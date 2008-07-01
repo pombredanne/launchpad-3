@@ -73,7 +73,7 @@
           </tal:is-closed>
 
           <form name="login" method="POST">
-            <table style="max-width: 20em; margin: 0 auto;">
+            <table style="margin: 0 auto;">
               <tr>
                 <th>
                   <label for="email">E-mail address:</label>

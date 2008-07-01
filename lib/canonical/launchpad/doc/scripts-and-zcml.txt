@@ -24,7 +24,7 @@ demonstrate this:
 Run the script (making sure it uses the testrunner configuration).
 
    >>> env = dict(os.environ)
-   >>> env['LPCONFIG_SECTION'] = 'testrunner'
+   >>> env['LPCONFIG'] = 'testrunner'
    >>> proc = subprocess.Popen([sys.executable, script_file.name], 
    ...                         stdout=subprocess.PIPE, stderr=None,
    ...                         env=env)

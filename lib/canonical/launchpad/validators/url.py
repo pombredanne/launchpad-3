@@ -67,7 +67,7 @@ def builder_url_validator(url):
     """Return True if the url is valid, or raise a LaunchpadValidationError"""
     if not valid_builder_url(url):
         raise LaunchpadValidationError(_(dedent("""
-            Invalid builder url '%s'. Builder urls must be
+            Invalid builder url '${url}'. Builder urls must be
             http://host/ or http://host:port/ only.
-            """)), url)
+            """), mapping={'url': url}))
     return True

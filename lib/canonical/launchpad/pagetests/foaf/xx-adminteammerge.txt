@@ -37,7 +37,7 @@ are merged.
 
 Merged teams shouldn't appear on the team listings:
 
-    >>> browser.open("http://launchpad.dev/people/+teamlist?batch=999")
+    >>> browser.open("http://launchpad.dev/people/+teamlist?batch=100")
     >>> "guadamen" in browser.contents
     True
     >>> "landscape-developers" in browser.contents

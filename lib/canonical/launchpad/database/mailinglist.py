@@ -1,9 +1,10 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
 __all__ = [
+    'HeldMessageDetails',
     'MailingList',
     'MailingListSet',
     'MailingListSubscription',
@@ -11,27 +12,36 @@ __all__ = [
     'MessageApprovalSet',
     ]
 
+
+from email import message_from_string
+from email.Header import decode_header, make_header
+from itertools import repeat
 from string import Template
 
 from sqlobject import ForeignKey, StringCol
-from zope.component import getUtility
+from zope.component import getUtility, queryAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.event import (
+    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
-    EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
-    IMailingListSet, IMailingListSubscription, IMessageApproval,
-    IMessageApprovalSet, MailingListStatus, PostedMessageStatus)
-from canonical.launchpad.validators.person import public_person_validator
+    EmailAddressStatus, IEmailAddressSet, IHeldMessageDetails,
+    ILaunchpadCelebrities, IMailingList, IMailingListSet,
+    IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
+    IMessageSet, MailingListStatus, PostedMessageStatus)
+from canonical.launchpad.mailman.config import configure_hostname
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 
 
 class MessageApproval(SQLBase):
@@ -39,25 +49,30 @@ class MessageApproval(SQLBase):
 
     implements(IMessageApproval)
 
-    message_id = StringCol()
+    message_id = StringCol(notNull=True)
 
     posted_by = ForeignKey(
         dbName='posted_by', foreignKey='Person',
-        validator=public_person_validator)
+        storm_validator=validate_public_person,
+        notNull=True)
 
     posted_message = ForeignKey(
-        dbName='posted_message', foreignKey='LibraryFileAlias')
+        dbName='posted_message', foreignKey='LibraryFileAlias',
+        notNull=True)
 
     posted_date = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
+    mailing_list = ForeignKey(
+        dbName='mailing_list', foreignKey='MailingList',
+        notNull=True)
 
     status = EnumCol(enum=PostedMessageStatus,
-                     default=PostedMessageStatus.NEW)
+                     default=PostedMessageStatus.NEW,
+                     notNull=True)
 
     disposed_by = ForeignKey(
         dbName='disposed_by', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_public_person,
         default=None)
 
     disposal_date = UtcDateTimeCol(default=None)
@@ -74,12 +89,20 @@ class MessageApproval(SQLBase):
         self.disposal_date = UTC_NOW
         self.status = PostedMessageStatus.REJECTION_PENDING
 
+    def discard(self, reviewer):
+        """See `IMessageApproval`."""
+        self.disposed_by = reviewer
+        self.disposal_date = UTC_NOW
+        self.status = PostedMessageStatus.DISCARD_PENDING
+
     def acknowledge(self):
         """See `IMessageApproval`."""
         if self.status == PostedMessageStatus.APPROVAL_PENDING:
             self.status = PostedMessageStatus.APPROVED
         elif self.status == PostedMessageStatus.REJECTION_PENDING:
             self.status = PostedMessageStatus.REJECTED
+        elif self.status == PostedMessageStatus.DISCARD_PENDING:
+            self.status = PostedMessageStatus.DISCARDED
         else:
             raise AssertionError('Not an acknowledgeable state: %s' %
                                  self.status)
@@ -99,31 +122,36 @@ class MailingList(SQLBase):
 
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        validator=public_person_validator)
+        notNull=True)
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator)
+        storm_validator=validate_public_person, notNull=True)
 
     date_registered = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
 
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
     date_activated = UtcDateTimeCol(notNull=False, default=None)
 
     status = EnumCol(enum=MailingListStatus,
-                     default=MailingListStatus.REGISTERED)
+                     default=MailingListStatus.REGISTERED,
+                     notNull=True)
 
-    welcome_message_text = StringCol(default=None)
+    # Use a trailing underscore because SQLObject/importfascist doesn't like
+    # the typical leading underscore.
+    welcome_message_ = StringCol(default=None, dbName='welcome_message')
 
     @property
     def address(self):
         """See `IMailingList`."""
-        return '%s@%s' % (self.team.name, config.mailman.build.host_name)
+        return '%s@%s' % (
+            self.team.name,
+            configure_hostname(config.mailman.build_host_name))
 
     @property
     def archive_url(self):
@@ -214,7 +242,12 @@ class MailingList(SQLBase):
                 # when the list status goes back to ACTIVE the email
                 # will go from PREFERRED to VALIDATED and the list
                 # will stop being the contact method.
-                email.status = EmailAddressStatus.VALIDATED
+                # We also need to remove the email's security proxy because
+                # this method will be called via the internal XMLRPC rather
+                # than as a response to a user action.
+                from zope.security.proxy import removeSecurityProxy
+                removeSecurityProxy(email).status = (
+                    EmailAddressStatus.VALIDATED)
             assert email.person == self.team, (
                 "Email already associated with another team.")
 
@@ -244,13 +277,12 @@ class MailingList(SQLBase):
             'Only active mailing lists may be deactivated')
         self.status = MailingListStatus.DEACTIVATING
         email = getUtility(IEmailAddressSet).getByEmail(self.address)
+        if email == self.team.preferredemail:
+            self.team.setContactAddress(None)
         email.status = EmailAddressStatus.NEW
 
     def reactivate(self):
         """See `IMailingList`."""
-        # XXX: The Mailman side of this is not yet implemented, although it
-        # will be implemented soon. -- Guilherme Salgado, 2007-10-08
-        # https://launchpad.net/launchpad/+spec/team-mailing-lists-reactivate
         assert self.status == MailingListStatus.INACTIVE, (
             'Only inactive mailing lists may be reactivated')
         self.status = MailingListStatus.APPROVED
@@ -261,15 +293,21 @@ class MailingList(SQLBase):
             "Only mailing lists in the REGISTERED state can be canceled.")
         self.destroySelf()
 
-    def _get_welcome_message(self):
-        return self.welcome_message_text
+    @property
+    def is_public(self):
+        """See `IMailingList`."""
+        return not queryAdapter(self.team, IObjectPrivacy).is_private
 
-    def isUsable(self):
-        """See `IMailingList`"""
+    @property
+    def is_usable(self):
+        """See `IMailingList`."""
         return self.status in [MailingListStatus.ACTIVE,
                                MailingListStatus.MODIFIED,
                                MailingListStatus.UPDATING,
                                MailingListStatus.MOD_FAILED]
+
+    def _get_welcome_message(self):
+        return self.welcome_message_
 
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:
@@ -279,7 +317,7 @@ class MailingList(SQLBase):
             # at list construction time.  It is enough to just set the
             # database attribute to properly notify Mailman what to do.
             pass
-        elif self.isUsable():
+        elif self.is_usable:
             # Transition the status to MODIFIED so that the XMLRPC layer knows
             # that it has to inform Mailman that a mailing list attribute has
             # been changed on an active list.
@@ -287,7 +325,7 @@ class MailingList(SQLBase):
         else:
             raise AssertionError(
                 'Only registered or usable mailing lists may be modified')
-        self.welcome_message_text = text
+        self.welcome_message_ = text
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
 
@@ -298,8 +336,8 @@ class MailingList(SQLBase):
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
-        if not self.status == MailingListStatus.ACTIVE:
-            raise CannotSubscribe('Mailing list is not active: %s' %
+        if not self.is_usable:
+            raise CannotSubscribe('Mailing list is not usable: %s' %
                                   self.team.displayname)
         if person.isTeam():
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
@@ -373,7 +411,7 @@ class MailingList(SQLBase):
             """ % sqlvalues(self, self.team,
                             MailingListStatus.INACTIVE,
                             EmailAddressStatus.PREFERRED),
-            clauseTables=clause_tables)
+            clauseTables=clause_tables, prejoins=['person'])
         specific = EmailAddress.select("""
             EmailAddress.id = MailingListSubscription.email_address AND
             MailingList.id = MailingListSubscription.mailing_list AND
@@ -382,7 +420,7 @@ class MailingList(SQLBase):
             TeamParticipation.team = %s AND
             MailingList.status <> %s
             """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
-            clauseTables=clause_tables)
+            clauseTables=clause_tables, prejoins=['person'])
         return preferred.union(specific)
 
     def getSenderAddresses(self):
@@ -400,17 +438,28 @@ class MailingList(SQLBase):
             """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE,
                             (EmailAddressStatus.VALIDATED,
                              EmailAddressStatus.PREFERRED)),
-            distinct=True, clauseTables=['MailingListSubscription',
-                                         'TeamParticipation',
-                                         'MailingList'])
+            distinct=True, prejoins=['person'],
+            clauseTables=['MailingListSubscription',
+                          'TeamParticipation',
+                          'MailingList'])
 
     def holdMessage(self, message):
         """See `IMailingList`."""
-        return MessageApproval(message_id=message.rfc822msgid,
-                               posted_by=message.owner,
-                               posted_message=message.raw,
-                               posted_date=message.datecreated,
-                               mailing_list=self)
+        held_message = MessageApproval(message_id=message.rfc822msgid,
+                                       posted_by=message.owner,
+                                       posted_message=message.raw,
+                                       posted_date=message.datecreated,
+                                       mailing_list=self)
+        notify(SQLObjectCreatedEvent(held_message))
+        return held_message
+
+    def getReviewableMessages(self):
+        """See `IMailingList`."""
+        return MessageApproval.select("""
+            MessageApproval.mailing_list = %s AND
+            MessageApproval.status = %s
+            """ % sqlvalues(self, PostedMessageStatus.NEW),
+            orderBy=['posted_date', 'message_id'])
 
 
 class MailingListSet:
@@ -479,6 +528,12 @@ class MailingListSet:
         """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.DEACTIVATING)
 
+    @property
+    def unsynchronized_lists(self):
+        """See `IMailingListSet`."""
+        return MailingList.select('status IN %s' % sqlvalues(
+            (MailingListStatus.CONSTRUCTING, MailingListStatus.UPDATING)))
+
 
 class MailingListSubscription(SQLBase):
     """A mailing list subscription."""
@@ -487,9 +542,12 @@ class MailingListSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator)
+        storm_validator=validate_public_person,
+        notNull=True)
 
-    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
+    mailing_list = ForeignKey(
+        dbName='mailing_list', foreignKey='MailingList',
+        notNull=True)
 
     date_joined = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -522,3 +580,52 @@ class MessageApprovalSet:
     def getHeldMessagesWithStatus(self, status):
         """See `IMessageApprovalSet`."""
         return MessageApproval.selectBy(status=status)
+
+
+class HeldMessageDetails:
+    """Details about a held message."""
+
+    implements(IHeldMessageDetails)
+
+    def __init__(self, message_approval):
+        self.message_approval = message_approval
+        self.message_id = message_approval.message_id
+        # We need to get the IMessage object associated with this
+        # IMessageApproval object.  The tie-in is the Message-ID.
+        messages = getUtility(IMessageSet).get(self.message_id)
+        assert len(messages) == 1, (
+            'Expected exactly one message with Message-ID: %s' %
+            self.message_id)
+        self.message = messages[0]
+        self.subject = self.message.subject
+        self.date = self.message.datecreated
+        self.author = self.message.owner
+
+    @cachedproperty
+    def email_message(self):
+        self.message.raw.open()
+        try:
+            return message_from_string(self.message.raw.read())
+        finally:
+            self.message.raw.close()
+
+    @cachedproperty
+    def sender(self):
+        """See `IHeldMessageDetails`."""
+        originators = self.email_message.get_all('from', [])
+        originators.extend(self.email_message.get_all('reply-to', []))
+        if len(originators) == 0:
+            return 'n/a'
+        unicode_parts = []
+        for bytes, charset in decode_header(originators[0]):
+            if charset is None:
+                charset = 'us-ascii'
+            unicode_parts.append(
+                bytes.decode(charset, 'replace').encode('utf-8'))
+        header = make_header(zip(unicode_parts, repeat('utf-8')))
+        return unicode(header)
+
+    @cachedproperty
+    def body(self):
+        """See `IHeldMessageDetails`."""
+        return self.message.text_contents

@@ -9,6 +9,7 @@ __all__ = [
     'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
+    'PrivateMaloneApplication',
     'RosettaApplication',
     'ShipItApplication',
     ]
@@ -23,11 +24,12 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
     ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication,
-    IOpenIdApplication, IPersonSet, IProductSet, IRosettaApplication,
+    IMailingListApplication, IMaloneApplication, IOpenIdApplication,
+    IPrivateMaloneApplication, IProductSet, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
     IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
+
 
 class AuthServerApplication:
     """AuthServer End-Point."""
@@ -41,6 +43,13 @@ class CodeImportSchedulerApplication:
     implements(ICodeImportSchedulerApplication)
 
     title = "Code Import Scheduler"
+
+
+class PrivateMaloneApplication:
+    """ExternalBugTracker authentication token end-point."""
+    implements(IPrivateMaloneApplication)
+
+    title = "Launchpad Bugs."
 
 
 class ShipItApplication:
@@ -101,6 +110,9 @@ class MaloneApplication:
         user = getUtility(ILaunchBag).user
         return getUtility(IBugSet).searchAsUser(
             user=user, orderBy='-datecreated', limit=5)
+
+    def default_bug_list(self, user=None):
+        return getUtility(IBugSet).searchAsUser(user)
 
 
 class BazaarApplication:
@@ -189,10 +201,3 @@ class HWDBApplication:
 class WebServiceApplication(ServiceRootResource):
     """See IWebServiceApplication."""
     implements(IWebServiceApplication)
-
-    # See ServiceRootResource for more on top_level_collections.
-    @property
-    def top_level_collections(self):
-        return {'bugtasks': getUtility(IBugTaskSet),
-                'bugs': getUtility(IBugSet),
-                'people': getUtility(IPersonSet)}

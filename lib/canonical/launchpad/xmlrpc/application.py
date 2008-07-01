@@ -1,4 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd., all rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """XML-RPC API to the application roots."""
 
@@ -19,7 +20,8 @@ from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
     IAuthServerApplication, ICodeImportSchedulerApplication, ILaunchBag,
-    IMailingListApplication, IPrivateApplication)
+    IMailingListApplication, IPrivateApplication,
+    IPrivateMaloneApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
@@ -40,6 +42,11 @@ class PrivateApplication:
     def codeimportscheduler(self):
         """See `IPrivateApplication`."""
         return getUtility(ICodeImportSchedulerApplication)
+
+    @property
+    def bugs(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IPrivateMaloneApplication)
 
 
 class ISelfTest(Interface):

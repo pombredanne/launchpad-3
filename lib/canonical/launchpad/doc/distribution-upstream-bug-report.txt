@@ -98,7 +98,9 @@ upstream is reported for it. Let's fix that:
 
 We then add an upstream task to the second pmount bug:
 
+    >>> from storm.store import Store
     >>> task = getUtility(IBugTaskSet).createTask(bug, name12, product=pmount)
+    >>> Store.of(task).flush()
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
     pmount              pmount  2 2 1 0
     linux-source-2.6.15 None    1 0 0 0
@@ -156,7 +158,7 @@ them:
     ...         print data.product.name
     ...     else:
     ...         print "NO PRODUCT"
-    ...     for f in ['bugcontact_url', 'product_edit_url',
+    ...     for f in ['bug_supervisor_url', 'product_edit_url',
     ...               'upstream_bugs_url', 'upstream_bugs_delta_url',
     ...               'watched_bugs_delta_url']:
     ...         t = getattr(data, f, "NO URL")
@@ -174,7 +176,7 @@ Here are the helper URLs we construct:
     ...     print_helpers(item)
     pmount ubuntu hoary
     pmount
-    http://launchpad.dev/pmount/+bugcontact
+    http://launchpad.dev/pmount/+bugsupervisor
     http://launchpad.dev/pmount/+edit
     **pmount?field.status_upstream=open_upstream&field.status%3Alist=TRIAGED
     **pmount?field.status_upstream=hide_upstream&field.status%3Alist=TRIAGED
@@ -190,7 +192,7 @@ Here are the helper URLs we construct:
     --
     mozilla-firefox ubuntu hoary
     firefox
-    http://launchpad.dev/firefox/+bugcontact
+    http://launchpad.dev/firefox/+bugsupervisor
     http://launchpad.dev/firefox/+edit
     **mozilla-firefox?field.status_upstream=open_upstream&field.status%3Alist=TRIAGED
     **mozilla-firefox?field.status_upstream=hide_upstream&field.status%3Alist=TRIAGED

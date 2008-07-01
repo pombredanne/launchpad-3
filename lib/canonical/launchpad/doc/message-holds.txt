@@ -6,7 +6,13 @@ sender of the message is not a member of the mailing list and their
 personal standing in Launchpad is unknown.
 
     >>> from canonical.launchpad.ftests import mailinglists_helper
-    >>> team, mailing_list = mailinglists_helper.new_team('test-one', True)
+    >>> team_one, list_one = mailinglists_helper.new_team('test-one', True)
+
+    # We don't care about the email notifications sent when the mailing
+    # list was created, and we don't want the notification to confuse
+    # things later on in this test, so clear the queue.
+    >>> from canonical.launchpad.tests import mail_helpers
+    >>> ignore = mail_helpers.pop_notifications()
 
 
 == Initial hold ==
@@ -28,11 +34,26 @@ first created.
 
 Then this message is inserted into the approval queue.
 
-    >>> held_message = mailing_list.holdMessage(message)
+    >>> held_message = list_one.holdMessage(message)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IMessageApproval
     >>> verifyObject(IMessageApproval, held_message)
     True
+
+We can get some useful details about this held message by adapting it to the
+IHeldMessageDetails interface.
+
+    >>> from zope.component import getAdapter
+    >>> from canonical.launchpad.interfaces import IHeldMessageDetails
+    >>> details = getAdapter(held_message, IHeldMessageDetails)
+    >>> print details.message_id
+    <first-post>
+    >>> print details.subject
+    My first test
+    >>> print details.author.displayname
+    Foo Bar
+    >>> print details.date
+    2000-08-01 01:08:59+00:00
 
 The new hold has several important pieces of information, such as the
 message id of the held message...
@@ -87,6 +108,37 @@ information.
     >>> print held_message.disposal_date
     None
 
+A notification message is sent to every team administrator informing
+them that there is a message waiting for their approval.
+
+    >>> mail_helpers.print_emails()
+    From: Test One <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Subject: New mailing list message requiring approval for Test One
+    <BLANKLINE>
+    Hello No Privileges Person,
+    <BLANKLINE>
+    Test One has a new message requiring your approval.
+    <BLANKLINE>
+        Subject: My first test
+        Author name: Foo Bar
+        Author url: http://launchpad.dev/~name16
+        Date: 2000-08-01 01:08:59+00:00
+        Message-ID: <first-post>
+    <BLANKLINE>
+    A message has been posted to the mailing list for your team, but this
+    message requires your approval before it will be sent to the list
+    members.  After reviewing the message, you may approve, discard or
+    reject it.
+    <BLANKLINE>
+    To review all messages pending approval, visit:
+    <BLANKLINE>
+        http://launchpad.dev/~test-one/+mailinglist-moderate
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+
 
 == Approving the message ==
 
@@ -94,7 +146,7 @@ No Privileges Person is the team owner who reviews the held message, and
 he decides that it is appropriate for the mailing list, so he approves
 it.
 
-    >>> owner = mailing_list.team.teamowner
+    >>> owner = list_one.team.teamowner
     >>> print owner.displayname
     No Privileges Person
     >>> held_message.approve(owner)
@@ -117,7 +169,8 @@ The message has been disposed by Foo Bar on today's date.
 
 == Rejecting the message ==
 
-Held messages can also be rejected.
+Held messages can also be rejected, in which case the original message is
+bounced back to the sender.
 
     >>> message = message_set.fromEmail("""\
     ... From: foo.bar@canonical.com
@@ -128,7 +181,7 @@ Held messages can also be rejected.
     ...
     ... This is my second post!
     ... """)
-    >>> held_message = mailing_list.holdMessage(message)
+    >>> held_message = list_one.holdMessage(message)
     >>> held_message.reject(owner)
     >>> syncUpdate(held_message)
 
@@ -136,6 +189,34 @@ Held messages can also be rejected.
     <second-post>
     >>> held_message.status
     <DBItem PostedMessageStatus.REJECTION_PENDING, (30) Decline pending>
+    >>> print held_message.disposed_by.displayname
+    No Privileges Person
+    >>> held_message.disposal_date is not None
+    True
+
+
+== Discarding the message ==
+
+Held messages can also be discarded.  Nothing further is done with the
+message.
+
+    >>> message = message_set.fromEmail("""\
+    ... From: foo.bar@canonical.com
+    ... To: test-one@lists.launchpad.dev
+    ... Subject: My third test
+    ... Message-ID: <third-post>
+    ... Date: Fri, 01 Aug 2000 01:09:00 -0000
+    ...
+    ... This is my third post!
+    ... """)
+    >>> held_message = list_one.holdMessage(message)
+    >>> held_message.discard(owner)
+    >>> syncUpdate(held_message)
+
+    >>> print held_message.message_id
+    <third-post>
+    >>> held_message.status
+    <DBItem PostedMessageStatus.DISCARD_PENDING, (60) Discard pending>
     >>> print held_message.disposed_by.displayname
     No Privileges Person
     >>> held_message.disposal_date is not None
@@ -153,49 +234,198 @@ A few more messages are held for approval.
     >>> message = message_set.fromEmail("""\
     ... From: foo.bar@canonical.com
     ... To: test-one@lists.launchpad.dev
-    ... Subject: My third test
-    ... Message-ID: <third-post>
+    ... Subject: My fourth test
+    ... Message-ID: <fourth-post>
     ... Date: Fri, 01 Aug 2000 01:09:01 -0000
     ...
-    ... This is my third post!
+    ... This is my fourth post!
     ... """)
-    >>> held_message = mailing_list.holdMessage(message)
+    >>> held_message = list_one.holdMessage(message)
 
     >>> message = message_set.fromEmail("""\
     ... From: foo.bar@canonical.com
     ... To: test-one@lists.launchpad.dev
-    ... Subject: My fourth test
-    ... Message-ID: <fourth-post>
+    ... Subject: My fifth test
+    ... Message-ID: <fifth-post>
     ... Date: Fri, 01 Aug 2000 01:09:02 -0000
     ...
-    ... This is my fourth post!
+    ... This is my fifth post!
     ... """)
-    >>> held_message = mailing_list.holdMessage(message)
+    >>> held_message = list_one.holdMessage(message)
+
+A second mailing list gets created and some messages get held for approval on
+that list too.
+
+    >>> team_two, list_two = mailinglists_helper.new_team('test-two', True)
+
+    >>> message = message_set.fromEmail("""\
+    ... From: foo.bar@canonical.com
+    ... To: test-two@lists.launchpad.dev
+    ... Subject: My sixth test
+    ... Message-ID: <sixth-post>
+    ... Date: Fri, 01 Aug 2000 01:09:03 -0000
+    ...
+    ... This is my sixth post!
+    ... """)
+    >>> held_message = list_two.holdMessage(message)
+
+    >>> message = message_set.fromEmail("""\
+    ... From: foo.bar@canonical.com
+    ... To: test-two@lists.launchpad.dev
+    ... Subject: My seventh test
+    ... Message-ID: <seventh-post>
+    ... Date: Fri, 01 Aug 2000 01:09:04 -0000
+    ...
+    ... This is my seventh post!
+    ... """)
+    >>> held_message = list_two.holdMessage(message)
+
+Here are some helper functions.
 
     >>> from canonical.launchpad.interfaces import IMessageApprovalSet
     >>> hold_set = getUtility(IMessageApprovalSet)
     >>> from operator import attrgetter
+    >>> def print_hold(message_hold):
+    ...     messages = message_set.get(message_hold.message_id)
+    ...     assert len(messages) <= 1, 'Duplicate message-ids'
+    ...     message_id = message_hold.message_id
+    ...     subject = messages[0].subject
+    ...     list_name = message_hold.mailing_list.team.name
+    ...     print message_id, list_name, subject
+
     >>> def print_messages(status):
     ...     held_messages = sorted(hold_set.getHeldMessagesWithStatus(status),
     ...                            key=attrgetter('message_id'))
-    ...     for hold in held_messages:
-    ...         messages = message_set.get(hold.message_id)
-    ...         assert len(messages) <= 1, 'Duplicate message-ids'
-    ...         print hold.message_id, messages[0].subject
+    ...     for message_hold in held_messages:
+    ...         print_hold(message_hold)
 
 Here are all the messages pending approval...
 
     >>> from canonical.launchpad.interfaces import PostedMessageStatus
     >>> print_messages(PostedMessageStatus.APPROVAL_PENDING)
-    <first-post> My first test
+    <first-post> test-one My first test
 
 ...and all the messages pending rejection...
 
     >>> print_messages(PostedMessageStatus.REJECTION_PENDING)
-    <second-post> My second test
+    <second-post> test-one My second test
 
 ...and all the messages where are waiting for any disposition.
 
     >>> print_messages(PostedMessageStatus.NEW)
-    <fourth-post> My fourth test
-    <third-post> My third test
+    <fifth-post> test-one My fifth test
+    <fourth-post> test-one My fourth test
+    <seventh-post> test-two My seventh test
+    <sixth-post> test-two My sixth test
+
+When managing the held messages for a mailing lists, we will want to query for
+just those new messages needing approval for a specific list.
+
+    >>> for message_hold in list_one.getReviewableMessages():
+    ...     print_hold(message_hold)
+    <fourth-post> test-one My fourth test
+    <fifth-post> test-one My fifth test
+
+    >>> for message_hold in list_two.getReviewableMessages():
+    ...     print_hold(message_hold)
+    <sixth-post> test-two My sixth test
+    <seventh-post> test-two My seventh test
+
+
+== Non-ASCII hold notifications ==
+
+When a message is sent by a person who's name contains non-ASCII characters,
+the notification message is properly encoded.
+
+    # Ignore any notifications up to this point.
+    >>> ignore = mail_helpers.pop_notifications()
+
+    >>> message = message_set.fromEmail("""\
+    ... From: carlos@canonical.com
+    ... To: test-one@lists.launchpad.dev
+    ... Subject: =?iso-8859-1?q?Adi=C3=B3s?=
+    ... Message-ID: <eighth-post>
+    ... Date: Fri, 01 Aug 2000 01:09:00 -0000
+    ...
+    ... This is my first post!
+    ... """)
+    >>> held_message = list_one.holdMessage(message)
+
+    >>> mail_helpers.print_emails()
+    From: Test One <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Subject: New mailing list message requiring approval for Test One
+    Hello No Privileges Person,
+    <BLANKLINE>
+    Test One has a new message requiring your approval.
+    <BLANKLINE>
+        Subject: Adi=C3=83=C2=B3s
+        Author name: Carlos Perell=C3=B3 Mar=C3=ADn
+        Author url: http://launchpad.dev/~carlos
+        Date: 2000-08-01 01:09:00+00:00
+        Message-ID: <eighth-post>
+    <BLANKLINE>
+    A message has been posted to the mailing list for your team, but this
+    message requires your approval before it will be sent to the list
+    members.  After reviewing the message, you may approve, discard or
+    reject it.
+    <BLANKLINE>
+    To review all messages pending approval, visit:
+    <BLANKLINE>
+        http://launchpad.dev/~test-one/+mailinglist-moderate
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+
+
+== Held message formatting ==
+
+When held messages are displayed in the u/i, they will be formatted in such a
+way that we can show the body summary with an ellipsis to review more body
+details.  Because formatting email messages for the web can get tricky, we
+take a fairly conservative 80/20 approach.
+
+    >>> from canonical.launchpad.browser.mailinglists import HeldMessageView
+    >>> from canonical.launchpad.interfaces import (
+    ...     IHeldMessageDetails, IPersonSet)
+    >>> from zope.component import getUtility
+    >>> from zope.interface import implements
+
+First, we craft an object like what the view expects.
+
+    >>> person = getUtility(IPersonSet).getByName('name12')
+    >>> class FakeHeldMessageDetails:
+    ...     implements(IHeldMessageDetails)
+    ...     message_id = '<zebra>'
+    ...     subject = 'A subject'
+    ...     date = 'Today'
+    ...     author = person
+    ...     sender = 'test@example.com'
+    ...     body = """\
+    ... What are the Guadamen?  I think I might want to be come one
+    ... but I'm not sure.  Are they men who like guacamole?  Or are
+    ... they men who live on Gauadalcanal?  I used to live on Guadalcanal
+    ... and boy, do I sure like avocados!
+    ...
+    ... Please consider me for Guadamanhood.
+    ...
+    ... -Guy
+    ... """
+
+    >>> view = HeldMessageView(FakeHeldMessageDetails(), None)
+    >>> view.initialize()
+    >>> view.widget_name
+    'field.%3Czebra%3E'
+    >>> view.author
+    u'<a href="http://launchpad.dev/~name12">test@example.com</a>'
+    >>> view.body_summary
+    'What are the Guadamen?  I think I might want to be come one'
+    >>> print view.body_details
+    but I'm not sure.  Are they men who like guacamole?  Or are
+    they men who live on Gauadalcanal?  I used to live on Guadalcanal
+    and boy, do I sure like avocados!
+    <p>
+    Please consider me for Guadamanhood.
+    <p>
+    -Guy

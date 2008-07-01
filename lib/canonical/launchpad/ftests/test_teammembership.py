@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+import re
 import subprocess
 import unittest
 from datetime import datetime, timedelta
@@ -12,10 +13,13 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import (
     flush_database_caches, flush_database_updates, cursor)
-from canonical.launchpad.database import TeamMembership, TeamParticipation
+from canonical.launchpad.database import TeamMembership
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces import (
-    IPersonSet, ITeamMembershipSet, TeamMembershipStatus)
+from canonical.launchpad.interfaces.person import (
+    IPersonSet, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.teammembership import (
+    CyclicalTeamMembershipError, ITeamMembershipSet, TeamMembershipStatus)
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -138,14 +142,14 @@ class TestTeamMembership(unittest.TestCase):
         direct member is kicked.
 
         Create a team hierarchy with 5 teams and one person (no-priv) as
-        member of the last team in the chain. 
+        member of the last team in the chain.
             team1
                team2
                   team3
                      team4
                         team5
                            no-priv
-        
+
         Then kick the latest team (team5) from team4 and check that neither
         no-priv nor team5 are indirect members of any other teams.
         """
@@ -215,6 +219,11 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         self.no_priv = getUtility(IPersonSet).getByName('no-priv')
         self.ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         self.admins = getUtility(IPersonSet).getByName('admins')
+        # Create a bunch of arbitrary teams to use in the tests.
+        factory = LaunchpadObjectFactory()
+        self.team1 = factory.makeTeam(self.foobar)
+        self.team2 = factory.makeTeam(self.foobar)
+        self.team3 = factory.makeTeam(self.foobar)
 
     def test_proponent_is_stored(self):
         for status in [TeamMembershipStatus.DEACTIVATED,
@@ -318,6 +327,97 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         tm.setStatus(TeamMembershipStatus.APPROVED, self.foobar)
         self.failUnless(tm.datejoined <= one_minute_ago)
 
+    def test_no_cyclical_membership_allowed(self):
+        """No status change can create cyclical memberships."""
+        # Invite team2 as member of team1 and team1 as member of team2. This
+        # is not a problem because that won't make any team an active member
+        # of the other.
+        self.team1.addMember(self.team2, self.foobar)
+        self.team2.addMember(self.team1, self.foobar)
+        team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        team2_on_team1 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team2, self.team1)
+        self.failUnlessEqual(
+            team1_on_team2.status, TeamMembershipStatus.INVITED)
+        self.failUnlessEqual(
+            team2_on_team1.status, TeamMembershipStatus.INVITED)
+
+        # Now make team1 an active member of team2.  From this point onwards,
+        # team2 cannot be made an active member of team1.
+        team1_on_team2.setStatus(TeamMembershipStatus.APPROVED, self.foobar)
+        flush_database_updates()
+        self.failUnlessEqual(
+            team1_on_team2.status, TeamMembershipStatus.APPROVED)
+        self.assertRaises(
+            CyclicalTeamMembershipError, team2_on_team1.setStatus,
+            TeamMembershipStatus.APPROVED, self.foobar)
+        self.failUnlessEqual(
+            team2_on_team1.status, TeamMembershipStatus.INVITED)
+
+        # It is possible to change the state of team2's membership on team1
+        # to another inactive state, though.
+        team2_on_team1.setStatus(
+            TeamMembershipStatus.INVITATION_DECLINED, self.foobar)
+        self.failUnlessEqual(
+            team2_on_team1.status, TeamMembershipStatus.INVITATION_DECLINED)
+
+    def test_no_cyclical_participation_allowed(self):
+        """No status change can create cyclical participation."""
+        # Invite team1 as a member of team3 and forcibly add team2 as member
+        # of team1 and team3 as member of team2.
+        self.team3.addMember(self.team1, self.foobar)
+        self.team1.addMember(self.team2, self.foobar, force_team_add=True)
+        self.team2.addMember(self.team3, self.foobar, force_team_add=True)
+
+        # Since team2 is a member of team1 and team3 is a member of team2, we
+        # can't make team1 a member of team3.
+        team1_on_team3 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team3)
+        self.assertRaises(
+            CyclicalTeamMembershipError, team1_on_team3.setStatus,
+            TeamMembershipStatus.APPROVED, self.foobar)
+
+    def test_invited_member_can_be_made_admin(self):
+        self.team2.addMember(self.team1, self.foobar)
+        team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        self.assertEqual(team1_on_team2.status, TeamMembershipStatus.INVITED)
+        team1_on_team2.setStatus(TeamMembershipStatus.ADMIN, self.foobar)
+        self.assertEqual(team1_on_team2.status, TeamMembershipStatus.ADMIN)
+
+    def test_deactivated_member_can_be_made_admin(self):
+        self.team2.addMember(self.team1, self.foobar, force_team_add=True)
+        team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        self.assertEqual(team1_on_team2.status, TeamMembershipStatus.APPROVED)
+        team1_on_team2.setStatus(TeamMembershipStatus.DEACTIVATED, self.foobar)
+        self.assertEqual(
+            team1_on_team2.status, TeamMembershipStatus.DEACTIVATED)
+        team1_on_team2.setStatus(TeamMembershipStatus.ADMIN, self.foobar)
+        self.assertEqual(team1_on_team2.status, TeamMembershipStatus.ADMIN)
+
+    def test_expired_member_can_be_made_admin(self):
+        self.team2.addMember(self.team1, self.foobar, force_team_add=True)
+        team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        self.assertEqual(team1_on_team2.status, TeamMembershipStatus.APPROVED)
+        team1_on_team2.setStatus(TeamMembershipStatus.EXPIRED, self.foobar)
+        self.assertEqual(team1_on_team2.status, TeamMembershipStatus.EXPIRED)
+        team1_on_team2.setStatus(TeamMembershipStatus.ADMIN, self.foobar)
+        self.assertEqual(team1_on_team2.status, TeamMembershipStatus.ADMIN)
+
+    def test_declined_member_can_be_made_admin(self):
+        self.team2.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        self.team1.join(self.team2, requester=self.foobar)
+        team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        self.assertEqual(team1_on_team2.status, TeamMembershipStatus.PROPOSED)
+        team1_on_team2.setStatus(TeamMembershipStatus.DECLINED, self.foobar)
+        self.assertEqual(team1_on_team2.status, TeamMembershipStatus.DECLINED)
+        team1_on_team2.setStatus(TeamMembershipStatus.ADMIN, self.foobar)
+        self.assertEqual(team1_on_team2.status, TeamMembershipStatus.ADMIN)
+
 
 class TestCheckTeamParticipationScript(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
@@ -337,25 +437,34 @@ class TestCheckTeamParticipationScript(unittest.TestCase):
         self.assertEqual((out, err), ('', ''))
 
     def test_report_invalid_teamparticipation_entries(self):
+        """The script reports invalid TeamParticipation entries.
+
+        As well as missing self-participation.
+        """
         cur = cursor()
+        # Create a new entry in the Person table and update its
+        # TeamParticipation so that the person is a participant in a team
+        # (without being a member) and the person is not a member of itself.
         cur.execute("""
-            SELECT p.id, t.id
-            FROM person AS p, person AS t
-            WHERE (p.id, t.id) NOT IN (
-                SELECT person, team FROM teamparticipation)
-                AND p.id != t.id
-                AND p.teamowner IS NULL
-                AND t.teamowner IS NOT NULL
-                LIMIT 1
+            INSERT INTO
+                Person (id, name, displayname, creation_rationale)
+                VALUES (9999, 'zzzzz', 'zzzzzz', 1);
+            UPDATE TeamParticipation
+                SET team = (
+                    SELECT id FROM Person WHERE teamowner IS NOT NULL limit 1)
+                WHERE person = 9999;
             """)
-        [person, team] = cur.fetchone()
-        tp = TeamParticipation(person=person, team=team)
         import transaction
         transaction.commit()
+
         out, err = self._runScript()
         self.assertEqual(err, '', (out, err))
         self.failUnless(
-            'Invalid teamParticipation entry for' in out, (out, err))
+            re.search('Invalid TeamParticipation entry for zzzzz', out),
+            (out, err))
+        self.failUnless(
+            re.search('not members of themselves:.*zzzzz.*', out),
+            (out, err))
 
 
 def test_suite():

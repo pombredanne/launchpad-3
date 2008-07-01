@@ -83,14 +83,6 @@ policy other than None and don't specify a default renewal period.
 
 == Teams with mailing lists may not be renamed ==
 
-XXX BarryWarsaw 06-Dec-2007 Teams must be members of the mailing list beta
-program team in order to be able to apply for a mailing list.  This will go
-away when mailing lists go public.
-
-    >>> from canonical.launchpad.ftests.mailinglists_helper import (
-    ...     beta_program_enable)
-    >>> beta_program_enable('landscape-developers')
-
 Because renaming mailing lists is non-trivial in Mailman 2.1, renaming teams
 with mailing lists is prohibited.  This is done by making the 'name' field of
 such team pages read-only.

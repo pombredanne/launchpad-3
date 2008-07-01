@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
 """Browser views for ITranslationImportQueue."""
 
@@ -237,7 +237,7 @@ class TranslationImportQueueView(HasTranslationImportsView):
         """
         return self.createFilterFieldHelper(
             name='filter_target',
-            source=TranslationImportTargetVocabularyFactory(),
+            source=TranslationImportTargetVocabularyFactory(self),
             title='Choose which target to show')
 
 
@@ -246,9 +246,34 @@ class TranslationImportTargetVocabularyFactory:
 
     implements(IContextSourceBinder)
 
+    def __init__(self, view):
+        """Create a `TranslationImportTargetVocabularyFactory`.
+
+        :param view: The view that called this factory.  We access its
+            filter_status widget later to see which status it filters for.
+        """
+        self.view = view
+
     def __call__(self, context):
-        translation_import_queue = getUtility(ITranslationImportQueue)
-        targets = translation_import_queue.getPillarObjectsWithImports()
+        import_queue = getUtility(ITranslationImportQueue)
+        targets = import_queue.getRequestTargets()
+        filtered_targets = set()
+
+        # Read filter_status, in order to mark targets that have requests with
+        # that status pending.  This works because we set up the filter_status
+        # widget before the filter_target one, which uses this vocabulary
+        # factory.
+        status_widget = self.view.widgets['filter_status']
+        if status_widget.hasInput():
+            status_filter = status_widget.getInputValue()
+            if status_filter != 'all':
+                try:
+                    status = RosettaImportStatus.items[status_filter]
+                    filtered_targets = set(
+                        import_queue.getRequestTargets(status))
+                except LookupError:
+                    # Unknown status.  Ignore.
+                    pass
 
         terms = [SimpleTerm('all', 'all', 'All targets')]
         for target in targets:
@@ -258,5 +283,10 @@ class TranslationImportTargetVocabularyFactory:
                 term_name = '%s/%s' % (target.distribution.name, target.name)
             else:
                 term_name = target.name
-            terms.append(SimpleTerm(term_name, term_name, target.displayname))
+
+            displayname = target.displayname
+            if target in filtered_targets:
+                displayname += '*'
+
+            terms.append(SimpleTerm(term_name, term_name, displayname))
         return SimpleVocabulary(terms)

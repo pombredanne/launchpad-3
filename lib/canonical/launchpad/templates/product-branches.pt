@@ -6,26 +6,37 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
+<div metal:fill-slot="main">
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
+  <div style="float:right" id="floating-buttons">
+    <div>
+      <a href="+addbranch" id="register-branch">
+        <img alt="Register a branch"
+             src="/+icing/but-lrg-registerabranch.gif"/>
+      </a>
+    </div>
+    <div tal:condition="not: context/official_codehosting">
+      <a href="/+code-imports/+new" id="new-code-import">
+        <img alt="Import your project"
+             src="/+icing/but-lrg-importyourproject.gif"/>
+      </a>
+    </div>
+  </div>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Bazaar branches for <tal:project-name replace="context/displayname"/></h1>
-</metal:heading>
+  <h1>Bazaar branches of <tal:project-name replace="context/displayname"/></h1>
 
-<div metal:fill-slot="main"
-     tal:define="branches view/branches">
+  <tal:branch-summary content="structure context/@@+branch-summary" />
 
-  <tal:branchlisting content="structure branches/@@+branch-listing" />
+  <tal:has-branches condition="view/branch_count"
+                    define="branches view/branches">
+    <tal:branchlisting content="structure branches/@@+branch-listing" />
+  </tal:has-branches>
 
 </div>
 

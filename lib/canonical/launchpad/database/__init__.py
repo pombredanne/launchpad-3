@@ -1,14 +1,18 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
+from canonical.launchpad.database.account import *
 from canonical.launchpad.database.codeimport import *
 from canonical.launchpad.database.codeimportevent import *
 from canonical.launchpad.database.codeimportjob import *
 from canonical.launchpad.database.codeimportmachine import *
 from canonical.launchpad.database.codeimportresult import *
+from canonical.launchpad.database.codereviewvote import *
+from canonical.launchpad.database.customlanguagecode import *
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.personlocation import *
+from canonical.launchpad.database.personnotification import *
 from canonical.launchpad.database.pillar import *
 from canonical.launchpad.database.product import *
 from canonical.launchpad.database.productbounty import *
@@ -33,6 +37,7 @@ from canonical.launchpad.database.bugactivity import *
 from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugnomination import *
 from canonical.launchpad.database.bugnotification import *
+from canonical.launchpad.database.commercialsubscription import *
 from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
 from canonical.launchpad.database.bugtracker import *
@@ -73,6 +78,7 @@ from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
 from canonical.launchpad.database.translationmessage import *
 from canonical.launchpad.database.translationsoverview import *
+from canonical.launchpad.database.translationtemplateitem import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.branch import *
@@ -122,7 +128,6 @@ from canonical.launchpad.database.questionmessage import *
 from canonical.launchpad.database.questionreopening import *
 from canonical.launchpad.database.questionsubscription import *
 from canonical.launchpad.database.poexportrequest import *
-from canonical.launchpad.database.distrocomponentuploader import *
 from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *
 from canonical.launchpad.database.archive import *
@@ -134,4 +139,5 @@ from canonical.launchpad.database.mailinglist import *
 from canonical.launchpad.database.hwdb import *
 from canonical.launchpad.database.archivedependency import *
 from canonical.launchpad.database.packagediff import *
-from canonical.launchpad.database.codereviewmessage import *
+from canonical.launchpad.database.codereviewcomment import *
+from canonical.launchpad.database.archivepermission import *

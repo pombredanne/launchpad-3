@@ -322,7 +322,7 @@ class TestExpandURL(BranchTestCase):
         """
         # Create the owner explicitly so that we can get its email without
         # resorting to removeSecurityProxy.
-        email = self.getUniqueString('email')
+        email = "%s@example.com" % self.getUniqueString('email')
         arbitrary_branch = self.makePrivateBranch(
             owner=self.makePerson(email=email))
         login(email)

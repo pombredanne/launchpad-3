@@ -243,3 +243,155 @@ earlier, we have a "mirror image" of the dependencies in the blocked speces.
     <foo2>:
         foo1
 
+
+== SpecificationTreeImageTag and SpecificationView ==
+
+The SpecificationTreeImageTag subclass will generate a HTML image map
+tag when the render() method is called.
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.browser.specification import (
+    ...     SpecificationTreeImageTag)
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> svg_support = firefox.getSpecification('svg-support')
+    >>> request = LaunchpadTestRequest(form={})
+    >>> graph_view = getMultiAdapter(
+    ...     (svg_support, request), name="+deptreeimgtag")
+    >>> graph_view.initialize()
+    >>> isinstance(graph_view, SpecificationTreeImageTag)
+    True
+
+    >>> print graph_view.render()
+    <img src="deptree.png" usemap="#deptree" />
+    <map id="deptree" name="deptree"> ...
+
+The real work of converting the graph data into an image map is done by
+the renderGraphvizGraph() method from the view's parent class. The
+method will make an image map when 'cmapx' is passed as an argument; It
+also makes PNG images when it is passed 'png' as an argument.
+
+    >>> graph_view.renderGraphvizGraph('cmapx')
+    '<map id="deptree" name="deptree">...'
+
+The SpecificationTreeImageTag view is indirectly called when the spec's
++index template calls render().
+
+    >>> login('no-priv@canonical.com', request)
+    >>> page_view = getMultiAdapter((svg_support, request), name="+index")
+    >>> page_view.initialize()
+    >>> content = page_view.render()
+    >>> image_start = content.find('<map id="deptree"')
+    >>> content[image_start:image_start + 33]
+    u'<map id="deptree" name="deptree">'
+
+
+== renderGraphvizGraph() error handling ==
+
+The renderGraphvizGraph() method may raise a ProblemRenderingGraph error
+running the subprocess. The error could be caused because the
+data sent to the command is bad:
+
+    # Replace getDotFileText() with a fake function that will return
+    # bad data.
+    >>> from canonical.launchpad.browser import specification
+    >>> graph_view_class = specification.SpecificationTreeGraphView
+    >>> original_getDotFileText = graph_view_class.getDotFileText
+    >>> def fake_getDotFileText(format):
+    ...     return 'bad data'
+    >>> graph_view_class.getDotFileText = fake_getDotFileText
+
+    >>> graph_view = getMultiAdapter(
+    ...     (svg_support, request), name="+deptreeimgtag")
+    >>> graph_view.initialize()
+    >>> graph_view.renderGraphvizGraph('cmapx')
+    Traceback (most recent call last):
+     ...
+    ProblemRenderingGraph: ("<stdin>:1: syntax error in line 1 near 'bad'...)
+
+The SpecificationTreeImageTag.render() method captures the raised
+error and directly converts it into an oops report. The markup contains
+a message explaining that the image was not linked.
+
+    >>> print graph_view.render()
+    <img src="deptree.png" usemap="#deptree" />
+    <p class="error message">There was an error linking the dependency tree
+    to its specs.</p>
+
+    >>> from zope.app.error.interfaces import IErrorReportingUtility
+    >>> globalErrorUtility = getUtility(IErrorReportingUtility)
+    >>> oops_report = globalErrorUtility.getLastOopsReport()
+    >>> print oops_report.type, oops_report.value
+    ProblemRenderingGraph ("<stdin>:1: syntax error in line 1 near 'bad'...)
+
+    # Restore the getDotFileText() method.
+    >>> graph_view_class.getDotFileText = original_getDotFileText
+
+The renderGraphvizGraph() pipes data to a subprocess. That subprocess
+can raise errors like OSError.
+
+    # Replace the Popen object with a fake function that will raise
+    # an OSError.
+    >>> original_popen = specification.Popen
+    >>> def fake_popen(*args, **kwargs):
+    ...     raise OSError(12, 'Cannot allocate memory')
+    >>> specification.Popen = fake_popen
+
+    >>> graph_view = getMultiAdapter(
+    ...     (svg_support, request), name="+deptreeimgtag")
+    >>> graph_view.initialize()
+    >>> graph_view.renderGraphvizGraph('cmapx')
+    Traceback (most recent call last):
+     ...
+    OSError: [Errno 12] Cannot allocate memory
+
+The OSError raised creating the image map does not break the spec index
+page. Again, the image map was replaced with an suggestion to reload
+the page to link the image.
+
+    >>> print graph_view.render()
+    <img src="deptree.png" usemap="#deptree" />
+    <p class="error message">There was an error linking the dependency tree
+    to its specs. Reload the page to link the image.</p>
+
+    >>> oops_report = globalErrorUtility.getLastOopsReport()
+    >>> print oops_report.type, oops_report.value
+    OSError [Errno 12] Cannot allocate memory
+
+If an error occurs during the render of the PNG image, the fail
+over image (icing/blueprints-deptree-error.png) is returned. It's size
+is 3092 bytes.
+
+    >>> graph_view = getMultiAdapter(
+    ...     (svg_support, request), name="deptree.png")
+    >>> graph_view.initialize()
+    >>> graph_view.renderGraphvizGraph('png')
+    Traceback (most recent call last):
+     ...
+    OSError: [Errno 12] Cannot allocate memory
+
+    >>> image = graph_view.render()
+    >>> image.startswith('\x89PNG')
+    True
+
+    >>> fail_over_image_length = len(image)
+    >>> fail_over_image_length
+    3092
+
+The dependency graph image is rendered correctly when Popen is
+restored.
+
+    # Restore the Popen object.
+    >>> specification.Popen = original_popen
+
+    >>> graph_view = getMultiAdapter(
+    ...     (svg_support, request), name="deptree.png")
+    >>> graph_view.initialize()
+    >>> image = graph_view.render()
+    >>> image.startswith('\x89PNG')
+    True
+
+    >>> len(image) != fail_over_image_length
+    True

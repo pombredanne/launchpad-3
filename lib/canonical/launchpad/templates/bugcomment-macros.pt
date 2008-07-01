@@ -2,9 +2,10 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="comment-box"
-  class="boardComment">
-
-  <div class="boardCommentDetails">
+  tal:define="remote_bug_comment_class
+              python: comment.bugwatch and 'remoteBugComment' or ''"
+  tal:attributes="class string:boardComment ${remote_bug_comment_class}">
+  <div class="boardCommentDetails" tal:condition="not: comment/bugwatch">
     <tal:comment_has_owner>
       <tal:comment_owner replace="structure comment/owner/fmt:link" />
     </tal:comment_has_owner>
@@ -14,12 +15,27 @@
       tal:content="comment/datecreated/fmt:displaydate">
       7 minutes ago
     </span>:
-    <span tal:condition="comment/bugwatch">
-      imported from
-      <a tal:attributes="href comment/bugwatch/url">
-        <tal:block replace="comment/bugwatch/title" />
-      </a>
-    </span>
+    <a tal:attributes="href comment/fmt:url">
+      <strong tal:condition="comment/display_title"
+              tal:content="comment/title" />
+      (permalink)
+    </a>
+  </div>
+
+  <div class="boardCommentDetails" tal:condition="comment/bugwatch">
+    <img tal:replace="structure comment/bugtask/target/image:icon" />
+    In
+    <a tal:attributes="href comment/bugwatch/url"
+       tal:content="comment/bugwatch/title" />,
+    <tal:comment_has_owner>
+      <tal:comment_owner replace="structure comment/owner/fmt:link" />
+    </tal:comment_has_owner>
+    wrote
+    <span
+      tal:attributes="title comment/datecreated/fmt:datetime"
+      tal:content="comment/datecreated/fmt:displaydate">
+      7 minutes ago
+    </span>:
     <a tal:attributes="href comment/fmt:url">
       <strong tal:condition="comment/display_title"
               tal:content="comment/title" />
@@ -55,5 +71,64 @@
       <a tal:attributes="href comment/fmt:url">Read more...</a>
     </p>
   </div>
-
+  <div class="boardCommentFooter" tal:condition="comment/bugwatch">
+    <div>
+      <table style="width: 100%">
+        <tr>
+          <td style="text-align: left; vertical-align: middle">
+            <tal:reply-link condition="view/user">
+              <a tal:attributes="id string:remote_comment_reply_expand_link_${comment/index};
+                                 href comment/fmt:url"
+                 href="#">
+                <img tal:attributes="id string:remote_comment_reply_tree_icon_${comment/index};
+                                     src python: '/@@/tree' + (view.expand_reply_box and 'Expanded' or 'Collapsed')"
+                     class="collapseIcon" height="14" width="14" />
+                Reply on <tal:bugtracker replace="comment/bugwatch/bugtracker/title"/>
+              </a>
+            </tal:reply-link>
+          </td>
+          <td style="text-align: right; vertical-align: middle">
+            <tal:sync-state condition="not: comment/synchronized">
+              <img height="14" width="14" src="/@@/bug-remote-comment-synchronizing" />
+              Awaiting synchronization
+            </tal:sync-state>
+          </td>
+        </tr>
+        <tr tal:condition="view/user">
+          <td colspan="2">
+            <div tal:attributes="id string:remote_comment_reply_div_${comment/index};
+                                 style python: 'display: ' + (view.expand_reply_box and 'block' or 'none')">
+              <form tal:attributes="action comment/add_comment_url"
+                    name="launchpadform" method="post"
+                    enctype="multipart/form-data"
+                    accept-charset="UTF-8">
+                <input type="hidden" name="field.bugwatch_id"
+                       tal:attributes="value comment/bugwatch/id" />
+                <input type="hidden" name="field.subject"
+                       tal:attributes="value comment/bugtask/bug/followup_subject" />
+                <textarea id="field.comment" name="field.comment" rows="10" cols="60"></textarea>
+                <br />
+                <div class="actions">
+                  <table style="width: 100%">
+                    <tr>
+                      <td style="vertical-align: middle">
+                        <input type="submit" id="field.actions.save"
+                               name="field.actions.save" value="Save Changes" class="button" />
+                      </td>
+                      <td style="text-align: right; vertical-align: middle">
+                        Your comment will be sent to <a tal:replace="structure comment/bugwatch/fmt:external-link" />
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <script type="text/javascript"
+            tal:condition="view/user"
+            tal:content="string:connectRemoteCommentReply(${comment/index});" />
+  </div>
 </div>

@@ -18,9 +18,13 @@ As our test runner runs in 'always show tracebacks' mode, we need to
 switch this off for these tests to work
 
     >>> from canonical.config import config
-    >>> show_tracebacks = config.show_tracebacks
-    >>> config.show_tracebacks = False
-    >>> config.show_tracebacks
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [canonical]
+    ...     show_tracebacks: False
+    ...     """)
+    >>> config.push('test_data', test_data)
+    >>> config.canonical.show_tracebacks
     False
 
 Anonymous users don't get tracebacks.
@@ -37,9 +41,7 @@ And the OOPS ID is displayed but not linkified.
     <...
     <h1 class="exception">Oops!</h1>
     ...
-    Include the error <abbr>ID</abbr>
-    <code class="oopsid">OOPS-...</code>
-    in your message.
+    <code class="oopsid">OOPS-...</code>)
     ...
 
 Launchpad developers logged in via Basic Auth get tracebacks.
@@ -58,9 +60,7 @@ And the OOPS ID is displayed and linkified.
     <...
     <h1 class="exception">Oops!</h1>
     ...
-    Include the error <abbr>ID</abbr>
-    <a href=...oops.cgi/OOPS-...><code class="oopsid">OOPS-...</code></a>
-    in your message.
+    <a href=...oops.cgi/OOPS-...><code class="oopsid">OOPS-...</code></a>)
     ...
 
 Other users logged in via basic auth don't get tracebacks. In this
@@ -79,16 +79,15 @@ And the OOPS ID is displayed but not linkified.
     <...
     <h1 class="exception">Oops!</h1>
     ...
-    Include the error <abbr>ID</abbr>
-    <code class="oopsid">OOPS-...</code>
-    in your message.
+    <code class="oopsid">OOPS-...</code>)
     ...
 
 To avoid affecting other tests, reset the show_tracebacks config item.
 
-    >>> config.show_tracebacks = show_tracebacks
-    >>> config.show_tracebacks
+    >>> test_config_data = config.pop('test_data')
+    >>> config.canonical.show_tracebacks
     True
+
 
 = HTTPCaller handle_errors =
 

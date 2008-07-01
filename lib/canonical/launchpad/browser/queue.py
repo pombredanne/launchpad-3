@@ -7,16 +7,26 @@ __metaclass__ = type
 __all__ = [
     'QueueItemsView',
     ]
+
+import operator
+
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IHasQueueItems, IPackageUploadSet, QueueInconsistentStateError,
+    IArchivePermissionSet, IComponentSet, IHasQueueItems,
+    IPackageUpload, IPackageUploadSet, ISectionSet, NotFoundError,
+    PackagePublishingPriority, QueueInconsistentStateError,
     UnexpectedFormData, PackageUploadStatus)
+from canonical.launchpad.interfaces.files import (
+    IBinaryPackageFileSet, ISourcePackageReleaseFileSet)
+from canonical.launchpad.scripts.queue import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
 
-QUEUE_SIZE = 20
+from canonical.lazr import decorates
+
+QUEUE_SIZE = 30
 
 
 class QueueItemsView(LaunchpadView):
@@ -77,24 +87,94 @@ class QueueItemsView(LaunchpadView):
         self.batchnav = BatchNavigator(queue_items, self.request,
                                        size=QUEUE_SIZE)
 
+    def decoratedQueueBatch(self):
+        """Return the current batch, converted to decorated objects.
+
+        Each batch item, a PackageUpload, is converted to a
+        CompletePackageUpload.  This avoids many additional SQL queries
+        in the +queue template.
+        """
+        uploads = list(self.batchnav.currentBatch())
+
+        if not uploads:
+            return None
+
+        # Build a dictionary keyed by upload ID where the values are
+        # lists of binary files.  To do this efficiently we need to get
+        # all the PacakgeUploadBuild records at once, otherwise the
+        # Ibuild.package_upload property causes one query per iteration of
+        # the loop.
+        upload_ids = [upload.id for upload in uploads]
+        binary_file_set = getUtility(IBinaryPackageFileSet)
+        upload_set = getUtility(IPackageUploadSet)
+        binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
+        build_ids = [binary_file.binarypackagerelease.build.id
+                     for binary_file in binary_files]
+        package_upload_builds = upload_set.getBuildByBuildIDs(
+            build_ids) 
+        # Make a dictionary of PackageUploadBuild keyed by build ID.
+        package_upload_builds_dict = {}
+        for package_upload_build in package_upload_builds:
+            package_upload_builds_dict[
+                package_upload_build.build.id] = package_upload_build
+
+        build_upload_files = {}
+        for binary_file in binary_files:
+            build_id = binary_file.binarypackagerelease.build.id
+            id = package_upload_builds_dict[build_id].packageupload.id
+            if id not in build_upload_files:
+                build_upload_files[id] = []
+            build_upload_files[id].append(binary_file)
+
+        # Now do a similar thing for the source files.
+        source_file_set = getUtility(ISourcePackageReleaseFileSet)
+        source_files = source_file_set.getByPackageUploadIDs(upload_ids)
+        sourcepackagerelease_ids = [
+            source_file.sourcepackagerelease.id
+            for source_file in source_files]
+
+        # Build a dictionary of PackageUploadSource keyed by
+        # sourcepackagerelease ID using a single query.
+        pkg_upload_sources = upload_set.getSourceBySourcePackageReleaseIDs(
+            sourcepackagerelease_ids)
+        package_upload_source_dict = {}
+        for pkg_upload_source in pkg_upload_sources:
+            package_upload_source_dict[
+                pkg_upload_source.sourcepackagerelease.id] = pkg_upload_source
+
+        # Finally we can make the dictionary of source files keyed on
+        # the PackageUpload ID.
+        source_upload_files = {}
+        for source_file in source_files:
+            id = package_upload_source_dict[
+                source_file.sourcepackagerelease.id].packageupload.id
+            if id not in source_upload_files:
+                source_upload_files[id] = []
+            source_upload_files[id].append(source_file)
+
+        return [CompletePackageUpload(item, build_upload_files,
+                                      source_upload_files)
+                for item in uploads]
+
     def availableActions(self):
         """Return the available actions according to the selected queue state.
 
         Returns a list of labelled actions or an empty list.
         """
-        # states that support actions
+        # States that support actions.
         mutable_states = [
             PackageUploadStatus.NEW,
-            PackageUploadStatus.UNAPPROVED,
+            PackageUploadStatus.REJECTED,
+            PackageUploadStatus.UNAPPROVED
             ]
 
-        # return actions only for supported states and require
-        # edit permission
+        # Return actions only for supported states and require
+        # edit permission.
         if (self.state in mutable_states and
             check_permission('launchpad.Edit', self.queue)):
             return ['Accept', 'Reject']
 
-        # no actions for unsupported states
+        # No actions for unsupported states.
         return []
 
     def performQueueAction(self):
@@ -103,20 +183,61 @@ class QueueItemsView(LaunchpadView):
         Returns a message describing the action executed or None if nothing
         was done.
         """
+        # Immediately bail out if the page is not the result of a submission.
         if self.request.method != "POST":
             return
 
+        # Also bail out if an unauthorised user is faking submissions.
         if not check_permission('launchpad.Edit', self.queue):
             self.error = 'You do not have permission to act on queue items.'
             return
 
+        # Retrieve the form data.
         accept = self.request.form.get('Accept', '')
         reject = self.request.form.get('Reject', '')
+        component_override = self.request.form.get('component_override', '')
+        section_override = self.request.form.get('section_override', '')
+        priority_override = self.request.form.get('priority_override', '')
         queue_ids = self.request.form.get('QUEUE_ID', '')
 
+        # If no boxes were checked, bail out.
         if (not accept and not reject) or not queue_ids:
             return
 
+        # Determine if there is a source override requested.
+        new_component = None
+        new_section = None
+        try:
+            if component_override:
+                new_component = getUtility(IComponentSet)[component_override]
+        except NotFoundError:
+            self.error = "Invalid component: %s" % component_override
+            return
+
+        # Get a list of components that the user has rights to accept and
+        # override to or from.
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            self.context.main_archive, self.user)
+        allowed_components = set(
+            permission.component for permission in permissions)
+
+        try:
+            if section_override:
+                new_section = getUtility(ISectionSet)[section_override]
+        except NotFoundError:
+            self.error = "Invalid section: %s" % section_override
+            return
+
+        # Determine if there is a binary override requested.
+        new_priority = None
+        if priority_override not in name_priority_map:
+            self.error = "Invalid priority: %s" % priority_override
+            return
+
+        new_priority = name_priority_map[priority_override]
+
+        # Process the requested action.
         if not isinstance(queue_ids, list):
             queue_ids = [queue_ids]
 
@@ -124,26 +245,142 @@ class QueueItemsView(LaunchpadView):
 
         if accept:
             header = 'Accepting Results:<br>'
-            def queue_action(queue_item):
-                queue_item.acceptFromQueue(
-                    announce_list=self.context.changeslist)
+            action = "accept"
         elif reject:
             header = 'Rejecting Results:<br>'
-            def queue_action(queue_item):
-                queue_item.rejectFromQueue()
+            action = "reject"
 
         success = []
         failure = []
         for queue_id in queue_ids:
             queue_item = queue_set.get(int(queue_id))
+            # First check that the user has rights to accept/reject this
+            # item by virtue of which component it has.
+            if not check_permission('launchpad.Edit', queue_item):
+                existing_component_names = ", ".join(
+                    component.name for component in queue_item.components)
+                failure.append(
+                    "FAILED: %s (You have no rights to %s component(s) "
+                    "'%s')" % (queue_item.displayname,
+                               action,
+                               existing_component_names))
+                continue
+
+            # Sources and binaries are mutually exclusive when it comes to
+            # overriding, so only one of these will be set.
             try:
-                queue_action(queue_item)
+                source_overridden = queue_item.overrideSource(
+                    new_component, new_section, allowed_components)
+                binary_overridden = queue_item.overrideBinaries(
+                    new_component, new_section, new_priority,
+                    allowed_components)
+            except QueueInconsistentStateError, info:
+                failure.append("FAILED: %s (%s)" %
+                               (queue_item.displayname, info))
+                continue
+
+            feedback_interpolations = {
+                "name"      : queue_item.displayname,
+                "component" : "(unchanged)",
+                "section"   : "(unchanged)",
+                "priority"  : "(unchanged)",
+                }
+            if new_component:
+                feedback_interpolations['component'] = new_component.name
+            if new_section:
+                feedback_interpolations['section'] = new_section.name
+            if new_priority:
+                feedback_interpolations[
+                    'priority'] = new_priority.title.lower()
+
+            try:
+                getattr(self, 'queue_action_' + action)(queue_item)
             except QueueInconsistentStateError, info:
                 failure.append('FAILED: %s (%s)' %
                                (queue_item.displayname, info))
             else:
-                success.append('OK: %s' % queue_item.displayname)
+                if source_overridden:
+                    success.append("OK: %(name)s(%(component)s/%(section)s)" %
+                                   feedback_interpolations)
+                elif binary_overridden:
+                    success.append(
+                        "OK: %(name)s(%(component)s/%(section)s/%(priority)s)"
+                            % feedback_interpolations)
+                else:
+                    success.append('OK: %s' % queue_item.displayname)
 
         report = '%s<br>%s' % (header, ', '.join(success + failure))
         return report
 
+    def queue_action_accept(self, queue_item):
+        """Reject the queue item passed."""
+        queue_item.acceptFromQueue(announce_list=self.context.changeslist)
+
+    def queue_action_reject(self, queue_item):
+        """Accept the queue item passed."""
+        queue_item.rejectFromQueue()
+
+    def sortedSections(self):
+        """Possible sections for the context distroseries.
+
+        Return an iterable of possible sections for the context distroseries
+        sorted by their name.
+        """
+        return sorted(
+            self.context.sections, key=operator.attrgetter('name'))
+
+    def priorities(self):
+        """An iterable of priorities from PackagePublishingPriority."""
+        return (priority for priority in PackagePublishingPriority)
+
+
+class CompletePackageUpload:
+    """A decorated `PackageUpload` including sources, builds and packages.
+    
+    Some properties of PackageUpload are cached here to reduce the number
+    of queries that the +queue template has to make.
+    """
+    # These need to be predeclared to avoid decorates taking them over.
+    # Would be nice if there was a way of allowing writes to just work
+    # (i.e. no proxying of __set__).
+    pocket = None
+    datecreated = None
+    sources = None
+    builds = None
+    customfiles = None
+    contains_source = None
+    contains_build = None
+    sourcepackagerelease = None
+
+    decorates(IPackageUpload)
+
+    def __init__(self, packageupload, build_upload_files,
+                 source_upload_files):
+        self.pocket = packageupload.pocket
+        self.datecreated = packageupload.datecreated
+        self.context = packageupload
+        self.sources = list(packageupload.sources)
+        self.contains_source = len(self.sources) > 0
+        self.builds = list(packageupload.builds)
+        self.contains_build = len(self.builds) > 0
+        self.customfiles = list(packageupload.customfiles)
+
+        # Create a dictionary of binary files keyed by
+        # binarypackagerelease.
+        self.binary_packages = {}
+        self.binary_files = build_upload_files.get(self.id, None)
+        if self.binary_files is not None:
+            for binary in self.binary_files:
+                package = binary.binarypackagerelease
+                if package not in self.binary_packages:
+                    self.binary_packages[package] = []
+                self.binary_packages[package].append(binary)
+
+        # Create a list of source files if this is a source upload.
+        self.source_files = source_upload_files.get(self.id, None)
+
+        # Pre-fetch the sourcepackagerelease if it exists.
+        if self.contains_source:
+            self.sourcepackagerelease = self.sources[0].sourcepackagerelease
+        else:
+            self.sourcepackagerelease = None

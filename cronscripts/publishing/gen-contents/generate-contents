@@ -68,10 +68,10 @@ echo 'Ensure we have a private tree in place ...'
 mkdir -p $CONTENTARCHIVE/ubuntu-misc
 mkdir -p $CONTENTARCHIVE/ubuntu-cache
 
-cp $LPCONTENT/$APTCONF_HEADER_TEMPLATE $LPCONTENT/$APTCONF
+cp $LPCONTENT/$APTCONF_HEADER_TEMPLATE $CONTENTARCHIVE/ubuntu-misc/$APTCONF
 for suite in $suites; do
   sed -e "s/\$SUITE/$suite/g" -e "s/\$ARCHS/$archs/g" \
-       $LPCONTENT/$APTCONF_DIST_TEMPLATE >> $LPCONTENT/$APTCONF
+       $LPCONTENT/$APTCONF_DIST_TEMPLATE >> $CONTENTARCHIVE/ubuntu-misc/$APTCONF
   for component in $components; do
     for dir in $dirs; do
       path="$CONTENTARCHIVE/ubuntu/dists/$suite/$component/$dir"
@@ -87,7 +87,6 @@ if test $GENERATEFILES = "yes" ; then
    echo 'Running apt in your private tree to generate new contents ...'
    cp -a $ARCHIVE/ubuntu-overrides $CONTENTARCHIVE/
    cp $LPCONTENT/$CONTENTHEADER $CONTENTARCHIVE/ubuntu-misc/
-   cp $LPCONTENT/$APTCONF $CONTENTARCHIVE/ubuntu-misc/
    apt-ftparchive generate $CONTENTARCHIVE/ubuntu-misc/$APTCONF
 else
    echo "Skipping apt-ftparchive run"

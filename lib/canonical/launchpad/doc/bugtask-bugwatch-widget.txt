@@ -103,7 +103,7 @@ Now let's create a new bug watch, pointing at bug #84 in the Gnome tracker.
     >>> NEW = BugTaskBugWatchWidget._new_bugwatch_value
     >>> request = LaunchpadTestRequest(form={
     ...     'field.bugwatch': NEW,
-    ...     'field.url': u'http://bugzilla.gnome.org/show_bug.cgi?id=84'})
+    ...     'field.url': u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84'})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
     >>> bugwatch = bugwatch_widget.getInputValue()
@@ -126,7 +126,7 @@ watch is being returned, and no new bug watch is created.
 
     >>> request = LaunchpadTestRequest(form={
     ...     'field.bugwatch': NEW,
-    ...     'field.url': u'http://bugzilla.gnome.org/show_bug.cgi?id=84'})
+    ...     'field.url': u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84'})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
     >>> bugwatch = bugwatch_widget.getInputValue()
@@ -164,7 +164,7 @@ it's passed 'NEW', it will return the newly created bug watch.
 
     >>> request = LaunchpadTestRequest(form={
     ...     'field.bugwatch': NEW,
-    ...     'field.url': 'http://bugzilla.gnome.org/show_bug.cgi?id=177'})
+    ...     'field.url': 'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=177'})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
     >>> bugwatch = bugwatch_widget._toFieldValue(NEW)

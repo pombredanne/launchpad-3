@@ -2,23 +2,19 @@
 
 __metaclass__ = type
 
-import re
-
 from zope.app.form import CustomWidgetFactory, InputWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    ConversionError, IInputWidget, InputErrors, MissingInputError,
-    WidgetInputError)
+    ConversionError, IInputWidget, InputErrors, MissingInputError)
 from zope.app.form.utility import setUpWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
-from zope.schema.interfaces import ConstraintNotSatisfied
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSourcePackage, ILaunchpadCelebrities, IProduct,
-    NotFoundError, UnexpectedFormData)
+    IDistribution, IDistributionSourcePackage, ILaunchpadCelebrities,
+    IProduct, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout, IAlwaysSubmittedWidget)
@@ -34,6 +30,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
     default_option = "package"
 
     def __init__(self, field, request):
+        # Shut off the pylint warning about not calling __init__()
+        # on a Mixin class.
+        # pylint: disable-msg=W0231
         BrowserWidget.__init__(self, field, request)
         fields = [
             Choice(
@@ -47,7 +46,8 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 __name__='package', title=u"Package",
                 required=False, vocabulary='BinaryAndSourcePackageName'),
             ]
-        self.distribution_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
+        self.distribution_widget = CustomWidgetFactory(
+            LaunchpadDropdownWidget)
         for field in fields:
             setUpWidget(
                 self, field.__name__, field, IInputWidget, prefix=self.name)
@@ -92,7 +92,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     "%s.product" % self.name)
                 raise LaunchpadValidationError(
                     "There is no project named '%s' registered in"
-                    " Launchpad", entered_name)
+                    " Launchpad" % entered_name)
         elif form_value == 'package':
             try:
                 distribution = self.distribution_widget.getInputValue()
@@ -101,7 +101,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     "%s.distribution" % self.name)
                 raise LaunchpadValidationError(
                     "There is no distribution named '%s' registered in"
-                    " Launchpad", entered_name)
+                    " Launchpad" % entered_name)
 
             if self.package_widget.hasInput():
                 try:
@@ -110,8 +110,8 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     entered_name = self.request.form_ng.getOne(
                         '%s.package' % self.name)
                     raise LaunchpadValidationError(
-                        "There is no package name '%s' published in %s",
-                        entered_name, distribution.displayname)
+                        "There is no package name '%s' published in %s"
+                         % (entered_name, distribution.displayname))
                 if package_name is None:
                     return distribution
                 try:
@@ -119,8 +119,8 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                         package_name.name)
                 except NotFoundError:
                     raise LaunchpadValidationError(
-                        "There is no package name '%s' published in %s",
-                        package_name.name, distribution.displayname)
+                        "There is no package name '%s' published in %s"
+                        % (package_name.name, distribution.displayname))
                 return distribution.getSourcePackage(source_name)
             else:
                 return distribution

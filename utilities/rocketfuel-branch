@@ -31,6 +31,6 @@ fi
 
 bzr branch trunk $1
 cd $1
-utilities/link-external-sourcecode.sh ../../lp-sourcedeps
+utilities/link-external-sourcecode ../../lp-sourcedeps
 make
 

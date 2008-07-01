@@ -90,7 +90,7 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
                      "%s.target" % self.name)
                 self._error = LaunchpadValidationError(
                     "There is no project named '%s' registered in"
-                    " Launchpad", entered_name)
+                    " Launchpad" % entered_name)
                 raise self._error
         elif self.required:
             raise UnexpectedFormData("No valid option was selected.")

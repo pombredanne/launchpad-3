@@ -115,10 +115,9 @@ date_created values from the database.
     >>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
     >>> title = "David Allouche's Main GNOME Terminal Branch"
     >>> summary = "Main line of development for David Allouche on GNOME Terminal."
-    >>> home_page = "http://example.com/~ddaa/"
     >>> gterm_dev = branchset.new(
     ...     BranchType.MIRRORED, 'dev', ddaa, ddaa, gterm_product, gterm_dev_url,
-    ...     title, summary=summary, home_page=home_page, date_created=now.next())
+    ...     title, summary=summary, date_created=now.next())
 
     >>> gterm_dev.name
     u'dev'
@@ -146,8 +145,8 @@ whereas the owner is.
     vcs-imports
     >>> gterm_dev.owner = ddaa
 
-Branch may or may not be associated to a product, and may have no home_page,
-no title, and no summary, and even no URL.
+Branch may or may not be associated to a product, and may have no title,
+and no summary, and even no URL.
 
 Branches with no URL are primarily hosted on the supermirror.
 
@@ -158,8 +157,6 @@ Branches with no URL are primarily hosted on the supermirror.
     >>> junkcode.name
     u'junkcode'
     >>> print repr(junkcode.product)
-    None
-    >>> print repr(junkcode.home_page)
     None
     >>> print repr(junkcode.title)
     None
@@ -446,12 +443,22 @@ And on a branch with a NULL author.
 
 == Branch subscriptions ==
 
-Branches can be subscribed to and unsubscribed from by a Person.
+Branches can be subscribed to and unsubscribed from by a Person.  An
+implicit subscription to the branch is created when the branch is created
+so that the branch owner can be informed of merge proposals or code review
+messages relating to their branches.
 
-Branch subscriptions now have extra attributes associated with them.
+    >>> subscriptions = list(gterm_dev.subscriptions)
+    >>> print len(subscriptions)
+    1
+    >>> subscriptions[0].person == gterm_dev.owner
+    True
+
+Branch subscriptions have attributes associated with them.
 The notification_level is used to control what email is sent to the
 subscribed user, and max_diff_lines is used to control the size of
-any generated diffs between revisions that are emailed out.
+any generated diffs between revisions that are emailed out.  The review_level
+controls the amount of notification caused by code review activities.
 
 Both of these attributes are contolled through the UI through the use
 of the enumerated types: BranchSubscriptionDiffSize, and
@@ -459,14 +466,15 @@ BranchSubscriptionNotificationLevel.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    ...     IBranchSubscription)
+    ...     CodeReviewNotificationLevel, IBranchSubscription)
     >>> sabdfl = personset.getByName('sabdfl')
     >>> sabdfl.subscribed_branches.count()
     0
     >>> subscription = gterm_dev.subscribe(
     ...     sabdfl,
     ...     BranchSubscriptionNotificationLevel.FULL,
-    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+    ...     BranchSubscriptionDiffSize.FIVEKLINES,
+    ...     CodeReviewNotificationLevel.FULL)
     >>> verifyObject(IBranchSubscription, subscription)
     True
     >>> subscription.branch == gterm_dev and subscription.person == sabdfl
@@ -475,23 +483,52 @@ BranchSubscriptionNotificationLevel.
     True
     >>> subscription.max_diff_lines == BranchSubscriptionDiffSize.FIVEKLINES
     True
-    >>> gterm_dev.subscriptions[0] == subscription
+    >>> subscription.review_level == CodeReviewNotificationLevel.FULL
     True
-    >>> list(gterm_dev.subscribers) == [sabdfl]
+    >>> gterm_dev.subscriptions[1] == subscription
+    True
+    >>> set(gterm_dev.subscribers) == set([gterm_dev.owner, sabdfl])
     True
     >>> list(sabdfl.subscribed_branches) == [gterm_dev]
     True
     >>> from canonical.launchpad.webapp import canonical_url
     >>> print canonical_url(subscription)
     http://code.launchpad.dev/~ddaa/gnome-terminal/dev/+subscription/sabdfl
+
+    The settings for a subscription can be changed by re-subscribing.
+
+    >>> subscription1 = gterm_dev.getSubscription(sabdfl)
+    >>> subscription1.review_level == CodeReviewNotificationLevel.FULL
+    True
+    >>> subscription2 = gterm_dev.subscribe(
+    ...     sabdfl,
+    ...     BranchSubscriptionNotificationLevel.FULL,
+    ...     BranchSubscriptionDiffSize.FIVEKLINES,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
+    >>> subscription == subscription2
+    True
+    >>> subscription2.review_level == CodeReviewNotificationLevel.NOEMAIL
+    True
+
+    Unsubscribing is also supported.
+
     >>> gterm_dev.unsubscribe(sabdfl)
     >>> gterm_dev.subscribers.count()
-    0
+    1
 
 
 We can get the subscribers for a branch based on their level of
 subscription. From the example above, we see that sabdfl has a 'FULL'
 subscription to `gterm_dev`.
+
+Create a subscription to another branch to confirm that we are just
+getting the correct subscriptions.
+
+    >>> factory = LaunchpadObjectFactory()
+    >>> subscription = factory.makeBranchSubscription()
+    >>> subscription.notification_level = BranchSubscriptionNotificationLevel.FULL
+    >>> subscription.max_diff_lines = BranchSubscriptionDiffSize.FIVEKLINES
+    >>> syncUpdate(subscription)
 
     >>> def print_names(persons):
     ...     """Print the name of each person on a new line."""
@@ -501,7 +538,8 @@ subscription to `gterm_dev`.
     >>> subscription = gterm_dev.subscribe(
     ...     sabdfl,
     ...     BranchSubscriptionNotificationLevel.FULL,
-    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+    ...     BranchSubscriptionDiffSize.FIVEKLINES,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
 
     >>> print_names(gterm_dev.getSubscriptionsByLevel([
     ...     BranchSubscriptionNotificationLevel.FULL]))
@@ -532,7 +570,8 @@ the branches registered, authored and subscribed to by this person.
     >>> junkcode.author = lifeless
     >>> syncUpdate(junkcode)
     >>> unused = gterm_dev.subscribe(lifeless,
-    ...            BranchSubscriptionNotificationLevel.NOEMAIL, None)
+    ...            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+    ...            CodeReviewNotificationLevel.NOEMAIL)
     >>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
     True
 
@@ -714,33 +753,55 @@ Private branches are not browseable at all.
 URLs are shown for a branch to show a user where they can push to and
 pull or branch from.  These methods don't check any visibility constraints
 for the person passed into the methods, that job is left to the views.
+The branch location is shown using the lp: Bazaar lookup names.
 
     >>> print branch.unique_name
     ~landscape-developers/landscape/trunk
     >>> branch.private
     True
-    >>> print branch.getBzrUploadURL()
-    bzr+ssh://<name>@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
-    >>> print branch.getBzrDownloadURL()
-    bzr+ssh://<name>@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
-    >>> print branch.getBzrUploadURL(ddaa)
-    bzr+ssh://ddaa@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
-    >>> print branch.getBzrDownloadURL(ddaa)
-    bzr+ssh://ddaa@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
+    >>> print branch.bzr_identity
+    lp://dev/~landscape-developers/landscape/trunk
 
-Public branches use anonymous http for the bzr branch location.
+Branches associated with product series have shorter identities.  To
+show this the landscape trunk branch will be associated as the primary
+development focus branch.
 
-    >>> branch = branchset.getByUniqueName('~name12/gnome-terminal/main')
-    >>> print branch.private
-    False
-    >>> print branch.getBzrUploadURL()
-    bzr+ssh://<name>@bazaar.launchpad.dev/~name12/gnome-terminal/main
-    >>> print branch.getBzrDownloadURL()
-    http://bazaar.launchpad.dev/~name12/gnome-terminal/main
-    >>> print branch.getBzrUploadURL(ddaa)
-    bzr+ssh://ddaa@bazaar.launchpad.dev/~name12/gnome-terminal/main
-    >>> print branch.getBzrDownloadURL(ddaa)
-    http://bazaar.launchpad.dev/~name12/gnome-terminal/main
+    >>> landscape = branch.product
+    >>> landscape.development_focus.user_branch = branch
+    >>> syncUpdate(landscape.development_focus)
+
+Private branches still show the full branch name.
+
+    >>> print branch.bzr_identity
+    lp://dev/~landscape-developers/landscape/trunk
+
+    >>> branch.private = False
+    >>> print branch.bzr_identity
+    lp://dev/landscape
+
+If the series is not the main development focus, then the series
+name is appended.  The branch will always use the shorter of the
+names if possible.
+
+    >>> series = landscape.newSeries(branch.owner, 'experimental', '', branch)
+    >>> len(list(branch.associatedProductSeries()))
+    2
+    >>> print branch.bzr_identity
+    lp://dev/landscape
+    >>> landscape.development_focus.user_branch = None
+    >>> syncUpdate(landscape.development_focus)
+    >>> print branch.bzr_identity
+    lp://dev/landscape/experimental
+
+Junk branches associated with a series do not get the short form of
+bzr_identity.
+
+    >>> print junkcode.product
+    None
+    >>> series.user_branch = junkcode
+    >>> syncUpdate(series)
+    >>> print junkcode.bzr_identity
+    lp://dev/~ddaa/+junk/junkcode
 
 
 == Branch Scan List ==
@@ -827,6 +888,12 @@ Lets make gnome terminal have a user branch as the dev focus.
 
 == Getting the branch count and last commit for products ==
 
+    >>> products = [
+    ...     productset.getByName('evolution'),
+    ...     productset.getByName('firefox'),
+    ...     productset.getByName('gnome-terminal'),
+    ...     ]
+
     >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
     >>> for product in products:
     ...     print "%s %s %s" % (
@@ -836,17 +903,15 @@ Lets make gnome terminal have a user branch as the dev focus.
     evolution      1 None
     firefox        5 2005-03-09 15:50:00
     gnome-terminal 8 None
-    iso-codes      1 None
-    landscape      2 None
-    thunderbird    1 None
 
 
 == Getting all branches for a person ==
 
 Batching of the branch pages relies (ideally) on a quick simple query
 that can have the result set limited in order to only return a partial
-result set.  The getBranchesForPerson method on IBranchSet will
-return all branches associated with that person:
+result set.  The getBranchesForContext method on IBranchSet where the
+context is a Person (or team) will return all branches associated with
+that person:
 
   - subscribed branches by person
   - person is author or owner of the branch
@@ -860,7 +925,7 @@ sort order, the sort is by lifecycle, product, author, name).
 
     >>> from canonical.launchpad.interfaces import (
     ...     BranchListingSort, DEFAULT_BRANCH_STATUS_IN_LISTING)
-    >>> branches = branchset.getBranchesForPerson(
+    >>> branches = branchset.getBranchesForContext(
     ...     personset.getByName('ddaa'), DEFAULT_BRANCH_STATUS_IN_LISTING)
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
@@ -869,7 +934,7 @@ sort order, the sort is by lifecycle, product, author, name).
     New ~vcs-imports/+junk/junkcode
 
     >>> sample_person = personset.getByName('name12')
-    >>> branches = branchset.getBranchesForPerson(
+    >>> branches = branchset.getBranchesForContext(
     ...     sample_person, visible_by_user=sample_person,
     ...     sort_by=BranchListingSort.LIFECYCLE)
     >>> for branch in branches:
@@ -889,25 +954,45 @@ sort order, the sort is by lifecycle, product, author, name).
     New ~landscape-developers/landscape/trunk
     New ~name12/+junk/junk.contrib
 
-    >>> for branch in branchset.getBranchesRegisteredByPerson(
-    ...     sample_person, sort_by=BranchListingSort.PRODUCT):
-    ...     print branch.lifecycle_status.title, branch.unique_name
-    New ~name12/firefox/main
-    Abandoned ~name12/gnome-terminal/2.4
-    Merged ~name12/gnome-terminal/slowness
-    Mature ~name12/gnome-terminal/2.6
-    Development ~name12/gnome-terminal/main
-    Experimental ~name12/gnome-terminal/klingon
-    New ~name12/gnome-terminal/mirrored
-    New ~name12/gnome-terminal/pushed
-    New ~name12/gnome-terminal/scanned
-    Experimental ~name12/+junk/junk.dev
-    New ~name12/+junk/junk.contrib
+In order to further restrict the branches that are returned for a person
+there is the BranchPersonSearchContext, which has a restriction from
+BranchPersonSearchRestriction.
 
-    >>> for branch in branchset.getBranchesSubscribedByPerson(sample_person):
-    ...     print branch.lifecycle_status.title, branch.unique_name
-    New ~launchpad/gnome-terminal/launchpad
-    Experimental ~name12/+junk/junk.dev
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchPersonSearchContext, BranchPersonSearchRestriction)
+    >>> for item in BranchPersonSearchRestriction.items:
+    ...     print repr(item)
+    <Item ...ALL, All related branches>
+    <Item ...REGISTERED, Registered branches>
+    <Item ...OWNED, Owned branches>
+    <Item ...SUBSCRIBED, Subscribed branches>
+
+A BranchPersonSearchContext takes a person and a restriction.
+
+    >>> search_context = BranchPersonSearchContext(
+    ...     sample_person, BranchPersonSearchRestriction.REGISTERED)
+    >>> for branch in branchset.getBranchesForContext(
+    ...     search_context, sort_by=BranchListingSort.PRODUCT):
+    ...     print branch.unique_name
+    ~name12/firefox/main
+    ~name12/gnome-terminal/2.4
+    ~name12/gnome-terminal/slowness
+    ~name12/gnome-terminal/2.6
+    ~name12/gnome-terminal/main
+    ~name12/gnome-terminal/klingon
+    ~name12/gnome-terminal/mirrored
+    ~name12/gnome-terminal/pushed
+    ~name12/gnome-terminal/scanned
+    ~landscape-developers/landscape/trunk
+    ~name12/+junk/junk.dev
+    ~name12/+junk/junk.contrib
+
+    >>> search_context = BranchPersonSearchContext(
+    ...     sample_person, BranchPersonSearchRestriction.SUBSCRIBED)
+    >>> for branch in branchset.getBranchesForContext(search_context):
+    ...     print branch.unique_name
+    ~launchpad/gnome-terminal/launchpad
+    ~name12/+junk/junk.dev
 
 
 == Getting branches for a product ==
@@ -917,7 +1002,7 @@ of the work as possible.  This way there are optimal database queries for
 extra display information.
 
     >>> gnome_terminal = productset.getByName('gnome-terminal')
-    >>> branches = branchset.getBranchesForProduct(
+    >>> branches = branchset.getBranchesForContext(
     ...     gnome_terminal, DEFAULT_BRANCH_STATUS_IN_LISTING,
     ...     sort_by=BranchListingSort.REGISTRANT)
     >>> for branch in branches:
@@ -933,32 +1018,12 @@ extra display information.
     New Sample Person ~name12/gnome-terminal/scanned
     New VCS imports ~vcs-imports/gnome-terminal/import
 
-    >>> branches = branchset.getBranchesForProduct(
-    ...     gnome_terminal, sort_by=BranchListingSort.AUTHOR)
-    >>> for branch in branches:
-    ...     print branch.lifecycle_status.title,
-    ...     if branch.author:
-    ...         print branch.author.displayname,
-    ...     else:
-    ...         print '<none>',
-    ...     print branch.unique_name
-    New Launchpad Developers ~launchpad/gnome-terminal/launchpad
-    Merged Sample Person ~name12/gnome-terminal/slowness
-    Experimental Sample Person ~name12/gnome-terminal/klingon
-    Abandoned <none> ~name12/gnome-terminal/2.4
-    Mature <none> ~name12/gnome-terminal/2.6
-    Development <none> ~name12/gnome-terminal/main
-    New <none> ~ddaa/gnome-terminal/dev
-    New <none> ~vcs-imports/gnome-terminal/import
-    New <none> ~name12/gnome-terminal/mirrored
-    New <none> ~name12/gnome-terminal/pushed
-    New <none> ~name12/gnome-terminal/scanned
-
-    >>> branches = branchset.getBranchesForProduct(
+    >>> branches = branchset.getBranchesForContext(
     ...     gnome_terminal, [BranchLifecycleStatus.DEVELOPMENT])
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
     Development ~name12/gnome-terminal/main
+
 
 == Getting branches for a project ==
 
@@ -968,7 +1033,7 @@ products that belong to a given project.
     >>> from canonical.launchpad.interfaces import IProjectSet
     >>> def printMozillaBranches(lifecycle_statuses=None):
     ...     mozilla = getUtility(IProjectSet).getByName('mozilla')
-    ...     branches = branchset.getBranchesForProject(
+    ...     branches = branchset.getBranchesForContext(
     ...         mozilla, lifecycle_statuses)
     ...     for branch in branches:
     ...         print branch.lifecycle_status.title, branch.unique_name
@@ -993,7 +1058,7 @@ variety of different statuses, so that we can demonstrate filtering by status.
     ...         new_status = getattr(BranchLifecycleStatus, new_status_name)
     ...         branch.lifecycle_status = new_status
     ...         syncUpdate(branch)
-    ...     # getBranchesForProject queries BranchWithSortKeys but we've just
+    ...     # getBranchesForContext queries BranchWithSortKeys but we've just
     ...     # updated Branch.  SQLObject doesn't know that these are related
     ...     # so we have to drop the cached BranchWithSortKeys objects.
     ...     flush_database_caches()
@@ -1059,13 +1124,10 @@ canonical/launchpad/database/tests/test_branch.py.
 
     >>> print branch.unique_name
     ~ddaa/gnome-terminal/to-delete
-    >>> branch.canBeDeleted()
-    True
 
-Adding a subscriber makes it not deletable.
+Since the branch has ddaa as an implicit subscriber, the branch is not
+deletable.
 
-    >>> ignored = branch.subscribe(
-    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None)
     >>> branch.canBeDeleted()
     False
     >>> branch.destroySelf()
@@ -1088,13 +1150,12 @@ The requirements for deleting the branch can be discovered:
     ...     BranchType.MIRRORED, 'to-delete', ddaa, ddaa, gterm_product,
     ...     'http://example.com/branches/to-delete', 'A branch to delete',
     ...     date_created=now.next())
-    >>> subscription = branch.subscribe(
-    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None)
     >>> requirements = branch.deletionRequirements()
 
 The keys in the requirements are the objects that are associated with the
 branch.
 
+    >>> [subscription] = list(branch.subscriptions)
     >>> [subscription] == requirements.keys()
     True
     >>> action, reason = requirements[subscription]
@@ -1123,6 +1184,46 @@ Branches with revisions are deletable.
     >>> branch.destroySelf()
     >>> print branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
     None
+    >>> logout()
+
+A user without launchpad.Edit cannot delete a branch.
+
+    >>> login('no-priv@canonical.com')
+    >>> message = factory.makeCodeReviewComment()
+    >>> branch = message.branch_merge_proposal.target_branch
+    >>> branch.destroySelf(break_references=True)
+    Traceback (most recent call last):
+    Unauthorized: (<Branch ...>, 'destroySelf', 'launchpad.Edit')
+
+Even if users with no delete rights on the branch could somehow access
+the page, they still wouldn't be able to delete the message.  The message
+is listed as not "allowed":
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> branch_delete_view = getMultiAdapter(
+    ...   (branch, LaunchpadTestRequest()), name="+delete")
+    >>> deletion_requirements = [
+    ...     "%s allowed: %s" % (req[0].__class__.__name__, req[3])
+    ...     for req in branch_delete_view.display_deletion_requirements]
+    >>> for req in sorted(deletion_requirements):
+    ...     print req
+    BranchMergeProposal allowed: False
+    BranchSubscription allowed: False
+
+
+The "allowed: False" status is mirrored in the display.
+
+    >>> request = LaunchpadTestRequest(
+    ...   method='POST',
+    ...   form={'field.actions.delete_branch': 'Delete'})
+    >>> branch_delete_view = getMultiAdapter(
+    ...   (branch, request), name="+delete")
+    >>> branch_delete_view.delete_branch_action.success({})
+    >>> for notice in request.response.notifications:
+    ...     print notice.message
+    This branch cannot be deleted.
+    >>> logout()
 
 
 == Branch references ==
@@ -1141,6 +1242,7 @@ The current references to the branch table are shown here.
     ...     '%s.%s' % (src_tab, src_col) for
     ...     src_tab, src_col, ref_tab, ref_col, updact, delact in references]):
     ...     print name
+    branch.stacked_on
     branchmergeproposal.dependent_branch
     branchmergeproposal.source_branch
     branchmergeproposal.target_branch
@@ -1151,3 +1253,6 @@ The current references to the branch table are shown here.
     productseries.import_branch
     productseries.user_branch
     specificationbranch.branch
+
+(Unfortunately, references can form a graph-- note that codereviewcomments
+ aren't shown.)

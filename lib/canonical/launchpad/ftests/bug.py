@@ -2,9 +2,13 @@
 
 """Helper functions for bug-related doctests and pagetests."""
 
+import textwrap
+
 from datetime import datetime, timedelta
 from operator import attrgetter
 from pytz import UTC
+
+from BeautifulSoup import BeautifulSoup
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -13,9 +17,15 @@ from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
     extract_text, find_main_content, find_portlet, find_tag_by_id,
     find_tags_by_class)
-from canonical.launchpad.interfaces import (
-    BugTaskStatus, IDistributionSet, IBugTaskSet, IPersonSet, IProductSet,
-    ISourcePackageNameSet, IBugSet, IBugWatchSet, CreateBugParams)
+from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 
 
 DIRECT_SUBS_PORTLET_INDEX = 0
@@ -80,7 +90,7 @@ def print_remote_bugtasks(content):
         for key, value in img.attrs:
             if '@@/bug-remote' in value:
                 target = extract_text(img.findAllPrevious('td')[-2])
-                print target, extract_text(img.findPrevious('a'))
+                print target, extract_text(img.findNext('a'))
 
 
 def print_bugs_table(content, table_id):
@@ -168,7 +178,8 @@ def update_task_status(task_id, person, status):
 
 def create_old_bug(
     title, days_old, target, status=BugTaskStatus.INCOMPLETE,
-    with_message=True):
+    with_message=True, external_bugtracker=None, assignee=None,
+    milestone=None, duplicateof=None):
     """Create an aged bug.
 
     :title: A string. The bug title for testing.
@@ -176,11 +187,14 @@ def create_old_bug(
     :target: A BugTarkget. The bug's target.
     :status: A BugTaskStatus. The status of the bug's single bugtask.
     :with_message: A Bool. Whether to create a reply message.
+    :external_bugtracker: An external bug tracker which is watched for this
+        bug.
     """
     no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     params = CreateBugParams(
         owner=no_priv, title=title, comment='Something is broken.')
     bug = target.createBug(params)
+    bug.duplicateof = duplicateof
     sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     if with_message is True:
         bug.newMessage(
@@ -189,13 +203,23 @@ def create_old_bug(
     bugtask = bug.bugtasks[0]
     bugtask.transitionToStatus(
         status, sample_person)
+    if assignee is not None:
+        bugtask.transitionToAssignee(assignee)
+    bugtask.milestone = milestone
+    if external_bugtracker is not None:
+        getUtility(IBugWatchSet).createBugWatch(bug=bug, owner=sample_person, 
+            bugtracker=external_bugtracker, remotebug='1234')
     date = datetime.now(UTC) - timedelta(days=days_old)
     removeSecurityProxy(bug).date_last_updated = date
+    sync_bugtasks([bugtask])
     return bugtask
 
 
 def summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
+    bugtaskset = getUtility(IBugTaskSet)
+    expirable_bugtasks = list(bugtaskset.findExpirableBugTasks(
+        0, getUtility(ILaunchpadCelebrities).janitor))
     print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
     for bugtask in sorted(set(bugtasks), key=attrgetter('id')):
         if len(bugtask.bug.bugtasks) == 1:
@@ -204,7 +228,7 @@ def summarize_bugtasks(bugtasks):
             title = bugtask.target.name
         print '%s  %s  %s  %s  %s  %s  %s  %s' % (
             title,
-            bugtask.pillar.enable_bug_expiration,
+            bugtask in expirable_bugtasks,
             (datetime.now(UTC) - bugtask.bug.date_last_updated).days,
             bugtask.status.title,
             bugtask.assignee is not None,
@@ -222,3 +246,34 @@ def sync_bugtasks(bugtasks):
         sync(bugtask.bug)
 
 
+def print_upstream_linking_form(browser):
+    """Print the upstream linking form found via +choose-affected-product.
+
+    The resulting output will look something like:
+    (*) A checked option
+        [A related text field]
+    ( ) An unchecked option
+    """
+    soup = BeautifulSoup(browser.contents)
+
+    link_upstream_how_radio_control = browser.getControl(
+        name='field.link_upstream_how')
+    link_upstream_how_buttons =  soup.findAll(
+        'input', {'name': 'field.link_upstream_how'})
+
+    wrapper = textwrap.TextWrapper(width=65, subsequent_indent='    ')
+    for button in link_upstream_how_buttons:
+        # Print the radio button.
+        label = button.findParent('label')
+        if label is None:
+            label = soup.find('label', {'for': button['id']})
+        if button.get('value') in link_upstream_how_radio_control.value:
+            print wrapper.fill('(*) %s' % extract_text(label))
+        else:
+            print wrapper.fill('( ) %s' % extract_text(label))
+        # Print related text field, if found. Assumes that the text
+        # field is in the same table row as the radio button.
+        text_field = button.findParent('tr').find('input', {'type':'text'})
+        if text_field is not None:
+            text_control = browser.getControl(name=text_field.get('name'))
+            print '    [%s]' % text_control.value.ljust(10)

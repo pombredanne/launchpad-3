@@ -3,14 +3,15 @@
 From the DerivationOverview spec
 <https://launchpad.canonical.com/DerivationOverview>:
 
-    A distribution of GNU/Linux comprises a set of packages, an installer,
-    possibly a live-CD, some amount of metadata associated with the arrangement
-    of those elements and also a lot of information on managing it.
+    A distribution of GNU/Linux comprises a set of packages, an
+    installer, possibly a live-CD, some amount of metadata associated with
+    the arrangement of those elements and also a lot of information on
+    managing it.
 
-In Launchpad, one distribution is mapped to one row in the Distribution table.
-To retrieve a distribution, use the IDistributionSet utility. If you've already
-used IPersonSet to retrieve a Person, or IBugTaskSet to retrieve a task, this
-syntax should look familiar.
+In Launchpad, one distribution is mapped to one row in the Distribution
+table.  To retrieve a distribution, use the IDistributionSet utility. If
+you've already used IPersonSet to retrieve a Person, or IBugTaskSet to
+retrieve a task, this syntax should look familiar.
 
 The IDistributionSet utility is accessed in the usual fashion:
 
@@ -159,7 +160,6 @@ Even if we add a series to Gentoo, no packages have ever been published
 in it, and therefore guessPackageNames will still fail:
 
     >>> from canonical.launchpad.interfaces import IDistroSeriesSet
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> distroseriesset = getUtility(IDistroSeriesSet)
     >>> gentoo_two = distroseriesset.new(gentoo, 'gentoo-two', 'Gentoo Two',
     ...                                   'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
@@ -254,10 +254,10 @@ and even on substrings:
 === Finding distroseriess and pockets from distribution names ===
 
 A distribution knows what distroseriess it has. Those distroseriess have
-pockets which have suffixes used by the archive publisher. Because we sometimes
-need to talk about distroseriess such as ubuntu/hoary-security we need some
-way to decompose that into the distroseries and the pocket. Distribution
-can do that for us.
+pockets which have suffixes used by the archive publisher. Because we
+sometimes need to talk about distroseriess such as ubuntu/hoary-security
+we need some way to decompose that into the distroseries and the pocket.
+Distribution can do that for us.
 
 If we ask for a totally unknown distroseries, we raise NotFoundError
     >>> ubuntu.getDistroSeriesAndPocket('unknown')
@@ -299,21 +299,23 @@ raise NotFoundError for us
 === Upload related stuff ===
 
 When uploading to a distribution we need to query its uploaders. Each
-uploader record is in fact a DistroComponentUploader record which
-tells us what component is uploadable to by what person or group of
-people.
+uploader record is in fact an ArchivePermission record that tells us
+what component is uploadable to by what person or group of people.
 
-   >>> for dcu in sorted(ubuntu.uploaders,
-   ...                   key=lambda dcu: dcu.component.name):
-   ...     assert dcu.distribution == ubuntu
-   ...     print dcu.component.name
-   ...     print dcu.uploader.displayname
-   main
+   >>> from operator import attrgetter
+   >>> for permission in sorted(
+   ...     ubuntu.uploaders, key=attrgetter("id")):
+   ...     assert not permission.archive.is_ppa
+   ...     print permission.component.name
+   ...     print permission.person.displayname
+   universe
    Ubuntu Team
    restricted
    Ubuntu Team
-   universe
+   main
    Ubuntu Team
+   partner
+   Canonical Partner Developers
 
 When processing an upload we may want to find a file (E.g. if an
 incomplete source is uploaded).
@@ -345,6 +347,18 @@ officially. Ubuntu uses all of them:
     True
     >>> ubuntu.official_answers
     True
+    >>> ubuntu.official_blueprints
+    True
+
+
+A distribution *cannot* specify that it uses codehosting. Currently there's
+no way for a distribution to use codehosting.
+
+    >>> ubuntu.official_codehosting
+    False
+    >>> ubuntu.official_codehosting = True
+    Traceback (most recent call last):
+    ForbiddenAttribute: ('official_codehosting', ...)
 
 While Debian uses none:
 
@@ -353,6 +367,10 @@ While Debian uses none:
     >>> debian.official_rosetta
     False
     >>> debian.official_answers
+    False
+    >>> debian.official_codehosting
+    False
+    >>> debian.official_blueprints
     False
 
 Gentoo only uses Malone
@@ -364,6 +382,32 @@ Gentoo only uses Malone
     >>> print gentoo.official_answers
     False
 
+Non-admins cannot set these values
+
+    >>> debian.official_blueprints = True
+    Traceback (most recent call last):
+    Unauthorized: (..., 'official_blueprints', 'launchpad.Admin')
+    >>> debian.official_malone = True
+    Traceback (most recent call last):
+    Unauthorized: (..., 'official_malone', 'launchpad.Admin')
+    >>> debian.official_rosetta = True
+    Traceback (most recent call last):
+    Unauthorized: (..., 'official_rosetta', 'launchpad.Admin')
+
+    Launchpad admins should be able to set these fields
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('mark@hbd.com')
+    >>> debian = getUtility(ILaunchpadCelebrities).debian
+    >>> debian.official_blueprints = True
+    >>> debian.official_blueprints
+    True
+    >>> debian.official_malone = True
+    >>> debian.official_malone
+    True
+    >>> debian.official_rosetta = True
+    >>> debian.official_rosetta
+    True
 
 === Specification Listings ===
 
@@ -443,12 +487,15 @@ We can get only valid specs (those that are not obsolete or superseded):
  >>> from canonical.launchpad.ftests import login
  >>> login('mark@hbd.com')
  >>> for spec in kubuntu.specifications():
+ ...     # Do this here, otherwise, the change will be flush before
+ ...     # updateLifecycleStatus() acts and an IntegrityError will be
+ ...     # raised.
+ ...     owner = spec.owner
  ...     if spec.name in ['cluster-installation', 'revu']:
  ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
  ...     if spec.name in ['krunch-desktop-plan']:
  ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
- ...     shim = spec.updateLifecycleStatus(spec.owner)
- >>> flush_database_updates()
+ ...     shim = spec.updateLifecycleStatus(owner)
  >>> for spec in kubuntu.valid_specifications:
  ...     print spec.name
  kde-desktopfile-langpacks
@@ -471,13 +518,13 @@ They're ordered by dateexpected.
 
     >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
     ...  for milestone in debian.milestones]
-    [(u'3.1', '2056-05-16'), (u'3.1-rc1', '2056-02-16'), (u'woody-rc1', '2028-10-01')]
+    [(u'3.1', '2056-05-16'), (u'3.1-rc1', '2056-02-16'),
+     (u'woody-rc1', '2028-10-01')]
 
 Only milestones which have visible=True are returned by the .milestones
 property.
 
     >>> debian_milestone.visible = False
-    >>> flush_database_updates()
     >>> [milestone.name for milestone in debian.milestones]
     [u'3.1', u'3.1-rc1']
 
@@ -667,8 +714,8 @@ Publishing the record will exclude Celso's PPA from
 pending-publication state:
 
       >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-      >>> src_pub.status = PackagePublishingStatus.PUBLISHED
-      >>> syncUpdate(src_pub)
+      >>> src_pub.secure_record.status = PackagePublishingStatus.PUBLISHED
+      >>> syncUpdate(src_pub.secure_record)
 
       >>> ubuntu.getPendingPublicationPPAs().count()
       0
@@ -704,8 +751,8 @@ state:
 Similarly to sources, publishing the binary will exclude Celso's PPA from
 pending-publication state:
 
-      >>> bin_pub.status = PackagePublishingStatus.PUBLISHED
-      >>> syncUpdate(bin_pub)
+      >>> bin_pub.secure_record.status = PackagePublishingStatus.PUBLISHED
+      >>> syncUpdate(bin_pub.secure_record)
 
       >>> ubuntu.getPendingPublicationPPAs().count()
       0

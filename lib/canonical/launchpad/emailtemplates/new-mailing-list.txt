@@ -1,6 +1,6 @@
 Hello %(user)s,
 
-%(team)s has a new team mailing list.
+A new mailing list has been created for %(team_displayname)s (%(team_name)s).
 
 If you would like to subscribe to the list, please use the link below
 to update your Mailing List Subscription preferences.

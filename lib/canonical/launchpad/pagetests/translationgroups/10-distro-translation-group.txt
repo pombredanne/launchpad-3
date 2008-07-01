@@ -1,25 +1,20 @@
-Now, let's go have a look at where we can use these translation groups. We
-want to check out the distro side first.
+Now, let's go have a look at where we can use these translation groups.
+We want to check out the distro side first.
 
 Ubuntu is using Launchpad for translations
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'table-details'))
-    Bug contact:
-    ...
-    Uses Launchpad for:
-    Answers
-    Bug tracking
-    Translations
-    ...
+    ...     find_tag_by_id(anon_browser.contents, 'uses'))
+    Ubuntu Linux uses Launchpad for ... Translations.
 
-Ubuntu doesn't have TranslationGroup and uses open permissions. We can see
-that from the translations page.
+Ubuntu doesn't have TranslationGroup and uses open permissions. We can
+see that from the translations page.
 
     >>> anon_browser.getLink('Translations').click()
     >>> print anon_browser.title
     Translating Ubuntu
+
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents,
     ...                    'portlet-translation-permissions'))
@@ -47,22 +42,26 @@ closed permissions.
     ...     'Translation group').displayOptions
     ['(no value)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']
+
     >>> ubuntu_owner_browser.getControl(
     ...     'Translation group').displayValue = [
     ...         'The PolyGlot Translation Group']
     >>> ubuntu_owner_browser.getControl('Change').click()
     >>> print ubuntu_owner_browser.title
     Appoint Ubuntu Linux's translation group
+
     >>> for tag in find_tags_by_class(
     ...     ubuntu_owner_browser.contents, 'informational message'):
     ...     print tag.renderContents()
     Updated on ...
 
-And make sure these changes are now reflected in the Ubuntu translations page.
+And make sure these changes are now reflected in the Ubuntu translations
+page.
 
     >>> anon_browser.reload()
     >>> print anon_browser.title
     Translating Ubuntu
+
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents,
     ...                    'portlet-translation-permissions'))
@@ -72,4 +71,6 @@ And make sure these changes are now reflected in the Ubuntu translations page.
 
     >>> anon_browser.getLink('The PolyGlot Translation Group').click()
     >>> anon_browser.title
-    '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d Launchpad translation group'
+    '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d
+    Launchpad translation group'
+

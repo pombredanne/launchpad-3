@@ -13,7 +13,7 @@ class TestChunkydiffSetting(unittest.TestCase):
 
     def test(self):
         self.failUnless(
-                config.chunkydiff is False,
+                config.canonical.chunkydiff is False,
                 'This test is failing to ensure that the chunkydiff '
                 'config setting cannot be committed in "on" mode.'
                 )

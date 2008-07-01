@@ -19,16 +19,22 @@ __all__ = [
     'ProductView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
+    'ProductActiveReviewsView',
     'ProductAddView',
     'ProductAddViewBase',
+    'ProductAdminView',
+    'ProductApprovedMergesView',
+    'ProductBranchListingView',
     'ProductBrandingView',
     'ProductEditView',
     'ProductChangeTranslatorsView',
-    'ProductReviewView',
+    'ProductCodeIndexView',
+    'ProductReviewLicenseView',
     'ProductAddSeriesView',
     'ProductReassignmentView',
     'ProductRdfView',
     'ProductSetFacets',
+    'ProductSetReviewLicensesView',
     'ProductSetSOP',
     'ProductSetNavigation',
     'ProductSetContextMenu',
@@ -53,15 +59,21 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
+    BranchLifecycleStatusFilter, BranchListingSort,
+    IBranchSet, IBugTracker, ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IPillarNameSet, IProduct, IProductSeries, IProductSet, IProject,
-    ITranslationImportQueue, License, NotFoundError,
+    IPersonSet, IPillarNameSet, IProduct,
+    IProductReviewSearch, IProductSeries, IProductSet,
+    IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    IBranchMergeProposalGetter, BranchMergeProposalStatus)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
+from canonical.launchpad.browser.branchmergeproposallisting import (
+    BranchMergeProposalListingView)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
@@ -84,9 +96,14 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
     canonical_url, custom_widget, enabled_with_permission,
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.uri import URI
+from canonical.widgets.date import DateWidget
+from canonical.widgets.itemswidgets import (
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget)
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -192,8 +209,8 @@ class ProductLicenseMixin:
             user = getUtility(ILaunchBag).user
             subject = "Project License Submitted for %s by %s" % (
                     self.product.name, user.name)
-            fromaddress = format_address("Launchpad",
-                                         config.noreply_from_address)
+            fromaddress = format_address(
+                "Launchpad", config.canonical.noreply_from_address)
             license_titles = '\n'.join(
                 license.title for license in self.product.licenses)
             def indent(text):
@@ -289,7 +306,7 @@ class ProductOverviewMenu(ApplicationMenu):
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
         'series_add', 'announce', 'announcements', 'administer',
-        'branch_visibility', 'rdf', 'subscribe']
+        'review_license', 'branch_visibility', 'rdf', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -345,7 +362,7 @@ class ProductOverviewMenu(ApplicationMenu):
 
     def announcements(self):
         text = 'Show announcements'
-        enabled = bool(self.context.announcements().count())
+        enabled = bool(self.context.announcements())
         return Link('+announcements', text, enabled=enabled)
 
     def branch_add(self):
@@ -361,7 +378,12 @@ class ProductOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
         text = 'Administer'
-        return Link('+review', text, icon='edit')
+        return Link('+admin', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Commercial')
+    def review_license(self):
+        text = 'Review license'
+        return Link('+review-license', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def branch_visibility(self):
@@ -377,27 +399,56 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['bugcontact', 'securitycontact', 'cve']
+    links = (
+        'bugsupervisor',
+        'securitycontact',
+        'cve',
+        'subscribe'
+        )
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
-    def bugcontact(self):
-        text = 'Change bug contact'
-        return Link('+bugcontact', text, icon='edit')
+    def bugsupervisor(self):
+        text = 'Change bug supervisor'
+        return Link('+bugsupervisor', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
 
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text)
 
-class ProductBranchesMenu(ApplicationMenu):
+
+class ProductReviewCountMixin:
+    """A mixin used by the menu and the code index view."""
+
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
+        return query.count()
+
+    @cachedproperty
+    def approved_merge_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
+            self.user)
+        return query.count()
+
+
+class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', 'list_branches']
+    links = ['branch_add', 'list_branches', 'active_reviews',
+             'approved_merges']
 
     def branch_add(self):
         text = 'Register branch'
@@ -408,6 +459,20 @@ class ProductBranchesMenu(ApplicationMenu):
         text = 'List branches'
         summary = 'List the branches for this project'
         return Link('+branches', text, summary, icon='add')
+
+    def active_reviews(self):
+        if self.active_review_count == 1:
+            text = 'active review'
+        else:
+            text = 'active reviews'
+        return Link('+activereviews', text)
+
+    def approved_merges(self):
+        if self.approved_merge_count == 1:
+            text = 'approved merge'
+        else:
+            text = 'approved merges'
+        return Link('+approvedmerges', text)
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -525,7 +590,10 @@ class ProductSetContextMenu(ContextMenu):
 
     def register(self):
         text = 'Register a project'
-        return Link('+new', text, icon='add')
+        # We link to the guided form, though people who know the URL can
+        # just jump to +new directly. That might be considered a
+        # feature!
+        return Link('+new-guided', text, icon='add')
 
     def register_team(self):
         text = 'Register a team'
@@ -567,7 +635,87 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin):
+class ProductDownloadFileMixin:
+    """Provides methods for managing download files."""
+
+    def deleteFiles(self, releases):
+        """Delete the selected files from the set of releases.
+
+        :param releases: A set of releases in the view.
+        :return: The number of files deleted.
+        """
+        del_count = 0
+        for release in releases:
+            for release_file in release.files:
+                if release_file.libraryfile.id in self.delete_ids:
+                    release.deleteFileAlias(release_file.libraryfile)
+                    self.delete_ids.remove(release_file.libraryfile.id)
+                    del_count += 1
+        return del_count
+
+    def getReleases(self):
+        """Find the releases with download files for view."""
+        raise NotImplementedError
+
+    def fileURL(self, file_, release=None):
+        """Create a download URL for the `LibraryFileAlias`."""
+        if release is None:
+            release = self.context
+        url = urlappend(canonical_url(release), '+download')
+        # Quote the filename to eliminate non-ascii characters which
+        # are invalid in the url.
+        url = urlappend(url, urllib.quote(file_.filename.encode('utf-8')))
+        return str(URI(url).replace(scheme='http'))
+
+    def md5URL(self, file_, release=None):
+        """Create a URL for the MD5 digest."""
+        baseurl = self.fileURL(file_, release)
+        return urlappend(baseurl, '+md5')
+
+    def processDeleteFiles(self):
+        """If the 'delete_files' button was pressed, process the deletions."""
+        del_count = None
+        self.delete_ids = [int(value) for key, value in self.form.items()
+                           if key.startswith('checkbox')]
+        if 'delete_files' in self.form:
+            if self.request.method == 'POST':
+                del(self.form['delete_files'])
+                releases = self.getReleases()
+                del_count = self.deleteFiles(releases)
+            else:
+                # If there is a form submission and it is not a POST then
+                # raise an error.  This is to protect against XSS exploits.
+                raise UnsafeFormGetSubmissionError(self.form['delete_files'])
+        if del_count is not None:
+            if del_count <= 0:
+                self.request.response.addNotification(
+                    "No files were deleted.")
+            elif del_count == 1:
+                self.request.response.addNotification(
+                    "1 file has been deleted.")
+            else:
+                self.request.response.addNotification(
+                    "%d files have been deleted." %
+                    del_count)
+
+    def seriesHasDownloadFiles(self, series):
+        """Determine whether a series has any download files."""
+        for release in series.releases:
+            if release.files.count() > 0:
+                return True
+
+    @cachedproperty
+    def latest_release_with_download_files(self):
+        """Return the latest release with download files."""
+        for series in self.sorted_series_list:
+            for release in series.releases:
+                if release.files.count() > 0:
+                    return release
+        return None
+
+
+class ProductView(HasAnnouncementsView, SortSeriesMixin,
+                  FeedsMixin, ProductDownloadFileMixin):
 
     __used_for__ = IProduct
 
@@ -692,69 +840,16 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin):
     def getLatestBranches(self):
         return self.context.getLatestBranches(visible_by_user=self.user)
 
+    @property
+    def requires_commercial_subscription(self):
+        """Whether to display notice to purchase a commercial subscription."""
+        return (len(self.context.licenses) > 0
+                and self.context.commercial_subscription_is_due)
 
-class ProductDownloadFileMixin:
-    """Provides methods for managing download files."""
-
-    def deleteFiles(self, releases):
-        """Delete the selected files from the set of releases.
-
-        :param releases: A set of releases in the view.
-        :return: The number of files deleted.
-        """
-        del_count = 0
-        for release in releases:
-            for release_file in release.files:
-                if release_file.libraryfile.id in self.delete_ids:
-                    release.deleteFileAlias(release_file.libraryfile)
-                    self.delete_ids.remove(release_file.libraryfile.id)
-                    del_count += 1
-        return del_count
-
-    def getReleases(self):
-        """Find the releases with download files for view."""
-        raise NotImplementedError
-
-    def fileURL(self, file_, release=None):
-        """Create a download URL for the `LibraryFileAlias`."""
-        if release is None:
-            release = self.context
-        url = urlappend(canonical_url(release), '+download')
-        # Quote the filename to eliminate non-ascii characters which
-        # are invalid in the url.
-        url = urlappend(url, urllib.quote(file_.filename.encode('utf-8')))
-        return str(URI(url).replace(scheme='http'))
-
-    def md5URL(self, file_, release=None):
-        """Create a URL for the MD5 digest."""
-        baseurl = self.fileURL(file_, release)
-        return urlappend(baseurl, '+md5')
-
-    def processDeleteFiles(self):
-        """If the 'delete_files' button was pressed, process the deletions."""
-        del_count = None
-        self.delete_ids = [int(value) for key, value in self.form.items()
-                           if key.startswith('checkbox')]
-        if 'delete_files' in self.form:
-            if self.request.method == 'POST':
-                del(self.form['delete_files'])
-                releases = self.getReleases()
-                del_count = self.deleteFiles(releases)
-            else:
-                # If there is a form submission and it is not a POST then
-                # raise an error.  This is to protect against XSS exploits.
-                raise UnsafeFormGetSubmissionError(self.form['delete_files'])
-        if del_count is not None:
-            if del_count <= 0:
-                self.request.response.addNotification(
-                    "No files were deleted.")
-            elif del_count == 1:
-                self.request.response.addNotification(
-                    "1 file has been deleted.")
-            else:
-                self.request.response.addNotification(
-                    "%d files have been deleted." %
-                    del_count)
+    @property
+    def can_purchase_subscription(self):
+        return (check_permission('launchpad.Edit', self.context)
+                and not self.context.qualifies_for_free_hosting)
 
 
 class ProductDownloadFilesView(LaunchpadView,
@@ -779,9 +874,8 @@ class ProductDownloadFilesView(LaunchpadView,
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
         for series in self.product.serieses:
-            for release in series.releases:
-                if release.files.count() > 0:
-                    return True
+            if self.seriesHasDownloadFiles(series):
+                return True
         return False
 
     @cachedproperty
@@ -812,6 +906,7 @@ class ProductDownloadFilesView(LaunchpadView,
         return (series in self.milestones and
                 release in self.milestones[series])
 
+
 class ProductBrandingView(BrandingChangeView):
 
     schema = IProduct
@@ -824,12 +919,29 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     schema = IProduct
     label = "Change project details"
     field_names = [
-        "displayname", "title", "summary", "description",
-        "bug_reporting_guidelines", "project", "bugtracker",
-        "enable_bug_expiration", "official_rosetta", "official_answers",
-        "homepageurl", "sourceforgeproject", "freshmeatproject", "wikiurl",
-        "screenshotsurl", "downloadurl", "programminglang",
-        "development_focus", "licenses", "license_info"]
+        "displayname",
+        "title",
+        "summary",
+        "description",
+        "bug_reporting_guidelines",
+        "project",
+        "official_codehosting",
+        "bugtracker",
+        "enable_bug_expiration",
+        "official_blueprints",
+        "official_rosetta",
+        "official_answers",
+        "homepageurl",
+        "sourceforgeproject",
+        "freshmeatproject",
+        "wikiurl",
+        "screenshotsurl",
+        "downloadurl",
+        "programminglang",
+        "development_focus",
+        "licenses",
+        "license_info",
+    ]
     custom_widget(
         'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
@@ -878,18 +990,47 @@ class ProductChangeTranslatorsView(ProductEditView):
     field_names = ["translationgroup", "translationpermission"]
 
 
-class ProductReviewView(ProductEditView):
+class ProductAdminView(ProductEditView):
     label = "Administer project details"
-    field_names = ["name", "owner", "active", "autoupdate", "reviewed",
-                   "private_bugs"]
+    field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
 
     def validate(self, data):
-        if data.get('private_bugs') and self.context.bugcontact is None:
+        if data.get('private_bugs') and self.context.bug_supervisor is None:
             self.setFieldError('private_bugs',
                 structured(
-                    'Set a <a href="%s/+bugcontact">bug contact</a> '
+                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+
+class ProductReviewLicenseView(ProductAdminView):
+    label = "Review project licensing"
+    field_names = ["active", "private_bugs",
+                   "license_reviewed", "license_approved",
+                   "reviewer_whiteboard"]
+
+    @property
+    def next_url(self):
+        """Successful form submission should send to this URL."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('next_url')
+        if referrer is None:
+            referrer = self.request.getHeader('referer')
+
+        if (referrer is not None
+            and referrer.startswith(self.request.getApplicationURL())):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return self.next_url
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -1072,6 +1213,70 @@ class ProductSetView(LaunchpadView):
         return self.matches > self.max_results_to_display
 
 
+class ProductSetReviewLicensesView(LaunchpadFormView):
+    """View for searching products to be reviewed."""
+
+    schema = IProductReviewSearch
+
+    full_row_field_names = [
+        'search_text',
+        'active',
+        'license_reviewed',
+        'license_info_is_empty',
+        'licenses',
+        'has_zero_licenses',
+        ]
+
+    side_by_side_field_names = [
+        ('created_after', 'created_before'),
+        ('subscription_expires_after', 'subscription_expires_before'),
+        ('subscription_modified_after', 'subscription_modified_before'),
+        ]
+
+    custom_widget(
+        'licenses', CheckBoxMatrixWidget, column_count=4,
+        orientation='vertical')
+    custom_widget('active', LaunchpadRadioWidget)
+    custom_widget('license_reviewed', LaunchpadRadioWidget)
+    custom_widget('license_info_is_empty', LaunchpadRadioWidget)
+    custom_widget('has_zero_licenses', LaunchpadRadioWidget)
+    custom_widget('created_after', DateWidget)
+    custom_widget('created_before', DateWidget)
+    custom_widget('subscription_expires_after', DateWidget)
+    custom_widget('subscription_expires_before', DateWidget)
+    custom_widget('subscription_modified_after', DateWidget)
+    custom_widget('subscription_modified_before', DateWidget)
+
+    @property
+    def left_side_widgets(self):
+        return (self.widgets.get(left)
+                for left, right in self.side_by_side_field_names)
+
+    @property
+    def right_side_widgets(self):
+        return (self.widgets.get(right)
+                for left, right in self.side_by_side_field_names)
+
+    @property
+    def full_row_widgets(self):
+        return (self.widgets[name] for name in self.full_row_field_names)
+
+    def forReviewBatched(self):
+        # Calling _validate populates the data dictionary as a side-effect
+        # of validation.
+        data = {}
+        self._validate(None, data)
+        # Get default values from the schema since the form defaults
+        # aren't available until the search button is pressed.
+        search_params = {}
+        for name in self.schema:
+            search_params[name] = self.schema[name].default
+        # Override the defaults with the form values if available.
+        search_params.update(data)
+        return BatchNavigator(self.context.forReview(**search_params),
+                              self.request, size=10)
+
+
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
     """Abstract class for adding a new product.
 
@@ -1102,7 +1307,7 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
 class ProductAddView(ProductAddViewBase):
 
     field_names = (ProductAddViewBase.field_names
-                   + ['owner', 'project', 'reviewed'])
+                   + ['owner', 'project', 'license_reviewed'])
 
     label = "Register an upstream open source project"
     product = None
@@ -1120,7 +1325,8 @@ class ProductAddView(ProductAddViewBase):
             # the owner and reviewed status during the edit process;
             # this saves time wasted on getting to product/+admin.
             # The fields are not displayed for other people though.
-            self.form_fields = self.form_fields.omit('owner', 'reviewed')
+            self.form_fields = self.form_fields.omit('owner',
+                                                     'license_reviewed')
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):
@@ -1131,9 +1337,9 @@ class ProductAddView(ProductAddViewBase):
             # Zope makes sure these are never set, since they are not in
             # self.form_fields
             assert "owner" not in data
-            assert "reviewed" not in data
+            assert "license_reviewed" not in data
             data['owner'] = self.user
-            data['reviewed'] = False
+            data['license_reviewed'] = False
         self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
             title=data['title'],
@@ -1149,7 +1355,7 @@ class ProductAddView(ProductAddViewBase):
             programminglang=data['programminglang'],
             project=data['project'],
             owner=data['owner'],
-            reviewed=data['reviewed'],
+            license_reviewed=data['license_reviewed'],
             licenses = data['licenses'],
             license_info=data['license_info'])
         self.notifyFeedbackMailingList()
@@ -1221,26 +1427,21 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
         return self.context.getLatestBranches(visible_by_user=self.user)
 
 
-class ProductBranchesView(BranchListingView):
-    """View for branch listing for a product."""
+class ProductBranchListingView(BranchListingView):
+    """A base class for product branch listings."""
 
-    extra_columns = ('author',)
+    show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
-    @cachedproperty
-    def hide_dormant_initial_value(self):
-        """If there are more than one page of branches, hide dormant ones."""
-        page_size = config.launchpad.branchlisting_batch_size
-        return self.context.branches.count() > page_size
+    @property
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user).count()
 
     @cachedproperty
     def development_focus_branch(self):
         return self.context.development_focus.series_branch
-
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
 
     @property
     def no_branch_message(self):
@@ -1259,3 +1460,236 @@ class ProductBranchesView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project.')
         return message % self.context.displayname
+
+
+class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
+                           ProductDownloadFileMixin, ProductReviewCountMixin):
+    """Initial view for products on the code virtual host."""
+
+    @property
+    def form_action(self):
+        return "+branches"
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.DEFAULT,
+            }
+
+    @cachedproperty
+    def _recent_revisions(self):
+        """Revisions for this project created in the last 30 days."""
+        # The actual number of revisions for any given project are likely
+        # to be small(ish).  We also need to be able to traverse over the
+        # actual revision authors in order to get an accurate count.
+        revisions = list(
+            getUtility(IRevisionSet).getRecentRevisionsForProduct(
+                product=self.context, days=30))
+        # XXX: thumper 2008-04-24
+        # How best to warn if the limit is getting too large?
+        # And how much is too much anyway.
+        return revisions
+
+    @property
+    def commit_count(self):
+        """The number of new revisions in the last 30 days."""
+        return len(self._recent_revisions)
+
+    @cachedproperty
+    def committer_count(self):
+        """The number of committers in the last 30 days."""
+        # Record a set of tuples where the first part is a launchpad
+        # person name if know, and the second part is the revision author
+        # text.  Only one part of the tuple will be set.
+        committers = set()
+        for revision in self._recent_revisions:
+            author = revision.revision_author
+            if author.person is None:
+                committers.add((None, author.name))
+            else:
+                committers.add((author.person.name, None))
+        return len(committers)
+
+    @cachedproperty
+    def _branch_owners(self):
+        """The owners of branches."""
+        # Listify the owners, there really shouldn't be that many for any
+        # one project.
+        return list(getUtility(IPersonSet).getPeopleWithBranches(
+                product=self.context))
+
+    @cachedproperty
+    def person_owner_count(self):
+        """The number of individual people who own branches."""
+        return len([person for person in self._branch_owners
+                    if not person.isTeam()])
+
+    @cachedproperty
+    def team_owner_count(self):
+        """The number of teams who own branches."""
+        return len([person for person in self._branch_owners
+                    if person.isTeam()])
+
+    def _getSeriesBranches(self):
+        """Get the series branches for the product, dev focus first."""
+        # XXX: thumper 2008-04-22
+        # When bug 181157 is fixed, only get branches for non-obsolete
+        # series.
+
+        # We want to show each series branch only once, always show the
+        # development focus branch, no matter what's it lifecycle status, and
+        # skip subsequent series where the lifecycle status is Merged or
+        # Abandoned
+        sorted_series = self.sorted_series_list
+        def show_branch(branch):
+            if self.selected_lifecycle_status is None:
+                return True
+            else:
+                return (branch.lifecycle_status in
+                    self.selected_lifecycle_status)
+        # The series will always have at least one series, that of the
+        # development focus.
+        dev_focus_branch = sorted_series[0].series_branch
+        result = []
+        if dev_focus_branch is not None and show_branch(dev_focus_branch):
+            result.append(dev_focus_branch)
+        for series in sorted_series[1:]:
+            branch = series.series_branch
+            if (branch is not None and
+                branch not in result and
+                show_branch(branch)):
+                result.append(branch)
+        return result
+
+    @cachedproperty
+    def initial_branches(self):
+        """Return the series branches, followed by most recently changed."""
+        series_branches = self._getSeriesBranches()
+        branch_query = getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user,
+            lifecycle_statuses=self.selected_lifecycle_status,
+            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
+        # We don't want the initial branch listing to be batched, so only get
+        # the batch size - the number of series_branches.
+        batch_size = config.launchpad.branchlisting_batch_size
+        max_branches_from_query = batch_size - len(series_branches)
+        # Since series branches are actual branches, and the query
+        # returns the bastardised BranchWithSortColumns, we need to
+        # check branch ids in the following list comprehension.
+        series_branch_ids = set(branch.id for branch in series_branches)
+        # We want to make sure that the series branches do not appear
+        # in our branch list.
+        branches = [
+            branch for branch in branch_query[:max_branches_from_query]
+            if branch.id not in series_branch_ids]
+        series_branches.extend(branches)
+        return series_branches
+
+    def _branches(self, lifecycle_status):
+        """Return the series branches, followed by most recently changed."""
+        # The params are ignored, and only used by the listing view.
+        return self.initial_branches
+
+    @property
+    def unseen_branch_count(self):
+        """How many branches are not shown."""
+        return self.branch_count - len(self.initial_branches)
+
+    def hasAnyBranchesVisibleByUser(self):
+        """See `BranchListingView`."""
+        return self.branch_count > 0
+
+    @property
+    def has_development_focus_branch(self):
+        """Is there a branch assigned as development focus?"""
+        return self.context.development_focus.series_branch is not None
+
+    def _getPluralText(self, count, singular, plural):
+        if count == 1:
+            return singular
+        else:
+            return plural
+
+    @property
+    def branch_text(self):
+        return self._getPluralText(
+            self.branch_count, _('branch'), _('branches'))
+
+    @property
+    def person_text(self):
+        return self._getPluralText(
+            self.person_owner_count, _('person'), _('people'))
+
+    @property
+    def team_text(self):
+        return self._getPluralText(
+            self.team_owner_count, _('team'), _('teams'))
+
+    @property
+    def commit_text(self):
+        return self._getPluralText(
+            self.commit_count, _('commit'), _('commits'))
+
+    @property
+    def committer_text(self):
+        return self._getPluralText(
+            self.committer_count, _('person'), _('people'))
+
+
+class ProductBranchesView(ProductBranchListingView):
+    """View for branch listing for a product."""
+
+    def initialize(self):
+        """Conditionally redirect to the default view.
+
+        If the branch listing requests the default listing, redirect to the
+        default view for the product.
+        """
+        ProductBranchListingView.initialize(self)
+        if self.sort_by == BranchListingSort.DEFAULT:
+            redirect_url = canonical_url(self.context)
+            widget = self.widgets['lifecycle']
+            if widget.hasValidInput():
+                redirect_url += (
+                    '?field.lifecycle=' + widget.getInputValue().name)
+            self.request.response.redirect(redirect_url)
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.LIFECYCLE,
+            }
+
+
+class ProductActiveReviewsView(BranchMergeProposalListingView):
+    """Branch merge proposals for the product that are needing review."""
+
+    extra_columns = ['date_review_requested', 'vote_summary']
+    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Active code reviews for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no active code reviews." % self.context.displayname
+
+
+class ProductApprovedMergesView(BranchMergeProposalListingView):
+    """Branch merge proposals for the product that have been approved."""
+
+    extra_columns = ['date_reviewed']
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
+
+    @property
+    def heading(self):
+        return "Approved merges for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no approved merges." % self.context.displayname

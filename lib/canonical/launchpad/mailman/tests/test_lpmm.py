@@ -15,7 +15,7 @@ def test_suite():
     # back to false.  This is really better than testing to see if the Mailman
     # package is importable because, that we really want to do in the doctest!
     from canonical.config import config
-    if config.mailman.build.build:
+    if config.mailman.build:
         # These tests will only be run when Mailman is enabled.
         test = doctest.DocFileSuite(
             'test-lpmm.txt',

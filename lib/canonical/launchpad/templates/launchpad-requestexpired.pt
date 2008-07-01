@@ -14,18 +14,18 @@
       <h1 class="exception">Timeout error</h1>
       <p>
         Sorry, something just went wrong in Launchpad.
+      </p>
+      <p>
         We&#8217;ve recorded what happened,
         and we&#8217;ll fix it as soon as possible.
         Apologies for the inconvenience.
       </p>
       <p>
         Trying again in a couple of minutes might work.
-        If it doesn&#8217;t, and this is blocking your work, let us know on the
-        <a href="https://lists.canonical.com/mailman/listinfo/launchpad-users"
-        >launchpad-users mailing list</a> (requires subscription).
-        Include the error <abbr>ID</abbr>
-        <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
-        in your message.
+      </p>
+      <p>
+        (Error <abbr>ID</abbr>:
+        <tal:oops replace="structure view/oops_id_text" />)
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>

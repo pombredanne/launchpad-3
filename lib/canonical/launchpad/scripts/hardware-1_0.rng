@@ -105,7 +105,11 @@
                 <oneOrMore>
                     <element name="device">
                         <attribute name="id">
-                            <data type="integer"/>
+                            <data type="integer">
+                                <except>
+                                    <value/>
+                                </except>
+                            </data>
                         </attribute>
                         <attribute name="udi">
                             <text/>
@@ -126,7 +130,11 @@
                 <oneOrMore>
                     <element name="processor">
                         <attribute name="id">
-                            <data type="integer"/>
+                            <data type="integer">
+                                <except>
+                                    <value/>
+                                </except>
+                            </data>
                         </attribute>
                         <attribute name="name">
                             <text/>
@@ -142,7 +150,11 @@
                     <zeroOrMore>
                         <element name="alias">
                             <attribute name="target">
-                                <data type="integer"/>
+                                <data type="integer">
+                                    <except>
+                                        <value/>
+                                    </except>
+                                </data>
                             </attribute>
                             <interleave>
                                 <element name="vendor">
@@ -174,6 +186,13 @@
                     <zeroOrMore>
                         <element name="package">
                             <attribute name="name"/>
+                            <attribute name="id">
+                                <data type="integer">
+                                    <except>
+                                        <value/>
+                                    </except>
+                                </data>
+                            </attribute>
                             <oneOrMore>
                                 <ref name="property"/>
                             </oneOrMore>
@@ -266,7 +285,11 @@
                     <zeroOrMore>
                         <element name="target">
                             <attribute name="id">
-                                <data type="integer"/>
+                                <data type="integer">
+                                    <except>
+                                        <value/>
+                                    </except>
+                                </data>
                             </attribute>
                             <interleave>
                                 <zeroOrMore>

@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd. All rights reserved.
+# Copyright 2005-2008 Canonical Ltd. All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
@@ -263,12 +263,12 @@ class ITranslationImportQueue(Interface):
             or None to get all entries available.
         """
 
-    def getPillarObjectsWithImports(status=None):
-        """Return list of Product and DistroSeries with pending imports.
+    def getRequestTargets(status=None):
+        """Return list of `Product` and `DistroSeries` with pending imports.
 
-        :arg status: Filter by RosettaImportStatus.
+        :arg status: Filter by `RosettaImportStatus`.
 
-        All returned items will implement IHasTranslationImports.
+        All returned items will implement `IHasTranslationImports`.
         """
 
     def executeOptimisticApprovals(ztm):

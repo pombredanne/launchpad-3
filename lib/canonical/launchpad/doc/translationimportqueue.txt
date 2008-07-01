@@ -893,14 +893,14 @@ no sense at all.
     0
 
 
-== getPillarObjectsWithImports ==
+== getRequestTargets ==
 
     >>> # Helper functions
     >>> def get_target_names(status=None):
-    ...     """Call getPillarObjectsWithImports, return list of names/titles.
+    ...     """Call getRequestTargets, return list of names/titles.
     ...     """
     ...     result = []
-    ...     queue = translationimportqueue.getPillarObjectsWithImports(status)
+    ...     queue = translationimportqueue.getRequestTargets(status)
     ...     for object in queue:
     ...         if IDistroSeries.providedBy(object):
     ...             name = "%s/%s" % (object.distribution.name, object.name)
@@ -914,8 +914,8 @@ no sense at all.
     ...     for string in strings:
     ...         print string
 
-getPillarObjectsWithImports() returns all objects that have entries in
-the translation import queue waiting to be imported.  Object can be a
+getRequestTargets() returns all objects that have entries in the
+translation import queue waiting to be imported.  Object can be a
 Product or a DistroSeries.
 
 The user uploads two translations into Hoary and Warty respectively, as
@@ -975,7 +975,7 @@ Lets check that the returned entries are actually the same ones we submitted.
 Each of the objects returned provides a getFirstEntryToImport method
 which returns the TranslationImportQueueEntry which is next up for import.
 
-    >>> importqueues = translationimportqueue.getPillarObjectsWithImports(
+    >>> importqueues = translationimportqueue.getRequestTargets(
     ...     RosettaImportStatus.APPROVED)
     >>> sortedqueues = sorted(importqueues,
     ...                       cmp=lambda x,y: cmp(y.title, x.title))
@@ -1199,11 +1199,11 @@ raise errors about them.
     ...
 
 
-== getPillarobjectsWithImports output ordering ==
+== getRequestTargets output ordering ==
 
-TranslationImportQueue.getPillarObjectsWithImports first lists distro
-series (ordered by distro name and series name), followed by products
-(ordered by name).
+TranslationImportQueue.getRequestTargets first lists distro series
+(ordered by distro name and series name), followed by products (ordered
+by name).
 
     >>> print_list(get_target_names(RosettaImportStatus.APPROVED))
     ubuntu/hoary    Hoary

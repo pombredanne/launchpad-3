@@ -21,8 +21,8 @@ from canonical.launchpad import _
 class SSHKeyType(DBEnumeratedType):
     """SSH key type
 
-    SSH (version 2) can use RSA or DSA keys for authentication.  See OpenSSH's
-    ssh-keygen(1) man page for details.
+    SSH (version 2) can use RSA or DSA keys for authentication. See
+    OpenSSH's ssh-keygen(1) man page for details.
     """
 
     RSA = DBItem(1, """
@@ -42,9 +42,12 @@ class ISSHKey(Interface):
     """SSH public key"""
     id = Int(title=_("Database ID"), required=True, readonly=True)
     person = Int(title=_("Owner"), required=True, readonly=True)
-    keytype = Choice(title=_("Key type"), required=True, vocabulary=SSHKeyType)
+    personID = Int(title=_('Owner ID'), required=True, readonly=True)
+    keytype = Choice(title=_("Key type"), required=True,
+                     vocabulary=SSHKeyType)
     keytext = TextLine(title=_("Key text"), required=True)
-    comment = TextLine(title=_("Comment describing this key"), required=True)
+    comment = TextLine(title=_("Comment describing this key"),
+                       required=True)
 
     def destroySelf():
         """Remove this SSHKey from the database."""
@@ -61,4 +64,7 @@ class ISSHKeySet(Interface):
 
         Return the given default if there's now object with the given id.
         """
+
+    def getByPeople(people):
+        """Return SSHKey object associated to the people provided."""
 

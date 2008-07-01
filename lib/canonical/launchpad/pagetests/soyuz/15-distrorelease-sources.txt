@@ -27,21 +27,13 @@ Starting from distribution page:
   >>> browser.open(
   ...     'http://launchpad.dev/ubuntu')
 
-We get a list of all published packages:
+Search for mozilla in the packages:
 
-  >>> browser.getLink("List all packages").click()
+  >>> browser.getControl(name='text').value = 'mozilla'
+  >>> browser.getControl("Find a Package").click()
 
-Click on the respective name to get in the DistributionSourcePackage:
 Let's have a look at the firefox DistributionSourcePackage.
 
-  # But mozilla-firefox is not on the current batch of results
-  >>> browser.getLink("mozilla-firefox").click()
-  Traceback (most recent call last):
-  ...
-  LinkNotFoundError
-
-  # Let's go to the next batch, where we can see it.
-  >>> browser.getLink("Next").click()
   >>> browser.getLink("mozilla-firefox").click()
   >>> print browser.url
   http://launchpad.dev/ubuntu/+source/mozilla-firefox
@@ -52,10 +44,10 @@ about Firefox's publishing history.
   >>> browser.getLink("Show publishing history").click()
   >>> print extract_text(find_tag_by_id(browser.contents, 'publishing-summary'))
   Date                    Status    Target  Pocket  Component Section Version
-  2006-02-13 12:19:00 UTC Pending   WartyII release main      editors 0.9
+  2006-02-13 12:19:00 UTC Published WartyII release main      web     0.9
+  Published on 2006-02-13
   ...
-  2004-09-27 11:57:13 UTC Published WartyII release main      web     0.9
-  Published on 2004-09-27
+  2004-09-27 11:57:13 UTC Pending   WartyII release main      editors 0.9
   ...
 
 Jump back to the DistributionSourcePackage page to continue the tests:
@@ -437,3 +429,42 @@ And also download the files contained in this source, like '.orig',
     <a href="/ubuntu/breezy-autotest/+source/commercialpackage/1.0-1/+files/commercialpackage_1.0-1.dsc">commercialpackage_1.0-1.dsc</a>
     ...
 
+
+== Tracing copied sources ==
+
+Any user can view the publishing history details for a source in the
+distribution PRIMARY archive, specifically in the
+DistributionSourcePackage 'Full publishing history' page. It offers
+enough information to trace copied sources.
+
+If the publishing is a copy, the original location, distribution,
+distroseries and archive are shown.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/alsa-utils')
+
+    >>> anon_browser.getLink("Show publishing history").click()
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'publishing-summary'))
+    Date           Status     Target    Pocket  Component Section Version
+    2006-02-15 ... Pending    WartyII   release main      editors 1.0.9a-4ubuntu1
+      Copied from ubuntu hoary in Primary Archive for The Test Distribution
+    ...
+    2005-09-16 ... Published  WartyII   release main      base    1.0.9a-4
+      Published on 2005-09-16
+      Copied from debian sid in Primary Archive for The Test Distribution
+    ...
+    2005-09-15 ... Superseded Hoary     release main      editors 1.0.9a-4
+      Removed from disk on 2005-09-15.
+      Removal requested on 2005-09-15.
+      Superseded on 2005-09-15 by alsa-utils - 1.0.9a-4ubuntu1
+      Published on 2005-09-15
+      Copied from debian sid in Primary Archive for The Test Distribution
+    ...
+    2005-09-15 ... Published  Hoary     release main      base    1.0.9a-4ubuntu1
+      Published on 2005-09-15
+    ...
+    2005-09-15 ... Published  WartyII   release main      base    1.0.8-1ubuntu1
+      Published on 2005-09-15
+    ...

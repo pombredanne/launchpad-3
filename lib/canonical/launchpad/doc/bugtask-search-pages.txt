@@ -13,12 +13,13 @@ A helper function to make it easier to construct a view.  The function
 also adds the context object to the launchbag, which approximates what
 happens during traversal.
 
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> def create_view(context, name, form=None):
     ...     launchbag.clear()
     ...     launchbag.add(context)
-    ...     view = getView(context, name, LaunchpadTestRequest(form=form))
+    ...     view = getMultiAdapter(
+    ...         (context, LaunchpadTestRequest(form=form)), name=name)
     ...     view.initialize()
     ...     return view
 

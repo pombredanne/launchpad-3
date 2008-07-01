@@ -16,7 +16,7 @@ Check that the PO template has a certain message ID.
 
     >>> from canonical.launchpad.database import POMsgID
     >>> pomsgid = POMsgID.byMsgid('evolution addressbook')
-    >>> template.hasMessageID(pomsgid)
+    >>> template.hasMessageID(pomsgid, None)
     True
 
 Get a Spanish PO file for this PO template

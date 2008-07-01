@@ -78,8 +78,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = 'No XML'
         result, submission_id = self.runValidator(sample_data)
         self.handler.assertLogsMessage(
-            "Parsing submission %s: line 1: "
-                "Start tag expected, '<' not found" % submission_id,
+            "Parsing submission %s: "
+                "syntax error: line 1, column 0" % submission_id,
             logging.ERROR)
         self.assertEqual(result, None, 'Expected detection of non-XML data')
 
@@ -129,7 +129,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         Bytes with bit 7 set must be detected as invalid.
         """
-        sample_data_ascii_encoded = self._setEncoding('ascii')
+        sample_data_ascii_encoded = self._setEncoding('US-ASCII')
         result, submission_id = self.runValidator(sample_data_ascii_encoded)
         self.assertNotEqual(result, None,
                             'Valid submission with ASCII encoding rejected')
@@ -145,8 +145,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertEqual(result, None,
                          'Invalid submission with ASCII encoding accepted')
         self.handler.assertLogsMessage(
-            "Parsing submission %s: line 28: Premature end of data in tag "
-                "system line 2" % submission_id,
+            "Parsing submission %s: "
+                "not well-formed (invalid token): line 28, column 25"
+                % submission_id,
             logging.ERROR)
 
     def testISO8859_1_Encoding(self):
@@ -190,8 +191,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                          'Invalid submissison with UTF-8 encoding accepted')
         self.handler.assertLogsMessage(
             "Parsing submission %s: "
-                "line 1: Input is not proper UTF-8, indicate encoding !\n"
-                "Bytes: 0xC3 0x22 0x2F 0x3E" % submission_id,
+                "not well-formed (invalid token): line 1, column 21"
+                % submission_id,
             logging.ERROR)
 
     # Using self.log.assertLogsMessage, the usual way to assert the
@@ -227,13 +228,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             candidate = r.getMessage()
             if candidate.startswith('Parsing submission %s:'
                                     % submission_key):
-                # It seems that lxml currently (version 1.3.3) interprets
-                # error codes from the Relax NG validator as xmlParserErrors
-                # and inserts corresponding texts into the message.
-                # Thus we search for
-                # <string>:(line):ERROR:RELAXNGV:(wrong text):(message)
-                if re.search('^<string>:\d+:ERROR:RELAXNGV:[^\n]+: %s$'
-                                 % re.escape(message),
+                if re.search(
+                    '(:\d+: element .*?: )?Relax-NG validity error : %s$'
+                    % re.escape(message),
                              candidate, re.MULTILINE):
                     return
                 else:
@@ -252,7 +249,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     def testAssertErrorMessage(self):
         """Test the assertErrorMessage method."""
         log_template = ('Parsing submission %s:\n'
-                        '<string>:%i:ERROR:RELAXNGV:NONSENSE: %s')
+                        '-:%i: element node_name: Relax-NG validity error :'
+                        ' %s')
         self.log.error(log_template % ('assert_test_1', 123, 'log message 1'))
         self.log.error(log_template % ('assert_test_1', 234, 'log message 2'))
         self.log.error(log_template % ('assert_test_2', 345, 'log message 2'))
@@ -711,7 +709,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         in the standard sample data.
 
-        The values of 'id' and 'parent' must be integers.
+        The values of 'id' and 'parent' must be integers. "id" must not
+        be emtpy.
         """
         for only_attribute in ('id', 'udi'):
             sample_data = self.replaceSampledata(
@@ -735,6 +734,17 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             "Type integer doesn't allow value 'NoInteger'",
             "invalid content of the 'id' attribute of <device>")
+
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<device id="" udi="foo">',
+            from_text='<device',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            "Invalid attribute id for element device",
+            "empty 'id' attribute of <device>")
 
         sample_data = self.replaceSampledata(
             data=self.sample_data,
@@ -1458,7 +1468,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Element processor failed to validate attributes',
-            'missing attribute "name" of <processors>')
+            'missing attribute "name" of <processor>')
 
         sample_data = self.sample_data.replace(
             '<processor id="123" name="0">', '<processor name="0">')
@@ -1466,7 +1476,26 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Element processor failed to validate attributes',
-            'missing attribute "id" attribute of <processors>')
+            'missing attribute "id" attribute of <processor>')
+
+        # "id" must not be empty.
+        sample_data = self.sample_data.replace(
+            '<processor id="123" name="0">', '<processor id="" name="0">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute id for element processor',
+            'empty attribute "id" of <processor>')
+
+        # "id" must have integer content.
+        sample_data = self.sample_data.replace(
+            '<processor id="123" name="0">',
+            '<processor id="noInteger" name="0">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute id for element processor',
+            'invalid content of attribute "name" of <processor>')
 
         # other attributes are invalid.
         sample_data = self.sample_data.replace(
@@ -1476,7 +1505,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Invalid attribute foo for element processor',
-            'missing attribute "id" attribute of <processors>')
+            'invalid attribute of <processor>')
 
         # Other sub-tags than <property> are invalid.
         sample_data = self.insertSampledata(
@@ -1546,7 +1575,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # The attribute target is required.
         # Note that the expected error message from the validator
         # is identical to the last error message expected in
-        # testAliasesTag: lxml's Relax NG validator is sometimes
+        # testAliasesTag: libxml2's Relax NG validator is sometimes
         # not as informative as one might wish.
         sample_data = self.sample_data.replace(
             '<alias target="65">', '<alias>')
@@ -1563,6 +1592,15 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Extra element aliases in interleave',
+            'missing attribute of <alias>')
+
+        # target must not be empty.
+        sample_data = self.sample_data.replace(
+            '<alias target="65">', '<alias target="">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element hardware failed to validate content',
             'missing attribute of <alias>')
 
         # Other attributes are not allowed. We get again the same
@@ -1843,17 +1881,46 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         """Test the validation of <package> tag attributes."""
         # The attribute "name" is required.
         sample_data = self.sample_data.replace(
-            '<package name="metacity">', '<package>')
+            '<package name="metacity" id="200">', '<package id="200">')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
             'Extra element packages in interleave',
-            'detection missing required attribute name in <package>')
+            'detection of missing required attribute name in <package>')
+
+        # The attribute "id" is required.
+        sample_data = self.sample_data.replace(
+            '<package name="metacity" id="200">', '<package name="metacity">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of missing required attribute id in <package>')
+
+        # The attribute "id" must not be empty.
+        sample_data = self.sample_data.replace(
+            '<package name="metacity" id="200">',
+            '<package name="metacity" id="">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of empty required attribute id in <package>')
+
+        # The attribute "id" must have integer content.
+        sample_data = self.sample_data.replace(
+            '<package name="metacity" id="200">',
+            '<package name="metacity" id="noInteger">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of non-integer content of attribute id in <package>')
 
         # Other attributes are not allowed.
         sample_data = self.sample_data.replace(
-            '<package name="metacity">',
-            '<package name="metacity" foo="bar">')
+            '<package name="metacity" id="200">',
+            '<package name="metacity" id="200" foo="bar">')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -1876,8 +1943,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # At least one <property> tag is required
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text='<package name="metacity"/>',
-            from_text='<package name="metacity">',
+            replace_text='<package name="metacity" id="200"/>',
+            from_text='<package name="metacity" id="200">',
             to_text='</package>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
@@ -1890,7 +1957,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # CDATA content is not allowed.
         sample_data = self.insertSampledata(
             data=self.sample_data,
-            insert_text='<nonsense/>',
+            insert_text='nonsense',
             where='</package>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
@@ -2407,7 +2474,25 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Element target failed to validate attributes',
-             'missing attribute "id" for <target>')
+            'detection of missing attribute "id" for <target>')
+
+        # "id" must not be empty.
+        sample_data = self.sample_data.replace('<target id="42">',
+                                               '<target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element target failed to validate attributes',
+            'detection of empty attribute "id" for <target>')
+
+        # "id" must have integer content.
+        sample_data = self.sample_data.replace('<target id="42">',
+                                               '<target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element target failed to validate attributes',
+            'detection of <target> attribute "id" with non-integer content')
 
         # Other attributes are not allowed.
         sample_data = self.replaceSampledata(
@@ -2419,7 +2504,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Invalid attribute foo for element target',
-             'detection of invalid <target> attribute')
+            'detection of invalid <target> attribute')
 
     def testTargetTagCData(self):
         """Test the validation of <target> tag CDATA content."""
@@ -2509,7 +2594,4 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
 
 def test_suite():
-    # XXX 2008-02-29 jamesh bug=196936:
-    #return TestLoader().loadTestsFromName(__name__)
-    from unittest import TestSuite
-    return TestSuite()
+    return TestLoader().loadTestsFromName(__name__)

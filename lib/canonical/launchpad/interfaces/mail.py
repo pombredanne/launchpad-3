@@ -74,12 +74,24 @@ class IMailHandler(Interface):
         The 'filealias' is an ILibraryFileAlias.
         The 'log' is the logger to be used.
 
-        Return True if the mesage was processed, otherwise False.
+        Return False if to_address does not exist/is bad.
+        Return True if the mesage was processed, successfully or
+        unsuccessfully.  This includes user or input errors.
+        Programming errors should cause exceptions to be raised.
         """
 
 
 class EmailProcessingError(Exception):
     """Something went wrong while processing an email command."""
+
+    def __init__(self, args, stop_processing=False):
+        """Initialize
+
+        :args: The standard exception extra arguments.
+        "stop_processing: Should the processing of the email be stopped?
+        """
+        Exception.__init__(self, args)
+        self.stop_processing = stop_processing
 
 
 class BugTargetNotFound(Exception):
@@ -109,7 +121,8 @@ class IEmailCommand(Interface):
         """
 
     def __str__():
-        """Return a textual representation of the command and its arguments."""
+        """Return a textual representation of the command and its arguments.
+        """
 
 
 class IBugEmailCommand(IEmailCommand):

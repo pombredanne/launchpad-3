@@ -8,40 +8,48 @@ import os
 from twisted.application import service, internet, strports
 from twisted.web import server
 
-from canonical.database.sqlbase import SQLBase
-from canonical.lp import initZopeless
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from canonical.librarian.libraryprotocol import FileUploadFactory
 from canonical.librarian import storage, db
 from canonical.librarian import web as fatweb
 
 # Connect to database
-initZopeless(
-    dbuser=config.librarian.dbuser,
-    dbhost=config.database.dbhost,
-    dbname=config.database.dbname,
-    implicitBegin=False
-    )
+dbconfig.setConfigSection('librarian')
+execute_zcml_for_scripts()
 
-application = service.Application('Librarian')
+# Our version of twisted doesn't allow easily to add command-line
+# parameters, so we use an environment variable to switch between
+# starting the restricted or standard libarian.
+restricted = 'RESTRICTED_LIBRARIAN' in os.environ
+if restricted:
+    applicationName = 'RestrictedLibrarian'
+    uploadPort = config.librarian.restricted_upload_port
+    webPort = config.librarian.restricted_download_port
+else:
+    applicationName = 'Librarian'
+    uploadPort = config.librarian.upload_port
+    webPort = config.librarian.download_port
+
+application = service.Application(applicationName)
 librarianService = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
 tachandler.ReadyService().setServiceParent(librarianService)
 
-path = config.librarian.server.root
-storage = storage.LibrarianStorage(path, db.Library())
+path = config.librarian_server.root
+storage = storage.LibrarianStorage(path, db.Library(restricted))
 
 f = FileUploadFactory(storage)
-uploadPort = str(config.librarian.upload_port)
-strports.service(uploadPort, f).setServiceParent(librarianService)
+strports.service(str(uploadPort), f).setServiceParent(librarianService)
 
-if config.librarian.server.upstream_host:
-    upstreamHost = config.librarian.server.upstream_host
-    upstreamPort = int(config.librarian.server.upstream_port)
-    print 'Using upstream librarian http://%s:%d' % (upstreamHost, upstreamPort)
+if config.librarian_server.upstream_host:
+    upstreamHost = config.librarian_server.upstream_host
+    upstreamPort = config.librarian_server.upstream_port
+    print 'Using upstream librarian http://%s:%d' % (
+        upstreamHost, upstreamPort)
 else:
     upstreamHost = upstreamPort = None
 root = fatweb.LibraryFileResource(storage, upstreamHost, upstreamPort)
@@ -49,5 +57,4 @@ root.putChild('search', fatweb.DigestSearchResource(storage))
 root.putChild('robots.txt', fatweb.robotsTxt)
 site = server.Site(root)
 site.displayTracebacks = False
-webPort = str(config.librarian.download_port)
-strports.service(webPort, site).setServiceParent(librarianService)
+strports.service(str(webPort), site).setServiceParent(librarianService)

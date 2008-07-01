@@ -1,4 +1,0 @@
-
-See the tests in canonical/config/__init__.py for information on accessing
-configuration information.
-

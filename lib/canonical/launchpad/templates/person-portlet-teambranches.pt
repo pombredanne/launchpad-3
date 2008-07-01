@@ -4,17 +4,17 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-team-branches"
+<div class="related" id="portlet-team-branches"
      tal:condition="view/teams_with_branches">
-  <h2>Branches for</h2>
+  <h2>Branches related to</h2>
 
-  <div class="portletBody portletContent">
-   
-    <div tal:repeat="team view/teams_with_branches">
+  <ul>
+    <li tal:repeat="team view/teams_with_branches">
       <img src="/@@/team" />
       <a tal:content="team/displayname"
          tal:attributes="href team/fmt:url">team name</a>
-    </div>
-  </div>
+    </li>
+  </ul>
 </div>
+
 </tal:root>

@@ -99,12 +99,9 @@ XXX cprov 20051209: need to build a broken upload to test it properly
   >>> for item in new_queue:
   ...     try:
   ...         item.setAccepted()
+  ...         item.syncUpdate()
   ...     except QueueInconsistentStateError, info:
   ...         print info
-
-Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
-
-  >>> flush_database_updates()
 
   >>> accepted_queue = hoary.getQueueItems(PackageUploadStatus.ACCEPTED)
 
@@ -145,23 +142,8 @@ Check if it implements its interface completely:
 
 Iterating over IPackageUploads via iPackageUploadSet:
 
-  >>> for item in qset:
-  ...     print item.id
-  1
-  2
-  3
-  4
-  5
-  6
-  7
-  8
-  9
-  10
-  11
-  12
-  13
-  14
-  15
+  >>> len([item for item in qset])
+  16
 
 Retrieving an IPackageUpload by its id:
 
@@ -174,10 +156,10 @@ Retrieving an IPackageUpload by its id:
 Counter, optionally by status (informally named "queue") and or distroseries:
 
   >>> qset.count()
-  15
+  16
 
-  >>> qset.count(PackageUploadStatus.ACCEPTED)
-  1
+  >>> qset.count(PackageUploadStatus.DONE)
+  5
 
   >>> qset.count(PackageUploadStatus.REJECTED)
   0
@@ -196,31 +178,32 @@ Retrieve some data from DB to play more with counter.
   ...            distroseries=breezy_autotest)
   0
 
-  >>> qset.count(status=PackageUploadStatus.ACCEPTED,
+  >>> qset.count(status=PackageUploadStatus.DONE,
   ...            distroseries=hoary)
   1
 
 
 Check the behaviour of @cachedproperty  attributes:
+
   >>> qitem = qset.get(1)
 
   >>> qitem.datecreated
   datetime.datetime(...)
 
-  >>> qitem.changesfile.filename
-  u'mozilla-firefox_0.9_i386.changes'
+  >>> print qitem.changesfile.filename
+  mozilla-firefox_0.9_i386.changes
 
-  >>> qitem.sourcepackagerelease.name
-  u'mozilla-firefox'
+  >>> print qitem.sourcepackagerelease.name
+  mozilla-firefox
 
-  >>> qitem.displayname
-  u'mozilla-firefox'
+  >>> print qitem.displayname
+  mozilla-firefox
 
-  >>> qitem.displayversion
-  u'0.9'
+  >>> print qitem.displayversion
+  0.9
 
-  >>> qitem.displayarchs
-  u'i386'
+  >>> print qitem.displayarchs
+  i386
 
   >>> qitem.sourcepackagerelease
   <SourcePackageRelease at ...>
@@ -233,22 +216,40 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
   >>> custom_item.datecreated
   datetime.datetime(...)
 
-  >>> custom_item.changesfile.filename
-  u'netapplet-1.0.0.tar.gz'
+  >>> print custom_item.changesfile.filename
+  netapplet-1.0.0.tar.gz
 
-  >>> custom_item.displayname
-  u'netapplet-1.0.0.tar.gz'
+  >>> print custom_item.displayname
+  netapplet-1.0.0.tar.gz
 
-  >>> custom_item.displayversion
-  '-'
+  >>> print custom_item.displayversion
+  -
 
-  >>> custom_item.displayarchs
-  'raw-translations'
+  >>> print custom_item.displayarchs
+  raw-translations
 
   >>> custom_item.sourcepackagerelease
   Traceback (most recent call last):
   ...
   AssertionError: No source available.
+
+
+The method getBuildByBuildIDs() will return all the PackageUploadBuild
+records that match the supplied build IDs.
+
+  >>> ids = (18,19)
+  >>> for package_upload_build in qset.getBuildByBuildIDs(ids):
+  ...     print package_upload_build.packageupload.displayname
+  mozilla-firefox
+  pmount
+
+If the supplied IDs is empty or None, an empty list is returned:
+
+  >>> qset.getBuildByBuildIDs([])
+  []
+
+  >>> qset.getBuildByBuildIDs(None)
+  []
 
 
 == Upload Signing Key ==
@@ -370,16 +371,16 @@ Got 'pmount_0.1-1'.
 
 Look for every queue entry which package name is like 'mo'
 
-  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
-  ...                                            name='mo')
+  >>> items = breezy_autotest.getQueueItems(
+  ...     PackageUploadStatus.NEW, name='mo')
   >>> items.count()
   2
 
   >>> for item in items:
-  ...     (item.builds[0].build.binarypackages[0].name,
-  ...      item.builds[0].build.binarypackages[0].version)
-  (u'mozilla-firefox', u'0.9')
-  (u'pmount', u'0.1-1')
+  ...     a_binary = item.builds[0].build.binarypackages[0]
+  ...     print item.displayname
+  pmount
+  mozilla-firefox
 
 Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
 
@@ -456,6 +457,7 @@ Check State Machine over PackageUploadBuilds:
 
 Performing full acceptance:
 
+  >>> from canonical.launchpad.ftests import syncUpdate
   >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW)
   >>> for item in items:
   ...      try:
@@ -463,7 +465,8 @@ Performing full acceptance:
   ...      except QueueInconsistentStateError, e:
   ...          print item.displayname, e
   ...      else:
-  ...          print item.displayname, 'ACCEPTED'
+  ...          print item.displayname, item.status.name
+  ...      syncUpdate(item)
   netapplet-1.0.0.tar.gz ACCEPTED
   netapplet-1.0.0.tar.gz ACCEPTED
   alsa-utils ACCEPTED
@@ -471,13 +474,23 @@ Performing full acceptance:
   pmount ACCEPTED
   mozilla-firefox ACCEPTED
 
-Move the PackageUpload items back to NEW
+Move the ACCEPTED items back to NEW.
 
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.ACCEPTED)
   >>> for item in items:
   ...     item.setNew()
+  ...     print item.displayname, item.status.name
+  ...     syncUpdate(item)
+  netapplet-1.0.0.tar.gz NEW
+  netapplet-1.0.0.tar.gz NEW
+  alsa-utils NEW
+  netapplet NEW
+  pmount NEW
+  mozilla-firefox NEW
 
 Check if the state machine methods raise when trying to set the same state:
 
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW)
   >>> for item in items:
   ...      try:
   ...          item.setNew()
@@ -608,8 +621,8 @@ Override the pmount section to fresh created 'heaven' section.
 
 XXX cprov 20060118: remove proxy magic is required for BPR instances.
 
-  >>> naked_bin = removeSecurityProxy(
-  ...       item.builds[0].build.binarypackages[0])
+  >>> pmount_binary = item.builds[0].build.binarypackages[0]
+  >>> naked_bin = removeSecurityProxy(pmount_binary)
   >>> naked_bin.section = getUtility(ISectionSet).new('heaven')
 
 Try to perform single acceptance of pmount with not allowed section:
@@ -642,7 +655,7 @@ Anonymous can view all queue items, public and private ones.
 
 A normal user can't act on both of them:
 
-  >>> login('test@canonical.com')
+  >>> login('no-priv@canonical.com')
 
   >>> pub_qitem.setDone()
   Traceback (most recent call last):
@@ -680,6 +693,109 @@ Clear existing mail stack:
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> rubbish = pop_notifications()
 
+
+== Overriding uploads ==
+
+Sources and binaries for the upload may be overridden via the methods
+overrideSource() and overrideBinaries().  The former allows overriding
+of component and section and the latter both those plus the section.
+In addition to these parameters, you must also supply
+"allowed_components", which is a sequence of IComponent.  Any overrides
+must have the existing and new component in this sequence otherwise
+QueueInconsistentStateError is raised.
+
+The alsa-utils source is already in the queue with component "main"
+and section "base".
+
+    >>> [item] = breezy_autotest.getQueueItems(
+    ...     PackageUploadStatus.NEW, name='alsa-utils')
+    >>> [source] = item.sources
+    >>> print "%s/%s" % (
+    ...     source.sourcepackagerelease.component.name,
+    ...     source.sourcepackagerelease.section.name)
+    main/base
+
+Overriding to a component not in the allowed_components list results in
+an error:
+
+    >>> restricted = getUtility(IComponentSet)['restricted']
+    >>> universe = getUtility(IComponentSet)['universe']
+    >>> main = getUtility(IComponentSet)['main']
+    >>> web = getUtility(ISectionSet)['web']
+    >>> print item.overrideSource(
+    ...     new_component=restricted, new_section=web,
+    ...     allowed_components=(universe,))
+    Traceback (most recent call last):
+    ...
+    QueueInconsistentStateError: No rights to override from main to restricted
+
+Allowing "restricted" still won't work because the original component
+is "main":
+
+    >>> print item.overrideSource(
+    ...     new_component=restricted, new_section=web,
+    ...     allowed_components=(restricted,))
+    Traceback (most recent call last):
+    ...
+    QueueInconsistentStateError: No rights to override from main to restricted
+
+Specifying both main and restricted allows the override to restricted/web.
+overrideSource() returns True if it completed the task.
+
+    >>> print item.overrideSource(
+    ...     new_component=restricted, new_section=web,
+    ...     allowed_components=(main,restricted))
+    True
+    >>> print "%s/%s" % (
+    ...     source.sourcepackagerelease.component.name,
+    ...     source.sourcepackagerelease.section.name)
+    restricted/web
+
+Similarly for binaries:
+
+    >>> [item] = breezy_autotest.getQueueItems(
+    ...     PackageUploadStatus.NEW, name='pmount')
+    >>> [build] = item.builds
+    >>> [binary_package] = build.build.binarypackages
+    >>> print "%s/%s/%s" % (
+    ...     binary_package.component.name,
+    ...     binary_package.section.name,
+    ...     binary_package.priority.title)
+    main/base/Important
+
+    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> print item.overrideBinaries(
+    ...     new_component=restricted,
+    ...     new_section=web,
+    ...     new_priority=PackagePublishingPriority.EXTRA,
+    ...     allowed_components=(universe,))
+    Traceback (most recent call last):
+    ...
+    QueueInconsistentStateError: No rights to override from main to restricted
+
+    >>> print item.overrideBinaries(
+    ...     new_component=restricted,
+    ...     new_section=web,
+    ...     new_priority=PackagePublishingPriority.EXTRA,
+    ...     allowed_components=(restricted,))
+    Traceback (most recent call last):
+    ...
+    QueueInconsistentStateError: No rights to override from main to restricted
+
+    >>> print item.overrideBinaries(
+    ...     new_component=restricted,
+    ...     new_section=web,
+    ...     new_priority=PackagePublishingPriority.EXTRA,
+    ...     allowed_components=(main,restricted))
+    True
+    >>> print "%s/%s/%s" % (
+    ...     binary_package.component.name,
+    ...     binary_package.section.name,
+    ...     binary_package.priority.title)
+    restricted/web/Extra
+
+
+== Queue Manipulation ==
 
 Two convenience methods exist, acceptFromQueue and rejectFromQueue that will
 accept or reject the item and send an email respectively.

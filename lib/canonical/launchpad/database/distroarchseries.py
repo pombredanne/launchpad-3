@@ -26,10 +26,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchseriesbinarypackage import (
     DistroArchSeriesBinaryPackage)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
-from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.processor import Processor
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -48,9 +47,9 @@ class DistroArchSeries(SQLBase):
     official = BoolCol(notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
-    ppa_supported = BoolCol(notNull=False, default=False)
+    supports_virtualized = BoolCol(notNull=False, default=False)
 
     packages = SQLRelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchseries',
@@ -62,9 +61,9 @@ class DistroArchSeries(SQLBase):
 
     @property
     def default_processor(self):
-        """See IDistroArchSeries"""
+        """See `IDistroArchSeries`."""
         # XXX cprov 2005-08-31:
-        # I could possibly be better designed, let's think about it in
+        # This could possibly be better designed; let's think about it in
         # the future. Pick the first processor we found for this
         # distroarchseries.processorfamily. The data model should
         # change to have a default processor for a processorfamily
@@ -72,12 +71,12 @@ class DistroArchSeries(SQLBase):
 
     @property
     def processors(self):
-        """See IDistroArchSeries"""
+        """See `IDistroArchSeries`."""
         return Processor.selectBy(family=self.processorfamily, orderBy='id')
 
     @property
     def title(self):
-        """See IDistroArchSeries """
+        """See `IDistroArchSeries`."""
         return '%s for %s (%s)' % (
             self.distroseries.title, self.architecturetag,
             self.processorfamily.name
@@ -85,11 +84,13 @@ class DistroArchSeries(SQLBase):
 
     @property
     def displayname(self):
-        """See IDistroArchSeries."""
-        return '%s %s' % (self.distroseries.name, self.architecturetag)
+        """See `IDistroArchSeries`."""
+        return '%s %s %s' % (
+            self.distroseries.distribution.displayname,
+            self.distroseries.displayname, self.architecturetag)
 
     def updatePackageCount(self):
-        """See IDistroArchSeries """
+        """See `IDistroArchSeries`."""
         query = """
             BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
@@ -106,17 +107,17 @@ class DistroArchSeries(SQLBase):
 
     @property
     def isNominatedArchIndep(self):
-        """See IDistroArchSeries"""
+        """See `IDistroArchSeries`."""
         return (self.distroseries.nominatedarchindep and
                 self.id == self.distroseries.nominatedarchindep.id)
 
     def getPocketChroot(self):
-        """See IDistroArchSeries"""
+        """See `IDistroArchSeries`."""
         pchroot = PocketChroot.selectOneBy(distroarchseries=self)
         return pchroot
 
     def getChroot(self, default=None):
-        """See IDistroArchSeries"""
+        """See `IDistroArchSeries`."""
         pocket_chroot = self.getPocketChroot()
 
         if pocket_chroot is None:
@@ -125,7 +126,7 @@ class DistroArchSeries(SQLBase):
         return pocket_chroot.chroot
 
     def addOrUpdateChroot(self, chroot):
-        """See IDistroArchSeries"""
+        """See `IDistroArchSeries`."""
         pocket_chroot = self.getPocketChroot()
 
         if pocket_chroot is None:
@@ -142,7 +143,7 @@ class DistroArchSeries(SQLBase):
             self.distroseries, pattern, self.architecturetag, fti)
 
     def searchBinaryPackages(self, text):
-        """See IDistroArchSeries."""
+        """See `IDistroArchSeries`."""
         archives = self.distroseries.distribution.getArchiveIDList()
         bprs = BinaryPackageRelease.select("""
             BinaryPackagePublishingHistory.distroarchseries = %s AND
@@ -162,7 +163,7 @@ class DistroArchSeries(SQLBase):
             clauseTables=['BinaryPackagePublishingHistory',
                           'BinaryPackageName'],
             prejoinClauseTables=["BinaryPackageName"],
-            orderBy=['-rank'],
+            orderBy=['-rank', 'BinaryPackageName.name'],
             distinct=True)
         # import here to avoid circular import problems
         from canonical.launchpad.database import (
@@ -172,7 +173,7 @@ class DistroArchSeries(SQLBase):
                     binarypackagerelease=bpr) for bpr in bprs]
 
     def getBinaryPackage(self, name):
-        """See IDistroArchSeries."""
+        """See `IDistroArchSeries`."""
         if not IBinaryPackageName.providedBy(name):
             try:
                 name = BinaryPackageName.byName(name)
@@ -231,15 +232,8 @@ class DistroArchSeries(SQLBase):
 
         return shortlist(published)
 
-    def findDepCandidateByName(self, name):
-        """See IPublishedSet."""
-        return PublishedPackage.selectFirstBy(
-            binarypackagename=name, distroarchseries=self,
-            packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
-            orderBy=['-id'])
-
     def getPendingPublications(self, archive, pocket, is_careful):
-        """See ICanPublishPackages."""
+        """See `ICanPublishPackages`."""
         queries = [
             "distroarchseries = %s AND archive = %s"
             % sqlvalues(self, archive)
@@ -266,7 +260,7 @@ class DistroArchSeries(SQLBase):
         return publications
 
     def publish(self, diskpool, log, archive, pocket, is_careful=False):
-        """See ICanPublishPackages."""
+        """See `ICanPublishPackages`."""
         log.debug("Attempting to publish pending binaries for %s"
               % self.architecturetag)
 
@@ -295,7 +289,7 @@ class DistroArchSeriesSet:
         return iter(DistroArchSeries.select())
 
     def get(self, dar_id):
-        """See canonical.launchpad.interfaces.IDistributionSet."""
+        """See `canonical.launchpad.interfaces.IDistributionSet`."""
         return DistroArchSeries.get(dar_id)
 
     def count(self):

@@ -2,15 +2,21 @@
 
 __metaclass__ = type
 
+import gc
+import os
+from datetime import datetime
 import thread
+import threading
+from time import strftime
 import traceback
 import urllib
 
+from cProfile import Profile
+
 import tickcount
 
-import sqlos.connection
-from sqlos.interfaces import IConnectionName
-
+from psycopg2.extensions import TransactionRollbackError
+from storm.exceptions import DisconnectionError, IntegrityError
 import transaction
 
 from zope.app import zapi  # used to get at the adapters service
@@ -29,6 +35,9 @@ from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
 
 from canonical.config import config
+from canonical.mem import (
+    countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
+    resident)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
@@ -78,6 +87,7 @@ class LaunchpadBrowserPublication(
 
     def __init__(self, db):
         self.db = db
+        self.thread_locals = threading.local()
 
     def annotateTransaction(self, txn, request, ob):
         """See `zope.app.publication.zopepublication.ZopePublication`.
@@ -109,37 +119,15 @@ class LaunchpadBrowserPublication(
                 root_object = bag.site
             return root_object
 
-    # the below ovverrides to zopepublication (callTraversalHooks,
+    # The below overrides to zopepublication (callTraversalHooks,
     # afterTraversal, and _maybePlacefullyAuthenticate) make the
     # assumption that there will never be a ZODB "local"
     # authentication service (such as the "pluggable auth service").
     # If this becomes untrue at some point, the code will need to be
     # revisited.
 
-    @staticmethod
-    def clearSQLOSCache():
-        # Big boot for fixing SQLOS transaction issues - nuke the
-        # connection cache at the start of a transaction. This shouldn't
-        # affect performance much, as psycopg does connection pooling.
-        #
-        # XXX Steve Alexander 2004-12-14: Move this to SQLOS, in a method
-        # that is subscribed to the transaction begin event rather than
-        # hacking it into traversal.
-        name = getUtility(IConnectionName).name
-        key = (thread.get_ident(), name)
-        cache = sqlos.connection.connCache
-        if cache.has_key(key):
-            del cache[key]
-        # SQLOS Connection objects also only register themselves for
-        # the transaction in which they are instantiated - this is
-        # no longer a problem as we are nuking the connection cache,
-        # but it is still an issue in SQLOS that needs to be fixed.
-        #name = getUtility(IConnectionName).name
-        #con = sqlos.connection.getConnection(None, name)
-        #t = transaction.get_transaction()
-        #t.join(con._dm)
-
     def beforeTraversal(self, request):
+        self.startProfilingHook()
         request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
         threadrequestfile = open('thread-%s.request' % threadid, 'w')
@@ -160,7 +148,6 @@ class LaunchpadBrowserPublication(
         newInteraction(request)
         transaction.begin()
 
-        self.clearSQLOSCache()
         getUtility(IOpenLaunchBag).clear()
 
         # Set the default layer.
@@ -312,9 +299,11 @@ class LaunchpadBrowserPublication(
 
         # launchpad.pageid contains an identifier of the form
         # ContextName:ViewName. It will end up in the page log.
-        unrestricted_ob = removeSecurityProxy(ob)
+        view = removeSecurityProxy(ob)
+        # It's possible that the view is a bounded method.
+        view = getattr(view, 'im_self', view)
         context = removeSecurityProxy(
-            getattr(unrestricted_ob, 'context', None))
+            getattr(view, 'context', None))
         if context is None:
             pageid = ''
         else:
@@ -322,10 +311,10 @@ class LaunchpadBrowserPublication(
             # is accessible in the instance __name__ attribute. We use
             # that if it's available, otherwise fall back to the class
             # name.
-            if getattr(unrestricted_ob, '__name__', None) is not None:
-                view_name = unrestricted_ob.__name__
+            if getattr(view, '__name__', None) is not None:
+                view_name = view.__name__
             else:
-                view_name = unrestricted_ob.__class__.__name__
+                view_name = view.__class__.__name__
             pageid = '%s:%s' % (context.__class__.__name__, view_name)
         # The view name used in the pageid usually comes from ZCML and so
         # it will be a unicode string although it shouldn't.  To avoid
@@ -338,7 +327,8 @@ class LaunchpadBrowserPublication(
     def afterCall(self, request, ob):
         """See `zope.publisher.interfaces.IPublication`.
 
-        Our implementation aborts() the transaction on read-only requests.
+        Our implementation calls self.finishReadOnlyRequest(), which by
+        default aborts the transaction, for read-only requests.
         Because of this we cannot chain to the superclass and implement
         the whole behaviour here.
         """
@@ -356,7 +346,7 @@ class LaunchpadBrowserPublication(
 
         # Abort the transaction on a read-only request.
         if request.method in ['GET', 'HEAD']:
-            txn.abort()
+            self.finishReadOnlyRequest(txn)
         else:
             txn.commit()
 
@@ -364,6 +354,14 @@ class LaunchpadBrowserPublication(
         # by zope.app.publication.browser.BrowserPublication
         if request.method == 'HEAD':
             request.response.setResult('')
+
+    def finishReadOnlyRequest(self, txn):
+        """Hook called at the end of a read-only request.
+
+        By default it abort()s the transaction, but subclasses may need to
+        commit it instead, so they must overwrite this.
+        """
+        txn.abort()
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
@@ -429,8 +427,9 @@ class LaunchpadBrowserPublication(
         # Reraise Retry exceptions rather than log.
         # XXX stub 20070317: Remove this when the standard
         # handleException method we call does this (bug to be fixed upstream)
-        if (retry_allowed
-            and isinstance(exc_info[1], (Retry, da.DisconnectionError))):
+        if retry_allowed and isinstance(
+            exc_info[1], (Retry, DisconnectionError, IntegrityError,
+                          TransactionRollbackError)):
             if request.supportsRetry():
                 # Remove variables used for counting ticks as this request is
                 # going to be retried.
@@ -453,7 +452,13 @@ class LaunchpadBrowserPublication(
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
+
+        self.endProfilingHook(request)
+
         da.clear_request_started()
+
+        if config.debug.references:
+            self.debugReferencesLeak(request)
 
         # Maintain operational statistics.
         OpStats.stats['requests'] += 1
@@ -475,3 +480,151 @@ class LaunchpadBrowserPublication(
 
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
+
+
+    def startProfilingHook(self):
+        """Handle profiling.
+
+        If requests profiling start a profiler. If memory profiling is
+        requested, save the VSS and RSS.
+        """
+        if config.profiling.profile_requests:
+            self.thread_locals.profiler = Profile()
+            self.thread_locals.profiler.enable()
+
+        if config.profiling.memory_profile_log:
+            self.thread_locals.memory_profile_start = (memory(), resident())
+
+    def endProfilingHook(self, request):
+        """If profiling is turned on, save profile data for the request."""
+        # Create a timestamp including milliseconds.
+        now = datetime.fromtimestamp(da.get_request_start_time())
+        timestamp = "%s.%d" % (
+            now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
+        pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
+        oopsid= getattr(request, 'oopsid', None)
+
+        if config.profiling.profile_requests:
+            profiler = self.thread_locals.profiler
+            profiler.disable()
+
+            if oopsid:
+                oopsid_part = '-%s' % oopsid
+            else:
+                oopsid_part = ''
+            filename = '%s-%s%s-%s.prof' % (
+                timestamp, pageid, oopsid_part,
+                threading.currentThread().getName())
+
+            profiler.dump_stats(
+                os.path.join(config.profiling.profile_dir, filename))
+
+            # Free some memory.
+            self.thread_locals.profiler = None
+
+        # Dump memory profiling info.
+        if config.profiling.memory_profile_log:
+            log = file(config.profiling.memory_profile_log, 'a')
+            vss_start, rss_start = self.thread_locals.memory_profile_start
+            vss_end, rss_end = memory(), resident()
+            if oopsid is None:
+                oopsid = '-'
+            log.write('%s %s %s %f %d %d %d %d\n' % (
+                timestamp, pageid, oopsid, da.get_request_duration(),
+                vss_start, rss_start, vss_end, rss_end))
+            log.close()
+
+    def debugReferencesLeak(self, request):
+        """See what kind of references are increasing.
+
+        This logs the current RSS and references count by types in a
+        scoreboard file. If that file exists, we compare the current stats
+        with the previous one and logs the increase along the current page id.
+
+        Note that this only provides reliable results when only one thread is
+        processing requests.
+        """
+        gc.collect()
+        current_rss = resident()
+        current_garbage_count = len(gc.garbage)
+        # Convert type to string, because that's what we get when reading
+        # the old scoreboard.
+        current_refs = [
+            (count, str(ref_type)) for count, ref_type in mostRefs(n=0)]
+        # Add G as prefix to types on the garbage list.
+        current_garbage = [
+            (count, 'G%s' % str(ref_type))
+            for count, ref_type in countsByType(gc.garbage, n=0)]
+        scoreboard_path = config.debug.references_scoreboard_file
+
+        # Read in previous scoreboard if it exists.
+        if os.path.exists(scoreboard_path):
+            scoreboard = open(scoreboard_path, 'r')
+            try:
+                stats = scoreboard.readline().split()
+                prev_rss = int(stats[0].strip())
+                prev_garbage_count = int(stats[1].strip())
+                prev_refs = readCounts(scoreboard, '=== GARBAGE ===\n')
+                prev_garbage = readCounts(scoreboard)
+            finally:
+                scoreboard.close()
+            mem_leak = current_rss - prev_rss
+            garbage_leak = current_garbage_count - prev_garbage_count
+            delta_refs = list(deltaCounts(prev_refs, current_refs))
+            delta_refs.extend(deltaCounts(prev_garbage, current_garbage))
+            self.logReferencesLeak(request, mem_leak, delta_refs)
+
+        # Save the current scoreboard.
+        scoreboard = open(scoreboard_path, 'w')
+        try:
+            scoreboard.write("%d %d\n" % (current_rss, current_garbage_count))
+            printCounts(current_refs, scoreboard)
+            scoreboard.write('=== GARBAGE ===\n')
+            printCounts(current_garbage, scoreboard)
+        finally:
+            scoreboard.close()
+
+    def logReferencesLeak(self, request, mem_leak, delta_refs):
+        """Log the time, pageid, increase in RSS and increase in references.
+        """
+        log = open(config.debug.references_leak_log, 'a')
+        try:
+            pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
+            # It can happen that the pageid is ''?!?
+            if pageid == '':
+                pageid = 'Unknown'
+            leak_in_mb = float(mem_leak) / (1024*1024)
+            formatted_delta = "; ".join(
+                "%s=%d" % (ref_type, count)
+                for count, ref_type in delta_refs)
+            log.write('%s %s %.2fMb %s\n' % (
+                strftime('%Y-%m-%d:%H:%M:%S'),
+                pageid,
+                leak_in_mb,
+                formatted_delta))
+        finally:
+            log.close()
+
+
+class InvalidThreadsConfiguration(Exception):
+    """Exception thrown when the number of threads isn't set correctly."""
+
+
+def debug_references_startup_check(event):
+    """Event handler for IProcessStartingEvent.
+
+    If debug/references is set to True, we make sure that the number of
+    threads is configured to 1. We also delete any previous scoreboard file.
+    """
+    if not config.debug.references:
+        return
+
+    if config.threads != 1:
+        raise InvalidThreadsConfiguration(
+            "Number of threads should be one when debugging references.")
+
+    # Remove any previous scoreboard, the content is meaningless once
+    # the server is restarted.
+    if os.path.exists(config.debug.references_scoreboard_file):
+        os.remove(config.debug.references_scoreboard_file)
+

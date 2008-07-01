@@ -177,6 +177,30 @@ class Publisher(object):
         # This is a set of tuples in the form (distroseries.name, pocket)
         self.dirty_pockets = set()
 
+    def isDirty(self, distroseries, pocket):
+        """True if a publication has happened in this release and pocket."""
+        if not (distroseries.name, pocket) in self.dirty_pockets:
+            return False
+        return True
+
+    def markPocketDirty(self, distroseries, pocket):
+        """Mark a pocket dirty only if it's allowed."""
+        if self.isAllowed(distroseries, pocket):
+            self.dirty_pockets.add((distroseries.name, pocket))
+
+    def isAllowed(self, distroseries, pocket):
+        """Whether or not the given suite should be considered.
+
+        Return True either if the self.allowed_suite is empty (was not
+        specified in command line) or if the given suite is included in it.
+
+        Otherwise, return False.
+        """
+        if (self.allowed_suites and
+            (distroseries.name, pocket) not in self.allowed_suites):
+            return False
+        return True
+
     def A_publish(self, force_publishing):
         """First step in publishing: actual package publishing.
 
@@ -235,7 +259,7 @@ class Publisher(object):
                 source_query = " AND ".join(clauses)
                 sources = SourcePackagePublishingHistory.select(source_query)
                 if sources.count() > 0:
-                    self.dirty_pockets.add((distroseries.name, pocket))
+                    self.markPocketDirty(distroseries, pocket)
                     # No need to check binaries if the pocket is already
                     # dirtied from a source.
                     continue
@@ -250,7 +274,7 @@ class Publisher(object):
                 binaries = BinaryPackagePublishingHistory.select(binary_query,
                     clauseTables=['DistroArchSeries'])
                 if binaries.count() > 0:
-                    self.dirty_pockets.add((distroseries.name, pocket))
+                    self.markPocketDirty(distroseries, pocket)
 
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
@@ -312,12 +336,6 @@ class Publisher(object):
                         continue
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 self._writeDistroSeries(distroseries, pocket)
-
-    def isDirty(self, distroseries, pocket):
-        """True if a publication has happened in this release and pocket."""
-        if not (distroseries.name, pocket) in self.dirty_pockets:
-            return False
-        return True
 
     def _makeFileGroupWriteableAndWorldReadable(self, file_path):
         """Make the file group readable/writable and world readable."""
@@ -432,19 +450,6 @@ class Publisher(object):
             self.apt_handler.requestReleaseFile(
                 suite_name, component.name, arch_name)
 
-    def isAllowed(self, distroseries, pocket):
-        """Whether or not the given suite should be considered.
-
-        Return True either if the self.allowed_suite is empty (was not
-        specified in command line) or if the given suite is included in it.
-
-        Otherwise, return False.
-        """
-        if (self.allowed_suites and
-            (distroseries.name, pocket) not in self.allowed_suites):
-            return False
-        return True
-
     def checkDirtySuiteBeforePublishing(self, distroseries, pocket):
         """Last check before publishing a dirty suite.
 
@@ -497,8 +502,15 @@ class Publisher(object):
         f = open(os.path.join(
             self._config.distsroot, full_name, "Release"), "w")
 
+        # If this file is released from a PPA then modify the origin to
+        # indicate so (Bug #140412)
+        if self.archive.purpose == ArchivePurpose.PPA:
+            origin = "LP-PPA-%s" % self.archive.owner.name
+        else:
+            origin = self.distro.displayname
+
         stanza = DISTRORELEASE_STANZA % (
-                    self.distro.displayname,
+                    origin,
                     self.distro.displayname,
                     full_name,
                     distroseries.version,

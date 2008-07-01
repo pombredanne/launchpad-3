@@ -20,6 +20,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
+
+from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -49,7 +51,6 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
@@ -64,24 +65,33 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
+
 from canonical.launchpad.helpers import shortlist
+
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
-    IBuildSet, IDistroSeries, IDistroSeriesSet, IHasBuildRecords,
-    IHasTranslationTemplates, IHasQueueItems, ILibraryFileAliasSet,
-    IPublishedPackageSet, ICanPublishPackages, ISourcePackage,
-    ISourcePackageName, ISourcePackageNameSet, LanguagePackType,
-    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, SpecificationFilter, SpecificationGoalStatus,
-    SpecificationSort, SpecificationImplementationStatus)
+    IBuildSet, ICanPublishPackages, IDistroSeries, IDistroSeriesSet,
+    IHasBuildRecords, IHasQueueItems, IHasTranslationTemplates,
+    ILibraryFileAliasSet, IPublishedPackageSet, ISourcePackage,
+    ISourcePackageName, ISourcePackageNameSet, IStructuralSubscriptionTarget,
+    LanguagePackType, NotFoundError, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
+    SpecificationGoalStatus, SpecificationImplementationStatus,
+    SpecificationSort)
+from canonical.launchpad.database.packagecloner import clone_packages
+
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasTranslationImportsMixin):
+                   HasTranslationImportsMixin,
+                   StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
-        IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IHasTranslationTemplates, ICanPublishPackages)
+        ICanPublishPackages, IDistroSeries, IHasBuildRecords, IHasQueueItems,
+        IHasTranslationTemplates, IStructuralSubscriptionTarget)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -102,10 +112,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
@@ -159,10 +169,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=["ComponentSelection"])
 
     @property
-    def ppa_architectures(self):
+    def virtualized_architectures(self):
         return DistroArchSeries.select("""
         DistroArchSeries.distroseries = %s AND
-        DistroArchSeries.ppa_supported = True
+        DistroArchSeries.supports_virtualized = True
         """ % sqlvalues(self), orderBy='architecturetag')
 
     @property
@@ -193,9 +203,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return sorted(drivers, key=lambda driver: driver.browsername)
 
     @property
-    def bugcontact(self):
+    def bug_supervisor(self):
         """See `IDistroSeries`."""
-        return self.distribution.bugcontact
+        return self.distribution.bug_supervisor
 
     @property
     def security_contact(self):
@@ -958,7 +968,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompletePackageCache(self, archive, log, ztm):
+    def updateCompletePackageCache(self, archive, log, ztm, commit_chunk=500):
         """See `IDistroSeries`."""
         # Get the set of package names to deal with.
         bpns = list(BinaryPackageName.select("""
@@ -977,18 +987,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                           'DistroArchSeries',
                           'BinaryPackageRelease']))
 
-        # Now ask each of them to update themselves. commit every 100
-        # packages.
-        counter = 0
+        number_of_updates = 0
+        chunk_size = 0
         for bpn in bpns:
             log.debug("Considering binary '%s'" % bpn.name)
             self.updatePackageCache(bpn, archive, log)
-            counter += 1
-            if counter > 99:
-                counter = 0
-                if ztm is not None:
-                    log.debug("Committing")
-                    ztm.commit()
+            number_of_updates += 1
+            chunk_size += 1
+            if chunk_size == commit_chunk:
+                chunk_size = 0
+                log.debug("Committing")
+                ztm.commit()
+
+        return number_of_updates
 
     def updatePackageCache(self, binarypackagename, archive, log):
         """See `IDistroSeries`."""
@@ -1063,12 +1074,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
 
     def newArch(self, architecturetag, processorfamily, official, owner,
-                ppa_supported=False):
+                supports_virtualized=False):
         """See `IDistroSeries`."""
         distroarchseries = DistroArchSeries(
             architecturetag=architecturetag, processorfamily=processorfamily,
             official=official, distroseries=self, owner=owner,
-            ppa_supported=ppa_supported)
+            supports_virtualized=supports_virtualized)
         return distroarchseries
 
     def newMilestone(self, name, dateexpected=None, description=None):
@@ -1115,7 +1126,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # off to the librarian.
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),
-            StringIO(changesfilecontent), 'text/plain')
+            StringIO(changesfilecontent), 'text/plain',
+            restricted=archive.private)
 
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
@@ -1327,10 +1339,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Perform the copies
         self._copy_component_and_section_selections(cur)
-        self._copy_source_publishing_records(cur)
+
+        # Prepare the list of distroarchseries for which binary packages
+        # shall be copied.
+        distroarchseries_list = []
         for arch in self.architectures:
             parent_arch = self.parent_series[arch.architecturetag]
-            self._copy_binary_publishing_records(cur, arch, parent_arch)
+            distroarchseries_list.append((parent_arch, arch))
+        # Now copy source and binary packages.
+        self._copy_publishing_records(distroarchseries_list)
         self._copy_lucille_config(cur)
 
         # Finally, flush the caches because we've altered stuff behind the
@@ -1346,8 +1363,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             WHERE id = %s
             ''' % sqlvalues(self.parent_series.id, self.id))
 
-    def _copy_binary_publishing_records(self, cur, arch, parent_arch):
-        """Copy the binary publishing records from the parent arch series
+    def _copy_publishing_records(self, distroarchseries_list):
+        """Copy the publishing records from the parent arch series
         to the given arch series in ourselves.
 
         We copy all PENDING and PUBLISHED records as PENDING into our own
@@ -1357,72 +1374,34 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         archives.
         """
         archive_set = getUtility(IArchiveSet)
+
         for archive in self.parent_series.distribution.all_distro_archives:
             # We only want to copy PRIMARY and PARTNER archives.
-            if archive.purpose not in (
-                    ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER):
+            allowed_purposes = (
+                ArchivePurpose.PRIMARY,
+                ArchivePurpose.PARTNER,
+                )
+            if archive.purpose not in allowed_purposes:
                 continue
-            target_archive = archive_set.ensure(
-                distribution=self.distribution, purpose=archive.purpose,
-                owner=None)
-            cur.execute('''
-                INSERT INTO SecureBinaryPackagePublishingHistory (
-                    binarypackagerelease, distroarchseries, status,
-                    component, section, priority, archive, datecreated,
-                    datepublished, pocket, embargo)
-                SELECT bpph.binarypackagerelease, %s as distroarchseries,
-                       bpph.status, bpph.component, bpph.section, bpph.priority,
-                       %s as archive, %s as datecreated, %s as datepublished,
-                       %s as pocket, false as embargo
-                FROM BinaryPackagePublishingHistory AS bpph
-                WHERE bpph.distroarchseries = %s AND bpph.status in (%s, %s)
-                AND
-                    bpph.pocket = %s and bpph.archive = %s
-                ''' % sqlvalues(arch.id, target_archive, UTC_NOW, UTC_NOW,
-                                PackagePublishingPocket.RELEASE,
-                                parent_arch.id,
-                                PackagePublishingStatus.PENDING,
-                                PackagePublishingStatus.PUBLISHED,
-                                PackagePublishingPocket.RELEASE,
-                                archive))
 
-    def _copy_source_publishing_records(self, cur):
-        """Copy the source publishing records from our parent distro series.
+            # XXX cprov 20080612: Implicitly creating a PARTNER archive for
+            # the destination distroseries is bad. Why are we copying
+            # partner to a series in another distribution anyway ?
+            # See bug #239807 for further information.
+            target_archive = archive_set.getByDistroPurpose(
+                self.distribution, archive.purpose)
+            if target_archive is None:
+                target_archive = archive_set.new(
+                    distribution=self.distribution, purpose=archive.purpose,
+                    owner=self.distribution.owner)
 
-        We copy all PENDING and PUBLISHED records as PENDING into our own
-        publishing records.
-
-        We copy only the RELEASE pocket in the PRIMARY and PARTNER
-        archives.
-        """
-        archive_set = getUtility(IArchiveSet)
-        for archive in self.parent_series.distribution.all_distro_archives:
-            # We only want to copy PRIMARY and PARTNER archives.
-            if archive.purpose not in (
-                    ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER):
-                continue
-            target_archive = archive_set.ensure(
-                distribution=self.distribution, purpose=archive.purpose,
-                owner=None)
-            cur.execute('''
-                INSERT INTO SecureSourcePackagePublishingHistory (
-                    sourcepackagerelease, distroseries, status, component,
-                    section, archive, datecreated, datepublished, pocket,
-                    embargo)
-                SELECT spph.sourcepackagerelease, %s as distroseries,
-                       spph.status, spph.component, spph.section, %s as archive,
-                       %s as datecreated, %s as datepublished,
-                       %s as pocket, false as embargo
-                FROM SourcePackagePublishingHistory AS spph
-                WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
-                      spph.pocket = %s and spph.archive = %s
-                ''' % sqlvalues(self.id, target_archive, UTC_NOW, UTC_NOW,
-                                PackagePublishingPocket.RELEASE,
-                                self.parent_series.id,
-                                PackagePublishingStatus.PENDING,
-                                PackagePublishingStatus.PUBLISHED,
-                                PackagePublishingPocket.RELEASE,
-                                archive))
+            origin = PackageLocation(
+                archive, self.parent_series.distribution, self.parent_series,
+                PackagePublishingPocket.RELEASE)
+            destination = PackageLocation(
+                target_archive, self.distribution, self,
+                PackagePublishingPocket.RELEASE)
+            clone_packages(origin, destination, distroarchseries_list)
 
     def _copy_component_and_section_selections(self, cur):
         """Copy the section and component selections from the parent distro

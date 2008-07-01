@@ -13,7 +13,7 @@ from operator import attrgetter
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.interface import implements
 
-from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.helpers import emailPeople
 from canonical.launchpad.interfaces import (
     INotificationRecipientSet, IPerson, UnknownRecipientError)
 
@@ -32,6 +32,7 @@ class NotificationRecipientSet:
         # was first added.
         self._personToRationale = {}
         self._emailToPerson = {}
+        self._receiving_people = set()
 
     def getEmails(self):
         """See `INotificationRecipientSet`."""
@@ -41,6 +42,9 @@ class NotificationRecipientSet:
         """See `INotificationRecipientSet`."""
         return sorted(
             self._personToRationale.keys(),  key=attrgetter('displayname'))
+
+    def getRecipientPersons(self):
+        return self._receiving_people
 
     def __iter__(self):
         """See `INotificationRecipientSet`."""
@@ -89,7 +93,9 @@ class NotificationRecipientSet:
             if person in self._personToRationale:
                 continue
             self._personToRationale[person] = reason, header
-            for email in contactEmailAddresses(person):
+            for receiving_person in emailPeople(person):
+                self._receiving_people.add(receiving_person)
+                email = str(receiving_person.preferredemail.email)
                 old_person = self._emailToPerson.get(email)
                 # Only associate this email to the person, if there was
                 # no association or if the previous one was to a team and

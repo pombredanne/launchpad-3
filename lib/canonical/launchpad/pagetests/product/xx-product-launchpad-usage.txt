@@ -11,7 +11,9 @@ Translations officially) are found on the +edit page.
     >>> status_label = content.find('th', text='Status:')
     >>> print extract_text(status_label.findNext())
     Active
+    Doesn&rsquo;t use Code
     Uses Bugs
+    Doesn&rsquo;t use Blueprints
     Doesn&rsquo;t use Translations
     Uses Answers
 
@@ -57,6 +59,11 @@ doesn't use any bug tracker at all.
     False
     >>> registrant_browser.getControl('Somewhere else').selected = True
 
+We'll also set it as officially using codehosting.
+
+    >>> registrant_browser.getControl(
+    ...     'Code for this project is published in Bazaar branches on'
+    ...     ' Launchpad').selected = True
     >>> registrant_browser.getControl('Change').click()
 
 On the product page, we can see that the product doesn't use any bug
@@ -66,7 +73,9 @@ tracker, not even Launchpad.
     >>> status_label = content.find('th', text='Status:')
     >>> print extract_text(status_label.findNext())
     Active
+    Uses Code
     Doesn&rsquo;t use Bugs
+    Doesn&rsquo;t use Blueprints
     Doesn&rsquo;t use Translations
     Uses Answers
 
@@ -89,7 +98,9 @@ Now let's go back and choose to use a specific bug tracker.
     >>> status_label = content.find('th', text='Status:')
     >>> print extract_text(status_label.findNext())
     Active
+    Uses Code
     Doesn&rsquo;t use Bugs
+    Doesn&rsquo;t use Blueprints
     Doesn&rsquo;t use Translations
     Uses Answers
 
@@ -114,9 +125,50 @@ Let's reset it to the way it was before.
     >>> status_label = content.find('th', text='Status:')
     >>> print extract_text(status_label.findNext())
     Active
+    Uses Code
     Uses Bugs
+    Doesn&rsquo;t use Blueprints
     Doesn&rsquo;t use Translations
     Uses Answers
+
+
+== Tracking bugs by email ==
+
+Instead if using a web-based bug tracker, projects can specify an
+email address where bug reports should be sent.
+
+    >>> registrant_browser.open('http://launchpad.dev/firefox/+edit')
+    >>> registrant_browser.getControl(
+    ...     'By emailing an upstream bug contact').selected = True
+    >>> registrant_browser.getControl(
+    ...     name='field.bugtracker.upstream_email_address').value = (
+    ...         'puff@magicdragon.example.com')
+    >>> registrant_browser.getControl('Change').click()
+
+An Email Address bug tracker is automatically created.
+
+    >>> registrant_browser.open('http://launchpad.dev/bugs/bugtrackers')
+    >>> registrant_browser.getLink(
+    ...     "Email to puff@magicdragon").click()
+    >>> print extract_text(
+    ...     find_tag_by_id(registrant_browser.contents, 'bugtracker-urls'))
+    mailto:puff@magicdragon.example.com
+
+An error message is shown if the email address is not filled in.
+
+    >>> registrant_browser.open('http://launchpad.dev/firefox/+edit')
+    >>> registrant_browser.getControl(
+    ...     'By emailing an upstream bug contact').selected = True
+    >>> registrant_browser.getControl(
+    ...     name='field.bugtracker.upstream_email_address').value = ''
+    >>> registrant_browser.getControl('Change').click()
+    >>> registrant_browser.url
+    'http://launchpad.dev/firefox/+edit'
+    >>> for message in find_tags_by_class(
+    ...     registrant_browser.contents, 'message'):
+    ...     print extract_text(message)
+    There is 1 error.
+    Please enter an email address.
 
 
 == enable_bug_expiration and JavaScript ==
@@ -155,7 +207,9 @@ The Status of Launchpad uses shows the bug tracker was changed.
     >>> status_label = content.find('th', text='Status:')
     >>> print extract_text(status_label.findNext())
     Active
+    Doesn&rsquo;t use Code
     Doesn&rsquo;t use Bugs
+    Doesn&rsquo;t use Blueprints
     Doesn&rsquo;t use Translations
     Doesn&rsquo;t use Answers
 

@@ -14,10 +14,12 @@ from canonical.launchpad.database import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces import (
     ICountrySet, IPersonSet, ShipItArchitecture, ShipItDistroSeries,
     ShipItFlavour, ShippingRequestPriority, ShippingRequestStatus,
     ShippingRequestType)
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -30,9 +32,9 @@ class TestShippingRequestSet(unittest.TestCase):
         totals = ShippingRequestSet().getTotalsForRequests(requests)
         for request in requests:
             total_requested, total_approved = totals[request.id]
-            self.failUnless(
-                total_requested == request.getTotalCDs()
-                and total_approved == request.getTotalApprovedCDs())
+            self.failUnlessEqual(total_requested, request.getTotalCDs())
+            self.failUnlessEqual(
+                total_approved, request.getTotalApprovedCDs())
 
 
 class TestFraudDetection(unittest.TestCase):
@@ -85,6 +87,8 @@ class TestFraudDetection(unittest.TestCase):
                 'FORM_SUBMIT': 'Request',
                 }
         request = LaunchpadTestRequest(form=form)
+        # The request object on the ShipIt layers has that attribute.
+        request.icing_url = '/+icing-%s' % flavour.name
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
         login(user_email)
         view = getMultiAdapter(
@@ -169,7 +173,7 @@ class TestFraudDetection(unittest.TestCase):
         # Now when a second request for CDs of the same release are made using
         # the same address, it gets marked with the DUPLICATEDADDRESS status.
         request3 = self._make_new_request_through_web(
-            flavour, user_email='karl@canonical.com', form=form)
+            flavour, user_email='tim@canonical.com', form=form)
         self.assertEqual(request.distroseries, request3.distroseries)
         self.failUnless(request3.isDuplicatedAddress(), flavour)
         self.assertEqual(
@@ -212,6 +216,112 @@ class TestShippingRun(unittest.TestCase):
         run = requestset._create_shipping_run(
             approved_request_ids + [non_approved_request.id])
         self.failUnless(run.requests_count == len(approved_request_ids))
+
+    def test_shippingrun_creation_adds_cds_for_edubuntu_request(self):
+        """Ensure there is an Ubuntu CD for each Edubuntu CD.
+
+        Edubuntu CDs are not standalone, so we need to make sure the recipient
+        can use them by including one Ubuntu CD for each Edubuntu one in the
+        original request.
+        """
+        # If the request has only Edubuntu CDs, we'll add enough Ubuntu CDs to
+        # match the number of Edubuntu ones.
+        login(ANONYMOUS)
+        factory = LaunchpadObjectFactory()
+        request = factory.makeShipItRequest(ShipItFlavour.EDUBUNTU)
+        self.failUnlessEqual(
+            set(request.getContainedFlavours()),
+            set([ShipItFlavour.EDUBUNTU]))
+        requestset = ShippingRequestSet()
+        run = requestset._create_shipping_run([request.id])
+        self.failUnlessEqual(request.status, ShippingRequestStatus.SHIPPED)
+        self.failUnlessEqual(
+            set(request.getContainedFlavours()),
+            set([ShipItFlavour.EDUBUNTU, ShipItFlavour.UBUNTU]))
+        requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
+        requested_ubuntu = requested_cds[ShipItFlavour.UBUNTU]
+        requested_edubuntu = requested_cds[ShipItFlavour.EDUBUNTU]
+        all_requested_arches = set(
+            requested_ubuntu.keys() + requested_edubuntu.keys())
+        new_ubuntu_quantities = {}
+        for arch in all_requested_arches:
+            ubuntu_qty = getattr(
+                requested_ubuntu[arch], 'quantityapproved', 0)
+            edubuntu_qty = getattr(
+                requested_edubuntu[arch], 'quantityapproved', 0)
+            self.failUnlessEqual(
+                ubuntu_qty, edubuntu_qty,
+                "Number of Ubuntu and Edubuntu CDs is different for %s"
+                    % arch)
+
+        # If the request has Ubuntu CDs but there's less of that than
+        # Edubuntu, we'll add some more Ubuntu ones to get things even.
+        request = factory.makeShipItRequest(ShipItFlavour.EDUBUNTU)
+        request.setQuantities(
+            {ShipItFlavour.EDUBUNTU: {ShipItArchitecture.X86: 10,
+                                      ShipItArchitecture.AMD64: 2}})
+        request.setQuantities(
+            {ShipItFlavour.UBUNTU: {ShipItArchitecture.X86: 5}})
+        self.failUnlessEqual(
+            set(request.getContainedFlavours()),
+            set([ShipItFlavour.EDUBUNTU, ShipItFlavour.UBUNTU]))
+        requestset = ShippingRequestSet()
+        run = requestset._create_shipping_run([request.id])
+        self.failUnlessEqual(request.status, ShippingRequestStatus.SHIPPED)
+        self.failUnlessEqual(
+            set(request.getContainedFlavours()),
+            set([ShipItFlavour.EDUBUNTU, ShipItFlavour.UBUNTU]))
+        requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
+        requested_ubuntu = requested_cds[ShipItFlavour.UBUNTU]
+        requested_edubuntu = requested_cds[ShipItFlavour.EDUBUNTU]
+        all_requested_arches = set(
+            requested_ubuntu.keys() + requested_edubuntu.keys())
+        new_ubuntu_quantities = {}
+        for arch in all_requested_arches:
+            ubuntu_qty = getattr(
+                requested_ubuntu[arch], 'quantityapproved', 0)
+            edubuntu_qty = getattr(
+                requested_edubuntu[arch], 'quantityapproved', 0)
+            self.failUnlessEqual(
+                ubuntu_qty, edubuntu_qty,
+                "Number of Ubuntu and Edubuntu CDs is different for %s"
+                    % arch)
+
+    def test_shippingrun_creation_does_nothing_for_kubuntu_request(self):
+        """Ubuntu CDs are not added for Kubuntu CD only orders.
+
+        That is because Kubuntu CDs are standalone and so we don't need to add
+        anything to the request so that the user can use the CDs. (This is not
+        the case with Edubuntu)
+        """
+        login(ANONYMOUS)
+        factory = LaunchpadObjectFactory()
+        request = factory.makeShipItRequest(ShipItFlavour.KUBUNTU)
+        self.failUnlessEqual(
+            set(request.getContainedFlavours()), set([ShipItFlavour.KUBUNTU]))
+        requestset = ShippingRequestSet()
+        run = requestset._create_shipping_run([request.id])
+        self.failUnlessEqual(request.status, ShippingRequestStatus.SHIPPED)
+        self.failUnlessEqual(
+            set(request.getContainedFlavours()), set([ShipItFlavour.KUBUNTU]))
+
+    def test_shippingrun_creation_does_nothing_for_ubuntu_request(self):
+        """Ubuntu CDs are not added for Ubuntu CD only orders.
+
+        That is because Ubuntu CDs are standalone and so we don't need to add
+        anything to the request so that the user can use the CDs. (This is not
+        the case with Edubuntu)
+        """
+        login(ANONYMOUS)
+        factory = LaunchpadObjectFactory()
+        request = factory.makeShipItRequest(ShipItFlavour.UBUNTU)
+        self.failUnlessEqual(
+            set(request.getContainedFlavours()), set([ShipItFlavour.UBUNTU]))
+        requestset = ShippingRequestSet()
+        run = requestset._create_shipping_run([request.id])
+        self.failUnlessEqual(request.status, ShippingRequestStatus.SHIPPED)
+        self.failUnlessEqual(
+            set(request.getContainedFlavours()), set([ShipItFlavour.UBUNTU]))
 
 
 class TestShippingRequest(unittest.TestCase):
@@ -292,7 +402,9 @@ class TestShippingRequest(unittest.TestCase):
         # If the user becomes inactive (which can be done by having his
         # account closed by an admin or by the user himself), though, the
         # recipient_email will be just a piece of text explaining that.
-        request.recipient.preferredemail.destroySelf()
+        email = request.recipient.preferredemail
+        email.status = EmailAddressStatus.VALIDATED
+        email.destroySelf()
         # Need to clean the cache because preferredemail is a cached property.
         request.recipient._preferredemail_cached = None
         self.failIf(request.recipient.preferredemail is not None)

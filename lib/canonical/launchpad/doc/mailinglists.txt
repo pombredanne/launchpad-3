@@ -7,7 +7,6 @@ an existing team.  This is done through an IMailingListSet utility.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingList, IMailingListSet)
-    >>> from canonical.launchpad.database import MailingListSet
     >>> list_set = getUtility(IMailingListSet)
     >>> verifyObject(IMailingListSet, list_set)
     True
@@ -74,7 +73,9 @@ mailing list.
 You may not register a mailing list for a person.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
+    >>> login('foo.bar@canonical.com')
     >>> anne = new_person('Anne')
+    >>> login(ANONYMOUS)
     >>> list_set.new(anne, anne)
     Traceback (most recent call last):
     ...
@@ -92,8 +93,8 @@ However, if we make Anne a team administrator, she can then register the
 mailing list.
 
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
-    >>> bart = new_person('Bart')
     >>> login('foo.bar@canonical.com')
+    >>> bart = new_person('Bart')
     >>> team_two.addMember(anne, bart, status=TeamMembershipStatus.ADMIN)
     >>> login(ANONYMOUS)
     >>> flush_database_updates()
@@ -114,7 +115,7 @@ registration date is set, and its status is set to REGISTERED.
     >>> # We have to compare dates this way because of minor clock skew
     >>> # between the Python process and the database (which is where
     >>> # date_registered comes from).  Also, Python's date objects don't
-    >>> # support timezones.
+    >>> # support time zones.
     >>> list_one.date_registered.date() == registration_date.date()
     True
     >>> list_one.status.name
@@ -135,8 +136,8 @@ welcome message text.
 The mailing list's registrant does not change even if the team's owner
 changes.
 
-    >>> cris = new_person('Cris')
     >>> login('foo.bar@canonical.com')
+    >>> cris = new_person('Cris')
     >>> team_one.teamowner = cris
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
@@ -179,7 +180,9 @@ participate in the Mailing List Experts team.
     ...     ILaunchpadCelebrities, MailingListStatus)
     >>> mailing_list_experts = getUtility(
     ...     ILaunchpadCelebrities).mailing_list_experts
+    >>> login('foo.bar@canonical.com')
     >>> dirk = new_person('Dirk')
+    >>> login(ANONYMOUS)
     >>> dirk.hasParticipationEntryFor(mailing_list_experts)
     False
     >>> list_one.review(dirk, MailingListStatus.APPROVED)
@@ -189,14 +192,16 @@ participate in the Mailing List Experts team.
 
 A mailing list expert is required to approve the registration.
 
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> transaction_timestamp = get_transaction_timestamp()
+
     >>> lpadmin = list(mailing_list_experts.allmembers)[0]
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
     >>> syncUpdate(list_one)
     >>> list_one.status.name
     'APPROVED'
-    >>> list_one.date_reviewed
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-
+    >>> list_one.date_reviewed == transaction_timestamp
+    True
 
 If Dirk becomes a member of the Mailing List Experts, he'll be able to approve
 a list.
@@ -320,8 +325,8 @@ team's contact address.
     'ACTIVE'
     >>> email_set.getByEmail(list_one.address).status.name
     'VALIDATED'
-    >>> list_one.date_activated
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    >>> list_one.date_activated == transaction_timestamp
+    True
 
 
 Some list constructions may fail.
@@ -354,6 +359,7 @@ This method will return None for missing teams or non-team people.
 
 A list which is active may be deactivated.
 
+    >>> login(list_three.team.teamowner.preferredemail.email)
     >>> list_three.deactivate()
     >>> flush_database_updates()
     >>> list_three.status.name
@@ -434,6 +440,41 @@ any other state can't though.
 Permissions on a team's mailing list are not tracked separately from
 permissions on the team.
 
+You cannot turn a team with a mailing list into a private team.
+
+    >>> from zope.component import queryAdapter
+    >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+    >>> from canonical.launchpad.interfaces.person import PersonVisibility
+    >>> queryAdapter(team_one, IObjectPrivacy).is_private
+    False
+    >>> login('foo.bar@canonical.com')
+    >>> team_one.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    Traceback (most recent call last):
+    ...
+    ValueError: This team cannot be made private since it is referenced by a mailinglist.
+
+However, you can give a private team a mailing list.
+
+    >>> thereminists = new_team('thereminists')
+    >>> queryAdapter(thereminists, IObjectPrivacy).is_private
+    False
+    >>> thereminists.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> syncUpdate(thereminists)
+    >>> queryAdapter(thereminists, IObjectPrivacy).is_private
+    True
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     new_list_for_team)
+    >>> thereminists_list = new_list_for_team(thereminists)
+    >>> thereminists_list
+    <MailingList for team "thereminists"; status=ACTIVE at ...>
+
+Once a private team has a mailing list though, it cannot be made public.
+
+    >>> thereminists.visibility = PersonVisibility.PUBLIC
+    Traceback (most recent call last):
+    ...
+    ValueError: This team cannot be made public since it has a mailing list
+
 
 == Welcome messages ==
 
@@ -442,7 +483,6 @@ they subscribe to a list.  The welcome message can contain any text.
 
     >>> print list_one.welcome_message
     None
-    >>> login('foo.bar@canonical.com')
     >>> list_one.welcome_message = """\
     ... Welcome to the Team One mailing list."""
     >>> login(ANONYMOUS)

@@ -15,14 +15,6 @@ First, No Privileges Person will create a new team and its mailing list.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-
-XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
-program in order to apply for mailing lists.  When mailing lists go public,
-this stanza can be removed.
-
-    >>> itest_helper.beta_program_enable('itest-one')
-
-    >>> browser.reload()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
@@ -60,9 +52,9 @@ re-activation.
     >>> from canonical.launchpad.ftests import sync
     >>> sync(list_one)
     >>> list_one.subscribe(anne)
-    >>> serial_watcher.resync()
     >>> from canonical.database.sqlbase import commit
     >>> logout()
+    >>> serial_watcher.resync()
     >>> commit()
     >>> serial_watcher.wait()
     >>> mlist.Load()

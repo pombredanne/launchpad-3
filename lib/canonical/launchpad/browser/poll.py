@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'BasePollView',
+    'poll_to_structuralheading',
     'PollAddView',
     'PollContextMenu',
     'PollEditView',
@@ -26,7 +27,7 @@ from canonical.launchpad.webapp import (
     Link, Navigation, stepthrough)
 from canonical.launchpad.interfaces import (
     IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll, PollAlgorithm,
-    PollSecrecy, validate_date_interval)
+    IStructuralHeaderPresentation, PollSecrecy, validate_date_interval)
 from canonical.launchpad.helpers import shortlist
 
 
@@ -56,7 +57,8 @@ class PollNavigation(Navigation):
 
     @stepthrough('+option')
     def traverse_option(self, name):
-        return getUtility(IPollOptionSet).getByPollAndId(self.context, name)
+        return getUtility(IPollOptionSet).getByPollAndId(
+            self.context, int(name))
 
 
 class BasePollView:
@@ -186,7 +188,9 @@ class PollView(BasePollView):
         return getUtility(IVoteSet).getVotesByOption(option)
 
     def getPairwiseMatrixWithHeaders(self):
-        """Return the pairwise matrix with headers being the option's names."""
+        """Return the pairwise matrix, with headers being the option's
+        names.
+        """
         # XXX: kiko 2006-03-13:
         # The list() call here is necessary because, lo and behold,
         # it gives us a non-security-proxied list object! Someone come
@@ -259,7 +263,7 @@ class PollVoteView(BasePollView):
             newoption = None
         else:
             newoption = getUtility(IPollOptionSet).getByPollAndId(
-                context, newoption_id)
+                context, int(newoption_id))
 
         if self.userVoted():
             self.currentVote.option = newoption
@@ -377,3 +381,7 @@ class PollOptionAddView(AddView):
         self._nextURL = canonical_url(self.context)
         notify(ObjectCreatedEvent(polloption))
 
+
+def poll_to_structuralheading(poll):
+    """Adapts an `IPoll` into an `IStructuralHeaderPresentation`."""
+    return IStructuralHeaderPresentation(poll.team)

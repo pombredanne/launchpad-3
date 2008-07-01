@@ -537,7 +537,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 uploaded_file.filename,
                 uploaded_file.size,
                 open(uploaded_file.filepath, "rb"),
-                uploaded_file.content_type)
+                uploaded_file.content_type,
+                restricted=self.policy.archive.private)
             release.addFile(library_file)
 
         return release

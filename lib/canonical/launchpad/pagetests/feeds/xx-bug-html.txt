@@ -14,6 +14,28 @@ Define a helper function for parsing the entries:
     ...                   parseOnlyThese=SoupStrainer('tr'))]
     ...     return entries
 
+And two for printing the results:
+
+    >>> def print_entry(entry):
+    ...     tds = entry('td')
+    ...     print "number:", extract_text(tds[1])
+    ...     print "href:", tds[1].a['href']
+    ...     print "title:", extract_text(tds[2])
+    ...     if len(tds) < 6:
+    ...         print "importance:", extract_text(tds[3])
+    ...         print "status:", extract_text(tds[4])
+    ...     else:
+    ...         print "project:", extract_text(tds[3])
+    ...         print "importance:", extract_text(tds[4])
+    ...         print "status:", extract_text(tds[5])
+
+    >>> def get_bug_numbers(entries):
+    ...     bug_numbers = []
+    ...     for entry in entries[1:]:
+    ...         bug_num = int(extract_text(entry('td')[1]))
+    ...         bug_numbers.append(bug_num)
+    ...     return bug_numbers
+
 
 == Latest bugs for a product ==
 
@@ -31,20 +53,16 @@ the bug itself.
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     3
-    >>> entry = entries[1]
-    >>> print extract_text(entry('td')[1])
-    12
-    >>> print entry('td')[1].a['href']
-    http://bugs.launchpad.dev/jokosher/+bug/12
-    >>> print extract_text(entry('td')[2])
-    Copy, Cut and Delete operations should work on selections
-    >>> print entry('td')[2].a['href']
-    http://bugs.launchpad.dev/jokosher/+bug/12
-    >>> print extract_text(entry('td')[3])
-    Critical
-    >>> print extract_text(entry('td')[4])
-    Confirmed
 
+    >>> print_entry(entries[1])
+    number: 12
+    href: http://bugs.launchpad.dev/jokosher/+bug/12
+    title: Copy, Cut and Delete operations should work on selections
+    importance: Critical
+    status: Confirmed
+
+    >>> get_bug_numbers(entries)
+    [12, 11]
 
 == Latest bugs for a project ==
 
@@ -62,17 +80,15 @@ as the latest bugs feed for a product.
     >>> print len(entries)
     12
 
-    >>> entry = entries[1]
-    >>> print extract_text(entry('td')[1])
-    15
-    >>> print entry('td')[1].a['href']
-    http://bugs.launchpad.dev/redfish/+bug/15
-    >>> print extract_text(entry('td')[2])
-    Nonsensical bugs are useless
-    >>> print extract_text(entry('td')[3])
-    Undecided
-    >>> print extract_text(entry('td')[4])
-    New
+    >>> print_entry(entries[1])
+    number: 15
+    href: http://bugs.launchpad.dev/redfish/+bug/15
+    title: Nonsensical bugs are useless
+    importance: Undecided
+    status: New
+
+    >>> get_bug_numbers(entries)
+    [15, 15, 9, 9, 5, 5, 5, 4, 1, 1, 1]
 
 
 == Latest bugs for a person ==
@@ -89,21 +105,16 @@ This feed gets the latest bugs for a person.
     >>> print len(entries)
     13
 
-    >>> entry = entries[1]
-    >>> print extract_text(entry('td')[1])
-    3
-    >>> print entry('td')[1].a['href']
-    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
-    >>> print extract_text(entry('td')[2])
-    Bug Title Test
-    >>> print entry('td')[2].a['href']
-    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
-    >>> print extract_text(entry('td')[3])
-    mozilla-firefox (Debian)
-    >>> print extract_text(entry('td')[4])
-    Unknown
-    >>> print extract_text(entry('td')[5])
-    New
+    >>> print_entry(entries[1])
+    number: 15
+    href: http://bugs.launchpad.dev/redfish/+bug/15
+    title: Nonsensical bugs are useless
+    project: Redfish
+    importance: Undecided
+    status: New
+
+    >>> get_bug_numbers(entries)
+    [15, 15, 12, 11, 10, 9, 9, 7, 7, 3, 3, 3]
 
 
 == General bug search ==
@@ -121,7 +132,7 @@ performance problem in production.
     >>> from zope.security.interfaces import Unauthorized
     >>> from canonical.config import config
     >>> config.launchpad.is_bug_search_feed_active = False
-    >>> try: 
+    >>> try:
     ...     browser.open(url)
     ... except Unauthorized, info:
     ...     print Unauthorized, info
@@ -136,23 +147,18 @@ to True.
     >>> browser.title
     'Bugs from custom search'
 
-
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    24
+    26
 
-    >>> entry = entries[1]
-    >>> print extract_text(entry('td')[1])
-    3
-    >>> print entry('td')[1].a['href']
-    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
-    >>> print extract_text(entry('td')[2])
-    Bug Title Test
-    >>> print entry('td')[2].a['href']
-    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
-    >>> print extract_text(entry('td')[3])
-    mozilla-firefox (Debian)
-    >>> print extract_text(entry('td')[4])
-    Unknown
-    >>> print extract_text(entry('td')[5])
-    New
+    >>> print_entry(entries[1])
+    number: 15
+    href: http://bugs.launchpad.dev/redfish/+bug/15
+    title: Nonsensical bugs are useless
+    project: Redfish
+    importance: Undecided
+    status: New
+
+    >>> get_bug_numbers(entries)
+    [15, 15, 13, 12, 11, 10, 9, 9, 7, 7, 5, 5, 5, 4,
+    3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 1]

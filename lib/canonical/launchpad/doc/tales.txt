@@ -43,11 +43,10 @@ they all implement IHasLogo,.IHasMugshot and IHasIcon.
     >>> test_tales("person/image:logo", person=person)
     '<img ... src="/@@/person-logo" />'
 
-The Mugshot is presented in a div, floating right, with the mugshot inside
-it:
+The Mugshot is presented in an <img> tag.
 
     >>> test_tales("person/image:mugshot", person=person)
-    '<div...<img...src="/@@/person-mugshot" />.../div>'
+    '<img...src="/@@/person-mugshot" />'
 
 For people we even have different images in case the person in question is not
 an actual launchpad user.
@@ -261,6 +260,15 @@ Merge proposals also have a link formatter, which displays branch titles:
     u'<a href="...">Proposed merge of baz into qux</a>'
 
 
+=== Code review comments ===
+
+   >>> comment = factory.makeCodeReviewComment()
+   >>> print test_tales('comment/fmt:url', comment=comment)
+   http://code.launchpad.dev/~person-name.../product-name.../branch.../+merge/.../comments/...
+   >>> print test_tales('comment/fmt:link', comment=comment)
+   <a href="...">Comment by Person-name...</a>
+
+
 === Bug branches ===
 
     >>> login('test@canonical.com')
@@ -273,10 +281,14 @@ Merge proposals also have a link formatter, which displays branch titles:
 
 === Code imports ===
 
+The fmt:link for a code import takes you to the branch that the code
+import is associated with.  The primary reason that this is here is
+to support the branch deletion code.
+
     >>> login('foo.bar@canonical.com')
-    >>> code_import = factory.makeCodeImport()
+    >>> code_import = factory.makeCodeImport(branch_name="trunk")
     >>> test_tales("code_import/fmt:link", code_import=code_import)
-    u'<a href="...+code-import">Import of...</a>'
+    u'<a href=".../trunk">Import of...</a>'
 
 
 === Product series ===
@@ -317,6 +329,114 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> question = getUtility(IQuestionSet).get(1)
     >>> test_tales("question/fmt:link", question=question)
     u'<a...<img ... src="/@@/question" />&nbsp;1:...</a>'
+
+
+== The fmt: namespace for specially formatted object info ===
+
+
+=== Bug Trackers ===
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> bugtracker = getUtility(IBugTrackerSet).getByName('email')
+    >>> bugtracker.title = 'an@email.address bug tracker'
+    >>> bugtracker.aliases = ['mailto:eatme@wundrlnd.com',
+    ...                       'http://bugs.vikingsrool.no/']
+
+The "standard" 'url' name is supported:
+
+    >>> test_tales("bugtracker/fmt:url", bugtracker=bugtracker)
+    u'http://launchpad.dev/bugs/bugtrackers/email'
+
+As are 'link', 'external-link', 'external-title-link' and 'aliases',
+which help when hiding email addresses from users who are not logged
+in.
+
+    >>> def print_formatted_bugtrackers():
+    ...     expression = "bugtracker/fmt:%s"
+    ...     for format in ['link', 'external-link', 'external-title-link']:
+    ...         print '%s -->\n  %r' % (
+    ...             format, test_tales(expression % format,
+    ...                                bugtracker=bugtracker))
+    ...     print 'aliases -->\n  %r' % (
+    ...         list(test_tales(expression % 'aliases',
+    ...                         bugtracker=bugtracker)),)
+
+    >>> login('test@canonical.com')
+    >>> print_formatted_bugtrackers()
+    link -->
+      u'<a href=".../bugs/bugtrackers/email">an@email.address bug tracker</a>'
+    external-link -->
+      u'<a class="link-external"
+        href="mailto:bugs@example.com">mailto:bugs@example.com</a>'
+    external-title-link -->
+      u'<a class="link-external"
+        href="mailto:bugs@example.com">an@email.address bug tracker</a>'
+    aliases -->
+      [u'http://bugs.vikingsrool.no/', u'mailto:eatme@wundrlnd.com']
+
+    >>> login(ANONYMOUS)
+    >>> print_formatted_bugtrackers()
+    link -->
+      u'<a href="...ckers/email">&lt;email address hidden&gt; bug tracker</a>'
+    external-link -->
+      u'mailto:&lt;email address hidden&gt;'
+    external-title-link -->
+      u'&lt;email address hidden&gt; bug tracker'
+    aliases -->
+      [u'http://bugs.vikingsrool.no/', u'mailto:&lt;email address hidden&gt;']
+
+    >>> login('test@canonical.com')
+
+
+=== Bug Watches ===
+
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> sf_bugwatch = getUtility(IBugWatchSet).createBugWatch(
+    ...     getUtility(IBugSet).get(12),
+    ...     getUtility(ILaunchBag).user,
+    ...     getUtility(IBugTrackerSet).getByName('sf'),
+    ...     '1234')
+    >>> email_bugwatch = getUtility(IBugWatchSet).createBugWatch(
+    ...     getUtility(IBugSet).get(12),                   # bug
+    ...     getUtility(ILaunchBag).user,                   # owner
+    ...     getUtility(IBugTrackerSet).getByName('email'), # bugtracker
+    ...     '')                                            # remotebug
+
+The "standard" 'url' name is supported:
+
+    >>> test_tales("bugwatch/fmt:url", bugwatch=sf_bugwatch)
+    u'http://launchpad.dev/bugs/12/+watch/13'
+    >>> test_tales("bugwatch/fmt:url", bugwatch=email_bugwatch)
+    u'http://launchpad.dev/bugs/12/+watch/14'
+
+As are 'external-link' and 'external-link-short', which help when
+hiding email addresses from users who are not logged in:
+
+    >>> login('test@canonical.com')
+
+    >>> test_tales("bugwatch/fmt:external-link", bugwatch=sf_bugwatch)
+    u'<a class="link-external" href="http://sourceforge.net/support/tracker.php?aid=1234">sf #1234</a>'
+    >>> test_tales("bugwatch/fmt:external-link-short", bugwatch=sf_bugwatch)
+    u'<a class="link-external" href="http://sourceforge.net/support/tracker.php?aid=1234">1234</a>'
+
+    >>> test_tales("bugwatch/fmt:external-link", bugwatch=email_bugwatch)
+    u'<a class="link-external" href="mailto:bugs@example.com">email</a>'
+    >>> test_tales("bugwatch/fmt:external-link-short", bugwatch=email_bugwatch)
+    u'<a class="link-external" href="mailto:bugs@example.com">&mdash;</a>'
+
+    >>> login(ANONYMOUS)
+
+    >>> test_tales("bugwatch/fmt:external-link", bugwatch=sf_bugwatch)
+    u'<a class="link-external" href="http://sourceforge.net/support/tracker.php?aid=1234">sf #1234</a>'
+    >>> test_tales("bugwatch/fmt:external-link-short", bugwatch=sf_bugwatch)
+    u'<a class="link-external" href="http://sourceforge.net/support/tracker.php?aid=1234">1234</a>'
+
+    >>> test_tales("bugwatch/fmt:external-link", bugwatch=email_bugwatch)
+    u'email'
+    >>> test_tales("bugwatch/fmt:external-link-short", bugwatch=email_bugwatch)
+    u'&mdash;'
+
+    >>> login('test@canonical.com')
 
 
 == The fmt: namespace to get strings (hiding) ==
@@ -639,7 +759,7 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
     ...
     ...     def getApplicationURL(self):
     ...         return 'https://mandrill.example.org:23'
-    ...     
+    ...
     ...     def setPrincipal(self, principal):
     ...         self.principal = principal
 

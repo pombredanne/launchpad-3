@@ -1,5 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213,W0611
+# XXX Aaron Bentley 2008-01-24: See comment from kiko re:import shims
 
 """Interfaces pertaining to the launchpad application.
 
@@ -8,7 +9,7 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -22,6 +23,7 @@ from canonical.launchpad.webapp.interfaces import (
     IBasicLaunchpadRequest, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
     IOpenLaunchBag, NotFoundError, UnexpectedFormData,
     UnsafeFormGetSubmissionError)
+
 
 __all__ = [
     'IAging',
@@ -49,8 +51,8 @@ __all__ = [
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
+    'ILaunchpadSearch',
     'ILaunchpadUsage',
-    'IMaloneApplication',
     'INotificationRecipientSet',
     'IOpenIdApplication',
     'IOpenLaunchBag',
@@ -58,6 +60,7 @@ __all__ = [
     'IPasswordEncryptor',
     'IPasswordResets',
     'IPrivateApplication',
+    'IPrivateMaloneApplication',
     'IReadZODBAnnotation',
     'IRosettaApplication',
     'IShipItApplication',
@@ -125,22 +128,8 @@ class ICrowd(Interface):
         """
 
 
-class IMaloneApplication(ILaunchpadApplication):
-    """Application root for malone."""
-
-    def searchTasks(search_params):
-        """Search IBugTasks with the given search parameters."""
-
-    bug_count = Attribute("The number of bugs recorded in Launchpad")
-    bugwatch_count = Attribute("The number of links to external bug trackers")
-    bugtask_count = Attribute("The number of bug tasks in Launchpad")
-    projects_with_bugs_count = Attribute("The number of products and "
-        "distributions which have bugs in Launchpad.")
-    shared_bug_count = Attribute("The number of bugs that span multiple "
-        "products and distributions")
-    bugtracker_count = Attribute("The number of bug trackers in Launchpad")
-    top_bugtrackers = Attribute("The BugTrackers with the most watches.")
-    latest_bugs = Attribute("The latest 5 bugs filed.")
+class IPrivateMaloneApplication(ILaunchpadApplication):
+    """Private application root for malone."""
 
 
 class IRosettaApplication(ILaunchpadApplication):
@@ -197,6 +186,8 @@ class IPrivateApplication(ILaunchpadApplication):
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
+
+    bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
 
 
 class IAuthServerApplication(ILaunchpadApplication):
@@ -397,9 +388,6 @@ class IHasDateCreated(Interface):
 class IStructuralHeaderPresentation(Interface):
     """Adapter for common aspects of a structural object's presentation."""
 
-    def isPrivate():
-        """Whether read access to the object is restricted."""
-
     def getIntroHeading():
         """Any heading introduction needed (e.g. "Ubuntu source package:")."""
 
@@ -436,6 +424,13 @@ class IAppFrontPageSearchForm(Interface):
 
     scope = Choice(title=_('Search scope'), required=False,
                    vocabulary='DistributionOrProductOrProject')
+
+
+class ILaunchpadSearch(Interface):
+    """The Schema for performing searches across all Launchpad."""
+
+    text = TextLine(
+        title=_('Search text'), required=False, max_length=250)
 
 
 class UnknownRecipientError(KeyError):
@@ -523,12 +518,20 @@ class ILaunchpadUsage(Interface):
     official_answers = Bool(
         title=_('People can ask questions in Launchpad Answers'),
         required=True)
+    official_blueprints = Bool(
+        title=_('This project uses blueprints'), required=True)
+    official_codehosting = Bool(
+        title=_('Code for this project is published in Bazaar branches on'
+                ' Launchpad'),
+        required=True)
     official_malone = Bool(
         title=_('Bugs in this project are tracked in Launchpad'),
         required=True)
     official_rosetta = Bool(
         title=_('Translations for this project are done in Launchpad'),
         required=True)
+    official_anything = Bool (
+        title=_('Uses Launchpad for something'),)
     enable_bug_expiration = Bool(
         title=_('Expire Incomplete bug reports when they become inactive'),
         required=True)

@@ -1,0 +1,303 @@
+@CHARSET "UTF-8";
+
+/* top of page, above masthead */
+#header {
+	padding-top: 12px;
+}
+#header h1 {
+	display: inline;
+}
+
+#header h1 span {
+	display: none;
+}
+
+#logo-floater {
+	width: 225px;
+	float: left;
+}
+
+ul.primary-links {
+	float: right;
+	text-align: right;
+	border-bottom: 1px solid #bbb;
+	font-size: 90%;
+	padding: 0 0px .5em 0px;
+	border-bottom: 1px solid #D6D6D6;
+}
+
+ul.primary-links li {
+	margin: 0 4px 0 0;
+	text-indent: 13px;
+	padding-bottom: 0;
+	background-image: url(bullet-triangle.png);
+	background-repeat: no-repeat;
+	background-position: left center;
+	line-height: 1.1em;
+}
+
+ul.primary-links a {
+	color: #656565;
+	text-decoration: none;
+	border-bottom: 1px dotted #fff;
+	margin-left: 6px
+}
+
+ul.primary-links a:hover {
+	border-bottom: 1px dotted #656565;
+}
+
+/* drop down menu (legacy) */
+#topNav ul ul {
+	padding-bottom: 0;
+}
+#topNav li {
+	display: block;
+	float: left;
+	position: relative;
+}
+#topNav li.last {
+	margin: 0;
+}
+#topNav li ul {
+	position: absolute;
+	background-color: #fff;
+	border: 1px solid #D3CAAA;
+	width: 10em;
+	left: -999em;
+	top: 1.1em;
+	z-index: 100;
+	font-size: 90%;
+}
+#topNav li:hover ul {
+	left: 0;
+	z-index: 1000;
+}
+#topNav li ul li {
+	background-image: none;
+	text-indent: 0;
+	width: 100%;
+	padding: 0;
+	margin: 0;
+}
+#topNav li ul li a {
+	display: block;
+	width: 100%;
+	padding: .2em 0;
+	text-indent: .2em;
+}
+#topNav li ul li a:hover,#topNav li ul li a:active {
+	color: white;
+	background-color: #D3CAAA;
+}
+#topNav img {
+	margin: 0;
+	padding: 0;
+	border-style: none;
+}
+#topNav img.rule {
+	border-top: 1.7em solid white;
+	/* ugly, ugly, but the line is too close to the tabs w/out it
+	   using ems means this lowers as the users font-size increases */
+}
+
+/* searchbox */
+#searchbox {
+	width: 50%;
+	height: 25px;
+	text-align: right;
+	line-height: 60px;
+	position: absolute;
+	top: 3.5em;
+	right: 9px;
+}
+#searchbox p {
+	line-height: 1.1em;
+	position: absolute;
+	bottom: 0;
+	right: 0;
+}
+#searchbox label {
+	display: none;
+}
+#searchbox button {
+	border-style: none;
+	background-color: #fff;
+	background-image: url(icon-search.png);
+	width: 34px;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+#searchbox button span {
+	display: block;
+	text-indent: -100px;
+	overflow: hidden;
+}
+#searchbox input {
+	border: 1px solid #C6C6C6;
+	color: #777;
+	font-size: 70%;
+	padding: 2px;
+}
+
+/* masthead area */
+.short-banner {
+	height: 100px;
+	margin-left: -5px;
+	padding-bottom: 5px;
+}
+/* side navigation */
+/* navigation
+ *
+*/
+.breadcrumb {
+	font-size: 80%;
+	border-bottom: 1px dotted #656565;
+	margin-bottom: 1em;
+}
+.breadcrumb h3 {
+	font-size: 90%;
+	color: #DB0800;
+	display: inline;
+	padding-right: 1em;
+}
+.block h2.title {
+	font-size: 100%;
+	padding: .4em;
+	margin: 0;
+	color: #DB0800;
+}
+span.taxonomy {
+        display: none;
+}
+/* both left and right side menus */
+ul.menu {
+	font-size: 80%;
+	padding: 0 0 0 .2em;
+}
+ul.menu li {
+	display: block;
+	text-indent: 17px;
+	padding: 0;
+	margin: 0;
+	line-height: 1.5em;
+	list-style: none;
+}
+ul.menu a {
+	color: #474747;
+	display: block;
+	width: 100%;
+	text-decoration: none;
+	padding: .2em 0;
+}
+ul.menu a:active, ul.menu a.active {
+	color: #D20000;
+}
+/* right side menu only */
+#rightsidebar div.block {
+	padding: 12px;
+	font-size: 80%;
+}
+
+/* left side menu only */
+#leftsidebar ul {
+	margin: 0;
+}
+#leftsidebar ul.menu li {
+	background-image: url(bullet-triangle.png);
+	background-repeat: no-repeat;
+	background-position: 0 .7em;
+}
+#leftsidebar ul.menu a {
+	border-bottom: 1px dotted #656565;
+	font-size: 110%;
+}
+#leftsidebar ul.menu li.expanded {
+	background-image: url(bullet-triangle-down.png);
+}
+#leftsidebar ul.menu li.expanded ul {
+	padding: 0;
+}
+#leftsidebar ul.menu li.expanded li {
+	background-color: #F0EEEB;
+	background-image: url(bullet-triangle2.png);
+	background-position: 1.3em .7em;
+	font-size: 110%;
+	text-indent: 2.4em;
+}
+#leftsidebar ul.menu li.expanded li ul {
+	padding-left: 1.5em;
+}
+#leftsidebar ul.menu li.expanded li ul li {
+	background-image: none;
+}
+#leftsidebar ul.menu li.expanded li a {
+	border-bottom-style: none;
+}
+#leftsidebar ul.menu li.expanded {
+	border-bottom: 1px dotted #656565;
+}
+#leftsidebar ul.menu ul.menu li.expanded {
+	border-bottom-style: none;
+}
+#hotlinks_fancy {
+	margin: 1em 0;
+}
+
+#hotlinks_fancy .sb *, #hotlinks_fancy .sbi * {
+	position: static;
+}
+#hotlinks_fancy div {
+	margin-bottom: 1em;
+	position: relative;
+	background-image: url(feature-button-bg.jpg);
+	background-repeat: no-repeat;
+	background-position: bottom right; 
+	border-top: 1px solid white; /* needed to make ie6 behave */
+}
+#hotlinks_fancy div a {
+	color: #BD0901;
+	display: block;
+	margin-left: 52px;
+	text-decoration: none;
+}
+#hotlinks_fancy div img {
+	border-style: none;
+	position: absolute;
+	top: 0;
+	left: 4px;
+}
+#hotlinks_fancy div p {
+	margin: .5em 0 0 52px;
+	font-size: 90%;
+	padding-bottom: 1em;
+}
+#hotlinks_fancy div p a {
+	display: inline;
+	margin: 0;
+}
+#hotlinks {
+	margin: 2em 0;
+	font-size: 80%;
+}
+#hotlinks div {
+	margin-bottom: 1em;
+	position: relative;
+	border-top: 1px solid white; /* needed to make ie6 behave */
+}
+#hotlinks div a {
+	color: #BD0901;
+	text-decoration: none;
+}
+#hotlinks div img {
+	border-style: none;
+	vertical-align: middle;
+}
+
+/* footer */
+#footer {
+	margin: 20px 0;
+	font-size: 90%;
+	color: #444;
+}
+/* end navigation */

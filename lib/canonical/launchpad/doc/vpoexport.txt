@@ -18,15 +18,14 @@ tables.
     ...         pofile.potemplate.sourcepackagename.name,
     ...         pofile.potemplate.name, pofile.language.code)
 
-To facilitate language pack exports, IVPOExportSet can enumerate the
-POFiles in a given distro series.
+To facilitate language pack exports, IVPOExportSet can enumerate all
+current POFiles in a given distro series.
 
     >>> pofiles = sorted([
     ...     describe_pofile(pofile)
     ...     for pofile in vpoexportset.get_distroseries_pofiles(hoary)])
     >>> for pofile in pofiles:
     ...     print pofile
-    evolution disabled-template es
     evolution evolution-2.2 es
     evolution evolution-2.2 ja
     evolution evolution-2.2 xh
@@ -56,11 +55,12 @@ POFiles in a given distro series.
     pmount    pmount nb
 
     >>> print len(pofiles)
-    28
+    27
     >>> print vpoexportset.get_distroseries_pofiles_count(hoary)
-    28
+    27
 
-The get_pofile_rows method lists translation
+The get_pofile_rows method lists all translations matching its
+arguments.
 
     >>> def describe_poexport_row(row):
     ...     return "%s %s %s" % (

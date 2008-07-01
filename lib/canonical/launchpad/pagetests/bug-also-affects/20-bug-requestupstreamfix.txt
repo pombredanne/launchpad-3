@@ -32,26 +32,31 @@ product, though.
     >>> user_browser.getControl('Project').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
 
-Since Thunderbird doesn't use Launchpad, there's a widget for entering 
-a bug URL.
+Since Thunderbird doesn't use Launchpad, a form is shown asking for
+bug URLs and suchlike:
 
-    >>> user_browser.getControl('URL').value
-    ''
+    >>> from canonical.launchpad.ftests.bug import print_upstream_linking_form
+    >>> print_upstream_linking_form(user_browser)
+    (*) I have the URL for the upstream bug:
+        [          ]
+    ( ) I have already emailed an upstream bug contact:
+        [          ]
+    ( ) I just want to register that it is upstream right now; I
+        don't have any way to link it.
 
-If we leave it empty, a notification will be shown when trying to add
-the task, asking us to confirm that we want to add the task without a
-bug watch.
+We can just link upstream without a URL to say that this has been
+dealt with, but we can't reference it.
+
+    >>> user_browser.getControl('I just want to register').selected = True
+    >>> print_upstream_linking_form(user_browser)
+    ( ) I have the URL for the upstream bug:
+        [          ]
+    ( ) I have already emailed an upstream bug contact:
+        [          ]
+    (*) I just want to register that it is upstream right now; I
+        don't have any way to link it.
 
     >>> user_browser.getControl('Add to Bug Report').click()
-    >>> user_browser.url
-    'http://.../ubuntu/+source/evolution/+bug/6/+choose-affected-product'
-
-    >>> print get_feedback_messages(user_browser.contents)
-    [u"Mozilla Thunderbird doesn't use Launchpad as its bug tracker...]
-
-Let's confirm adding the task.
-
-    >>> user_browser.getControl('Add Anyway').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/thunderbird/+bug/6'
 
@@ -142,8 +147,9 @@ space in the bug URL it will be stripped.
     ...     '+bug/3/+choose-affected-product')
     >>> user_browser.getControl('Project').value = 'alsa-utils'
     >>> user_browser.getControl('Continue').click()
- 
-    >>> user_browser.getControl('URL').value = (
+
+    >>> user_browser.getControl('I have the URL').selected = True
+    >>> user_browser.getControl(name='field.bug_url').value = (
     ...     '   https://bugzilla.mozilla.org/show_bug.cgi?id=1234   ')
     >>> user_browser.getControl('Add to Bug Report').click()
 
@@ -163,7 +169,7 @@ new bug watch.
 And we can check that the remote bug number was stripped.
 
     >>> user_browser.getLink('mozilla.org #1234')
-    <Link text='Linked to [IMG] mozilla.org #1234'
+    <Link text='mozilla.org #1234'
       url='https://bugzilla.mozilla.org/show_bug.cgi?id=1234'>
 
 And now we try to add the same upstream again.

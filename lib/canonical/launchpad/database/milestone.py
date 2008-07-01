@@ -72,8 +72,6 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin):
     def title(self):
         """See IMilestone."""
         title = 'Milestone %s for %s' % (self.name, self.target.displayname)
-        if self.dateexpected:
-            title += ' due ' + self.dateexpected.strftime('%Y-%m-%d')
         return title
 
 

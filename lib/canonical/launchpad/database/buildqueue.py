@@ -22,8 +22,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBuildQueue, IBuildQueueSet, NotFoundError,
-    PackagePublishingStatus, SourcePackageUrgency)
+    ArchivePurpose, BuildStatus, IBuildQueue, IBuildQueueSet,
+    NotFoundError, PackagePublishingPocket, SourcePackageUrgency)
 
 
 class BuildQueue(SQLBase):
@@ -93,16 +93,6 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         return self.build.is_virtualized
 
-    @property
-    def is_last_version(self):
-        """See `IBuildQueue`."""
-        spr = self.build.sourcepackagerelease
-        if (spr.publishings and spr.publishings[0].status >
-            PackagePublishingStatus.PUBLISHED):
-            return False
-
-        return True
-
     def score(self):
         """See `IBuildQueue`."""
         # Grab any logger instance available.
@@ -112,6 +102,19 @@ class BuildQueue(SQLBase):
             logger.debug(
                 "%s (%d) MANUALLY RESCORED" % (self.name, self.lastscore))
             return
+
+        # XXX Al-maisan, 2008-05-14 (bug #230330):
+        # We keep touching the code here whenever a modification to the
+        # scoring parameters/weights is needed. Maybe the latter can be
+        # externalized?
+
+        score_pocketname = {
+            PackagePublishingPocket.PROPOSED: 0,
+            PackagePublishingPocket.BACKPORTS: 1500,
+            PackagePublishingPocket.RELEASE: 3000,
+            PackagePublishingPocket.UPDATES: 4500,
+            PackagePublishingPocket.SECURITY: 6000,
+            }
 
         score_componentname = {
             'multiverse': 0,
@@ -140,28 +143,55 @@ class BuildQueue(SQLBase):
             (300, 5),
         ]
 
+        private_archive_increment = 10000
+
+        # For build jobs in rebuild archives a score value of 4 was chosen
+        # because a minimum score of 5 is likely to be attained by any
+        # package with a "LOW" urgency or a waiting time of 5 minutes.
+        rebuild_archive_score = 4
+
         score = 0
         msg = "%s (%d) -> " % (self.build.title, self.lastscore)
 
-        # Calculates the urgency-related part of the score.
-        score += score_urgency[self.urgency]
-        msg += "U+%d " % score_urgency[self.urgency]
-
-        # Calculates the component-related part of the score.
-        score += score_componentname[self.build.current_component.name]
-        msg += "C+%d " % score_componentname[
-            self.build.current_component.name]
-
-        # Calculates the build queue time component of the score.
-        right_now = datetime.now(pytz.timezone('UTC'))
-        eta = right_now - self.created
-        for limit, dep_score in queue_time_scores:
-            if eta.seconds > limit:
-                score += dep_score
-                msg += "T+%d " % dep_score
-                break
+        # Please note: the score for language packs is to be zero because
+        # they unduly delay the building of packages in the main component
+        # otherwise.
+        if self.build.sourcepackagerelease.section.name == 'translations':
+            msg += "LPack => score zero"
+        elif self.build.archive.purpose == ArchivePurpose.REBUILD:
+            score = rebuild_archive_score
+            msg += "Rebuild archive => low score"
         else:
-            msg += "T+0 "
+            # Calculates the urgency-related part of the score.
+            urgency = score_urgency[self.urgency]
+            score += urgency
+            msg += "U+%d " % urgency
+
+            # Calculates the pocket-related part of the score.
+            score_pocket = score_pocketname[self.build.pocket]
+            score += score_pocket
+            msg += "P+%d " % score_pocket
+
+            # Calculates the component-related part of the score.
+            score_component = score_componentname[
+                self.build.current_component.name]
+            score += score_component
+            msg += "C+%d " % score_component
+
+            # Calculates the build queue time component of the score.
+            right_now = datetime.now(pytz.timezone('UTC'))
+            eta = right_now - self.created
+            for limit, dep_score in queue_time_scores:
+                if eta.seconds > limit:
+                    score += dep_score
+                    msg += "T+%d " % dep_score
+                    break
+            else:
+                msg += "T+0 "
+
+            # Private builds get uber score.
+            if self.build.archive.private:
+                score += private_archive_increment
 
         # Store current score value.
         self.lastscore = score
@@ -195,7 +225,7 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.builder = builder
         self.buildstart = UTC_NOW
-        self.build.buildstate = BuildStatus.BUILDING
+        self.build.forceState(BuildStatus.BUILDING)
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
@@ -205,7 +235,7 @@ class BuildQueue(SQLBase):
             % (self.builder.url, self.build.title))
         self.builder = None
         self.buildstart = None
-        self.build.buildstate = BuildStatus.NEEDSBUILD
+        self.build.forceState(BuildStatus.NEEDSBUILD)
 
     def updateBuild_BUILDING(self, build_id, build_status,
                              logtail, filemap, dependencies, logger):
@@ -223,7 +253,7 @@ class BuildQueue(SQLBase):
         self.builder.cleanSlave()
         self.builder = None
         self.buildstart = None
-        self.build.buildstate = BuildStatus.BUILDING
+        self.build.forceState(BuildStatus.BUILDING)
 
 
 class BuildQueueSet(object):

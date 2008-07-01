@@ -11,8 +11,7 @@ IDistributionSourcePackage.bug_subscriptions attribute. When there are
 no subscriptions associated with a package, an empty list is returned:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IDistributionSourcePackage)
+    >>> from canonical.launchpad.interfaces import IDistributionSet
 
     >>> debian = getUtility(IDistributionSet).getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
@@ -119,8 +118,7 @@ when a subscriber to the new package is already subscribed to the bug:
     >>> import transaction
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistroBugTask, IDistroSeriesBugTask)
+    >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> from canonical.launchpad.mail import stub
 
     >>> daf = personset.getByName("daf")
@@ -305,19 +303,19 @@ the subscriptions remain unchanged:
      u'Ubuntu Team']
 
 
-== Product Bug Contacts and Bug Tasks ==
+== Product Bug Supervisors and Bug Tasks ==
 
 Like reassigning a bug task to another package, reassigning a bug task
-to another product will subscribe any new product bug contacts to the
+to another product will subscribe any new product bug supervisors to the
 bug that aren't already subscribed.
 
     >>> from canonical.launchpad.interfaces import IProductSet
 
     >>> mozilla_firefox = getUtility(IProductSet).get(4)
 
-Let's make Foo Bar a bug contact for upstream firefox:
+Let's make Foo Bar a bug supervisor for upstream firefox:
 
-    >>> mozilla_firefox.setBugContact(foobar, foobar)
+    >>> mozilla_firefox.setBugSupervisor(foobar, foobar)
 
 Then we'll reassign bug #2 in Ubuntu to be in Firefox, noting that Foo
 Bar gets subscribed to the bug in the process:
@@ -357,7 +355,7 @@ With the product changed, we can see that Foo Bar is now subscribed:
 
 And Foo Bar gets an email containing complete information about the bug
 report. It states that he received the email because he is the bug
-contact for Mozilla Firefox.
+supervisor for Mozilla Firefox.
 
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
@@ -385,9 +383,9 @@ contact for Mozilla Firefox.
     are subscribed to Mozilla Firefox.
 
 
-== Teams as bug contacts ==
+== Teams as bug supervisors ==
 
-The list of teams that a user may add to a package as a bug contact will
+The list of teams that a user may add to a package as a bug supervisor will
 only contain those teams of which the user is an administrator.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
@@ -409,7 +407,7 @@ Sample person is a member of two teams:
     [u'Landscape Developers: ADMIN', u'Warty Security Team: APPROVED']
 
 But is only an administrator of Landscape Developers, so that is the only
-team that will be listed when the user is changing a package bug contact:
+team that will be listed when the user is changing a package bug supervisor:
 
     >>> for team in view.user.getAdministratedTeams():
     ...     print team.displayname

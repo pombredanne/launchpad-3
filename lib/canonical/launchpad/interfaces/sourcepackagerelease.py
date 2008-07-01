@@ -128,6 +128,9 @@ class ISourcePackageRelease(Interface):
         "The LibraryFileAlias for the changesfile this package was uploaded "
         "with.")
 
+    def getQueueRecord(distroseries=None):
+        """Return the `PackageUpload` record for this source package."""
+
     def addFile(file):
         """Add the provided library file alias (file) to the list of files
         in this package.
@@ -157,11 +160,6 @@ class ISourcePackageRelease(Interface):
 
         All arguments are optional and can be set individually. A non-passed
         argument remains untouched.
-        """
-
-    def countOpenBugsInUploadedDistro(user):
-        """Return the number of open bugs targeted to the sourcepackagename
-        and distribution to which this release was uploaded.
         """
 
     def attachTranslationFiles(tarball_alias, is_published, importer=None):

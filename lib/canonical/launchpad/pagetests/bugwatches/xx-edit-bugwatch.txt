@@ -25,3 +25,14 @@ bug tracker already registered with Launchpad.
     ...     print extract_text(message)
     There is 1 error.
     Invalid bug tracker URL.
+
+Likewise, stupid URLs are rejected with a polite error message.
+
+    >>> admin_browser.getControl('URL').value = 'GELLER'
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.url
+    'http://bugs.launchpad.dev/bugs/1/+watch/2/+edit'
+    >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print extract_text(message)
+    There is 1 error.
+    "GELLER" is not a valid URI

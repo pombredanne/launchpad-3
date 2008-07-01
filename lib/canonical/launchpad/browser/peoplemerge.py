@@ -114,12 +114,15 @@ class AdminMergeBaseView(LaunchpadFormView):
 
     def doMerge(self, data):
         """Merge the two person/team entries specified in the form."""
+        from zope.security.proxy import removeSecurityProxy
         for email in self.dupe_person_emails:
             # XXX: Maybe this status change should be done only when merging
             # people but not when merging teams.
             # -- Guilherme Salgado, 2007-10-15
             email.status = EmailAddressStatus.NEW
-            email.person = self.target_person
+            # EmailAddress.person is a readonly field, so we need to remove
+            # the security proxy here.
+            removeSecurityProxy(email).person = self.target_person
         flush_database_updates()
         getUtility(IPersonSet).merge(self.dupe_person, self.target_person)
         self.request.response.addInfoNotification(_(

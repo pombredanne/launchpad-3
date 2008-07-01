@@ -299,8 +299,8 @@ class SprintAddView(LaunchpadFormView):
         time_zone_widget = self.widgets['time_zone']
         if time_zone_widget.hasValidInput():
             tz = pytz.timezone(time_zone_widget.getInputValue())
-            self.widgets['time_starts'].required_timezone = tz
-            self.widgets['time_ends'].required_timezone = tz
+            self.widgets['time_starts'].required_time_zone = tz
+            self.widgets['time_ends'].required_time_zone = tz
 
     def validate(self, data):
         time_starts = data.get('time_starts')
@@ -363,8 +363,8 @@ class SprintEditView(LaunchpadEditFormView):
             tz = pytz.timezone(time_zone_widget.getInputValue())
         else:
             tz = pytz.timezone(self.context.time_zone)
-        self.widgets['time_starts'].required_timezone = tz
-        self.widgets['time_ends'].required_timezone = tz
+        self.widgets['time_starts'].required_time_zone = tz
+        self.widgets['time_ends'].required_time_zone = tz
 
     def validate(self, data):
         time_starts = data.get('time_starts')
@@ -552,6 +552,10 @@ class SprintAttendeesCsvExportView(LaunchpadView):
             irc_nicknames = ', '.join(sorted(set(
                 [ircid.nickname for ircid
                  in attendance.attendee.ircnicknames])))
+            if attendance.attendee.country is None:
+                country = ''
+            else:
+                country = attendance.attendee.country.name
             rows.append(
                 (attendance.attendee.name,
                  attendance.attendee.displayname,
@@ -560,8 +564,8 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  attendance.attendee.phone,
                  attendance.attendee.organization,
                  attendance.attendee.city,
-                 attendance.attendee.country,
-                 attendance.attendee.timezone,
+                 country,
+                 attendance.attendee.time_zone,
                  attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
                  attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
         # CSV can't handle unicode, so we force encoding

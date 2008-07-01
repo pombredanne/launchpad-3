@@ -89,11 +89,12 @@ We define a helper that uses the BugTaskListingView class (obtained via
 +listing-view) to render the status:
 
   >>> from canonical.launchpad.interfaces import BugTaskStatus, ILaunchBag
-  >>> from zope.component import getView
+  >>> from zope.component import getMultiAdapter
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> def render_bugtask_status(task):
-  ...   view = getView(task, "+listing-view", LaunchpadTestRequest())
+  ...   view = getMultiAdapter(
+  ...       (task, LaunchpadTestRequest()), name="+listing-view")
   ...   return view.status
 
 Let's see some examples of how this works:
@@ -160,7 +161,8 @@ other contexts. Again, the listing-view holds a method which provides us
 with this information; let's define a helper for it:
 
   >>> def render_bugtask_status_elsewhere(task):
-  ...   view = getView(task, "+listing-view", LaunchpadTestRequest())
+  ...   view = getMultiAdapter(
+  ...       (task, LaunchpadTestRequest()), name="+listing-view")
   ...   return view.status_elsewhere
 
 The main questions of interest, in order, are:

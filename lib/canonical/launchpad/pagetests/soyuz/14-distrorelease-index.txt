@@ -5,7 +5,7 @@ As it's main functionality this page allow users to search for binary
 packages within the distroseries in context:
 
   >>> anon_browser.open("http://launchpad.dev/ubuntu/warty")
-  >>> anon_browser.getControl(name="text", index=1).value = "firefox"
+  >>> anon_browser.getControl(name="text").value = "firefox"
   >>> anon_browser.getControl("Find a Package").click()
   >>> anon_browser.url
   'http://launchpad.dev/ubuntu/warty/+search?text=firefox'

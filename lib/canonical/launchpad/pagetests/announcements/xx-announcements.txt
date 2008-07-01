@@ -15,9 +15,6 @@ news feed.
     >>> def latest_news(content):
     ...     """The contents of the latest news portlet."""
     ...     return extract_text(find_portlet(content, 'Latest news'))
-    >>> def has_latest_news(content):
-    ...     """Determine if the latest-news portlet is visible"""
-    ...     return find_portlet(content, 'Latest news') is not None
     >>> def has_show_link(content):
     ...     """Determine whether the "Show announcements" link is shown."""
     ...     return len(find_tags_by_class(
@@ -59,12 +56,6 @@ pillar.
     >>> print link.text
     Make announcement
 
-When there are no announcements for a project, there should be no
-"Latest news" portlet:
-
-    >>> has_latest_news(priv_browser.contents)
-    False
-
 Following the action link takes you to a form where you can make the
 announcement:
 
@@ -83,11 +74,6 @@ project.
     >>> print priv_browser.url
     http://launchpad.dev/apache
 
-And now there is news, so we see the "Latest news" portlet.
-
-    >>> has_latest_news(priv_browser.contents)
-    True
-
 We'll repeat the process for Tomcat, an IProduct that is part of the
 Apache project, but this time we won't specify a URL, and we will
 specify a date the announcement was made:
@@ -97,8 +83,6 @@ specify a date the announcement was made:
 Because Tomcat is part of the Apache group, it picks up on the Apache
 announcement so there is a "Latest news" portlet:
 
-    >>> has_latest_news(priv_browser.contents)
-    True
     >>> 'Tomcat announcement' in latest_news(priv_browser.contents)
     False
     >>> priv_browser.getLink('Make announcement').click()
@@ -116,13 +100,16 @@ announcement so there is a "Latest news" portlet:
     >>> 'Tomcat announcement' in latest_news(priv_browser.contents)
     True
 
+Let's make sure that the announcement is presented as a link.
+
+    >>> print priv_browser.getLink('Tomcat announcement headline').url
+    http://launchpad.dev/tomcat/+announcement/...
+
 We'll repeat the process for Derby, an IProduct that is part of the
 Apache project, but this time we won't specify a URL, and we'll make the
 announcement immediately:
 
     >>> priv_browser.open('http://launchpad.dev/derby')
-    >>> has_latest_news(priv_browser.contents)
-    True
     >>> 'Derby announcement' in latest_news(priv_browser.contents)
     False
     >>> priv_browser.getLink('Make announcement').click()
@@ -141,8 +128,6 @@ any project, but this time we won't specify a URL, and we will specify a
 date in the future when the announcement will be made:
 
     >>> priv_browser.open('http://launchpad.dev/jokosher')
-    >>> has_latest_news(priv_browser.contents)
-    False
     >>> priv_browser.getLink('Make announcement').click()
     >>> priv_browser.getControl('Headline').value = (
     ...     'Jokosher announcement headline')
@@ -155,8 +140,6 @@ date in the future when the announcement will be made:
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.url
     http://launchpad.dev/jokosher
-    >>> has_latest_news(priv_browser.contents)
-    True
     >>> 'Jokosher announcement' in latest_news(priv_browser.contents)
     True
 
@@ -164,8 +147,6 @@ And again for Kubuntu, an IDistribution, but this time we won't specify
 a date for the announcement at all:
 
     >>> priv_browser.open('http://launchpad.dev/kubuntu')
-    >>> has_latest_news(priv_browser.contents)
-    False
     >>> priv_browser.getLink('Make announcement').click()
     >>> priv_browser.getControl('Headline').value = (
     ...     'Kubuntu announcement headline')
@@ -181,8 +162,6 @@ a date for the announcement at all:
 And finally for RedHat, an IDistribution, with immediate announcement:
 
     >>> priv_browser.open('http://launchpad.dev/redhat')
-    >>> has_latest_news(priv_browser.contents)
-    False
     >>> priv_browser.getLink('Make announcement').click()
     >>> priv_browser.getControl('Headline').value = (
     ...     'RedHat announcement headline')
@@ -235,9 +214,12 @@ When there are no announcements, we should not see a link to the page.
     >>> anon_browser.open('http://launchpad.dev/gnome')
     >>> has_show_link(anon_browser.contents)
     False
+
+Distribution pages always have the link in the navigation menu,
+
     >>> anon_browser.open('http://launchpad.dev/kubuntu')
     >>> has_show_link(anon_browser.contents)
-    False
+    True
 
 But we do see it when there are published announcements.
 

@@ -340,17 +340,21 @@ is allowed to do it. For large projects, like distributions, it's not
 suitable to restrict approving nominations to only release managers,
 instead anyone that can upload a package may approve a nomination.
 
-    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
-    >>> from canonical.launchpad.database import (
-    ...     Component, DistroComponentUploader)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IArchivePermissionSet, TeamSubscriptionPolicy)
+    >>> from canonical.launchpad.database import Component
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> main_uploaders = getUtility(IPersonSet).newTeam(
     ...     foo_bar, 'main-uploaders', 'main uploaders',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
     >>> main = Component.byName('main')
-    >>> distro_main_uploader_record = DistroComponentUploader.selectOneBy(
-    ...     distribution=ubuntu, component=main)
-    >>> distro_main_uploader_record.uploader = main_uploaders
+    >>> permission_set = getUtility(IArchivePermissionSet)
+    >>> uploaders = permission_set.uploadersForComponent(
+    ...     ubuntu.main_archive, main)
+    >>> [distro_main_uploader_record] = uploaders
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(
+    ...     distro_main_uploader_record).person = main_uploaders
 
 For a bug nominated to a package from the 'main' component in Ubuntu,
 only those people that are allowed to upload to 'main' are allowed to
@@ -388,9 +392,11 @@ approve 'main' nominations.
     ...     foo_bar, 'universe-uploaders', 'universe uploaders',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
     >>> universe = Component.byName('universe')
-    >>> distro_universe_uploader_record = DistroComponentUploader.selectOneBy(
-    ...     distribution=ubuntu, component=universe)
-    >>> distro_universe_uploader_record.uploader = universe_uploaders
+    >>> uploaders = permission_set.uploadersForComponent(
+    ...     ubuntu.main_archive, universe)
+    >>> [distro_universe_uploader_record] = uploaders
+    >>> removeSecurityProxy(
+    ...     distro_universe_uploader_record).person = universe_uploaders
 
     >>> no_priv.leave(main_uploaders)
     >>> no_priv.join(universe_uploaders)

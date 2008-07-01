@@ -9,7 +9,8 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IProductSet)
+    CreateBugParams, IDistributionSet, ILaunchBag, IProductSet,
+    ISourcePackageNameSet)
 from canonical.launchpad.interfaces.ftests.test_bugtarget import (
     bugtarget_filebug)
 from canonical.launchpad.testing.systemdocs import (
@@ -44,6 +45,23 @@ def milestoneSetUp(test):
     test.globs['target'] = firefox.getMilestone('1.0')
     test.globs['filebug'] = milestone_filebug
 
+def distroseries_sourcepackage_filebug(distroseries, summary, status=None):
+    params = CreateBugParams(
+        getUtility(ILaunchBag).user, summary, comment=summary, status=status)
+    alsa_utils = getUtility(ISourcePackageNameSet)['alsa-utils']
+    params.setBugTarget(distribution=distroseries.distribution,
+                        sourcepackagename=alsa_utils)
+    bug = distroseries.distribution.createBug(params)
+    nomination = bug.addNomination(
+        distroseries.distribution.owner, distroseries)
+    return bug
+
+def distroSeriesSourcePackageSetUp(test):
+    setUp(test)
+    test.globs['target'] = (
+        getUtility(IDistributionSet).getByName('ubuntu').getSeries('hoary'))
+    test.globs['filebug'] = distroseries_sourcepackage_filebug
+
 def test_suite():
     """Return the `IStructuralSubscriptionTarget` TestSuite."""
     suite = unittest.TestSuite()
@@ -53,6 +71,7 @@ def test_suite():
         productSetUp,
         distributionSetUp,
         milestoneSetUp,
+        distroSeriesSourcePackageSetUp,
         ]
 
     for setUpMethod in setUpMethods:

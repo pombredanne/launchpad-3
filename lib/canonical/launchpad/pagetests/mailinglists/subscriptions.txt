@@ -19,40 +19,24 @@ preferred email address.  Both the admins and rosetta-admins teams are given
 mailing lists but only admins will actually use its mailing list as its
 contact address.
 
-    XXX BarryWarsaw 28-Jan-2008 Remove this when the beta testing program is
-    complete.  Also, don't create a list for rosetta-admins through the web
-    because we don't want it to be part of the mailing list beta testers
-    team.  If it is, then the test for subscriptions being available only to
-    beta testers won't work.  It works on launchpad.net because the mailing
-    list beta testers team is different than the launchpad beta testers team.
-    This isn't the case for the testrunner.  Again, all this will go away when
-    the feature goes public. See bug #190974.
-    >>> from canonical.launchpad.ftests import mailinglists_helper
-    >>> mailinglists_helper.beta_program_enable('admins')
-    >>> mailinglists_helper.beta_program_enable('testing-spanish-team')
-
     >>> admin_browser.open('http://launchpad.dev/~admins')
+    >>> admin_browser.getLink('Configure mailing list').click()
+    >>> admin_browser.getControl('Apply for Mailing List').click()
+
+    >>> admin_browser.open('http://launchpad.dev/~rosetta-admins')
     >>> admin_browser.getLink('Configure mailing list').click()
     >>> admin_browser.getControl('Apply for Mailing List').click()
 
     >>> admin_browser.open('http://launchpad.dev/+mailinglists')
     >>> admin_browser.getControl(name='field.admins').value = ['approve']
+    >>> admin_browser.getControl(name='field.rosetta-admins').value = [
+    ...     'approve']
     >>> admin_browser.getControl('Submit').click()
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingListSet, IPersonSet)
-    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> login('foo.bar@canonical.com')
-    >>> person_set = getUtility(IPersonSet)
-    >>> rosetta_admins = person_set.getByName('rosetta-admins')
-    >>> rosetta_admins_list = getUtility(IMailingListSet).new(rosetta_admins)
-    >>> mailinglists_helper.review_list('rosetta-admins')
-    >>> logout()
-    >>> flush_database_updates()
-
     >>> mailinglists_helper.mailman.act()
+    >>> logout()
 
     >>> admin_browser.open('http://launchpad.dev/~admins')
     >>> admin_browser.getLink('Change contact address').click()
@@ -68,10 +52,9 @@ actually be approved.
     >>> browser.getControl('Apply for Mailing List').click()
 
 
-== Beta testers ==
+== Subscribing ==
 
-A person who is not a member of the beta testers team cannot subscribe to
-mailing lists even if the team they are a member of has a mailing list.
+Any team member can join the mailing list.
 
     >>> admin_browser.open('http://launchpad.dev/~rosetta-admins/+addmember')
     >>> admin_browser.getControl('New member').value = 'no-team-memberships'
@@ -79,23 +62,6 @@ mailing lists even if the team they are a member of has a mailing list.
 
     >>> no_team_browser = setupBrowser(
     ...     auth="Basic no-team-memberships@test.com:test")
-    >>> no_team_browser.open('http://launchpad.dev/people/+me/+editemails')
-    >>> no_team_browser.getControl(name='field.subscription.rosetta-admins')
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.subscription.rosetta-admins'
-
-Once the person joins the beta testers team, they can join the mailing list.
-
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> login('foo.bar@canonical.com')
-    >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-    >>> no_team_memberships = person_set.getByName('no-team-memberships')
-    >>> sabdfl = person_set.getByName('sabdfl')
-    >>> beta.addMember(no_team_memberships, reviewer=sabdfl)
-    >>> flush_database_updates()
-    >>> logout()
-
     >>> no_team_browser.open('http://launchpad.dev/people/+me/+editemails')
     >>> rosetta_admins = no_team_browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -216,11 +182,17 @@ First, we need to make sure that Jdub is a member of the Beta Testers
 team.  (Otherwise, the mailing list subscription checkbox won't show at
 all.)
 
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
     >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+    >>> person_set = getUtility(IPersonSet)
     >>> jdub = person_set.getByName('jdub')
     >>> sabdfl = person_set.getByName('sabdfl')
     >>> beta.addMember(jdub, reviewer=sabdfl)
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
 
@@ -415,3 +387,130 @@ does not show either link.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+
+
+== Mailing list auto-subscription settings ==
+
+Launchpad may automatically subscribe a person to a team's mailing
+list.  The setting that controls this behaviour is on the person's
+Email preferences page.
+
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~carlos')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.title
+    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+
+Carlos's default setting, 'Ask me when I join a team', is still in place.
+
+    >>> print_radio_button_field(browser.contents,
+    ...     'mailing_list_auto_subscribe_policy')
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+Carlos can update the value at any time using his Email Preferences
+page.
+
+    # A convenient helper for setting and submitting a new
+    # auto-subscribe policy.
+    >>> def set_autosubscribe_policy_and_submit(newvalue):
+    ...     control = browser.getControl(
+    ...         name='field.mailing_list_auto_subscribe_policy')
+    ...     control.value = [newvalue]
+    ...     browser.getControl('Update Policy').click()
+    ...     print_radio_button_field(browser.contents,
+    ...         'mailing_list_auto_subscribe_policy')
+
+    >>> original_value = browser.getControl(
+    ...     name='field.mailing_list_auto_subscribe_policy').value.pop()
+
+    >>> set_autosubscribe_policy_and_submit('ALWAYS')
+    ( ) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    (*) Always subscribe me to mailing lists
+
+    # We only need to check this once.
+    >>> get_feedback_messages(browser.contents)
+    [u'Your auto-subscription policy has been updated.']
+
+    >>> set_autosubscribe_policy_and_submit('NEVER')
+    (*) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+    >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION')
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+Updating the value twice has no adverse affect.
+
+    # Restores the original value while performing the test.
+    >>> assert original_value == 'ON_REGISTRATION'
+    >>> set_autosubscribe_policy_and_submit(original_value)
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+These settings also effect what a user sees when they go to join a new
+team.  The 'Team Join' page has a checkbox that allows a user to sign
+up for the team mailing list at the same time as joining the
+team. Users who have chosen the 'On registration' or 'Always'
+subscription settings will see the box checked by default.
+
+    >>> browser = setupBrowser(
+    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
+
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> print_radio_button_field(browser.contents,
+    ...     'mailing_list_auto_subscribe_policy')
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~rosetta-admins/+join'
+
+    >>> print browser.getControl(name='mailinglist_subscribe').value
+    ['subscribe']
+
+    # Change James' setting
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> set_autosubscribe_policy_and_submit('ALWAYS')
+    ( ) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    (*) Always subscribe me to mailing lists
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> print browser.getControl(name='mailinglist_subscribe').value
+    ['subscribe']
+
+Users who have chosen to never be auto-subscribed to mailing
+lists will not have the box checked.
+
+    # Change James' setting
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> set_autosubscribe_policy_and_submit('NEVER')
+    (*) Never subscribe to mailing lists
+    ( ) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> print browser.getControl(name='mailinglist_subscribe').value
+    []
+
+    # Restore James' setting.
+    >>> browser.open('http://launchpad.dev/~jblack')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION')
+    ( ) Never subscribe to mailing lists
+    (*) Ask me when I join a team
+    ( ) Always subscribe me to mailing lists

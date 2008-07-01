@@ -10,8 +10,8 @@ __all__ = [
 
 from zope.schema import Object, TextLine
 
+from canonical.lazr.fields import CollectionField
 from canonical.lazr.interfaces import IEntry
-from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import IMessage
 
@@ -19,7 +19,7 @@ class IMessageTargetEntry(IEntry):
     """The part of a message target that we expose through the web service.
     """
 
-    messages = CollectionField(value_type=Object(schema=IMessage),
-                               is_entry_container=True)
+    messages = CollectionField(value_type=Object(schema=IMessage))
+
     followup_subject = TextLine(
         title=u"The likely subject of the next message.")

@@ -122,8 +122,8 @@ class VerifyPOFileStatsProcess:
                 % (loop.total_exceptions, loop.total_incorrect,
                     loop.total_checked))
             simple_sendmail(
-                from_addr=config.rosetta.rosettaadmin.email,
-                to_addrs=[config.rosetta.rosettaadmin.email],
+                from_addr=config.rosettaadmin.email,
+                to_addrs=[config.rosettaadmin.email],
                 subject="POFile statistics errors",
                 body=MailWrapper().format(message))
             self.transaction.commit()

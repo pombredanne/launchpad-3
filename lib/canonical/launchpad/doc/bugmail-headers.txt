@@ -36,13 +36,17 @@ You can ask an IBugTask for its representation as an email header value:
       importance=Undecided; assignee=None;'
 
     >>> debian_firefox_bugtask.asEmailHeaderValue()
-    u'distribution=debian; sourcepackage=mozilla-firefox; component=None; status=Confirmed; importance=Low; assignee=None;'
+    u'distribution=debian; sourcepackage=mozilla-firefox;
+      component=None; status=Confirmed; importance=Low; assignee=None;'
 
     >>> ubuntu_firefox_bugtask.asEmailHeaderValue()
-    u'distribution=ubuntu; sourcepackage=mozilla-firefox; component=main; status=New; importance=Medium; assignee=None;'
+    u'distribution=ubuntu; sourcepackage=mozilla-firefox;
+      component=main; status=New; importance=Medium; assignee=None;'
 
     >>> warty_firefox_bugtask.asEmailHeaderValue()
-    u'distribution=ubuntu; distroseries=warty; sourcepackage=mozilla-firefox; component=main; status=New; importance=Medium; assignee=None;'
+    u'distribution=ubuntu; distroseries=warty;
+      sourcepackage=mozilla-firefox; component=main; status=New;
+      importance=Medium; assignee=None;'
 
 Here's what the header values look like for distro tasks that have no
 sourcepackage (we have to login to be allowed to set attributes on these tasks):
@@ -54,10 +58,12 @@ sourcepackage (we have to login to be allowed to set attributes on these tasks):
     >>> warty_firefox_bugtask.sourcepackagename = None
 
     >>> debian_firefox_bugtask.asEmailHeaderValue()
-    u'distribution=debian; sourcepackage=None; component=None; status=Confirmed; importance=Low; assignee=None;'
+    u'distribution=debian; sourcepackage=None; component=None;
+      status=Confirmed; importance=Low; assignee=None;'
 
     >>> warty_firefox_bugtask.asEmailHeaderValue()
-    u'distribution=ubuntu; distroseries=warty; sourcepackage=None; component=None; status=New; importance=Medium; assignee=None;'
+    u'distribution=ubuntu; distroseries=warty; sourcepackage=None;
+      component=None; status=New; importance=Medium; assignee=None;'
 
 It is possible to have an assignee on a task who doesn't have a preferred email
 address. The assignee might be a team with no email address or a person who has
@@ -71,4 +77,5 @@ doesn't have a "preferred email" set in Launchpad.
     >>> scott = getUtility(IPersonSet).getByName('keybuk')
     >>> debian_firefox_bugtask.transitionToAssignee(scott)
     >>> debian_firefox_bugtask.asEmailHeaderValue()
-    u'distribution=debian; sourcepackage=None; component=None; status=Confirmed; importance=Low; assignee=keybuk;'
+    u'distribution=debian; sourcepackage=None; component=None;
+      status=Confirmed; importance=Low; assignee=keybuk;'

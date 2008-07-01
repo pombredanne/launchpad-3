@@ -9,7 +9,7 @@
   metal:use-macro="view/macro:page/freeform"
   i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="main">
+    <div metal:fill-slot="main" class="freeform">
 
   <div class="informational message" tal:condition="view/canRedirect">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
@@ -61,58 +61,73 @@
                 />
               </a>
             </center>
-           </p>
+          </p>
+          <tal:not-beta-team-member condition="not: view/isBetaUser">
            <h2>Join the Launchpad beta team</h2>
            <p id="beta-test">
-             Get first access to new features and take part in the Launchpad development process.
-             Join the <a href="https://help.launchpad.net/BetaTesting">beta team</a> today!
-          </p>
+            Get first access to new features and take part in the Launchpad development process.
+            Join the <a href="https://help.launchpad.net/BetaTesting">beta team</a> today!
+           </p>
+          </tal:not-beta-team-member>
         </div>
         <div class="three column middle">
           <h2>What&#8217;s new here?</h2>
-          <table>
-            <tbody>
-             <tr>
-              <td><img src="/@@/news" alt="" /></td>
-              <td>
-              <a href="https://help.launchpad.net/BugSubscriptions">
-                <strong>Improved bug subscriptions</strong><br />
-                Get email notifications of bugs associated with a milestone, project, package or distribution.
-               </a>
-              </td>
-             </tr>
-             <tr>
-              <td><img src="/@@/news" alt="" /></td>
-              <td>
-               <a href="https://help.launchpad.net/BugTrackerEmailInterface#attachments">
-                <strong>Bug attachments by email</strong><br />
-                You can now attach files to bug reports using the Bug Tracker's email interface.
-               </a>
-              </td>
-             </tr>
-             <tr>
-              <td><img src="/@@/news" alt="" /></td>
-              <td>
-               <a href="https://help.launchpad.net/BranchMergeProposals">
-                <strong>Approve branch merge proposals</strong><br />
-                Mark branch merge proposals as approved or rejected.
-               </a>
-              </td>
-             </tr>
-             <tr>
-               <td><img src="/@@/news" alt="" /></td>
-               <td>
-                 <a href="https://help.launchpad.net/logo">
-                   <strong>Logo competition!</strong><br />
-                   Submit your design for the new Launchpad logo for
-                   the chance to win an Ubuntu Messenger bag.
-                 </a>
-               </td>
-             </tr>
-            </tbody>
-          </table>
+          <ul>
+           <li class="news">
+              <a href="http://news.launchpad.net/?p=94">
+                <strong>More control over your code imports</strong><br />
+                Get more information on the status of code imports CVS and Subversion.
+              </a>
+           </li>
+           <li class="news">
+              <a href="http://news.launchpad.net/?p=91">
+                <strong>Code review by email</strong><br />
+                Use email to vote and add your comments to code reviews in Launchpad.
+              </a>
+           </li>
+           <li class="news">
+              <a href="http://news.launchpad.net/?p=92">
+                <strong>Redesigned pages for bugs, translations, and distributions</strong><br />
+                We're making Launchpad easier to navigate.
+              </a>
+           </li>
+           <li class="news">
+              <a href="http://news.launchpad.net/cool-new-stuff/review-branch-merge-proposals-in-launchpad">
+                <strong>Code merger reviews</strong><br />
+                Review proposed branch mergers, using comments and voting, direct in Launchpad.
+              </a>
+           </li>
+           <li class="news">
+              <a href="http://news.launchpad.net/?p=80">
+                <strong>Site-wide search improvements</strong><br />
+                We have significantly enhanced our site-wide search feature to
+                provide better results. Give it a try!
+              </a>
+           </li>
+            <li class="news">
+              <a href="http://news.launchpad.net/category/podcast">
+                <strong>New Launchpad podcast</strong><br />
+                Hear the latest from the Launchpad team, with interviews and
+                news in Launchpod - the Launchpad team podcast.
+              </a>
+           </li>
+            <li class="news">
+              <a href="http://news.launchpad.net/?p=75">
+                <strong>Package diffs</strong><br />
+                View a diff of your newly uploaded source package with the
+                currently published package
+              </a>
+            </li>
+            <li class="news">
+              <a href="http://news.launchpad.net/?p=74">
+                <strong>Search translations</strong><br />
+                Find words and phrases within translation files. Ideal for
+                locating and correcting errors.
+              </a>
+            </li>
+          </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2008-02-20.
+            Updated 2008-06-30.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>
@@ -158,4 +173,4 @@
     </div>
   </body>
 </html>
-<!-- 1-0 inprogress Needs images and marketing material -->
+<!-- 1-0 done could use a team icon though -->

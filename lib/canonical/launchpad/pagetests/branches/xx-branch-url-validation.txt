@@ -14,7 +14,7 @@ Try to create a branch with an invalid URL.
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
-    &quot;example.com/~lifeless/pyresources/&quot; is not a valid URI
+    "example.com/~lifeless/pyresources/" is not a valid URI
 
 Try to create branches with URLs in bazaar.launchpad.dev.
 

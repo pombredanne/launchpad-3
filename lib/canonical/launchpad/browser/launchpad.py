@@ -4,23 +4,29 @@
 __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
+    'ApplicationButtons',
     'Breadcrumbs',
+    'BrowserWindowDimensions',
+    'ContribIcingFolder',
+    'DefaultShortLink',
+    'EdubuntuIcingFolder',
+    'IcingFolder',
+    'KubuntuIcingFolder',
+    'LaunchpadRootNavigation',
+    'LaunchpadImageFolder',
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
-    'MenuBox',
-    'MaloneContextMenu',
-    'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
-    'SoftTimeoutView',
+    'MaloneContextMenu',
+    'MenuBox',
+    'NavigationMenuTabs',
     'OneZeroTemplateStatus',
-    'IcingFolder',
-    'StructuralHeaderPresentationView',
+    'SoftTimeoutView',
     'StructuralHeaderPresentation',
+    'StructuralHeaderPresentationView',
     'StructuralObjectPresentation',
-    'ApplicationButtons',
-    'DefaultShortLink',
-    'BrowserWindowDimensions',
+    'UbuntuIcingFolder',
     ]
 
 import cgi
@@ -32,7 +38,7 @@ import time
 from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
-from zope.component import getUtility
+from zope.component import getUtility, queryAdapter
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
@@ -42,7 +48,7 @@ from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
 from canonical.config import config
-from canonical.lazr import ExportedFolder
+from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
     IAnnouncementSet,
@@ -86,9 +92,11 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link,
     LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
     canonical_url, custom_widget)
-from canonical.launchpad.webapp.interfaces import POSTToNonCanonicalURL
+from canonical.launchpad.webapp.interfaces import (
+    POSTToNonCanonicalURL, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -157,18 +165,54 @@ class MenuBox(LaunchpadView):
     def initialize(self):
         menuapi = MenuAPI(self.context)
         # We are only interested on enabled links in non development mode.
-        context_menu_links = menuapi.context
         self.contextmenuitems = sorted([
-            link for link in context_menu_links.values() if (link.enabled or
-                                                             config.devmode)],
+            link for link in menuapi.context.values()
+            if link.enabled or config.devmode],
             key=operator.attrgetter('sort_key'))
+        facet = menuapi.selectedfacetname()
+        if facet not in ('unknown', 'bounties'):
+            # XXX sinzui 2008-06-23 bug=242453:
+            # Why are we getting unknown? Bouties are borked. We need
+            # to end the facet hacks to get a clear state for the menus.
+            application_links = getattr(menuapi, facet).values()
+        else:
+            application_links = []
         self.applicationmenuitems = sorted([
-            link for link in menuapi.application() if (link.enabled or
-                                                       config.devmode)],
+            link for link in application_links
+            if link.enabled or config.devmode],
             key=operator.attrgetter('sort_key'))
 
     def render(self):
-        if not self.contextmenuitems and not self.applicationmenuitems:
+        if (not self.contextmenuitems and not self.applicationmenuitems):
+            return u''
+        else:
+            return self.template()
+
+
+class NavigationMenuTabs(LaunchpadView):
+    """View class that helps its template render the navigation menu tabs.
+
+    Nothing at all is rendered if there are no navigation menu items.
+    """
+
+    def initialize(self):
+        requested_view = get_current_view(self.request)
+        facet = get_facet(requested_view)
+        menu = queryAdapter(self.context, INavigationMenu, name=facet)
+        if menu is None:
+            # There are no menu entries.
+            self.links = []
+            return
+        self.title = menu.title
+        # We are only interested on enabled links in non development mode.
+        menu.request = self.request
+        self.links = sorted([
+            link for link in menu.iterlinks() if (link.enabled or
+                                                  config.devmode)],
+            key=operator.attrgetter('sort_key'))
+
+    def render(self):
+        if not self.links:
             return ''
         else:
             return self.template()
@@ -184,7 +228,11 @@ class LinkView(LaunchpadView):
     def render(self):
         """Render the menu link if it's enabled or we're in dev mode."""
         if self.context.enabled or config.devmode:
-            return self.template()
+            # XXX: TomBerger 2008-04-16 bug=218706:
+            # We strip the result of the template rendering
+            # since ZPT seems to always insert a line break
+            # at the end of an embedded template.
+            return self.template().strip()
         else:
             return ''
 
@@ -507,15 +555,11 @@ class LaunchpadRootNavigation(Navigation):
                 canonical_url(self.context) + canonical_name(name),
                 status=301)
 
-        admins = getUtility(ILaunchpadCelebrities).admin
-        user = getUtility(ILaunchBag).user
-        ignore_inactive = True
-        if user and user.inTeam(admins):
-            # Admins should be able to access deactivated projects too.
-            ignore_inactive = False
         pillar = getUtility(IPillarNameSet).getByName(
-            name, ignore_inactive=ignore_inactive)
-        return pillar
+            name, ignore_inactive=False)
+        if pillar is not None and check_permission('launchpad.View', pillar):
+            return pillar
+        return None
 
     def _getBetaRedirectionView(self):
         # If the inhibit_beta_redirect cookie is set, don't redirect.
@@ -701,6 +745,42 @@ class IcingFolder(ExportedFolder):
         os.path.dirname(os.path.realpath(__file__)), '../icing/')
 
 
+class LaunchpadImageFolder(ExportedImageFolder):
+    """Export the Launchpad images - supporting retrieval without extension.
+    """
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../images/')
+
+
+class ContribIcingFolder(ExportedFolder):
+    """Export the contrib icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-contrib/')
+
+
+class UbuntuIcingFolder(ExportedFolder):
+    """Export the Ubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-ubuntu/')
+
+
+class KubuntuIcingFolder(ExportedFolder):
+    """Export the Kubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-kubuntu/')
+
+
+class EdubuntuIcingFolder(ExportedFolder):
+    """Export the Edubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-edubuntu/')
+
+
 class StructuralHeaderPresentationView(LaunchpadView):
 
     def initialize(self):
@@ -720,9 +800,6 @@ class StructuralHeaderPresentation:
 
     def __init__(self, context):
         self.context = context
-
-    def isPrivate(self):
-        return False
 
     def getIntroHeading(self):
         return None

@@ -22,26 +22,14 @@ member of the vcs-imports team and can access the objects freely.
 == Creating CodeImportResults ==
 
 Creating CodeImportResult objects is usually done by the finishJob()
-method of the CodeImportWorkflow utility, but here we directly use the
-new() method of ICodeImportResultSet.  It takes as arguments:
+method of the CodeImportWorkflow utility, but here we use the object
+factory.
 
- * the code import the job was performed for,
- * the machine it was run on,
- * the user who requested the import, if the import was specifically
-   requested rather than being updated automatically,
- * an excerpt of the log,
- * a link to the full log in the librarian,
- * a status code from CodeImportResultStatus, and
- * the date the job started.
-
-We first upload a pretend log file to the librarian.
-
-    >>> from canonical.librarian.interfaces import ILibrarianClient
-    >>> from StringIO import StringIO
+    >>> factory = LaunchpadObjectFactory()
     >>> log_data = 'several\nlines\nof\nlog data'
     >>> log_excerpt = log_data.splitlines()[-1]
-    >>> log_alias_id = getUtility(ILibrarianClient).addFile(
-    ...    'import_log.txt', len(log_data), StringIO(log_data), 'text/plain')
+    >>> log_alias = factory.makeLibraryFileAlias(log_data)
+    >>> log_alias_id = log_alias.id
 
 Then commit the transaction, so the external librarian process can see
 it.
@@ -51,14 +39,7 @@ it.
     >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> log_alias = getUtility(ILibraryFileAliasSet)[log_alias_id]
 
-We can find suitable values for the import and machine parameters in
-the sample data.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     ICodeImportSet, ICodeImportMachineSet)
-    >>> sample_import = getUtility(ICodeImportSet).get(1)
-    >>> sample_machine = getUtility(ICodeImportMachineSet).getByHostname(
-    ...     'bazaar-importer')
+    >>> sample_import = factory.makeCodeImport()
 
 Then create a result object.
 
@@ -68,24 +49,28 @@ Then create a result object.
     >>> time_source = time_counter(
     ...     datetime(2008, 1, 1, tzinfo=UTC),
     ...     timedelta(days=1))
+    >>> odin = factory.makeCodeImportMachine(hostname="odin")
     >>> from canonical.launchpad.interfaces import CodeImportResultStatus
-    >>> new_result = result_set.new(
-    ...     sample_import, sample_machine, None, log_excerpt, log_alias,
-    ...     CodeImportResultStatus.SUCCESS, time_source.next())
+    >>> new_result = factory.makeCodeImportResult(
+    ...     sample_import, result_status=CodeImportResultStatus.SUCCESS,
+    ...     date_started=time_source.next(), log_excerpt=log_excerpt,
+    ...     log_alias=log_alias, machine=odin)
     >>> verifyObject(ICodeImportResult, new_result)
     True
 
 CodeImportResult objects themselves have no behaviour, they are just
 read-only records of what happened.
 
-    >>> print new_result.code_import.id
-    1
     >>> print new_result.machine.hostname
-    bazaar-importer
+    odin
     >>> print new_result.requesting_user
     None
     >>> print new_result.log_excerpt
     log data
+
+In order to read the actual log file, the transaction needs to be committed
+for the Librarian to save the file.
+
     >>> print new_result.log_file.read()
     several
     lines
@@ -96,40 +81,44 @@ read-only records of what happened.
     >>> from canonical.launchpad.ftests import print_date_attribute
     >>> print_date_attribute(new_result, 'date_job_started')
     2008-01-01  00:00:00+00:00
-    >>> # date_job_finished does not exist in the DB, it is assumed to
-    >>> # be the same as date_created.
+
+The code import result date_job_finished does not exist in the DB but
+instead is an alias to date_created.
+
     >>> print_date_attribute(new_result, 'date_created')
-    UTC_NOW
+    2008-01-01  04:00:00+00:00
+    >>> print new_result.date_job_finished
+    2008-01-01  04:00:00+00:00
+
+A helper property exists to give the duration of the job run.
+
+    >>> print new_result.job_duration
+    4:00:00
 
 
 == Retrieving CodeImportResults ==
 
 The CodeImportResult objects for a given import can be retrieved in
-reverse chronological order with the getResultsForImport method.
+reverse chronological order with the results attribute on a code import.
 
 We need to create a few result objects before we can test that this
 method works as expected.
 
     >>> oldest_result = new_result
-    >>> def make_result(date_job_started, code_import=sample_import):
-    ...     """Create a CodeImportResult with the provided details."""
-    ...     return result_set.new(
-    ...        code_import, sample_machine, None, None, None,
-    ...        CodeImportResultStatus.SUCCESS, date_job_started)
-    >>> middle_result = make_result(time_source.next())
-    >>> newest_result = make_result(time_source.next())
+    >>> middle_result = factory.makeCodeImportResult(
+    ...     sample_import, date_started = time_source.next())
+    >>> newest_result = factory.makeCodeImportResult(
+    ...     sample_import, date_started = time_source.next())
 
 Results for other imports of course should not be present in the
 results, so we should create one of those just to be sure that it's
 not present.
 
-    >>> result_for_other_import = make_result(
-    ...     time_source.next(),
-    ...     code_import=getUtility(ICodeImportSet).get(2))
+    >>> result_for_other_import = factory.makeCodeImportResult()
 
 Then we can test that the results are in the order expected.
 
-    >>> results = list(result_set.getResultsForImport(sample_import))
+    >>> results = list(sample_import.results)
     >>> len(results)
     3
     >>> results.index(newest_result)

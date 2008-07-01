@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import os
 import shutil
+from StringIO import StringIO
 import tempfile
 import unittest
 
@@ -32,11 +33,12 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    IDistroSeriesSet, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus)
+    IDistroSeriesSet, ILibraryFileAliasSet, NonBuildableSourceUploadError,
+    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
+    QueueInconsistentStateError)
 from canonical.launchpad.mail import stub
+from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.mail_helpers import pop_notifications
-
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -91,13 +93,33 @@ class TestUploadProcessorBase(unittest.TestCase):
                         "'%s' is not in logged output\n\n%s"
                         % (line, '\n'.join(self.log.lines)))
 
+    def assertRaisesAndReturnError(self, excClass, callableObj, *args,
+                                   **kwargs):
+        """See `TestCase.assertRaises`.
+
+        Unlike `TestCase.assertRaises`, this method returns the exception
+        object when it is raised.  Callsites can then easily check the
+        exception contents.
+        """
+        try:
+            callableObj(*args, **kwargs)
+        except excClass, error:
+            return error
+        else:
+            if getattr(excClass, '__name__', None) is not None:
+                excName = excClass.__name__
+            else:
+                excName = str(excClass)
+            raise self.failureException, "%s not raised" % excName
+
     def setupBreezy(self):
         """Create a fresh distroseries in ubuntu.
 
         Use *initialiseFromParent* procedure to create 'breezy'
         on ubuntu based on the last 'breezy-autotest'.
 
-        Also sets 'changeslist' and 'nominatedarchindep' properly.
+        Also sets 'changeslist' and 'nominatedarchindep' properly and
+        creates a chroot for breezy-autotest/i386 distroarchseries.
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
@@ -109,10 +131,20 @@ class TestUploadProcessorBase(unittest.TestCase):
         breezy_i386 = self.breezy.newArch(
             'i386', bat['i386'].processorfamily, True, self.breezy.owner)
         self.breezy.nominatedarchindep = breezy_i386
+
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        breezy_i386.addOrUpdateChroot(fake_chroot)
+
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
         self.breezy.initialiseFromParent()
 
-    def queueUpload(self, upload_name, relative_path=""):
+    def addMockFile(self, filename, content="anything"):
+        """Return a librarian file."""
+        return getUtility(ILibraryFileAliasSet).create(
+            filename, len(content), StringIO(content),
+            'application/x-gtar')
+
+    def queueUpload(self, upload_name, relative_path="", test_files_dir=None):
         """Queue one of our test uploads.
 
         upload_name is the name of the test upload directory. It is also
@@ -124,7 +156,9 @@ class TestUploadProcessorBase(unittest.TestCase):
         """
         target_path = os.path.join(
             self.queue_folder, "incoming", upload_name, relative_path)
-        upload_dir = os.path.join(self.test_files_dir, upload_name)
+        if test_files_dir is None:
+            test_files_dir = self.test_files_dir
+        upload_dir = os.path.join(test_files_dir, upload_name)
         if relative_path:
             os.makedirs(os.path.dirname(target_path))
         shutil.copytree(upload_dir, target_path)
@@ -231,6 +265,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             pubrec = queue_item.sources[0].publish(self.log)
         else:
             pubrec = queue_item.builds[0].publish(self.log)
+        return pubrec
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.
@@ -311,8 +346,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         queue_item.setAccepted()
         pubrec = queue_item.sources[0].publish(self.log)
-        pubrec.status = PackagePublishingStatus.PUBLISHED
-        pubrec.datepublished = UTC_NOW
+        pubrec.secure_record.status = PackagePublishingStatus.PUBLISHED
+        pubrec.secure_record.datepublished = UTC_NOW
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
@@ -342,6 +377,69 @@ class TestUploadProcessor(TestUploadProcessorBase):
             queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
 
+    def testDuplicatedBinaryUploadGetsRejected(self):
+        """The upload processor rejects duplicated binary uploads.
+
+        Duplicated binary uploads should be rejected, because they can't
+        be published on disk, since it will be introducing different contents
+        to the same filename in the archive.
+
+        Such situation happens when a source gets copied to another suite in
+        the same archive. The binary rebuild will have the same (name, version)
+        of the original binary and will certainly have a different content
+        (at least, the ar-compressed timestamps) making it impossible to be
+        published in the archive.
+        """
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+
+        # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        bar_source_pub = self._publishPackage('bar', '1.0-1')
+        [bar_original_build] = bar_source_pub.createMissingBuilds()
+
+        self.options.context = 'buildd'
+        self.options.buildid = bar_original_build.id
+        upload_dir = self.queueUpload("bar_1.0-1_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+        [bar_binary_pub] = self._publishPackage("bar", "1.0-1", source=False)
+
+        # Prepare ubuntu/breezy-autotest to build sources in i386.
+        breezy_autotest = self.ubuntu['breezy-autotest']
+        breezy_autotest_i386 = breezy_autotest['i386']
+        breezy_autotest.nominatedarchindep = breezy_autotest_i386
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
+        self.layer.txn.commit()
+
+        # Copy 'bar-1.0-1' source from breezy to breezy-autotest.
+        bar_copied_source = bar_source_pub.copyTo(
+            breezy_autotest, PackagePublishingPocket.RELEASE,
+            self.ubuntu.main_archive)
+        [bar_copied_build] = bar_copied_source.createMissingBuilds()
+
+        # Re-upload the same 'bar-1.0-1' binary as if it was rebuilt
+        # in breezy-autotest context.
+        shutil.rmtree(upload_dir)
+        self.options.buildid = bar_copied_build.id
+        self.options.distroseries = breezy_autotest.name
+        upload_dir = self.queueUpload("bar_1.0-1_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+        [duplicated_binary_upload] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='bar',
+            version='1.0-1', exact_match=True)
+
+        # The just uploaded binary cannot be accepted because its
+        # filename 'bar_1.0-1_i386.deb' is already published in the
+        # archive.
+        error = self.assertRaisesAndReturnError(
+            QueueInconsistentStateError,
+            duplicated_binary_upload.setAccepted)
+        self.assertEqual(
+            str(error),
+            "The following files are already published in Primary "
+            "Archive for Ubuntu Linux:\nbar_1.0-1_i386.deb")
+
     def testPartnerArchiveMissingForPartnerUploadFails(self):
         """A missing partner archive should produce a rejection email.
 
@@ -353,10 +451,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
             policy='anything')
 
         # Fudge the partner archive in the sample data temporarily so that
-        # it's now an embargoed archive instead.
+        # it's now a PPA instead.
         archive = getUtility(IArchiveSet).getByDistroPurpose(
             distribution=self.ubuntu, purpose=ArchivePurpose.PARTNER)
-        removeSecurityProxy(archive).purpose = ArchivePurpose.EMBARGOED
+        removeSecurityProxy(archive).purpose = ArchivePurpose.PPA
 
         self.layer.txn.commit()
 
@@ -538,7 +636,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             build.title,
             'i386 build of foocomm 1.0-2 in ubuntu breezy RELEASE')
         self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(build.buildqueue_record.lastscore, 1255)
+        self.assertEqual(build.buildqueue_record.lastscore, 4255)
 
         # Upload the next binary version of the package.
         upload_dir = self.queueUpload("foocomm_1.0-2_binary")
@@ -788,6 +886,65 @@ class TestUploadProcessor(TestUploadProcessorBase):
             queue_items.count(), 1,
             "Expected one 'bar' item in the queue, actually got %d."
                 % queue_items.count())
+
+    def testUploadResultingInNoBuilds(self):
+        """Source uploads resulting in no builds are rejected.
+
+        If a new source upload results in no builds, it can't be accepted
+        from queue, so the archive-admin will be forced to rejected it.
+
+        If a auto-accepted source upload results in no builds, like a known
+        ubuntu or a PPA upload, it will be rejected yet in upload time,
+        resulting in an upload rejection message.
+
+        It usually happens for sources targeted to architectures not
+        supported in ubuntu.
+
+        This way we don't create false expectations accepting sources that
+        won't be ever built.
+        """
+        self.setupBreezy()
+
+        # New 'biscuit' source building in 'm68k' only can't be accepted.
+        # The archive-admin will be forced to reject it manually.
+        packager = FakePackager(
+            'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+        packager.buildUpstream(suite=self.breezy.name, arch="m68k")
+        packager.buildSource()
+        upload = packager.uploadSourceVersion(
+            '1.0-1', auto_accept=False)
+        upload.do_accept(notify=False)
+
+        # Let's commit because acceptFromQueue needs to access the
+        # just-uploaded changesfile from librarian.
+        self.layer.txn.commit()
+
+        error = self.assertRaisesAndReturnError(
+            NonBuildableSourceUploadError,
+            upload.queue_root.acceptFromQueue, 'announce@ubuntu.com')
+        self.assertEqual(
+            str(error),
+            "Cannot build any of the architectures requested: m68k")
+
+        # 'biscuit_1.0-2' building on i386 get accepted and published.
+        packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
+        packager.buildSource()
+        biscuit_pub = packager.uploadSourceVersion('1.0-2')
+        self.assertEqual(biscuit_pub.status, PackagePublishingStatus.PENDING)
+
+        # A auto-accepted version building only in hppa, which also doesn't
+        # exist in breezy gets rejected yet in upload time (meaning, the
+        # uploader will receive a rejection email).
+        packager.buildVersion('1.0-3', suite=self.breezy.name, arch="m68k")
+        packager.buildSource()
+        upload = packager.uploadSourceVersion('1.0-3', auto_accept=False)
+
+        error = self.assertRaisesAndReturnError(
+            NonBuildableSourceUploadError,
+            upload.storeObjectsInDatabase)
+        self.assertEqual(
+            str(error),
+            "Cannot build any of the architectures requested: m68k")
 
 
 def test_suite():

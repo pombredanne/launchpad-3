@@ -2,11 +2,13 @@
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, List, Object, Text
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.pofile import IPOFile
+from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet
 from canonical.launchpad.interfaces.potranslation import IPOTranslation
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -87,6 +89,18 @@ class ITranslationMessage(Interface):
     pofile = Object(
         title=_("The translation file from where this translation comes"),
         readonly=True, required=True, schema=IPOFile)
+
+    potemplate = Object(
+        title=_("The template this translation is in"),
+        readonly=False, required=False, schema=IPOTemplate)
+
+    language = Choice(
+        title=_('Language of this translation message.'),
+        vocabulary='Language', required=False)
+
+    variant = TextLine(
+        title=_('The language variant for this translation message.'),
+        default=None)
 
     potmsgset = Object(
         title=_("The template message that this translation is for"),

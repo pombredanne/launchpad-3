@@ -8,14 +8,13 @@ __all__ = [
     'BugTrackerAliasSet',
     'BugTrackerSet']
 
-import re
-
 from itertools import chain
 # splittype is not formally documented, but is in urllib.__all__, is
 # simple, and is heavily used by the rest of urllib, hence is unlikely
 # to change or go away.
 from urllib import splittype
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
@@ -24,24 +23,28 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, sqlvalues)
+    SQLBase, flush_database_updates, sqlvalues)
 
+from canonical.launchpad.database.bugtrackerperson import BugTrackerPerson
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.bugtrackerperson import (
+    BugTrackerPersonAlreadyExists)
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
     IBugTrackerSet, NotFoundError)
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp.uri import URI
 
 
 def normalise_leading_slashes(rest):
     """Ensure that the 'rest' segment of a URL starts with //."""
-    slashre = re.compile('^/*(.*)')
-    return '//' + slashre.match(rest).group(1)
+    return '//' + rest.lstrip('/')
 
 
 def normalise_base_url(base_url):
@@ -87,6 +90,7 @@ def base_url_permutations(base_url):
             alternative_urls.append(url + '/')
     return alternative_urls
 
+
 def make_bugtracker_name(uri):
     """Return a name string for a bug tracker based on a URI.
 
@@ -98,12 +102,31 @@ def make_bugtracker_name(uri):
         if valid_email(base_uri.path):
             base_name = base_uri.path.split('@', 1)[0]
         else:
-            raise ValueError(
+            raise AssertionError(
                 'Not a valid email address: %s' % base_uri.path)
     else:
         base_name = base_uri.host
 
     return 'auto-%s' % base_name
+
+
+def make_bugtracker_title(uri):
+    """Return a title string for a bug tracker based on a URI.
+
+    :param uri: The base URI to be used to identify the bug tracker,
+        e.g. http://bugs.example.com or mailto:bugs@example.com
+    """
+    base_uri = URI(uri)
+    if base_uri.scheme == 'mailto':
+        if valid_email(base_uri.path):
+            local_part, domain = base_uri.path.split('@', 1)
+            domain_parts = domain.split('.')
+            return 'Email to %s@%s' % (local_part, domain_parts[0])
+        else:
+            raise AssertionError(
+                'Not a valid email address: %s' % base_uri.path)
+    else:
+        return base_uri.host + base_uri.path
 
 
 class BugTracker(SQLBase):
@@ -126,7 +149,7 @@ class BugTracker(SQLBase):
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     contactdetails = StringCol(notNull=False)
     projects = SQLMultipleJoin(
         'Project', joinColumn='bugtracker', orderBy='name')
@@ -172,8 +195,9 @@ class BugTracker(SQLBase):
         """See `IBugTracker.aliases`."""
         alias_urls = set(alias.base_url for alias in self._bugtracker_aliases)
         # Although it does no harm if the current baseurl is also an
-        # alias, we hide it here to avoid confusion.
-        alias_urls.discard(self.baseurl)
+        # alias, we hide it and all its permutations to avoid
+        # confusion.
+        alias_urls.difference_update(base_url_permutations(self.baseurl))
         return tuple(sorted(alias_urls))
 
     def _set_aliases(self, alias_urls):
@@ -215,6 +239,59 @@ class BugTracker(SQLBase):
                 (BugWatch.q.bugtrackerID == self.id)),
             orderBy=BugMessage.q.id)
 
+    def getLinkedPersonByName(self, name):
+        """Return the Person with a given name on this bugtracker."""
+        return BugTrackerPerson.selectOneBy(name=name, bugtracker=self)
+
+    def linkPersonToSelf(self, name, person):
+        """See `IBugTrackerSet`."""
+        # Check that this name isn't already in use for this bugtracker.
+        if self.getLinkedPersonByName(name) is not None:
+            raise BugTrackerPersonAlreadyExists(
+                "Name '%s' is already in use for bugtracker '%s'." %
+                (name, self.name))
+
+        bugtracker_person = BugTrackerPerson(
+            name=name, bugtracker=self, person=person)
+
+        return bugtracker_person
+
+    def ensurePersonForSelf(
+        self, display_name, email, rationale, creation_comment):
+        """Return a Person that is linked to this bug tracker."""
+        # If we have an email address to work with we can use
+        # ensurePerson() to get the Person we need.
+        if email is not None:
+            return getUtility(IPersonSet).ensurePerson(
+                email, display_name, rationale, creation_comment)
+
+        # First, see if there's already a BugTrackerPerson for this
+        # display_name on this bugtracker. If there is, return it.
+        bugtracker_person = self.getLinkedPersonByName(display_name)
+
+        if bugtracker_person is not None:
+            return bugtracker_person.person
+
+        # Generate a valid Launchpad name for the Person.
+        base_canonical_name = (
+            "%s-%s" % (sanitize_name(display_name), self.name))
+        canonical_name = base_canonical_name
+
+        person_set = getUtility(IPersonSet)
+        index = 0
+        while person_set.getByName(canonical_name) is not None:
+            index += 1
+            canonical_name = "%s-%s" % (base_canonical_name, index)
+
+        person = person_set.createPersonWithoutEmail(
+            canonical_name, rationale, creation_comment,
+            displayname=display_name)
+
+        # Link the Person to the bugtracker for future reference.
+        bugtracker_person = self.linkPersonToSelf(display_name, person)
+
+        return person
+
 
 class BugTrackerSet:
     """Implements IBugTrackerSet for a container or set of BugTracker's,
@@ -252,11 +329,12 @@ class BugTrackerSet:
 
     def queryByBaseURL(self, baseurl):
         """See `IBugTrackerSet`."""
+        # All permutations we'll search for.
         permutations = base_url_permutations(baseurl)
-        # All the important parts in the next expression are lazily
-        # evaluated. SQLObject queries do not execute any SQL until
-        # results are pulled, so the first query to return a match
-        # will be the last query executed.
+        # Construct the search. All the important parts in the next
+        # expression are lazily evaluated. SQLObject queries do not
+        # execute any SQL until results are pulled, so the first query
+        # to return a match will be the last query executed.
         matching_bugtrackers = chain(
             # Search for any permutation in BugTracker.
             BugTracker.select(
@@ -266,16 +344,7 @@ class BugTrackerSet:
             (alias.bugtracker for alias in
              BugTrackerAlias.select(
                     OR(*(BugTrackerAlias.q.base_url == url
-                         for url in permutations)))),
-            # Search for a substring match in BugTracker.
-            BugTracker.select(
-                BugTracker.q.baseurl.contains(baseurl),
-                limit=1),
-            # Search for a substring match in BugTrackerAlias.
-            (alias.bugtracker for alias in
-             BugTrackerAlias.select(
-                    BugTrackerAlias.q.base_url.contains(baseurl),
-                    limit=1)))
+                         for url in permutations)))))
         # Return the first match.
         for bugtracker in matching_bugtrackers:
             return bugtracker
@@ -288,20 +357,13 @@ class BugTrackerSet:
     def ensureBugTracker(self, baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):
         """See `IBugTrackerSet`."""
-        # first try and find one without normalisation
+        # Try to find an existing bug tracker that matches.
         bugtracker = self.queryByBaseURL(baseurl)
         if bugtracker is not None:
             return bugtracker
-        # now try and normalise it
-        baseurl = normalise_base_url(baseurl)
-        bugtracker = self.queryByBaseURL(baseurl)
-        if bugtracker is not None:
-            return bugtracker
-        # create the bugtracker, we don't know about it. we'll use the
-        # normalised base url
+        # Create the bugtracker; we don't know about it.
         if name is None:
             base_name = make_bugtracker_name(baseurl)
-
             # If we detect that this name exists already we mutate it
             # until it doesn't.
             name = base_name
@@ -309,11 +371,10 @@ class BugTrackerSet:
             while self.getByName(name) is not None:
                 name = "%s-%d" % (base_name, name_increment)
                 name_increment += 1
-
         if title is None:
-            title = quote('Bug tracker at %s' % baseurl)
-        bugtracker = BugTracker(name=name,
-            bugtrackertype=bugtrackertype,
+            title = make_bugtracker_title(baseurl)
+        bugtracker = BugTracker(
+            name=name, bugtrackertype=bugtrackertype,
             title=title, summary=summary, baseurl=baseurl,
             contactdetails=contactdetails, owner=owner)
         flush_database_updates()

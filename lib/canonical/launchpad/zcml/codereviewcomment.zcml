@@ -1,0 +1,75 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- CodeReviewComment -->
+    <content class="canonical.launchpad.database.CodeReviewComment">
+        <allow interface="canonical.launchpad.interfaces.ICodeReviewComment"
+        />
+    </content>
+    <subscriber
+      for="canonical.launchpad.interfaces.ICodeReviewComment
+           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+      handler="canonical.launchpad.mailout.codereviewcomment.send" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ICodeReviewComment"
+        path_expression="string:comments/${id}"
+        attribute_to_parent="branch_merge_proposal"
+        rootsite="code" />
+
+    <browser:menus
+        module="canonical.launchpad.browser.codereviewcomment"
+        classes="CodeReviewCommentContextMenu" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ICodeReviewComment"
+        name="+index" />
+
+    <browser:pages
+        facet="branches"
+        for="canonical.launchpad.interfaces.ICodeReviewComment"
+        permission="zope.Public">
+      <browser:page
+        name="+index"
+        template="../templates/codereviewcomment-index.pt" />
+    </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeReviewComment"
+        class="canonical.launchpad.browser.CodeReviewCommentView"
+        name="+fragment"
+        permission="zope.Public"
+        template="../templates/codereviewcomment-fragment.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeReviewComment"
+        class="canonical.launchpad.browser.CodeReviewCommentSummary"
+        name="+fragment-summary"
+        permission="zope.Public"
+        template="../templates/codereviewcomment-fragment.pt" />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.ICodeReviewComment"
+      name="+macros"
+      permission="zope.Public"
+      template="../templates/codereviewcomment-macros.pt" />
+
+    <browser:page
+        name="+reply"
+        facet="branches"
+        for="canonical.launchpad.interfaces.ICodeReviewComment"
+        class="canonical.launchpad.browser.CodeReviewCommentAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/codereviewcomment-reply.pt"
+        />
+    <browser:page
+        name="+comment"
+        for="canonical.launchpad.interfaces.IBranchMergeProposal"
+        class="canonical.launchpad.browser.CodeReviewCommentAddView"
+        facet="branches"
+        permission="launchpad.AnyPerson"
+        template="../templates/codereviewcomment-reply.pt" />
+</configure>

@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Functions used with the Rosetta PO import script."""
 
@@ -47,7 +47,7 @@ class ImportProcess:
         # Get the list of each product or distroseries with pending imports.
         # We'll serve these queues in turn, one request each, until either the
         # queue is drained or our time is up.
-        importqueues = translation_import_queue.getPillarObjectsWithImports(
+        importqueues = translation_import_queue.getRequestTargets(
             RosettaImportStatus.APPROVED)
 
         if not importqueues:
@@ -103,7 +103,7 @@ class ImportProcess:
                         entry_to_import.import_into.importFromQueue(
                             entry_to_import, self.logger))
 
-                    from_email = config.rosetta.rosettaadmin.email
+                    from_email = config.rosettaadmin.email
                     to_email = helpers.contactEmailAddresses(
                         entry_to_import.importer)
                     text = MailWrapper().format(mail_body)
@@ -169,7 +169,7 @@ class ImportProcess:
 
             # Refresh the list of objects with pending imports.
             importqueues = (
-                translation_import_queue.getPillarObjectsWithImports(
+                translation_import_queue.getRequestTargets(
                     RosettaImportStatus.APPROVED))
 
         if not importqueues:

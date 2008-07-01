@@ -50,6 +50,15 @@
         attribute="xrds"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        layer="canonical.launchpad.layers.OpenIdLayer"
+        class="canonical.launchpad.browser.openidserver.PreAuthorizeRPView"
+        name="+pre-authorize-rp"
+        permission="launchpad.AnyPerson"
+        attribute="__call__"
+        />
+
     <!-- OpenID persistent identity URLs -->
     <content
         class="canonical.launchpad.browser.openiddiscovery.OpenIDPersistentIdentity">
@@ -203,6 +212,20 @@
         for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
         name="+index"
         />
+
+    <!-- IOpenIDRPSummary -->
+    <class
+        class="canonical.launchpad.database.OpenIDRPSummary">
+        <allow interface="canonical.launchpad.interfaces.IOpenIDRPSummary" />
+    </class>
+
+    <!-- IOpenIDRPSummarySet -->
+    <securedutility
+        class="canonical.launchpad.database.OpenIDRPSummarySet"
+        provides="canonical.launchpad.interfaces.IOpenIDRPSummarySet">
+        <allow
+            interface="canonical.launchpad.interfaces.IOpenIDRPSummarySet" />
+    </securedutility>
 
     <!-- A simple view used by the page tests. -->
     <browser:page

@@ -570,14 +570,10 @@ Bug 3989 -- StuarBishop 20060713
     ('', '')
     >>> process.returncode
     0
+    >>> transaction.abort()
 
 Here we can see that the membership that was active is now flagged as expired
 while the one that was inactive hasn't changed.
-
-    # These two objects were updated in another transaction, so we need to
-    # expire them.
-    >>> removeSecurityProxy(foobar_on_admins).expire()
-    >>> removeSecurityProxy(sp_on_ubuntu_translators).expire()
 
     >>> foobar_on_admins = membershipset.getByPersonAndTeam(
     ...     personset.getByName('name16'), personset.getByName('admins'))
@@ -676,10 +672,10 @@ You can check a person's direct memberships by using myactivememberships:
      (u'admins', 'Administrator'), (u't4', 'Approved')]
 
 And you can check which direct memberships a team has by using
-getActiveMemberships():
+member_memberships:
 
     >>> [(membership.person.name, membership.status.title)
-    ...  for membership in t3.getActiveMemberships()]
+    ...  for membership in t3.member_memberships]
     [(u'cprov', 'Approved'), (u'name16', 'Administrator')]
 
 A team has a number of other methods that return the people which are members
@@ -756,7 +752,7 @@ There is also the getAdministratedTeams() method that returns all the
 teams for which the person/team has admin rights.
 
     >>> [team.name for team in cprov.getAdministratedTeams()]
-    [u'guadamen', u'launchpad-buildd-admins']
+    [u'canonical-partner-dev', u'guadamen', u'launchpad-buildd-admins']
 
 == Querying a person for team participation ==
 

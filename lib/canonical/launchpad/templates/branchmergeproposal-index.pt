@@ -12,8 +12,11 @@
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-</metal:portlets>
+<style type="text/css" metal:fill-slot="head_epilogue">
+  #code-review-votes {
+    margin: 2em 0;
+  }
+</style>
 
 <div metal:fill-slot="main">
 
@@ -43,6 +46,26 @@
       Whiteboard text goes here.
     </div>
   </tal:whiteboard>
+
+  <tal:votes replace="structure context/@@+votes-with-links"/>
+
+  <div tal:define="link context/menu:context/request_review"
+       tal:condition="link/enabled"
+       tal:content="structure link/render">
+       Request review
+  </div>
+
+  <tal:comments repeat="row view/comments" >
+    <div tal:content="structure row/comment/@@+fragment-summary"
+         tal:attributes="style row/style" />
+  </tal:comments>
+
+  <div tal:define="link context/menu:context/add_comment"
+       tal:condition="link/enabled"
+       tal:content="structure link/render">
+       Add comment
+  </div>
+
 
   <div id="source-revisions"
        tal:condition="not: context/queue_status/enumvalue:MERGED">

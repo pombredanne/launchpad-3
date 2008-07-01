@@ -342,6 +342,10 @@ COMMENT ON FUNCTION mv_pillarname_project() IS
     'Trigger maintaining the PillarName table';
 
 
+-- XXX StuartBishop 20080605 bug=237576: The stored procedures
+-- maintaining the ValidPersonOrTeamCache materialized view can go
+-- once we have made a new baseline. They only still exist to stop the
+-- dev database build procedure from breaking.
 CREATE OR REPLACE FUNCTION mv_validpersonorteamcache_person() RETURNS TRIGGER
 LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
     # This trigger function could be simplified by simply issuing
@@ -367,9 +371,7 @@ LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
             WHERE Person.id = $1
                 AND ValidPersonOrTeamCache.id IS NULL
                 AND merged IS NULL
-                AND (teamowner IS NOT NULL OR (
-                    password IS NOT NULL AND EmailAddress.id IS NOT NULL
-                    ))
+                AND (teamowner IS NOT NULL OR EmailAddress.id IS NOT NULL)
             """ % vars(), param_types)
 
     new = TD["new"]
@@ -391,16 +393,13 @@ LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
 
     # Short circuit if there are no relevant changes
     if (new["teamowner"] == old["teamowner"]
-        and new["password"] == old["password"]
         and new["merged"] == old["merged"]):
         return
 
     # This function is only dealing with updates to the Person table.
     # This means we do not have to worry about EmailAddress changes here
 
-    if (new["merged"] is not None
-        or (new["teamowner"] is None and new["password"] is None)
-        ):
+    if (new["merged"] is not None or new["teamowner"] is None):
         plpy.execute(SD["delete_plan"], query_params)
     else:
         plpy.execute(SD["maybe_insert_plan"], query_params)
@@ -443,7 +442,7 @@ RETURNS TRIGGER LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
                 AND ValidPersonOrTeamCache.id IS NULL
                 AND status = %(PREF)d
                 AND merged IS NULL
-                AND password IS NOT NULL
+                -- AND password IS NOT NULL
             """ % vars(), param_types)
 
     def is_team(person_id):
@@ -500,110 +499,6 @@ RETURNS TRIGGER LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
 $$;
 
 COMMENT ON FUNCTION mv_validpersonorteamcache_emailaddress() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the EmailAddress table';
-
--- XXX CarlosPerelloMarin 2007-10-24: This function is not needed anymore,
--- once we stop using patch-88 series.
-CREATE OR REPLACE FUNCTION mv_pofiletranslator_posubmission() RETURNS TRIGGER
-VOLATILE SECURITY DEFINER AS $$
-DECLARE
-    v_pofile INTEGER;
-    v_trash_old BOOLEAN;
-BEGIN
-    -- If we are deleting a row, we need to remove the existing
-    -- POFileTranslator row and reinsert the historical data if it exists.
-    -- We also treat UPDATEs that change the key (person, pofile) the same
-    -- as deletes. UPDATEs that don't change these columns are treated like
-    -- INSERTs below.
-    IF TG_OP = 'INSERT' THEN
-        v_trash_old := FALSE;
-    ELSIF TG_OP = 'DELETE' THEN
-        v_trash_old := TRUE;
-    ELSE -- UPDATE
-        v_trash_old = (
-            OLD.person != NEW.person OR OLD.pomsgset != NEW.pomsgset
-            );
-    END IF;
-
-    IF v_trash_old THEN
-
-        -- Delete the old record.
-        DELETE FROM POFileTranslator USING POMsgSet
-        WHERE POFileTranslator.pofile = POMsgSet.pofile
-            AND POFileTranslator.person = OLD.person
-            AND POMsgSet.id = OLD.pomsgset;
-
-        -- Insert a past record if there is one.
-        INSERT INTO POFileTranslator (
-            person, pofile, latest_posubmission, date_last_touched
-            )
-            SELECT DISTINCT ON (POSubmission.person, POMsgSet.pofile)
-                POSubmission.person, POMsgSet.pofile,
-                POSubmission.id, POSubmission.datecreated
-            FROM POSubmission, POMsgSet
-            WHERE POSubmission.pomsgset = POMsgSet.id
-                AND POSubmission.pomsgset = OLD.pomsgset
-                AND POSubmission.person = OLD.person
-            ORDER BY
-                POSubmission.person, POMsgSet.pofile,
-                POSubmission.datecreated DESC, POSubmission.id DESC;
-
-        -- No NEW with DELETE, so we can short circuit and leave.
-        IF TG_OP = 'DELETE' THEN
-            RETURN NULL; -- Ignored because this is an AFTER trigger
-        END IF;
-    END IF;
-
-    -- Get our new pofile id
-    SELECT INTO v_pofile POMsgSet.pofile FROM POMsgSet
-    WHERE POMsgSet.id = NEW.pomsgset;
-
-    -- Standard 'upsert' loop to avoid race conditions.
-    LOOP
-        UPDATE POFileTranslator
-            SET
-                date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
-                latest_posubmission = NEW.id
-            WHERE
-                person = NEW.person
-                AND pofile = v_pofile;
-        IF found THEN
-            RETURN NULL; -- Return value ignored as this is an AFTER trigger
-        END IF;
-
-        BEGIN
-            INSERT INTO POFileTranslator (person, pofile, latest_posubmission)
-            VALUES (NEW.person, v_pofile, NEW.id);
-            RETURN NULL; -- Return value ignored as this is an AFTER trigger
-        EXCEPTION WHEN unique_violation THEN
-            -- do nothing
-        END;
-    END LOOP;
-END;
-$$ LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION mv_pofiletranslator_posubmission() IS
-    'Trigger maintaining the POFileTranslator table';
-
--- XXX CarlosPerelloMarin 2007-10-24: This function is not needed anymore,
--- once we stop using patch-88 series.
-CREATE OR REPLACE FUNCTION mv_pofiletranslator_pomsgset() RETURNS TRIGGER
-VOLATILE SECURITY INVOKER AS $$
-BEGIN
-    IF TG_OP = 'DELETE' THEN
-        RAISE EXCEPTION
-            'Deletions from POMsgSet not supported by the POFileTranslator materialized view';
-    ELSIF TG_OP = 'UPDATE' THEN
-        IF OLD.pofile != NEW.pofile THEN
-            RAISE EXCEPTION
-                'Changing POMsgSet.pofile not supported by the POFileTranslator materialized view';
-        END IF;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION mv_pofiletranslator_pomsgset() IS
-    'Trigger enforing no POMsgSet deletions or POMsgSet.pofile changes';
 
 
 CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
@@ -838,7 +733,45 @@ $$;
 
 COMMENT ON FUNCTION set_shipit_normalized_address() IS 'Store a normalized concatenation of the request''s address into the normalized_address column.';
 
+CREATE OR REPLACE FUNCTION generate_openid_identifier() RETURNS text
+LANGUAGE plpythonu VOLATILE AS
+$$
+    from random import choice
 
+    # Non display confusing characters.
+    chars = '34678bcdefhkmnprstwxyzABCDEFGHJKLMNPQRTWXY'
+
+    # Character length of tokens. Can be increased, decreased or even made
+    # random - Launchpad does not care. 7 means it takes 40 bytes to store
+    # a null-terminated Launchpad identity URL on the current domain name.
+    length=7
+
+    loop_count = 0
+    while loop_count < 20000:
+        # Generate a random openid_identifier
+        oid = ''.join(choice(chars) for count in range(length))
+
+        # Check if the oid is already in the db, although this is pretty
+        # unlikely
+        rv = plpy.execute("""
+            SELECT COUNT(*) AS num FROM Account WHERE openid_identifier = '%s'
+            """ % oid, 1)
+        if rv[0]['num'] == 0:
+            return oid
+        loop_count += 1
+        if loop_count == 1:
+            plpy.warning(
+                'Clash generating unique openid_identifier. '
+                'Increase length if you see this warning too much.')
+    plpy.error(
+        "Unable to generate unique openid_identifier. "
+        "Need to increase length of tokens.")
+$$;
+
+
+--
+-- Obsolete - remove after next baseline
+--
 CREATE OR REPLACE FUNCTION set_openid_identifier() RETURNS trigger
 LANGUAGE plpythonu AS
 $$
@@ -971,3 +904,16 @@ $$;
 COMMENT ON FUNCTION set_bug_message_count() IS
 'AFTER UPDATE trigger on BugMessage maintaining the Bug.message_count column';
 
+
+CREATE OR REPLACE FUNCTION set_date_status_set() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.status <> NEW.status THEN
+        NEW.date_status_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION set_date_status_set() IS 'BEFORE UPDATE trigger on Account that maintains the Account.date_status_set column.';

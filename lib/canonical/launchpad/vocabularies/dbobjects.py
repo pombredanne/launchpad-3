@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Vocabularies pulling stuff from the database.
 
@@ -11,18 +11,19 @@ __metaclass__ = type
 __all__ = [
     'ActiveMailingListVocabulary',
     'BountyVocabulary',
-    'BranchVocabulary',
     'BranchRestrictedOnProductVocabulary',
+    'BranchVocabulary',
     'BugNominatableSeriesesVocabulary',
-    'BugVocabulary',
     'BugTrackerVocabulary',
+    'BugVocabulary',
     'BugWatchVocabulary',
+    'CommercialProjectsVocabulary',
     'ComponentVocabulary',
     'CountryNameVocabulary',
-    'DistributionVocabulary',
-    'DistributionOrProductVocabulary',
     'DistributionOrProductOrProjectVocabulary',
+    'DistributionOrProductVocabulary',
     'DistributionUsingMaloneVocabulary',
+    'DistributionVocabulary',
     'DistroSeriesVocabulary',
     'FAQVocabulary',
     'FeaturedProjectVocabulary',
@@ -37,44 +38,47 @@ __all__ = [
     'LanguageVocabulary',
     'MilestoneVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
-    'PackageReleaseVocabulary',
     'PPAVocabulary',
+    'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
-    'PersonActiveMembershipPlusSelfVocabulary',
-    'person_team_participations_vocabulary_factory',
-    'ProcessorVocabulary',
     'ProcessorFamilyVocabulary',
+    'ProcessorVocabulary',
     'ProductReleaseVocabulary',
     'ProductSeriesVocabulary',
     'ProductVocabulary',
     'ProjectVocabulary',
-    'project_products_vocabulary_factory',
-    'project_products_using_malone_vocabulary_factory',
-    'SpecificationVocabulary',
-    'SpecificationDependenciesVocabulary',
     'SpecificationDepCandidatesVocabulary',
+    'SpecificationDependenciesVocabulary',
+    'SpecificationVocabulary',
     'SprintVocabulary',
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'TranslationMessageVocabulary',
     'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
-    'ValidTeamVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
+    'ValidTeamVocabulary',
+    'WebBugTrackerVocabulary',
+    'person_team_participations_vocabulary_factory',
+    'project_products_using_malone_vocabulary_factory',
+    'project_products_vocabulary_factory',
+    'user_public_team_participations_and_self_vocabulary_factory',
     ]
 
 import cgi
 from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
+from storm.expr import SQL
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
     Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component,
     Country, Distribution, DistroArchSeries, DistroSeries, FeaturedProject,
@@ -86,17 +90,20 @@ from canonical.launchpad.database import (
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, EmailAddressStatus, IBranch,
-    IBugTask, IDistribution, IDistributionSourcePackage, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget,
-    ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet, IPerson,
-    IPersonSet, IPillarName, IProduct, IProductSeries, IProject,
-    ISourcePackage, ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
-    MailingListStatus, PersonVisibility)
+    ArchivePurpose, BugTrackerType, DistroSeriesStatus, EmailAddressStatus,
+    IBranch, IBugTask, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
+    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
+    IPerson, IPersonSet, IPillarName, IProduct, IProductSeries,
+    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification, ITeam,
+    IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
 
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
+
+from canonical.launchpad.webapp.tales import (
+    DateTimeFormatterAPI, FormattersAPI)
 
 
 class BasePersonVocabulary:
@@ -166,19 +173,18 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        branch_set = BranchSet()
-        branch = branch_set.getByUniqueName(token)
+        branch = self._getExactMatch(token)
         # fall back to interpreting the token as a branch URL
-        if branch is None:
-            url = token.rstrip('/')
-            branch = branch_set.getByUrl(url)
         if branch is None:
             raise LookupError(token)
         return self.toTerm(branch)
 
     def _getExactMatch(self, query):
         """Return the branch if query is a valid unique_name."""
-        return BranchSet().getByUniqueName(query)
+        branch = BranchSet().getByUniqueName(query)
+        if branch is not None:
+            return branch
+        return BranchSet().getByUrl(query.rstrip('/'))
 
     def searchForTerms(self, query=None):
         """See `SQLObjectVocabularyBase`."""
@@ -296,7 +302,6 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def __init__(self, context=None):
         BranchVocabularyBase.__init__(self, context)
-
         if IProduct.providedBy(self.context):
             self.product = self.context
         elif IProductSeries.providedBy(self.context):
@@ -309,7 +314,8 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 
     def _getExactMatch(self, query):
         """Return the branch if query is a valid unique_name."""
-        branch = BranchSet().getByUniqueName(query)
+        branch = super(
+            BranchRestrictedOnProductVocabulary, self)._getExactMatch(query)
         if branch is not None:
             if branch.product == self.product:
                 return branch
@@ -350,6 +356,12 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
 
     _table = BugTracker
     _orderBy = 'title'
+
+
+class WebBugTrackerVocabulary(BugTrackerVocabulary):
+    """All web-based bug tracker types."""
+
+    _filter = BugTracker.q.bugtrackertype != BugTrackerType.EMAILADDRESS
 
 
 class FAQVocabulary:
@@ -690,7 +702,7 @@ class PersonAccountToMergeVocabulary(
 
     def _select(self, text=""):
         return getUtility(IPersonSet).findPerson(
-            text, exclude_inactive_accounts=False)
+            text, exclude_inactive_accounts=False, must_have_email=True)
 
     def search(self, text):
         """Return people whose fti or email address match :text."""
@@ -812,6 +824,47 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             text = ''
         return self._doSearch(text=text)
 
+    def _doSearch(self, text=""):
+        """Return the teams whose fti or email address match :text:"""
+        if self.extra_clause:
+            extra_clause = " AND %s" % self.extra_clause
+        else:
+            extra_clause = ""
+
+        if not text:
+            query = """
+                teamowner IS NOT NULL AND Person.visibility = %s
+                """ % quote(PersonVisibility.PUBLIC)
+            query += extra_clause
+            return Person.select(query)
+
+        name_match_query = """
+            Person.fti @@ ftq(%s)
+            AND Person.visibility = %s
+            AND teamowner IS NOT NULL
+            """ % (quote(text), quote(PersonVisibility.PUBLIC))
+        name_match_query += extra_clause
+        name_matches = Person.select(name_match_query)
+
+        # Note that we must use lower(email) LIKE rather than ILIKE
+        # as ILIKE no longer appears to be hitting the index under PG8.0
+
+        email_match_query = """
+            EmailAddress.person = Person.id
+            AND lower(email) LIKE %s || '%%'
+            AND Person.visibility = %s
+            AND teamowner IS NOT NULL
+            """ % (quote_like(text), quote(PersonVisibility.PUBLIC))
+        email_match_query += extra_clause
+        email_matches = Person.select(
+            email_match_query, clauseTables=['EmailAddress'])
+
+        # XXX Guilherme Salgado 2006-01-30 bug=30053:
+        # We have to explicitly provide an orderBy here as a workaround
+        return name_matches.union(
+            email_matches, orderBy=['displayname', 'name'])
+
+
 
 class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
     """The set of valid members of a given team.
@@ -908,22 +961,6 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class PersonActiveMembershipPlusSelfVocabulary(
-    PersonActiveMembershipVocabulary):
-    """The logged in user, and all the teams they are a member of."""
-
-    def __init__(self, context):
-        # We are interested in the logged in user, not the actual context.
-        logged_in_user = getUtility(ILaunchBag).user
-        PersonActiveMembershipVocabulary.__init__(self, logged_in_user)
-
-    def _get_teams(self):
-        """See `PersonActiveMembershipVocabulary`."""
-        teams = PersonActiveMembershipVocabulary._get_teams(self)
-        # Add the logged in user as the first item.
-        return [self.context] + teams
-
-
 class ActiveMailingListVocabulary:
     """The set of all active mailing lists."""
 
@@ -1006,6 +1043,11 @@ class ActiveMailingListVocabulary:
         return CountableIterator(results.count(), results, self.toTerm)
 
 
+def person_term(person):
+    """Return a SimpleTerm for the `Person`."""
+    return SimpleTerm(person, person.name, title=person.displayname)
+
+
 def person_team_participations_vocabulary_factory(context):
     """Return a SimpleVocabulary containing the teams a person
     participate in.
@@ -1013,8 +1055,21 @@ def person_team_participations_vocabulary_factory(context):
     assert context is not None
     person = IPerson(context)
     return SimpleVocabulary([
-        SimpleTerm(team, team.name, title=team.displayname)
-        for team in person.teams_participated_in])
+        person_term(team) for team in person.teams_participated_in])
+
+
+def user_public_team_participations_and_self_vocabulary_factory(context):
+    """Return a SimpleVocabulary containing the public teams that the logged
+    in user participates in, along with the logged in user themselves.
+    """
+    logged_in_user = getUtility(ILaunchBag).user
+    assert logged_in_user is not None
+    terms = [person_term(logged_in_user)]
+    terms.extend([
+            person_term(team)
+            for team in logged_in_user.teams_participated_in
+            if team.visibility == PersonVisibility.PUBLIC])
+    return SimpleVocabulary(terms)
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
@@ -1216,17 +1271,16 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.displayname)
 
-    def __iter__(self):
-        target = None
-
-        milestone_context = self.context
-
+    @staticmethod
+    def getMilestoneTarget(milestone_context):
         if IUpstreamBugTask.providedBy(milestone_context):
             target = milestone_context.product
         elif IDistroBugTask.providedBy(milestone_context):
             target = milestone_context.distribution
         elif IDistroSeriesBugTask.providedBy(milestone_context):
             target = milestone_context.distroseries
+        elif IProductSeriesBugTask.providedBy(milestone_context):
+            target = milestone_context.productseries
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
@@ -1242,6 +1296,12 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # We didn't find a context that can have milestones attached
             # to it.
             target = None
+        return target
+
+    @cachedproperty
+    def visible_milestones(self):
+        milestone_context = self.context
+        target = MilestoneVocabulary.getMilestoneTarget(milestone_context)
 
         # XXX: Brad Bollenbach 2006-02-24: Listifying milestones is
         # evil, but we need to sort the milestones by a non-database
@@ -1257,6 +1317,15 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                     (milestone for product in target.products
                      for milestone in product.all_milestones),
                     longest_expected=40)
+            elif IProductSeries.providedBy(target):
+                series_milestones = shortlist(target.all_milestones,
+                                              longest_expected=40)
+                product_milestones = shortlist(target.product.all_milestones,
+                                               longest_expected=40)
+                # Some milestones are associtaed with a product
+                # and a product series; these should appear only
+                # once.
+                milestones = set(series_milestones + product_milestones)
             else:
                 milestones = shortlist(
                     target.all_milestones, longest_expected=40)
@@ -1275,9 +1344,11 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # linked to it. Include such milestones in the vocabulary to
             # ensure that the +editstatus page doesn't break.
             visible_milestones.append(milestone_context.milestone)
+        return sorted(visible_milestones, key=attrgetter('displayname'))
 
-        for ms in sorted(visible_milestones, key=attrgetter('displayname')):
-            yield self.toTerm(ms)
+    def __iter__(self):
+        for milestone in self.visible_milestones:
+            yield self.toTerm(milestone)
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):
@@ -1316,6 +1387,84 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
                 yield SimpleTerm(spec, spec.name, spec.title)
 
 
+class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
+    """List commercial projects a user administers.
+
+    A commercial project is one that does not qualify for free hosting.
+    """
+
+    implements(IHugeVocabulary)
+
+    _table = Product
+    _orderBy = 'displayname'
+
+    @property
+    def displayname(self):
+        return 'Select one of the commercial projects administered by %s' % (
+            self.context.displayname)
+
+    def _filter_projs(self, projects):
+        """Filter the list of all projects to just the commercial ones."""
+        return [
+            project for project in sorted(projects,
+                                          key=attrgetter('displayname'))
+            if not project.qualifies_for_free_hosting
+            ]
+
+    def _doSearch(self, query):
+        """Return terms where query is in the text of name
+        or displayname, or matches the full text index.
+        """
+        user = self.context
+        if user is None:
+            return self.emptySelectResults()
+
+        projects = user.getOwnedProjects(match_name=query)
+        commercial_projects = self._filter_projs(projects)
+        return commercial_projects
+
+    def toTerm(self, project):
+        """Return the term for this object."""
+        if project.commercial_subscription is None:
+            sub_status = "(unsubscribed)"
+        else:
+            date_formatter = DateTimeFormatterAPI(
+                project.commercial_subscription.date_expires)
+            sub_status = "(expires %s)" % date_formatter.displaydate()
+        return SimpleTerm(project,
+                          project.name,
+                          sub_status)
+
+    def getTermByToken(self, token):
+        """Return the term for the given token."""
+        search_results = self._doSearch(token)
+        for search_result in search_results:
+            if search_result.name == token:
+                return self.toTerm(search_result)
+        raise LookupError(token)
+
+    def searchForTerms(self, query=None):
+        """See `SQLObjectVocabularyBase`."""
+        results = self._doSearch(query)
+        return CountableIterator(len(results), results, self.toTerm)
+
+    def _commercial_projects(self):
+        """Return the list of commercial project owned by this user."""
+        user = self.context
+        if user is None:
+            return self.emptySelectResults()
+        return self._filter_projs(user.getOwnedProjects())
+
+    def __iter__(self):
+        """See `IVocabulary`."""
+        for proj in self._commercial_projects():
+            yield self.toTerm(proj)
+
+    def __contains__(self, obj):
+        """See `IVocabulary`."""
+        return obj in self._commercial_projects()
+
+
 class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
     """List specifications on which the current specification depends."""
 
@@ -1330,6 +1479,7 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
             for spec in sorted(
                 curr_spec.dependencies, key=attrgetter('title')):
                 yield SimpleTerm(spec, spec.name, spec.title)
+
 
 class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     """Specifications that could be dependencies of this spec.
@@ -1398,6 +1548,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     def __contains__(self, obj):
         return obj in self._all_specs()
 
+
 class SprintVocabulary(NamedSQLObjectVocabulary):
     _table = Sprint
 
@@ -1414,10 +1565,33 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
             yield self.toTerm(watch)
 
     def toTerm(self, watch):
-        return SimpleTerm(
-            watch, watch.id, '%s <a href="%s">#%s</a>' % (
-                cgi.escape(watch.bugtracker.title), watch.url,
-                cgi.escape(watch.remotebug)))
+        def escape(string):
+            return cgi.escape(string, quote=True)
+
+        if watch.url.startswith('mailto:'):
+            user = getUtility(ILaunchBag).user
+            if user is None:
+                title = FormattersAPI(
+                    watch.bugtracker.title).obfuscate_email()
+                return SimpleTerm(
+                    watch, watch.id, escape(title))
+            else:
+                url = watch.url
+                title = escape(watch.bugtracker.title)
+                if url in title:
+                    title = title.replace(
+                        url, '<a href="%s">%s</a>' % (
+                            escape(url), escape(url)))
+                else:
+                    title = '%s &lt;<a href="%s">%s</a>&gt;' % (
+                        title, escape(url), escape(url[7:]))
+                return SimpleTerm(watch, watch.id, title)
+        else:
+            return SimpleTerm(
+                watch, watch.id, '%s <a href="%s">#%s</a>' % (
+                    escape(watch.bugtracker.title),
+                    escape(watch.url),
+                    escape(watch.remotebug)))
 
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
@@ -1452,9 +1626,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        clause = """
-        %s AND Person.name = %s
-        """ % (self._filter, quote(token))
+        clause = AND(self._filter, Person.name == token)
 
         obj = self._table.selectOne(
             clause, clauseTables=self._clauseTables)
@@ -1473,9 +1645,9 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             return self.emptySelectResults()
 
         query = query.lower()
-        clause = """
-            %s AND (Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))
-        """ % (self._filter, quote(query), quote(query))
+        clause = AND(self._filter,
+                     SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
+                         % (quote(query), quote(query))))
 
         return self._table.select(
             clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
@@ -1843,4 +2015,3 @@ class FilteredLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
         query.append('(updates is NULL OR updates = %s)' % sqlvalues(
             self.context.language_pack_base))
         return query
-

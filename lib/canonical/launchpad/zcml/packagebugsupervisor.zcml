@@ -1,0 +1,5 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+  <content class="canonical.launchpad.database.packagebugsupervisor.PackageBugSupervisor">
+    <allow attributes="id distribution sourcepackagename bug_supervisor" />
+  </content>
+</configure>

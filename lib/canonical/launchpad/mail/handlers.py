@@ -2,10 +2,10 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 import re
 from urlparse import urlunparse
 
+from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
@@ -15,11 +15,12 @@ from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
-    EmailProcessingError, IBugAttachmentSet, IBugEditEmailCommand,
-    IBugEmailCommand, IBugTaskEditEmailCommand, IBugTaskEmailCommand,
-    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, ILibraryFileAliasSet,
-    IMailHandler, IMessageSet, IQuestionSet, ISpecificationSet,
-    IUpstreamBugTask, IWeaklyAuthenticatedPrincipal, QuestionStatus)
+    EmailProcessingError, IBranchMergeProposalGetter, IBugAttachmentSet,
+    IBugEditEmailCommand, IBugEmailCommand, IBugMessageSet,
+    IBugTaskEditEmailCommand, IBugTaskEmailCommand, CodeReviewVote,
+    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
+    IMessageSet, IQuestionSet, ISpecificationSet, IUpstreamBugTask,
+    IWeaklyAuthenticatedPrincipal, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -149,6 +150,36 @@ def reformat_wiki_text(text):
 
     return text
 
+def parse_commands(content, command_names):
+    """Extract indented commands from email body.
+
+    All commands must be indented using either spaces or tabs.  They must be
+    listed in command_names -- if not, they are silently ignored.
+
+    The special command 'done' terminates processing.  It takes no arguments.
+    Any commands that follow it will be ignored.  'done' should not be listed
+    in command_names.
+
+    While this syntax is the Launchpad standard, bug #29572 says it should be
+    changed to only accept commands at the beginning and to not require
+    indentation.
+
+    A list of (command, args) tuples is returned.
+    """
+    commands = []
+    for line in content.splitlines():
+        # All commands have to be indented.
+        if line.startswith(' ') or line.startswith('\t'):
+            command_string = line.strip()
+            if command_string == 'done':
+                # If the 'done' statement is encountered,
+                # stop reading any more commands.
+                break
+            words = command_string.split(' ')
+            if len(words) > 0 and words[0] in command_names:
+                commands.append((words[0], words[1:]))
+    return commands
+
 
 class MaloneHandler:
     """Handles emails sent to Malone.
@@ -162,23 +193,11 @@ class MaloneHandler:
 
     def getCommands(self, signed_msg):
         """Returns a list of all the commands found in the email."""
-        commands = []
         content = get_main_body(signed_msg)
         if content is None:
             return []
-        # First extract all commands from the email.
-        command_names = emailcommands.names()
-        for line in content.splitlines():
-            # All commands have to be indented.
-            if line.startswith(' ') or line.startswith('\t'):
-                command_string = line.strip()
-                words = command_string.split(' ')
-                if words and words[0] in command_names:
-                    command = emailcommands.get(
-                        name=words[0], string_args=words[1:])
-                    commands.append(command)
-        return commands
-
+        return [emailcommands.get(name=name, string_args=args) for
+                name, args in parse_commands(content, emailcommands.names())]
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
@@ -234,13 +253,18 @@ class MaloneHandler:
             bugtask = None
             bugtask_event = None
 
+            processing_errors = []
             while len(commands) > 0:
                 command = commands.pop(0)
                 try:
                     if IBugEmailCommand.providedBy(command):
                         if bug_event is not None:
                             notify(bug_event)
-                            bug_event = None
+                        if (bugtask_event is not None and
+                            not ISQLObjectCreatedEvent.providedBy(bug_event)):
+                            notify(bugtask_event)
+                        bugtask = None
+                        bugtask_event = None
 
                         bug, bug_event = command.execute(
                             signed_msg, filealias)
@@ -252,7 +276,24 @@ class MaloneHandler:
                                 filealias=filealias,
                                 parsed_message=signed_msg,
                                 fallback_parent=bug.initial_message)
-                            bugmessage = bug.linkMessage(message)
+
+                            # If the new message's parent is linked to
+                            # a bug watch we also link this message to
+                            # that bug watch.
+                            bug_message_set = getUtility(IBugMessageSet)
+                            parent_bug_message = (
+                                bug_message_set.getByBugAndMessage(
+                                    bug, message.parent))
+
+                            if (parent_bug_message is not None and
+                                parent_bug_message.bugwatch):
+                                bug_watch = parent_bug_message.bugwatch
+                            else:
+                                bug_watch = None
+
+                            bugmessage = bug.linkMessage(
+                                message, bug_watch)
+
                             notify(SQLObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False
                         else:
@@ -280,13 +321,24 @@ class MaloneHandler:
                             bugtask, bugtask_event)
 
                 except EmailProcessingError, error:
-                    raise IncomingEmailError(
-                        str(error), failing_command=command)
+                    processing_errors.append((error, command))
+                    if error.stop_processing:
+                        commands = []
+                        rollback()
+                    else:
+                        continue
+
+            if len(processing_errors) > 0:
+                raise IncomingEmailError(
+                    '\n'.join(str(error) for error, command
+                              in processing_errors),
+                    [command for error, command in processing_errors])
 
             if bug_event is not None:
                 try:
                     notify(bug_event)
                 except CreatedBugWithNoBugTasksError:
+                    rollback()
                     raise IncomingEmailError(
                         get_error_message('no-affects-target-on-submit.txt'))
             if bugtask_event is not None:
@@ -294,7 +346,6 @@ class MaloneHandler:
                     notify(bugtask_event)
 
         except IncomingEmailError, error:
-            rollback()
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
@@ -318,19 +369,27 @@ class MaloneHandler:
     # Some content types indicate that an attachment has a special
     # purpose. The current set is based on parsing emails from
     # one mail account and may need to be extended.
+    #
     # Mail signatures are most likely generated by the mail client
     # and hence contain not data that is interesting except for
     # mail authentication.
+    #
     # Resource forks of MacOS files are not easily represented outside
     # MacOS; if a resource fork contains useful debugging information,
     # the entire MacOS file should be sent encapsulated for example in
     # MacBinary format.
+    #
+    # application/ms-tnef attachment are created by Outlook; they
+    # seem to store no more than an RTF representation of an email.
+
     irrelevant_content_types = set((
         'application/applefile', # the resource fork of a MacOS file
         'application/pgp-signature',
         'application/pkcs7-signature',
         'application/x-pkcs7-signature',
-        'text/x-vcard',))
+        'text/x-vcard',
+        'application/ms-tnef',
+        ))
 
     def processAttachments(self, bug, message, signed_mail):
         """Create Bugattachments for "reasonable" mail attachments.
@@ -342,8 +401,15 @@ class MaloneHandler:
             blob = chunk.blob
             if blob is None:
                 continue
-            content_type = blob.mimetype
+            # Mutt (other mail clients too?) appends the filename to the
+            # content type.
+            content_type = blob.mimetype.split(';', 1)[0]
             if content_type in self.irrelevant_content_types:
+                continue
+
+            if content_type == 'text/html' and blob.filename == 'unnamed':
+                # This is the HTML representation of the main part of
+                # an email.
                 continue
 
             if content_type in ('text/x-diff', 'text/x-patch'):
@@ -353,7 +419,7 @@ class MaloneHandler:
 
             getUtility(IBugAttachmentSet).create(
                 bug=bug, filealias=blob, attach_type=attach_type,
-                title=blob.filename, message=message)
+                title=blob.filename, message=message, send_notifications=True)
 
 
 class AnswerTrackerHandler:
@@ -431,6 +497,116 @@ class AnswerTrackerHandler:
             question.addComment(message.owner, message)
 
 
+class BadBranchMergeProposalAddress(Exception):
+    """The user-supplied address is not an acceptable value."""
+
+class InvalidBranchMergeProposalAddress(BadBranchMergeProposalAddress):
+    """The user-supplied address is not an acceptable value."""
+
+class NonExistantBranchMergeProposalAddress(BadBranchMergeProposalAddress):
+    """The BranchMergeProposal specified by the address does not exist."""
+
+class InvalidVoteString(Exception):
+    """The user-supplied vote is not an acceptable value."""
+
+
+class CodeHandler:
+    """Mail handler for the code domain."""
+
+    addr_pattern = re.compile(r'(mp\+)([^@]+).*')
+
+    def process(self, mail, email_addr, file_alias):
+        """Process an email and create a CodeReviewComment.
+
+        The only mail command understood is 'vote', which takes 'approve',
+        'disapprove', or 'abstain' as values.  Specifically, it takes
+        any CodeReviewVote item value, case-insensitively.
+        :return: True.
+        """
+        try:
+            merge_proposal = self.getBranchMergeProposal(email_addr)
+        except BadBranchMergeProposalAddress:
+            return False
+        messageset = getUtility(IMessageSet)
+        try:
+            vote, vote_tag = self._getVote(mail)
+        except InvalidVoteString, e:
+            valid_strings = ', '.join(
+                sorted(v.name.lower() for v in CodeReviewVote.items.items))
+            simple_sendmail(
+                'noreply@launchpad.net', [self._getReplyAddress(mail)],
+                'Unsupported vote',
+                'Your comment was not accepted because the string "%s" is not'
+                ' a supported voting value.  The following values are'
+                ' supported: %s.' % (e.args[0], valid_strings))
+            return True
+        message = messageset.fromEmail(
+            mail.parsed_string,
+            owner=getUtility(ILaunchBag).user,
+            filealias=file_alias,
+            parsed_message=mail)
+        comment = merge_proposal.createCommentFromMessage(
+            message, vote, vote_tag)
+        return True
+
+    @staticmethod
+    def _getVote(message):
+        """Scan message content and find vote commands.
+
+        :param message: a SignedMessage
+        :return: (vote, vote_tag), where vote is a CodeReviewVote, and
+            vote_tag is a string.  vote_tag or vote may also be None.
+        """
+        content = get_main_body(message)
+        if content is None:
+            return None, None
+        commands = parse_commands(content, ['vote'])
+        if len(commands) == 0:
+            return None, None
+        args = commands[0][1]
+        if len(args) == 0:
+            return None, None
+        else:
+            vote_string = args[0]
+        vote_tag_list = args[1:]
+        try:
+            vote = CodeReviewVote.items[vote_string.upper()]
+        except KeyError:
+            raise InvalidVoteString(vote_string)
+        if len(vote_tag_list) == 0:
+            vote_tag = None
+        else:
+            vote_tag = ' '.join(vote_tag_list)
+        return vote, vote_tag
+
+    @staticmethod
+    def _getReplyAddress(mail):
+        """The address to use for automatic replies."""
+        return mail.get('Reply-to', mail['From'])
+
+    @classmethod
+    def getBranchMergeProposal(klass, email_addr):
+        """Return branch merge proposal designated by email_addr.
+
+        Addresses are of the form mp+5@code.launchpad.net, where 5 is the
+        database id of the related branch merge proposal.
+
+        The inverse operation is BranchMergeProposal.address.
+        """
+        match = klass.addr_pattern.match(email_addr)
+        if match is None:
+            raise InvalidBranchMergeProposalAddress(email_addr)
+        try:
+            merge_proposal_id = int(match.group(2))
+        except ValueError:
+            raise InvalidBranchMergeProposalAddress(email_addr)
+        getter = getUtility(IBranchMergeProposalGetter)
+        try:
+            return getter.get(merge_proposal_id)
+        except SQLObjectNotFound:
+            raise NonExistantBranchMergeProposalAddress(email_addr)
+
+
 class SpecificationHandler:
     """Handles emails sent to specs.launchpad.net."""
 
@@ -481,7 +657,7 @@ class SpecificationHandler:
                     filealias.http_url)
             return True
         # Check for emails that Launchpad sent us.
-        if signed_msg['Sender'] == config.bounce_address:
+        if signed_msg['Sender'] == config.canonical.bounce_address:
             if log and filealias:
                 log.warning('We received an email from Launchpad: %s'
                             % filealias.http_url)
@@ -528,6 +704,7 @@ class MailHandlers:
             # XXX flacoste 2007-04-23 Backward compatibility for old domain.
             # We probably want to remove it in the future.
             'support.launchpad.net': AnswerTrackerHandler(),
+            config.launchpad.code_domain: CodeHandler(),
             }
 
     def get(self, domain):

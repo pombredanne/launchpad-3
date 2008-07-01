@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 import os
+import re
 import tempfile
 
 from zope.component import getUtility
@@ -61,7 +62,7 @@ class TestChrootManager(TestCase):
         self.assertEqual([], chroot_manager._messages)
 
     def test_add_and_get(self):
-        """Adding new chroot and then retrive it."""
+        """Adding new chroot and then retrieve it."""
         chrootfilepath = self._create_file('chroot.test', content="UHMMM")
         chrootfilename = os.path.basename(chrootfilepath)
 
@@ -69,10 +70,15 @@ class TestChrootManager(TestCase):
             self.distroarchseries, filepath=chrootfilepath)
 
         chroot_manager.add()
+        match = re.match(
+            "LibraryFileAlias: \d+, 5 bytes, 5088e6471ab02d4268002f529a02621c",
+            chroot_manager._messages[0])
+        self.assert_(match is not None,
+                     "chroot_manager message mismatch: %s" %
+                     chroot_manager._messages[0])
         self.assertEqual(
-            ["LibraryFileAlias: 82, 5 bytes, 5088e6471ab02d4268002f529a02621c",
-             "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' "
-             "(1) added."], chroot_manager._messages)
+            ["PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' "
+             "(1) added."], chroot_manager._messages[1:])
 
         pocket_chroot = self.distroarchseries.getPocketChroot()
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
@@ -102,10 +108,15 @@ class TestChrootManager(TestCase):
             self.distroarchseries, filepath=chrootfilepath)
 
         chroot_manager.update()
+        match = re.match(
+            "LibraryFileAlias: \d+, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
+            chroot_manager._messages[0])
+        self.assert_(match is not None,
+                     "chroot_manager message mismatch: %s" %
+                     chroot_manager._messages[0])
         self.assertEqual(
-            ["LibraryFileAlias: 82, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
-             "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' "
-             "(1) updated."], chroot_manager._messages)
+            ["PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' "
+             "(1) updated."], chroot_manager._messages[1:])
 
         pocket_chroot = self.distroarchseries.getPocketChroot()
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)

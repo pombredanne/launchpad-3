@@ -8,8 +8,12 @@ all plugins in the bzrplugins/ directory underneath the rocketfuel checkout.
 
 __metaclass__ = type
 __all__ = [
-    'branch_id_to_path', 'get_bzr_path', 'get_bzr_plugins_path',
-    'ProgressUIFactory',]
+    'branch_id_to_path',
+    'get_bzr_path',
+    'get_bzr_plugins_path',
+    'get_rocketfuel_root',
+    'ProgressUIFactory',
+    ]
 
 
 import os.path

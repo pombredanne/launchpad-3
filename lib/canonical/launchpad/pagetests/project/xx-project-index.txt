@@ -110,7 +110,7 @@ the new product form for the project group.
     >>> admin_browser.getLink(
     ...     'register another project that is part of Test Group').click()
     >>> admin_browser.title
-    'Register a project in Launchpad'
+    'Register a project in your project group'
 
 == Products of a project ==
 
@@ -119,23 +119,23 @@ The home page of a project contains a list of all products which are part of tha
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> products = find_tags_by_class(browser.contents, 'project')
     >>> for product in products:
-    ...     print product.find('a').renderContents()
-    Mozilla Firefox
-    Mozilla Thunderbird
- 
+    ...     print repr(product.find('a').find(text=True))
+    u'&nbsp;Mozilla Firefox'
+    u'&nbsp;Mozilla Thunderbird'
+
 Inactive products are not included in that list, though.
 
     >>> from canonical.launchpad.database import ProductSet
     >>> firefox = ProductSet().getByName('firefox')
     >>> firefox.active = False
     >>> firefox.syncUpdate()
- 
+
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> products = find_tags_by_class(browser.contents, 'project')
     >>> for product in products:
-    ...     print product.find('a').renderContents()
-    Mozilla Thunderbird
- 
+    ...     print repr(product.find('a').find(text=True))
+    u'&nbsp;Mozilla Thunderbird'
+
     >>> firefox.active = True
     >>> firefox.syncUpdate()
 
@@ -156,3 +156,15 @@ It is possible to access the project's product through the project URL.
   ...Latest bugs...
   ...
 
+
+== Project bug subscriptions ==
+
+To receive email notifications about bugs pertaining to a project, we
+can create structural bug subscriptions.
+
+    >>> user_browser.open('http://launchpad.dev/mozilla')
+    >>> user_browser.getLink('Subscribe to bug mail').click()
+    >>> print user_browser.url
+    http://launchpad.dev/mozilla/+subscribe
+    >>> print user_browser.title
+    Bug subscriptions for The Mozilla Project

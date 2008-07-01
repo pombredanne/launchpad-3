@@ -11,28 +11,28 @@ __all__ = [
 import datetime
 import pytz
 
+import transaction
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
     UnknownBranchTypeError)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.database.sqlbase import (
-    clear_current_connection_cache, ZopelessTransactionManager)
+from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+from canonical.database.sqlbase import clear_current_connection_cache
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
-    READ_ONLY, WRITABLE)
-from canonical.lp import initZopeless
+    IUserDetailsStorageV2, LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE,
+    PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 
+from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
 from twisted.web.xmlrpc import Fault
 
@@ -45,60 +45,56 @@ def utf8(x):
     return x
 
 
-def getTxnManager():
-    """Get a current ZopelessTransactionManager."""
-    # FIXME: That uses a protected attribute in ZopelessTransactionManager
-    # -- David Allouche 2005-02-16
-    if ZopelessTransactionManager._installed is None:
-        return initZopeless(
-            implicitBegin=False, dbuser=config.authserver.dbuser)
-    else:
-        return ZopelessTransactionManager._installed
-
-
 def read_only_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
     def transacted(*args, **kwargs):
-        txn = getTxnManager()
-        txn.begin()
+        transaction.begin()
         clear_current_connection_cache()
         login(ANONYMOUS)
         try:
             return function(*args, **kwargs)
         finally:
             logout()
-            txn.abort()
+            transaction.abort()
     return mergeFunctionMetadata(function, transacted)
 
 
 def writing_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
     def transacted(*args, **kwargs):
-        txn = getTxnManager()
-        txn.begin()
+        transaction.begin()
         clear_current_connection_cache()
         login(ANONYMOUS)
         try:
             ret = function(*args, **kwargs)
         except:
             logout()
-            txn.abort()
+            transaction.abort()
             raise
         logout()
-        txn.commit()
+        transaction.commit()
         return ret
     return mergeFunctionMetadata(function, transacted)
 
 
 def run_as_requester(function):
     """Decorate 'function' by logging in as the user identified by its first
-    parameter, the `Person` object is then passed in to the function instead of
-    the login ID.
+    parameter, the `Person` object is then passed in to the function instead
+    of the login ID.
+
+    The exception is when the requesting login ID is `LAUNCHPAD_SERVICES`. In
+    that case, we'll pass through the `LAUNCHPAD_SERVICES` variable and the
+    method will do whatever security proxy hackery is required to provide read
+    privileges to the Launchpad services.
 
     Assumes that 'function' is on an object that implements a '_getPerson'
     method similar to `UserDetailsStorageMixin._getPerson`.
     """
     def as_user(self, loginID, *args, **kwargs):
+        if loginID == LAUNCHPAD_SERVICES:
+            # Don't pass in an actual user. Instead pass in LAUNCHPAD_SERVICES
+            # and expect `function` to use `removeSecurityProxy` or similar.
+            return function(self, LAUNCHPAD_SERVICES, *args, **kwargs)
         requester = self._getPerson(loginID)
         login(requester.preferredemail.email)
         try:
@@ -121,8 +117,12 @@ class UserDetailsStorageMixin:
             [person.preferredemail.email] +
             [email.email for email in person.validatedemails])
 
-    @read_only_transaction
     def getSSHKeys(self, loginID):
+        """See `IUserDetailsStorage`."""
+        return deferToThread(self._getSSHKeysInteraction, loginID)
+
+    @read_only_transaction
+    def _getSSHKeysInteraction(self, loginID):
         """The synchronous implementation of `getSSHKeys`.
 
         See `IUserDetailsStorage`.
@@ -189,8 +189,12 @@ class UserDetailsStorageMixin:
             'salt': salt,
         }
 
-    @read_only_transaction
     def getUser(self, loginID):
+        """See `IUserDetailsStorage`."""
+        return deferToThread(self._getUserInteraction, loginID)
+
+    @read_only_transaction
+    def _getUserInteraction(self, loginID):
         """The interaction for getUser."""
         return self._getPersonDict(self._getPerson(loginID))
 
@@ -211,8 +215,14 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         self.connectionPool = connectionPool
         self.encryptor = SSHADigestEncryptor()
 
-    @read_only_transaction
     def authUser(self, loginID, sshaDigestedPassword):
+        """See `IUserDetailsStorage`."""
+        return deferToThread(
+            self._authUserInteraction, loginID,
+            sshaDigestedPassword.encode('base64'))
+
+    @read_only_transaction
+    def _authUserInteraction(self, loginID, sshaDigestedPassword):
         """Synchronous implementation of `authUser`.
 
         See `IUserDetailsStorage`.
@@ -280,8 +290,12 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         person_dict['teams'] = self._getTeams(person)
         return person_dict
 
-    @read_only_transaction
     def authUser(self, loginID, password):
+        """See `IUserDetailsStorageV2`."""
+        return deferToThread(self._authUserInteraction, loginID, password)
+
+    @read_only_transaction
+    def _authUserInteraction(self, loginID, password):
         """Synchronous implementation of `authUser`.
 
         See `IUserDetailsStorageV2`.
@@ -296,9 +310,13 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         return self._getPersonDict(person)
 
+    def getBranchesForUser(self, personID):
+        """See `IHostedBranchStorage`."""
+        return deferToThread(self._getBranchesForUserInteraction, personID)
+
     @read_only_transaction
     @run_as_requester
-    def getBranchesForUser(self, person):
+    def _getBranchesForUserInteraction(self, person):
         """Synchronous implementation of `getBranchesForUser`.
 
         See `IHostedBranchStorage`.
@@ -318,8 +336,12 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return [(person_id, by_product.items())
                 for person_id, by_product in branches_summary.iteritems()]
 
-    @read_only_transaction
     def fetchProductID(self, productName):
+        """See `IHostedBranchStorage`."""
+        return deferToThread(self._fetchProductIDInteraction, productName)
+
+    @read_only_transaction
+    def _fetchProductIDInteraction(self, productName):
         """The synchronous implementation of `fetchProductID`.
 
         See `IHostedBranchStorage`.
@@ -330,9 +352,16 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         else:
             return product.id
 
+    def createBranch(self, loginID, personName, productName, branchName):
+        """See `IHostedBranchStorage`."""
+        return deferToThread(
+            self._createBranchInteraction, loginID, personName, productName,
+            branchName)
+
     @writing_transaction
     @run_as_requester
-    def createBranch(self, requester, personName, productName, branchName):
+    def _createBranchInteraction(self, requester, personName, productName,
+                                 branchName):
         """The synchronous implementation of `createBranch`.
 
         See `IHostedBranchStorage`.
@@ -362,9 +391,14 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         else:
             return branch.id
 
+    def requestMirror(self, requester, branchID):
+        """See `IHostedBranchStorage`."""
+        return deferToThread(
+            self._requestMirrorInteraction, requester, branchID)
+
     @writing_transaction
     @run_as_requester
-    def requestMirror(self, requester, branchID):
+    def _requestMirrorInteraction(self, requester, branchID):
         """The synchronous implementation of `requestMirror`.
 
         See `IHostedBranchStorage`.
@@ -374,10 +408,47 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         branch.requestMirror()
         return True
 
+    def getDefaultStackedOnBranch(self, requester, project_name):
+        return deferToThread(
+            self._getDefaultStackedOnBranchInteraction, requester,
+            project_name)
+
     @read_only_transaction
     @run_as_requester
-    def getBranchInformation(self, requester, userName, productName,
+    def _getDefaultStackedOnBranchInteraction(self, requester, project_name):
+        if project_name == '+junk':
+            return ''
+        product = getUtility(IProductSet).getByName(project_name)
+        if product is None:
+            raise Fault(
+                NOT_FOUND_FAULT_CODE,
+                "Project %r does not exist." % project_name)
+        branch = product.default_stacked_on_branch
+        if branch is None:
+            return ''
+        try:
+            unique_name = branch.unique_name
+        except Unauthorized:
+            return ''
+        return '/' + unique_name
+
+    def getBranchInformation(self, loginID, userName, productName,
                              branchName):
+        """See `IHostedBranchStorage`."""
+        return deferToThread(
+            self._getBranchInformationInteraction, loginID, userName,
+            productName, branchName)
+
+    def _canWriteToBranch(self, requester, branch):
+        if requester == LAUNCHPAD_SERVICES:
+            return False
+        return (branch.branch_type == BranchType.HOSTED
+                and requester.inTeam(branch.owner))
+
+    @read_only_transaction
+    @run_as_requester
+    def _getBranchInformationInteraction(self, requester, userName,
+                                         productName, branchName):
         """The synchronous implementation of `getBranchInformation`.
 
         See `IHostedBranchStorage`.
@@ -386,18 +457,20 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             '~%s/%s/%s' % (userName, productName, branchName))
         if branch is None:
             return '', ''
+        if requester == LAUNCHPAD_SERVICES:
+            branch = removeSecurityProxy(branch)
         try:
             branch_id = branch.id
         except Unauthorized:
             return '', ''
-        if (requester.inTeam(branch.owner)
-            and branch.branch_type == BranchType.HOSTED):
-            return branch_id, WRITABLE
-        elif branch.branch_type == BranchType.REMOTE:
+        if branch.branch_type == BranchType.REMOTE:
             # Can't even read remote branches.
             return '', ''
+        if self._canWriteToBranch(requester, branch):
+            permissions = WRITABLE
         else:
-            return branch_id, READ_ONLY
+            permissions = READ_ONLY
+        return branch_id, permissions
 
 
 class DatabaseBranchDetailsStorage:
@@ -429,8 +502,12 @@ class DatabaseBranchDetailsStorage:
                 'Remote branches should never be in the pull queue.')
         return (branch.id, branch.getPullURL(), branch.unique_name[1:])
 
-    @read_only_transaction
     def getBranchPullQueue(self, branch_type):
+        """See `IBranchDetailsStorage`."""
+        return deferToThread(self._getBranchPullQueueInteraction, branch_type)
+
+    @read_only_transaction
+    def _getBranchPullQueueInteraction(self, branch_type):
         """The synchronous implementation for `getBranchPullQueue`.
 
         See `IBranchDetailsStorage`.
@@ -443,8 +520,12 @@ class DatabaseBranchDetailsStorage:
         branches = getUtility(IBranchSet).getPullQueue(branch_type)
         return [self._getBranchPullInfo(branch) for branch in branches]
 
-    @writing_transaction
     def startMirroring(self, branchID):
+        """See `IBranchDetailsStorage`."""
+        return deferToThread(self._startMirroringInteraction, branchID)
+
+    @writing_transaction
+    def _startMirroringInteraction(self, branchID):
         """The synchronous implementation of `startMirroring`.
 
         See `IBranchDetailsStorage`.
@@ -457,8 +538,13 @@ class DatabaseBranchDetailsStorage:
         removeSecurityProxy(branch).startMirroring()
         return True
 
-    @writing_transaction
     def mirrorComplete(self, branchID, lastRevisionID):
+        """See `IBranchDetailsStorage`."""
+        return deferToThread(
+            self._mirrorCompleteInteraction, branchID, lastRevisionID)
+
+    @writing_transaction
+    def _mirrorCompleteInteraction(self, branchID, lastRevisionID):
         """The synchronous implementation of `mirrorComplete`.
 
         See `IBranchDetailsStorage`.
@@ -470,8 +556,12 @@ class DatabaseBranchDetailsStorage:
         removeSecurityProxy(branch).mirrorComplete(lastRevisionID)
         return True
 
-    @writing_transaction
     def mirrorFailed(self, branchID, reason):
+        """See `IBranchDetailsStorage`."""
+        return deferToThread(self._mirrorFailedInteraction, branchID, reason)
+
+    @writing_transaction
+    def _mirrorFailedInteraction(self, branchID, reason):
         """The synchronous implementation of `mirrorFailed`.
 
         See `IBranchDetailsStorage`.
@@ -483,8 +573,15 @@ class DatabaseBranchDetailsStorage:
         removeSecurityProxy(branch).mirrorFailed(reason)
         return True
 
+    def recordSuccess(self, name, hostname, date_started, date_completed):
+        """See `IBranchDetailsStorage`."""
+        return deferToThread(
+            self._recordSuccessInteraction, name, hostname, date_started,
+            date_completed)
+
     @writing_transaction
-    def recordSuccess(self, name, hostname, started_tuple, completed_tuple):
+    def _recordSuccessInteraction(self, name, hostname, started_tuple,
+                                  completed_tuple):
         """The synchronous implementation of `recordSuccess`.
 
         See `IBranchDetailsStorage`.

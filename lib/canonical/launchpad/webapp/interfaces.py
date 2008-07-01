@@ -9,10 +9,11 @@ import zope.app.publication.interfaces
 from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
-from zope.schema import Int, Text, Object, Datetime, TextLine, Bool
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem, use_template
+
 
 
 class TranslationUnavailable(Exception):
@@ -34,6 +35,16 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
     """
 
 
+class InvalidBatchSizeError(AssertionError):
+    """Received a batch parameter that exceed our configured max size."""
+
+    # XXX flacoste 2008/05/09 bug=185958:
+    # Ideally, we would use webservice_error, to set this up and
+    # register the view, but cyclic imports prevents us from doing
+    # so. This should be fixed once we move webapp stuff into LAZR.
+    __lazr_webservice_error__ = 400
+
+
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 
@@ -47,8 +58,10 @@ class ILaunchpadApplication(Interface):
     """
     title = Attribute('Title')
 
+
 class ILaunchpadProtocolError(Interface):
     """Marker interface for a Launchpad protocol error exception."""
+
 
 class IAuthorization(Interface):
     """Authorization policy for a particular object and permission."""
@@ -81,10 +94,10 @@ class UnsafeFormGetSubmissionError(Exception):
 class IMenu(Interface):
     """Public interface for facets, menus, extra facets and extra menus."""
 
-    def iterlinks(requesturl=None):
+    def iterlinks(request_url=None):
         """Iterate over the links in this menu.
 
-        requesturl, if it is not None, is a Url object that is used to
+        request_url, if it is not None, is a Url object that is used to
         decide whether a menu link points to the page being requested,
         in which case it will not be linked.
         """
@@ -101,15 +114,15 @@ class IMenuBase(IMenu):
 class IFacetMenu(IMenuBase):
     """Main facet menu for an object."""
 
-    def iterlinks(requesturl=None, selectedfacetname=None):
+    def iterlinks(request_url=None, selectedfacetname=None):
         """Iterate over the links in this menu.
 
-        requesturl, if it is not None, is a Url object that is used to
-        decide whether a menu link points to the page being requested,
-        in which case it will not be linked.
+        :param request_url: A `URI` or None. It is used to decide whether a
+            menu link points to the page being requested, in which case it
+            will not be linked.
 
-        If selectedfacetname is provided, the link with that name will be
-        marked as 'selected'.
+        :param selectedfacetname: A str. The link with that name will be
+            marked as 'selected'.
         """
 
     defaultlink = Attribute(
@@ -124,6 +137,12 @@ class IApplicationMenu(IMenuBase):
 
 class IContextMenu(IMenuBase):
     """Context menu for an object."""
+
+
+class INavigationMenu(IMenuBase):
+    """Navigation menu for an object."""
+
+    title = Attribute("The title of the menu as it appears on the page.")
 
 
 class ILinkData(Interface):
@@ -147,6 +166,9 @@ class ILinkData(Interface):
 
     site = Attribute(
         "The name of the site this link is to, or None for the current site.")
+
+    menu = Attribute(
+        "The `INavigationMenu` associated with the page this link points to.")
 
     # CarlosPerelloMarin 20080131 bugs=187837: This should be removed once
     # action menu is not used anymore and we move to use inline navigation.
@@ -175,6 +197,9 @@ class ILink(ILinkData):
         "Boolean to say whether this link is enabled.  Can be read and set.")
 
     escapedtext = Attribute("Text string, escaped as necessary.")
+
+    icon_url = Attribute(
+        "The full URL for this link's associated icon, if it has one.")
 
     def render():
         """Return a HTML representation of the link."""
@@ -286,12 +311,11 @@ class IDBSchemaItem(Interface):
     def __hash__():
         """Returns a hash value."""
 
-# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a
-# truly generic thing. The problem lies in the fact that half of this (user,
-# login, timezone, developer) is actually useful inside webapp/, and the other
-# half is very Launchpad-specific. I suggest we split the interface and
-# implementation into two parts, having a different name for the webapp/
-# bits.
+# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
+# generic thing. The problem lies in the fact that half of this (user, login,
+# time zone, developer) is actually useful inside webapp/, and the other half
+# is very Launchpad-specific. I suggest we split the interface and
+# implementation into two parts, having a different name for the webapp/ bits.
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
@@ -309,7 +333,7 @@ class ILaunchBag(Interface):
     user = Attribute('Currently authenticated IPerson, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
-    timezone = Attribute("The user's time zone")
+    time_zone = Attribute("The user's time zone")
 
     developer = Bool(
         title=u'True if a member of the launchpad developers celebrity'
@@ -482,8 +506,11 @@ class IPlacelessAuthUtility(IAuthenticationService):
     login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        The principal's password is set to None if want_password is False.
+        """
 
 
 class IPlacelessLoginSource(IPrincipalSource):
@@ -492,8 +519,15 @@ class IPlacelessLoginSource(IPrincipalSource):
     between the user id and login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    # want_password is temporary. Eventually we will have accounts
+    # without passwords at all, authenticated via other means such as external
+    # OpenID providers or SSL certificates. Principals having passwords
+    # doesn't really make sense.
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        If want_password is False, the principal's password is set to None.
+        """
 
     def getPrincipals(name):
         """Not implemented.
@@ -503,37 +537,64 @@ class IPlacelessLoginSource(IPrincipalSource):
         """
 
 
+# We have to define this here because importing from launchpad.interfaces
+# would create circular dependencies.
+class OAuthPermission(DBEnumeratedType):
+    """The permission granted by the user to the OAuth consumer."""
+
+    UNAUTHORIZED = DBItem(10, """
+        No Access
+
+        The application will not be allowed to access Launchpad on your
+        behalf.
+        """)
+
+    READ_PUBLIC = DBItem(20, """
+        Read Non-Private Data
+
+        The application will be able to access Launchpad on your behalf
+        but only for reading non-private data.
+        """)
+
+    WRITE_PUBLIC = DBItem(30, """
+        Change Non-Private Data
+
+        The application will be able to access Launchpad on your behalf
+        for reading and changing non-private data.
+        """)
+
+    READ_PRIVATE = DBItem(40, """
+        Read Anything
+
+        The application will be able to access Launchpad on your behalf
+        for reading anything, including private data.
+        """)
+
+    WRITE_PRIVATE = DBItem(50, """
+        Change Anything
+
+        The application will be able to access Launchpad on your behalf
+        for reading and changing anything, including private data.
+        """)
+
+
+class AccessLevel(DBEnumeratedType):
+    """The level of access any given principal has."""
+    use_template(OAuthPermission, exclude='UNAUTHORIZED')
+
+
 class ILaunchpadPrincipal(IPrincipal):
     """Marker interface for launchpad principals.
 
     This is used for the launchpad.AnyPerson permission.
     """
 
+    access_level = Choice(
+        title=_("The level of access this principal has."),
+        vocabulary=AccessLevel, default=AccessLevel.WRITE_PRIVATE)
 
-class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
-    """The Launchpad customized database adapter"""
-    def readonly():
-        """Set the connection to read only.
+    person = Attribute("The IPerson the principal represents.")
 
-        This should only be called at the start of the transaction to
-        avoid confusing code that defers making database changes until
-        transaction commit time.
-        """
-
-    def switchUser(self, dbuser=None):
-        """Change the PostgreSQL user we are connected as.
-
-        This involves closing the existing connection and reopening it;
-        uncommitted changes will be lost. The new connection will also open
-        in read/write mode so calls to readonly() will need to be made
-        after switchUser.
-        """
-
-    def getUser(self):
-        """Return the current PostgreSQL user we are connected as.
-
-        The default user comes from config.launchpad.dbuser.
-        """
 
 #
 # Browser notifications
@@ -670,6 +731,12 @@ class IBatchNavigator(Interface):
     """A batch navigator for a specified set of results."""
 
     batch = Attribute("The IBatch for which navigation links are provided.")
+
+    heading = Attribute(
+        "The heading describing the kind of objects in the batch.")
+
+    def setHeadings(singular, plural):
+        """Set the heading for singular and plural results."""
 
     def prevBatchURL():
         """Return a URL to the previous chunk of results."""

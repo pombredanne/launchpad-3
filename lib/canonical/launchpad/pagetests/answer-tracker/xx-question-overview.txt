@@ -9,7 +9,6 @@ distribution.
 The product's overview page list the latest questions that were asked
 with their status.
 
-    >>> from canonical.launchpad.helpers import backslashreplace
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> questions = find_portlet(user_browser.contents, 'Latest questions')
     >>> print extract_text(
@@ -73,20 +72,9 @@ question page.
 
 == Distributions ==
 
-Distributions also have the 'Latest questions' porlet and
-'Ask a question' button on the front page:
+Distributions have an 'Ask a question' link on the front page:
 
     >>> user_browser.open('http://launchpad.dev/ubuntu')
-
-    >>> questions = find_portlet(user_browser.contents, 'Latest questions')
-    >>> print extract_text(
-    ...     questions.find('div')).encode('ASCII', 'backslashreplace')
-    [Open] Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
-    [Open] Continue playing after shutdown
-    [Answered] Play DVDs in Totem
-    [Solved] mailto: problem in webpage
-    [Answered] Installation of Java Runtime Environment for Mozilla
-
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about Ubuntu
@@ -102,7 +90,7 @@ The distribution home page also has a link to the 'Answers' facet:
 
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Answers').url
-    'http://answers.launchpad.dev/ubuntu/'
+    'http://answers.launchpad.dev/ubuntu'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions for Ubuntu
@@ -148,10 +136,10 @@ the Answers facet.
 
     >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution')
     >>> browser.getLink('Answers').url
-    'http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/'
+    'http://answers.launchpad.dev/ubuntu/hoary/+source/evolution'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions for Hoary evolution...
+    Questions for Ubuntu Hoary evolution...
     >>> browser.getLink('Ask a question').url
     '.../ubuntu/hoary/+source/evolution/+addquestion'
 
@@ -169,7 +157,7 @@ page:
 
     >>> browser.open('http://launchpad.dev/ubuntu/+source/mozilla-firefox')
     >>> browser.getLink('Answers').url
-    'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox/'
+    'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions for mozilla-firefox in ubuntu
@@ -222,7 +210,7 @@ The 'Answers' facet link will display a page listing all the questions
 involving that person.
 
     >>> browser.getLink('Answers').url
-    'http://answers.launchpad.dev/~name16/'
+    'http://answers.launchpad.dev/~name16'
     >>> browser.getLink('Answers').click()
     >>> browser.title
     'Questions involving Foo Bar'

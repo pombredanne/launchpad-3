@@ -11,8 +11,7 @@ Let's look at a bug that has no attachments:
     >>> login("foo.bar@canonical.com")
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugAttachmentSet, IBugAttachment, ILibraryFileAliasSet,
-    ...     IMessageSet, IPersonSet)
+    ...     IBugAttachment, IBugSet, IMessageSet, IPersonSet)
     >>> bugset = getUtility(IBugSet)
     >>> bug_one = bugset.get(1)
     >>> bug_one.attachments.count()
@@ -92,7 +91,7 @@ If no description is given, the title is set to the filename.
 The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:
 
-    >>> from zope.app.zapi import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> login('test@canonical.com')
@@ -111,9 +110,9 @@ context", i.e. an IBugTask, so let's grab the first bugtask on bug_one
 and work with that:
 
     >>> bugtask = bug_one.bugtasks[0]
-    >>> from canonical.launchpad.browser import BugMessageAddFormView
 
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     >>> len(add_comment_view.errors)
     1
@@ -138,7 +137,8 @@ upload it:
     ...           'field.attachment_description': 'blah',
     ...           'field.patch': u'',
     ...           'field.actions.save' : 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     >>> len(add_comment_view.errors)
     1
@@ -160,7 +160,8 @@ means no limit:
     ...           'field.attachment_description': 'blah',
     ...           'field.patch': u'',
     ...           'field.actions.save' : 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     Attachment added: u'foo.txt'
     >>> len(add_comment_view.errors)
@@ -174,7 +175,8 @@ must have at least one.
     ...     form={'field.subject': u'Title',
     ...           'field.patch': u'',
     ...           'field.actions.save': 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     >>> len(add_comment_view.errors)
     1
@@ -192,7 +194,8 @@ If the request contains no attachment description the filename should be used.
     ...           'field.filecontent': filecontent,
     ...           'field.patch': u'',
     ...           'field.actions.save': 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     Attachment added: u'RA.txt'
     >>> len(add_comment_view.errors)
@@ -222,7 +225,8 @@ Let's try uploading a file with some weird characters in them:
     ...           'field.attachment_description': 'blah',
     ...           'field.patch': u'',
     ...           'field.actions.save' : 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> len(add_comment_view.errors)
     0
     >>> add_comment_view.initialize()
@@ -248,7 +252,8 @@ from the librarian.
     ...           'field.attachment_description': 'blah',
     ...           'field.patch': u'',
     ...           'field.actions.save' : 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     Attachment added: u'foo-bar-baz'
     >>> len(add_comment_view.errors)

@@ -218,3 +218,61 @@ milestone, it is "inheritied" by the project milestone.
     [u'applets-specification']
     >>> [spec.name for spec in gnome.getMilestone('1.1').specifications]
     [u'applets-specification']
+
+
+== Target change notifications ==
+
+When we change the milestone for a bug task, subscribers to both the old
+milestone and the new one are notified.
+
+    >>> from canonical.launchpad.database.bugnotification import (
+    ...     BugNotification)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.event.sqlobjectevent import (
+    ...     SQLObjectModifiedEvent)
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from zope.event import notify
+    >>> from zope.interface import providedBy
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_trunk = firefox.getSeries('trunk')
+    >>> milestone_one = firefox_trunk.milestones[0]
+    >>> milestone_two = firefox_trunk.newMilestone('2.0')
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_task = bug_one.bugtasks[0]
+    >>> bug_task.milestone = milestone_one
+
+The first task of bug #1 is targeted to milestone 1.0. Celso is
+subscribed to milestone 1.0, and David is subscribed to milestone 2.0.
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
+    >>> milestone_one.addBugSubscription(cprov, cprov)
+    <StructuralSubscription at ...>
+    >>> milestone_two.addBugSubscription(ddaa, ddaa)
+    <StructuralSubscription at ...>
+
+We change the milestone for the task from 1.0 to 2.0, and fire the
+change event.
+
+    >>> bugtask_before_modification = Snapshot(
+    ...     bug_task, providing=providedBy(bug_task))
+    >>> bug_task.milestone = milestone_two
+    >>> notify(
+    ...     SQLObjectModifiedEvent(
+    ...         object=bug_task,
+    ...         object_before_modification=bugtask_before_modification,
+    ...         edited_fields=['milestone']))
+
+A new bug notification is created, and both Celso and David are in the
+list of recipients.
+
+    >>> notification = BugNotification.select("date_emailed IS NULL")[-1]
+    >>> print notification.message.chunks[0].content
+    ** Changed in: firefox
+           Target: 1.0 => 2.0
+    >>> for recipient in notification.recipients:
+    ...     print recipient.person.name, recipient.reason_header
+    cprov Subscriber (Mozilla Firefox: 1.0)
+    ddaa Subscriber (Mozilla Firefox: 2.0)
+    ...

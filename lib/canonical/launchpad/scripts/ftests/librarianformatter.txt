@@ -81,6 +81,13 @@ Traceback (most recent call last):
     ...
 RuntimeError: An Exception
 
+As the librarian commits to the test database in a subprocess, we need
+to force the DatabaseLayer to fully tear down and restore the database
+after this test.
+
+>>> from canonical.testing.layers import DatabaseLayer
+>>> DatabaseLayer.force_dirty_database()
+
 We keep exceptions from expiring for about 3 months.
 
 >>> match = re.search('/(\d+)/', url)

@@ -1,0 +1,10 @@
+<configure xmlns="http://namespaces.zope.org/meta">
+
+  <directive
+      namespace="http://namespaces.canonical.com/webservice"
+      name="register"
+      schema="canonical.lazr.rest.metazcml.IRegisterDirective"
+      handler="canonical.lazr.rest.metazcml.register_webservice"
+      />
+
+</configure>

@@ -6,106 +6,89 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
-
-    <metal:heading fill-slot="pageheading">
-      <h1>Build machines for Launchpad</h1>
-    </metal:heading>
 
 <metal:block fill-slot="head_epilogue">
     <meta http-equiv="refresh" content="300" />
 </metal:block>
 
-<metal:portlets fill-slot="portlets">
-  <div class="portlet" id="portlet-build-queue-depth"
-       tal:condition="view/hasQueuedBuilds">
-    <h2>Build queue depth</h2>
-    <div class="portletBody">
-      <table width="100%">
-        <tbody>
-          <tr tal:repeat="arch view/buildQueueDepthByArch">
-            <td tal:repeat="value arch" tal:content="value" />
-          </tr>
-        </tbody>
-      </table>
+    <div metal:fill-slot="main">
+      <h1>Launchpad build machines</h1>
+
+    <p>
+      <tal:add_action
+        define="link context/menu:overview/add"
+        condition="link/enabled"
+        replace="structure link/render" />
+    </p>
+
+    <div id="ppa-builders" tal:define="category view/ppa_builders">
+      <div metal:use-macro="template/macros/builder-category" />
     </div>
-  </div>
-</metal:portlets>
 
-  <div metal:fill-slot="main">
+    <div id="other-builders" tal:define="category view/other_builders">
+      <div metal:use-macro="template/macros/builder-category" />
+    </div>
 
-      <table class="listing sortable" tal:attributes="id string:builders">
-      <thead>
-        <tr class="builder-row">
-            <th>Builder</th>
-            <th>Architecture</th>
-            <th>Owner</th>
-            <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tal:builder repeat="builder view/builders">
-          <tr class="builder-row">
-            <td>
-              <a tal:attributes="href builder/fmt:url"
-                 tal:content="builder/name"
-                 /><br />
-              <tal:manual condition="builder/manual">Manual</tal:manual>
-              <tal:auto condition="not: builder/manual">Automatic</tal:auto>
-            </td>
-            <td>
-              <span tal:replace="builder/processor/name">i386</span>
-              <tal:hardened
-                 condition="builder/virtualized">&nbsp;Virtual</tal:hardened>
-            </td>
-            <td>
-              <a tal:replace="structure builder/owner/fmt:link" />
-            </td>
-            <td>
-              <tal:problem condition="not: builder/builderok">
-                Not available
-                <tal:reason condition="builder/failnotes">
-                  because:<br />
-                  <span tal:replace="builder/failnotes">Live CD</span>
-                </tal:reason>
-              </tal:problem>
-              <tal:ok condition="builder/builderok">
-                <tal:building condition="builder/currentjob">
-                <tal:build define="build builder/currentjob/build">
-                  Building
-                  <span tal:replace="build/sourcepackagerelease/name" />
-                  <span tal:replace="build/sourcepackagerelease/version" />
-                  <br />
-                  for
-                  <tal:ppa condition="build/archive/purpose/enumvalue:PPA">
-                    <a tal:replace="structure build/archive/owner/fmt:link" />
-                  </tal:ppa>
-                  <span tal:replace="build/distribution/displayname" />
-                  <span tal:replace="build/distroseries/displayname" />
-                  <tal:ppa condition="build/archive/purpose/enumvalue:PPA">
-                    PPA
-                  </tal:ppa>
-                  <tal:no_ppa condition="not: build/archive/purpose/enumvalue:PPA">
-                    (<span tal:replace="build/pocket/name/fmt:lower" />)
-                  </tal:no_ppa>
-                </tal:build>
-                </tal:building>
-                <tal:idle condition="not: builder/currentjob">
-                  Idle
-                </tal:idle>
-              </tal:ok>
-            </td>
-          </tr>
-        </tal:builder>
-      </tbody>
-      </table>
-
-      <p class="discreet">Generated at <span tal:replace="view/now"/></p>
+    <p class="discreet">Generated at <span tal:replace="view/now"/></p>
 
   </div>
+
+<metal:macros fill-slot="bogus">
+<metal:macro define-macro="builder-category">
+  <tal:comment replace="nothing">
+    This macro expects the following variables defined:
+    :category: A BuilderCategory object
+  </tal:comment>
+
+   <h2 tal:content="category/title" />
+
+   <table class="listing">
+     <tbody>
+     <tal:group repeat="builder_group category/groups">
+       <tr class="highlighted">
+         <th colspan="3" style="text-align: left">
+          <tal:processor replace="builder_group/processor_name" />
+           &nbsp;&nbsp;&nbsp;
+           <span class="discreet">
+             <tal:queue-size replace="builder_group/queue_size"
+               >2</tal:queue-size> builds waiting in queue
+           </span>
+         </th>
+       </tr>
+       <tr class="builder-row" tal:repeat="builder builder_group/builders">
+         <td class="icon left">
+           <tal:not-ok condition="not: builder/builderok">
+             <img width="14" height="14" alt="[Disabled]"
+                  title="Disabled" src="/@@/no" />
+           </tal:not-ok>
+        </td>
+         <td style="text-align: left; width: 12em">
+           <a tal:attributes="href builder/fmt:url"
+              tal:content="builder/title/fmt:shorten/30">Bob</a>
+           <tal:mode condition="builder/manual">
+             (manual)
+           </tal:mode>
+         </td>
+         <td style="text-align: left">
+           <tal:status replace="builder/status">Disabled</tal:status>
+         </td>
+       </tr>
+       <tr tal:condition="repeat/builder_group/end" class="note">
+         <td>&nbsp;</td>
+       </tr>
+     </tal:group>
+     </tbody>
+  </table>
+
+</metal:macro>
+
+</metal:macros>
+
+
 </body>
 </html>
 

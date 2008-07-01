@@ -20,10 +20,15 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, StrippedTextLine, UniqueField, URIField)
+    ContentNameField, StrippedTextLine, URIField)
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr import DBEnumeratedType, DBItem
+
+
+LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
+
 
 class BugTrackerNameField(ContentNameField):
 
@@ -37,24 +42,21 @@ class BugTrackerNameField(ContentNameField):
         return getUtility(IBugTrackerSet).getByName(name)
 
 
-class BugTrackerBaseURL(UniqueField):
-    """A bug tracker base URL that's not used by any other bug trackers.
+class BugTrackerURL(URIField):
+    """A bug tracker URL that's not used by any other bug trackers.
 
     When checking if the URL is already registered with another
     bugtracker, it takes into account that the URL may differ slightly,
     i.e. it could end with a slash or be https instead of http.
     """
 
-    errormessage = _("%s is already registered in Launchpad.")
-    attribute = 'baseurl'
-
-    @property
-    def _content_iface(self):
-        return IBugTracker
-
-    def _getByAttribute(self, base_url):
-        """See `UniqueField`."""
-        return getUtility(IBugTrackerSet).queryByBaseURL(base_url)
+    def _validate(self, input):
+        """Check that the URL is not already in use by another bugtracker."""
+        super(BugTrackerURL, self)._validate(input)
+        bugtracker = getUtility(IBugTrackerSet).queryByBaseURL(input)
+        if bugtracker is not None and bugtracker != self.context:
+            raise LaunchpadValidationError(
+                "%s is already registered in Launchpad." % input)
 
 
 class BugTrackerType(DBEnumeratedType):
@@ -94,10 +96,11 @@ class BugTrackerType(DBEnumeratedType):
         """)
 
     SOURCEFORGE = DBItem(5, """
-        SourceForge
+        SourceForge or SourceForge derivative
 
-        SourceForge is a project hosting service which includes bug,
-        support and request tracking.
+        SorceForge is a collaborative revision control and software
+        development management system. It has several derivatives,
+        including GForge, RubyForge, BerliOS and JavaForge.
         """)
 
     MANTIS = DBItem(6, """
@@ -118,11 +121,18 @@ class BugTrackerType(DBEnumeratedType):
         Bugs are tracked by email, perhaps on a mailing list.
         """)
 
-    SAVANNAH = DBItem(9, """
-        GNU / NoGNU Savannah
+    SAVANE = DBItem(9, """
+        Savane
 
-        Savannah is a web-based project hosting system which includes
-        bug, support and request tracking.
+        Savane is a web-based project hosting system which includes
+        support and request tracking. The best-known example of Savane
+        is GNU's Savannah.
+        """)
+
+    PHPPROJECT = DBItem(10, """
+        PHP Project Bugtracker
+
+        The bug tracker developed by the PHP project.
         """)
 
 
@@ -148,17 +158,20 @@ class IBugTracker(Interface):
         description=_(
             'A brief introduction or overview of this bug tracker instance.'),
         required=False)
-    baseurl = BugTrackerBaseURL(
-        title=_('Base URL'),
+    baseurl = BugTrackerURL(
+        title=_('Location'),
+        allowed_schemes=LOCATION_SCHEMES_ALLOWED,
         description=_(
-            'The top-level URL for the bug tracker. This must be accurate '
-            'so that Launchpad can link to external bug reports.'))
+            'The top-level URL for the bug tracker, or an upstream email '
+            'address. This must be accurate so that Launchpad can link to '
+            'external bug reports.'))
     aliases = List(
-        title=_('Base URL aliases'),
+        title=_('Location aliases'),
         description=_(
-            'A list of URLs that all lead to the same bug tracker, '
-            'or commonly seen typos.'),
-        value_type=URIField(), required=False)
+            'A list of URLs or email addresses that all lead to the same '
+            'bug tracker, or commonly seen typos, separated by whitespace.'),
+        value_type=BugTrackerURL(allowed_schemes=LOCATION_SCHEMES_ALLOWED),
+        required=False)
     owner = Int(title=_('Owner'))
     contactdetails = Text(
         title=_('Contact details'),
@@ -184,6 +197,40 @@ class IBugTracker(Interface):
         :hours_since_last_check: hours are considered needing to be
         updated.
         """
+
+    def getLinkedPersonByName(name):
+        """Return the `IBugTrackerPerson` for a given name on a bugtracker.
+
+        :param name: The name of the person on the bugtracker in
+            `bugtracker`.
+        :return: an `IBugTrackerPerson`.
+        """
+
+    def linkPersonToSelf(name, person):
+        """Link a Person to the BugTracker using a given name.
+
+        :param name: The name used for person on bugtracker.
+        :param person: The `IPerson` to link to bugtracker.
+        :raise BugTrackerPersonAlreadyExists: If `name` has already been
+            used to link a person to `bugtracker`.
+        :return: An `IBugTrackerPerson`.
+        """
+
+    def ensurePersonForSelf(
+        display_name, email, rationale, creation_comment):
+        """Return the correct `IPerson` for a given name on a bugtracker.
+
+        :param bugtracker: The `IBugTracker` for which we should have a
+            given Person.
+        :param display_name: The name of the Person on `bugtracker`.
+        :param email: The Person's email address if available. If `email`
+            is supplied a Person will be created or retrieved using that
+            email address and no `IBugTrackerPerson` records will be created.
+        :param rationale: The `PersonCreationRationale` used to create a
+            new `IPerson` for this `name` and `bugtracker`, if necessary.
+        :param creation_comment: The creation comment for the `IPerson`
+            if one is created.
+         """
 
     def destroySelf():
         """Delete this bug tracker."""
@@ -257,9 +304,10 @@ class IBugTrackerAlias(Interface):
     bugtracker = Object(
         title=_('The bugtracker for which this is an alias.'),
         schema=IBugTracker)
-    base_url = BugTrackerBaseURL(
-        title=_('Base URL'),
-        description=_('Another top-level URL for the bug tracker.'))
+    base_url = BugTrackerURL(
+        title=_('Location'),
+        allowed_schemes=LOCATION_SCHEMES_ALLOWED,
+        description=_('Another URL or email address for the bug tracker.'))
 
 
 class IBugTrackerAliasSet(Interface):

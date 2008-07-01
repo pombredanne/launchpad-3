@@ -27,12 +27,12 @@ __all__ = [
     'LaunchpadXMLRPCView',
     'Link',
     'Navigation',
+    'NavigationMenu',
     'nearest',
     'nearest_adapter',
     'nearest_context_with_adapter',
     'redirection',
     'safe_action',
-    'smartquote',
     'sorted_dotted_numbers',
     'sorted_version_numbers',
     'StandardLaunchpadFacets',
@@ -46,8 +46,6 @@ __all__ = [
     'Utf8PreferredCharsets',
     ]
 
-import re
-
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.generalform import (
@@ -57,9 +55,9 @@ from canonical.launchpad.webapp.launchpadform import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget,
     safe_action)
 from canonical.launchpad.webapp.menu import (
-    Link, FacetMenu, ApplicationMenu, ContextMenu, structured,
-    enabled_with_permission, nearest_context_with_adapter, nearest_adapter
-    )
+    ApplicationMenu, ContextMenu, FacetMenu, Link, NavigationMenu,
+    enabled_with_permission, nearest_adapter, nearest_context_with_adapter,
+    structured)
 from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
     canonical_name, canonical_url, nearest, LaunchpadView, Navigation,
@@ -67,31 +65,6 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.launchpad.webapp.sorting import (
     expand_numbers, sorted_version_numbers, sorted_dotted_numbers)
 from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
-
-def smartquote(str):
-    """Return a copy of the string provided, with smartquoting applied.
-
-    >>> smartquote('')
-    u''
-    >>> smartquote('foo "bar" baz')
-    u'foo \u201cbar\u201d baz'
-    >>> smartquote('foo "bar baz')
-    u'foo \u201cbar baz'
-    >>> smartquote('foo bar" baz')
-    u'foo bar\u201d baz'
-    >>> smartquote('""foo " bar "" baz""')
-    u'""foo " bar "" baz""'
-    >>> smartquote('" foo "')
-    u'" foo "'
-    >>> smartquote('"foo".')
-    u'\u201cfoo\u201d.'
-    >>> smartquote('a lot of "foo"?')
-    u'a lot of \u201cfoo\u201d?'
-    """
-    str = unicode(str)
-    str = re.compile(u'(^| )(")([^" ])').sub(u'\\1\u201c\\3', str)
-    str = re.compile(u'([^ "])(")($|[\s.,;:!?])').sub(u'\\1\u201d\\3', str)
-    return str
 
 
 class GetitemNavigation(Navigation):

@@ -31,13 +31,13 @@ Then there are three kinds of users that are indirectly subscribed to
 a bug:
 
     * assignees
-    * bug contacts
+    * structural subscribers (subscribers to the bug's target)
     * direct subscribers from dupes
 
-Bugs may get reassigned, bug contacts may come and go, and dupes may
+Bugs may get reassigned, bug subscribers may come and go, and dupes may
 be unduped or reduped to other bugs. Indirect subscriptions are looked
 up at mail sending time, so the mail is automatically sent to new bug
-contacts or assignees, stops being sent to subscribers from dupes when
+subscribers or assignees, stops being sent to subscribers from dupes when
 a bug is unduped, and so forth.
 
 Let's create a new bug to demonstrate how direct and indirect
@@ -51,7 +51,7 @@ subscriptions work.
     >>> linux_source = ubuntu.getSourcePackage("linux-source-2.6.15")
     >>> linux_source.bug_subscriptions
     []
-    >>> print linux_source.distribution.bugcontact
+    >>> print linux_source.distribution.bug_supervisor
     None
 
     >>> foobar = getUtility(ILaunchBag).user
@@ -138,7 +138,7 @@ Here are some examples of the three types of indirect subscribers:
     Sample Person
     Ubuntu Team
 
-2. Bug contacts
+2. Structural subscribers
 
     >>> mr_no_privs = personset.getByName("no-priv")
 
@@ -163,7 +163,7 @@ Here are some examples of the three types of indirect subscribers:
 
     >>> ubuntu_team = personset.getByName("ubuntu-team")
 
-    >>> linux_source.distribution.setBugContact(ubuntu_team, ubuntu_team)
+    >>> linux_source.distribution.setBugSupervisor(ubuntu_team, ubuntu_team)
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -175,8 +175,8 @@ Here are some examples of the three types of indirect subscribers:
     Sample Person
     Ubuntu Team
 
-(Adding a product bugtask to demonstrate that the upstream bug contact
-is also an indirect subscriber.)
+After adding a product bugtask we can see that the upstream bug
+supervisor is also an indirect subscriber.
 
     >>> from canonical.launchpad.interfaces import IBugTaskSet, IProductSet
     >>> firefox = getUtility(IProductSet).get(4)
@@ -187,7 +187,7 @@ is also an indirect subscriber.)
     <BugTask ...>
 
     >>> lifeless = personset.getByName("lifeless")
-    >>> firefox.setBugContact(lifeless, lifeless)
+    >>> firefox.setBugSupervisor(lifeless, lifeless)
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -201,10 +201,10 @@ is also an indirect subscriber.)
     Sample Person
     Ubuntu Team
 
-If there were no upstream product bug contact, the product owner would
-be used instead.
+If there were no upstream product bug subscribers, the product owner
+would be used instead.
 
-    >>> firefox.setBugContact(None, None)
+    >>> firefox.setBugSupervisor(None, None)
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -235,7 +235,7 @@ be used instead.
     Ubuntu Team
 
     >>> firefox.owner = previous_owner
-    >>> firefox.setBugContact(lifeless, lifeless)
+    >>> firefox.setBugSupervisor(lifeless, lifeless)
 
 3. Direct subscribers of duplicate bugs.
 
@@ -446,7 +446,7 @@ Define a function that get subscriber email addresses back conveniently:
 
 Let's have a look at an example for a distribution bug:
 
-    >>> ubuntu.setBugContact(sample_person, sample_person)
+    >>> ubuntu.setBugSupervisor(sample_person, sample_person)
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -471,6 +471,10 @@ there is no security contact:
     >>> ubuntu.security_contact is None
     True
 
+    >>> from canonical.launchpad.mail import stub
+    >>> transaction.commit()
+    >>> stub.test_emails = []
+
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
     ...     owner=foobar, security_related=True, private=True)
@@ -479,9 +483,17 @@ there is no security contact:
     >>> getSubscribers(new_bug)
     ['foo.bar@canonical.com', 'support@ubuntu.com']
 
+Even though support@ubuntu.com got subscribed while filing the bug, no
+"You have been subscribed" notification was sent, which is normally sent
+to new subscribers.
+
+    >>> transaction.commit()
+    >>> stub.test_emails
+    []
+
 Another example, this time for an upstream:
 
-    >>> firefox.setBugContact(sabdfl, sabdfl)
+    >>> firefox.setBugSupervisor(sabdfl, sabdfl)
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -494,14 +506,14 @@ Again, only Foo Bar is explicitly subscribed:
     ...  for subscription in new_bug.subscriptions]
     [u'Foo Bar']
 
-But the upstream Firefox bug contact, sabdfl, is implicitly added to the
+But the upstream Firefox bug supervisor, sabdfl, is implicitly added to the
 recipients list.
 
     >>> getSubscribers(new_bug)
     ['foo.bar@canonical.com', 'mark@hbd.com', 'robertc@robertcollins.net']
 
 If we create a bug task on Ubuntu in the same bug, the Ubuntu bug
-contact will be subscribed:
+supervisor will be subscribed:
 
     >>> ubuntu_task = getUtility(IBugTaskSet).createTask(
     ...     bug=new_bug, distribution=ubuntu, owner=sabdfl)
@@ -519,11 +531,11 @@ But still, only Foo Bar is explicitly subscribed.
     ...  for subscription in new_bug.subscriptions]
     [u'Foo Bar']
 
-When an upstream does *not* have a specific bug contact set, the
-product.owner is used instead. So, if Firefox's bugcontact is unset,
+When an upstream does *not* have a specific bug supervisor set, the
+product.owner is used instead. So, if Firefox's bug supervisor is unset,
 Sample Person, the Firefox "owner" will get subscribed instead:
 
-    >>> firefox.setBugContact(None, None)
+    >>> firefox.setBugSupervisor(None, None)
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -662,3 +674,37 @@ subscriptions themselves, rather than the subscribers.
     ...         subscription.display_subscribed_by)
     Foo Bar (Subscribed by Robert Collins)
     Scott James Remnant (Subscribed themselves)
+
+
+== Email notification ==
+
+When a user is subscribed to a bug by someone other than themselves,
+they receive an email notification. The notification is sent only when
+an SQLObjectCreatedEvent is issued, since subscribe() is used in places
+where no notification should be sent.
+
+    >>> from canonical.launchpad.event import SQLObjectCreatedEvent
+    >>> from canonical.launchpad.mail import stub
+    >>> transaction.commit()
+    >>> stub.test_emails = []
+    >>> bug_subscription = bug.subscribe(sabdfl, lifeless)
+    >>> notify(SQLObjectCreatedEvent(bug_subscription))
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+    >>> print stub.test_emails[-1][2]
+    MIME-Version: 1.0
+    ...
+    From: Launchpad Bug Tracker <...@bugs.launchpad.net>
+    To: mark@hbd.com
+    Reply-To: Bug ... <...@bugs.launchpad.net>
+    ...
+    X-Launchpad-Message-Rationale: Subscriber
+    ...
+    You have been subscribed to a public bug by Robert Collins (lifeless):
+    ...
+    If a Save As dialog for a nonexistent window exists,
+    ...
+    ** Affects: firefox
+    ...
+    http://bugs.launchpad.dev/bugs/...

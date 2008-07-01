@@ -126,7 +126,7 @@ class IBuilder(IHasOwner):
         description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
-    currentjob = Attribute("Build Job being processed")
+    currentjob = Attribute("BuildQueue instance for job being processed.")
     status = Attribute("Generated status information")
     pocket_dependencies = Attribute("""
         A dictionary of pocket to a tuple of pocket dependencies.
@@ -147,6 +147,19 @@ class IBuilder(IHasOwner):
         :param logger: A logger used for providing debug information.
         :param libraryfilealias: A library file alias representing the needed
             file.
+        """
+
+    def cachePrivateSourceOnSlave(logger, build_queue_item):
+        """Ask the slave to download source files for a private build.
+
+        The slave will cache the files for the source in build_queue_item
+        to its local disk in preparation for a private build.  Private builds
+        will always take the source files from the archive rather than the
+        librarian since the archive has more granular access to each
+        archive's files.
+
+        :param logger: A logger used for providing debug information.
+        :param build_queue_item: The `IBuildQueue` being built.
         """
 
     def checkCanBuildForDistroArchSeries(distro_arch_series):
@@ -292,9 +305,14 @@ class IBuilderSet(Interface):
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchSeries."""
 
-    def getBuildQueueDepthByArch():
-        """Return a list of architectures and the number of Builds that are
-        in the NEEDSBUILD state for each of them.
+    def getBuildQueueSizeForProcessor(processor, virtualized=False):
+        """Return the number of pending builds for a given processor.
+
+        :param processor: IProcessor;
+        :param virtualized: boolean, controls which queue to check,
+            'virtualized' means PPA.
+
+        :return the size of the queue, integer.
         """
 
     def pollBuilders(logger, txn):
@@ -312,3 +330,6 @@ class IBuilderSet(Interface):
             temporary and once the dispatchBuilds method no longer requires
             a used instance this return parameter will be dropped.
         """
+
+    def getBuildersForQueue(processor, virtualized):
+        """Return all builders for given processor/virtualization setting."""

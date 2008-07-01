@@ -12,7 +12,6 @@ __all__ = [
 from datetime import date, timedelta, datetime
 import re
 import os
-import os.path
 
 from pytz import utc
 
@@ -92,11 +91,13 @@ def unwanted_oops_files(root_path, days, log=None):
 
 
 def old_oops_files(root_path, days):
-    '''Generate a list of all OOPS files found under root_path that
-       are older than 'days' days old.
+    """Generate a list of all OOPS files older than 'days' days old.
 
-       root_path defaults to the config.launchpad.errorreports.errordir
-    '''
+    :param root_path: The directory that contains the OOPS files. The
+        cronscript will pass config.error_reports.error_dir if the root_path
+        was not specified on the command line.
+    :param days: The age the OOPS files must exceed to be considered old.
+    """
     now = date.today()
     for (dirpath, dirnames, filenames) in os.walk(root_path):
 

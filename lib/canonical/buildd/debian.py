@@ -16,6 +16,7 @@ from canonical.buildd.slave import (
 
 class DebianBuildState:
     """States for the DebianBuildManager."""
+    INIT = "INIT"
     UNPACK = "UNPACK"
     MOUNT = "MOUNT"
     OGRE = "OGRE"
@@ -64,7 +65,7 @@ class DebianBuildManager(BuildManager):
         self._ogrepath = slave._config.get("debianmanager", "ogrepath")
         self._sourcespath = slave._config.get("debianmanager", "sourcespath")
         self._cachepath = slave._config.get("slave","filecache")
-        self._state = DebianBuildState.UNPACK
+        self._state = DebianBuildState.INIT
         slave.emptyLog()
         self.alreadyfailed = False
 
@@ -197,12 +198,25 @@ class DebianBuildManager(BuildManager):
             raise ValueError, "Unknown internal state " + self._state
         func(success)
 
+    def iterate_INIT(self, success):
+        """Just finished initialising the build."""
+        if success != 0:
+            if not self.alreadyfailed:
+                # The init failed, can't fathom why that would be...
+                self._slave.builderFail()
+                self.alreadyfailed = True
+            self._state = DebianBuildState.CLEANUP
+            self.doCleanup()
+        else:
+            self._state = DebianBuildState.UNPACK
+            self.doUnpack()
+
     def iterate_UNPACK(self, success):
         """Just finished unpacking the tarball."""
         if success != 0:
             if not self.alreadyfailed:
                 # The unpack failed for some reason...
-                self._slave.builderFail()
+                self._slave.chrootFail()
                 self.alreadyfailed = True
             self._state = DebianBuildState.CLEANUP
             self.doCleanup()
@@ -214,7 +228,7 @@ class DebianBuildManager(BuildManager):
         """Just finished doing the mounts."""
         if success != 0:
             if not self.alreadyfailed:
-                self._slave.builderFail()
+                self._slave.chrootFail()
                 self.alreadyfailed = True
             self._state = DebianBuildState.UMOUNT
             self.doUnmounting()
@@ -341,4 +355,5 @@ class DebianBuildManager(BuildManager):
         else:
             # Successful clean
             if not self.alreadyfailed:
-                self._slave.buildComplete()
+                self._slave.buildOK()
+        self._slave.buildComplete()

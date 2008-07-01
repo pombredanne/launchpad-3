@@ -8,12 +8,12 @@ Tests for the team '+join' page's raw view objects.
     >>> personset = getUtility(IPersonSet)
 
     # Set up a harness to make form submission testing easier.
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> def join_team(team):
     ...     form = {'join': '1', 'mailinglist_subscribe': '1'}
     ...     request = LaunchpadTestRequest(method='POST', form=form)
-    ...     view = getView(team, '+join', request)
+    ...     view = getMultiAdapter((team, request), name='+join')
     ...     view.initialize()
     ...     for notification in request.notifications:
     ...         print notification.message
@@ -37,18 +37,7 @@ results in an error notification.  (This is probably the result of
 mangled form data.)
 
     >>> sample_person = personset.getByName('name12')
-
-    # XXX mars 2008-02-21:
-    # Remove this when the mailing list beta is over.  See bug #190974.
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> beta_testers = getUtility(
-    ...     ILaunchpadCelebrities).launchpad_beta_testers
-    >>> salgado = personset.getByName('salgado')
-    >>> login(salgado.preferredemail.email)
-    >>> beta_testers.addMember(sample_person, reviewer=salgado)
-
     >>> login(sample_person.preferredemail.email)
-
     >>> no_list_team = make_team(
     ...     'open-team-no-list', TeamSubscriptionPolicy.OPEN)
 

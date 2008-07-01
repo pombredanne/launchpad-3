@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Export module for gettext's .mo file format."""
 
@@ -11,7 +11,6 @@ __all__ = [
 
 import os
 import subprocess
-from cStringIO import StringIO
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -19,7 +18,7 @@ from canonical.launchpad.interfaces import (
     ITranslationExporter, ITranslationFormatExporter, TranslationFileFormat,
     UnknownTranslationExporterError)
 from canonical.launchpad.translationformat.translation_export import (
-    ExportedTranslationFile, LaunchpadWriteTarFile)
+    ExportFileStorage)
 
 
 class POCompiler:
@@ -59,18 +58,17 @@ class GettextMOExporter:
         raise NotImplementedError(
             "This file format doesn't allow to export a single message.")
 
-    def exportTranslationFiles(self, translation_file_list,
-                               ignore_obsolete=False, force_utf8=False):
+    def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
+                               force_utf8=False):
         """See `ITranslationFormatExporter`."""
-        assert len(translation_file_list) > 0, (
-            'Got an empty list of files to export!')
-
         translation_exporter = getUtility(ITranslationExporter)
         gettext_po_exporter = (
             translation_exporter.getExporterProducingTargetFileFormat(
                 TranslationFileFormat.PO))
-        exported_files = {}
-        for translation_file in translation_file_list:
+
+        storage = ExportFileStorage('application/x-gmo')
+
+        for translation_file in translation_files:
             # To generate MO files we need first its PO version and then,
             # generate the MO one.
             template_exported = gettext_po_exporter.exportTranslationFiles(
@@ -101,25 +99,7 @@ class GettextMOExporter:
                 # GTranslator.
                 content_type = 'application/x-gmo'
 
-            exported_files[file_path] = exported_file_content
+            storage.addFile(file_path, file_extension, exported_file_content)
 
-        if len(exported_files) == 1:
-            # It's a single file export. Return it directly.
-            exported_file = ExportedTranslationFile(
-                StringIO(exported_file_content))
-            exported_file.path = file_path
-            exported_file.content_type = content_type
-            exported_file.file_extension = file_extension
-        else:
-            # There are multiple files being exported. We need to generate an
-            # archive that include all them.
-            exported_file = ExportedTranslationFile(
-                LaunchpadWriteTarFile.files_to_stream(exported_files))
-            # For tar.gz files, the standard content type is
-            # application/x-gtar. You can see more info on
-            # http://en.wikipedia.org/wiki/List_of_archive_formats
-            exported_file.content_type = 'application/x-gtar'
-            exported_file.file_extension = 'tar.gz'
-            # By leaving path set to None, we let the caller decide.
+        return storage.export()
 
-        return exported_file

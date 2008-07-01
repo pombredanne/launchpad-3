@@ -6,6 +6,7 @@ __all__ = ['Build', 'BuildSet']
 
 
 import apt_pkg
+from datetime import datetime, timedelta
 import logging
 
 from zope.interface import implements
@@ -14,13 +15,15 @@ from zope.component import getUtility
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
+from storm.references import Reference
 
 from canonical.config import config
 
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import cursor
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -31,11 +34,55 @@ from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBuild, IBuildSet, NotFoundError,
-    ILaunchpadCelebrities, PackagePublishingPocket, PackagePublishingStatus)
+    ArchivePurpose, BuildStatus, BuildstateTransitionError, IBuild,
+    IBuildSet, IBuilderSet, NotFoundError, ILaunchpadCelebrities,
+    PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+
+
+def update_archive_counters(obj, attr, value):
+    """Updates the archive build counters upon build state change.
+    """
+    if obj._SO_creating:
+        # The necessary initializations will be performed in the initialize()
+        # method. Please note that all Build instances are now created via
+        # the BuildSet.newBuild() method.
+        pass
+    else:
+        # The build state of a build instance was updated.
+        # Check whether the build state value actually changed.
+        if obj.buildstate == value:
+            # The value did not change, nothing to do.
+            pass
+        else:
+            # The build state value did change.
+            if isinstance(value, tuple):
+                # This is a forced build state change. The actual
+                # value is contained within a 1-tuple.
+                [value] = value
+                obj.stateForced(value)
+            else:
+                # This is a normal build state change, invoke the
+                # corresponding state transition method.
+                if value == BuildStatus.NEEDSBUILD:
+                    # A build is being retried.
+                    obj.buildRetried()
+                elif value == BuildStatus.FULLYBUILT:
+                    # A build succeeded.
+                    obj.buildSucceeded()
+                elif value == BuildStatus.SUPERSEDED:
+                    # A build was superseded.
+                    obj.buildDiscontinued()
+                elif value == BuildStatus.BUILDING:
+                    # A build started.
+                    obj.buildStarted()
+                else:
+                    # A build failed.
+                    obj.buildFailed(value)
+
+    return value
 
 
 class Build(SQLBase):
@@ -49,7 +96,8 @@ class Build(SQLBase):
     distroarchseries = ForeignKey(dbName='distroarchseries',
         foreignKey='DistroArchSeries', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True,
-                         schema=BuildStatus)
+                         schema=BuildStatus,
+                         storm_validator=update_archive_counters)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
     datebuilt = UtcDateTimeCol(dbName='datebuilt', default=None)
@@ -62,24 +110,20 @@ class Build(SQLBase):
                      notNull=True)
     dependencies = StringCol(dbName='dependencies', default=None)
     archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
+    estimated_build_duration = IntervalCol(default=None)
 
-    @property
-    def buildqueue_record(self):
-        """See `IBuild`"""
-        # XXX cprov 2005-10-25 bug=3424:
-        # Would be nice if we can use fresh sqlobject feature 'singlejoin'
-        # instead.
-        return BuildQueue.selectOneBy(build=self)
+    buildqueue_record = Reference("<primary key>", BuildQueue.buildID,
+                                  on_remote=True)
 
     @property
     def current_component(self):
         """See `IBuild`."""
-        pub = self._currentPublication()
+        pub = self.getCurrentPublication()
         if pub is not None:
             return pub.component
         return self.sourcepackagerelease.component
 
-    def _currentPublication(self):
+    def getCurrentPublication(self):
         """See `IBuild`."""
         allowed_status = (
             PackagePublishingStatus.PENDING,
@@ -149,8 +193,13 @@ class Build(SQLBase):
     @property
     def binarypackages(self):
         """See `IBuild`."""
-        bpklist = BinaryPackageRelease.selectBy(build=self, orderBy=['id'])
-        return sorted(bpklist, key=lambda a: a.binarypackagename.name)
+        return BinaryPackageRelease.select("""
+            BinaryPackageRelease.build = %s AND
+            BinaryPackageRelease.binarypackagename = BinaryPackageName.id
+            """ % sqlvalues(self),
+            clauseTables=["BinaryPackageName"],
+            orderBy=["BinaryPackageName.name", "BinaryPackageRelease.id"],
+            prejoins=["binarypackagename", "component", "section"])
 
     @property
     def distroarchseriesbinarypackages(self):
@@ -173,16 +222,9 @@ class Build(SQLBase):
             # re-tried.
             return False
 
-        failed_buildstates = [
-            BuildStatus.FAILEDTOBUILD,
-            BuildStatus.MANUALDEPWAIT,
-            BuildStatus.CHROOTWAIT,
-            BuildStatus.FAILEDTOUPLOAD,
-            ]
-
         # If the build is currently in any of the failed states,
         # it may be retried.
-        return self.buildstate in failed_buildstates
+        return self.hasFailed()
 
     @property
     def can_be_rescored(self):
@@ -228,7 +270,7 @@ class Build(SQLBase):
         return {
             'main': ['main'],
             'restricted': ['main', 'restricted'],
-            'universe': ['main', 'restricted',  'universe'],
+            'universe': ['main', 'universe'],
             'multiverse': ['main', 'restricted', 'universe', 'multiverse'],
             'partner' : ['partner'],
             }
@@ -236,7 +278,154 @@ class Build(SQLBase):
     @property
     def ogre_components(self):
         """See `IBuild`."""
+        # Builds targeted to BACKPORTS are allowed to depend on any
+        # component, exactly as if they were published in 'multiverse'.
+        if self.pocket == PackagePublishingPocket.BACKPORTS:
+            return self.component_dependencies['multiverse']
+
         return self.component_dependencies[self.current_component.name]
+
+    def getEstimatedBuildStartTime(self):
+        """See `IBuild`.
+
+        The estimated dispatch time for the build job at hand is
+        calculated from the following ingredients:
+            * the start time for the head job (job at the
+              head of the respective build queue)
+            * the estimated build durations of all jobs that
+              precede the job at hand in the build queue
+              (divided by the number of machines in the respective
+              build pool)
+        If either of the above cannot be determined the estimated
+        dispatch is not known in which case the EPOCH time stamp
+        is returned.
+        """
+        # This method may only be invoked for pending jobs.
+        if self.buildstate != BuildStatus.NEEDSBUILD:
+            raise AssertionError(
+                "The start time is only estimated for pending builds.")
+
+        # A None value indicates that the estimated dispatch time is not
+        # available.
+        result = None
+
+        cur = cursor()
+        # For a given build job in position N in the build queue the
+        # query below sums up the estimated build durations for the
+        # jobs [1 .. N-1] i.e. for the jobs that are ahead of job N.
+        sum_query = """
+            SELECT
+                EXTRACT(EPOCH FROM SUM(Build.estimated_build_duration))
+            FROM
+                Archive
+                JOIN Build ON
+                    Build.archive = Archive.id
+                JOIN BuildQueue ON
+                    Build.id = BuildQueue.build
+            WHERE
+                Build.buildstate = 0 AND
+                Build.processor = %s AND
+                Archive.require_virtualized = %s AND
+                ((BuildQueue.lastscore > %s) OR
+                 ((BuildQueue.lastscore = %s) AND
+                  (Build.id < %s)))
+             """ % sqlvalues(self.processor, self.is_virtualized,
+                      self.buildqueue_record.lastscore,
+                      self.buildqueue_record.lastscore, self)
+
+        cur.execute(sum_query)
+        # Get the sum of the estimated build time for jobs that are
+        # ahead of us in the queue.
+        [sum_of_delays] = cur.fetchone()
+
+        # Get build dispatch time for job at the head of the queue.
+        headjob_delay = self._getHeadjobDelay()
+
+        # Get the number of machines that are available in the build
+        # pool for this build job.
+        pool_size = getUtility(IBuilderSet).getBuildersForQueue(
+            self.processor, self.is_virtualized).count()
+
+        # The estimated dispatch time can only be calculated for
+        # non-zero-sized build pools.
+        if pool_size > 0:
+            # This is the estimated build job start time in seconds
+            # from now.
+            start_time = 0
+
+            if sum_of_delays is None:
+                # This job is the head job.
+                start_time = headjob_delay
+            else:
+                # There are jobs ahead of us. Divide the delay total by
+                # the number of machines available in the build pool.
+                # Please note: we need the pool size to be a floating
+                # pointer number for the purpose of the division below.
+                pool_size = float(pool_size)
+                start_time = headjob_delay + int(sum_of_delays/pool_size)
+            result = datetime.utcnow() + timedelta(seconds=start_time)
+
+        return result
+
+    def _getHeadjobDelay(self):
+        """Get estimated dispatch time for job at the head of the queue."""
+        cur = cursor()
+        # The query below yields the remaining build times (in seconds
+        # since EPOCH) for the jobs that are currently building on the
+        # machine pool of interest.
+        delay_query = """
+            SELECT
+                CAST (EXTRACT(EPOCH FROM
+                        (Build.estimated_build_duration -
+                        (NOW() - BuildQueue.buildstart))) AS INTEGER)
+                    AS remainder
+            FROM
+                Archive
+                JOIN Build ON
+                    Build.archive = Archive.id
+                JOIN BuildQueue ON
+                    Build.id = BuildQueue.build
+                JOIN Builder ON
+                    Builder.id = BuildQueue.builder
+            WHERE
+                Archive.require_virtualized = %s AND
+                Build.buildstate = %s AND
+                Builder.processor = %s
+            ORDER BY
+                remainder;
+            """ % sqlvalues(self.is_virtualized, BuildStatus.BUILDING,
+                    self.processor)
+
+        cur.execute(delay_query)
+        # Get the remaining build times for the jobs currently
+        # building on the respective machine pool (current build
+        # set).
+        remainders = cur.fetchall()
+        build_delays = set([int(row[0]) for row in remainders if row[0]])
+
+        # This is the head job delay in seconds. Initialize it here.
+        if len(build_delays):
+            headjob_delay = max(build_delays)
+        else:
+            headjob_delay = 0
+
+        # Did all currently building jobs overdraw their estimated
+        # time budget?
+        if headjob_delay < 0:
+            # Yes, this is the case. Reset the head job delay to two
+            # minutes.
+            headjob_delay = 120
+
+        for delay in reversed(sorted(build_delays)):
+            if delay < 0:
+                # This job is currently building and taking longer
+                # than estimated i.e. we don't have a clue when it
+                # will be finished. Make a wild guess (2 minutes?).
+                delay = 120
+            if delay < headjob_delay:
+                headjob_delay = delay
+
+        return headjob_delay
 
     def _parseDependencyToken(self, token):
         """Parse the given token.
@@ -297,7 +486,9 @@ class Build(SQLBase):
         satisfied and if it is reachable in the build context.
         """
         name, version, relation = self._parseDependencyToken(token)
-        dep_candidate = self.distroarchseries.findDepCandidateByName(name)
+
+        dep_candidate = self.archive.findDepCandidateByName(
+            self.distroarchseries, name)
 
         if not dep_candidate:
             return False
@@ -306,7 +497,14 @@ class Build(SQLBase):
             dep_candidate.binarypackageversion, version, relation):
             return False
 
-        if dep_candidate.component not in self.ogre_components:
+        # Only PRIMARY archive build dependencies should be restricted
+        # to the ogre_components. Both PARTNER and PPA can reach
+        # dependencies from all components in the PRIMARY archive.
+        # Moreover, PARTNER and PPA component domain is single, i.e,
+        # PARTNER only contains packages in 'partner' component and PPAs
+        # only contains packages in 'main' component.
+        if (self.archive.purpose == ArchivePurpose.PRIMARY and
+            dep_candidate.component not in self.ogre_components):
             return False
 
         return True
@@ -400,8 +598,21 @@ class Build(SQLBase):
         # have no preferredemail. They are the autosync ones (creator = katie,
         # 3583 packages) and the untouched sources since we have migrated from
         # DAK (the rest). We should not spam Debian maintainers.
-        if config.builddmaster.notify_owner:
+
+        # Please note that both the package creator and the package uploader
+        # will be notified of failures if:
+        #     * the 'notify_owner' flag is set
+        #     * the package build (failure) occurred in the original
+        #       archive.
+        package_was_not_copied = (
+            self.archive == self.sourcepackagerelease.upload_archive)
+
+        if package_was_not_copied and config.builddmaster.notify_owner:
             recipients = recipients.union(contactEmailAddresses(creator))
+            dsc_key = self.sourcepackagerelease.dscsigningkey
+            if dsc_key:
+                recipients = recipients.union(
+                    contactEmailAddresses(dsc_key.owner))
 
         # Modify notification contents according the targeted archive.
         # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
@@ -409,7 +620,7 @@ class Build(SQLBase):
         # main archive candidates.
         # For PPA build notifications we include the archive.owner
         # contact_address.
-        if self.archive.purpose != ArchivePurpose.PPA:
+        if not self.archive.is_ppa:
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
                 contactEmailAddresses(buildd_admins))
@@ -485,6 +696,129 @@ class Build(SQLBase):
             simple_sendmail(
                 fromaddress, toaddress, subject, message,
                 headers=extra_headers)
+
+    def hasFailed(self):
+        return self.buildstate in [BuildStatus.FAILEDTOBUILD,
+                                   BuildStatus.MANUALDEPWAIT,
+                                   BuildStatus.CHROOTWAIT,
+                                   BuildStatus.FAILEDTOUPLOAD]
+
+    def buildRetried(self):
+        """Handle the transition of the build state to 'pending'."""
+        # Only failed builds may be retried.
+        if not self.hasFailed():
+            raise BuildstateTransitionError(
+            "Build state transition failure (%s -> %s)" % (
+            self.buildstate, BuildStatus.NEEDSBUILD))
+        self.archive.pending_count += 1
+        self.archive.failed_count -= 1
+
+    def buildSucceeded(self):
+        """Handle the transition of the build state to 'succeeded'."""
+        if self.buildstate != BuildStatus.BUILDING:
+            raise BuildstateTransitionError(
+                "Build state transition failure (%s -> %s)" % (
+                self.buildstate, BuildStatus.FULLYBUILT))
+        self.archive.succeeded_count += 1
+        self.archive.building_count -= 1
+
+    def buildDiscontinued(self):
+        """Handle the transition of the build state to 'superseded'."""
+        if self.buildstate != BuildStatus.NEEDSBUILD:
+            raise BuildstateTransitionError(
+                "Build state transition failure (%s -> %s)" % (
+                self.buildstate, BuildStatus.SUPERSEDED))
+        self.archive.pending_count -= 1
+        self.archive.total_count -= 1
+
+    def buildStarted(self):
+        """Handle the transition of the build state to 'building'."""
+        if self.buildstate != BuildStatus.NEEDSBUILD:
+            raise BuildstateTransitionError(
+                "Build state transition failure (%s -> %s)" % (
+                self.buildstate, BuildStatus.BUILDING))
+        self.archive.building_count += 1
+        self.archive.pending_count -= 1
+
+    def buildFailed(self, value):
+        """Handle the transition of the build state to 'failed'."""
+        if self.buildstate != BuildStatus.BUILDING:
+            raise BuildstateTransitionError(
+                "Build state transition failure (%s -> %s)" % (
+                self.buildstate, value))
+        self.archive.failed_count += 1
+        self.archive.building_count -= 1
+
+    def forceState(self, value):
+        """Set the build state to the value passed no matter what."""
+        # Packing the actual build state value in a 1-tuple will indicate
+        # that this is a forced state change to the validator function.
+        if value != self.buildstate:
+            self.buildstate = (value,)
+
+    def stateForced(self, value):
+        """Handle the forced change of the build state to new value.
+        """
+        # Take action according to the previous state.
+        if self.buildstate == BuildStatus.NEEDSBUILD:
+            # A pending build was changed.
+            self.archive.pending_count -= 1
+        elif self.buildstate == BuildStatus.FULLYBUILT:
+            # A successfully completed build was changed.
+            self.archive.succeeded_count -= 1
+        elif self.buildstate == BuildStatus.SUPERSEDED:
+            # A superseded build was changed.
+            self.archive.total_count += 1
+        elif self.buildstate == BuildStatus.BUILDING:
+            # A currently building build was changed.
+            self.archive.building_count -= 1
+        else:
+            # A failed build was changed.
+            self.archive.failed_count -= 1
+
+        # Take action according to the new state.
+        if value == BuildStatus.NEEDSBUILD:
+            # This is a pending build now.
+            self.archive.pending_count += 1
+        elif value == BuildStatus.FULLYBUILT:
+            # This is a succeeded build now.
+            self.archive.succeeded_count += 1
+        elif value == BuildStatus.SUPERSEDED:
+            # This is a superseded build now.
+            self.archive.total_count -= 1
+        elif value == BuildStatus.BUILDING:
+            # This is a currently active/building build now.
+            self.archive.building_count += 1
+        else:
+            # This is a failed build now.
+            self.archive.failed_count += 1
+
+    def initialize(self):
+        """Update archive counters according to build state.
+
+        This method is called immediately after a Build instance
+        creation.
+        """
+        # A new build instance was created.
+        if self.buildstate == BuildStatus.NEEDSBUILD:
+            # A pending build was created.
+            self.archive.total_count += 1
+            self.archive.pending_count += 1
+        elif self.buildstate == BuildStatus.FULLYBUILT:
+            # A successfully completed build was created.
+            self.archive.total_count += 1
+            self.archive.succeeded_count += 1
+        elif self.buildstate == BuildStatus.SUPERSEDED:
+            # A superseded build was created, no-op.
+            pass
+        elif self.buildstate == BuildStatus.BUILDING:
+            # A currently building build was created.
+            self.archive.total_count += 1
+            self.archive.building_count += 1
+        else:
+            # A failed build was created.
+            self.archive.total_count += 1
+            self.archive.failed_count += 1
 
 
 class BuildSet:
@@ -565,8 +899,8 @@ class BuildSet:
         else:
             orderBy = ["-Build.datebuilt"]
 
-        # all orders fallback to -id if the primary order doesn't succeed
-        orderBy.append("-id")
+        # all orders fallback to id if the primary order doesn't succeed
+        orderBy.append("id")
 
 
         queries.append("builder=%s" % builder_id)
@@ -604,8 +938,8 @@ class BuildSet:
             orderBy = ["-Build.datecreated"]
         else:
             orderBy = ["-Build.datebuilt"]
-        # All orders fallback to -id if the primary order doesn't succeed
-        orderBy.append("-id")
+        # All orders fallback to id if the primary order doesn't succeed
+        orderBy.append("id")
 
         queries.append("archive=%s" % sqlvalues(archive))
         clause = " AND ".join(queries)
@@ -665,8 +999,8 @@ class BuildSet:
         else:
             orderBy = ["-Build.datebuilt"]
 
-        # Fallback to ordering by -id as a tie-breaker.
-        orderBy.append("-id")
+        # Fallback to ordering by id as a tie-breaker.
+        orderBy.append("id")
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
@@ -692,9 +1026,10 @@ class BuildSet:
             DistroArchSeries.distroseries = DistroSeries.id AND
             DistroSeries.distribution = Distribution.id AND
             Distribution.id = Archive.distribution AND
-            Archive.purpose != %s AND
+            Archive.purpose IN (%s) AND
             Archive.id = Build.archive
-            """ % quote(ArchivePurpose.PPA))
+            """ % ','.join(
+                sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,
@@ -723,10 +1058,70 @@ class BuildSet:
                 continue
             build.updateDependencies()
             if build.dependencies:
-                logger.info(
+                logger.debug(
                     "Skipping %s: %s" % (build.title, build.dependencies))
                 continue
             logger.info("Retrying %s" % build.title)
             build.retry()
             build.buildqueue_record.score()
 
+    def newBuild(
+        self, sourcepackagerelease, distroarchseries, pocket, processor,
+        archive, buildstate=BuildStatus.NEEDSBUILD, buildduration=None,
+        datecreated=None, datebuilt=None, estimated_build_duration=None,
+        builder=None, buildlog=None):
+        """Creates a new build object using the parameter values passed.
+        """
+        # These are mandatory Build instantiation parameters.
+        init_params = dict(
+            sourcepackagerelease=sourcepackagerelease,
+            distroarchseries=distroarchseries,
+            pocket=pocket,
+            processor=processor,
+            archive=archive)
+
+        # These are optional Build instantiation parameters and will
+        # be passed if set.
+        if buildstate is not None:
+            init_params['buildstate'] = buildstate
+        if buildduration is not None:
+            init_params['buildduration'] = buildduration
+        if datecreated is not None:
+            init_params['datecreated'] = datecreated
+        if datebuilt is not None:
+            init_params['datebuilt'] = datebuilt
+        if estimated_build_duration is not None:
+            init_params['estimated_build_duration'] = estimated_build_duration
+        if builder is not None:
+            init_params['builder'] = builder
+        if buildlog is not None:
+            init_params['buildlog'] = buildlog
+
+        # Create build instance.
+        new_build = Build(**init_params)
+
+        # Allow the new Build instance to perform the necessary
+        # initializations (e.g. archive build counters maintenance)
+        new_build.initialize()
+
+        return new_build
+
+    def getBuildsBySourcePackageRelease(self, sourcepackagerelease_ids,
+                                        buildstate=None):
+        """See `IBuildSet`."""
+        if (sourcepackagerelease_ids is None or
+            len(sourcepackagerelease_ids) == 0):
+            return []
+
+        query = """
+            sourcepackagerelease IN %s AND
+            archive.id = build.archive AND
+            archive.purpose != %s
+            """ % sqlvalues(sourcepackagerelease_ids, ArchivePurpose.PPA)
+
+        if buildstate is not None:
+            query += "AND buildstate = %s" % sqlvalues(buildstate)
+
+        return Build.select(
+            query, orderBy=["-datecreated", "id"],
+            clauseTables=["Archive"])

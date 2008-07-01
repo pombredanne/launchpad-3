@@ -19,8 +19,6 @@ class ProcessMail(LaunchpadCronScript):
 
     """ + __doc__
     def main(self):
-        # Append the 'EMAIL' prefix to all OOPSes (after the server prefix).
-        config.launchpad.errorreports.oops_prefix += 'EMAIL'
         try:
             handleMail(self.txn)
         except ComponentLookupError, lookup_error:

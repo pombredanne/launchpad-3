@@ -11,11 +11,13 @@ __all__ = ['DistributionMirror', 'MirrorDistroArchSeries',
 from datetime import datetime, timedelta, MINYEAR
 import pytz
 
+from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.expr import Func
 from sqlobject import ForeignKey, StringCol, BoolCol
-from sqlobject.sqlbuilder import AND, func
+from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
 
@@ -37,7 +39,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
@@ -56,10 +58,10 @@ class DistributionMirror(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol(
@@ -210,7 +212,7 @@ class DistributionMirror(SQLBase):
         """
         template = get_email_template('notify-mirror-owner.txt')
         fromaddress = format_address(
-            "Launchpad Mirror Prober", config.noreply_from_address)
+            "Launchpad Mirror Prober", config.canonical.noreply_from_address)
 
         replacements = {
             'distro': self.distribution.title,
@@ -400,7 +402,7 @@ class DistributionMirrorSet:
         if country is not None:
             country_id = country.id
         base_query = AND(
-            DistributionMirror.q.content == sqlvalues(mirror_type),
+            DistributionMirror.q.content == mirror_type,
             DistributionMirror.q.enabled == True,
             DistributionMirror.q.http_base_url != None,
             DistributionMirror.q.official_candidate == True,
@@ -409,7 +411,7 @@ class DistributionMirrorSet:
         # The list of mirrors returned by this method is fed to apt through
         # launchpad.net, so we order the results randomly in a lame attempt to
         # balance the load on the mirrors.
-        order_by = [func.random()]
+        order_by = [Func('random')]
         mirrors = shortlist(
             DistributionMirror.select(query, orderBy=order_by),
             longest_expected=50)
@@ -465,9 +467,9 @@ class DistributionMirrorSet:
         if limit is not None:
             query += " LIMIT %d" % limit
 
-        conn = DistributionMirror._connection
+        store = getUtility(IZStorm).get('main')
         ids = ", ".join(str(id)
-                        for (id, date_created) in conn.queryAll(query))
+                        for (id, date_created) in store.execute(query))
         query = '1 = 2'
         if ids:
             query = 'id IN (%s)' % ids

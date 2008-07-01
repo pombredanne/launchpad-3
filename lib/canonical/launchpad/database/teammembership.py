@@ -2,7 +2,11 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['TeamMembership', 'TeamMembershipSet', 'TeamParticipation']
+__all__ = [
+    'TeamMembership',
+    'TeamMembershipSet',
+    'TeamParticipation',
+    ]
 
 from datetime import datetime, timedelta
 import itertools
@@ -25,11 +29,11 @@ from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import (
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
-    IPersonSet, ITeamMembership, ITeamMembershipSet, ITeamParticipation,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus)
+    CyclicalTeamMembershipError, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    ILaunchpadCelebrities, IPersonSet, ITeamMembership, ITeamMembershipSet,
+    ITeamParticipation, TeamMembershipRenewalPolicy, TeamMembershipStatus)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
@@ -45,19 +49,19 @@ class TeamMembership(SQLBase):
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     last_changed_by = ForeignKey(
         dbName='last_changed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     proposed_by = ForeignKey(
         dbName='proposed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     acknowledged_by = ForeignKey(
         dbName='acknowledged_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     reviewed_by = ForeignKey(
         dbName='reviewed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     status = EnumCol(
         dbName='status', notNull=True, enum=TeamMembershipStatus)
     # XXX: salgado, 2008-03-06: Need to rename datejoined and dateexpires to
@@ -97,7 +101,7 @@ class TeamMembership(SQLBase):
         assert team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND
 
         from_addr = format_address(
-            team.displayname, config.noreply_from_address)
+            team.displayname, config.canonical.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
                         'team_url': canonical_url(team),
@@ -119,7 +123,7 @@ class TeamMembership(SQLBase):
         assert team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC
 
         from_addr = format_address(
-            team.displayname, config.noreply_from_address)
+            team.displayname, config.canonical.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
                         'team_url': canonical_url(team),
@@ -248,7 +252,7 @@ class TeamMembership(SQLBase):
 
         msg = get_email_template(templatename) % replacements
         from_addr = format_address(
-            team.displayname, config.noreply_from_address)
+            team.displayname, config.canonical.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)
 
     def setStatus(self, status, user, comment=None):
@@ -272,11 +276,11 @@ class TeamMembership(SQLBase):
         state_transition = {
             admin: [approved, expired, deactivated],
             approved: [admin, expired, deactivated],
-            deactivated: [proposed, approved, invited],
-            expired: [proposed, approved, invited],
+            deactivated: [proposed, approved, admin, invited],
+            expired: [proposed, approved, admin, invited],
             proposed: [approved, admin, declined],
-            declined: [proposed, approved],
-            invited: [approved, invitation_declined],
+            declined: [proposed, approved, admin],
+            invited: [approved, admin, invitation_declined],
             invitation_declined: [invited, approved, admin]}
         assert self.status in state_transition, (
             "Unknown status: %s" % self.status.name)
@@ -284,10 +288,17 @@ class TeamMembership(SQLBase):
             "Bad state transition from %s to %s"
             % (self.status.name, status.name))
 
+        active_states = [approved, admin]
+        if status in active_states and self.team in self.person.allmembers:
+            raise CyclicalTeamMembershipError(
+                "Cannot make %(person)s a member of %(team)s because "
+                "%(team)s is a member of %(person)s."
+                % dict(person=self.person.name, team=self.team.name))
+
+
         old_status = self.status
         self.status = status
 
-        active_states = [approved, admin]
         now = datetime.now(pytz.timezone('UTC'))
         if status in [proposed, invited]:
             self.proposed_by = user
@@ -345,7 +356,7 @@ class TeamMembership(SQLBase):
         member = self.person
         reviewer = self.last_changed_by
         from_addr = format_address(
-            team.displayname, config.noreply_from_address)
+            team.displayname, config.canonical.noreply_from_address)
         new_status = self.status
         admins_emails = team.getTeamAdminsEmailAddresses()
         # self.person might be a team, so we can't rely on its preferredemail.
@@ -515,7 +526,7 @@ def _cleanTeamParticipation(member, team):
     _cleanTeamParticipation() to make sure the member is actually removed from
     the given team and its superteams.
     """
-    for subteam in team.getSubTeams():
+    for subteam in team.sub_teams:
         if member.hasParticipationEntryFor(subteam) and member != subteam:
             # This is an indirect member of the given team, so we must not
             # remove his participation entry for that team or any of its
@@ -527,7 +538,7 @@ def _cleanTeamParticipation(member, team):
     active_states = "%s,%s" % sqlvalues(
         TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN)
     member_team_and_subteams = itertools.chain(
-        [member, team], member.getSubTeams())
+        [member, team], member.sub_teams)
     member_team_and_subteams_ids = ",".join(
         str(person.id) for person in member_team_and_subteams)
     query = """
@@ -570,7 +581,7 @@ def _cleanTeamParticipation(member, team):
     # Now we remove the member (and its members, if they exist) from each
     # superteam of the given team, but only if there are no other paths from
     # the member to the team and if he's not a direct member of the team.
-    superteams = list(team.getSuperTeams())
+    superteams = list(team.super_teams)
     if len(superteams) == 0:
         return
 
@@ -634,7 +645,6 @@ def _fillTeamParticipation(member, team):
         members.extend(member.allmembers)
 
     for m in members:
-        for t in itertools.chain(team.getSuperTeams(), [team]):
+        for t in itertools.chain(team.super_teams, [team]):
             if not m.hasParticipationEntryFor(t):
                 TeamParticipation(person=m, team=t)
-

@@ -66,7 +66,7 @@ Guacamole agenda.
   >>> cprov_browser.open('http://launchpad.dev/sprints/uds-guacamole')
   >>> cprov_browser.getLink('Blueprints').click()
   >>> cprov_browser.url
-  'http://blueprints.launchpad.dev/sprints/uds-guacamole/'
+  'http://blueprints.launchpad.dev/sprints/uds-guacamole'
   >>> cprov_browser.getLink('Set agenda').click()
 
   >>> cprov_browser.title

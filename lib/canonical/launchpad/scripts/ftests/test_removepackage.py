@@ -34,7 +34,7 @@ class TestRemovePackageScript(unittest.TestCase):
     """
     layer = LaunchpadZopelessLayer
 
-    def runRemovePackage(self, extra_args=[]):
+    def runRemovePackage(self, extra_args=None):
         """Run lp-remove-package.py, returning the result and output.
 
         Returns a tuple of the process's return code, stdout output and
@@ -43,7 +43,8 @@ class TestRemovePackageScript(unittest.TestCase):
         script = os.path.join(
             config.root, "scripts", "ftpmaster-tools", "lp-remove-package.py")
         args = [sys.executable, script, '-y']
-        args.extend(extra_args)
+        if extra_args is not None:
+            args.extend(extra_args)
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
@@ -57,10 +58,12 @@ class TestRemovePackageScript(unittest.TestCase):
         """
         # Count the DELETED records in SSPPH and SBPPH to check later
         # that they increased according to the script action.
-        num_src_deleted_before = SecureSourcePackagePublishingHistory.selectBy(
-            status=PackagePublishingStatus.DELETED).count()
-        num_bin_deleted_before = SecureBinaryPackagePublishingHistory.selectBy(
-            status=PackagePublishingStatus.DELETED).count()
+        num_src_deleted_before = (
+            SecureSourcePackagePublishingHistory.selectBy(
+                status=PackagePublishingStatus.DELETED).count())
+        num_bin_deleted_before = (
+            SecureBinaryPackagePublishingHistory.selectBy(
+                status=PackagePublishingStatus.DELETED).count())
 
         returncode, out, err = self.runRemovePackage(
             extra_args=['-s', 'warty', 'mozilla-firefox', '-u', 'cprov',
@@ -203,7 +206,7 @@ class TestPackageRemover(unittest.TestCase):
 
         Performs a lookup on publishing table and checks each entry for:
 
-         * PUBLISHED status,
+         * PUBLISHED or PENDING status,
          * empty removed_by,
          * empty removal_comment.
 
@@ -213,7 +216,7 @@ class TestPackageRemover(unittest.TestCase):
         pub_ids, getter = self._preparePublicationIDs(pub_ids, source)
         for pub_id in pub_ids:
             pub = getter.get(pub_id)
-            self.assertEqual('PUBLISHED', pub.status.name)
+            self.assertTrue(pub.status.name in ['PUBLISHED', 'PENDING'])
             self.assertEqual(None, pub.removed_by)
             self.assertEqual(None, pub.removal_comment)
 
@@ -454,7 +457,8 @@ class TestPackageRemover(unittest.TestCase):
         removal_candidates.extend(mozilla_firefox_bin_pub_ids)
 
         # See the comment in testRemoveBinaryOnly.
-        remover = self.getRemover(binary_only=True, version='0.9', arch='i386')
+        remover = self.getRemover(
+            binary_only=True, version='0.9', arch='i386')
         removals = remover.mainTask()
 
         self.assertEqual(
@@ -479,7 +483,8 @@ class TestPackageRemover(unittest.TestCase):
         remover = self.getRemover(component='main')
         removals_with_main_component = remover.mainTask()
         self.assertEqual(
-            len(removals_without_component), len(removals_with_main_component))
+            len(removals_without_component),
+            len(removals_with_main_component))
 
     def testRemoveComponentFilterError(self):
         """Check a component filter error.

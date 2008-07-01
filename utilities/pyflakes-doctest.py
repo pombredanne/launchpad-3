@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=F0401
 """Perform pyflakes checks on doctests."""
 
 import compiler
@@ -9,6 +10,7 @@ import os
 import sys
 
 import pyflakes
+from pyflakes.checker import Checker
 
 
 # Names we define in the globals for our doctests
@@ -16,18 +18,23 @@ GLOBAL_NAMES = set([
     # for system documentation
     'ANONYMOUS',
     'ILaunchBag',
+    'bugtarget',
+    'commit',
     'create_view',
     'flush_database_updates',
     'getUtility',
     'login',
     'logout',
     'transaction',
+    'LaunchpadObjectFactory',
     # for page tests
     'admin_browser',
     'anon_browser',
     'browser',
     'extract_link_from_tag',
     'extract_text',
+    'factory',
+    'filebug',
     'find_main_content',
     'find_portlet',
     'find_tag_by_id',
@@ -35,19 +42,29 @@ GLOBAL_NAMES = set([
     'first_tag_by_class',
     'get_feedback_messages',
     'http',
+    'mailinglist_api',
     'parse_relationship_section',
     'print_action_links',
     'print_batch_header',
     'print_comments',
+    'print_navigation',
+    'print_navigation_links',
     'print_portlet_links',
+    'print_ppa_packages',
     'print_radio_button_field',
+    'print_self_link_of_entries',
     'print_submit_buttons',
     'print_tab_links',
+    'print_tag_with_id',
     'setupBrowser',
     'user_browser',
     'webservice',
+    'public_webservice',
+    'user_webservice',
     # For OpenID per-version tests
     'PROTOCOL_URI',
+    # For buildd tests
+    'test_dbuser'
     ])
 
 
@@ -128,7 +145,7 @@ def check_doctest(filename):
         print >> sys.stderr, line
         print >> sys.stderr, " " * (offset-1), "^"
     else:
-        w = pyflakes.Checker(tree, filename)
+        w = Checker(tree, filename)
         for warning in sorted(w.messages, key=operator.attrgetter('lineno')):
             if suppress_warning(warning):
                 continue

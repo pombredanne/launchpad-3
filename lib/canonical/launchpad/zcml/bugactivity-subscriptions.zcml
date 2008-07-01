@@ -47,9 +47,9 @@
      handler="canonical.launchpad.subscribers.bugactivity.record_package_infestation_edited" />
 
   <subscriber
-     for="canonical.launchpad.interfaces.IBugSubscription
-          zope.app.event.interfaces.IObjectCreatedEvent"
-     handler="canonical.launchpad.subscribers.bugactivity.record_bugsubscription_added" />
+      for="canonical.launchpad.interfaces.IBugSubscription
+           zope.app.event.interfaces.IObjectCreatedEvent"
+      handler="canonical.launchpad.subscribers.bugactivity.record_bugsubscription_added" />
 
   <subscriber
      for="canonical.launchpad.interfaces.IBugSubscription

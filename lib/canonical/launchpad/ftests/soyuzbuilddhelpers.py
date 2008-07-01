@@ -137,8 +137,10 @@ class OkSlave:
     def status(self):
         return ('BuilderStatus.IDLE', '')
 
-    def ensurepresent(self, sha1, url):
-        print "ensurepresent called"
+    def ensurepresent(self, sha1, url, user=None, password=None):
+        print "ensurepresent called, url=%s" % url
+        if user is not None and user != "":
+            print "URL authorisation with %s/%s" % (user, password)
         return True, None
 
     def build(self, buildid, buildtype, chroot, filemap, args):
@@ -152,6 +154,7 @@ class OkSlave:
             print "No archives set."
         print "Suite: %s" % args['suite']
         print "Archive Purpose: %s" % args['archive_purpose']
+        print "Archive Private: %s" % args['archive_private']
         return ('BuildStatus.Building', info)
 
     def fetchlogtail(self, size):

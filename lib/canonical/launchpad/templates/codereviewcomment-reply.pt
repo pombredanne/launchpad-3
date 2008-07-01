@@ -1,0 +1,25 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+
+<body>
+<div metal:fill-slot="main">
+
+  <h1>Code review comment</h1>
+  <tal:previous tal:condition="view/is_reply">
+      <tal:content replace="structure context/@@+fragment"/>
+  </tal:previous>
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_info" style="clear: both" />
+  </div>
+</div>
+</body>
+</html>

@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 import binascii
 import os
@@ -7,8 +8,8 @@ import logging
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
 from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import session, filetransfer
-from twisted.conch.ssh import factory, userauth, connection
+from twisted.conch.ssh import (
+    channel, connection, factory, filetransfer, session, userauth)
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
 
@@ -16,14 +17,9 @@ from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
 
-from twisted.internet import defer
-
 from twisted.python import components, failure
 
-from twisted.vfs.pathutils import FileSystem
-from twisted.vfs.adapters import sftp
-
-from canonical.codehosting.bazaarfs import SFTPServerRoot
+from canonical.codehosting import sftp
 from canonical.codehosting.smartserver import launch_smart_server
 from canonical.config import config
 
@@ -37,119 +33,78 @@ class SubsystemOnlySession(session.SSHSession, object):
         # Without this, the client hangs when its finished transferring.
         self.loseConnection()
 
+    def loseConnection(self):
+        # XXX: JonathanLange 2008-03-31: This deliberately replaces the
+        # implementation of session.SSHSession.loseConnection. The default
+        # implementation will try to call loseConnection on the client
+        # transport even if it's None. I don't know *why* it is None, so this
+        # doesn't necessarily address the root cause.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.loseConnection()
+        # This is called by session.SSHSession.loseConnection. SSHChannel is
+        # the base class of SSHSession.
+        channel.SSHChannel.loseConnection(self)
+
+    def stopWriting(self):
+        """See `session.SSHSession.stopWriting`.
+
+        When the client can't keep up with us, we ask the child process to
+        stop giving us data.
+        """
+        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
+        # self.client.transport is entirely paranoia inspired by the comment
+        # in `loseConnection` above.  It would be good to know if and why it
+        # is necessary.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.pauseProducing()
+
+    def startWriting(self):
+        """See `session.SSHSession.startWriting`.
+
+        The client is ready for data again, so ask the child to start
+        producing data again.
+        """
+        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
+        # self.client.transport is entirely paranoia inspired by the comment
+        # in `loseConnection` above.  It would be good to know if and why it
+        # is necessary.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.resumeProducing()
+
 
 class LaunchpadAvatar(avatar.ConchUser):
+    """An account on the SSH server, corresponding to a Launchpad person.
 
-    def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
-        # Double-check that we don't get unicode -- directory names on the file
-        # system are a sequence of bytes as far as we're concerned.  We don't
-        # want any tricky login names turning into a security problem.
-        # (I'm reasonably sure twisted.cred guarantees this will be str, but in
-        # the meantime let's make sure).
-        assert type(avatarId) is str
+    :ivar authserver: A Twisted XML-RPC client for the authserver. The server
+        must implement `IUserDetailsStorageV2` and `IHostedBranchStorage`.
+    :ivar channelLookup: See `avatar.ConchUser`.
+    :ivar subsystemLookup: See `avatar.ConchUser`.
+    :ivar user_id: The Launchpad database ID of the Person for this account.
+    :ivar username: The Launchpad username for this account.
+    """
 
-        self.avatarId = avatarId
-        self.homeDirsRoot = homeDirsRoot
-        self._launchpad = launchpad
-
-        self.lpid = userDict['id']
-        self.lpname = userDict['name']
-        self.teams = userDict['teams']
-
-        logging.getLogger('codehosting.ssh').info('%r logged in', self.lpname)
-        self.logger = logging.getLogger('codehosting.sftp.%s' % self.lpname)
-
-        # Extract the initial branches from the user dict.
-        branches_by_team = dict(userDict['initialBranches'])
-        self.branches = {}
-        for team in self.teams:
-            branches_by_product = branches_by_team.get(team['id'], [])
-            self.branches[team['id']] = team_branches = []
-            for (product_id, product_name), branches in branches_by_product:
-                team_branches.append((product_id, product_name, branches))
-        self._productIDs = {}
-        self._productNames = {}
-
-        # XXX: Andrew Bennetts 2007-01-26:
-        # See AdaptFileSystemUserToISFTP below.
-        self.filesystem = None
+    def __init__(self, userDict, authserver):
+        avatar.ConchUser.__init__(self)
+        self.authserver = authserver
+        self.user_id = userDict['id']
+        self.username = userDict['name']
+        logging.getLogger('codehosting.ssh').info(
+            '%r logged in', self.username)
 
         # Set the only channel as a session that only allows requests for
         # subsystems...
         self.channelLookup = {'session': SubsystemOnlySession}
         # ...and set the only subsystem to be SFTP.
-        self.subsystemLookup = {'sftp': BazaarFileTransferServer}
+        self.subsystemLookup = {'sftp': filetransfer.FileTransferServer}
 
-    def fetchProductID(self, productName):
-        """Fetch the product ID for productName.
-
-        Returns a Deferred of the result, which may be None if no product by
-        that name exists.
-
-        This method guarantees repeatable reads: on a particular instance of
-        LaunchpadAvatar, fetchProductID will always return the same value for a
-        given productName.
-        """
-        productID = self._productIDs.get(productName)
-        if productID is not None:
-            # XXX: Andrew Bennetts 2005-12-13: Should the None result
-            # (i.e. not found) be remembered too, to ensure repeatable reads?
-            return defer.succeed(productID)
-        deferred = self._launchpad.fetchProductID(productName)
-        deferred.addCallback(self._cbRememberProductID, productName)
-        return deferred
-
-    def createBranch(self, loginID, userName, productName, branchName):
-        """Register a new branch in Launchpad.
-
-        Returns a Deferred with the new branch ID.
-        """
-        self.logger.info(
-            'Creating branch: (%r, %r, %r)', userName, productName, branchName)
-        return self._launchpad.createBranch(
-            loginID, userName, productName, branchName)
-
-    def _cbRememberProductID(self, productID, productName):
-        if productID is None:
-            return None
-        # XXX: Andrew Bennetts 2007-01-26:
-        # Why convert the number to a string here?
-        productID = str(productID)
-        self._productIDs[productName] = productID
-        self._productNames[productID] = productName
-        return productID
-
-    def _runAsUser(self, f, *args, **kwargs):
-        # Version of UnixConchUser._runAsUser with the setuid bits stripped out
-        # -- we don't need them.
-        try:
-            f = iter(f)
-        except TypeError:
-            f = [(f, args, kwargs)]
-        for i in f:
-            func = i[0]
-            args = len(i)>1 and i[1] or ()
-            kw = len(i)>2 and i[2] or {}
-            r = func(*args, **kw)
-        return r
-
-    def makeFileSystem(self):
-        return FileSystem(SFTPServerRoot(self))
-
-
-# XXX Andrew Bennetts 2007-01-26: This is nasty.  We want a filesystem per
-# SFTP session, not per avatar, so we let the standard adapter grab a per
-# avatar object, and immediately override with the one we want it to use.
-class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
-    def __init__(self, avatar):
-        sftp.AdaptFileSystemUserToISFTP.__init__(self, avatar)
-        self.filesystem = avatar.makeFileSystem()
-
-
-components.registerAdapter(AdaptFileSystemUserToISFTP, LaunchpadAvatar,
-                           filetransfer.ISFTPServer)
 
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
+
+components.registerAdapter(
+    sftp.avatar_to_sftp_server, LaunchpadAvatar, filetransfer.ISFTPServer)
 
 
 class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
@@ -161,31 +116,16 @@ class Realm:
 
     avatarFactory = LaunchpadAvatar
 
-    def __init__(self, homeDirsRoot, authserver):
-        self.homeDirsRoot = homeDirsRoot
+    def __init__(self, authserver):
         self.authserver = authserver
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         # Fetch the user's details from the authserver
         deferred = self.authserver.getUser(avatarId)
 
-        # Then fetch more details: the branches owned by this user (and the
-        # teams they are a member of).
-        def getInitialBranches(userDict):
-            # XXX: Andrew Bennetts 2005-12-13: This makes many XML-RPC
-            #      requests where a better API could require only one
-            #      (or include it in the team dict in the first place).
-            deferred = self.authserver.getBranchesForUser(userDict['id'])
-            def _gotBranches(branches):
-                userDict['initialBranches'] = branches
-                return userDict
-            return deferred.addCallback(_gotBranches)
-        deferred.addCallback(getInitialBranches)
-
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
-            avatar = self.avatarFactory(avatarId, self.homeDirsRoot, userDict,
-                                        self.authserver)
+            avatar = self.avatarFactory(userDict, self.authserver.proxy)
             return interfaces[0], avatar, lambda: None
         return deferred.addCallback(gotUserDict)
 
@@ -208,11 +148,10 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
             self.sendBanner(config.codehosting.banner)
         return passed_through
 
-    # XXX Jonathan Lange 2007-03-19: Copied from
-    # twisted/conch/ssh/userauth.py, with modifications noted.
-    # In Twisted r19857 and earlier, this method does not return a Deferred,
-    # but should. See http://twistedmatrix.com/trac/ticket/2528 for progress.
     def ssh_USERAUTH_REQUEST(self, packet):
+        # This is copied and pasted from twisted/conch/ssh/userauth.py in
+        # Twisted 8.0.1. We do this so we can add _ebLogToBanner between
+        # two existing errbacks.
         user, nextService, method, rest = getNS(packet, 3)
         if user != self.user or nextService != self.nextService:
             self.authenticatedWith = [] # clear auth state
@@ -226,10 +165,9 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         d.addCallback(self._sendConfiguredBanner)
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
-        # The following line does not appear in the original Twisted source.
+        # This line does not appear in the original.
         d.addErrback(self._ebLogToBanner)
         d.addErrback(self._ebBadAuth)
-        # Not in original Twisted method
         return d
 
     def _ebLogToBanner(self, reason):
@@ -308,13 +246,3 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         raise UnauthorizedLogin(
             "Your SSH key does not match any key registered for Launchpad "
             "user %s" % credentials.username)
-
-
-class BazaarFileTransferServer(filetransfer.FileTransferServer):
-
-    def __init__(self, data=None, avatar=None):
-        filetransfer.FileTransferServer.__init__(self, data, avatar)
-        self.logger = avatar.logger
-
-    def connectionLost(self, reason):
-        self.logger.info('Connection lost: %s', reason)

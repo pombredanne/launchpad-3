@@ -13,14 +13,32 @@ set -e
 # https://launchpad.canonical.com/DatabaseSetup which are intended for
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
-sudo /etc/init.d/postgresql-8.2 stop
+if [ -e /etc/init.d/postgresql-8.3 ]; then
+  pgversion=8.3
+  echo "Using PostGRES 8.3"
+elif [ -e /etc/init.d/postgresql-8.2]; then
+  pgversion=8.2
+  echo "Using PostGRES 8.2"
+else
+  echo "Unable to determine your PostGRES version."
+  exit 1
+fi
+
+# Make sure that we have the correct version running on port 5432
+sudo grep -q "port.*5432" /etc/postgresql/$pgversion/main/postgresql.conf
+if [ $? -ne 0 ]; then
+  echo "Please check /etc/postgresql/$pgversion/main/postgresql.conf and"
+  echo "ensure PostGRES is running on port 5432."
+fi;
+
+sudo /etc/init.d/postgresql-$pgversion stop
 
 
-main=/var/lib/postgresql/8.2/main
+main=/var/lib/postgresql/$pgversion/main
 echo Purging postgresql data...
 sudo -u postgres sh -c "rm -rf $main/*"
 echo Re-creating postgresql database...
-sudo -u postgres /usr/lib/postgresql/8.2/bin/initdb \
+sudo -u postgres /usr/lib/postgresql/$pgversion/bin/initdb \
 	--pgdata=$main \
 	--encoding=UNICODE --locale=C
 sudo -u postgres ln -s /etc/postgresql-common/root.crt $main
@@ -29,9 +47,9 @@ sudo -u postgres ln -s /etc/ssl/private/ssl-cert-snakeoil.key $main/server.key
 
 echo Applying postgresql configuration changes...
 
-sudo cp -a /etc/postgresql/8.2/main/pg_hba.conf /etc/postgresql/8.2/main/pg_hba.conf.old
-sudo grep -q Launchpad /etc/postgresql/8.2/main/pg_hba.conf || \
-sudo patch /etc/postgresql/8.2/main/pg_hba.conf <<'EOF'
+sudo cp -a /etc/postgresql/$pgversion/main/pg_hba.conf /etc/postgresql/$pgversion/main/pg_hba.conf.old
+sudo grep -q Launchpad /etc/postgresql/$pgversion/main/pg_hba.conf || \
+sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
 --- pg_hba.conf 2005-11-02 17:33:08.000000000 -0800
 +++ /tmp/pg_hba.conf    2005-11-03 07:32:46.932400423 -0800
 @@ -58,7 +58,9 @@
@@ -46,42 +64,34 @@ sudo patch /etc/postgresql/8.2/main/pg_hba.conf <<'EOF'
 
 
 EOF
-sudo chown --reference=/etc/postgresql/8.2/main/pg_hba.conf.old /etc/postgresql/8.2/main/pg_hba.conf
-sudo chmod --reference=/etc/postgresql/8.2/main/pg_hba.conf.old /etc/postgresql/8.2/main/pg_hba.conf
+sudo chown --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old /etc/postgresql/$pgversion/main/pg_hba.conf
+sudo chmod --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old /etc/postgresql/$pgversion/main/pg_hba.conf
 
-sudo grep -q Launchpad /etc/postgresql/8.2/main/postgresql.conf || \
-sudo patch /etc/postgresql/8.2/main/postgresql.conf <<'EOF'
---- /etc/postgresql/8.2/main/postgresql.conf    2005-11-03 07:56:27.000000000 -0800
-+++ /tmp/postgresql.conf        2005-11-03 07:57:28.156973216 -0800
-@@ -423,6 +423,14 @@
- # - Other Platforms & Clients -
+sudo grep -q Launchpad /etc/postgresql/$pgversion/main/postgresql.conf || \
+sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 
- #transform_null_equals = off
+##
+## Launchpad configuration
+##
+# Enable launchpad full text searching in database
+search_path='$user,public,ts2'
+add_missing_from=false
+# Force use of indexes, to assist in tuning queries
+enable_seqscan=false
 
-+##
-+## Launchpad configuration
-+##
-+# Enable launchpad full text searching in database
-+search_path='$user,public,ts2'
-+add_missing_from=false
-+# Force use of indexes, to assist in tuning queries
-+enable_seqscan=false
-
- #---------------------------------------------------------------------------
- # CUSTOMIZED OPTIONS
 EOF
 
-if [ -f /etc/postgresql/8.2/main/start.conf ]; then
-    sudo sed -i -e 's/^manual/auto/' /etc/postgresql/8.2/main/start.conf
+if [ -f /etc/postgresql/$pgversion/main/start.conf ]; then
+    sudo sed -i -e 's/^manual/auto/' /etc/postgresql/$pgversion/main/start.conf
 fi
 
-sudo /etc/init.d/postgresql-8.2 start
+sudo /etc/init.d/postgresql-$pgversion start
 
 echo Waiting 10 seconds for postgresql to come up...
 sleep 10
 
 echo Creating postgresql user $(id -un)
-sudo -u postgres /usr/lib/postgresql/8.2/bin/createuser -a -d $(id -un)
+sudo -u postgres /usr/lib/postgresql/$pgversion/bin/createuser -a -d $(id -un)
 
 echo
 echo Looks like everything went ok.

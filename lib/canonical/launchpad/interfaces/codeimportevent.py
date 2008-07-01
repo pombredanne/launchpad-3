@@ -334,22 +334,26 @@ class ICodeImportEventSet(Interface):
         :return: `CodeImportEvent` of REQUEST type.
         """
 
-    def newOnline(machine):
+    def newOnline(machine, user=None, message=None):
         """Record that an import machine went online.
 
         :param machine: `CodeImportMachine` whose state changed to ONLINE.
+        :param user: `Person` that requested going online if done by a user.
+        :param message: User-provided message.
         :return: `CodeImportEvent` of ONLINE type.
         """
 
-    def newOffline(machine, reason):
+    def newOffline(machine, reason, user=None, message=None):
         """Record that an import machine went offline.
 
         :param machine: `CodeImportMachine` whose state changed to OFFLINE.
         :param reason: `CodeImportMachineOfflineReason` enum value.
+        :param user: `Person` that requested going offline if done by a user.
+        :param message: User-provided message.
         :return: `CodeImportEvent` of OFFLINE type.
         """
 
-    def newQuiesce(machine, user, message):
+    def newQuiesce(machine, user, message=None):
         """Record that user requested the machine to quiesce for maintenance.
 
         :param machine: `CodeImportMachine` whose state changed to QUIESCING.

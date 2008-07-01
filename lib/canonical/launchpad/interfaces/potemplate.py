@@ -298,17 +298,20 @@ class IPOTemplate(IRosettaStats):
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
 
-    def getPOTMsgSetByMsgIDText(msgidtext, only_current=False, context=None):
-        """Return the `IPOTMesgSet` indexed by msgidtext from this template.
+    def getPOTMsgSetByMsgIDText(singular_text, plural_text=None,
+                                only_current=False, context=None):
+        """Return `IPOTMsgSet` indexed by `singular_text` from this template.
 
         If the key is a string or a unicode object, returns the
         `IPOTMsgSet` in this template that has a primary message ID
         with the given text.
 
-        If only_current is True, then get only current message sets.
+        If `only_current` is True, then get only current message sets.
 
-        If context is not None, look for a message set with that context
+        If `context` is not None, look for a message set with that context
         value.
+
+        If `plural_text` is not None, also filter by that plural text.
 
         If no `IPOTMsgSet` is found, return None.
         """
@@ -321,12 +324,11 @@ class IPOTemplate(IRosettaStats):
         The sequence number must be > 0.
         """
 
-    def getPOTMsgSets(current=True, slice=None):
+    def getPOTMsgSets(current=True):
         """Return an iterator over `IPOTMsgSet` objects in this template.
 
         The 'current' argument is used to select only current POTMsgSets or
         all of them.
-        'slice' is a slice object that selects a subset of POTMsgSets.
         """
 
     def getPOTMsgSetsCount(current=True):

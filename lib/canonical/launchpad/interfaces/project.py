@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -48,7 +49,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
                IHasMentoringOffers, IHasMilestones, IHasMugshot,
                IHasOwner, IHasSpecifications, IHasSprints,
                IHasTranslationGroup, IMakesAnnouncements,
-               IKarmaContext):
+               IKarmaContext, IPillar):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -175,10 +176,6 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
             "on this project group's home page in Launchpad. It should be no "
             "bigger than 100kb in size. "))
 
-    active = Bool(title=_('Active'), required=False,
-        description=_(
-	    "Whether or not this project group is considered active."))
-
     reviewed = Bool(title=_('Reviewed'), required=False,
         description=_("Whether or not this project group has been reviewed."))
 
@@ -285,9 +282,9 @@ class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
                            required=True, readonly=True,
                            constraint=name_validator)
 
-    title = TextLine(title=u'The title for this project series.', required=True,
-                     readonly=True)
+    title = TextLine(title=u'The title for this project series.',
+                     required=True, readonly=True)
 
-    project = Object(schema=IProject, 
+    project = Object(schema=IProject,
                      title=u"The project this series belongs to",
                      required=True, readonly=True)

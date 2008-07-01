@@ -7,7 +7,8 @@ Let's do some imports we will need to test this class.
     >>> from canonical.launchpad.database import (
     ...     POTemplate, POTMsgSet, TranslationMessage)
     >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IProductSet, ITranslationMessage)
+    ...     ILanguageSet, IPersonSet, IProductSet, ITranslationMessage,
+    ...     ITranslatorSet)
 
     >>> potemplate = POTemplate.get(1)
     >>> potmsgsets = potemplate.getPOTMsgSets()
@@ -106,14 +107,22 @@ We are working with Evolution POFile.
     >>> evolution_trunk = evolution.getSeries('trunk')
     >>> evolution_potemplate = evolution_trunk.getPOTemplate('evolution-2.2')
 
-We will be working with Serbian (sr) translations, with the new PO file.
+No Privileges Person is going to work on Serbian (sr) translation, with
+the new PO file.
 
     >>> pofile_sr = evolution_potemplate.newPOFile('sr')
     >>> serbian = pofile_sr.language
     >>> potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
     ...     u'evolution addressbook')
 
-A non-privileged user can only submit a suggestion, which will not be
+This is a Restricted translation, and No Privileges Person is not the
+assigned reviewer.
+
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> sr_translation_reviewer = getUtility(ITranslatorSet).new(
+    ...     evolution.translationgroup, serbian, foobar)
+
+No Privileges Person can only submit a suggestion, which will not be
 hidden.
 
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
@@ -214,7 +223,8 @@ contains just a None.
 For a message with plurals, it's the POFile's number of plural forms.
 
     >>> spanish = getUtility(ILanguageSet)['es']
-    >>> plural_potmsgset = potemplate.getPOTMsgSetByMsgIDText('%d contact')
+    >>> plural_potmsgset = potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d contact', u'%d contacts')
     >>> plural_message = plural_potmsgset.getCurrentTranslationMessage(
     ...     spanish)
     >>> plural_message.translations

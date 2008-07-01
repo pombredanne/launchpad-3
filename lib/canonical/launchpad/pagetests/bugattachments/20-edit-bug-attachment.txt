@@ -33,7 +33,7 @@ changed to be text/plain.
   ...   url='/firefox/+bug/1/attachments/1'
   ...   ).click()
 
-  >>> user_browser.getControl('Patch').selected = True
+  >>> user_browser.getControl('This attachment is a patch').selected = True
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url

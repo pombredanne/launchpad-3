@@ -23,6 +23,7 @@ __all__ = [
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import operator
+import re
 
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
@@ -30,6 +31,7 @@ from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.security.interfaces import Unauthorized
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     BugTaskStatus,
     BugTaskSearchParams,
@@ -80,6 +82,13 @@ class BugNavigation(Navigation):
             # in future this should look up by (bug.id, watch.seqnum)
             return getUtility(IBugWatchSet)[name]
 
+    @stepthrough('+subscription')
+    def traverse_subscriptions(self, person_name):
+        """Retrieve a BugSubscription by person name."""
+        for subscription in self.context.subscriptions:
+            if subscription.person.name == person_name:
+                return subscription
+
 
 class BugFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an `IBug`.
@@ -122,18 +131,18 @@ class BugContextMenu(ContextMenu):
 
     def editdescription(self):
         """Return the 'Edit description/tags' Link."""
-        text = 'Edit description/tags'
+        text = 'Update description / tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
         """Return the 'Set privacy/security' Link."""
         text = 'Set privacy/security'
-        return Link('+secrecy', text, icon='edit')
+        return Link('+secrecy', text)
 
     def markduplicate(self):
         """Return the 'Mark as duplicate' Link."""
         text = 'Mark as duplicate'
-        return Link('+duplicate', text, icon='edit')
+        return Link('+duplicate', text)
 
     def addupstream(self):
         """Return the 'lso affects project' Link."""
@@ -191,7 +200,10 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        text = 'Add branch'
+        if self.context.bug.bug_branches.count() > 0:
+            text = 'Link another branch'
+        else:
+            text = 'Link a related branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
@@ -220,27 +232,30 @@ class BugContextMenu(ContextMenu):
         """Return the 'Retract mentorship' Link."""
         text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
-        enabled = (self.context.bug.isMentor(user) and
-                   not self.context.bug.is_complete and
-                   user)
+        # We should really only allow people to retract mentoring if the
+        # bug's open and the user's already a mentor.
+        if user and not self.context.bug.is_complete:
+            enabled = self.context.bug.isMentor(user)
+        else:
+            enabled = False
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def createquestion(self):
         """Create a question from this bug."""
-        text = 'Convert to question'
+        text = 'Convert to a question'
         enabled = self.context.bug.getQuestionCreatedFromBug() is None
-        return Link('+create-question', text, icon='edit', enabled=enabled)
+        return Link('+create-question', text, enabled=enabled)
 
     def removequestion(self):
         """Remove the created question from this bug."""
-        text = 'Convert back to bug'
+        text = 'Convert back to a bug'
         enabled = self.context.bug.getQuestionCreatedFromBug() is not None
-        return Link('+remove-question', text, icon='edit', enabled=enabled)
+        return Link('+remove-question', text, enabled=enabled)
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'View activity log'
-        return Link('+activity', text, icon='list')
+        text = 'Activity log'
+        return Link('+activity', text)
 
 
 class MaloneView(LaunchpadFormView):
@@ -535,15 +550,24 @@ class DeprecatedAssignedBugsView:
             "/+assignedbugs")
 
 
+normalize_mime_type = re.compile(r'\s+')
+
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
+    @cachedproperty
+    def bugtasks(self):
+        """Cache bugtasks and avoid hitting the DB twice."""
+        return list(self.context.bugtasks)
 
-    def bug_text(self, bug):
+    def bug_text(self):
         """Return the bug information for text display."""
+        bug = self.context
+
         text = []
         text.append('bug: %d' % bug.id)
         text.append('title: %s' % bug.title)
-        text.append('date-reported: %s' % format_rfc2822_date(bug.datecreated))
+        text.append('date-reported: %s' %
+            format_rfc2822_date(bug.datecreated))
         text.append('date-updated: %s' %
             format_rfc2822_date(bug.date_last_updated))
         text.append('reporter: %s' % bug.owner.unique_displayname)
@@ -585,14 +609,16 @@ class BugTextView(LaunchpadView):
         text = []
         text.append('task: %s' % task.bugtargetname)
         text.append('status: %s' % task.status.title)
-        text.append('date-created: %s' % format_rfc2822_date(task.datecreated))
+        text.append('date-created: %s' %
+            format_rfc2822_date(task.datecreated))
 
-        for status in ["confirmed", "assigned", "inprogress",
-                       "closed", "incomplete"]:
+        for status in ["left_new", "confirmed", "triaged", "assigned",
+                       "inprogress", "closed", "incomplete",
+                       "fix_committed", "fix_released"]:
             date = getattr(task, "date_%s" % status)
             if date:
                 text.append("date-%s: %s" % (
-                    status, format_rfc2822_date(date)))
+                    status.replace('_', '-'), format_rfc2822_date(date)))
 
         text.append('reporter: %s' % task.owner.unique_displayname)
 
@@ -619,8 +645,9 @@ class BugTextView(LaunchpadView):
 
     def attachment_text(self, attachment):
         """Return a text representation of a bug attachment."""
-        return "%s %s" % (attachment.libraryfile.http_url,
-                          attachment.libraryfile.mimetype)
+        mime_type = normalize_mime_type.sub(
+            ' ', attachment.libraryfile.mimetype)
+        return "%s %s" % (attachment.libraryfile.http_url, mime_type)
 
     def comment_text(self):
         """Return a text representation of bug comments."""
@@ -639,7 +666,7 @@ class BugTextView(LaunchpadView):
 
         # XXX: for some reason, get_comments_for_bugtask takes a task,
         # not a bug. For now live with it. -- kiko, 2007-10-31
-        first_task = self.context.bugtasks[0]
+        first_task = self.bugtasks[0]
         all_comments = get_comments_for_bugtask(first_task)
         comments = get_visible_comments(all_comments[1:])
 
@@ -649,7 +676,8 @@ class BugTextView(LaunchpadView):
 
         for comment in comments:
             message = build_message(comment.text_for_display)
-            message['Author'] = comment.owner.unique_displayname.encode('utf-8')
+            message['Author'] = comment.owner.unique_displayname.encode(
+                'utf-8')
             message['Date'] = format_rfc2822_date(comment.datecreated)
             message['Message-Id'] = comment.rfc822msgid
             comment_mime.attach(message)
@@ -657,10 +685,10 @@ class BugTextView(LaunchpadView):
         return comment_mime.as_string().decode('utf-8')
 
     def render(self):
-        """Return a text representation of the Bug."""
+        """Return a text representation of the bug."""
         self.request.response.setHeader('Content-type', 'text/plain')
-        texts = [self.bug_text(self.context)]
-        texts.extend(self.bugtask_text(task) for task in self.context.bugtasks)
+        texts = [self.bug_text()]
+        texts.extend(self.bugtask_text(task) for task in self.bugtasks)
         texts.append(self.comment_text())
         return "\n".join(texts)
 

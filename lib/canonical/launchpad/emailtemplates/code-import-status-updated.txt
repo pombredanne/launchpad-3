@@ -1,0 +1,7 @@
+Hello,
+
+%(status)s
+
+--
+%(branch)s
+%(rationale)s%(unsubscribe)s

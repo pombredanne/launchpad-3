@@ -11,13 +11,6 @@
           <th>Type:</th>
           <td><tal:branch-type replace="context/branch_type/title" /></td>
         </tr>
-        <tr tal:condition="context/home_page">
-          <th>External links:</th>
-          <td>
-            <a tal:attributes="href context/home_page"
-               class="link">Home page</a>
-          </td>
-        </tr>
         <tr tal:condition="not:view/owner_is_registrant">
           <th>Registrant:</th>
           <td>
@@ -27,8 +20,7 @@
         <tr tal:condition="context/product">
           <th>Project:</th>
           <td>
-            <a tal:attributes="href context/product/fmt:url"
-               tal:content="context/product/displayname">Mozilla Firefox</a>
+            <tal:link replace="structure context/product/fmt:link" />
           </td>
         </tr>
         <tr>

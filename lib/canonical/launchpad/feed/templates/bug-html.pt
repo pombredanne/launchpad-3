@@ -16,8 +16,8 @@
         My Title</th>
     </tr>
     <tbody>
-    <div tal:omit-tag="python:True" tal:repeat="bugtask view/getPublicRawItems">
-      <tr tal:repeat="bugtask bugtask/bug/bugtasks">
+    <div tal:omit-tag="python:True" tal:repeat="bug view/getPublicRawItems">
+      <tr tal:repeat="bugtask bug/bugtasks">
         <td class="icon right">
           <img src="/@@/bug"
             tal:replace="structure bugtask/image:icon:mainsite" />

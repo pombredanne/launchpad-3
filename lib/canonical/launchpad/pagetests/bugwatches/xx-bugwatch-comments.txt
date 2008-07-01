@@ -105,8 +105,8 @@ Launchpad.
     ...     'boardCommentDetails')
     >>> for link in header.findAll('a'):
     ...     print "%s: %s" % (extract_text(link), link.get('href'))
-    josh: http://launchpad.dev/~jbuhl-nospam
     Debian Bug tracker #308994: http://bugs.debian.org/...?bug=308994
+    josh: http://launchpad.dev/~jbuhl-nospam
     gnome-volume-manager... (permalink): /redfish/+bug/15/comments/1
 
 If sabdfl leaves the Launchpad Developers team the comment will no longer

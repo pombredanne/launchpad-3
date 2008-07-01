@@ -20,12 +20,12 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot,
-    IProduct, IProject, IProjectSeries, IProjectSet,
-    ISearchableByQuestionOwner,
-    ImportStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationFilter, SpecificationImplementationStatus,
-    SpecificationSort, SprintSpecificationStatus, TranslationPermission)
+    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct, IProject,
+    IProjectSeries, IProjectSet, ISearchableByQuestionOwner,
+    IStructuralSubscriptionTarget, ImportStatus, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    SprintSpecificationStatus, TranslationPermission)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -39,7 +39,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.announcement import MakesAnnouncements
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.projectbounty import ProjectBounty
@@ -47,23 +47,26 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.question import QuestionTargetSearch
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               MakesAnnouncements, HasSprintsMixin, KarmaContextMixin,
-              BranchVisibilityPolicyMixin):
+              BranchVisibilityPolicyMixin, StructuralSubscriptionTargetMixin):
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
-               IHasMugshot, ISearchableByQuestionOwner)
+               IHasMugshot, ISearchableByQuestionOwner,
+               IStructuralSubscriptionTarget)
 
     _table = "Project"
 
     # db field names
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     name = StringCol(dbName='name', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     title = StringCol(dbName='title', notNull=True)
@@ -73,7 +76,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         default=UTC_NOW)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(

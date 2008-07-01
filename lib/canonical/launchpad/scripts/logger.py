@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0702
 
 """Logging setup for scripts.
@@ -12,7 +12,8 @@ to be used for non-script stuff.
 __metaclass__ = type
 
 # Don't import stuff from this module. Import it from canonical.scripts
-__all__ = ['log', 'logger', 'logger_options', 'FakeLogger']
+__all__ = ['log', 'logger', 'logger_options', 'FakeLogger',
+           'QuietFakeLogger']
 
 import logging
 import re
@@ -60,6 +61,15 @@ class FakeLogger:
 
     def debug(self, *stuff, **kw):
         self.message('DEBUG', *stuff, **kw)
+
+
+class QuietFakeLogger(FakeLogger):
+    """Extra quiet FakeLogger.
+
+    Does not print any message.
+    """
+    def message(self, prefix, *stuff, **kw):
+        pass
 
 
 class LibrarianFormatter(logging.Formatter):
@@ -263,7 +273,7 @@ def _logger(level, out_stream, name=None):
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
     hdlr = logging.StreamHandler(strm=out_stream)
-    if config.default_section == 'testrunner':
+    if config.instance_name == 'testrunner':
         # Don't output timestamps in the test environment
         fmt = '%(levelname)-7s %(message)s'
     else:

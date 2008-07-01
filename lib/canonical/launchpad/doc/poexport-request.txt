@@ -1,4 +1,4 @@
-= Rosetta PO Export Request Queue =
+= Translation Export Request Queue =
 
 The queue of export requests is served by a cron script. Let's check if it can
 serve those requests properly.
@@ -58,6 +58,7 @@ Now we request that the queue be processed.
     >>> process_queue(MockTransactionManager(), MockLogger())
     log> Exporting objects for Mark Shuttleworth, related to template pmount
     in Ubuntu Hoary package "pmount"
+    log> Stored file at http://.../launchpad-export.tar.gz
 
 We need to make sure the Librarian data has settled into place.
 
@@ -81,8 +82,8 @@ The user receives a confirmation email.
     >
     > Hello Mark Shuttleworth,
     >
-    > The files you requested from Rosetta are ready for download
-    > from the following location:
+    > The translation files you requested from Launchpad are ready for
+    > download from the following location:
     >
     >     http://localhost:58000/.../launchpad-export.tar.gz
 
@@ -185,6 +186,7 @@ Let's try requesting an export in MO format:
     >>> process_queue(MockTransactionManager(), MockLogger())
     log> Exporting objects for Mark Shuttleworth, related to template pmount
     in Ubuntu Hoary package "pmount"
+    log> Stored file at http://.../cs_LC_MESSAGES_pmount.mo
 
     >>> transaction.commit()
 
@@ -197,8 +199,8 @@ Let's try requesting an export in MO format:
     > 
     > Hello Mark Shuttleworth,
     > 
-    > The files you requested from Rosetta are ready for download
-    > from the following location:
+    > The translation files you requested from Launchpad are ready for
+    > download from the following location:
     > 
     >     http://localhost:58000/.../cs_LC_MESSAGES_pmount.mo
     >>> url = extract_url(body)
@@ -255,6 +257,7 @@ The script is run.
     netapplet in NetApplet trunk
     DEBUG   Exporting objects for Mark Shuttleworth, related to template
     alsa-utils in alsa-utils trunk
+    INFO    Stored file at http://.../launchpad-export.tar.gz
     DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
     <BLANKLINE>
 

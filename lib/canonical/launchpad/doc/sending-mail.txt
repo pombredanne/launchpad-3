@@ -244,9 +244,9 @@ provide better bounce handling.
     >>> from canonical.config import config
     >>> from_addr, to_add, raw_message = stub.test_emails.pop()
     >>> sent_msg = email.message_from_string(raw_message)
-    >>> sent_msg['Return-Path'] == config.bounce_address
+    >>> sent_msg['Return-Path'] == config.canonical.bounce_address
     True
-    >>> sent_msg['Errors-To'] == config.bounce_address
+    >>> sent_msg['Errors-To'] == config.canonical.bounce_address
     True
 
 It must also add a Precedence: bulk header so that automatic replies

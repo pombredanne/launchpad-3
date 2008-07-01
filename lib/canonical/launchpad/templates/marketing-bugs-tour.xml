@@ -41,7 +41,7 @@
     </callout>
     <callout>Subscribing to a bug lets you follow its progress by email.
       Launchpad users and teams can choose to subscribe to a bug, while a
-      project's bug contact is automatically notified of new bug reports and
+      project's bug supervisor is automatically notified of new bug reports and
       changes to existing bugs.
     </callout>
     <transition>In some projects, bug reports are used to request new

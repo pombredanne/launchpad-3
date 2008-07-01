@@ -149,7 +149,8 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
     usedfor = IDistroSeries
     facet = 'overview'
     links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
-             'add_port', 'add_milestone', 'admin', 'builds', 'queue']
+             'add_port', 'add_milestone', 'admin', 'builds', 'queue',
+             'subscribe']
 
     def edit(self):
         text = 'Change details'
@@ -202,18 +203,29 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
 
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
+
 
 class DistroSeriesBugsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'bugs'
-    links = ['cve', 'nominations']
+    links = (
+        'cve',
+        'nominations',
+        'subscribe',
+        )
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
 
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
+
+    def subscribe(self):
+        return Link('+subscribe', 'Subscribe to bug mail')
 
 
 class DistroSeriesSpecificationsMenu(ApplicationMenu):
@@ -444,7 +456,7 @@ class DistroSeriesDynMenu(DynMenu):
 
     def mainMenu(self):
         for architecture in self.context.architectures:
-            yield self.makeBreadcrumbLink(architecture)
+            yield architecture.architecturetag
 
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):

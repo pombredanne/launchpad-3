@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BranchSubscriptionDiffSize',
     'BranchSubscriptionNotificationLevel',
+    'CodeReviewNotificationLevel',
     'IBranchSubscription',
     ]
 
@@ -96,6 +97,33 @@ class BranchSubscriptionNotificationLevel(DBEnumeratedType):
         """)
 
 
+class CodeReviewNotificationLevel(DBEnumeratedType):
+    """Code Review Notification Level
+
+    The notification level is used to control the amount and content
+    of the email notifications send with respect to code reviews related
+    to this branch.
+    """
+
+    NOEMAIL = DBItem(0, """
+        No email
+
+        Do not send any email about code review for this branch.
+        """)
+
+    STATUS = DBItem(1, """
+        Status changes only
+
+        Send email when votes are cast or status is changed.
+        """)
+
+    FULL = DBItem(2, """
+        Email about all changes
+
+        Send email about any code review activity for this branch.
+        """)
+
+
 class IBranchSubscription(Interface):
     """The relationship between a person and a branch."""
 
@@ -113,8 +141,8 @@ class IBranchSubscription(Interface):
         vocabulary=BranchSubscriptionNotificationLevel,
         default=BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
         description=_(
-            'Attribute notifications are sent when branch details are changed '
-            'such as lifecycle status and name.  Revision notifications are '
+            'Attribute notifications are sent when branch details are changed'
+            ' such as lifecycle status and name.  Revision notifications are '
             'generated when new branch revisions are found due to the branch '
             'being updated through either pushes to the hosted branches or '
             'the mirrored branches being updated.'))
@@ -127,3 +155,11 @@ class IBranchSubscription(Interface):
             'sent to the subscriber.  The subscriber will still receive '
             'an email with the new revision details even if the diff '
             'is larger than the specified number of lines.'))
+    review_level = Choice(
+        title=_('Code review Level'), required=True,
+        vocabulary=CodeReviewNotificationLevel,
+        default=CodeReviewNotificationLevel.FULL,
+        description=_(
+            'Control the kind of review activity that triggers notifications.'
+            ))
+

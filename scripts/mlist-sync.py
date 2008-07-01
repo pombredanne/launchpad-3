@@ -36,6 +36,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, IMailingListSet, IPersonSet)
+from canonical.launchpad.mailman.config import configure_prefix
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
@@ -89,7 +90,7 @@ class MailingListSyncScript(LaunchpadCronScript):
         # Start by rsync'ing over the entire $vardir/lists, $vardir/archives,
         # $vardir/backups, and $vardir/mhonarc directories.  We specifically
         # do not rsync the data, locks, logs, qfiles, or spam directories.
-        destination_url = config.mailman.build.var_dir
+        destination_url = config.mailman.build_var_dir
         # Do one rsync for all subdirectories.
         rsync_command = [RSYNC_COMMAND]
         rsync_command.extend(RSYNC_OPTIONS)
@@ -181,7 +182,7 @@ class MailingListSyncScript(LaunchpadCronScript):
     def deleteMailmanList(self, list_name):
         """Delete all Mailman data structures for `list_name`."""
         mailman_bindir = os.path.normpath(os.path.join(
-            config.mailman.build.prefix, 'bin'))
+            configure_prefix(config.mailman.build_prefix), 'bin'))
         process = subprocess.Popen(('./rmlist', '-a', list_name),
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
@@ -207,7 +208,7 @@ class MailingListSyncScript(LaunchpadCronScript):
 
         # We need to get to the Mailman API.  Set up the paths so that Mailman
         # can be imported.  This can't be done at module global scope.
-        mailman_path = config.mailman.build.prefix
+        mailman_path = configure_prefix(config.mailman.build_prefix)
         sys.path.append(mailman_path)
 
         retcode = self.syncMailmanDirectories(source_url)

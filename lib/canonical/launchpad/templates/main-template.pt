@@ -47,8 +47,6 @@
       tal:content="string:@import url(${icingroot}/style.css);"/>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background-image: url(/@@/demo) !important;}</style>
-    <style tal:condition="site_message" type="text/css"
-    >#help {top: 47px !important;}</style>
 
     <tal:XXX condition="nothing">
       20080131 mpt: We make text fields slightly narrower in IE to avoid the
@@ -91,6 +89,7 @@
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/inlinehelp.js"></script>
     <script type="text/javascript"
         tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
     <script type="text/javascript">
@@ -98,7 +97,7 @@
         lpmenu.initialize(['menuroot'], '/', 'menupreload',
                            [], '1.3em', 16, true);
         sortables_init();
-        initHelpPanel();
+        initInlineHelp();
         PortletManager.initialize(cookie_scope);
       }
       registerLaunchpadFunction(onLoadFunction);
@@ -127,7 +126,7 @@
         </tr>
       </table>
     </div>
-    <div id="nonhelp">
+
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
         tal:condition="view/macro:pagehas/applicationbuttons"
@@ -162,21 +161,23 @@
       <form
         tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch" xml:lang="en" lang="en" dir="ltr"
-        action="/projects/"
+        action=""
         method="get"
         accept-charset="UTF-8"
+        tal:attributes="action string:${rooturl}+search"
       >
         <div>
           <input
             type="text"
-            id="text"
-            name="text"
+            id="search-text"
+            name="field.text"
             value="Search"
             onfocus="if(this.value=='Search'){this.value='';};"
           />
           <input
             type="image"
             id="searchbutton"
+            name="field.actions.search"
             src="/+icing/but_search.gif"
             title="Search"
           />
@@ -241,7 +242,8 @@
                       </tal:applicationtabs>
                       <div
                         id="container"
-                        tal:attributes="class python:path('view/isPrivate | CONTEXTS/lp:immediate_object_is_private') and 'private' or None"
+                        tal:define="context_badges CONTEXTS/lp:context_badges"
+                        tal:attributes="class python: path('view/isPrivate | context_badges/isPrivateBadgeVisible') and 'private' or None"
                       >
                         <tal:noportlets
                           condition="not: view/macro:pagehas/portlets"
@@ -255,12 +257,33 @@
                                 "context/@@+main-template-macros/notifications"
                             />
                           </tal:notifications>
+                        </tal:noportlets>
+                        <div id="navigation-tabs"
+                             tal:condition="view/macro:pagehas/navigationtabs">
+                          <div id="context-navigation-tabs"
+                               tal:condition="context/menu:navigation">
+                            <tal:menu
+                              replace="structure context/@@+navigationmenutabs"
+                              />
+                          </div>
+                          <div id="view-navigation-tabs"
+                               tal:condition="view/menu:navigation">
+                            <tal:menu
+                              replace="structure view/@@+navigationmenutabs"
+                              />
+                          </div>
+                        </div>
+                        <tal:noportlets condition="not: view/macro:pagehas/portlets">
                           <metal:block define-slot="main" />
                         </tal:noportlets>
                         <div
                           id="maincontent"
                           tal:condition="view/macro:pagehas/portlets"
                         >
+                          <div id="big-badges" style="float: right">
+                            <tal:big-badges replace="structure context/badges:large"/>
+                          </div>
+
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
@@ -279,7 +302,8 @@
                           id="portlets" xml:lang="en" lang="en" dir="ltr"
                           tal:condition="view/macro:pagehas/portlets"
                         >
-                          <tal:menu replace="structure CONTEXTS/@@+menubox" />
+                          <tal:menu condition="view/macro:pagehas/actionsmenu"
+                                    replace="structure CONTEXTS/@@+menubox" />
                           <metal:portlets define-slot="portlets" />
                           <metal:portlets define-slot="portlets_two" />
                           <metal:portlets define-slot="portlets_one" />
@@ -330,7 +354,7 @@
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           <tal:block>
               | <a href="https://help.launchpad.net/LaunchpadReleases">
-              Version 1.2.3</a> | build
+              Version 1.2.6</a> | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>
@@ -362,18 +386,13 @@
             </li>
         </ul>
       </div><!--id="globalfooter"-->
-    </div><!--id="nonhelp"-->
-    <div id="help" class="closed" xml:lang="en" lang="en" dir="ltr">
-      <h2 id="help-tab">Help</h2>
-      <div id="help-panel">
-        <div id="help-content">
-          <div id="help-text">
-            <p metal:define-slot="help">
-              Sorry, help isn&rsquo;t available for this page.
-            </p>
-          </div>
-        </div>
-        <div id="help-bottom">&nbsp;</div>
+
+    <div id="help-pane" class="invisible">
+      <div id="help-body">
+        <iframe id="help-pane-content" class="invisible">Loading...</iframe>
+      </div>
+      <div id="help-footer">
+        <a href="#" id="help-close-btn">Close</a>
       </div>
     </div>
     <div id="menupreload" style="visibility:hidden"

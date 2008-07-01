@@ -35,6 +35,8 @@ class BugWatchView(LaunchpadView):
 
     schema = IBugWatch
 
+    expand_reply_box = False
+
     @property
     def comments(self):
         """Return the comments to be displayed for a bug watch.
@@ -66,8 +68,10 @@ class BugWatchEditForm(Interface):
 
     url = URIField(
         title=_('URL'), required=True,
-        allowed_schemes=['http', 'https'],
-        description=_("""The URL at which to view the remote bug."""))
+        allowed_schemes=['http', 'https', 'mailto'],
+        description=_("The URL at which to view the remote bug, or the "
+                      "email address to which this bug has been "
+                      "forwarded (as a mailto: URL)."))
 
 
 class BugWatchEditView(LaunchpadFormView):
@@ -84,6 +88,8 @@ class BugWatchEditView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView.`"""
+        if 'url' not in data:
+            return
         try:
             bugtracker, bug = getUtility(
                 IBugWatchSet).extractBugTrackerAndBug(data['url'])

@@ -58,14 +58,40 @@ Each listed binary links to the corresponding page.
     >>> anon_browser.getLink("mozilla-firefox 0.9").url
     'http://launchpad.dev/ubuntu/warty/hppa/mozilla-firefox/0.9'
 
+The user can see the estimated build start time field for each job
+still in the build queue.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/11")
+    >>> build_details = extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
+    >>> print_text(build_details)
+    Changes file:
+    not available
+    Archive:
+    ubuntu archive
+    Component:
+    main
+    Status:
+    Needs building
+    Queued:
+    2006-02-14
+    Estimated build start:
+    not available
+    Build score:
+    10
+    Build log:
+    not available
+    Finished:
+    not available
 
 == Build Retrying ==
 
 In order to test build retrying action we have to make ubuntu/warty
 active for development.
 
+    >>> import transaction
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, DistroSeriesStatus)
     >>> from canonical.launchpad.ftests import login, logout
@@ -73,8 +99,8 @@ active for development.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
     >>> warty.status = DistroSeriesStatus.DEVELOPMENT
-    >>> flush_database_updates()
     >>> logout()
+    >>> transaction.commit()
 
 With anonymous access, Retry Build link should not be there.
 
@@ -92,6 +118,53 @@ Even if accessed with a manually typed URL it will result in a error.
     Traceback (most recent call last):
     ...
     Unauthorized: ...
+
+Users who have upload permissions for the respective distribution
+(but are not a member of an admin team) are allowed to retry the build.
+
+    >>> uploader_browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> uploader_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/9")
+    >>> uploader_browser.getLink("Retry build").click()
+
+An unprivileged user (not a member of any team) has no access to the
+rebuild link however.
+
+    >>> noteam_browser = setupBrowser(
+    ...     auth="Basic no-team-memberships@test.com:test")
+    >>> noteam_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/9")
+    >>> noteam_browser.getLink("Retry build")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+If we grant the unprivileged user upload permissions for the specific
+source package, however, the build retry link becomes avaialable.
+
+Let's grant the package specific upload permissions first.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePermissionType, IPersonSet, ISourcePackageNameSet)
+    >>> from canonical.launchpad.database import ArchivePermission
+    >>> login('foo.bar@canonical.com')
+    >>> noteam_person = getUtility(IPersonSet).getByEmail(
+    ...     'no-team-memberships@test.com')
+    >>> pmount_name = getUtility(ISourcePackageNameSet)['pmount']
+    >>> discard = ArchivePermission(
+    ...     archive=ubuntu.main_archive, person=noteam_person,
+    ...     permission=ArchivePermissionType.UPLOAD,
+    ...     sourcepackagename=pmount_name, component=None)
+    >>> logout()
+    >>> transaction.commit()
+
+Now even the unprivileged user (not a member of any team) will have
+access to the rebuild link.
+
+    >>> noteam_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/9")
+    >>> noteam_browser.getLink("Retry build").click()
 
 When the user has permission (buildd-admin, admin or the source
 uploader) the link to 'retry' the build is presented in the Action
@@ -308,7 +381,7 @@ PPA build pages also have some text telling the viewer that they can retry
 the build if that action is possible:
 
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Build details for i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     You can retry this build if you think
     the failure was transient. Be aware that the previous
     build log and timestamps will be purged.

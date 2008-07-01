@@ -27,7 +27,7 @@
     information, read about <a href="/+code/">The Bazaar</a>.
     </p>
 
-    <p tal:condition="view/error_message" tal:content="view/error_message"
+    <p tal:condition="view/error_message" tal:content="structure view/error_message"
       class="error message">Error message.</p>
     
     <p tal:condition="view/info_message" tal:content="view/info_message"
@@ -56,8 +56,12 @@
       <div>
         <label>Public key line</label>
         <div class="formHelp">
-            Insert the contents of <code>~/.ssh/id_dsa.pub</code> or
-            <code>~/.ssh/id_rsa.pub</code>.  Only SSH v2 keys are supported.
+          Insert the contents of your public key (usually
+          <code>~/.ssh/id_dsa.pub</code> or <code>~/.ssh/id_rsa.pub</code>).
+          Only SSH v2 keys are supported.
+          <a href="https://help.launchpad.net/YourAccount/CreatingAnSSHKeyPair">
+            How do I get a public key?
+          </a>
         </div>
         <textarea name="sshkey" width="30" height="6"></textarea>
         <input type="submit" value="Import Public Key" />

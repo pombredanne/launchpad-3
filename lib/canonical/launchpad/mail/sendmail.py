@@ -1,3 +1,5 @@
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
+
 """
 The One True Way to send mail from the Launchpad application.
 
@@ -89,7 +91,7 @@ def format_address(name, address):
     return str(formataddr((name, address)))
 
 
-def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
+def simple_sendmail(from_addr, to_addrs, subject, body, headers=None):
     """Send an email from from_addr to to_addrs with the subject and body
     provided. to_addrs can be a list, tuple, or ASCII string.
 
@@ -101,6 +103,8 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
 
     Returns the `Message-Id`.
     """
+    if headers is None:
+        headers = {}
     if zisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
 
@@ -118,8 +122,8 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
         from_addr=from_addr, to_addrs=to_addrs, subject=subject, body=body)
 
     msg = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
-    # The header_body_values may be a list or tuple of values, so we will add a
-    # header once for each value provided for that header. (X-Launchpad-Bug,
+    # The header_body_values may be a list or tuple of values, so we will add
+    # a header once for each value provided for that header. (X-Launchpad-Bug,
     # for example, may often be set more than once for a bugmail.)
     for header, header_body_values in headers.items():
         if not zisinstance(header_body_values, (list, tuple)):
@@ -132,14 +136,17 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     return sendmail(msg)
 
 
-def simple_sendmail_from_person(person, to_addrs, subject, body, headers={}):
+def simple_sendmail_from_person(
+    person, to_addrs, subject, body, headers=None):
     """Sends a mail using the given person as the From address.
 
     It works just like simple_sendmail, excepts that it ensures that the
     From header is properly encoded.
     """
-    from_addr = format_address(person.displayname, person.preferredemail.email)
-    return simple_sendmail(from_addr, to_addrs, subject, body, headers=headers)
+    from_addr = format_address(
+        person.displayname, person.preferredemail.email)
+    return simple_sendmail(
+        from_addr, to_addrs, subject, body, headers=headers)
 
 
 def sendmail(message, to_addrs=None):
@@ -189,17 +196,17 @@ def sendmail(message, to_addrs=None):
     # Add a Sender: header to show that we were the one sending the
     # email.
     if "Sender" not in message:
-        message["Sender"] = config.bounce_address
+        message["Sender"] = config.canonical.bounce_address
 
     # Add an Errors-To: header for bounce handling
     del message['Errors-To']
-    message['Errors-To'] = config.bounce_address
+    message['Errors-To'] = config.canonical.bounce_address
 
     # Add a Return-Path: header for bounce handling as well. Normally
     # this is added by the SMTP mailer using the From: header. But we
     # want it to be bounce_address instead.
     if 'return-path' not in message:
-        message['Return-Path'] = config.bounce_address
+        message['Return-Path'] = config.canonical.bounce_address
 
     # Add Precedence header to prevent automatic reply programs
     # (e.g. vacation) from trying to respond to our messages.
@@ -216,9 +223,10 @@ def sendmail(message, to_addrs=None):
         # The zopeless specific stuff is pretty simple though so this
         # should be fine.
 
-        if config.default_section == 'testrunner':
+        if config.instance_name == 'testrunner':
             # when running in the testing environment, store emails
-            TestMailer().send(config.bounce_address, to_addrs, raw_message)
+            TestMailer().send(
+                config.canonical.bounce_address, to_addrs, raw_message)
         else:
             if config.zopeless.send_email:
                 # Note that we simply throw away dud recipients. This is fine,
@@ -229,7 +237,8 @@ def sendmail(message, to_addrs=None):
 
                 # The "MAIL FROM" is set to the bounce address, to behave in a
                 # way similar to mailing list software.
-                smtp.sendmail(config.bounce_address, to_addrs, raw_message)
+                smtp.sendmail(
+                    config.canonical.bounce_address, to_addrs, raw_message)
                 smtp.quit()
         # Strip the angle brackets to the return a Message-Id consistent with
         # raw_sendmail (which doesn't include them).
@@ -237,7 +246,8 @@ def sendmail(message, to_addrs=None):
     else:
         # The "MAIL FROM" is set to the bounce address, to behave in a way
         # similar to mailing list software.
-        return raw_sendmail(config.bounce_address, to_addrs, raw_message)
+        return raw_sendmail(
+            config.canonical.bounce_address, to_addrs, raw_message)
 
 
 def raw_sendmail(from_addr, to_addrs, raw_message):

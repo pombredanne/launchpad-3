@@ -90,7 +90,7 @@ class RosettaApplicationView(TranslationsMixin):
                               self.request)
 
     def rosettaAdminEmail(self):
-        return config.rosetta.rosettaadmin.email
+        return config.rosettaadmin.email
 
 
 class RosettaStatsView:

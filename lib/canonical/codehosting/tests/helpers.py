@@ -7,33 +7,31 @@ __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
     'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
-    'make_bazaar_branch_and_tree']
+    'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
-import shutil
-import signal
 import threading
 import unittest
 
 import transaction
 
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import FileExists, TransportNotPossible
+from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
 from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
 
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 
-from canonical.authserver.interfaces import PERMISSION_DENIED_FAULT_CODE
+from canonical.authserver.interfaces import (
+    LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.tests.test_twisted import TwistedTestCase
+from canonical.testing import LaunchpadFunctionalLayer, TwistedLayer
 
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
@@ -41,14 +39,14 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web.xmlrpc import Fault
 
 
-class AvatarTestCase(TwistedTestCase):
+class AvatarTestCase(TrialTestCase):
     """Base class for tests that need a LaunchpadAvatar with some basic sample
     data.
     """
 
+    layer = TwistedLayer
+
     def setUp(self):
-        self.tmpdir = self.mktemp()
-        os.mkdir(self.tmpdir)
         # A basic user dict, 'alice' is a member of no teams (aside from the
         # user themself).
         self.aliceUserDict = {
@@ -68,15 +66,6 @@ class AvatarTestCase(TwistedTestCase):
             'initialBranches': [(2, []), (3, [])]
         }
 
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir)
-
-        # Remove test droppings in the current working directory from using
-        # twisted.trial.unittest.TestCase.mktemp outside the trial test
-        # runner.
-        tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
-        shutil.rmtree(tmpdir_root)
-
 
 def exception_names(exceptions):
     """Return a list of exception names for the given exception list."""
@@ -88,6 +77,8 @@ def exception_names(exceptions):
         # Unfortunately, not all exceptions render themselves as their name.
         # More cases like this may need to be added
         names = ["Transport operation not possible"]
+    elif exceptions is PermissionDenied:
+        names = ['Permission denied', 'PermissionDenied']
     else:
         names = [exceptions.__name__]
     return names
@@ -196,16 +187,8 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
     def installServer(self, server):
         self.server = server
 
-    def setUpSignalHandling(self):
-        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-
     def setUp(self):
         super(ServerTestCase, self).setUp()
-
-        # Install the default SIGCHLD handler so that read() calls don't get
-        # EINTR errors when child processes exit.
-        self.setUpSignalHandling()
 
         if self.server is None:
             self.installServer(self.getDefaultServer())
@@ -214,7 +197,6 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
 
     def tearDown(self):
         deferred1 = self.server.tearDown()
-        signal.signal(signal.SIGCHLD, self._oldSigChld)
         deferred2 = defer.maybeDeferred(super(ServerTestCase, self).tearDown)
         return defer.gatherResults([deferred1, deferred2])
 
@@ -249,6 +231,21 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
 
     def getTransport(self, relpath=None):
         return self.server.getTransport(relpath)
+
+
+def deferToThread(f):
+    """Run the given callable in a separate thread and return a Deferred which
+    fires when the function completes.
+    """
+    def decorated(*args, **kwargs):
+        d = defer.Deferred()
+        def runInThread():
+            return threads._putResultInDeferred(d, f, args, kwargs)
+
+        t = threading.Thread(target=runInThread)
+        t.start()
+        return d
+    return mergeFunctionMetadata(f, decorated)
 
 
 class FakeLaunchpad:
@@ -295,6 +292,19 @@ class FakeLaunchpad:
         new_id = max(item_set.keys() + [0]) + 1
         item_set[new_id] = item_dict
         return new_id
+
+    def getDefaultStackedOnBranch(self, login_id, product_name):
+        if product_name == '+junk':
+            return ''
+        elif product_name == 'evolution':
+            # This has to match the sample data. :(
+            return '/~vcs-imports/evolution/main'
+        elif product_name == 'firefox':
+            return ''
+        else:
+            raise ValueError(
+                "The crappy mock authserver doesn't know how to translate: %r"
+                % (product_name,))
 
     def createBranch(self, login_id, user, product, branch_name):
         """See `IHostedBranchStorage.createBranch`.
@@ -343,6 +353,8 @@ class FakeLaunchpad:
                 product = self._product_set[branch['product_id']]['name']
             if ((owner['name'], product, branch['name'])
                 == (user_name, product_name, branch_name)):
+                if login_id == LAUNCHPAD_SERVICES:
+                    return branch_id, 'r'
                 logged_in_user = self._lookup(self._person_set, login_id)
                 if owner['id'] in logged_in_user['teams']:
                     return branch_id, 'w'
@@ -443,7 +455,7 @@ def create_branch_with_one_revision(branch_dir):
         tree = BzrDir.create_standalone_workingtree(branch_dir)
     except FileExists:
         return
-    f = open(branch_dir + 'hello', 'w')
+    f = open(os.path.join(branch_dir, 'hello'), 'w')
     f.write('foo')
     f.close()
     tree.commit('message')

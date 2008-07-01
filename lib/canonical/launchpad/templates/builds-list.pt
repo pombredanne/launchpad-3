@@ -31,7 +31,7 @@
   <table class="listing" tal:condition="batch">
     <tbody>
       <tal:batch_repeat repeat="complete_build batch">
-        <tr tal:define="build complete_build/build">
+        <tr class="build-row" tal:define="build complete_build/build">
           <td class="left icon">
              <tal:icon replace="structure build/image:icon" />
           </td>

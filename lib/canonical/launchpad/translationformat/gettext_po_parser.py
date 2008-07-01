@@ -60,13 +60,18 @@ def make_plural_function(expression):
     return function
 
 
+def make_plurals_identity_map():
+    """Return a dict mapping each plural form number onto itself."""
+    return dict(enumerate(xrange(TranslationConstants.MAX_PLURAL_FORMS)))
+
+
 def plural_form_mapper(first_expression, second_expression):
     """Maps plural forms from one plural formula to the other.
 
     Returns a dict indexed by indices in the `first_formula`
     pointing to corresponding indices in the `second_formula`.
     """
-    identity_map = {0:0, 1:1, 2:2, 3:3}
+    identity_map = make_plurals_identity_map()
     try:
         first_func = make_plural_function(first_expression)
         second_func = make_plural_function(second_expression)
@@ -477,7 +482,7 @@ class POParser(object):
         self._lineno = 0
         # This is a default plural form mapping (i.e. no mapping) when
         # no header is present in the PO file.
-        self._plural_form_mapping = {0: 0, 1: 1, 2: 2, 3: 3}
+        self._plural_form_mapping = make_plurals_identity_map()
         self._expected_plural_formula = plural_formula
 
         # Marks when we're parsing a continuation of a string after an escaped

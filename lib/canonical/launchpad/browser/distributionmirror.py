@@ -13,20 +13,24 @@ import pytz
 
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.event import notify
+from zope.interface import implements
 
 from canonical.archivepublisher.debversion import Version
 from canonical.launchpad import _
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadFormView, Link, StandardLaunchpadFacets)
-from canonical.launchpad.interfaces import IDistributionMirror
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.interfaces.distribution import (
+    IDistributionMirrorMenuMarker)
+from canonical.launchpad.interfaces.distributionmirror import (
+    IDistributionMirror)
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp import (
+    action, ApplicationMenu, canonical_url, enabled_with_permission,
+    LaunchpadEditFormView, LaunchpadFormView, Link, StandardLaunchpadFacets)
 
 
 class DistributionMirrorFacets(StandardLaunchpadFacets):
@@ -161,6 +165,7 @@ class DistributionMirrorDeleteView(LaunchpadFormView):
 
 class DistributionMirrorAddView(LaunchpadFormView):
 
+    implements(IDistributionMirrorMenuMarker)
     schema = IDistributionMirror
     field_names = ["displayname", "description", "http_base_url",
                    "ftp_base_url", "rsync_base_url", "speed", "country",

@@ -11,6 +11,7 @@ __all__ = [
     'BadStatus',
     'BranchAlreadyRegistered',
     'BranchCreationForbidden',
+    'BranchNameInUse',
     'BranchUniqueNameConflict',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
@@ -19,7 +20,6 @@ __all__ = [
     'NoSuchBranch',
     'NoBranchForSeries',
     'NoSuchBug',
-    'NoSuchCodeImportMachine',
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
@@ -275,11 +275,11 @@ class NoSuchPersonWithUsername(LaunchpadFault):
         LaunchpadFault.__init__(self, username=username)
 
 
-class NoSuchCodeImportMachine(LaunchpadFault):
-    """There is no CodeImportMachine known with the specified hostname."""
+class BranchNameInUse(LaunchpadFault):
+    """There is already a branch with this name for this product."""
 
-    error_code = 210
-    msg_template = 'No such code import machine: %(hostname)s'
+    error_code = 220
+    msg_template = "Branch name already in use: %(error)s"
 
-    def __init__(self, hostname):
-        LaunchpadFault.__init__(self, hostname=hostname)
+    def __init__(self, error):
+        LaunchpadFault.__init__(self, error=error)

@@ -32,50 +32,58 @@ class DistroArchSeriesBinaryPackageRelease:
 
     @property
     def name(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         return self.binarypackagerelease.binarypackagename.name
 
     @property
     def version(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         return self.binarypackagerelease.version
 
     @property
     def distroseries(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         return self.distroarchseries.distroseries
 
     @property
     def distribution(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         return self.distroarchseries.distroseries.distribution
 
     @property
     def displayname(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         return '%s %s' % (self.name, self.version)
 
     @property
     def title(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         return '%s %s (%s binary) in %s %s' % (
             self.name, self.version, self.distroarchseries.architecturetag,
             self.distribution.name, self.distroseries.name)
 
     @property
     def distributionsourcepackagerelease(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         return DistributionSourcePackageRelease(
             self.distribution,
             self.build.sourcepackagerelease)
+
+    @property
+    def distroarchseriesbinarypackage(self):
+        """See `IDistroArchSeriesBinaryPackage`."""
+        return self.distroarchseries.getBinaryPackage(
+            self.binarypackagename)
 
     # XXX: kiko, 2006-02-01: I'd like to rename this to
     # current_published_publishing_record, because that's what it
     # returns, but I don't want to do that right now.
     @property
     def current_publishing_record(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
-        status = PackagePublishingStatus.PUBLISHED
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
+        status = [
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED]
         record = self._latest_publishing_record(status=status)
         return record
 
@@ -83,21 +91,24 @@ class DistroArchSeriesBinaryPackageRelease:
 # content classes in order to be better maintained. In this specific case
 # the publishing queries should live in publishing.py.
     def _latest_publishing_record(self, status=None):
-        query = ("binarypackagerelease = %s AND distroarchseries = %s "
-                 "AND archive IN %s"
-                 % sqlvalues(
-                    self.binarypackagerelease,
-                    self.distroarchseries,
-                    self.distribution.all_distro_archive_ids))
+        query = """
+            binarypackagerelease = %s AND
+            distroarchseries = %s AND
+            archive IN %s
+        """ % sqlvalues(self.binarypackagerelease, self.distroarchseries,
+                        self.distribution.all_distro_archive_ids)
+
         if status is not None:
-            query += " AND status = %s" % sqlvalues(status)
+            if not isinstance(status, list):
+                status = [status]
+            query += " AND status IN %s" % sqlvalues(status)
 
         return BinaryPackagePublishingHistory.selectFirst(
             query, orderBy=['-datecreated', '-id'])
 
     @property
     def publishing_history(self):
-        """See IDistroArchSeriesBinaryPackage."""
+        """See `IDistroArchSeriesBinaryPackage`."""
         return BinaryPackagePublishingHistory.select("""
             distroarchseries = %s AND
             archive IN %s AND
@@ -110,7 +121,7 @@ class DistroArchSeriesBinaryPackageRelease:
 
     @property
     def pocket(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         pub = self._latest_publishing_record()
         if pub is None:
             return None
@@ -118,7 +129,7 @@ class DistroArchSeriesBinaryPackageRelease:
 
     @property
     def status(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         pub = self._latest_publishing_record()
         if pub is None:
             return None
@@ -126,7 +137,7 @@ class DistroArchSeriesBinaryPackageRelease:
 
     @property
     def section(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         pub = self._latest_publishing_record()
         if pub is None:
             return None
@@ -134,7 +145,7 @@ class DistroArchSeriesBinaryPackageRelease:
 
     @property
     def component(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         pub = self._latest_publishing_record()
         if pub is None:
             return None
@@ -142,7 +153,7 @@ class DistroArchSeriesBinaryPackageRelease:
 
     @property
     def priority(self):
-        """See IDistroArchSeriesBinaryPackageRelease."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
         pub = self._latest_publishing_record()
         if pub is None:
             return None
@@ -153,85 +164,85 @@ class DistroArchSeriesBinaryPackageRelease:
 
     @property
     def binarypackagename(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.binarypackagename
 
     @property
     def summary(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.summary
 
     @property
     def description(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.description
 
     @property
     def build(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.build
 
     @property
     def binpackageformat(self):
-        """See IPackageRelease."""
+        """See `IPackageRelease`."""
         return self.binarypackagerelease.binpackageformat
 
     @property
     def shlibdeps(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.shlibdeps
 
     @property
     def depends(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.depends
 
     @property
     def recommends(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.recommends
 
     @property
     def replaces(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.replaces
 
     @property
     def conflicts(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.conflicts
 
     @property
     def provides(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.provides
 
     @property
     def suggests(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.suggests
 
     @property
     def essential(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.essential
 
     @property
     def installedsize(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.installedsize
 
     @property
     def architecturespecific(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.architecturespecific
 
     @property
     def datecreated(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.datecreated
 
     @property
     def files(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagerelease.files

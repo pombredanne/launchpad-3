@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Widgets related to IBranch."""
 
@@ -8,17 +8,16 @@ __all__ = [
     ]
 
 
-from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget, InputErrors
 from zope.app.form.utility import setUpWidget
-from zope.component import getUtility
+from zope.component import getMultiAdapter, getUtility
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.interfaces import IBranchSet, ILaunchBag
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.popup import SinglePopupWidget
 
 
 class TargetBranchWidget(LaunchpadRadioWidget):
@@ -45,8 +44,8 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         LaunchpadRadioWidget.__init__(
             self, field, self.branch_selector_vocab, request)
 
-        self.other_branch_widget = CustomWidgetFactory(
-            SinglePopupWidget, displayWidth=35)
+        self.other_branch_widget = getMultiAdapter(
+            (field, request), IInputWidget)
         setUpWidget(
             self, 'other_branch', field, IInputWidget,
             prefix=self.name, context=branch)
@@ -76,10 +75,14 @@ class TargetBranchWidget(LaunchpadRadioWidget):
                 logged_in_user, branch.product))
         # If there is a development focus branch, make sure it is always
         # shown, and as the first item.
-        if self.dev_focus is not None:
+        if self.dev_focus is not None and branch != self.dev_focus:
             if self.dev_focus in target_branches:
                 target_branches.remove(self.dev_focus)
             target_branches.insert(0, self.dev_focus)
+
+        # Make sure the the source branch isn't in the target_branches.
+        if branch in target_branches:
+            target_branches.remove(branch)
 
         terms = []
         for branch in target_branches:
@@ -177,18 +180,24 @@ class TargetBranchWidget(LaunchpadRadioWidget):
 
         # Lastly render the other option.
         index = len(items)
-        if index == 0:
-            renderfunc = self.renderSelectedItem
-        else:
-            renderfunc = self.renderItem
         other_branch_text = "%s %s" % (
             self._renderLabel("Other:", index),
             self.other_branch_widget())
-        render_args = dict(
-            index=index, text=other_branch_text,
-            value="other", name=self.name,
-            cssClass=self.cssClass)
-        items.append(renderfunc(**render_args))
+        other_branch_onclick = (
+            "this.form['%s.target_branch'].focus()" % self.name)
+
+        elem = renderElement(u'input',
+                             value="other",
+                             name=self.name,
+                             id='%s.%s' % (self.name, index),
+                             cssClass=self.cssClass,
+                             type='radio',
+                             onClick=other_branch_onclick)
+
+        other_radio_button = self._joinButtonToMessageTemplate % (
+            elem, other_branch_text)
+
+        items.append(other_radio_button)
 
         return items
 

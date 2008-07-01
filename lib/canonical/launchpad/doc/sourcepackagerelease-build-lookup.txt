@@ -12,7 +12,8 @@ DistroArchSeries and Archive.
 To demonstrate this we need to define some variables.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILibraryFileAliasSet)
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
@@ -21,6 +22,10 @@ Retrieve hoary/i386 and hoary/hppa `DistroArchSeries.
 
     >>> hoary_i386 = hoary['i386']
     >>> hoary_hppa = hoary['hppa']
+
+    >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+    >>> trash = hoary_i386.addOrUpdateChroot(fake_chroot)
+    >>> trash = hoary_hppa.addOrUpdateChroot(fake_chroot)
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -259,8 +264,8 @@ Then we can copy source and binary from PRIMARY archive to Celso's PPA:
     ...    hoary, pocket_release, cprov.archive)
     >>> cprov_bin = foo_pub_binaries[0].copyTo(
     ...    hoary, pocket_release, cprov.archive)
-    >>> cprov_src.status = PackagePublishingStatus.PUBLISHED
-    >>> cprov_bin.status = PackagePublishingStatus.PUBLISHED
+    >>> cprov_src.secure_record.status = PackagePublishingStatus.PUBLISHED
+    >>> cprov_bin.secure_record.status = PackagePublishingStatus.PUBLISHED
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
@@ -288,7 +293,7 @@ breezy-autotest in his PPA.
     >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
     >>> copy = cprov_foo_src.copyTo(
     ...    breezy_autotest, pocket_release, cprov.archive)
-    >>> copy.status = PackagePublishingStatus.PUBLISHED
+    >>> copy.secure_record.status = PackagePublishingStatus.PUBLISHED
     >>> flush_database_updates()
 
 When only the source is copied we do want to rebuild, so it's correct
@@ -313,8 +318,8 @@ suite in Celso's PPA.
     ...    warty, pocket_release, cprov.archive)
     >>> copied_binary = cprov_foo_bin.copyTo(
     ...    warty, pocket_release, cprov.archive)
-    >>> copied_source.status = PackagePublishingStatus.PUBLISHED
-    >>> copied_binary.status = PackagePublishingStatus.PUBLISHED
+    >>> copied_source.secure_record.status = PackagePublishingStatus.PUBLISHED
+    >>> copied_binary.secure_record.status = PackagePublishingStatus.PUBLISHED
     >>> flush_database_updates()
 
 In this case the system is also able to locate the original build by
@@ -343,8 +348,8 @@ to Mark Shuttleworth's PPA.
     ...    hoary, pocket_release, sabdfl.archive)
     >>> sabdfl_bin = cprov_foo_bin.copyTo(
     ...    hoary, pocket_release, sabdfl.archive)
-    >>> sabdfl_src.status = PackagePublishingStatus.PUBLISHED
-    >>> sabdfl_bin.status = PackagePublishingStatus.PUBLISHED
+    >>> sabdfl_src.secure_record.status = PackagePublishingStatus.PUBLISHED
+    >>> sabdfl_bin.secure_record.status = PackagePublishingStatus.PUBLISHED
     >>> flush_database_updates()
 
 The published binaries build path is followed again to find the

@@ -267,7 +267,8 @@ class CustomUploadFile(NascentUploadFile):
         libraryfile = self.librarian.create(
             self.filename, self.size,
             open(self.filepath, "rb"),
-            self.content_type)
+            self.content_type,
+            restricted=self.policy.archive.private)
         return libraryfile
 
 
@@ -833,7 +834,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             build = sourcepackagerelease.getBuildByArch(
                 dar, self.policy.archive)
             if build is not None:
-                build.buildstate = BuildStatus.FULLYBUILT
+                build.forceState(BuildStatus.FULLYBUILT)
                 self.logger.debug("Updating build for %s: %s" % (
                     dar.architecturetag, build.id))
             else:
@@ -849,7 +850,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # Ensure gathered binary is related to a FULLYBUILT build
             # record. It will be check in slave-scanner procedure to
             # certify that the build was processed correctly.
-            build.buildstate = BuildStatus.FULLYBUILT
+            build.forceState(BuildStatus.FULLYBUILT)
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense (ie. is not for the right
@@ -909,7 +910,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             architecturespecific=architecturespecific)
 
         library_file = self.librarian.create(self.filename,
-             self.size, open(self.filepath, "rb"), self.content_type)
+             self.size, open(self.filepath, "rb"), self.content_type,
+             restricted=self.policy.archive.private)
         binary.addFile(library_file)
         return binary
 

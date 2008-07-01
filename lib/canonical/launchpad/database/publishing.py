@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'makePoolPath',
     'BinaryPackageFilePublishing',
     'BinaryPackagePublishingHistory',
     'IndexStanzaFields',
@@ -13,24 +14,30 @@ __all__ = [
     'SourcePackagePublishingHistory',
     ]
 
-from warnings import warn
+
+from datetime import datetime
 import os
+import pytz
+from warnings import warn
 
 from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
+from storm.store import Store
 
+from canonical.buildmaster.master import determineArchitecturesToBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces import (
-    IArchiveSafePublisher, IBinaryPackageFilePublishing,
-    IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
+    ArchivePurpose, BuildStatus, IArchiveSafePublisher,
+    IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
+    ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 
@@ -42,8 +49,9 @@ def makePoolPath(source_name, component_name):
         'pool', poolify(source_name, component_name))
 
 
-class FilePublishingBase(SQLBase):
+class FilePublishingBase:
     """Base class to publish files in the archive."""
+
     def publish(self, diskpool, log):
         """See IFilePublishing."""
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
@@ -81,13 +89,13 @@ class FilePublishingBase(SQLBase):
                 self.libraryfilealiasfilename)
 
 
-class SourcePackageFilePublishing(FilePublishingBase):
+class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
     """Source package release files and their publishing status.
 
     Represents the source portion of the pool.
     """
 
-    _idType = str
+    _idType = unicode
     _defaultOrder = "id"
 
     implements(ISourcePackageFilePublishing)
@@ -97,8 +105,9 @@ class SourcePackageFilePublishing(FilePublishingBase):
                               unique=False,
                               notNull=True)
 
-    sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
-         foreignKey='SecureSourcePackagePublishingHistory')
+    sourcepackagepublishing = ForeignKey(
+        dbName='sourcepackagepublishing',
+        foreignKey='SourcePackagePublishingHistory')
 
     libraryfilealias = ForeignKey(
         dbName='libraryfilealias', foreignKey='LibraryFileAlias',
@@ -127,7 +136,7 @@ class SourcePackageFilePublishing(FilePublishingBase):
     @property
     def publishing_record(self):
         """See `IFilePublishing`."""
-        return self.sourcepackagepublishing
+        return self.sourcepackagepublishing.secure_record
 
     @property
     def file_type_name(self):
@@ -144,13 +153,13 @@ class SourcePackageFilePublishing(FilePublishingBase):
         return "other"
 
 
-class BinaryPackageFilePublishing(FilePublishingBase):
+class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
     """A binary package file which is published.
 
     Represents the binary portion of the pool.
     """
 
-    _idType = str
+    _idType = unicode
     _defaultOrder = "id"
 
     implements(IBinaryPackageFilePublishing)
@@ -160,8 +169,9 @@ class BinaryPackageFilePublishing(FilePublishingBase):
                               unique=False, notNull=True,
                               immutable=True)
 
-    binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
-        foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
+    binarypackagepublishing = ForeignKey(
+        dbName='binarypackagepublishing',
+        foreignKey='BinaryPackagePublishingHistory', immutable=True)
 
     libraryfilealias = ForeignKey(
         dbName='libraryfilealias', foreignKey='LibraryFileAlias',
@@ -195,7 +205,7 @@ class BinaryPackageFilePublishing(FilePublishingBase):
     @property
     def publishing_record(self):
         """See `ArchiveFilePublisherBase`."""
-        return self.binarypackagepublishing
+        return self.binarypackagepublishing.secure_record
 
 
 class ArchiveSafePublisherBase:
@@ -242,7 +252,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
@@ -290,7 +300,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
@@ -358,6 +368,11 @@ class ArchivePublisherBase:
         current.scheduleddeletiondate = UTC_NOW
         return current
 
+    @property
+    def age(self):
+        """See `IArchivePublisher`."""
+        return datetime.now(pytz.timezone('UTC')) - self.datecreated
+
 
 class IndexStanzaFields:
     """Store and format ordered Index Stanza fields."""
@@ -419,43 +434,166 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
-    def getPublishedBinaries(self):
-        """See `ISourcePackagePublishingHistory`."""
-        clause = """
+    def _getPublishingBinariesBaseClause(self):
+        """Base query to reach binary publications for the context source.
+
+         The query follows every `BinaryPackageRelease` ever published in
+         the context `IArchive` and Pocket built from the context
+         `SourcePackageRelease` in any `DistroArchSeries` for the context
+         `DistroSeries`.
+
+        :return: a tuple containing, in this order, a list of clauses and
+            a list clauseTables;
+        """
+        clauses = ["""
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
             BinaryPackagePublishingHistory.distroarchseries=
                 DistroArchSeries.id AND
             BinaryPackageRelease.build=Build.id AND
-            BinaryPackageRelease.binarypackagename=
-                BinaryPackageName.id AND
             Build.sourcepackagerelease=%s AND
             DistroArchSeries.distroseries=%s AND
             BinaryPackagePublishingHistory.archive=%s AND
-            BinaryPackagePublishingHistory.pocket=%s AND
-            BinaryPackagePublishingHistory.status=%s
-            """ % sqlvalues(
-                    self.sourcepackagerelease,
-                    self.distroseries,
-                    self.archive,
-                    self.pocket,
-                    PackagePublishingStatus.PUBLISHED)
+            BinaryPackagePublishingHistory.pocket=%s
+        """ % sqlvalues(self.sourcepackagerelease, self.distroseries,
+                        self.archive, self.pocket)]
+
+        clauseTables = ['Build', 'BinaryPackageRelease', 'DistroArchSeries']
+
+        return (clauses, clauseTables)
+
+    def getPublishedBinaries(self):
+        """See `ISourcePackagePublishingHistory`."""
+        clauses, clauseTables = self._getPublishingBinariesBaseClause()
+
+        published_status = [
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            ]
+        clauses.append("""
+            BinaryPackageRelease.binarypackagename=
+                BinaryPackageName.id AND
+            BinaryPackagePublishingHistory.status IN %s
+        """ % sqlvalues(published_status))
+
+        clauseTables.append('BinaryPackageName')
 
         orderBy = ['BinaryPackageName.name',
-                   'DistroArchSeries.architecturetag']
-
-        clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
-                        'DistroArchSeries']
+                   'DistroArchSeries.architecturetag',
+                   '-BinaryPackagePublishingHistory.id']
 
         preJoins = ['binarypackagerelease',
                     'binarypackagerelease.binarypackagename']
 
         return BinaryPackagePublishingHistory.select(
-            clause, orderBy=orderBy, clauseTables=clauseTables,
+            " AND ".join(clauses), orderBy=orderBy, clauseTables=clauseTables,
             prejoins=preJoins)
+
+    def getBuiltBinaries(self):
+        """See `ISourcePackagePublishingHistory`."""
+        clauses, clauseTables = self._getPublishingBinariesBaseClause()
+        orderBy = ['-BinaryPackagePublishingHistory.id']
+        preJoins = ['binarypackagerelease']
+
+        results = BinaryPackagePublishingHistory.select(
+            " AND ".join(clauses), orderBy=orderBy, clauseTables=clauseTables,
+            prejoins=preJoins)
+        binary_publications = list(results)
+
+        unique_binary_locations = set(
+            [(pub.binarypackagerelease.id, pub.distroarchseries.id)
+             for pub in binary_publications])
+
+        unique_binary_publications = []
+        for pub in binary_publications:
+            location = (pub.binarypackagerelease.id, pub.distroarchseries.id)
+            if location in unique_binary_locations:
+                unique_binary_publications.append(pub)
+                unique_binary_locations.remove(location)
+                if len(unique_binary_locations) == 0:
+                    break
+
+        return unique_binary_publications
+
+    def getBuilds(self):
+        """See `ISourcePackagePublishingHistory`."""
+        clause = """
+            Build.distroarchseries = DistroArchSeries.id AND
+            DistroArchSeries.distroseries = %s AND
+            Build.sourcepackagerelease = %s AND
+            Build.archive = %s
+        """ % sqlvalues(self.distroseries, self.sourcepackagerelease,
+                        self.archive)
+
+        orderBy = ['DistroArchSeries.architecturetag']
+
+        clauseTables = ['DistroArchSeries']
+
+        prejoins = ['distroarchseries',
+                    'sourcepackagerelease']
+
+        # Import Build locally to avoid circular imports.
+        from canonical.launchpad.database.build import Build
+
+        return Build.select(
+            clause, orderBy=orderBy, clauseTables=clauseTables,
+            prejoins=prejoins)
+
+    def createMissingBuilds(self, architectures_available=None,
+                            pas_verify=None, logger=None):
+        """See `ISourcePackagePublishingHistory`."""
+        if self.archive.purpose == ArchivePurpose.PPA:
+            pas_verify = None
+
+        if architectures_available is None:
+            architectures_available = [
+                arch for arch in self.distroseries.architectures
+                if arch.getPocketChroot() is not None]
+
+        build_architectures = determineArchitecturesToBuild(
+            self, architectures_available, self.distroseries, pas_verify)
+
+        builds = []
+        for arch in build_architectures:
+            build_candidate = self._createMissingBuildForArchitecture(
+                arch, logger=logger)
+            if build_candidate is not None:
+                builds.append(build_candidate)
+
+        return builds
+
+    def _createMissingBuildForArchitecture(self, arch, logger=None):
+        """Create a build for a given architecture if it doesn't exist yet.
+
+        Return the just-created `IBuild` record already scored or None
+        if a suitable build is already present.
+        """
+        build_candidate = self.sourcepackagerelease.getBuildByArch(
+            arch, self.archive)
+
+        # Check DistroArchSeries database IDs because the object belongs
+        # to different transactions (architecture_available is cached).
+        if (build_candidate is not None and
+            (build_candidate.distroarchseries.id == arch.id or
+             build_candidate.buildstate == BuildStatus.FULLYBUILT)):
+            return None
+
+        build = self.sourcepackagerelease.createBuild(
+            distroarchseries=arch, archive=self.archive, pocket=self.pocket)
+        build_queue = build.createBuildQueueEntry()
+        build_queue.score()
+        Store.of(build).flush()
+
+        if logger is not None:
+            logger.debug(
+                "Created %s [%d] in %s (%d)"
+                % (build.title, build.id, build.archive.title,
+                   build_queue.lastscore))
+
+        return build
 
     @property
     def secure_record(self):
@@ -483,25 +621,15 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             BinaryPackageFile.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.build=Build.id AND
-            Build.sourcepackagerelease=%s AND
-            DistroArchSeries.distroseries=%s AND
-
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.distroarchseries=
-                DistroArchSeries.id AND
-            BinaryPackagePublishingHistory.archive=%s AND
-            BinaryPackagePublishingHistory.pocket=%s AND
-            BinaryPackagePublishingHistory.status=%s
-            """ % sqlvalues(
-                    self.sourcepackagerelease,
-                    self.distroseries,
-                    self.archive,
-                    self.pocket,
-                    PackagePublishingStatus.PUBLISHED)
+            Build.sourcepackagerelease=%s AND
+            BinaryPackagePublishingHistory.archive=%s
+            """ % sqlvalues(self.sourcepackagerelease, self.archive)
+
         binariesClauseTables = [
             'BinaryPackageFile', 'BinaryPackagePublishingHistory',
-            'BinaryPackageRelease', 'Build', 'DistroArchSeries']
+            'BinaryPackageRelease', 'Build']
 
         preJoins = ['content']
 
@@ -510,7 +638,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             prejoins=preJoins)
         binariesQuery = LibraryFileAlias.select(
             binariesClause, clauseTables=binariesClauseTables,
-            prejoins=preJoins)
+            prejoins=preJoins, distinct=True)
 
         # I would like to use UNION here to merge the two result sets, but
         # that silently drops the preJoins.
@@ -630,7 +758,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def copyTo(self, distroseries, pocket, archive):
         """See `ISourcePackagePublishingHistory`."""
         current = self.secure_record
-        return SecureSourcePackagePublishingHistory(
+        secure_copy = SecureSourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
             archive=archive,
@@ -640,6 +768,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             embargo=False)
+        return SourcePackagePublishingHistory.get(secure_copy.id)
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -669,7 +798,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @property
@@ -826,7 +955,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         current = self.secure_record
         target_das = distroseries[current.distroarchseries.architecturetag]
 
-        return SecureBinaryPackagePublishingHistory(
+        secure_copy = SecureBinaryPackagePublishingHistory(
             archive=archive,
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=target_das,
@@ -837,3 +966,4 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             datecreated=UTC_NOW,
             pocket=pocket,
             embargo=False)
+        return BinaryPackagePublishingHistory.get(secure_copy.id)

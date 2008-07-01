@@ -1,8 +1,15 @@
 #!/usr/bin/python2.4
+
+# Copyright 2008 Canonical Ltd.  All rights reserved.
+
 """
 Backup one or more PostgreSQL databases.
+
 Suitable for use in crontab for daily backups.
 """
+
+__metaclass__ = type
+__all__ = []
 
 import sys
 import os
@@ -27,51 +34,50 @@ def call(cmd, **kw):
     return rv
 
 def main(options, databases):
+    global return_code
     #Need longer file names if this is used more than daily
     #today = datetime.now().strftime('%Y%m%d_%H:%M:%S')
     today = datetime.now().strftime('%Y%m%d')
 
     backup_dir = options.backup_dir
- 
+
+    # Check for existing files now. Also check later just in case
+    # there are two copies of this script running or something crazy.
+    # Better to bomb out now rather than to bomb out later, as later might
+    # be several hours away.
     for database in databases:
         dest =  os.path.join(backup_dir, '%s.%s.dump' % (database, today))
+        if os.path.exists(dest):
+            log.fatal("%s already exists." % dest)
+            return 1
+ 
+    exit_code = 0
+    for database in databases:
+        dest =  os.path.join(backup_dir, '%s.%s.dump' % (database, today))
+
+        if os.path.exists(dest):
+            log.fatal("%s already exists." % dest)
+            return 1
+
         cmd = [
             "/usr/bin/pg_dump",
             "-U", "postgres",
             "--format=c",
-            "--compress=0",
+            "--compress=9",
             "--blobs",
             "--file=%s" % dest,
             database,
             ]
-        # If the file already exists, it was from a dump that didn't
-        # complete (because completed dumps are renamed during compression).
-        # Remove it.
-        if os.path.exists(dest):
-            log.warn("%s already exists. Removing." % dest)
-            os.unlink(dest)
-        rv = call(cmd, stdin=subprocess.PIPE)
+
+        rv = call(cmd, stdin=subprocess.PIPE) # Sets return_code on failure.
         if rv != 0:
             log.critical("Failed to backup %s (%d)" % (database, rv))
             continue
         size = os.stat(dest)[stat.ST_SIZE]
 
-        bzdest = "%s.bz2" % dest
-        # If the file already exists, it is from an older dump today.
-        # We know we have a full, current dump so kill the old compressed one.
-        if os.path.exists(bzdest):
-            log.warn("%s already exists. Removing." % bzdest)
-            os.unlink(bzdest)
-        cmd = ["/usr/bin/bzip2", "-9", dest]
-        rv = call(cmd, stdin=subprocess.PIPE)
-        if rv != 0:
-            log.critical("Failed to compress %s (%d)" % (database, rv))
-            continue
-        csize = os.stat(bzdest)[stat.ST_SIZE]
+        log.info("Backed up %s (%0.2fMB)" % (database, size/MB))
 
-        log.info("Backed up %s (%0.2fMB/%0.2fMB)" % (
-            database, size/MB, csize/MB,
-            ))
+    return return_code
 
 if __name__ == '__main__':
     parser = OptionParser(
@@ -110,5 +116,4 @@ if __name__ == '__main__':
     elif verbosity < -1:
         log.setLevel(logging.ERROR)
 
-    main(options, databases)
-    sys.exit(return_code)
+    sys.exit(main(options, databases))

@@ -17,7 +17,7 @@ import os
 import sys
 
 import transaction
-from zope.component import getUtility, getView
+from zope.component import getUtility, getMultiAdapter
 from zope.testing import doctest
 from zope.testing.loggingsupport import Handler
 
@@ -27,7 +27,9 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing import reset_logging
 
 
 default_optionflags = (doctest.REPORT_NDIFF |
@@ -111,6 +113,7 @@ def LayeredDocFileSuite(*args, **kw):
         def tearDown(test):
             if kw_tearDown is not None:
                 kw_tearDown(test)
+            reset_logging()
             test._stdout_logger.uninstall()
         kw['tearDown'] = tearDown
 
@@ -124,7 +127,7 @@ def LayeredDocFileSuite(*args, **kw):
 class SpecialOutputChecker(doctest.OutputChecker):
     """An OutputChecker that runs the 'chunkydiff' checker if appropriate."""
     def output_difference(self, example, got, optionflags):
-        if config.chunkydiff is False:
+        if config.canonical.chunkydiff is False:
             return doctest.OutputChecker.output_difference(
                 self, example, got, optionflags)
 
@@ -158,7 +161,27 @@ def create_view(context, name, form=None, layer=None, server_url=None,
         form=form, SERVER_URL=server_url, method=method)
     if layer is not None:
         setFirstLayer(request, layer)
-    return getView(context, name, request)
+    return getMultiAdapter((context, request), name=name)
+
+
+def ordered_dict_as_string(dict):
+    """Return the contents of a dict as an ordered string.
+
+    The output will be ordered by key, so {'z': 1, 'a': 2, 'c': 3} will
+    be printed as {'a': 2, 'c': 3, 'z': 1}.
+
+    We do this because dict ordering is not guaranteed.
+    """
+    # XXX 2008-06-25 gmb:
+    #     Once we move to Python 2.5 we won't need this, since dict
+    #     ordering is guaranteed when __str__() is called.
+    item_string = '%r: %r'
+    item_strings = []
+    for key, value in sorted(dict.items()):
+        item_strings.append(item_string % (key, value))
+
+    return '{%s}' % ', '.join(
+        "%r: %r" % (key, value) for key, value in sorted(dict.items()))
 
 
 def setGlobs(test):
@@ -171,6 +194,8 @@ def setGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
     test.globs['create_view'] = create_view
+    test.globs['LaunchpadObjectFactory'] = LaunchpadObjectFactory
+    test.globs['ordered_dict_as_string'] = ordered_dict_as_string
 
 
 def setUp(test):

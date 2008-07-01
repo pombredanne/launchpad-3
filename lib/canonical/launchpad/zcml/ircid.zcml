@@ -1,9 +1,15 @@
-<configure xmlns="http://namespaces.zope.org/zope">
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.IrcID">
-        <allow interface="canonical.launchpad.interfaces.IIrcID"/>
-        <require permission="zope.Public"
-            set_attributes="network nickname" />
+        <allow interface="canonical.launchpad.interfaces.IHasOwner" />
+        <allow attributes="id person network nickname" />
+        <require permission="launchpad.Edit"
+                 set_schema="canonical.launchpad.interfaces.IIrcID"
+                 attributes="destroySelf" />
     </content>
 
     <content class="canonical.launchpad.database.IrcIDSet">
@@ -15,5 +21,11 @@
         provides="canonical.launchpad.interfaces.IIrcIDSet">
         <allow interface="canonical.launchpad.interfaces.IIrcIDSet" />
     </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IIrcID"
+        path_expression="string:+ircnick/${id}"
+        attribute_to_parent="person"
+        rootsite="api" />
 
 </configure>

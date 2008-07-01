@@ -38,7 +38,7 @@ These are parsed into webapp.vhost.allvhosts.
     althosts:
     ----
     api @ api.launchpad.dev
-    rooturl: http://api.launchpad.dev/
+    rooturl: http://api.launchpad.dev/beta/
     althosts:
     ----
     blueprints @ blueprints.launchpad.dev
@@ -86,7 +86,7 @@ These are parsed into webapp.vhost.allvhosts.
     althosts:
     ----
     xmlrpc_private @ xmlrpc-private.launchpad.dev
-    rooturl: http://xmlrpc-private.launchpad.dev/
+    rooturl: http://launchpad.dev/
     althosts:
     ----
 
@@ -146,8 +146,7 @@ A request publication factory that was initialized with
 handle_default_host=True will handle a request that specifies no virtual
 host. By default, handle_default_host is False.
 
-    >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'HTTP_HOST': ''}
+    >>> environment = {'REQUEST_METHOD': 'GET'}
     >>> factory.canHandle(environment)
     False
 
@@ -211,8 +210,7 @@ factory is not wrapped:
     >>> requestfactory
     <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
 
-    >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'HTTP_HOST': ''}
+    >>> environment = {'REQUEST_METHOD': 'GET'}
     >>> default_handling_factory.canHandle(environment)
     True
     >>> requestfactory, publicationfactory = default_handling_factory()
@@ -262,19 +260,17 @@ The port is also checked for in the HTTP_HOST variable:
     >>> factory.canHandle(environment)
     False
 
-If the port is given twice (in SERVER_PORT and the Host header), and
-the ports don't match, an AssertionError is the result. This prevents
-sneaky outsiders from making requests to ports only exposed
-internally.
+If the port is given twice (in SERVER_PORT and the Host header), the
+value from SERVER_PORT takes precedence. (The rationale behind this is
+that it's valid for a client to put launchpad.dev:80 in the Host header,
+but the request is really coming on the port 1234 because it's being
+proxied.)
 
     >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'SERVER_PORT' : 1234,
+    ...                'SERVER_PORT' : '1234',
     ...                'HTTP_HOST': 'launchpad.dev:80'}
     >>> factory.canHandle(environment)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Port specified in SERVER_PORT does not match
-    port specified in HTTP_HOST
+    True
 
 It's okay to specify the port in both places if the ports are the same:
 
@@ -452,29 +448,6 @@ application/json.
     WebServicePublication
     WebServiceClientRequest
     WebServicePublication
-
-XXX: We don't want to expose the web service until it's ready, so
-we've defined a config variable which controls its availability. This
-test will go away when we decide to deploy the web service on
-production. -- Leonard Richardson 2008-01-04
-(https://launchpad.net/launchpad/+spec/api-bugs-remote)
-
-    >>> from canonical.config import config
-    >>> config.vhosts.expose_webservice
-    True
-
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
-    ...     [vhosts]
-    ...     expose_webservice: false
-    ...     """)
-    >>> config.push('test', test_data)
-
-    >>> print_request_and_publication('api.launchpad.dev', method='GET')
-    ProtocolErrorRequest
-    ProtocolErrorPublication: status=404
-
-    >>> test_config_data = config.pop('test')
 
 The XML-RPC RequestPublicationFactory only responds to POST requests,
 and then only when the MIME type is text/xml.
@@ -705,6 +678,15 @@ the pageid.
     >>> print request._orig_env['launchpad.pageid']
     TestContext:+test
 
+Views registered through ZCML using the attribute property, are really a
+bounded method. These views have the same pageid as their class.
+
+    >>> del request._orig_env['launchpad.pageid']
+    >>> publication.callObject(request, view.__call__)
+    u'Result'
+    >>> print request._orig_env['launchpad.pageid']
+    TestContext:+test
+
 If the published object doesn't have a context attribute (unlike most
 views), the pageid will be empty.
 
@@ -845,16 +827,16 @@ variables from there.
     >>> request._orig_env['launchpad.publicationticks'] = 500
     >>> request.supportsRetry()
     True
-    >>> import canonical.launchpad.webapp.adapter as da
+    >>> from storm.exceptions import DisconnectionError
     >>> try:
-    ...     raise da.DisconnectionError()
+    ...     raise DisconnectionError()
     ... except:
     ...     exc_info = sys.exc_info()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: (<class canonical.launchpad.webapp.adapter.DisconnectionError...
+    Retry: (<class storm.exceptions.DisconnectionError...
     ...
 
     >>> request._orig_env.has_key('launchpad.publicationticks')
@@ -940,13 +922,22 @@ read-only (GET and HEAD) don't change anything in the database.
 (Actually, if the published method calls transaction.commit() itself,
 that assumption won't hold.)
 
-Again this is handled by the afterCall() publication hook.
+This is handled by the finishReadOnlyRequest() hook, which is called by
+afterCall().  For example, this publication subclass will simply print
+some string in its finishReadOnlyRequest().
 
-For example, the following database modification will be automatically
-reverted in a GET request.
+    >>> class MyPublication(LaunchpadBrowserPublication):
+    ...     def finishReadOnlyRequest(self, txn):
+    ...         print "booo!"
+
+    >>> publication = MyPublication(None)
+    >>> publication.afterCall(request, None)
+    booo!
+
+In the default implementation, the following database modification will
+be automatically reverted in a GET request.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-
     >>> login('foo.bar@canonical.com')
     >>> txn = transaction.begin()
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
@@ -963,7 +954,6 @@ reverted in a GET request.
     # have to change the request manually.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
-    >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> print foo_bar.city
@@ -982,11 +972,58 @@ But not if the request uses POST, the changes will be preserved.
     # have to change the request manually.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
-    >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> print foo_bar.city
     Montreal
+
+
+=== GET requests on api.launchpad.net ===
+
+In the case of WebServicePublication, though, we have to commit the
+transaction after GET requests in order to persist new entries added to
+the OAuthNonce table.
+
+    >>> import time
+    >>> from canonical.launchpad.interfaces import (
+    ...     IOAuthConsumerSet, IPersonSet, OAuthPermission)
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> token = consumer.newRequestToken()
+    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
+    >>> access_token = token.createAccessToken()
+    >>> transaction.commit()
+    >>> form = dict(
+    ...     oauth_consumer_key='foobar123451432',
+    ...     oauth_token=access_token.key,
+    ...     oauth_version='1.0',
+    ...     oauth_signature_method='PLAINTEXT',
+    ...     oauth_signature="&".join([consumer.secret, access_token.secret]),
+    ...     oauth_timestamp=time.time(),
+    ...     oauth_nonce='1234572616e48616d6d65724c61686176')
+    >>> test_request, publication = get_request_and_publication(
+    ...     'api.launchpad.dev', 'GET',
+    ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
+    >>> test_request.processInputs()
+    >>> print publication.getPrincipal(test_request).title
+    Guilherme Salgado
+
+    # Our afterCall() implementation expects to find a
+    # _publicationticks_start in its request, which is set by
+    # callObject(). Since we don't want to callObject() here, we'll
+    # have to change the request manually.
+    >>> test_request._publicationticks_start = 1345
+    >>> publication.afterCall(test_request, None)
+
+    >>> form['oauth_timestamp'] += 500
+    >>> test_request, publication = get_request_and_publication(
+    ...     'api.launchpad.dev', 'GET',
+    ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
+    >>> test_request.processInputs()
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Invalid nonce/timestamp: This nonce has been used already.
 
 
 == HEAD requests have empty body ==
@@ -1037,14 +1074,14 @@ will get associated with the request after the beforeTraversal() hook.
 
     >>> marker = object()
     >>> class MyPublication(LaunchpadBrowserPublication):
-    ...	      def getPrincipal(self, request):
-    ...	      	  return marker
+    ...     def getPrincipal(self, request):
+    ...         return marker
 
     >>> publication = MyPublication(None)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
 
-    # We need close the previous interaction.
+    # We need to close the previous interaction.
     >>> from zope.security.management import endInteraction
     >>> endInteraction()
 
@@ -1057,10 +1094,11 @@ will get associated with the request after the beforeTraversal() hook.
 The default implementation will use the IPlacelessAuthentication
 utility to setup the request.
 
+    >>> login(ANONYMOUS) # Get rid of the marker object in the interaction.
     >>> foo_bar_auth = 'Basic %s' % (
-    ...	    'foo.bar@canonical.com:test'.encode('base64'))
+    ...     'foo.bar@canonical.com:test'.encode('base64'))
     >>> request, publication = get_request_and_publication(
-    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    ...     extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
     >>> principal = publication.getPrincipal(request)
     >>> print principal.title
     Foo Bar
@@ -1068,16 +1106,106 @@ utility to setup the request.
 The feeds implementation always returns the anonymous user.
 
     >>> request, publication = get_request_and_publication(
-    ...	    'feeds.launchpad.dev',
-    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    ...     'feeds.launchpad.dev',
+    ...     extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
     >>> principal = publication.getPrincipal(request)
 
     >>> from zope.app.security.interfaces import IUnauthenticatedPrincipal
     >>> IUnauthenticatedPrincipal.providedBy(principal)
     True
 
+The webservice implementation returns the principal for the person
+associated with the access token specified in the request.  The
+principal's access_level will be the one specified in the token.
+
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> token = consumer.newRequestToken()
+    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
+    >>> access_token = token.createAccessToken()
+    >>> form = dict(
+    ...     oauth_consumer_key='foobar123451432',
+    ...     oauth_token=access_token.key,
+    ...     oauth_version='1.0',
+    ...     oauth_signature_method='PLAINTEXT',
+    ...     oauth_signature="&".join([consumer.secret, access_token.secret]),
+    ...     oauth_timestamp=time.time(),
+    ...     oauth_nonce='4572616e48616d6d65724c61686176')
+    >>> test_request, publication = get_request_and_publication(
+    ...     'api.launchpad.dev', 'GET',
+    ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
+    >>> test_request.processInputs()
+    >>> principal = publication.getPrincipal(test_request)
+    >>> print principal.title
+    Guilherme Salgado
+    >>> principal.access_level
+    <DBItem AccessLevel.WRITE_PUBLIC...
+
+If the token is expired or doesn't exist, an Unauthorized exception is
+raised, though.
+
+    # Must login in order to edit the token.
+    >>> login('salgado@ubuntu.com')
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> access_token.date_expires = now - timedelta(days=1)
+    >>> syncUpdate(access_token)
+    >>> test_request = LaunchpadTestRequest(form=form)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Expired token...
+    >>> access_token.date_expires = now + timedelta(days=1)
+    >>> syncUpdate(access_token)
+
+    >>> form2 = form.copy()
+    >>> form2['oauth_token'] += 'z'
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Unknown access token...
+
+The consumer must be registered as well, and the signature must be
+correct.
+
+    >>> form2 = form.copy()
+    >>> form2['oauth_consumer_key'] += 'z'
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Unknown consumer (foobar123451432z).
+
+    >>> form2 = form.copy()
+    >>> form2['oauth_signature'] += 'z'
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Invalid signature.
+
+Last but not least, the nonce specified in the request must either have
+not been used before (in a request with this same token) or its
+timestamp must be +/- 60 seconds of the timestamp associated with the
+OAuthNonce in our database.
+
+    >>> from canonical.launchpad.database.oauth import NONCE_TIME_WINDOW
+    >>> form2 = form.copy()
+    >>> form2['oauth_timestamp'] += NONCE_TIME_WINDOW - 1
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Guilherme Salgado
+
+    >>> form2['oauth_timestamp'] += NONCE_TIME_WINDOW + 1
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Invalid nonce/timestamp...
+
 Close the bogus request that was started by the call to
 beforeTraversal, in order to ensure we leave our state sane.
 
     >>> publication.endRequest(request, None)
-

@@ -314,8 +314,9 @@ Check the content IDRSPR binaries & builds attributes:
 
    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
    ...     print bin.id, bin.title, bin.build.distroarchseries.title
-   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
    27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (x86)
+   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
+
 
 'builds' should be empty since it was built in parent (warty), not in this
 distroseries (bumby.
@@ -441,31 +442,39 @@ Perform `post publication` override:
 
    >>> override = netapplet_srcrel.current_published.changeOverride(
    ...     new_section=new_section)
+
    >>> override.section == new_section
    True
-   >>> override.status.name
-   'PENDING'
-   >>> pub_hist = netapplet_srcrel.publishing_history
-   >>> pub_hist.count()
+
+   >>> print override.status.name
+   PENDING
+
+   >>> netapplet_srcrel.publishing_history.count()
    2
 
 Override information about 'pmount' is pending publication:
 
-   >>> pub_hist[0].status.name, pub_hist[0].section.name
-   ('PENDING', u'base')
+   >>> print netapplet_srcrel.current_published.status.name
+   PENDING
 
-Supersede current publication:
+   >>> print netapplet_srcrel.current_published.section.name
+   base
 
-   >>> superseded_netapplet = netapplet_srcrel.current_published.supersede()
+Supersede previous netapplet publication:
+
+   >>> last_published = netapplet_srcrel.publishing_history[1]
+   >>> superseded_netapplet = last_published.supersede()
+   >>> flush_database_updates()
+
    >>> netapplet_srcrel.publishing_history.count()
    2
 
-We need to flush cached values.
+   >>> print superseded_netapplet.status.name
+   SUPERSEDED
 
-   >>> flush_database_updates()
-
-   >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
-   ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+   >>> from canonical.database.sqlbase import get_transaction_timestamp
+   >>> superseded_netapplet.datesuperseded == get_transaction_timestamp()
+   True
 
 
 == DistroSeries Translations migration ==
@@ -483,6 +492,7 @@ transaction manager (in this case a fake one) to make these work.
     ...     def commit(self):
     ...         pass
     >>> transaction_stub = FakeTransactionManager()
+
 
 === Preconditions for migrating translations between distro series ===
 
@@ -618,7 +628,6 @@ working on Humpy, as long as they're still translating the same messages.
 Get the needed objects to prepare this test.
 
     >>> import datetime
-    >>> import pytz
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageNameSet, IPOTemplateSet, IPersonSet)
     >>> evolution = getUtility(ISourcePackageNameSet)['evolution']
@@ -944,22 +953,20 @@ to do the translation migration to this new distro series.
     >>> testing_series.getTranslationTemplates()
     []
 
-The script starts its own transactions, so we need to commit here to be sure
-the new series will be available in the script.
-
-    >>> import subprocess
-    >>> import sys
-    >>> import transaction
-    >>> from canonical.launchpad.ftests.script import run_script
-
 Now, we execute the script that will migrate/copy all current templates
 and translations from testing_series' parent distro series (hoary).
 
-The script fails as long as the defer_translation_imports flag is not
-set.
+    >>> import transaction
+    >>> from canonical.launchpad.ftests.script import run_script
+
+The script starts its own transactions, so we need to commit here to be sure
+the new series will be available in the script.
 
     >>> testing_series_id = testing_series.id
     >>> transaction.commit()
+
+The script fails as long as the defer_translation_imports flag is not
+set.
 
     >>> returnvalue, output, error_output = run_script(
     ...     'cronscripts/copy-missing-translations-from-parent.py',
@@ -974,6 +981,7 @@ set.
             automatically.
     DEBUG   Removing lock file: /var/lock/launchpad-copy-missing-translations-ubuntu-testing.lock
 
+    >>> transaction.abort()
     >>> testing_series = DistroSeries.get(testing_series_id)
     >>> testing_series.defer_translation_imports
     False
@@ -983,6 +991,7 @@ set.
 It succeeds, however, when we pass the --force option.  The script then
 sets the defer_translation_imports flag itself before copying.
 
+    >>> transaction.abort()
     >>> returnvalue, output, error_output = run_script(
     ...     'cronscripts/copy-missing-translations-from-parent.py',
     ...     ['--distribution=ubuntu', '--series=testing', '-v', '--force'])
@@ -998,6 +1007,7 @@ sets the defer_translation_imports flag itself before copying.
 After completing, the script restores the defer_translation_imports
 flag to its previous value (off).
 
+    >>> transaction.abort()
     >>> testing_series = DistroSeries.get(testing_series_id)
     >>> testing_series.defer_translation_imports
     False
@@ -1040,6 +1050,15 @@ the future.
 
    >>> hoary_pub_sources.count()
    6
+
+   >>> for pub in hoary_pub_sources:
+   ...     print pub.displayname
+   alsa-utils 1.0.9a-4ubuntu1 in hoary
+   cnews cr.g7-37 in hoary
+   evolution 1.0 in hoary
+   libstdc++ b8p in hoary
+   linux-source-2.6.15 2.6.15.3 in hoary
+   pmount 0.1-2 in hoary
 
    >>> hoary_pub_source = hoary_pub_sources[0]
 
@@ -1207,10 +1226,10 @@ and in the main archives for this distroseries:
     ...     print(
     ...         source.sourcepackagerelease.sourcepackagename.name,
     ...         source.sourcepackagerelease.version)
-    (u'mozilla-firefox', u'0.9')
     (u'netapplet', u'0.99.6-1')
     (u'alsa-utils', u'1.0.8-1ubuntu1')
     (u'alsa-utils', u'1.0.9a-4')
+    (u'mozilla-firefox', u'0.9')
     (u'cdrkit', u'1.0')
     (u'iceweasel', u'1.0')
 
@@ -1385,7 +1404,6 @@ on the distribution.
     ...     print d.name
     jblack
 
-
 Finally, on a release where neither the distribution nor the release have a
 driver. Here, we expect the driver to be the owner of the distribution
 (because this is the "commonest fallback").
@@ -1404,6 +1422,7 @@ driver. Here, we expect the driver to be the owner of the distribution
     ...     print d.name
     sabdfl
 
+
 == Lastest Uploads ==
 
 IDistroSeries provides the 'getLatestUpload' method which returns a
@@ -1416,8 +1435,9 @@ uploaded and published in its context.
 Each element is an IDistroSeriesSourcePackageRelease instance:
 
     >>> for upload in latest_uploads:
-    ...     print upload.name, upload.version
-    mozilla-firefox 0.9
+    ...     print upload.title
+    iceweasel 1.0 (source) in ubuntu warty
+    mozilla-firefox 0.9 (source) in ubuntu warty
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:

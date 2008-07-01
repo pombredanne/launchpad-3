@@ -28,22 +28,49 @@
     permission="zope.Public"
     />
 
+  <adapter
+    provides="canonical.lazr.interfaces.IObjectPrivacy"
+    for="canonical.launchpad.interfaces.ITeam"
+    factory="canonical.launchpad.browser.TeamPrivacyAdapter"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.badge.IHasBadges"
+    for="canonical.launchpad.interfaces.ITeam"
+    factory="canonical.launchpad.browser.TeamBadges"
+    permission="zope.Public"
+    />
+
   <content class="canonical.launchpad.database.Person">
-    <allow interface="canonical.launchpad.interfaces.IPersonPublic"/>
+    <allow interface="canonical.launchpad.interfaces.person.IPersonPublic"/>
+    <allow interface="canonical.launchpad.interfaces.person.ITeamPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasStanding"/>
+    <allow
+      interface="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
+      />
 
     <require
       permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.IPersonViewRestricted"
+      interface="canonical.launchpad.interfaces.person.IPersonViewRestricted"
+      />
+    <require
+      permission="launchpad.EditLocation"
+      interface="canonical.launchpad.interfaces.location.ISetLocation"
       />
     <require
       permission="launchpad.Edit"
-      interface="canonical.launchpad.interfaces.IPersonEditRestricted"
+      interface="canonical.launchpad.interfaces.person.IPersonEditRestricted"
       />
     <require
       permission="launchpad.Edit"
-      set_schema="canonical.launchpad.interfaces.IPersonPublic"
+      set_schema="canonical.launchpad.interfaces.person.IPersonPublic
+                  canonical.launchpad.interfaces.person.ITeamPublic"
+      />
+    <require
+      permission="launchpad.Admin"
+      set_schema="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
       />
     <require
       permission="launchpad.Special"
@@ -51,15 +78,6 @@
       />
     <require
       permission="launchpad.Edit"
-      attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
-                  renewTeamMembership"
-      />
-    <require
-      permission="launchpad.Admin"
-      attributes="deactivateAllMembers"
-      />
-    <require
-      permission="launchpad.Admin"
       set_schema="canonical.launchpad.interfaces.IHasStanding"
       />
   </content>
@@ -68,7 +86,9 @@
     module="canonical.launchpad.browser.person"
     classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
-        PersonSetFacets PersonSetContextMenu PersonTranslationsMenu"
+        PersonSetFacets PersonSetContextMenu PersonTranslationsMenu
+        PersonOverviewNavigationMenu PersonEditNavigationMenu
+        PersonRelatedSoftwareNavigationMenu"
     />
 
   <browser:url
@@ -188,10 +208,6 @@
       template="../templates/null.pt"
       />
     <browser:page
-      name="+packages"
-      template="../templates/person-packages.pt"
-      />
-    <browser:page
       name="+participation"
       template="../templates/person-participation.pt"
       />
@@ -226,6 +242,14 @@
       template="../templates/team-listing.pt"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.person.PersonPackagesView"
+    name="+packages"
+    template="../templates/person-packages.pt"
+    />
 
   <!-- The bounty system is kept maintained but not available for users.
   This is achieved by putting it on the PageTestLayer. -->
@@ -271,6 +295,14 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
+    name="+vouchers"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonVouchersView"
+    template="../templates/person-vouchers.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+table-specworkload"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonSpecWorkLoadView"
@@ -291,6 +323,16 @@
     class="canonical.launchpad.browser.PersonTranslationView"
     permission="zope.Public"
     template="../templates/person-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+licensing"
+    facet="translations"
+    class="canonical.launchpad.browser.PersonTranslationRelicensingView"
+    permission="launchpad.Edit"
+    template="../templates/person-translations-relicensing.pt"
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
@@ -330,7 +372,7 @@
     schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
     name="+portlet-otherpackages"
     permission="zope.Public"
-    class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+    class="canonical.launchpad.browser.BugSubscriberPackageBugsSearchListingView"
     fields="distribution sourcepackagename"
     template="../templates/person-portlet-otherpackages.pt"
     />
@@ -340,6 +382,14 @@
     name="+rdf"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonRdfView"
+    attribute="__call__"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+rdf-contents"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonRdfContentsView"
     attribute="__call__"
     />
 
@@ -374,7 +424,7 @@
     name="+packagebugs-search"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
-    class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+    class="canonical.launchpad.browser.BugSubscriberPackageBugsSearchListingView"
     permission="zope.Public"
     template="../templates/person-packagebugs-search.pt"
     />
@@ -387,7 +437,7 @@
     name="+packagebugs"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
-    class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+    class="canonical.launchpad.browser.BugSubscriberPackageBugsSearchListingView"
     permission="zope.Public"
     template="../templates/person-packagebugs-overview.pt"
     />
@@ -528,6 +578,41 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonCodeSummaryView"
+    permission="zope.Public"
+    facet="branches"
+    name="+codesummary"
+    template="../templates/person-codesummary.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonActiveReviewsView"
+    permission="zope.Public"
+    facet="branches"
+    name="+activereviews"
+    template="../templates/person-mergeproposals.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonApprovedMergesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+approvedmerges"
+    template="../templates/person-mergeproposals.pt"
+    />
+
+  <browser:page
+    name="+oauth-tokens"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonOAuthTokensView"
+    permission="launchpad.Edit"
+    template="../templates/person-oauth-tokens.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonView"
     name="+teamhierarchy"
@@ -556,6 +641,7 @@
     permission="zope.Public"
     name="+mugshots"
     template="../templates/team-mugshots.pt"
+    class="canonical.launchpad.browser.TeamMugshotView"
     />
 
   <browser:page
@@ -572,6 +658,14 @@
     class="canonical.launchpad.browser.TeamMailingListConfigurationView"
     name="+mailinglist"
     template="../templates/team-mailinglist.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.TeamMailingListModerationView"
+    name="+mailinglist-moderate"
+    template="../templates/team-mailinglist-moderate.pt"
     />
 
   <browser:page
@@ -600,7 +694,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
-    permission="launchpad.Admin"
+    permission="launchpad.Owner"
     class="canonical.launchpad.browser.TeamReassignmentView"
     name="+reassign"
     template="../templates/object-reassignment.pt"
@@ -657,6 +751,7 @@
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
     template="../templates/team-members.pt"
+    class="canonical.launchpad.browser.TeamMembershipView"
     />
 
   <browser:page

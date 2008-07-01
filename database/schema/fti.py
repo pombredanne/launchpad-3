@@ -16,7 +16,8 @@ import tempfile
 from textwrap import dedent
 import time
 
-import psycopg
+import psycopg2
+import psycopg2.extensions
 
 import upgrade
 from canonical import lp
@@ -146,7 +147,7 @@ ALL_FTI = [
 def quote(s):
     """SQL quoted string"""
     if s is not None:
-        return psycopg.QuotedString(s)
+        return psycopg2.extensions.QuotedString(s)
     else:
         return 'NULL'
 
@@ -290,7 +291,7 @@ def liverebuild(con):
                     """ % (table, id + 1, id + batch_size)
                 log.debug(query)
                 cur.execute(query)
-            except psycopg.Error:
+            except psycopg2.Error:
                 # No commit - we are in autocommit mode
                 log.exception('psycopg error')
                 con = connect(lp.dbuser)
@@ -478,7 +479,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         LANGUAGE plpythonu IMMUTABLE
         RETURNS NULL ON NULL INPUT
         """ % quote(text_func))
-    #print psycopg.QuotedString(text_func)
+    #print psycopg2.extensions.QuotedString(text_func)
     sexecute(con, r"""
         CREATE OR REPLACE FUNCTION ts2.ftq(text) RETURNS tsquery AS %s
         LANGUAGE plpythonu IMMUTABLE

@@ -2,11 +2,20 @@
 # pylint: disable-msg=E0611,W0212,W0102
 
 __metaclass__ = type
-__all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
-           'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs',
-           'Shipment', 'ShipmentSet', 'ShippingRun', 'ShippingRunSet',
-           'ShipItReport', 'ShipItReportSet',
-           'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT']
+__all__ = [
+    'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT',
+    'RequestedCDs',
+    'ShipItReport',
+    'ShipItReportSet',
+    'ShipItSurveySet',
+    'Shipment',
+    'ShipmentSet',
+    'ShippingRequest',
+    'ShippingRequestSet',
+    'ShippingRun',
+    'ShippingRunSet',
+    'StandardShipItRequest',
+    'StandardShipItRequestSet']
 
 from StringIO import StringIO
 import csv
@@ -15,6 +24,7 @@ import itertools
 import random
 import re
 
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -24,11 +34,13 @@ from sqlobject.sqlbuilder import AND, SQLConstant
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol)
 
+from canonical.lazr import Item
+
 from canonical.config import config
 from canonical.uuid import generate_uuid
 
 from canonical.database.sqlbase import (
-    SQLBase, sqlvalues, quote, quote_like, cursor)
+    block_implicit_flushes, SQLBase, sqlvalues, quote, quote_like, cursor)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -39,13 +51,14 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 from canonical.launchpad.interfaces import (
-    IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
-    IRequestedCDs, IShippingRequestSet, ILaunchpadCelebrities, IShipment,
-    IShippingRun, IShippingRunSet, IShipmentSet, ShippingRequestPriority,
-    IShipItReport, IShipItReportSet, ShipItConstants, ILibraryFileAliasSet,
-    SOFT_MAX_SHIPPINGRUN_SIZE, MAX_CDS_FOR_UNTRUSTED_PEOPLE,
-    ShipItDistroSeries, ShipItArchitecture, ShipItFlavour,
-    ShippingService, ShippingRequestStatus, ShippingRequestType)
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IRequestedCDs, IShipItReport,
+    IShipItReportSet, IShipItSurveySet, IShipment, IShipmentSet,
+    IShippingRequest, IShippingRequestSet, IShippingRun, IShippingRunSet,
+    IStandardShipItRequest, IStandardShipItRequestSet,
+    MAX_CDS_FOR_UNTRUSTED_PEOPLE, ShipItArchitecture, ShipItConstants,
+    ShipItDistroSeries, ShipItFlavour, ShipItSurveySchema,
+    ShippingRequestPriority, ShippingRequestStatus, ShippingRequestType,
+    ShippingService, SOFT_MAX_SHIPPINGRUN_SIZE)
 from canonical.launchpad.database.country import Country
 
 
@@ -63,9 +76,6 @@ class ShippingRequest(SQLBase):
                            notNull=True)
 
     daterequested = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-
-    shockandawe = ForeignKey(dbName='shockandawe', foreignKey='ShockAndAwe',
-                             default=None)
 
     type = EnumCol(enum=ShippingRequestType, default=None)
     status = EnumCol(
@@ -252,7 +262,7 @@ class ShippingRequest(SQLBase):
         for arch in ShipItArchitecture.items:
             arch_requested_cds = requested_cds[arch]
             # Any of {x86,amd64,ppc}_requested_cds can be None here, so we use
-            # a default value for getattr to make things easier.
+            # a default value for getattr() to make things easier.
             quantities[arch] = getattr(arch_requested_cds, 'quantity', 0)
         return quantities
 
@@ -435,7 +445,7 @@ class ShippingRequestSet:
 
     def new(self, recipient, recipientdisplayname, country, city,
             addressline1, phone, addressline2=None, province=None,
-            postcode=None, organization=None, reason=None, shockandawe=None):
+            postcode=None, organization=None, reason=None):
         """See IShippingRequestSet"""
         # Only the shipit-admins team can have more than one open request
         # at a time.
@@ -443,12 +453,16 @@ class ShippingRequestSet:
                 or recipient.currentShipItRequest() is None)
 
         request = ShippingRequest(
-            recipient=recipient, reason=reason, shockandawe=shockandawe,
-            city=city, country=country, addressline1=addressline1,
-            addressline2=addressline2, province=province, postcode=postcode,
+            recipient=recipient, reason=reason, city=city, country=country,
+            addressline1=addressline1, addressline2=addressline2,
+            province=province, postcode=postcode,
             recipientdisplayname=recipientdisplayname,
             organization=organization, phone=phone)
 
+        # The normalized_address field is maitained by a trigger, so
+        # the object needed to be refetched after creation.
+        Store.of(request).flush()
+        Store.of(request).invalidate()
         return request
 
     def getTotalsForRequests(self, requests):
@@ -543,6 +557,8 @@ class ShippingRequestSet:
             queries.append("ShippingRequest.status = %s" % sqlvalues(status))
 
         query = " AND ".join(queries)
+        if query == '':
+            query = None
         return ShippingRequest.select(
             query, orderBy=orderBy, prejoins=["recipient"])
 
@@ -575,6 +591,7 @@ class ShippingRequestSet:
             shippingrun.exportToCSVFile(filename)
             ztm.commit()
 
+    @block_implicit_flushes
     def _create_shipping_run(self, request_ids):
         """Create and return a ShippingRun containing all requests whose ids
         are in request_ids.
@@ -591,6 +608,37 @@ class ShippingRequestSet:
                 # can't export it.
                 continue
             assert not (request.isCancelled() or request.isShipped())
+
+            # Make sure we ship at least one Ubuntu CD for each Edubuntu CD
+            # that we approved in this request.
+            requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
+            requested_ubuntu = requested_cds[ShipItFlavour.UBUNTU]
+            requested_edubuntu = requested_cds[ShipItFlavour.EDUBUNTU]
+            edubuntu_total_approved = 0
+            for arch, requested_cds in requested_edubuntu.items():
+                if requested_cds is None:
+                    continue
+                edubuntu_total_approved += requested_cds.quantityapproved
+            if edubuntu_total_approved > 0:
+                all_requested_arches = set(
+                    requested_ubuntu.keys() + requested_edubuntu.keys())
+                new_ubuntu_quantities = {}
+                for arch in all_requested_arches:
+                    # Need to use getattr() here because
+                    # requested_edubuntu[arch] will be None if the request
+                    # doesn't contain any Edubuntu CDs of that architecture.
+                    edubuntu_qty = getattr(
+                        requested_edubuntu[arch], 'quantityapproved', 0)
+                    if edubuntu_qty == 0:
+                        continue
+                    ubuntu_qty = getattr(
+                        requested_ubuntu[arch], 'quantityapproved', 0)
+                    if edubuntu_qty > ubuntu_qty:
+                        ubuntu_qty = edubuntu_qty
+                    new_ubuntu_quantities[arch] = ubuntu_qty
+                request.setApprovedQuantities(
+                    {ShipItFlavour.UBUNTU: new_ubuntu_quantities})
+
             request.status = ShippingRequestStatus.SHIPPED
             shipment = ShipmentSet().new(
                 request, request.shippingservice, shippingrun)
@@ -1386,9 +1434,14 @@ class ShipmentSet:
     def new(self, request, shippingservice, shippingrun, trackingcode=None,
             dateshipped=None):
         """See IShipmentSet"""
+        # Flushing the database at this point leads to problems with
+        # the database constraints.
+        store = Store.of(shippingrun)
+        store.block_implicit_flushes()
         token = self._generateToken()
         while self.getByToken(token):
             token = self._generateToken()
+        store.unblock_implicit_flushes()
 
         shipment = Shipment(
             shippingservice=shippingservice, shippingrun=shippingrun,
@@ -1587,3 +1640,63 @@ class ShipItReportSet:
     def getAll(self):
         """See IShipItReportSet"""
         return ShipItReport.select()
+
+
+# Most ShipItSurvey-related classes don't have an associated interface because
+# they're not being used anywhere yet -- at this point we're only storing the
+# answers in the database.
+class ShipItSurveyQuestion(SQLBase):
+    question = StringCol(notNull=True)
+
+
+class ShipItSurveyAnswer(SQLBase):
+    answer = StringCol(notNull=True)
+
+
+class ShipItSurveyResult(SQLBase):
+    survey = ForeignKey(
+        dbName='survey', foreignKey='ShipItSurvey', notNull=True)
+    question = ForeignKey(
+        dbName='question', foreignKey='ShipItSurveyQuestion', notNull=True)
+    answer = ForeignKey(
+        dbName='answer', foreignKey='ShipItSurveyAnswer', notNull=False)
+
+
+class ShipItSurvey(SQLBase):
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    exported = BoolCol(notNull=True, default=False)
+
+
+class ShipItSurveySet:
+    """See IShipItSurveySet"""
+    implements(IShipItSurveySet)
+
+    def personHasAnswered(self, person):
+        """See IShipItSurveySet"""
+        return ShipItSurvey.selectBy(person=person).count() > 0
+
+    def new(self, person, answers):
+        """See IShipItSurveySet"""
+        survey = None
+        for key, values in answers.items():
+            if not values:
+                # There's no point in registering the fact that users have not
+                # answered a question.
+                continue
+            if survey is None:
+                survey = ShipItSurvey(person=person)
+            question_text = str(ShipItSurveySchema[key].title)
+            question = ShipItSurveyQuestion.selectOneBy(
+                question=question_text)
+            if question is None:
+                question = ShipItSurveyQuestion(question=question_text)
+            if isinstance(values, Item):
+                values = [values]
+            for value in values:
+                answer = ShipItSurveyAnswer.selectOneBy(answer=value.title)
+                if answer is None:
+                    answer = ShipItSurveyAnswer(answer=value.title)
+                ShipItSurveyResult(
+                    survey=survey, question=question, answer=answer)
+        return survey

@@ -19,10 +19,9 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
-from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
     IDistroSeriesSourcePackageRelease, ISourcePackageRelease,
-    PackagePublishingStatus, PackageUploadStatus)
+    PackagePublishingStatus)
 from canonical.lazr import decorates
 
 
@@ -43,6 +42,11 @@ class DistroSeriesSourcePackageRelease:
     def distribution(self):
         """See `IDistroSeriesSourcePackageRelease`."""
         return self.distroseries.distribution
+
+    @property
+    def sourcepackage(self):
+        """See `IDistroSeriesSourcePackageRelease`."""
+        return self.distroseries.getSourcePackage(self.sourcepackagename)
 
     @property
     def displayname(self):
@@ -128,7 +132,7 @@ class DistroSeriesSourcePackageRelease:
                         self.sourcepackagerelease)
 
         return BinaryPackageRelease.select(
-                query, prejoinClauseTables=['Build'],
+                query, prejoinClauseTables=['Build'], orderBy=['-id'],
                 clauseTables=clauseTables, distinct=True)
 
     @property
@@ -143,20 +147,8 @@ class DistroSeriesSourcePackageRelease:
     @property
     def changesfile(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        clauseTables = [
-            'PackageUpload',
-            'PackageUploadSource',
-            ]
-        query = """
-        PackageUpload.id = PackageUploadSource.packageupload AND
-        PackageUpload.distroseries = %s AND
-        PackageUploadSource.sourcepackagerelease = %s AND
-        PackageUpload.status = %s
-        """ % sqlvalues(self.distroseries, self.sourcepackagerelease,
-                        PackageUploadStatus.DONE)
-        queue_record = PackageUpload.selectOne(
-            query, clauseTables=clauseTables)
-
+        queue_record = self.sourcepackagerelease.getQueueRecord(
+            distroseries=self.distroseries)
         if not queue_record:
             return None
 
@@ -218,15 +210,18 @@ class DistroSeriesSourcePackageRelease:
     def current_published(self):
         """See `IDistroArchSeriesSourcePackage`."""
         # Retrieve current publishing info
+        published_status = [
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED]
         current = SourcePackagePublishingHistory.selectFirst("""
         distroseries = %s AND
         archive IN %s AND
         sourcepackagerelease = %s AND
-        status = %s
+        status IN %s
         """ % sqlvalues(self.distroseries,
                         self.distroseries.distribution.all_distro_archive_ids,
                         self.sourcepackagerelease,
-                        PackagePublishingStatus.PUBLISHED),
-            orderBy='-datecreated')
+                        published_status),
+            orderBy=['-datecreated', '-id'])
 
         return current

@@ -10,11 +10,12 @@ import os
 import sys
 import thread
 import unittest
+import xmlrpclib
 
 import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
-    BzrCommandError, LockFailed, NotBranchError, TransportNotPossible)
+    LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
 from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
 
@@ -22,21 +23,39 @@ from bzrlib.urlutils import local_path_from_url
 from bzrlib.tests import default_transport, TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
-from paramiko import SSHClient, SSHException, MissingHostKeyPolicy
+from twisted.python.util import mergeFunctionMetadata
 
-from canonical.codehosting.tests.helpers import adapt_suite, ServerTestCase
-from canonical.authserver.client.twistedclient import get_blocking_proxy
+from canonical.codehosting.tests.helpers import (
+    adapt_suite, ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing import TwistedLaunchpadZopelessLayer
+from canonical.testing.layers import disconnect_stores, reconnect_stores
 from canonical.twistedsupport import defer_to_thread
+
+
+def db_defer_to_thread(function):
+    """Run in a thread, making sure the database connection is sane.
+
+    The 'main' and 'session' Storm stores will be reconnected before
+    running the function, and then disconnected afterwards (to match
+    what happens in the main thread).
+
+    A Deferred is returned, which fires when the function returns.
+    """
+    def wrapper(*args, **kwargs):
+        reconnect_stores()
+        try:
+            return function(*args, **kwargs)
+        finally:
+            disconnect_stores()
+    wrapper = mergeFunctionMetadata(function, wrapper)
+    return defer_to_thread(wrapper)
 
 
 class SSHTestCase(ServerTestCase):
@@ -102,7 +121,7 @@ class SSHTestCase(ServerTestCase):
             push_command.run, remote_url, local_directory)
         return output.getvalue()
 
-    def push(self, local_directory, remote_url):
+    def push(self, local_directory, remote_url, **options):
         """Push the local branch to the given URL.
 
         This method is used to test the end-to-end behaviour of pushing Bazaar
@@ -116,9 +135,10 @@ class SSHTestCase(ServerTestCase):
         output = StringIO()
         push_command = cmd_push()
         push_command.outf = output
+        options['location'] = remote_url
         self.runInChdir(
             local_directory,
-            self.server.runAndWaitForDisconnect, push_command.run, remote_url)
+            self.server.runAndWaitForDisconnect, push_command.run, **options)
         return output.getvalue()
 
     def getLastRevision(self, remote_url):
@@ -155,7 +175,7 @@ class SSHTestCase(ServerTestCase):
         Used to create branches that the test user is not able to create, and
         might not even be able to view.
         """
-        authserver = get_blocking_proxy(self.server.authserver.get_url())
+        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
         if creator is None:
             creator_id = authserver.getUser(user)['id']
         else:
@@ -266,10 +286,10 @@ class AcceptanceTests(SSHTestCase):
             registrant=owner,
             name=branch_name, owner=owner, author=owner, product=product,
             url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
-            summary=None, home_page=None, whiteboard=None, private=private,
+            summary=None, whiteboard=None, private=private,
             date_created=UTC_NOW, branch_type=branch_type)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_push_to_new_branch(self):
         """
         The bzr client should be able to read and write to the codehosting
@@ -284,7 +304,7 @@ class AcceptanceTests(SSHTestCase):
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_push_to_existing_branch(self):
         """Pushing to an existing branch must work."""
         # Initial push.
@@ -299,7 +319,7 @@ class AcceptanceTests(SSHTestCase):
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_rename_branch(self):
         """
         Branches should be able to be renamed in the Launchpad webapp, and
@@ -330,7 +350,7 @@ class AcceptanceTests(SSHTestCase):
             self.getTransportURL('~testuser/+junk/renamed-branch'))
 
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_rename_product(self):
         # Push the local branch to the server
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
@@ -350,7 +370,7 @@ class AcceptanceTests(SSHTestCase):
             self.local_branch_path,
             self.getTransportURL('~testuser/firefox/test-branch'))
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_rename_user(self):
         # Rename person in the database. Again, the URL changes (and so does
         # the username we have to connect as!).
@@ -373,13 +393,13 @@ class AcceptanceTests(SSHTestCase):
             self.getTransportURL(
                 '~renamed-user/+junk/test-branch', 'renamed-user'))
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_push_team_branch(self):
         remote_url = self.getTransportURL('~testteam/firefox/a-new-branch')
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_push_new_branch_creates_branch_in_database(self):
         remote_url = self.getTransportURL(
             '~testuser/+junk/totally-new-branch')
@@ -394,7 +414,7 @@ class AcceptanceTests(SSHTestCase):
         self.assertEqual(
             '~testuser/+junk/totally-new-branch', branch.unique_name)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_push_triggers_mirror_request(self):
         # Pushing new data to a branch should trigger a mirror request.
         remote_url = self.getTransportURL(
@@ -425,7 +445,7 @@ class AcceptanceTests(SSHTestCase):
         self.assertNotEqual(None, branch.next_mirror_time)
         LaunchpadZopelessTestSetup().txn.abort()
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_cant_access_private_branch(self):
         # Trying to get information about a private branch should fail as if
         # the branch doesn't exist.
@@ -451,7 +471,7 @@ class AcceptanceTests(SSHTestCase):
             '~landscape-developers/landscape/some-branch')
         self.assertRaises(NotBranchError, self.getLastRevision, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_can_push_to_existing_hosted_branch(self):
         # If a hosted branch exists in the database, but not on the
         # filesystem, and is writable by the user, then the user is able to
@@ -460,10 +480,10 @@ class AcceptanceTests(SSHTestCase):
         branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
-        self.push(self.local_branch_path, remote_url)
+        self.push(self.local_branch_path, remote_url, use_existing_dir=True)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_cant_push_to_existing_mirrored_branch(self):
         # Users cannot push to mirrored branches.
         LaunchpadZopelessTestSetup().txn.begin()
@@ -476,10 +496,16 @@ class AcceptanceTests(SSHTestCase):
         # we care about is the one that cmd_push raises.
         self.captureStderr(
             self.assertRaises,
-            (BzrCommandError, TransportNotPossible),
+            (PermissionDenied, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
+        # XXX: JonathanLange 2008-04-07: In the SFTP test, the authserver logs
+        # a fault which comes back to us (although a little undesirable). Here
+        # we flush the test logs so that it doesn't fail the run.
+        flushLoggedErrors = getattr(self, 'flushLoggedErrors', None)
+        if flushLoggedErrors is not None:
+            flushLoggedErrors()
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_cant_push_to_existing_unowned_hosted_branch(self):
         # Users can only push to hosted branches that they own.
         LaunchpadZopelessTestSetup().txn.begin()
@@ -487,10 +513,10 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
         self.assertRaises(
-            (BzrCommandError, TransportNotPossible),
+            (PermissionDenied, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_cant_push_to_existing_hosted_branch_with_revisions(self):
         # XXX: JonathanLange 2007-08-07, We shoudn't be able to push to
         # branches that have revisions in the database but not actual files:
@@ -505,10 +531,10 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
         self.assertRaises(
-            (BzrCommandError, TransportNotPossible),
+            (PermissionDenied, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_can_push_loom_branch(self):
         # We can push and pull a loom branch.
         tree = self.makeLoomBranchAndTree('loom')
@@ -591,76 +617,10 @@ class SmartserverTests(SSHTestCase):
         # unit tests).
         remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
         error = self.assertTransportRaises(
-            TransportNotPossible,
+            PermissionDenied,
             self.push, self.local_branch_path, remote_url)
         self.assertIn("Project 'no-such-product' does not exist.", str(error))
 
-
-class OOPSReportingSmartserverTests(SSHTestCase):
-    """Acceptance tests for the ssh server that involve OOPS reporting."""
-
-    def setUp(self):
-        SSHTestCase.setUp(self)
-        self._oops_prefix = config.launchpad.errorreports.oops_prefix
-        self._errordir = config.launchpad.errorreports.errordir
-        self._copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
-        errorreports = config.codehosting
-        config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
-        config.launchpad.errorreports.errordir = errorreports.errordir
-        config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
-
-    def tearDown(self):
-        SSHTestCase.tearDown(self)
-        config.launchpad.errorreports.oops_prefix = self._oops_prefix
-        config.launchpad.errorreports.errordir = self._errordir
-        config.launchpad.errorreports.copy_to_zlog = self._copy_to_zlog
-
-    def test_oops_reported_on_unhandled_exception(self):
-        # We have to examine the oops reports in the main thread because
-        # canonical.config.config is a thread-locals object, but we have to do
-        # ssh client things in another thread, as the server runs in the
-        # twisted reactor in the main thread.
-
-        # Note the last oops reported before we start.
-        existing_report = globalErrorUtility.getLastOopsReport()
-
-        real_stderr = sys.stderr
-        sys.stderr = StringIO()
-
-        @defer_to_thread
-        def cause_exception_in_ssh_server():
-            """Trigger an unhandled exception in the code hosting ssh server.
-
-            What we do is attempt to execute some command other than 'bzr
-            serve', which works but is thoroughly arbitrary.
-            """
-            ssh_client = SSHClient()
-            # Connect to unrecognized hosts freely:
-            ssh_client.set_missing_host_key_policy(MissingHostKeyPolicy())
-            ssh_client.connect(
-                'localhost', 22222, 'sabdfl',
-                key_filename=os.path.join(os.environ['HOME'], '.ssh/id_dsa'))
-            try:
-                ssh_client.exec_command('sleep')
-            except SSHException:
-                pass
-            ssh_client.close()
-
-        defer_cause_exception = cause_exception_in_ssh_server()
-
-        def check_new_oops_has_been_reported(ignored):
-            """Check that there has been a new OOPS report logged."""
-            new_report = globalErrorUtility.getLastOopsReport()
-            self.assertNotEqual(new_report, None)
-            if existing_report is not None:
-                self.assertNotEqual(new_report.id, existing_report.id)
-            self.assertIn('Not allowed to execute', new_report.value)
-
-        def restore_stderr(ignored):
-            sys.stderr = real_stderr
-
-        return defer_cause_exception.addCallback(
-            check_new_oops_has_been_reported).addBoth(restore_stderr)
 
 def make_server_tests(base_suite, servers):
     from canonical.codehosting.tests.helpers import (
@@ -670,6 +630,51 @@ def make_server_tests(base_suite, servers):
 
 
 def make_smoke_tests(base_suite):
+    """Make smoke tests that run against every supported repository type."""
+    # XXX: JonathanLange 2008-08-11: This is a temporary kludge to let us land
+    # this branch before we upgrade Bazaar. This should be removed once
+    # rocketfuel has bzr 1.6b2 or better.
+    from bzrlib.tests import repository_implementations
+    adapter = getattr(
+        repository_implementations, 'RepositoryTestProviderAdapter', None)
+    if adapter is not None:
+        return make_smoke_tests_old_bzr(base_suite)
+    else:
+        return make_smoke_tests_new_bzr(base_suite)
+
+
+def make_smoke_tests_new_bzr(base_suite):
+    # XXX: JonathanLange 2008-08-11: Once rocketfuel has bzr 1.6b2 or better,
+    # this should be renamed to 'make_smoke_tests'.
+    from bzrlib import tests
+    from bzrlib.tests import repository_implementations
+    excluded_scenarios = [
+        # RepositoryFormat4 is not initializable (bzrlib raises TestSkipped
+        # when you try).
+        'RepositoryFormat4',
+        # Fetching weave formats from the smart server is known to be broken.
+        # See bug 173807 and bzrlib.tests.test_repository.
+        'RepositoryFormat5',
+        'RepositoryFormat6',
+        'RepositoryFormat7',
+        # Using RemoteRepositoryFormat doesn't make sense when testing push to
+        # remote server.
+        'RemoteRepositoryFormat',
+        ]
+    scenarios = repository_implementations.all_repository_format_scenarios()
+    scenarios = [
+        scenario for scenario in scenarios
+        if scenario[0] not in excluded_scenarios]
+    adapter = tests.TestScenarioApplier()
+    adapter.scenarios = scenarios
+    new_suite = unittest.TestSuite()
+    tests.adapt_tests(base_suite, adapter, new_suite)
+    return new_suite
+
+
+def make_smoke_tests_old_bzr(base_suite):
+    # XXX: JonathanLange 2008-08-11: Delete this once rocketfuel has bzr 1.6b2
+    # or better.
     from bzrlib.tests.repository_implementations import (
         RepositoryTestProviderAdapter)
     # We specifically exclude RepositoryFormat7, which is not supported.
@@ -686,12 +691,11 @@ def make_smoke_tests(base_suite):
 def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
+
     suite.addTest(make_server_tests(
-            base_suite, [make_sftp_server, make_bzr_ssh_server]))
+        base_suite, [make_sftp_server, make_bzr_ssh_server]))
+
     suite.addTest(make_server_tests(
             unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
-    suite.addTest(make_server_tests(
-            unittest.makeSuite(OOPSReportingSmartserverTests),
-            [make_bzr_ssh_server]))
     suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
     return suite

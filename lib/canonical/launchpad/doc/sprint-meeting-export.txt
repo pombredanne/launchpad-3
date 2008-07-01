@@ -13,7 +13,7 @@ First we import the classes required to test the view:
 
   >>> from datetime import datetime
   >>> from pytz import timezone
-  >>> from zope.component import getUtility, getView
+  >>> from zope.component import getUtility, getMultiAdapter
   >>> from canonical.launchpad.interfaces import (
   ...     ISprintSet, IPersonSet, IProductSet)
   >>> from canonical.launchpad.browser.sprint import SprintMeetingExportView
@@ -35,7 +35,7 @@ Look up a few Launchpad objects to be used in the tests
 Create a view for the UBZ sprint meeting export:
 
   >>> request = LaunchpadTestRequest()
-  >>> view = getView(ubz, '+temp-meeting-export', request)
+  >>> view = getMultiAdapter((ubz, request), name='+temp-meeting-export')
 
 Verify that the view is a SprintMeetingExportView:
 
@@ -66,7 +66,7 @@ and check the list of interested people:
   >>> essential=False
   >>> ext_spec.subscribe(sampleperson, sampleperson, essential)
   <SpecificationSubscription at ...>
-  >>> view = getView(ubz, '+temp-meeting-export', request)
+  >>> view = getMultiAdapter((ubz, request), name='+temp-meeting-export')
   >>> view.initialize()
 
 The person does not show up as interested in the spec though. Only the
@@ -84,7 +84,7 @@ sprint.  If we add them as an attendee, then they will be available:
   >>> ubz.attend(sampleperson, time_starts, time_ends)
   <SprintAttendance at ...>
 
-  >>> view = getView(ubz, '+temp-meeting-export', request)
+  >>> view = getMultiAdapter((ubz, request), name='+temp-meeting-export')
   >>> view.initialize()
   >>> sorted(person['name'] for person in view.specifications[0]['interested'])
   [u'carlos', u'name12']
@@ -119,7 +119,7 @@ sprint:
 Even though the Javascript spec has now been accepted for the sprint now,
 it is not listed by the view because of its priority:
 
-  >>> view = getView(ubz, '+temp-meeting-export', request)
+  >>> view = getMultiAdapter((ubz, request), name='+temp-meeting-export')
   >>> view.initialize()
   >>> spec_names = [spec['spec'].name for spec in view.specifications]
   >>> js_spec.name not in spec_names
@@ -134,7 +134,7 @@ of specs:
   >>> ubz.declineSpecificationLinks([link.id], sabdfl)
   0
 
-  >>> view = getView(ubz, '+temp-meeting-export', request)
+  >>> view = getMultiAdapter((ubz, request), name='+temp-meeting-export')
   >>> view.initialize()
   >>> view.specifications
   []

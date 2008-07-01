@@ -3,7 +3,6 @@
 """A global pipeline handler for determining Launchpad membership."""
 
 
-import socket
 import xmlrpclib
 
 from Mailman import Errors
@@ -23,12 +22,10 @@ def process(mlist, msg, msgdata):
     # posted to the list than to discard or hold it.
     is_member = True
     proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
-    try:
-        is_member = proxy.isRegisteredInLaunchpad(sender)
-    except (xmlrpclib.ProtocolError, socket.error), error:
-        syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
-    except xmlrpclib.Fault, error:
-        syslog('xmlrpc', 'Launchpad exception: %s', error)
+    # This will fail if we can't talk to Launchpad.  That's okay though
+    # because Mailman's IncomingRunner will re-queue the message and re-start
+    # processing at this handler.
+    is_member = proxy.isRegisteredInLaunchpad(sender)
     # Some automated processes will also send messages to the mailing list.
     # For example, if the list is a contact address for a team and that team
     # is the contact address for a project's answer tracker, an automated

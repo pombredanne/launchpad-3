@@ -9,7 +9,6 @@ __all__ = []
 import _pythonpath
 
 from optparse import OptionParser
-import sys
 
 from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.scripts import db_options

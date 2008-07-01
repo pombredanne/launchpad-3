@@ -21,10 +21,11 @@
             <tal:logged_in condition="request/lp:person">
               <tal:hidden_emails condition="context/hide_email_addresses">
 
-                <tal:can-view-hidden-emails condition="context/required:launchpad.Edit">
+                <tal:can-view-hidden-emails
+                  condition="context/preferredemail/required:launchpad.View">
                   <td title="This email address is not disclosed to others.">
                     <span style="white-space: nowrap">
-                      <img src="/@@/private" alt="" /> 
+                      <img src="/@@/private" alt="" />
                       <tal:email replace="context/preferredemail/email">foo@bar.com</tal:email>
                     </span>
                     <br />
@@ -32,7 +33,7 @@
                 </tal:can-view-hidden-emails>
 
                 <tal:cant-view-hidden-emails
-                    condition="not: context/required:launchpad.Edit">
+                  condition="not: context/preferredemail/required:launchpad.View">
                   <td>
                     No public address provided.
                   </td>
@@ -52,7 +53,7 @@
             <tal:not_logged_in condition="not: request/lp:person">
               <td>
                 <a href="+login">Log in</a> for email information.
-              <td>
+              </td>
             </tal:not_logged_in>
 
           </tal:has_preferredemail>
@@ -115,6 +116,20 @@
             </tal:block>
           </td>
         </tr>
+        <tal:can-view-openid-login
+	   condition="context/required:launchpad.Edit">
+	  <tr tal:condition="context/is_openid_enabled">
+	    <th>OpenID login:<br/>
+	      <span class="help">
+		(<a href="https://help.launchpad.net/OpenID"
+		    >What&rsquo;s&nbsp;this?</a>)</span>
+	    </th>
+            <td title="This URL is not disclosed to others.">
+              <img src="/@@/private" alt="" />
+              <tal:openid-login content="view/openid_identity_url" />
+            </td>
+	  </tr>
+	</tal:can-view-openid-login>
       </tbody>
     </table>
 

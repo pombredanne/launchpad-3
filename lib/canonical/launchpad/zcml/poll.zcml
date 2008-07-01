@@ -14,6 +14,12 @@
             set_schema="canonical.launchpad.interfaces.IPoll" />
     </content>
 
+    <adapter
+        for="canonical.launchpad.interfaces.IPoll"
+        provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+        factory="canonical.launchpad.browser.poll_to_structuralheading"
+      />
+
     <browser:menus
         module="canonical.launchpad.browser"
         classes="PollContextMenu"

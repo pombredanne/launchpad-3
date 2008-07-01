@@ -4,8 +4,7 @@ The general +filebug allows bugs to be filed on any product or package,
 and to help with this, the LaunchpadTargetWidget is used.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IFrontPageBugAddForm, IMaloneApplication)
+    >>> from canonical.launchpad.interfaces import IFrontPageBugAddForm
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
@@ -102,7 +101,7 @@ If no distribution name is given at all, a MissingInput error is raised.
     ...
     MissingInputError:...
     >>> widget.error()
-    ''
+    u''
 
 == Selecting a package ==
 

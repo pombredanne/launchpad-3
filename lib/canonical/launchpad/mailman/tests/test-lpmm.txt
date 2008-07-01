@@ -4,16 +4,16 @@ the shared package.  Anything more than that is left to other tests.
 
     >>> import subprocess, os
     >>> from canonical.config import config
+    >>> from canonical.launchpad.mailman.config import configure_prefix
     >>> def withlist(callable, *options):
     ...     callable_path = 'canonical.launchpad.mailman.tests.' + callable
     ...     args = ' '.join(options)
     ...     site_list = 'unused_mailman_site_list'
-    ...     mailman_bin = os.path.join(config.mailman.build.prefix, 'bin')
+    ...     prefix_path = configure_prefix(config.mailman.build_prefix)
+    ...     mailman_bin = os.path.join(prefix_path, 'bin')
     ...     command = './withlist %s -r %s %s' % (
     ...         args, callable_path, site_list)
     ...     return subprocess.call(command.split(), cwd=mailman_bin)
-
-    >>> import canonical.launchpad.mailman
 
 Mailman's site list must exist.
 

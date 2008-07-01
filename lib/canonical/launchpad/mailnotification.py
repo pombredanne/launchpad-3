@@ -16,15 +16,16 @@ from email.Utils import formatdate
 import re
 import rfc822
 
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IBugTask, IEmailAddressSet, ILaunchpadCelebrities,
+    IBugTask, IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
     INotificationRecipientSet, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
@@ -48,7 +49,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
     Each email address registered in a BugNotificationRecipients is
     associated to a string and a header that explain why the address is
     being emailed. For instance, if the email address is that of a
-    distribution bug contact for a bug, the string and header will make
+    distribution bug supervisor for a bug, the string and header will make
     that fact clear.
 
     The string is meant to be rendered in the email footer. The header
@@ -131,19 +132,19 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are a bug assignee"
         self._addReason(person, text, reason)
 
-    def addDistroBugContact(self, person, distro):
-        """Registers a distribution bug contact for this bug."""
-        reason = "Bug Contact (%s)" % distro.displayname
+    def addDistroBugSupervisor(self, person, distro):
+        """Registers a distribution bug supervisor for this bug."""
+        reason = "Bug Supervisor (%s)" % distro.displayname
         # All displaynames in these reasons should be changed to bugtargetname
         # (as part of bug 113262) once bugtargetname is finalized for packages
         # (bug 113258). Changing it before then would be excessively
         # disruptive.
         if person.isTeam():
-            text = ("are a member of %s, which is the bug contact for %s" %
+            text = ("are a member of %s, which is the bug supervisor for %s" %
                 (person.displayname, distro.displayname))
             reason += " @%s" % person.name
         else:
-            text = "are the bug contact for %s" % distro.displayname
+            text = "are the bug supervisor for %s" % distro.displayname
         self._addReason(person, text, reason)
 
     def addStructuralSubscriber(self, person, target):
@@ -157,15 +158,15 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are subscribed to %s" % target.displayname
         self._addReason(person, text, reason)
 
-    def addUpstreamBugContact(self, person, upstream):
-        """Registers an upstream bug contact for this bug."""
-        reason = "Bug Contact (%s)" % upstream.displayname
+    def addUpstreamBugSupervisor(self, person, upstream):
+        """Registers an upstream bug supervisor for this bug."""
+        reason = "Bug Supervisor (%s)" % upstream.displayname
         if person.isTeam():
-            text = ("are a member of %s, which is the bug contact for %s" %
+            text = ("are a member of %s, which is the bug supervisor for %s" %
                 (person.displayname, upstream.displayname))
             reason += " @%s" % person.name
         else:
-            text = "are the bug contact for %s" % upstream.displayname
+            text = "are the bug supervisor for %s" % upstream.displayname
         self._addReason(person, text, reason)
 
     def addRegistrant(self, person, upstream):
@@ -194,12 +195,16 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     msg['Reply-To'] = get_bugmail_replyto_address(bug)
     if references is not None:
         msg['References'] = ' '.join(references)
-    msg['Sender'] = config.bounce_address
+    msg['Sender'] = config.canonical.bounce_address
     msg['Date'] = format_rfc2822_date(email_date)
     if msgid is not None:
         msg['Message-Id'] = msgid
+
     subject_prefix = "[Bug %d]" % bug.id
-    if subject_prefix in subject:
+
+    if subject is None:
+        msg['Subject'] = subject_prefix
+    elif subject_prefix in subject:
         msg['Subject'] = subject
     else:
         msg['Subject'] = "%s %s" % (subject_prefix, subject)
@@ -207,6 +212,11 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     # Add X-Launchpad-Bug headers.
     for bugtask in bug.bugtasks:
         msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
+
+    # If the bug has tags we add an X-Launchpad-Bug-Tags header.
+    if bug.tags:
+        tag_string = ' '.join(bug.tags)
+        msg.add_header('X-Launchpad-Bug-Tags', tag_string)
 
     # Add X-Launchpad-Bug-Private and ...-Bug-Security-Vulnerability
     # headers. These are simple yes/no values denoting privacy and
@@ -221,12 +231,12 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     return msg
 
 
-def _send_bug_details_to_new_bugcontacts(
-    bug, previous_subscribers, current_subscribers):
+def _send_bug_details_to_new_bug_subscribers(
+    bug, previous_subscribers, current_subscribers, subscribed_by=None):
     """Send an email containing full bug details to new bug subscribers.
 
     This function is designed to handle situations where bugtasks get
-    reassigned to new products or sourcepackages, and the new bugcontacts
+    reassigned to new products or sourcepackages, and the new bug subscribers
     need to be notified of the bug.
     """
     prev_subs_set = set(previous_subscribers)
@@ -257,13 +267,15 @@ def _send_bug_details_to_new_bugcontacts(
     for to_addr in sorted(to_addrs):
         reason, rationale_header = recipients.getReason(to_addr)
         subject, contents = generate_bug_add_email(
-            bug, new_recipients=True, reason=reason)
+            bug, new_recipients=True, subscribed_by=subscribed_by,
+            reason=reason)
         msg = construct_bug_notification(
             bug, from_addr, to_addr, contents, subject, email_date,
             rationale_header=rationale_header, references=references)
         sendmail(msg)
 
 
+@block_implicit_flushes
 def update_security_contact_subscriptions(modified_bugtask, event):
     """Subscribe the new security contact when a bugtask's product changes.
 
@@ -349,14 +361,20 @@ def send_process_error_notification(to_address, subject, error_msg,
         :original_msg: The original message sent by the user.
         :failing_command: The command that caused the error to happen.
     """
-    if failing_command is not None:
-        failed_command_information = 'Failing command:\n    %s' % str(
-            failing_command)
+    if isinstance(failing_command, list):
+        failing_commands = failing_command
+    elif failing_command is None:
+        failing_commands = []
     else:
-        failed_command_information = ''
+        failing_commands = [failing_command]
+    failed_commands_information = ''
+    if len(failing_commands) > 0:
+        failed_commands_information = 'Failing command:'
+        for failing_command in failing_commands:
+            failed_commands_information += '\n    %s' % str(failing_command)
 
     body = get_email_template('email-processing-error.txt') % {
-            'failed_command_information': failed_command_information,
+            'failed_command_information': failed_commands_information,
             'error_msg': error_msg}
     mailwrapper = MailWrapper(width=72)
     body = mailwrapper.format(body)
@@ -385,7 +403,8 @@ def notify_errors_list(message, file_alias_url):
         )
 
 
-def generate_bug_add_email(bug, new_recipients=False, reason=None):
+def generate_bug_add_email(bug, new_recipients=False, reason=None,
+                           subscribed_by=None):
     """Generate a new bug notification from the given IBug.
 
     If new_recipients is supplied we generate a notification explaining
@@ -422,11 +441,26 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     if bug.tags:
         bug_info.append('\n** Tags: %s' % ' '.join(bug.tags))
 
+    mailwrapper = MailWrapper(width=72)
+    content_substitutions = {
+        'visibility' : visibility,
+        'bug_url' : canonical_url(bug),
+        'bug_info': "\n".join(bug_info),
+        'bug_title': bug.title,
+        'description': mailwrapper.format(bug.description),
+        'notification_rationale': reason
+        }
+
     if new_recipients:
-        contents += ("You have been subscribed to a %(visibility)s bug:\n\n"
+        contents += "You have been subscribed to a %(visibility)s bug"
+        if subscribed_by is not None:
+            contents += " by %(subscribed_by)s"
+            content_substitutions['subscribed_by'] = (
+                subscribed_by.unique_displayname)
+        contents += (":\n\n"
                      "%(description)s\n\n%(bug_info)s")
         # The visibility appears mid-phrase so.. hack hack.
-        visibility = visibility.lower()
+        content_substitutions['visibility'] = visibility.lower()
         # XXX: kiko, 2007-03-21:
         # We should really have a centralized way of adding this
         # footer, but right now we lack a INotificationRecipientSet
@@ -437,12 +471,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
         contents += ("%(visibility)s bug reported:\n\n"
                      "%(description)s\n\n%(bug_info)s")
 
-    mailwrapper = MailWrapper(width=72)
-    contents = contents % {
-        'visibility' : visibility, 'bug_url' : canonical_url(bug),
-        'bug_info': "\n".join(bug_info), 'bug_title': bug.title,
-        'description': mailwrapper.format(bug.description),
-        'notification_rationale': reason}
+    contents = contents % content_substitutions
 
     contents = contents.rstrip()
 
@@ -705,6 +734,7 @@ def get_bug_delta(old_bug, new_bug, user):
 
     if changes:
         changes["bug"] = new_bug
+        changes["bug_before_modification"] = old_bug
         changes["bugurl"] = canonical_url(new_bug)
         changes["user"] = user
 
@@ -713,6 +743,7 @@ def get_bug_delta(old_bug, new_bug, user):
         return None
 
 
+@block_implicit_flushes
 def notify_bug_added(bug, event):
     """Send an email notification that a bug was added.
 
@@ -722,6 +753,7 @@ def notify_bug_added(bug, event):
     bug.addCommentNotification(bug.initial_message)
 
 
+@block_implicit_flushes
 def notify_bug_modified(modified_bug, event):
     """Notify the Cc'd list that this bug has been modified.
 
@@ -763,10 +795,10 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None):
         also_notified_subscribers.update(
             bugtask.milestone.getBugNotificationsRecipients(recipients))
 
-    # If the target's bug contact isn't set,
+    # If the target's bug supervisor isn't set,
     # we add the owner as a subscriber.
     pillar = bugtask.pillar
-    if pillar.bugcontact is None:
+    if pillar.bug_supervisor is None:
         also_notified_subscribers.add(pillar.owner)
         if recipients is not None:
             recipients.addRegistrant(pillar.owner, pillar)
@@ -775,14 +807,23 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None):
         also_notified_subscribers,
         key=operator.attrgetter('displayname'))
 
-def add_bug_change_notifications(bug_delta):
+
+def add_bug_change_notifications(bug_delta, old_bugtask=None):
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_edit_notification_texts(bug_delta)
+    recipients = bug_delta.bug.getBugNotificationRecipients(
+        old_bug=bug_delta.bug_before_modification)
+    if old_bugtask is not None:
+        old_bugtask_recipients = BugNotificationRecipients()
+        get_bugtask_indirect_subscribers(
+            old_bugtask, recipients=old_bugtask_recipients)
+        recipients.update(old_bugtask_recipients)
     for text_change in changes:
         bug_delta.bug.addChangeNotification(
-            text_change, person=bug_delta.user)
+            text_change, person=bug_delta.user, recipients=recipients)
 
 
+@block_implicit_flushes
 def notify_bugtask_added(bugtask, event):
     """Notify CC'd list that this bug has been marked as needing fixing
     somewhere else.
@@ -801,6 +842,7 @@ def notify_bugtask_added(bugtask, event):
     add_bug_change_notifications(bug_delta)
 
 
+@block_implicit_flushes
 def notify_bugtask_edited(modified_bugtask, event):
     """Notify CC'd subscribers of this bug that something has changed
     on this task.
@@ -815,15 +857,17 @@ def notify_bugtask_edited(modified_bugtask, event):
         bugtask_deltas=bugtask_delta,
         user=event.user)
 
-    add_bug_change_notifications(bug_delta)
+    add_bug_change_notifications(
+        bug_delta, old_bugtask=event.object_before_modification)
 
     previous_subscribers = event.object_before_modification.bug_subscribers
     current_subscribers = event.object.bug_subscribers
-    _send_bug_details_to_new_bugcontacts(
+    _send_bug_details_to_new_bug_subscribers(
         event.object.bug, previous_subscribers, current_subscribers)
     update_security_contact_subscriptions(modified_bugtask, event)
 
 
+@block_implicit_flushes
 def notify_bug_comment_added(bugmessage, event):
     """Notify CC'd list that a message was added to this bug.
 
@@ -835,6 +879,7 @@ def notify_bug_comment_added(bugmessage, event):
     bug.addCommentNotification(bugmessage.message)
 
 
+@block_implicit_flushes
 def notify_bug_watch_added(watch, event):
     """Notify CC'd list that a new watch has been added for this bug.
 
@@ -850,6 +895,7 @@ def notify_bug_watch_added(watch, event):
     add_bug_change_notifications(bug_delta)
 
 
+@block_implicit_flushes
 def notify_bug_watch_modified(modified_bug_watch, event):
     """Notify CC'd bug subscribers that a bug watch was edited.
 
@@ -871,6 +917,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
         add_bug_change_notifications(bug_delta)
 
 
+@block_implicit_flushes
 def notify_bug_cve_added(bugcve, event):
     """Notify CC'd list that a new cve ref has been added to this bug.
 
@@ -884,6 +931,7 @@ def notify_bug_cve_added(bugcve, event):
 
     add_bug_change_notifications(bug_delta)
 
+@block_implicit_flushes
 def notify_bug_cve_deleted(bugcve, event):
     """Notify CC'd list that a cve ref has been removed from this bug.
 
@@ -898,6 +946,7 @@ def notify_bug_cve_deleted(bugcve, event):
     add_bug_change_notifications(bug_delta)
 
 
+@block_implicit_flushes
 def notify_bug_became_question(event):
     """Notify CC'd list that a bug was made into a question.
 
@@ -912,6 +961,7 @@ def notify_bug_became_question(event):
     bug.addChangeNotification(change_info, person=event.user)
 
 
+@block_implicit_flushes
 def notify_bug_attachment_added(bugattachment, event):
     """Notify CC'd list that a new attachment has been added.
 
@@ -928,6 +978,7 @@ def notify_bug_attachment_added(bugattachment, event):
     add_bug_change_notifications(bug_delta)
 
 
+@block_implicit_flushes
 def notify_bug_attachment_removed(bugattachment, event):
     """Notify that an attachment has been removed."""
     bug = bugattachment.bug
@@ -939,6 +990,18 @@ def notify_bug_attachment_removed(bugattachment, event):
     bug.addChangeNotification(change_info, person=event.user)
 
 
+@block_implicit_flushes
+def notify_bug_subscripiton_added(bug_subscription, event):
+    """Notify that a new bug subscription was added."""
+    # When a user is subscribed to a bug by someone other
+    # than themselves, we send them a notification email.
+    if bug_subscription.person != bug_subscription.subscribed_by:
+        _send_bug_details_to_new_bug_subscribers(
+            bug_subscription.bug, [], [bug_subscription.person],
+            subscribed_by=bug_subscription.subscribed_by)
+
+
+@block_implicit_flushes
 def notify_invitation_to_join_team(event):
     """Notify team admins that the team has been invited to join another team.
 
@@ -958,7 +1021,8 @@ def notify_invitation_to_join_team(event):
 
     reviewer = membership.proposed_by
     admin_addrs = member.getTeamAdminsEmailAddresses()
-    from_addr = format_address(team.displayname, config.noreply_from_address)
+    from_addr = format_address(
+        team.displayname, config.canonical.noreply_from_address)
     subject = 'Invitation for %s to join' % member.name
     templatename = 'membership-invitation.txt'
     template = get_email_template(templatename)
@@ -976,6 +1040,7 @@ def notify_invitation_to_join_team(event):
         simple_sendmail(from_addr, address, subject, msg)
 
 
+@block_implicit_flushes
 def notify_team_join(event):
     """Notify team admins that someone has asked to join the team.
 
@@ -992,7 +1057,8 @@ def notify_team_join(event):
         TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN,
         TeamMembershipStatus.PROPOSED]
     admin_addrs = team.getTeamAdminsEmailAddresses()
-    from_addr = format_address(team.displayname, config.noreply_from_address)
+    from_addr = format_address(
+        team.displayname, config.canonical.noreply_from_address)
 
     reviewer = membership.proposed_by
     if reviewer != person and membership.status in [approved, admin]:
@@ -1546,6 +1612,7 @@ def specification_notification_subject(spec):
     """Format the email subject line for a specification."""
     return '[Blueprint %s] %s' % (spec.name, spec.title)
 
+@block_implicit_flushes
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""
     spec_delta = spec.getDelta(event.object_before_modification, event.user)
@@ -1610,6 +1677,7 @@ def notify_specification_modified(spec, event):
 
 
 
+@block_implicit_flushes
 def notify_specification_subscription_created(specsub, event):
     """Notify a user that they have been subscribed to a blueprint."""
     user = event.user
@@ -1627,6 +1695,7 @@ def notify_specification_subscription_created(specsub, event):
     for address in contactEmailAddresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
+@block_implicit_flushes
 def notify_specification_subscription_modified(specsub, event):
     """Notify a subscriber to a blueprint that their
     subscription has changed.
@@ -1656,23 +1725,26 @@ def notify_specification_subscription_modified(specsub, event):
     for address in contactEmailAddresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
+
 def notify_mailinglist_activated(mailinglist, event):
-    """Notify the active members of a team and its subteams that a mailing
-    list is available.
+    """Notification that a mailing list is available.
+
+    All active members of a team and its subteams receive notification when
+    the team's mailing list is available.
     """
     # We will use the setting of the date_activated field as a hint
     # that this list is new, and that noboby has subscribed yet.  See
     # `MailingList.transitionToStatus()` for the details.
     old_date = event.object_before_modification.date_activated
     new_date = event.object.date_activated
-    list_looks_new = (old_date is None) and (new_date is not None)
+    list_looks_new = old_date is None and new_date is not None
 
-    if not (list_looks_new and mailinglist.isUsable()):
+    if not (list_looks_new and mailinglist.is_usable):
         return
 
     team = mailinglist.team
     from_address = format_address(
-        team.displayname, config.noreply_from_address)
+        team.displayname, config.canonical.noreply_from_address)
     headers = {}
     subject = "New Mailing List for %s" % team.displayname
     template = get_email_template('new-mailing-list.txt')
@@ -1689,25 +1761,47 @@ def notify_mailinglist_activated(mailinglist, event):
             members.add(person)
         return members
 
-    beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-
     for person in contacts_for(team):
-
-        # XXX mars 2008-02-21:
-        # This should be removed when the Mailing List Beta is over.
-        #
-        # Only send an invitation to Beta testers, because they are
-        # the only people that can sign up for the list!
-        if not person.inTeam(beta_testers):
-            continue
-
         to_address = [str(person.preferredemail.email)]
         replacements = {
             'user': person.displayname,
-            'team': team.displayname,
+            'team_displayname': team.displayname,
+            'team_name': team.name,
             'team_url': canonical_url(team),
             'subscribe_url': editemails_url % canonical_url(person),
             }
         body = MailWrapper(72).format(template % replacements,
                                       force_wrap=True)
         simple_sendmail(from_address, to_address, subject, body, headers)
+
+
+def notify_message_held(message_approval, event):
+    """Send a notification of a message hold to all team administrators."""
+    message_details = getAdapter(message_approval, IHeldMessageDetails)
+    team = message_approval.mailing_list.team
+    from_address = format_address(
+        team.displayname, config.canonical.noreply_from_address)
+    subject = (
+        'New mailing list message requiring approval for %s'
+        % team.displayname)
+    template = get_email_template('new-held-message.txt')
+
+    # Most of the replacements are the same for everyone.
+    replacements = {
+        'subject': message_details.subject,
+        'author_name': message_details.author.displayname,
+        'author_url': canonical_url(message_details.author),
+        'date': message_details.date,
+        'message_id': message_details.message_id,
+        'review_url': '%s/+mailinglist-moderate' % canonical_url(team),
+        'team': team.displayname,
+        }
+
+    # Send one message to every team administrator.
+    person_set = getUtility(IPersonSet)
+    for address in team.getTeamAdminsEmailAddresses():
+        user = person_set.getByEmail(address)
+        replacements['user'] = user.displayname
+        body = MailWrapper(72).format(
+            template % replacements, force_wrap=True)
+        simple_sendmail(from_address, address, subject, body)

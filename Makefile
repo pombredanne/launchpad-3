@@ -12,26 +12,34 @@ TESTOPTS=
 
 SHHH=${PYTHON} utilities/shhh.py
 STARTSCRIPT=runlaunchpad.py
-Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
-TWISTEDPATH=$(shell pwd)/sourcecode/twisted
 HERE:=$(shell pwd)
 
-LPCONFIG=default
+LPCONFIG=development
 CONFFILE=configs/${LPCONFIG}/launchpad.conf
 
 MINS_TO_SHUTDOWN=15
 
+CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
+
+APPSERVER_ENV = \
+  LPCONFIG=${LPCONFIG} \
+  PYTHONPATH=$(PYTHONPATH) \
+  STORM_CEXTENSIONS=1
+
 # DO NOT ALTER : this should just build by default
 default: inplace
 
-schema: build
+schema: build clean_codehosting
 	$(MAKE) -C database/schema
 	$(PYTHON) ./utilities/make-dummy-hosted-branches
+	rm -rf /var/tmp/fatsam
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-check_launchpad_on_merge: build dbfreeze_check check importdcheck check_sourcecode_dependencies
+check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
+
+check_launchpad_storm_on_merge: check_launchpad_on_merge
 
 check_sourcecode_dependencies:
 	# Use the check_for_launchpad rule which runs tests over a smaller
@@ -46,14 +54,15 @@ check_loggerhead_on_merge:
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 dbfreeze_check:
-	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
-	    grep database/schema/ | grep -v pending | grep -v security.cfg | \
-	    wc -l` -eq 0 ]
+	# Ignore lines starting with P as these are pending merges.
+	[ ! -f database-frozen.txt -o \
+	  `PYTHONPATH= bzr status -S database/schema/ | \
+		grep -v "\(^P\|pending\|security.cfg\|Makefile\)" | wc -l` -eq 0 ]
 
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]
 
-check_merge: check_not_a_ui_merge build check importdcheck
+check_merge: check_not_a_ui_merge build check
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short
 	# term solution, the long term solution will need to be
@@ -63,7 +72,7 @@ check_merge: check_not_a_ui_merge build check importdcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge_ui: build check importdcheck
+check_merge_ui: build check
 	# Same as check_merge, except we don't need to do check_not_a_ui_merge.
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
@@ -74,11 +83,7 @@ check_merge_edge: dbfreeze_check check_merge
 	# in database/schema/pending. Used for maintaining the
 	# edge.lauchpad.net branch.
 
-importdcheck: build
-	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./lib/importd/test_all.py "$$TESTFILTER"
-
-check: build
+check: build bzr_version_info
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
@@ -91,7 +96,7 @@ lint-verbose:
 	@bash ./utilities/lint.sh -v
 
 check-configs:
-	${PYTHON} utilities/check-configs.py 'canonical/pid_dir=/tmp'
+	${PYTHON} utilities/check-configs.py
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
@@ -130,14 +135,19 @@ ftest_inplace: inplace
 
 run: inplace stop bzr_version_info
 	rm -f thread*.request
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -r librarian -C $(CONFFILE)
+	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
+		 -r librarian,restricted-librarian,google-webservice -C $(CONFFILE)
 
 run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
+	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
+		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
+
+run_all_quickly_and_quietly: stop_quickly_and_quietly
+	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
+		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
+		 -C $(CONFFILE) > /tmp/${LPCONFIG}-quiet.log 2>&1
 
 pull_branches: bzr_version_info
 	# Mirror the hosted branches in the development upload area to the
@@ -147,8 +157,8 @@ pull_branches: bzr_version_info
 rewritemap:
 	# Build rewrite map that maps friendly branch names to IDs. Necessary
 	# for http access to branches and for the branch scanner.
-	mkdir -p /var/tmp/sm-ng/config
-	$(PYTHON) cronscripts/supermirror_rewritemap.py /var/tmp/sm-ng/config/launchpad-lookup.txt
+	mkdir -p $(CODEHOSTING_ROOT)/config
+	$(PYTHON) cronscripts/supermirror_rewritemap.py $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 scan_branches: rewritemap
 	# Scan branches from the filesystem into the database.
@@ -167,15 +177,19 @@ bzr_version_info:
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
 start: inplace stop bzr_version_info
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
-		 nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
+	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition.
 stop: build
-	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
+	@ $(APPSERVER_ENV) ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
+
+stop_quickly_and_quietly:
+	@ $(APPSERVER_ENV) ${PYTHON} \
+	  utilities/killservice.py librarian buildsequencer launchpad mailman \
+	  > /dev/null 2>&1
 
 shutdown: scheduleoutage stop
 	rm -f +maintenancetime.txt
@@ -187,17 +201,17 @@ scheduleoutage:
 	sleep ${MINS_TO_SHUTDOWN}m
 
 harness:
-	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py
+	$(APPSERVER_ENV) $(PYTHON) -i lib/canonical/database/harness.py
 
 iharness:
-	PYTHONPATH=lib $(IPYTHON) -i lib/canonical/database/harness.py
+	$(APPSERVER_ENV) $(IPYTHON) -i lib/canonical/database/harness.py
 
 rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PYTHON) database/schema/fti.py -d launchpad_dev --force
 
 debug:
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+	$(APPSERVER_ENV) \
 		 $(PYTHON) -i -c \ "from zope.app import Application;\
 		    app = Application('Data.fs', 'site.zcml')()"
 
@@ -208,10 +222,18 @@ clean:
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
 	rm -rf lib/mailman
+	rm -rf $(CODEHOSTING_ROOT)
 
 realclean: clean
 	rm -f TAGS tags
 	$(PYTHON) setup.py clean -a
+
+clean_codehosting:
+	rm -rf $(CODEHOSTING_ROOT)
+	mkdir -p $(CODEHOSTING_ROOT)/mirrors
+	mkdir -p $(CODEHOSTING_ROOT)/push-branches
+	mkdir -p $(CODEHOSTING_ROOT)/config
+	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 zcmldocs:
 	PYTHONPATH=`pwd`/src:$(PYTHONPATH) $(PYTHON) \
@@ -231,8 +253,8 @@ sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
 
 install: reload-apache
 
-/etc/apache2/sites-available/local-launchpad: configs/default/local-launchpad-apache
-	cp configs/default/local-launchpad-apache $@
+/etc/apache2/sites-available/local-launchpad: configs/development/local-launchpad-apache
+	cp configs/development/local-launchpad-apache $@
 
 /etc/apache2/sites-enabled/local-launchpad: /etc/apache2/sites-available/local-launchpad
 	a2ensite local-launchpad
@@ -244,14 +266,15 @@ static:
 	$(PYTHON) scripts/make-static.py
 
 TAGS:
-	ctags -e -R lib
+	ctags -e -R lib/canonical && ctags --exclude=lib/canonical -a -e -R lib/
 
 tags:
 	ctags -R lib
 
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
-		check importdcheck check_merge schema default launchpad.pot \
+		check check_merge schema default launchpad.pot \
 		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
-		sync_branches check_loggerhead_on_merge reload-apache
+		sync_branches check_loggerhead_on_merge reload-apache \
+		check_launchpad_storm_on_merge
 

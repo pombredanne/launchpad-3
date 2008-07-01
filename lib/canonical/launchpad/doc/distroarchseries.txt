@@ -3,16 +3,14 @@
    >>> from canonical.launchpad.webapp.testing import verifyObject
 
    >>> from canonical.launchpad.interfaces import (
-   ...    IDistroArchSeriesBinaryPackageRelease,
    ...    IDistroArchSeriesBinaryPackage,
    ...    IBinaryPackagePublishingHistory,
    ...    ISectionSet)
 
-   >>> from canonical.launchpad.database.distroarchseries import (
-   ...     DistroArchSeries)
-
-
-   >>> hoary_i386 = DistroArchSeries.get(6)
+   >>> from canonical.launchpad.interfaces import IDistributionSet
+   >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+   >>> hoary = ubuntu.getSeries('hoary')
+   >>> hoary_i386 = hoary['i386']
 
 # XXX: daniels 2005-10-17 bug=3257:
 #      This needs many more tests to be effective.
@@ -32,19 +30,6 @@ interrogate this information.
 
 See more information about getReleasePackages below.
 
-DistroArchSeries class has a built-in method to return a single
-dependency package candidate by its name as a PublishedPackage
-instance:
-
-   >>> hoary_i386.findDepCandidateByName("pmount").binarypackagename
-   u'pmount'
-
-Since 'at' isn't available in our sampledata (not even published),
-None is returned:
-
-   >>> hoary_i386.findDepCandidateByName("at") is None
-   True
-
 Check the behavior of the provided search method, which returns a
 list of IDARBPR instances containing the matching packages.
 
@@ -56,7 +41,8 @@ list of IDARBPR instances containing the matching packages.
 The method works even when we are searching for packages whose names are
 not fti-matchable, such as "linux-2.6.12", and substrings:
 
-   >>> warty_i386 = DistroArchSeries.get(1)
+   >>> warty = ubuntu.getSeries('warty')
+   >>> warty_i386 = warty['i386']
    >>> results = warty_i386.searchBinaryPackages(text='linux-2.6.12')
    >>> len(results)
    1
@@ -129,8 +115,9 @@ Supersede current publication:
    >>> pmount_hoary_i386.publishing_history.count()
    3
 
-   >>> superseded_pmount.status.name, superseded_pmount.datesuperseded
-   ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+   >>> pub = superseded_pmount
+   >>> print pub.status.name, pub.datesuperseded is not None
+   SUPERSEDED True
 
 
 == Binary publishing lookups ==
@@ -144,8 +131,7 @@ publishing records with different (status, pocket, archive) in
 ubuntu/breezy-autotest/i386, which is empty:
 
     >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, IPersonSet, PackagePublishingPocket,
-    ...    PackagePublishingStatus)
+    ...    IDistributionSet, IPersonSet, PackagePublishingPocket)
     >>> from canonical.launchpad.database.publishing import (
     ...     SecureBinaryPackagePublishingHistory)
 
@@ -187,6 +173,12 @@ pockets:
     ...     pub_main_proposed_published,
     ...     pub_main_release_published,
     ...     ]
+
+    >>> import operator
+    >>> all_published_main_pubs = sorted(
+    ...    all_published_main_pubs, key=operator.attrgetter('id'),
+    ...    reverse=True)
+
     >>> result = bt_i386.getReleasedPackages('at')
     >>> soyuz_helper.checkPubList(all_published_main_pubs, result)
     True
@@ -200,6 +192,11 @@ pockets.
     ...     pub_main_release_published,
     ...     pub_main_release_pending,
     ...     ]
+
+    >>> all_main_pubs = sorted(
+    ...    all_main_pubs, key=operator.attrgetter('id'),
+    ...    reverse=True)
+
     >>> result = bt_i386.getReleasedPackages('at', include_pending=True)
     >>> soyuz_helper.checkPubList(all_main_pubs, result)
     True
@@ -224,6 +221,10 @@ Using 'exclude_pocket' filter, to exclude publications to RELEASE pocket:
     ...     pub_main_updates_pending,
     ...     ]
 
+    >>> non_release_main_pubs = sorted(
+    ...    non_release_main_pubs, key=operator.attrgetter('id'),
+    ...    reverse=True)
+
     >>> result = bt_i386.getReleasedPackages(
     ...     'at', include_pending=True,
     ...     exclude_pocket=PackagePublishingPocket.RELEASE)
@@ -240,6 +241,10 @@ pockets.
     ...     pub_ppa_release_published,
     ...     pub_ppa_release_pending,
     ...     ]
+
+    >>> all_ppa_pubs = sorted(
+    ...    all_ppa_pubs, key=operator.attrgetter('id'), reverse=True)
+
     >>> result = bt_i386.getReleasedPackages(
     ...    'at', include_pending=True, archive=cprov_archive)
     >>> soyuz_helper.checkPubList(all_ppa_pubs, result)
@@ -257,15 +262,15 @@ via the 'architectures' property.
     >>> def print_architectures(architectures):
     ...     for arch in architectures:
     ...         result = arch.title
-    ...         if arch.official or arch.ppa_supported:
+    ...         if arch.official or arch.supports_virtualized:
     ...             result += ' ('
     ...         if arch.official:
     ...             result += 'official'
-    ...             if arch.ppa_supported:
+    ...             if arch.supports_virtualized:
     ...                 result += ', '
-    ...         if arch.ppa_supported:
+    ...         if arch.supports_virtualized:
     ...             result += 'ppa'
-    ...         if arch.official or arch.ppa_supported:
+    ...         if arch.official or arch.supports_virtualized:
     ...             result += ')'
     ...         print result
 
@@ -274,7 +279,7 @@ via the 'architectures' property.
     The Warty Warthog Release for i386 (x86) (official, ppa)
 
 DistroArchSeries for which we support PPA building can be obtained via
-another distroseries method called 'ppa_architectures'.
+another distroseries method called 'virtualized_architectures'.
 
 For testing purpose we can compare the results of a
 manually-calculated set of warty architectures for which we support
@@ -282,25 +287,25 @@ PPA  and the actual value returned from the 'ppa_architecture'
 property.
 
     >>> expected_ppa_archs = [arch for arch in warty.architectures
-    ...                       if arch.ppa_supported is True]
+    ...                       if arch.supports_virtualized is True]
     >>> print_architectures(expected_ppa_archs)
     The Warty Warthog Release for i386 (x86) (official, ppa)
 
-    >>> print_architectures(warty.ppa_architectures)
+    >>> print_architectures(warty.virtualized_architectures)
     The Warty Warthog Release for i386 (x86) (official, ppa)
 
 Let's activate ppa support for hoary/hppa and check if
-'ppa_architectures' will include it this time.
+'virtualized_architectures' will include it this time.
 
-    >>> print_architectures(hoary.ppa_architectures)
+    >>> print_architectures(hoary.virtualized_architectures)
     The Hoary Hedgehog Release for i386 (x86) (official, ppa)
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
 
-    >>> hoary['hppa'].ppa_supported = True
+    >>> hoary['hppa'].supports_virtualized = True
     >>> flush_database_updates()
 
-    >>> print_architectures(hoary.ppa_architectures)
+    >>> print_architectures(hoary.virtualized_architectures)
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
     The Hoary Hedgehog Release for i386 (x86) (official, ppa)

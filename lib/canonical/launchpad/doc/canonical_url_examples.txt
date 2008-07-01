@@ -129,8 +129,6 @@ An ISourcePackage.
 
 An IDistributionSourcePackage.
 
-    >>> from canonical.launchpad.interfaces.distributionsourcepackage import (
-    ...     IDistributionSourcePackage)
     >>> from canonical.launchpad.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
@@ -138,6 +136,7 @@ An IDistributionSourcePackage.
     ...     sourcepackagenameset['mozilla-firefox'])
     >>> canonical_url(ubuntu_firefox)
     u'http://launchpad.dev/ubuntu/+source/mozilla-firefox'
+
 
 == Projects and products ==
 
@@ -177,12 +176,10 @@ An IProductRelease.
     >>> canonical_url(evolution_release)
     u'http://launchpad.dev/evolution/trunk/2.1.6'
 
+
 == Bugs and bugtasks ==
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBug, IBugSet, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    ...     IDistroSeriesBugTask, IBugWatchSet)
-    >>> from canonical.launchpad.database import BugWatchSet
+    >>> from canonical.launchpad.interfaces import IBugSet, IBugTaskSet
 
 The IBugSet.
 
@@ -198,6 +195,18 @@ An IUpstreamBugTask.
 
     >>> canonical_url(getUtility(IBugTaskSet).get(2))
     u'http://bugs.launchpad.dev/firefox/+bug/1'
+
+An IMessage on a bug.
+
+    >>> canonical_url(getUtility(IBugSet).get(1).messages[0])
+    u'http://bugs.launchpad.dev/firefox/+bug/1/comments/0'
+
+(But messages not related to bug, don't have such a URL.)
+
+    >>> canonical_url(getUtility(IQuestionSet).get(6).messages[0])
+    Traceback (most recent call last):
+      ...
+    NoCanonicalUrl: ...
 
 An IDistroBugTask.
 
@@ -270,7 +279,8 @@ An IBugComment.
     >>> from canonical.launchpad.browser import BugComment
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugtask_one = bug_one.bugtasks[0]
-    >>> bug_comment = BugComment(1, bug_one.initial_message, bugtask_one)
+    >>> bug_comment = BugComment(
+    ...     1, bug_one.initial_message, bugtask_one, True)
     >>> canonical_url(bug_comment)
     u'http://launchpad.dev/firefox/+bug/1/comments/1'
 
@@ -280,6 +290,7 @@ An IBugNomination.
     >>> bug_nomination = getUtility(IBugNominationSet).get(1)
     >>> canonical_url(bug_nomination)
     u'http://launchpad.dev/bugs/1/nominations/1'
+
 
 == Remote Bug Trackers and Remote Bugs ==
 
@@ -304,6 +315,7 @@ A bug from a remote bug tracker.
     >>> canonical_url(remote_bug)
     u'http://launchpad.dev/bugs/bugtrackers/mozilla.org/42'
 
+
 == Branches ==
 
 An IBranch.
@@ -323,6 +335,33 @@ An IBugBranch.
 
     >>> canonical_url(bug_branch)
     u'http://launchpad.dev/~sabdfl/firefox/release-0.9.2/+bug/1'
+
+
+== BranchMergeProposals ==
+
+Set up example Branch Merge Proposal
+
+    >>> mainline = getUtility(IBranchSet).get(15)
+    >>> release26 = getUtility(IBranchSet).get(16)
+    >>> merge_proposal = mainline.addLandingTarget(mainline.owner, release26)
+
+Branch merge proposals should have a canonical URL.  (Based on their source
+branch.)
+
+    >>> print canonical_url(merge_proposal)
+    http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/...
+
+Create example CodeReviewComment.
+
+    >>> comment = merge_proposal.createComment(
+    ...     release26.owner, 'My subject', 'My content')
+
+CodeReviewComment should have a canonical URL.  (It should extend the URL of
+the merge proposal)
+
+    >>> print canonical_url(comment)
+    http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/.../comments/...
+
 
 == POTemplates and so on ==
 
@@ -410,6 +449,7 @@ Rosetta also has translation groups.
 
     >>> canonical_url(getUtility(ITranslationGroupSet))
     u'http://launchpad.dev/+groups'
+
 
 == Specifications ==
 

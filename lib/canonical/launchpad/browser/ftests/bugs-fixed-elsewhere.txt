@@ -5,11 +5,10 @@ getting information about bugs fixed in some other context. It includes
 both a count of how many bugs that are fixed elsewhere, as well as a
 URL to the full list.
 
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> view = getView(
-    ...     bugtarget, '+bugs-index',
-    ...     LaunchpadTestRequest())
+    >>> view = getMultiAdapter(
+    ...     (bugtarget, LaunchpadTestRequest()), name='+bugs-index')
     >>> view.initialize()
 
     >>> bugs_fixed = view.bugs_fixed_elsewhere_info
@@ -51,10 +50,11 @@ Bugs fixed elsewhere also show up when we perform an advanced bug
 search, using the appropriate query string parameter to ask for "bugs
 resolved elsewhere":
 
-    >>> view = getView(
-    ...     bugtarget, '+bugs',
-    ...     LaunchpadTestRequest(
-    ...         form={'field.status_upstream': 'resolved_upstream'}))
+    >>> view = getMultiAdapter(
+    ...     (bugtarget,
+    ...      LaunchpadTestRequest(
+    ...         form={'field.status_upstream': 'resolved_upstream'})),
+    ...     name='+bugs')
     >>> view.initialize()
     >>> navigator = view.search()
 
@@ -89,7 +89,8 @@ This means that No Privileges Person will see that there is only one bug
 fixed elsewhere.
 
     >>> login('no-priv@canonical.com')
-    >>> view = getView(bugtarget, '+bugs-index', LaunchpadTestRequest())
+    >>> view = getMultiAdapter(
+    ...     (bugtarget, LaunchpadTestRequest()), name='+bugs-index')
     >>> view.initialize()
 
     >>> bugs_fixed = view.bugs_fixed_elsewhere_info

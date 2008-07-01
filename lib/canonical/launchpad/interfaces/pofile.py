@@ -193,6 +193,9 @@ class IPOFile(IRosettaStats):
         Raise NotFoundError if it does not exist.
         """
 
+    def findPOTMsgSetsContaining(text):
+        """Get POTMsgSets where English text or translation contain `text`."""
+
     def getPOTMsgSetTranslated():
         """Get pot messages that are translated for this translation file."""
 

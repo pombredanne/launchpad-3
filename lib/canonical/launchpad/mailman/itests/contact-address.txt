@@ -15,7 +15,6 @@ ignore these (there's only one, currently).
     >>> for message in sorted(smtpd.getMessages(), key=itemgetter('sender')):
     ...     print message['subject']
     New Mailing List for Itest One
-    >>> smtpd.reset()
 
 Subscribe someone to the team and mailing list so that these messages can get
 delivered.
@@ -128,8 +127,8 @@ Here is the message to Anne, a member of the mailing list.
     Reply-To: question...@answers.launchpad.net
     List-Id: <itest-one.lists.launchpad.dev>
     List-Help: <http://help.launchpad.dev/ListHelp>
-    List-Subscribe: <http://launchpad.dev/people/+me/+editemails>
-    List-Unsubscribe: <http://launchpad.dev/people/+me/+editemails>
+    List-Subscribe: <http://launchpad.dev/~itest-one>
+    List-Unsubscribe: <http://launchpad.dev/~itest-one>
     List-Post: <mailto:itest-one@lists.launchpad.dev>
     List-Archive: <http://lists.launchpad.dev/itest-one>
     List-Owner: <http://launchpad.dev/~itest-one>
@@ -150,7 +149,7 @@ Here is the message to Anne, a member of the mailing list.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -169,9 +168,6 @@ Here is the message to the archive submission address.
 
 Similarly, if we subscribe our new team to a blueprint, a notification will be
 sent to Anne and to the archive via the mailing list.
-
-    # Reset the smtp server with a fresh mbox.
-    >>> smtpd.reset()
 
     >>> browser.open(
     ...     'http://launchpad.dev/firefox/+spec/canvas/+addsubscriber')
@@ -206,7 +202,7 @@ This one gets sent to Anne...
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -233,7 +229,7 @@ This one gets sent to Anne...
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -249,9 +245,6 @@ mailing list, they'll be sent to the team members individually.
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0Each member individually']
-
-    # Reset the smtp server with a fresh mbox.
-    >>> smtpd.reset()
 
     >>> browser.open('http://answers.launchpad.dev/firefox/+addquestion')
     >>> browser.getControl('Summary').value = 'Another question'
@@ -325,8 +318,6 @@ member.
 When emails are sent directly to the mailing list address they're still
 delivered since the mailing list is still active.
 
-    # Reset the smtp server with a fresh mbox.
-    >>> smtpd.reset()
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
     ... From: %s
@@ -361,7 +352,7 @@ address both get copies of the message.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -381,7 +372,7 @@ address both get copies of the message.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>

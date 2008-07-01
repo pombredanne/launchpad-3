@@ -27,6 +27,8 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadFormView, Link,
     StandardLaunchpadFacets, action, canonical_url, redirection)
 
+from canonical.lazr.utils import smartquote
+
 
 class DistributionSourcePackageSOP(StructuralObjectPresentation):
 
@@ -55,9 +57,9 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = ['managebugcontacts', 'publishinghistory']
+    links = ['subscribe', 'publishinghistory']
 
-    def managebugcontacts(self):
+    def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
     def publishinghistory(self):
@@ -69,7 +71,7 @@ class DistributionSourcePackageBugsMenu(
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['managebugcontacts']
+    links = ['subscribe']
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,
@@ -80,7 +82,8 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
     redirection("+editbugcontact", "+subscribe")
 
     def breadcrumb(self):
-        return self.context.sourcepackagename.name
+        return smartquote('"%s" package') % (
+            self.context.sourcepackagename.name)
 
 
 class DistributionSourcePackageView(LaunchpadFormView):

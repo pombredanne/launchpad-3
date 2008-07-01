@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+import logging
 import os
 import subprocess
 import sys
@@ -14,12 +15,13 @@ from canonical.config import config
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    BuildStatus, IComponentSet)
-from canonical.launchpad.scripts import FakeLogger
+from canonical.launchpad.interfaces.build import BuildStatus
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.buildd import RetryDepwait
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
-from canonical.testing import LaunchpadLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseLayer, LaunchpadLayer, LaunchpadZopelessLayer)
 
 
 class TestCronscriptBase(unittest.TestCase):
@@ -27,7 +29,11 @@ class TestCronscriptBase(unittest.TestCase):
     layer = LaunchpadLayer
 
     def setUp(self):
-        self.layer.setUp()
+        super(TestCronscriptBase, self).setUp()
+        # All of these tests commit to the launchpad_ftest database in
+        # subprocesses, so we need to tell the layer to fully tear down and
+        # restore the database.
+        DatabaseLayer.force_dirty_database()
 
     def runCronscript(self, name, extra_args):
         """Run given cronscript, returning the result and output.
@@ -98,11 +104,13 @@ class TestRetryDepwait(unittest.TestCase):
 
         retry_depwait = RetryDepwait(
             name='retry-depwait', test_args=test_args)
-        # Swallowing all log messages.
-        retry_depwait.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        retry_depwait.logger.message = message
+        retry_depwait.logger = QuietFakeLogger()
+
+        # `IBuildSet.retryDepwait` retrieve a specific logger instance
+        # from the global registry, we have to silence that too.
+        root_logger = logging.getLogger('retry-depwait')
+        root_logger.setLevel(logging.CRITICAL)
+
         return retry_depwait
 
     def testUnknownDistribution(self):
@@ -148,7 +156,7 @@ class TestRetryDepwait(unittest.TestCase):
             self.number_of_pending_builds + 1,
             self.getPendingBuilds().count())
         self.assertEqual(depwait_build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(depwait_build.buildqueue_record.lastscore, 255)
+        self.assertEqual(depwait_build.buildqueue_record.lastscore, 3255)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

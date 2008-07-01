@@ -3,7 +3,7 @@
 import unittest
 from cStringIO import StringIO
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseLayer, LaunchpadFunctionalLayer
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import UploadFailed
 
@@ -29,6 +29,10 @@ class LibrarianClientTestCase(unittest.TestCase):
     def test_remoteAddFileDoesntSendDatabaseName(self):
         # remoteAddFile should send the Database-Name header as well.
         client = InstrumentedLibrarianClient()
+        # Because the remoteAddFile call commits to the database in a
+        # different process, we need to explicitly tell the DatabaseLayer to
+        # fully tear down and set up the database.
+        DatabaseLayer.force_dirty_database()
         id1 = client.remoteAddFile('sample.txt', 6, StringIO('sample'),
                                    'text/plain')
         self.failUnless(client.sentDatabaseName,

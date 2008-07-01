@@ -10,13 +10,18 @@
   <metal:block define-slot="top_slot" />
   <head>
     <metal:extra-head fill-slot="extra-head">
-      <link rel="shortcut icon" href="/@@/kubuntu-favicon.png" />
+    <link rel="shortcut icon" href=""
+        tal:attributes="href string:${request/icing_url}/kubuntu-favicon.png" />
 
-      <style type="text/css" media="screen"> @import url(/@@/kubuntu-masthead2.css);</style>
+      <style type="text/css" media="screen"
+        tal:content="string:@import url(${request/icing_url}/kubuntu-masthead2.css);;"/>
+      <style type="text/css" media="screen">
+        @import url(/+icing/shipit.css);</style>
 
       <style type="text/css">
         <!-- 
         h1, h2, h3 {
+            clear: both;
             width: 100%;
             padding-bottom: .0em;
             padding-top: 0.4em;
@@ -48,7 +53,7 @@
           background-color: #638ec6;
           position: relative;
           text-align: center;
-          background-image: url(/@@/kubuntu-footer-bg);
+          background-image: url(/+icing-kubuntu/kubuntu-footer-bg.png);
           background-repeat: repeat-y;
           background-position: center;
         }

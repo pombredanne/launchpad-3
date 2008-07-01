@@ -68,6 +68,8 @@ for it to create.
     >>> print_actions(pending_actions)
     team-one --> create {'welcome_message': u'Welcome to Team One'}
     team-two --> create {}
+    team-one --> unsynchronized constructing
+    team-two --> unsynchronized constructing
 
 In the database, the state of both lists should now be CONSTRUCTING to
 indicate that Mailman is in the process of creating the lists.
@@ -83,8 +85,9 @@ Should Mailman poll the actions again before it completes creating these
 lists, there will be nothing to do because lists in the CONSTRUCTING state
 don't show up as needing to be created.
 
-    >>> mailinglist_api.getPendingActions()
-    {}
+    >>> print_actions(mailinglist_api.getPendingActions())
+    team-one --> unsynchronized constructing
+    team-two --> unsynchronized constructing
 
 
 == Creating the mailing lists ==
@@ -104,8 +107,10 @@ some reason.
 We can see that the statuses of the mailing lists have been updated in the
 database.
 
+    >>> list_one = list_set.get('team-one')
     >>> list_one.status.name
     'ACTIVE'
+    >>> list_two = list_set.get('team-two')
     >>> list_two.status.name
     'FAILED'
 
@@ -148,8 +153,10 @@ scenes.
     >>> print_actions(pending_actions)
     team-three --> create {}
     team-one --> deactivate
+    team-three --> unsynchronized constructing
     >>> mailinglist_api.reportStatus({'team-three': 'success'})
     True
+    >>> list_three = list_set.get('team-three')
     >>> list_three.deactivate()
     >>> commit()
 
@@ -194,6 +201,8 @@ create a couple more teams and mailing lists.
     >>> print_actions(pending_actions)
     team-five --> create {}
     team-four --> create {}
+    team-five --> unsynchronized constructing
+    team-four --> unsynchronized constructing
     >>> mailinglist_api.reportStatus({
     ...     'team-four': 'success',
     ...     'team-five': 'success',
@@ -206,12 +215,16 @@ create a couple more teams and mailing lists.
 Now, when a mailing list's welcome message is changed, Mailman will see this
 modification action the next time it polls.
 
+    >>> list_four = list_set.get('team-four')
     >>> list_four.welcome_message = u'Welcome to Team Four'
+    >>> list_five = list_set.get('team-five')
     >>> list_five.welcome_message = u'Welcome to Team Five'
     >>> commit()
     >>> print_actions(mailinglist_api.getPendingActions())
     team-five --> modify {'welcome_message': u'Welcome to Team Five'}
     team-four --> modify {'welcome_message': u'Welcome to Team Four'}
+    team-five --> unsynchronized updating
+    team-four --> unsynchronized updating
 
 And at this point, the lists are in the MODIFIED state, awaiting a status
 report from Mailman.

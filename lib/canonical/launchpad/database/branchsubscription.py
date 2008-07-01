@@ -14,8 +14,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    IBranchSubscription)
-from canonical.launchpad.validators.person import public_person_validator
+    CodeReviewNotificationLevel, IBranchSubscription)
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class BranchSubscription(SQLBase):
@@ -27,9 +27,11 @@ class BranchSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
     notification_level = EnumCol(enum=BranchSubscriptionNotificationLevel,
                                  notNull=True, default=DEFAULT)
     max_diff_lines = EnumCol(enum=BranchSubscriptionDiffSize,
                              notNull=False, default=DEFAULT)
+    review_level = EnumCol(enum=CodeReviewNotificationLevel,
+                                 notNull=True, default=DEFAULT)

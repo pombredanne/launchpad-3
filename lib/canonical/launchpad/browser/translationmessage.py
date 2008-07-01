@@ -49,6 +49,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
+
 #
 # Translation-related formatting functions
 #
@@ -400,8 +401,6 @@ class BaseTranslationView(LaunchpadView):
 
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
-            # XXX: kiko 2006-10-18:
-            # This should refer people to +addticket, right?
             self.request.response.addErrorNotification(
                 structured("""
             <p>
@@ -414,8 +413,8 @@ class BaseTranslationView(LaunchpadView):
             application to see whether anyone has submitted it yet.  If not,
             please file the information there as a question.  The preferred
             format for such questions is described in the
-            <a href="https://help.launchpad.net/RosettaFAQ">Frequently Asked
-            Questions list</a>.
+            <a href="https://help.launchpad.net/FAQ/Translations">Frequently
+            Asked Questions list</a>.
             </p>
             <p>
             This only needs to be done once per language. Thanks for helping
@@ -691,8 +690,7 @@ class BaseTranslationView(LaunchpadView):
     @cachedproperty
     def form_is_writeable(self):
         """Whether the form should accept write operations."""
-        return (self.user is not None and
-                self.pofile.canAddSuggestions(self.user))
+        return self.pofile.canAddSuggestions(self.user)
 
     def _extractFormPostedTranslations(self, potmsgset):
         """Look for translations for this `POTMsgSet` in the form submitted.
@@ -1290,7 +1288,8 @@ class CurrentTranslationMessageView(LaunchpadView):
     @cachedproperty
     def sequence(self):
         """Return the position number of this potmsgset in the pofile."""
-        return self.context.potmsgset.sequence
+        return self.context.potmsgset.getSequence(
+            self.context.potmsgset.potemplate)
 
     @property
     def singular_text(self):

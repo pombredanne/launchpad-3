@@ -3,13 +3,25 @@
 __metaclass__ = type
 
 __all__ = [
-    'StandardShipItRequestAddView', 'ShippingRequestApproveOrDenyView',
-    'ShippingRequestsView', 'ShipItLoginView', 'ShipItRequestView',
-    'ShipItUnauthorizedView', 'StandardShipItRequestsView',
-    'ShipItExportsView', 'ShipItNavigation', 'ShipItReportsView',
-    'ShippingRequestAdminView', 'StandardShipItRequestSetNavigation',
-    'ShippingRequestSetNavigation', 'ShipitFrontPageView']
+    'ShipItExportsView',
+    'ShipitFrontPageView',
+    'ShipItLoginView',
+    'ShipItLoginForServerCDsView',
+    'ShipItNavigation',
+    'ShipItReportsView',
+    'ShipItRequestServerCDsView',
+    'ShipItRequestView',
+    'ShipItSurveyView',
+    'ShipItUnauthorizedView',
+    'ShippingRequestAdminView',
+    'ShippingRequestApproveOrDenyView',
+    'ShippingRequestSetNavigation',
+    'ShippingRequestsView',
+    'StandardShipItRequestAddView',
+    'StandardShipItRequestSetNavigation',
+    'StandardShipItRequestsView']
 
+from copy import copy
 from operator import attrgetter
 
 from zope.event import notify
@@ -22,9 +34,12 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
+from canonical.widgets import CheckBoxMatrixWidget, LabeledMultiCheckBoxWidget
 from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadFormView)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -33,11 +48,11 @@ from canonical.launchpad.webapp import (
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
-    IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag,
-    ILaunchpadCelebrities, IShippingRunSet, IShipItApplication,
-    IShipItReportSet, UnexpectedFormData, IShippingRequestUser,
-    ShipItConstants, ShipItFlavour, ShipItArchitecture, ShipItDistroSeries,
-    ShippingRequestStatus)
+    ILaunchBag, ILaunchpadCelebrities, IShipItApplication, IShipItReportSet,
+    IShipItSurveySet, IShippingRequestSet, IShippingRequestUser,
+    IShippingRunSet, IStandardShipItRequestSet, ShipItArchitecture,
+    ShipItConstants, ShipItDistroSeries, ShipItFlavour, ShipItSurveySchema,
+    ShippingRequestStatus, UnexpectedFormData)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
@@ -57,10 +72,9 @@ class ShipItUnauthorizedView(SystemErrorView):
 
 class ShipitFrontPageView(LaunchpadView):
 
-    series = ShipItConstants.current_distroseries
-
     def initialize(self):
         self.flavour = _get_flavour_from_layer(self.request)
+        self.series = get_current_series_for_flavour(self.flavour)
 
     @property
     def prerelease_mode(self):
@@ -90,6 +104,24 @@ def shipit_is_open(flavour):
         flavour, getUtility(ILaunchBag).user))
 
 
+def get_current_series_for_flavour(flavour):
+    """Return the current `ShipItDistroSeries`.
+
+    If the given flavour is Kubuntu and the current series is 8.04 we make
+    a copy of the series and update its title because Kubuntu 8.04 is not LTS.
+
+    XXX: salgado, 2008-04-18: As you can guess, this is a hack needed because
+    Kubuntu 8.04 is not LTS like the others (Ubuntu, Server and Edubuntu) and
+    can be removed as soon as we stop shipping Hardy.
+    """
+    series = ShipItConstants.current_distroseries
+    if (flavour == ShipItFlavour.KUBUNTU
+        and series == ShipItDistroSeries.HARDY):
+        series = copy(series)
+        series.title = series.title.replace(' LTS', '')
+    return series
+
+
 # XXX: GuilhermeSalgado 2005-09-09:
 # The LoginOrRegister class is not really designed to be reused. That
 # class must either be fixed to allow proper reuse or we should write a new
@@ -97,7 +129,8 @@ def shipit_is_open(flavour):
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
-    series = ShipItConstants.current_distroseries
+    standard_order_page = '/myrequest'
+    custom_order_page = '/specialrequest'
     possible_origins = {
         ShipItFlavour.UBUNTU: 'shipit-ubuntu',
         ShipItFlavour.KUBUNTU: 'shipit-kubuntu',
@@ -107,6 +140,7 @@ class ShipItLoginView(LoginOrRegister):
         self.context = context
         self.request = request
         self.flavour = _get_flavour_from_layer(request)
+        self.series = get_current_series_for_flavour(self.flavour)
         self.origin = self.possible_origins[self.flavour]
 
     def is_open(self):
@@ -131,9 +165,43 @@ class ShipItLoginView(LoginOrRegister):
         current_order = user.currentShipItRequest()
         if (current_order and
             current_order.containsCustomQuantitiesOfFlavour(self.flavour)):
-            self.request.response.redirect('specialrequest')
+            self.request.response.redirect(self.custom_order_page)
         else:
-            self.request.response.redirect('myrequest')
+            self.request.response.redirect(self.standard_order_page)
+
+
+class ShipItLoginForServerCDsView(ShipItLoginView):
+    """The login page used when users want Server CDs."""
+
+    def __init__(self, context, request):
+        super(ShipItLoginForServerCDsView, self).__init__(context, request)
+        self.flavour = ShipItFlavour.SERVER
+
+    @property
+    def custom_order_page(self):
+        """Return the page where users make custom requests for server CDs.
+
+        If the user hasn't answered the survey yet, we return the /survey page
+        instead.
+        """
+        user = getUtility(ILaunchBag).user
+        if getUtility(IShipItSurveySet).personHasAnswered(user):
+            return '/specialrequest-server'
+        else:
+            return '/survey'
+
+    @property
+    def standard_order_page(self):
+        """Return the page where users make standard requests for server CDs.
+
+        If the user hasn't answered the survey yet, we return the /survey page
+        instead.
+        """
+        user = getUtility(ILaunchBag).user
+        if getUtility(IShipItSurveySet).personHasAnswered(user):
+            return '/myrequest-server'
+        else:
+            return '/survey'
 
 
 def _get_flavour_from_layer(request):
@@ -155,16 +223,9 @@ def _get_flavour_from_layer(request):
 class ShipItRequestView(GeneralFormView):
     """The view for people to create/edit ShipIt requests."""
 
-    from_email_addresses = {
-        ShipItFlavour.UBUNTU: config.shipit.ubuntu_from_email_address,
-        ShipItFlavour.EDUBUNTU: config.shipit.edubuntu_from_email_address,
-        ShipItFlavour.KUBUNTU: config.shipit.kubuntu_from_email_address}
-
+    standard_order_page = '/myrequest'
+    custom_order_page = '/specialrequest'
     should_show_custom_request = False
-    # This only exists so that our tests can simulate the creation (through
-    # the web UI) of requests containing CDs of serieses other than the
-    # current one.
-    series = ShipItConstants.current_distroseries
 
     # Field names that are part of the schema but don't exist in our
     # context object.
@@ -180,7 +241,7 @@ class ShipItRequestView(GeneralFormView):
         self.context = context
         self.request = request
         self.flavour = _get_flavour_from_layer(request)
-        self.from_email_address = self.from_email_addresses[self.flavour]
+        self.series = get_current_series_for_flavour(self.flavour)
         self.fieldNames = [
             'recipientdisplayname', 'addressline1', 'addressline2', 'city',
             'province', 'country', 'postcode', 'phone', 'organization']
@@ -193,11 +254,9 @@ class ShipItRequestView(GeneralFormView):
         These fields include the 'reason' and quantity widgets for users to
         make custom orders.
         """
-        if self.flavour == ShipItFlavour.UBUNTU:
-            self.quantity_fields_mapping = {
-                ShipItArchitecture.X86: 'ubuntu_quantityx86',
-                ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
-        elif self.flavour == ShipItFlavour.KUBUNTU:
+        ubuntu_kubuntu_and_server = [
+            ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.SERVER]
+        if self.flavour in ubuntu_kubuntu_and_server:
             self.quantity_fields_mapping = {
                 ShipItArchitecture.X86: 'ubuntu_quantityx86',
                 ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
@@ -217,22 +276,6 @@ class ShipItRequestView(GeneralFormView):
     @property
     def prerelease_mode(self):
         return config.shipit.prerelease_mode
-
-    @property
-    def dvds_section(self):
-        """Get the HTML containing links to DVD sales for this flavour."""
-        # XXX: Method stubbed out until we get the links to Gutsy DVDs on
-        # amazon.com. -- Guilherme Salgado, 2007-09-24
-        return u''
-        if self.flavour == ShipItFlavour.UBUNTU:
-            return ViewPageTemplateFile(
-                '../templates/shipit-ubuntu-dvds.pt')(self)
-        elif self.flavour == ShipItFlavour.KUBUNTU:
-            return ViewPageTemplateFile(
-                '../templates/shipit-kubuntu-dvds.pt')(self)
-        else:
-            # We don't have DVDs for Edubuntu. :-(
-            return u''
 
     @property
     def _keyword_arguments(self):
@@ -279,7 +322,7 @@ class ShipItRequestView(GeneralFormView):
     @property
     def download_url(self):
         """Return the URL where the ISO images of this flavour are located."""
-        if self.flavour == ShipItFlavour.UBUNTU:
+        if self.flavour in [ShipItFlavour.UBUNTU, ShipItFlavour.SERVER]:
             return "http://www.ubuntu.com/download"
         elif self.flavour == ShipItFlavour.EDUBUNTU:
             return "http://www.edubuntu.org/Download"
@@ -332,16 +375,8 @@ class ShipItRequestView(GeneralFormView):
 
     def standardShipItRequests(self):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
-        request_set = getUtility(IStandardShipItRequestSet)
-        requests = request_set.getByFlavour(self.flavour, self.user)
-        # XXX: Guilherme Salgado, 2008-02-22: Evil hack to allow users to
-        # request Ubuntu Server CDs on https://shipit.ubuntu.com/.  A more
-        # reasonable solution will replace this one before we start shipping
-        # Hardy.  When removing this hack, one should remember to remove the
-        # rest of it, from the process() method of this view.
-        if self.flavour == ShipItFlavour.UBUNTU:
-            server_requests = request_set.getByFlavour(ShipItFlavour.SERVER)
-            requests = list(requests) + list(server_requests)
+        requests = getUtility(IStandardShipItRequestSet).getByFlavour(
+            self.flavour, self.user)
         return sorted(requests, key=attrgetter('totalCDs'))
 
     @cachedproperty
@@ -442,9 +477,10 @@ class ShipItRequestView(GeneralFormView):
                 kw.get('postcode'), kw.get('organization'), reason)
             if self.should_show_custom_request:
                 msg = ('Request accepted. Please note that special requests '
-                       'can take up to <strong>ten weeks<strong> to deliver. '
-                       'For quicker processing, choose a '
-                       '<a href="/myrequest">standard option</a> instead.')
+                       'can take up to <strong>sixteen weeks<strong> to '
+                       'deliver. For quicker processing, choose a '
+                       '<a href="%s">standard option</a> instead.'
+                       % self.standard_order_page)
             else:
                 msg = ('Request accepted. Please note that requests usually '
                        'take from 4 to 6 weeks to deliver, depending on the '
@@ -471,16 +507,7 @@ class ShipItRequestView(GeneralFormView):
             assert not self._extra_fields
             request_type = getUtility(IStandardShipItRequestSet).get(
                 request_type_id)
-            allowed_flavour = False
-            if self.flavour == ShipItFlavour.UBUNTU:
-                # We're currently accepting requests for Desktop/Server CDs on
-                # shipit.ubuntu.com/myrequest.  Soon we'll use a separate page
-                # for that and drop this.
-                allowed_flavour = request_type.flavour in [
-                    ShipItFlavour.UBUNTU, ShipItFlavour.SERVER]
-            else:
-                allowed_flavour = request_type.flavour == self.flavour
-            if request_type is None or not allowed_flavour:
+            if request_type is None or request_type.flavour != self.flavour:
                 # Either a shipit admin removed this option after the user
                 # loaded the page or the user is poisoning the form.
                 return ("The option you chose was not found. Please select "
@@ -495,19 +522,13 @@ class ShipItRequestView(GeneralFormView):
                 quantities[arch] = intOrZero(kw.get(field_name))
                 total_cds += quantities[arch]
 
-        # This is only necessary because we're allowing users to request
-        # Server CDs on shipit.ubuntu.com and so we need to use the standard
-        # option's flavour in those cases.
-        flavour = self.flavour
-        if request_type_id:
-            flavour = request_type.flavour
         # Here we set both requested and approved quantities. This is not a
         # problem because if this order needs manual approval, it'll be
         # flagged as pending approval, meaning that somebody will have to
         # check (and possibly change) its approved quantities before it can be
         # shipped.
         current_order.setQuantities(
-            {flavour: quantities}, distroseries=self.series)
+            {self.flavour: quantities}, distroseries=self.series)
 
         # Make sure that subsequent queries will see the RequestedCDs objects
         # created/updated when we set the order quantities above.
@@ -603,6 +624,17 @@ class ShipItRequestView(GeneralFormView):
 
         if errors:
             raise WidgetsError(errors)
+
+
+class ShipItRequestServerCDsView(ShipItRequestView):
+    """Where users can request Ubuntu Server Edition CDs."""
+
+    standard_order_page = '/myrequest-server'
+    custom_order_page = '/specialrequest-server'
+
+    def __init__(self, context, request):
+        super(ShipItRequestServerCDsView, self).__init__(context, request)
+        self.flavour = ShipItFlavour.SERVER
 
 
 class _SelectMenuOption:
@@ -1150,3 +1182,31 @@ class StandardShipItRequestSetNavigation(Navigation):
     def traverse(self, name):
         return self.context.get(name)
 
+
+class ShipItSurveyView(LaunchpadFormView):
+    """A survey that should be answered by people requesting server CDs."""
+
+    schema = ShipItSurveySchema
+    custom_widget('environment', LabeledMultiCheckBoxWidget)
+    custom_widget('evaluated_uses', CheckBoxMatrixWidget, column_count=3)
+    custom_widget('used_in', LabeledMultiCheckBoxWidget)
+    custom_widget('interested_in_paid_support', LabeledMultiCheckBoxWidget)
+
+    @action(_("Continue to Complete CD Request"), name="continue")
+    def continue_action(self, action, data):
+        """Continue to the page where the user requests server CDs.
+
+        Also stores the answered questions in the database.
+
+        If the user has an existing request with custom quantities of server
+        CDs, he'll be sent to /specialrequest-server, otherwise he's sent to
+        /myrequest-server.
+        """
+        getUtility(IShipItSurveySet).new(self.user, data)
+        current_order = self.user.currentShipItRequest()
+        server = ShipItFlavour.SERVER
+        if (current_order is not None and
+            current_order.containsCustomQuantitiesOfFlavour(server)):
+            self.next_url = '/specialrequest-server'
+        else:
+            self.next_url = '/myrequest-server'

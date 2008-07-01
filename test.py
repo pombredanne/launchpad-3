@@ -16,7 +16,7 @@
 
 $Id: test.py 25177 2004-06-02 13:17:31Z jim $
 """
-import sys, os, psycopg, time, logging, warnings, re
+import sys, os, time, logging, warnings, re
 
 
 if os.getsid(0) == os.getsid(os.getppid()):
@@ -34,6 +34,9 @@ if os.getsid(0) == os.getsid(os.getppid()):
 # (No longer actually required, as PQM does this)
 os.environ['TZ'] = 'Asia/Calcutta'
 time.tzset()
+
+# Enable Storm's C extensions
+os.environ['STORM_CEXTENSIONS'] = '1'
 
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(here, 'lib'))
@@ -59,9 +62,9 @@ warninghandler.install_warning_handler()
 from configs import generate_overrides
 generate_overrides()
 
-# Tell canonical.config to use the test config section in launchpad.conf
+# Tell canonical.config to use the testrunner config instance.
 from canonical.config import config
-config.setDefaultSection('testrunner')
+config.setInstance('testrunner')
 
 # Remove this module's directory from path, so that zope.testbrowser
 # can import pystone from test:
@@ -87,7 +90,7 @@ warnings.filterwarnings(
         'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh'
         )
 warnings.filterwarnings(
-        'ignore', 'twisted.python.plugin', DeprecationWarning, 'buildbot'
+        'ignore', 'twisted.python.plugin', DeprecationWarning,
         )
 warnings.filterwarnings(
         'ignore', 'The concrete concept of a view has been deprecated.',
@@ -125,10 +128,30 @@ defaults = [
     '--package=canonical',
     ]
 
+# Monkey-patch os.listdir to randomise the results
+original_listdir = os.listdir
+
+import random
+
+def listdir(path):
+    """Randomise the results of os.listdir.
+
+    It uses random.suffle to randomise os.listdir results, this way tests
+    relying on unstable ordering will have a higher chance to fail in the
+    development environment.
+    """
+    directory_contents = original_listdir(path)
+    random.shuffle(directory_contents)
+    return directory_contents
+
+os.listdir = listdir
+
+
 if __name__ == '__main__':
 
-    # Extract arguments so we can see them too. We need to strip --resume-layer
-    # and --default stuff if found as get_options can't handle it.
+    # Extract arguments so we can see them too. We need to strip
+    # --resume-layer and --default stuff if found as get_options can't
+    # handle it.
     if len(sys.argv) > 1 and sys.argv[1] == '--resume-layer':
         args = list(sys.argv)
         args.pop(1) # --resume-layer

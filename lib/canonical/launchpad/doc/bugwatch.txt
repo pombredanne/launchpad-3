@@ -31,7 +31,7 @@ Bug watches are accessed via a utility that provides IBugWatchSet.
     >>> bugwatch.remotebug
     u'2000'
 
-The url property of the bugwatch produces the actual URL under which
+The `url` property of the bugwatch produces the actual URL under which
 that bug lives in the remote system.
 
     >>> bugwatch.bugtracker.baseurl
@@ -54,11 +54,29 @@ slash or not:
     >>> bugwatch.url
     u'http://bugzilla.ubuntu.com/bugs/show_bug.cgi?id=1234'
 
+Watches of Email Address bugtrackers are slightly different: the `url`
+property is always the same as the bugtracker baseurl property.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IBugTrackerSet, IPersonSet)
+    >>> bugtrackerset = getUtility(IBugTrackerSet)
+
+    >>> email_bugtracker = bugtrackerset['email']
+    >>> email_bugwatch = (
+    ...     getUtility(IBugWatchSet).createBugWatch(
+    ...         getUtility(IBugSet).get(1), getUtility(IPersonSet).get(1),
+    ...         email_bugtracker, 'remote-bug-id'))
+
+    >>> email_bugwatch.remotebug
+    u'remote-bug-id'
+    >>> email_bugwatch.url
+    u'mailto:bugs@example.com'
+    >>> email_bugtracker.baseurl
+    u'mailto:bugs@example.com'
+
 Bug watches can also be accessed as a property of a bug tracker, with
 the .watches attribute.
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> bugtrackerset = getUtility(IBugTrackerSet)
     >>> debbugs = bugtrackerset['debbugs']
     >>> sorted([(watch.bug.id, watch.remotebug) for watch in debbugs.watches])
     [(1, u'304014'), (2, u'327452'), (3, u'327549'), (7, u'280883'),

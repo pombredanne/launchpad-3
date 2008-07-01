@@ -15,7 +15,7 @@ from canonical.config import config
 from canonical.pidfile import make_pidfile, pidfile_path
 from zope.app.server.main import main
 from canonical.launchpad.mailman import runmailman
-
+from canonical.launchpad.testing import googletestservice
 
 TWISTD_SCRIPT = None
 
@@ -47,6 +47,8 @@ class TacFile(Service):
             attributes.
         :param pre_launch: A callable that is called before the launch process.
         """
+        # No point calling super's __init__.
+        # pylint: disable-msg=W0231
         self.name = name
         self.tac_filename = tac_filename
         self.config = configuration
@@ -58,6 +60,14 @@ class TacFile(Service):
     @property
     def should_launch(self):
         return self.config is not None and self.config.launch
+
+    @property
+    def logfile(self):
+        """Return the log file to use.
+
+        Default to the value of the configuration key logfile.
+        """
+        return self.config.logfile
 
     def launch(self):
         # Don't run the server if it wasn't asked for.
@@ -98,17 +108,33 @@ class TacFile(Service):
         #    raise RuntimeError(
         #        "%s did not start: %d"
         #        % (self.name, process.returncode))
-        def stop_process():
-            if process.poll() is None:
-                os.kill(process.pid, signal.SIGTERM)
-                process.wait()
-        atexit.register(stop_process)
+        stop_at_exit(process)
+
+
+class RestrictedLibrarianService(TacFile):
+    """Custom TacFile launcher for the restricted librarian."""
+    def __init__(self):
+        super(RestrictedLibrarianService, self).__init__(
+            "restricted-librarian", "daemons/librarian.tac",
+            config.librarian_server, prepare_for_librarian)
+
+    def launch(self):
+        """We need to set an environment variable to launch this service."""
+        os.environ['RESTRICTED_LIBRARIAN'] = '1'
+        try:
+            super(RestrictedLibrarianService, self).launch()
+        finally:
+            del os.environ['RESTRICTED_LIBRARIAN']
+
+    @property
+    def logfile(self):
+        return self.config.restricted_logfile
 
 
 class MailmanService(Service):
     @property
     def should_launch(self):
-        return config.mailman is not None and config.mailman.launch
+        return config.mailman.launch
 
     def launch(self):
         # Don't run the server if it wasn't asked for.  Also, don't attempt to
@@ -128,28 +154,51 @@ class CodebrowseService(Service):
             ['make', '-C', 'sourcecode/launchpad-loggerhead', 'fg'],
             stdin=subprocess.PIPE)
         process.stdin.close()
-        def stop_process():
-            if process.poll() is None:
-                os.kill(process.pid, signal.SIGTERM)
-                process.wait()
-        atexit.register(stop_process)
+        stop_at_exit(process)
+
+class GoogleWebService(Service):
+
+    @property
+    def should_launch(self):
+        return config.google_test_service.launch
+
+    def launch(self):
+        process = googletestservice.start_as_process()
+        stop_at_exit(process)
+
+
+def stop_at_exit(process):
+    """Create and register an atexit hook for killing a process.
+
+    The hook will BLOCK until the process dies.
+
+    :param process: An instance of subprocess.Popen.
+    """
+    def stop_process():
+        if process.poll() is None:
+            os.kill(process.pid, signal.SIGTERM)
+            process.wait()
+    atexit.register(stop_process)
 
 
 def prepare_for_librarian():
-    if not os.path.isdir(config.librarian.server.root):
-        os.makedirs(config.librarian.server.root, 0700)
+    if not os.path.isdir(config.librarian_server.root):
+        os.makedirs(config.librarian_server.root, 0700)
 
 
 SERVICES = {
     'librarian': TacFile('librarian', 'daemons/librarian.tac',
-                         config.librarian.server, prepare_for_librarian),
-    'buildsequencer': TacFile('buildsequencer', 'daemons/buildd-sequencer.tac',
+                         config.librarian_server, prepare_for_librarian),
+    'restricted-librarian': RestrictedLibrarianService(),
+    'buildsequencer': TacFile('buildsequencer',
+                              'daemons/buildd-sequencer.tac',
                               config.buildsequencer),
     'authserver': TacFile('authserver', 'daemons/authserver.tac',
                           config.authserver),
     'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),
+    'google-webservice': GoogleWebService(),
     }
 
 
@@ -166,7 +215,7 @@ def make_css_slimmer():
 
 
 def get_services_to_run(requested_services):
-    """Return a list of services (i.e. TacFiles) given a list of service names.
+    """Return a list of services (TacFiles) given a list of service names.
 
     If no names are given, then the list of services to run comes from the
     launchpad configuration.
@@ -197,12 +246,6 @@ def split_out_runlaunchpad_arguments(args):
 def start_launchpad(argv=list(sys.argv)):
     global TWISTD_SCRIPT
     TWISTD_SCRIPT = make_abspath('sourcecode/twisted/bin/twistd')
-
-    # Disgusting hack to use our extended config file schema rather than the
-    # Z3 one. TODO: Add command line options or other to Z3 to enable
-    # overriding this -- StuartBishop 20050406
-    from zdaemon.zdoptions import ZDOptions
-    ZDOptions.schemafile = make_abspath('lib/canonical/config/schema.xml')
 
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed

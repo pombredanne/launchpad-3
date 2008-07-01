@@ -8,11 +8,31 @@
     <!-- SourcePackageReleaseFile -->
     <content class="canonical.launchpad.database.SourcePackageReleaseFile">
         <allow interface="canonical.launchpad.interfaces.ISourcePackageReleaseFile" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.ISourcePackageReleaseFile"
+        />
     </content>
 
     <!-- BinaryPackageFile -->
     <content class="canonical.launchpad.database.BinaryPackageFile">
         <allow interface="canonical.launchpad.interfaces.IBinaryPackageFile" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IBinaryPackageFile"
+        />
     </content>
+
+    <securedutility
+      class="canonical.launchpad.database.BinaryPackageFileSet"
+      provides="canonical.launchpad.interfaces.IBinaryPackageFileSet">
+      <allow interface="canonical.launchpad.interfaces.IBinaryPackageFileSet" />
+    </securedutility>
+
+    <securedutility
+      class="canonical.launchpad.database.files.SourcePackageReleaseFileSet"
+      provides="canonical.launchpad.interfaces.ISourcePackageReleaseFileSet">
+      <allow interface="canonical.launchpad.interfaces.ISourcePackageReleaseFileSet" />
+    </securedutility>
 
 </configure>

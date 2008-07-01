@@ -14,9 +14,8 @@ Defining Permissions in Launchpad
 =================================
 
 ********************************************************************************
-NOTE: If you think you want a permission added to Launchpad, talk to SteveA
-first! A new permission should only be defined if absolutely necessary, and
-only after approval from SteveA.
+NOTE: A new permission should only be defined if absolutely necessary, and
+it should be considered thoroughly in a code review.
 ********************************************************************************
 
 Occassionally, you'll find yourself in a situation where the existing

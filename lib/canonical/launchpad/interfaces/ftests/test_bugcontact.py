@@ -14,7 +14,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 
 def test_suite():
-    """Return the `IHasBugcontact` TestSuite."""
+    """Return the `IHasBugSupervisor` TestSuite."""
     suite = unittest.TestSuite()
 
     setUpMethods = [
@@ -23,7 +23,7 @@ def test_suite():
         ]
 
     for setUpMethod in setUpMethods:
-        test = LayeredDocFileSuite('has-bug-contact.txt',
+        test = LayeredDocFileSuite('has-bug-supervisor.txt',
             setUp=setUpMethod, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)

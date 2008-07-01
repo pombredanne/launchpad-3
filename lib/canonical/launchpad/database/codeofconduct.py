@@ -198,12 +198,14 @@ class SignedCodeOfConduct(SQLBase):
         template = open('lib/canonical/launchpad/emailtemplates/'
                         'signedcoc-acknowledge.txt').read()
         fromaddress = format_address(
-            "Launchpad Code Of Conduct System", config.noreply_from_address)
+            "Launchpad Code Of Conduct System",
+            config.canonical.noreply_from_address)
         replacements = {'user': self.owner.browsername,
                         'content': content}
         message = template % replacements
         simple_sendmail(
-            fromaddress, str(self.owner.preferredemail.email), subject, message)
+            fromaddress, str(self.owner.preferredemail.email),
+            subject, message)
 
 
 class SignedCodeOfConductSet:
@@ -266,8 +268,8 @@ class SignedCodeOfConductSet:
                     % (sig.fingerprint, canonical_url(user)))
 
         if gpg.owner.id != user.id:
-            return ('You (%s) do not seem to be the owner of this OpenPGP key '
-                    '(<code>%s</code>).'
+            return ('You (%s) do not seem to be the owner of this OpenPGP '
+                    'key (<code>%s</code>).'
                     % (user.displayname, gpg.owner.displayname))
 
         if not gpg.active:
@@ -326,8 +328,9 @@ class SignedCodeOfConductSet:
         elif searchfor == 'inactiveonly':
             query += ' AND SignedCodeOfConduct.active = false'
 
-        return SignedCodeOfConduct.select(query, clauseTables=clauseTables,
-                                          orderBy='SignedCodeOfConduct.active')
+        return SignedCodeOfConduct.select(
+            query, clauseTables=clauseTables,
+            orderBy='SignedCodeOfConduct.active')
 
     def searchByUser(self, user_id, active=True):
         """See ISignedCodeOfConductSet."""

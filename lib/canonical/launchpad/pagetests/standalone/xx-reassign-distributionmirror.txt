@@ -77,5 +77,6 @@ account.
     >>> browser.getControl(name='CHANGE_OWNER').click()
     >>> browser.url
     'http://launchpad.dev/ubuntu/+mirror/archive-mirror/'
+    >>> context = DistributionMirror.byName('archive-mirror')
     >>> salgado.id == getattr(context, owner_attribute_name).id
     True

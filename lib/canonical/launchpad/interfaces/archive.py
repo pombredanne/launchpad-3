@@ -10,9 +10,10 @@ __all__ = [
     'ArchivePurpose',
     'IArchive',
     'IArchiveEditDependenciesForm',
+    'IArchivePackageCopyingForm',
     'IArchivePackageDeletionForm',
-    'IArchiveEditDependenciesForm',
     'IArchiveSet',
+    'IArchiveSourceSelectionForm',
     'IPPAActivateForm',
     ]
 
@@ -21,6 +22,8 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.validators.name import name_validator
+
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -43,6 +46,11 @@ class IArchive(IHasOwner):
     owner = Choice(
         title=_('Owner'), required=True, vocabulary='ValidOwner',
         description=_("""The PPA owner."""))
+
+    name = TextLine(
+        title=_("Name"), required=True, readonly=True,
+        constraint=name_validator,
+        description=_("The name of this archive."))
 
     description = Text(
         title=_("PPA contents description"), required=False,
@@ -74,6 +82,20 @@ class IArchive(IHasOwner):
         title=_("Purpose of archive."), required=True, readonly=True,
         )
 
+    buildd_secret = TextLine(
+        title=_("Buildd Secret"), required=False,
+        description=_("The password used by the builder to access the "
+                      "archive.")
+        )
+
+    sources_cached = Int(
+        title=_("Number of sources cached"), required=False,
+        description=_("Number of source packages cached in this PPA."))
+
+    binaries_cached = Int(
+        title=_("Number of binaries cached"), required=False,
+        description=_("Number of binary packages cached in this PPA."))
+
     package_description_cache = Attribute(
         "Concatenation of the source and binary packages published in this "
         "archive. Its content is used for indexed searches across archives.")
@@ -85,7 +107,13 @@ class IArchive(IHasOwner):
         "Archive dependencies recorded for this archive and ordered by owner "
         "displayname.")
 
+    expanded_archive_dependencies = Attribute(
+        "The expanded list of archive dependencies. It includes the implicit "
+        "PRIMARY archive dependency for PPAs.")
+
     archive_url = Attribute("External archive URL.")
+
+    is_ppa = Attribute("True if this archive is a PPA.")
 
     title = Attribute("Archive Title.")
 
@@ -100,6 +128,33 @@ class IArchive(IHasOwner):
     binaries_size = Attribute(
         'The size of binaries published in the context archive.')
     estimated_size = Attribute('Estimated archive size.')
+
+    total_count = Int(
+        title=_("Total number of builds in archive"), required=True,
+        default=0,
+        description=_("The total number of builds in this archive. "
+                      "This counter does not include discontinued "
+                      "(superseded, cancelled, obsoleted) builds"))
+
+    pending_count = Int(
+        title=_("Number of pending builds in archive"), required=True,
+        default=0,
+        description=_("The number of pending builds in this archive."))
+
+    succeeded_count = Int(
+        title=_("Number of successful builds in archive"), required=True,
+        default=0,
+        description=_("The number of successful builds in this archive."))
+
+    building_count = Int(
+        title=_("Number of active builds in archive"), required=True,
+        default=0,
+        description=_("The number of active builds in this archive."))
+
+    failed_count = Int(
+        title=_("Number of failed builds in archive"), required=True,
+        default=0,
+        description=_("The number of failed builds in this archive."))
 
     def getPubConfig():
         """Return an overridden Publisher Configuration instance.
@@ -117,7 +172,7 @@ class IArchive(IHasOwner):
         :param: name: source name filter (exact match or SQL LIKE controlled
                       by 'exact_match' argument).
         :param: version: source version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a list.
+        :param: status: `PackagePublishingStatus` filter, can be a sequence.
         :param: distroseries: `IDistroSeries` filter.
         :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
@@ -126,10 +181,11 @@ class IArchive(IHasOwner):
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
-    def getSourcesForDeletion(name=None):
+    def getSourcesForDeletion(name=None, status=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
         :param: name: optional source name filter (SQL LIKE)
+        :param: status: `PackagePublishingStatus` filter, can be a sequence.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
@@ -187,11 +243,20 @@ class IArchive(IHasOwner):
         """Concentrate cached information about the archive contents.
 
         Group the relevant package information (source name, binary names,
-        binary summaries) strings in the IArchive.package_description_cache
-        search indexes (fti).
+        binary summaries and distroseries with binaries) strings in the
+        IArchive.package_description_cache search indexes (fti).
+
+        Updates 'sources_cached' and 'binaries_cached' counters.
 
         Also include owner 'name' and 'displayname' to avoid inpecting the
         Person table indexes while searching.
+        """
+
+    def findDepCandidateByName(distroarchseries, name):
+        """Return the last published binarypackage by given name.
+
+        Return the PublishedPackage record by binarypackagename or None if
+        not found.
         """
 
     def getArchiveDependency(dependency):
@@ -219,6 +284,30 @@ class IArchive(IHasOwner):
             `IArchive` requiring 'dependency' `IArchive`.
         """
 
+    def canUpload(user, component_or_package=None):
+        """Check to see if user is allowed to upload to component.
+
+        :param user: An `IPerson` whom should be checked for authentication.
+        :param component_or_package: The context `IComponent` or an
+            `ISourcePackageName` for the check.  This parameter is
+            not required if the archive is a PPA.
+
+        :return: True if 'user' is allowed to upload to the specified
+            component or package name.
+        :raise TypeError: If component_or_package is not one of
+            `IComponent` or `ISourcePackageName`.
+
+        """
+
+    def canAdministerQueue(user, component):
+        """Check to see if user is allowed to administer queue items.
+
+        :param user: An `IPerson` whom should be checked for authenticate.
+        :param component: The context `IComponent` for the check.
+
+        :return: True if 'user' is allowed to administer the package upload
+        queue for items with 'component'.
+        """
 
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""
@@ -234,17 +323,30 @@ class IPPAActivateForm(Interface):
         required=True, default=False)
 
 
-class IArchivePackageDeletionForm(Interface):
-    """Schema used to delete packages within a archive."""
+class IArchiveSourceSelectionForm(Interface):
+    """Schema used to select sources within an archive."""
 
     name_filter = TextLine(
         title=_("Package name"), required=False, default=None,
         description=_("Display packages only with name matching the given "
                       "filter."))
 
+
+class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
+    """Schema used to delete packages within an archive."""
+
     deletion_comment = TextLine(
         title=_("Deletion comment"), required=False,
         description=_("The reason why the package is being deleted."))
+
+
+class IArchivePackageCopyingForm(IArchiveSourceSelectionForm):
+    """Schema used to copy packages across archive."""
+
+    include_binaries = Bool(
+        title=_("Copy binaries"), required=False, default=False,
+        description=_("Whether or not to copy the binary packages for "
+                      "the selected sources."))
 
 
 class IArchiveEditDependenciesForm(Interface):
@@ -260,14 +362,27 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
-    def new(distribution=None, purpose=None, owner=None, description=None):
+    number_of_ppa_sources = Attribute(
+        'Number of published sources in public PPAs.')
+
+    number_of_ppa_binaries = Attribute(
+        'Number of published binaries in public PPAs.')
+
+    def new(purpose, owner, name=None, distribution=None, description=None):
         """Create a new archive.
 
-        If purpose is ArchivePurpose.PPA, owner must be set.
-        """
+        :param purpose: `ArchivePurpose`;
+        :param owner: `IPerson` owning the Archive;
+        :param name: optional text to be used as the archive name, if not
+            given it uses the names defined in
+            `IArchiveSet._getDefaultArchiveNameForPurpose`;
+        :param distribution: optional `IDistribution` to which the archive
+            will be attached;
+        :param description: optional text to be set as the archive
+            description;
 
-    def ensure(owner, distribution, purpose, description):
-        """Ensure the owner has a valid archive."""
+        :return: an `IArchive` object.
+        """
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
@@ -275,19 +390,52 @@ class IArchiveSet(Interface):
     def getPPAByDistributionAndOwnerName(distribution, name):
         """Return a single PPA the given (distribution, name) pair."""
 
-    def getByDistroPurpose(distribution, purpose):
-        """Return the IArchive with the given distribution and purpose."""
+    def getByDistroPurpose(distribution, purpose, name=None):
+        """Return the IArchive with the given distribution and purpose.
+
+        It uses the default names defined in
+        `IArchiveSet._getDefaultArchiveNameForPurpose`.
+
+        :raises AssertionError if used for with ArchivePurpose.PPA.
+        """
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
+
+    def getPPAsForUser(user):
+        """Return all PPAs the given user can participate.
+
+        The result is ordered by PPA owner's displayname.
+        """
+
+    def getLatestPPASourcePublicationsForDistribution(distribution):
+        """The latest 5 PPA source publications for a given distribution.
+
+        Private PPAs are excluded from the result.
+        """
+
+    def getMostActivePPAsForDistribution(distribution):
+        """Return the 5 most active PPAs.
+
+        The activity is currently measured by number of uploaded (published)
+        sources for each PPA during the last 7 days.
+
+        Private PPAs are excluded from the result.
+
+        :return A list with up to 5 dictionaries containing the ppa 'title'
+            and the number of 'uploads' keys and corresponding values.
+        """
+
 
 class ArchivePurpose(DBEnumeratedType):
     """The purpose, or type, of an archive.
 
     A distribution can be associated with different archives and this
     schema item enumerates the different archive types and their purpose.
-    For example, old distro releases may need to be obsoleted so their
-    archive would be OBSOLETE_ARCHIVE.
+
+    For example, Partner/ISV software in ubuntu is stored in a separate
+    archive. PPAs are separate archives and contain packages that 'overlay'
+    the ubuntu PRIMARY archive.
     """
 
     PRIMARY = DBItem(1, """
@@ -302,21 +450,14 @@ class ArchivePurpose(DBEnumeratedType):
         This is a Personal Package Archive.
         """)
 
-    EMBARGOED = DBItem(3, """
-        Embargoed Archive
-
-        This is the archive for embargoed packages.
-        """)
-
     PARTNER = DBItem(4, """
         Partner Archive
 
         This is the archive for partner packages.
         """)
 
-    OBSOLETE = DBItem(5, """
-        Obsolete Archive
+    REBUILD = DBItem(6, """
+        Rebuild Archive
 
-        This is the archive for obsolete packages.
+        This kind of archive is used for rebuilding packages.
         """)
-

@@ -18,22 +18,48 @@ from canonical.database.sqlbase import (
     commit, flush_database_updates, ISOLATION_LEVEL_READ_COMMITTED)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.ftests import mailinglists_helper
-from canonical.launchpad.ftests.bug import (
-    create_old_bug, summarize_bugtasks, sync_bugtasks)
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
     IPersonSet)
+from canonical.launchpad.testing import browser
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, setGlobs, tearDown)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
-    FunctionalLayer)
+    AppServerLayer, DatabaseLayer, FunctionalLayer, GoogleServiceLayer,
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
+
+def lobotomize_stevea():
+    """Set SteveA's email address' status to NEW.
+
+    Call this method first in a test's setUp where needed. Tests
+    using this function should be refactored to use the unaltered
+    sample data and this function eventually removed.
+
+    In the past, SteveA's account erroneously appeared in the old
+    ValidPersonOrTeamCache materialized view. This materialized view
+    has since been replaced and now SteveA is correctly listed as
+    invalid in the sampledata. This fix broke some tests testing
+    code that did not use the ValidPersonOrTeamCache to determine
+    validity.
+    """
+    from canonical.launchpad.database import EmailAddress
+    from canonical.launchpad.interfaces import EmailAddressStatus
+    stevea_emailaddress = EmailAddress.byEmail(
+            'steve.alexander@ubuntulinux.com')
+    stevea_emailaddress.status = EmailAddressStatus.NEW
+    commit()
+
+
+def lobotomizeSteveASetUp(test):
+    """Call lobotomize_stevea() and standard setUp"""
+    lobotomize_stevea()
+    setUp(test)
 
 
 def checkwatchesSetUp(test):
@@ -97,6 +123,7 @@ def branchStatusTearDown(test):
     test._authserver.tearDown()
 
 def bugNotificationSendingSetUp(test):
+    lobotomize_stevea()
     LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
     setUp(test)
 
@@ -127,10 +154,27 @@ def distroseriesqueueTearDown(test):
     tearDown(test)
 
 def uploadQueueSetUp(test):
+    lobotomize_stevea()
     test_dbuser = config.uploadqueue.dbuser
     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
+
+def uploaderBugsSetUp(test):
+    """Set up a test suite using the 'uploader' db user.
+
+    Some aspects of the bug tracker are being used by the Soyuz uploader.
+    In order to test that these functions work as expected from the uploader,
+    we run them using the same db user used by the uploader.
+    """
+    lobotomize_stevea()
+    test_dbuser = config.uploader.dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    setUp(test)
+    test.globs['test_dbuser'] = test_dbuser
+
+def uploaderBugsTearDown(test):
+    logout()
 
 def uploadQueueTearDown(test):
     logout()
@@ -183,9 +227,6 @@ def bugLinkedToQuestionSetUp(test):
 def bugtaskExpirationSetUp(test):
     """Setup globs for bug expiration."""
     setUp(test)
-    test.globs['create_old_bug'] = create_old_bug
-    test.globs['summarize_bugtasks'] = summarize_bugtasks
-    test.globs['sync_bugtasks'] = sync_bugtasks
     test.globs['commit'] = commit
     login('test@canonical.com')
 
@@ -204,14 +245,10 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     uploadQueueSetUp(test)
     login(ANONYMOUS)
 
-def translationMessageDestroySetUp(test):
-    """Set up the TranslationMessage.destroySelf() test."""
-    LaunchpadZopelessLayer.switchDbUser('rosettaadmin')
+def manageChrootSetup(test):
+    """Set up the manage-chroot.txt test."""
     setUp(test)
-
-def translationMessageDestroyTearDown(test):
-    """Tear down the TranslationMessage.destroySelf() test."""
-    tearDown(test)
+    LaunchpadZopelessLayer.switchDbUser("fiera")
 
 
 # XXX BarryWarsaw 15-Aug-2007: See bug 132784 as a placeholder for improving
@@ -286,6 +323,11 @@ def zopelessLaunchpadSecurityTearDown(test):
     setSecurityPolicy(test.old_security_policy)
 
 
+def hwdbDeviceTablesSetup(test):
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+
+
 # Files that have special needs can construct their own suite
 special = {
     # No setup or teardown at all, since it is demonstrating these features.
@@ -339,6 +381,12 @@ special = {
             layer=LaunchpadZopelessLayer,
             stdout_logging_level=logging.WARNING
             ),
+    'buildd-slave.txt': LayeredDocFileSuite(
+            '../doc/buildd-slave.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer,
+            stdout_logging_level=logging.WARNING
+            ),
     'buildd-scoring.txt': LayeredDocFileSuite(
             '../doc/buildd-scoring.txt',
             setUp=builddmasterSetUp,
@@ -350,6 +398,10 @@ special = {
             layer=LaunchpadZopelessLayer,
             stdout_logging_level=logging.WARNING
             ),
+    'close-account.txt': LayeredDocFileSuite(
+            '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
             setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
@@ -360,6 +412,33 @@ special = {
             setUp=setUp, tearDown=peopleKarmaTearDown,
             layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING
+            ),
+    'bugnotificationrecipients.txt-uploader': LayeredDocFileSuite(
+            '../doc/bugnotificationrecipients.txt',
+            setUp=uploaderBugsSetUp,
+            tearDown=uploaderBugsTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'bugnotificationrecipients.txt-queued': LayeredDocFileSuite(
+            '../doc/bugnotificationrecipients.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'bugnotification-comment-syncing-team.txt': LayeredDocFileSuite(
+            '../doc/bugnotification-comment-syncing-team.txt',
+            layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
+            tearDown=bugNotificationSendingTearDown
+            ),
+    'bugnotificationrecipients.txt': LayeredDocFileSuite(
+            '../doc/bugnotificationrecipients.txt',
+            setUp=lobotomizeSteveASetUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'bugnotification-threading.txt': LayeredDocFileSuite(
+            '../doc/bugnotification-threading.txt',
+            setUp=lobotomizeSteveASetUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
             ),
     'bugnotification-sending.txt': LayeredDocFileSuite(
             '../doc/bugnotification-sending.txt',
@@ -386,12 +465,12 @@ special = {
     'launchpadform.txt': LayeredDocFileSuite(
             '../doc/launchpadform.txt',
             setUp=setUp, tearDown=tearDown,
-            layer=FunctionalLayer
+            layer=LaunchpadFunctionalLayer
             ),
     'launchpadformharness.txt': LayeredDocFileSuite(
             '../doc/launchpadformharness.txt',
             setUp=setUp, tearDown=tearDown,
-            layer=FunctionalLayer
+            layer=LaunchpadFunctionalLayer
             ),
     'bug-export.txt': LayeredDocFileSuite(
             '../doc/bug-export.txt',
@@ -406,6 +485,11 @@ special = {
     'package-cache.txt': LayeredDocFileSuite(
             '../doc/package-cache.txt',
             setUp=statisticianSetUp, tearDown=statisticianTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'distroarchseriesbinarypackage.txt': LayeredDocFileSuite(
+            '../doc/distroarchseriesbinarypackage.txt',
+            setUp=setUp, tearDown=tearDown,
             layer=LaunchpadZopelessLayer
             ),
     'script-monitoring.txt': LayeredDocFileSuite(
@@ -424,10 +508,22 @@ special = {
             tearDown=uploadQueueTearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'bug-set-status.txt-uploader': LayeredDocFileSuite(
+            '../doc/bug-set-status.txt',
+            setUp=uploaderBugsSetUp,
+            tearDown=uploaderBugsTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
             '../doc/closing-bugs-from-changelogs.txt',
             setUp=uploadQueueSetUp,
             tearDown=uploadQueueTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'closing-bugs-from-changelogs.txt-uploader': LayeredDocFileSuite(
+            '../doc/closing-bugs-from-changelogs.txt',
+            setUp=uploaderBugsSetUp,
+            tearDown=uploaderBugsTearDown,
             layer=LaunchpadZopelessLayer
             ),
     'bugtask-expiration.txt': LayeredDocFileSuite(
@@ -463,6 +559,12 @@ special = {
             '../doc/bug-private-by-default.txt',
             setUp=setUp,
             tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'bugtracker-person.txt': LayeredDocFileSuite(
+            '../doc/bugtracker-person.txt',
+            setUp=checkwatchesSetUp,
+            tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer
             ),
     'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
@@ -516,6 +618,13 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-bugzilla-lp-plugin.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bugzilla-lp-plugin.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-bugzilla-oddities.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-bugzilla-oddities.txt',
@@ -533,6 +642,13 @@ special = {
     'externalbugtracker-comment-imports.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-comment-imports.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-comment-pushing.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-comment-pushing.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
@@ -600,6 +716,13 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-trac-lp-plugin.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-trac-lp-plugin.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
     'mailinglist-subscriptions-xmlrpc.txt': LayeredDocFileSuite(
             '../doc/mailinglist-subscriptions-xmlrpc.txt',
             setUp=mailingListXMLRPCInternalSetUp,
@@ -655,6 +778,7 @@ special = {
             ),
     'publishing.txt': LayeredDocFileSuite(
             '../doc/publishing.txt',
+            setUp=setUp,
             layer=LaunchpadZopelessLayer,
             ),
     'sourcepackagerelease-build-lookup.txt': LayeredDocFileSuite(
@@ -669,10 +793,52 @@ special = {
             ),
     'translationmessage-destroy.txt': LayeredDocFileSuite(
             '../doc/translationmessage-destroy.txt',
-            setUp=translationMessageDestroySetUp,
-            tearDown=translationMessageDestroyTearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'translationsoverview.txt': LayeredDocFileSuite(
+            '../doc/translationsoverview.txt',
+            layer=LaunchpadZopelessLayer
+            ),
+    'manage-chroot.txt': LayeredDocFileSuite(
+            '../doc/manage-chroot.txt',
+            setUp=manageChrootSetup,
+            layer=LaunchpadZopelessLayer,
+            ),
+    'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
+            '../doc/build-estimated-dispatch-time.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer,
+            ),
+    'hwdb-device-tables.txt': LayeredDocFileSuite(
+            '../doc/hwdb-device-tables.txt',
+            setUp=hwdbDeviceTablesSetup, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer,
+            ),
+    'standing.txt': LayeredDocFileSuite(
+            '../doc/standing.txt',
+            layer=LaunchpadZopelessLayer,
+            setUp=setUp, tearDown=tearDown,
+            ),
+    # This test is actually run twice to prove that the AppServerLayer
+    # properly isolates the database between tests.
+    'launchpadlib.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        setUp=browser.setUp, tearDown=browser.tearDown,
+        ),
+    'launchpadlib2.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        setUp=browser.setUp, tearDown=browser.tearDown,
+        ),
+    'google-service-stub.txt': LayeredDocFileSuite(
+            '../doc/google-service-stub.txt',
+            layer=GoogleServiceLayer,
+            ),
+    'karmacache.txt': LayeredDocFileSuite(
+        '../doc/karmacache.txt',
+        layer=LaunchpadZopelessLayer,
+        setUp=setUp, tearDown=tearDown),
     }
 
 
@@ -700,12 +866,12 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         'bugs-emailinterface.txt',
         'bugs-email-affects-path.txt',
         'emailauthentication.txt',
-    ]
+        ]
 
     doctests_with_logging = [
         'incomingmail.txt',
         'spec-mail-exploder.txt'
-    ]
+        ]
 
     @classmethod
     def addTestsToSpecial(cls):
@@ -757,9 +923,7 @@ def test_suite():
     suite = unittest.TestSuite()
 
     # Add special needs tests
-    keys = special.keys()
-    keys.sort()
-    for key in keys:
+    for key in sorted(special):
         special_suite = special[key]
         suite.addTest(special_suite)
 

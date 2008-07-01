@@ -12,6 +12,8 @@ from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.browser.bugtask import BugTaskListingItem
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.interfaces import (
@@ -56,13 +58,26 @@ class CVEReportView(LaunchpadView):
     def _buildBugTaskCves(self, search_params):
         """Construct a list of BugTaskCve objects, sorted by bug ID."""
         search_params.has_cve = True
-        bugtasks = self.context.searchTasks(search_params)
+        bugtasks = shortlist(
+            self.context.searchTasks(search_params),
+            longest_expected=300)
 
         if not bugtasks:
             return []
 
+        badge_properties = getUtility(IBugTaskSet).getBugTaskBadgeProperties(
+            bugtasks)
+
         bugtaskcves = {}
         for bugtask in bugtasks:
+            badges = badge_properties[bugtask]
+            # Wrap the bugtask in a BugTaskListingItem, to avoid db
+            # queries being issues when trying to render the badges.
+            bugtask = BugTaskListingItem(
+                bugtask,
+                has_mentoring_offer=badges['has_mentoring_offer'],
+                has_bug_branch=badges['has_branch'],
+                has_specification=badges['has_specification'])
             if not bugtaskcves.has_key(bugtask.bug.id):
                 bugtaskcves[bugtask.bug.id] = BugTaskCve()
             bugtaskcves[bugtask.bug.id].bugtasks.append(bugtask)

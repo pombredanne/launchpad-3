@@ -6,14 +6,10 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 <body>
-
-<metal:heading fill-slot="pageheading">
-  <h1 tal:content="view/heading">Archive Mirrors</h1>
-</metal:heading>
 
 <div metal:fill-slot="main">
 

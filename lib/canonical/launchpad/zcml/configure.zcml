@@ -5,6 +5,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
     <!-- Content class configuration -->
+    <include file="account.zcml" />
     <include file="announcement.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
@@ -23,7 +24,6 @@
     <include file="bugattachment.zcml" />
     <include file="bugbranch.zcml" />
     <include file="bugcomment.zcml" />
-    <include file="bugcontact.zcml" />
     <include file="bugcve.zcml" />
     <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />
@@ -32,22 +32,26 @@
     <include file="bugnotification.zcml" />
     <include file="bugpackageinfestation.zcml" />
     <include file="bugsubscription.zcml" />
+    <include file="bugsupervisor.zcml" />
     <include file="bugtask.zcml" />
     <include file="bugtarget.zcml" />
     <include file="bugtracker.zcml" />
+    <include file="bugtrackerperson.zcml" />
     <include file="bugwatch.zcml" />
     <include file="bug.zcml" />
     <include file="build.zcml" />
     <include file="builder.zcml" />
+    <include file="codereviewvote.zcml" />
     <include file="codeimport.zcml" />
     <include file="codeimportevent.zcml" />
     <include file="codeimportjob.zcml" />
     <include file="codeimportmachine.zcml" />
     <include file="codeimportresult.zcml" />
     <include file="codeofconduct.zcml" />
-    <include file="codereviewmessage.zcml" />
+    <include file="codereviewcomment.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
+    <include file="customlanguagecode.zcml" />
     <include file="cve.zcml" />
     <include file="cve-events.zcml" />
     <include file="cvereference.zcml" />
@@ -57,7 +61,6 @@
     <include file="distributionsourcepackage.zcml" />
     <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
-    <include file="distrocomponentuploader.zcml" />
     <include file="distroseries.zcml" />
     <include file="distroseriesbinarypackage.zcml" />
     <include file="distroseriespackagecache.zcml" />
@@ -83,20 +86,22 @@
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
+    <include file="location.zcml" />
     <include file="logintoken.zcml" />
     <include file="mailinglist.zcml" />
-    <include file="mailinglist-events.zcml" />
     <include file="marketing.zcml" />
     <include file="mentoringoffer.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
     <include file="oauth.zcml" />
     <include file="openid.zcml" />
-    <include file="packagebugcontact.zcml" />
+    <include file="packagebugsupervisor.zcml" />
+    <include file="packagecloner.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
     <include file="person.zcml" />
+    <include file="personnotification.zcml" />
     <include file="poexportrequest.zcml" />
     <include file="pofile.zcml" />
     <include file="poll.zcml" />
@@ -112,6 +117,7 @@
     <include file="publishedpackage.zcml" />
     <include file="queue.zcml" />
     <include file="revision.zcml" />
+    <include file="salesforce.zcml" />
     <include file="scriptactivity.zcml" />
     <include file="securitycontact.zcml" />
     <include file="shipit.zcml" />
@@ -146,6 +152,7 @@
     <include file="translationcommonformat.zcml" />
     <include file="translationgroup.zcml" />
     <include file="translationimportqueue.zcml" />
+    <include file="translationtemplateitem.zcml" />
     <include file="translator.zcml" />
     <include file="wikiname.zcml" />
     <include file="component.zcml" />
@@ -154,11 +161,12 @@
     <include file="vpotexport.zcml" />
     <include file="archive.zcml" />
     <include file="archivedependency.zcml" />
+    <include file="archivepermission.zcml" />
     <include file="webservice.zcml" />
     <include file="packagediff.zcml" />
+    <include file="archiverebuild.zcml" />
 
     <include file="fields.zcml" />
-    <include file="resources.zcml" />
     <include file="widgets.zcml" />
 
     <!-- System homepages -->
@@ -175,5 +183,6 @@
     <!-- Special Utilities -->
     <include file="geoip.zcml" />
     <include file="gpghandler.zcml" />
+    <include file="searchservice.zcml" />
 
 </configure>

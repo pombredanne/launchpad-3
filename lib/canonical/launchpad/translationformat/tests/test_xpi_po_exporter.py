@@ -9,7 +9,6 @@ from zope.interface.verify import verifyObject
 
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import sync
-from canonical.launchpad.helpers import test_diff
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateSet, ITranslationFileData,
     ITranslationFormatExporter, ITranslationImportQueue, RosettaImportStatus)
@@ -47,24 +46,21 @@ class XPIPOExporterTestCase(unittest.TestCase):
         :param expected_file: buffer with the expected file content.
         :param export_file: buffer with the output file content.
         """
-        expected_lines = [line for line in expected_file.split('\n')]
+        expected_lines = [line.strip() for line in expected_file.split('\n')]
         # Remove time bombs in tests.
         exported_lines = [
-            line for line in exported_file.split('\n')
+            line.strip() for line in exported_file.split('\n')
             if (not line.startswith('"X-Launchpad-Export-Date:') and
                 not line.startswith('"POT-Creation-Date:') and
                 not line.startswith('"X-Generator: Launchpad'))]
 
         for number, expected_line in enumerate(expected_lines):
-            self.assertEqual(
-                expected_line, exported_lines[number],
-                "Output doesn't match:\n\n %s" % test_diff(
-                    expected_lines, exported_lines))
+            self.assertEqual(expected_line, exported_lines[number])
 
     def setUpTranslationImportQueueForTemplate(self):
         """Return an ITranslationImportQueueEntry for testing purposes."""
         # Get the file to import.
-        en_US_xpi =  get_en_US_xpi_file_to_import()
+        en_US_xpi =  get_en_US_xpi_file_to_import('en-US')
 
         # Attach it to the import queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
@@ -102,66 +98,110 @@ class XPIPOExporterTestCase(unittest.TestCase):
         exported_template = self.translation_exporter.exportTranslationFiles(
             [ITranslationFileData(self.firefox_template)])
 
-        expected_template = dedent('''
+        expected_template = dedent(ur'''
             #, fuzzy
             msgid ""
             msgstr ""
-            "Project-Id-Version: PACKAGE VERSION\\n"
-            "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\\n"
-            "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"
-            "Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"
-            "Language-Team: LANGUAGE <LL@li.org>\\n"
-            "MIME-Version: 1.0\\n"
-            "Content-Type: text/plain; charset=UTF-8\\n"
-            "Content-Transfer-Encoding: 8bit\\n"
+            "<?xml version=\"1.0\"?>\n"
+            "<RDF xmlns=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n"
+            "     xmlns:em=\"http://www.mozilla.org/2004/em-rdf#\">\n"
+            "  <Description about=\"urn:mozilla:install-manifest\"\n"
+            "               em:id=\"langpack-en-US@firefox.mozilla.org\"\n"
+            "               em:name=\"English U.S. (en-US) Language Pack\"\n"
+            "               em:version=\"2.0\"\n"
+            "               em:type=\"8\"\n"
+            "               em:creator=\"Danilo \u0160egan\">\n"
+            "    <em:contributor>\u0414\u0430\u043d\u0438\u043b\u043e \u0428\u0435\u0433\u0430\u043d</em:contributor>\n"
+            "    <em:contributor>Carlos Perell\u00f3 Mar\u00edn "
+            "&lt;carlos@canonical.com&gt;</em:contributor>\n"
+            "\n"
+            "    <em:targetApplication>\n"
+            "      <Description>\n"
+            "        <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id><!-- firefox --"
+            ">\n"
+            "        <em:minVersion>2.0</em:minVersion>\n"
+            "        <em:maxVersion>2.0.0.*</em:maxVersion>\n"
+            "      </Description>\n"
+            "    </em:targetApplication>\n"
+            "  </Description>\n"
+            "</RDF>\n"
 
+            #.  This is a DTD file inside a subdirectory 
             #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.title)
+            msgctxt "main/subdir/test2.dtd"
             msgid "MENU"
             msgstr ""
 
+            #. Select the access key that you want to use. These have to be
+            #. translated in a way that the selected character is present in the
+            #. translated string of the label being referred to, for example 'i' in
+            #. 'Edit' menu item in English. If a translation already exists, please
+            #. don't change it if you are not sure about it. Please find the context
+            #. of the key from the end of the 'Located in' text below.
             #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.accesskey)
-            msgid "foozilla.menu.accesskey"
+            msgctxt "main/subdir/test2.dtd"
+            msgid "M"
             msgstr ""
 
+            #. Select the shortcut key that you want to use. It should be translated,
+            #. but often shortcut keys (for example Ctrl + KEY) are not changed from
+            #. the original. If a translation already exists, please don't change it
+            #. if you are not sure about it. Please find the context of the key from
+            #. the end of the 'Located in' text below.
             #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.commandkey)
-            msgid "foozilla.menu.commandkey"
+            msgctxt "main/subdir/test2.dtd"
+            msgid "m"
             msgstr ""
 
+            #. Translators, what you are seeing now is a lovely,
+            #. awesome, multiline comment aimed at you directly
+            #. from the streets of a .properties file
             #: en-US.xpi/chrome/en-US.jar!/subdir/test2.properties:6(foozilla_something)
+            msgctxt "main/subdir/test2.properties"
             msgid "SomeZilla"
             msgstr ""
 
             #: en-US.xpi/chrome/en-US.jar!/test1.dtd(foozilla.name)
+            msgctxt "main/test1.dtd"
             msgid "FooZilla!"
             msgstr ""
 
+            #.  Translators, don't play with fire! 
             #: en-US.xpi/chrome/en-US.jar!/test1.dtd(foozilla.play.fire)
+            msgctxt "main/test1.dtd"
             msgid "Do you want to play with fire?"
             msgstr ""
 
+            #.  This is just a comment, not a comment for translators 
             #: en-US.xpi/chrome/en-US.jar!/test1.dtd(foozilla.play.ice)
+            msgctxt "main/test1.dtd"
             msgid "Play with ice?"
             msgstr ""
 
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:1(foozilla.title)
+            msgctxt "main/test1.properties"
             msgid "FooZilla Zilla Thingy"
             msgstr ""
 
+            #. Translators, if you're older than six, don't translate this
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:3(foozilla.happytitle)
+            msgctxt "main/test1.properties"
             msgid "FooZillingy"
             msgstr ""
 
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:4(foozilla.nocomment)
+            msgctxt "main/test1.properties"
             msgid "No Comment"
             msgstr ""
 
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:5(foozilla.utf8)
-            msgid "\xd0\x94\xd0\xb0\xd0\xbd=Day"
+            msgctxt "main/test1.properties"
+            msgid "\u0414\u0430\u043d=Day"
             msgstr ""
             ''').strip()
 
-        self._compareExpectedAndExported(
-            expected_template, exported_template.read())
+        output = exported_template.read().decode("utf-8")
+        self._compareExpectedAndExported(expected_template, output)
 
 def test_suite():
     return unittest.defaultTestLoader.loadTestsFromName(__name__)

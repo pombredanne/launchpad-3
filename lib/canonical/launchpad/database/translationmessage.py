@@ -12,8 +12,9 @@ __all__ = [
 from datetime import datetime
 import pytz
 
-from zope.interface import implements
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+from storm.store import Store
+from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -23,7 +24,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationConstants, TranslationValidationStatus)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 def make_plurals_fragment(fragment, separator):
@@ -93,6 +94,9 @@ class DummyTranslationMessage(TranslationMessageMixIn):
 
         self.id = None
         self.pofile = pofile
+        self.potemplate = pofile.potemplate
+        self.language = pofile.language
+        self.variant = pofile.variant
         self.potmsgset = potmsgset
         UTC = pytz.timezone('UTC')
         self.date_created = datetime.now(UTC)
@@ -131,24 +135,83 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         return
 
 
+def validate_is_current(self, attr, value):
+    """Unset current message before setting this as current.
+
+    :param value: Whether we want this translation message as the new
+        current one.
+
+    If there is already another current message, we unset it first.
+    """
+    assert value is not None, 'is_current field cannot be None.'
+
+    if value and not self.is_current:
+        # We are setting this message as the current one. We need to
+        # change current one to non current before.
+        current_translation_message = (
+            self.potmsgset.getCurrentTranslationMessage(
+                self.pofile.language, self.pofile.variant))
+        if current_translation_message is not None:
+            current_translation_message.is_current = False
+            # We need to flush the old current message before the
+            # new one because the database constraints prevent two
+            # current messages.
+            Store.of(self).add_flush_order(current_translation_message,
+                                           self)
+
+    return value
+
+def validate_is_imported(self, attr, value):
+    """Unset current imported message before setting this as imported.
+
+    :param value: Whether we want this translation message as the new
+        imported one.
+
+    If there is already another imported message, we unset it first.
+    """
+    assert value is not None, 'is_imported field cannot be None.'
+
+    if value and not self.is_imported:
+        # We are setting this message as the current one. We need to
+        # change current one to non current before.
+        imported_translation_message = (
+            self.potmsgset.getImportedTranslationMessage(
+                self.pofile.language, self.pofile.variant))
+        if imported_translation_message is not None:
+            imported_translation_message.is_imported = False
+            # We need to flush the old imported message before the
+            # new one because the database constraints prevent two
+            # imported messages.
+            Store.of(self).add_flush_order(imported_translation_message,
+                                           self)
+
+    return value
+
+
 class TranslationMessage(SQLBase, TranslationMessageMixIn):
     implements(ITranslationMessage)
 
     _table = 'TranslationMessage'
 
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
+    potemplate = ForeignKey(
+        foreignKey='POTemplate', dbName='potemplate', notNull=False,
+        default=None)
+    language = ForeignKey(
+        foreignKey='Language', dbName='language', notNull=False, default=None)
+    variant = StringCol(dbName='variant', notNull=False, default=None)
     potmsgset = ForeignKey(
         foreignKey='POTMsgSet', dbName='potmsgset', notNull=True)
     date_created = UtcDateTimeCol(
         dbName='date_created', notNull=True, default=UTC_NOW)
     submitter = ForeignKey(
         foreignKey='Person',
-        validator=public_person_validator, dbName='submitter', notNull=True)
+        storm_validator=validate_public_person, dbName='submitter', notNull=True)
     date_reviewed = UtcDateTimeCol(
         dbName='date_reviewed', notNull=False, default=None)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
         "Change this code to support %d plural forms."
@@ -173,66 +236,19 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     validation_status = EnumCol(
         dbName='validation_status', notNull=True,
         schema=TranslationValidationStatus)
-    is_current = BoolCol(dbName='is_current', notNull=True, default=False)
+    is_current = BoolCol(dbName='is_current', notNull=True, default=False,
+                         storm_validator=validate_is_current)
     is_fuzzy = BoolCol(dbName='is_fuzzy', notNull=True, default=False)
-    is_imported = BoolCol(dbName='is_imported', notNull=True, default=False)
+    is_imported = BoolCol(dbName='is_imported', notNull=True, default=False,
+                          storm_validator=validate_is_imported)
     was_obsolete_in_last_import = BoolCol(
         dbName='was_obsolete_in_last_import', notNull=True, default=False)
     was_fuzzy_in_last_import = BoolCol(
         dbName='was_fuzzy_in_last_import', notNull=True, default=False)
 
-    def _set_is_current(self, value):
-        """Unset current message before setting this as current.
-
-        :param value: Whether we want this translation message as the new
-            current one.
-
-        If there is already another current message, we unset it first.
-        """
-        assert value is not None, 'is_current field cannot be None.'
-
-        if value and not self.is_current:
-            # We are setting this message as the current one. We need to
-            # change current one to non current before.
-            current_translation_message = (
-                self.potmsgset.getCurrentTranslationMessage(
-                    self.pofile.language, self.pofile.variant))
-            if current_translation_message is not None:
-                current_translation_message.is_current = False
-                # We need this syncUpdate so the old current one change is
-                # stored first in the database. This is because we can only
-                # have a TranslationMessage with the is_current flag set
-                # to TRUE.
-                current_translation_message.syncUpdate()
-
-        self._SO_set_is_current(value)
-
-    def _set_is_imported(self, value):
-        """Unset current imported message before setting this as imported.
-
-        :param value: Whether we want this translation message as the new
-            imported one.
-
-        If there is already another imported message, we unset it first.
-        """
-        assert value is not None, 'is_imported field cannot be None.'
-
-        if value and not self.is_imported:
-            # We are setting this message as the current one. We need to
-            # change current one to non current before.
-            imported_translation_message = (
-                self.potmsgset.getImportedTranslationMessage(
-                    self.pofile.language, self.pofile.variant))
-            if imported_translation_message is not None:
-                imported_translation_message.is_imported = False
-                # We need this syncUpdate so the old imported one change is
-                # stored first in the database. This is because we can only
-                # have a TranslationMessage with the is_imported flag set
-                # to TRUE.
-                imported_translation_message.syncUpdate()
-
-        self._SO_set_is_imported(value)
-
+    # XXX jamesh 2008-05-02:
+    # These two methods are not being called anymore.  The Storm
+    # validator code doesn't handle getters.
     def _get_was_obsolete_in_last_import(self):
         """Override getter for was_obsolete_in_last_import.
 

@@ -27,15 +27,15 @@ Test 'status' property:
 
     >>> builder.failnotes = 'Could not open Socket'
     >>> print builder.status
-    NOT OK : Could not open Socket (AUTO)
+    Could not open Socket
 
     >>> builder.builderok = True
     >>> print builder.status
-    BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (AUTO)
+    Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
 
     >>> builder.manual = True
     >>> print builder.status
-    BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (MANUAL)
+    Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
 
 Confirm we can get the slave xmlrpc interface
 
@@ -97,12 +97,10 @@ Check get() which returns a correspondent Builder instance to a given id:
 
 Or raises an SQLObjectNotFound exception:
 
-    >>> from sqlobject import SQLObjectNotFound
-    >>> try:
-    ...    builderset.get(100)
-    ... except SQLObjectNotFound, info:
-    ...    "%s" % info
-    'The object Builder by the ID 100 does not exist'
+    >>> builderset.get(100)
+    Traceback (most recent call last):
+    ...
+    SQLObjectNotFound: Object not found
 
 count() return the number of builder instance we have stored:
 
@@ -118,6 +116,30 @@ attributes of builder instance as: builderok and trust.
     u'bob'
     u'dummy'
     u'frog'
+
+'getBuildQueueSizeForProcessor' returns the number of pending builds
+for a given Processor. The callsites can also control which build-farm
+they are interested via the 'virtualized' argument.
+
+    >>> from canonical.launchpad.database.processor import Processor
+    >>> p386 = Processor.selectOneBy(name='386')
+    >>> amd64 = Processor.selectOneBy(name='amd64')
+
+'virtualized' defaults to False, so if not passed, it will return the
+size of the non-virtualized (trusted) build queue.
+
+    >>> builderset.getBuildQueueSizeForProcessor(p386)
+    1
+
+The 'amd64' build queue is empty.
+
+    >>> builderset.getBuildQueueSizeForProcessor(amd64)
+    0
+
+The virtualized build queue for 386 is also empty.
+
+    >>> builderset.getBuildQueueSizeForProcessor(p386, virtualized=True)
+    0
 
 
 == Resuming buildd slaves ==

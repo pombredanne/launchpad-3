@@ -25,57 +25,47 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces import (
     IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
-    IProductSeriesSourceAdmin, NotFoundError, PackagingType,
-    RevisionControlSystems, SpecificationSort, SpecificationGoalStatus,
-    SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus)
-
-
-class NoImportBranchError(Exception):
-    """Raised when ProductSeries.importUpdated finds not import branch.
-
-    This exception should never be caught. It exists only for unit testing.
-    """
-
-
-class DatePublishedSyncError(Exception):
-    """Raised by ProductSeries.importUpdated if datepublishedsync
-    should not be set.
-
-    If import_branch.date_last_mirrored is NULL, datepublishedsync should not
-    have been set because the import has not been published yet.
-
-    This exception should never be caught. It exists only for unit testing.
-    """
+    IProductSeriesSourceAdmin, IStructuralSubscriptionTarget, NotFoundError,
+    PackagingType, RevisionControlSystems, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationGoalStatus,
+    SpecificationImplementationStatus, SpecificationSort)
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                    HasTranslationImportsMixin):
+                    HasTranslationImportsMixin,
+                    StructuralSubscriptionTargetMixin):
     """A series of product releases."""
     implements(
-        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates)
+        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates,
+        IStructuralSubscriptionTarget)
 
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
+    status = EnumCol(
+        notNull=True, schema=DistroSeriesStatus,
+        default=DistroSeriesStatus.DEVELOPMENT)
     name = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
                                default=None)
     user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
@@ -103,6 +93,23 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datelastsynced = UtcDateTimeCol(default=None)
     datepublishedsync = UtcDateTimeCol(
         dbName='date_published_sync', default=None)
+
+    @property
+    def new_style_import(self):
+        """See `IProductSeries`."""
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This property is
+        # only necessary for the transition from the old to the new
+        # code import system, and should be deleted after that process
+        # is done.
+        # Local import to avoid circularity issues.
+        from canonical.launchpad.database.codeimport import (
+            _ProductSeriesCodeImport)
+        pair = _ProductSeriesCodeImport.selectOneBy(
+            productseries=self)
+        if pair is not None:
+            return pair.codeimport
+        else:
+            return None
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
@@ -159,9 +166,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return sorted(drivers, key=lambda x: x.browsername)
 
     @property
-    def bugcontact(self):
+    def bug_supervisor(self):
         """See IProductSeries."""
-        return self.product.bugcontact
+        return self.product.bug_supervisor
 
     @property
     def security_contact(self):
@@ -429,20 +436,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
-    def markTestFailed(self):
+    def markStopped(self):
         """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = ImportStatus.TESTFAILED
-        self.import_branch = None
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.syncinterval = None
-
-    def markDontSync(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = ImportStatus.DONTSYNC
-        self.import_branch = None
+        self.importstatus = ImportStatus.STOPPED
         self.dateautotested = None
         self.dateprocessapproved = None
         self.datesyncapproved = None
@@ -469,63 +465,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.cvsbranch = None
         self.cvstarfileurl = None
         self.svnrepository = None
-
-    def syncCertified(self):
-        """Return true or false indicating if the sync is enabled"""
-        return self.dateprocessapproved is not None
-
-    def autoSyncEnabled(self):
-        """Is the sync automatically scheduling?"""
-        return self.importstatus == ImportStatus.SYNCING
-
-    def enableAutoSync(self):
-        """Enable autosyncing."""
-        self.datesyncapproved = UTC_NOW
-        self.importstatus = ImportStatus.SYNCING
-
-    def autoTestFailed(self):
-        """Has the series source failed automatic testing by roomba?"""
-        return self.importstatus == ImportStatus.TESTFAILED
-
-    def importUpdated(self):
-        """See IProductSeries."""
-        # Update the timestamps after an import has successfully completed, so
-        # we can always know at what time the currently published branch was
-        # last imported.
-        #
-        # Importd updates branches to match the foreign VCS, then uploads them
-        # to an internal server. Then the branch-puller copies the branches
-        # from the internal server to the public server.
-        #
-        # * datelastsynced: time when importd last updated the internal branch
-        #   to match the foreign VCS.
-        # * import_branch.last_mirrored: time when branch-puller last updated
-        #   the published branch to match the internal branch.
-        # * datepublishedsync: time when the /published/ branch was last
-        #   updated from the foreign VCS, at the time when the /internal/
-        #   branch was last updated from the foreign VCS.
-        #
-        # Sorry if that breaks your brain.
-        if self.import_branch is None:
-            raise NoImportBranchError(
-                "importUpdated called for series %d,"
-                " but import_branch is NULL." % (self.id,))
-        if (self.import_branch.last_mirrored is None
-                and self.datepublishedsync is not None):
-            raise DatePublishedSyncError(
-                "importUpdated called for series %d,"
-                " where datepublishedsync is set,"
-                " but import_branch.last_mirror is NULL."
-                % (self.id,))
-        if self.datelastsynced is None:
-            # datepublishedsync SHOULD be None, but we reset it just in case.
-            self.datepublishedsync = None
-        if (self.datelastsynced is not None
-                and self.import_branch.last_mirrored is not None
-                and self.datelastsynced < self.import_branch.last_mirrored):
-            self.datepublishedsync = self.datelastsynced
-        self.datelastsynced = UTC_NOW
-        self.import_branch.requestMirror()
 
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
@@ -588,7 +527,8 @@ class ProductSeriesSet:
         """See `IProductSeriesSet`."""
         query = self.composeQueryString(text, importstatus)
         return ProductSeries.select(
-            query, distinct=True, clauseTables=['Product', 'Project'])
+            query, orderBy=['product.name', 'productseries.name'],
+            clauseTables=['Product'])
 
     def composeQueryString(self, text=None, importstatus=None):
         """Build SQL "where" clause for `ProductSeries` search.
@@ -599,22 +539,23 @@ class ProductSeriesSet:
             the given import status; if not specified or None, limit to series
             with non-NULL import status.
         """
-        conditions = []
+        conditions = ["ProductSeries.product = Product.id"]
         if text == u'':
             text = None
 
-        # First filter on product: match text, if necessary, and only consider
-        # active projects.
+        # First filter on text, if supplied.
         if text is not None:
-            conditions.append('Product.fti @@ ftq(%s)' % quote(text))
-        conditions.append('Product.active IS TRUE')
-        conditions.append("ProductSeries.product = Product.id")
+            conditions.append("""
+                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
+                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
 
-        # Then filter on project in the same way, if any.
-        product_match = "Product.project = Project.id AND Project.active"
-        if text is not None:
-            product_match += " AND Product.fti @@ ftq(%s)" % quote(text)
-        conditions.append("((%s) OR project IS NULL)" % product_match)
+        # Exclude deactivated products.
+        conditions.append('Product.active IS TRUE')
+
+        # Exclude deactivated projects, too.
+        conditions.append(
+            "((Product.project = Project.id AND Project.active) OR"
+            " Product.project IS NULL)")
 
         # Now just add the filter on import status.
         if importstatus is None:
@@ -623,8 +564,11 @@ class ProductSeriesSet:
             conditions.append('ProductSeries.importstatus = %s'
                               % sqlvalues(importstatus))
 
+        # And build the query.
         query = " AND ".join(conditions)
-        return query
+        return """productseries.id IN
+            (SELECT productseries.id FROM productseries, product, project
+             WHERE %s) AND productseries.product = product.id""" % query
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
         """See IProductSeriesSet."""
@@ -640,3 +584,14 @@ class ProductSeriesSet:
         if result is None:
             return default
         return result
+
+    def getSeriesForBranches(self, branches):
+        """See `IProductSeriesSet`."""
+        branch_ids = [branch.id for branch in branches]
+        if not branch_ids:
+            return []
+
+        return ProductSeries.select("""
+            ProductSeries.user_branch in %s OR
+            ProductSeries.import_branch in %s
+            """ % sqlvalues(branch_ids, branch_ids), orderBy=["name"])

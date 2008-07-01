@@ -1,5 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# PyLint doesn't grok Zope interfaces.
+# pylint: disable-msg=E0213
 __metaclass__ = type
 
 from zope.interface import Interface
@@ -67,5 +68,9 @@ class IFileDownloadClient(Interface):
 
 
 class ILibrarianClient(IFileUploadClient, IFileDownloadClient):
-    pass
+    """Interface for the librarian client."""
+
+
+class IRestrictedLibrarianClient(ILibrarianClient):
+    """A version of the client that connects to a restricted librarian."""
 

@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Testing infrastructure for page tests."""
 # Stop lint warning about not initializing TestCase parent on
 # PageStoryTestCase, see the comment bellow.
@@ -10,19 +10,28 @@ import os
 import re
 import simplejson
 import unittest
+import urllib
 
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
+from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
+from urllib import urlencode
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from zope.component import getUtility
 from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 
 
@@ -40,13 +49,14 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
             del kw['debug']
         else:
             self._debug = False
-        HTTPCaller.__init__(self, *args, **kw)
+        super(UnstickyCookieHTTPCaller, self).__init__(*args, **kw)
+
     def __call__(self, *args, **kw):
         if self._debug:
             import pdb
             pdb.set_trace()
         try:
-            return HTTPCaller.__call__(self, *args, **kw)
+            return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
         finally:
             self.resetCookies()
 
@@ -54,12 +64,116 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         self.cookies = SimpleCookie()
 
 
-class WebServiceCaller(UnstickyCookieHTTPCaller):
+class WebServiceCaller:
     """A class for making calls to Launchpad web services."""
 
-    def __call__(self, *args, **kw):
-        caller = super(WebServiceCaller, self).__call__(*args, **kw)
-        return WebServiceResponseWrapper(caller)
+    def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
+                 handle_errors=True, *args, **kwargs):
+        """Create a WebServiceCaller.
+        :param oauth_consumer_key: The OAuth consumer key to use.
+        :param oauth_access_key: The OAuth access key to use for the request.
+        :param handle_errors: Should errors raise exception or be handled by
+            the publisher. Default is to let the publisher handle them.
+
+        Other parameters are passed to the HTTPCaller used to make the calls.
+        """
+        if oauth_consumer_key is not None and oauth_access_key is not None:
+            login(ANONYMOUS)
+            self.consumer = getUtility(IOAuthConsumerSet).getByKey(
+                oauth_consumer_key)
+            self.access_token = self.consumer.getAccessToken(
+                oauth_access_key)
+            logout()
+        else:
+            self.consumer = None
+            self.access_token = None
+
+        self.handle_errors = handle_errors
+
+        # Set up a delegate to make the actual HTTP calls.
+        self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
+
+    def __call__(self, path_or_url, method='GET', data=None, headers=None):
+        if path_or_url.startswith('http:'):
+            scheme, netloc, path, query, fragment = urlsplit(path_or_url)
+        else:
+            path = path_or_url
+        path = str(path)
+        # Make an HTTP request.
+        full_headers = {'Host' : 'api.launchpad.dev'}
+        if self.consumer is not None and self.access_token is not None:
+            full_url = 'http://api.launchpad.dev/' + path
+            request = OAuthRequest.from_consumer_and_token(
+                self.consumer, self.access_token, http_url = full_url,
+                )
+            request.sign_request(OAuthSignatureMethod_PLAINTEXT(),
+                                 self.consumer, self.access_token)
+            full_headers.update(request.to_header(OAUTH_REALM))
+        if headers is not None:
+            full_headers.update(headers)
+        header_strings = ["%s: %s" % (header, str(value))
+                          for header, value in full_headers.items()]
+        request_string = "%s %s HTTP/1.1\n%s\n" % (method, path,
+                                                   "\n".join(header_strings))
+        if data:
+            request_string += "\n" + data
+
+        response = self.http_caller(
+            request_string, handle_errors=self.handle_errors)
+        return WebServiceResponseWrapper(response)
+
+    def get(self, path, media_type='application/json', headers=None):
+        """Make a GET request."""
+        full_headers = {'Accept': media_type}
+        if headers is not None:
+            full_headers.update(headers)
+        return self(path, 'GET', headers=full_headers)
+
+    def head(self, path, headers=None):
+        """Make a HEAD request."""
+        return self(path, 'HEAD', headers=headers)
+
+    def delete(self, path, headers=None):
+        """Make a DELETE request."""
+        return self(path, 'DELETE', headers=headers)
+
+    def put(self, path, media_type, data, headers=None):
+        """Make a PUT request."""
+        return self._make_request_with_entity_body(
+            path, 'PUT', media_type, data, headers)
+
+    def post(self, path, media_type, data, headers=None):
+        """Make a POST request."""
+        return self._make_request_with_entity_body(
+            path, 'POST', media_type, data, headers)
+
+    def named_get(self, path_or_url, operation_name, headers=None, **kwargs):
+        kwargs['ws.op'] = operation_name
+        data = '&'.join(['%s=%s' % (key, urllib.quote(value))
+                         for key, value in kwargs.items()])
+        return self.get("%s?%s" % (path_or_url, data), data, headers)
+
+    def named_post(self, path, operation_name, headers=None, **kwargs):
+        kwargs['ws.op'] = operation_name
+        data = urlencode(kwargs)
+        return self.post(path, 'application/x-www-form-urlencoded', data,
+                         headers)
+
+    def patch(self, path, media_type, data, headers=None):
+        """Make a PATCH request."""
+        return self._make_request_with_entity_body(
+            path, 'PATCH', media_type, data, headers)
+
+    def _make_request_with_entity_body(self, path, method, media_type, data,
+                                       headers):
+        """A helper method for requests that include an entity-body.
+
+        This means PUT, PATCH, and POST requests.
+        """
+        real_headers = {'Content-type' : media_type }
+        if headers is not None:
+            real_headers.update(headers)
+        return self(path, method, data, real_headers)
 
 
 class WebServiceResponseWrapper(ProxyBase):
@@ -77,6 +191,22 @@ class WebServiceResponseWrapper(ProxyBase):
             # string, instead of one that just says the string wasn't
             # JSON.
             raise ValueError(self.getBody())
+
+
+def extract_url_parameter(url, parameter):
+    """Extract parameter and its value from a URL.
+
+    Use this if your test needs to inspect a parameter value embedded in
+    a URL, but doesn't really care what the rest of the URL looks like
+    or how the parameters are ordered.
+    """
+    scheme, host, path, query, fragment = urlsplit(url)
+    args = query.split('&')
+    for arg in args:
+        key, value = arg.split('=')
+        if key == parameter:
+            return arg
+    return None
 
 
 class DuplicateIdError(Exception):
@@ -141,6 +271,10 @@ def find_main_content(content):
         # One-column pages don't use a <div id="maincontent">, so we
         # use the next best thing: <div id="container">.
         main_content = find_tag_by_id(content, 'container')
+    if main_content is None:
+        # Simple pages have neither of these, so as a last resort, we get
+        # the page <body>.
+        main_content = BeautifulSoup(content).body
     return main_content
 
 
@@ -299,6 +433,23 @@ def print_action_links(content):
             print entry.strong.string
 
 
+def print_navigation_links(content):
+    """Print navigation menu urls."""
+    navigation_links  = find_tag_by_id(content, 'navigation-tabs')
+    if navigation_links is None:
+        print "No navigation links"
+        return
+    title = navigation_links.find('label')
+    if title is not None:
+        print '= %s =' % title.string
+    entries = navigation_links.findAll(['strong', 'a'])
+    for entry in entries:
+        try:
+            print '%s: %s' % (entry.span.string, entry['href'])
+        except KeyError:
+            print entry.span.string
+
+
 def print_portlet_links(content, name, base=None):
     """Print portlet urls.
 
@@ -358,6 +509,53 @@ def print_batch_header(soup):
     print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
+def print_self_link_of_entries(json_body):
+    """Print the self_link attribute of each entry in the given JSON body."""
+    links = sorted(entry['self_link'] for entry in json_body['entries'])
+    for link in links:
+        print link
+
+
+def print_ppa_packages(contents):
+    packages = find_tags_by_class(contents, 'ppa_package_row')
+    for pkg in packages:
+        print extract_text(pkg)
+    empty_section = find_tag_by_id(contents, 'empty-result')
+    if empty_section is not None:
+        print extract_text(empty_section)
+
+
+def print_navigation(contents):
+    """Print the location, tabs, and page title of the page."""
+    doc = find_tag_by_id(contents, 'document')
+    breadcrumbs = doc.find(attrs={'id': 'menuroot'}).findAll('a')
+    print "Location: %s" % " > ".join(
+        extract_text(tag).encode('us-ascii', 'replace') for tag in breadcrumbs
+        if tag.get('id') != 'homebreadcrumb')
+    print "Structural title: %s" % extract_text(
+        doc.find(id='structuralobject')).encode('us-ascii', 'replace')
+    print 'Tabs:'
+    for tab in doc.find(id='applicationchooser').findAll('li'):
+        if tab.a:
+            link = tab.a['href']
+        else:
+            link = 'Not active'
+        print "* %s (%s)" % (extract_text(tab), link)
+    main_heading = doc.h1
+    if main_heading:
+        main_heading = extract_text(main_heading).encode(
+            'us-ascii', 'replace')
+    else:
+        main_heading = '(No main heading)'
+    print "Main heading: %s" % main_heading
+
+
+def print_tag_with_id(contents, id):
+    """A simple helper to print the extracted text of the tag."""
+    tag = find_tag_by_id(contents, id)
+    print extract_text(tag)
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -365,19 +563,29 @@ def setupBrowser(auth=None):
         string of the form 'Basic email:password' for an authenticated user.
     :return: A `Browser` object.
     """
+    browser = Browser()
     # Set up our Browser objects with handleErrors set to False, since
     # that gives a tracebacks instead of unhelpful error messages.
-    browser = Browser()
     browser.handleErrors = False
     if auth is not None:
         browser.addHeader("Authorization", auth)
     return browser
 
 
+def safe_canonical_url(*args, **kwargs):
+    """Generate a bytestring URL for an object"""
+    return str(canonical_url(*args, **kwargs))
+
+
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
-    test.globs['webservice'] = WebServiceCaller(port=9000)
+    test.globs['webservice'] = WebServiceCaller(
+        'launchpad-library', 'salgado-change-anything', port=9000)
+    test.globs['public_webservice'] = WebServiceCaller(
+        'foobar123451432', 'salgado-read-nonprivate', port=9000)
+    test.globs['user_webservice'] = WebServiceCaller(
+        'launchpad-library', 'nopriv-read-nonprivate', port=9000)
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
@@ -386,6 +594,11 @@ def setUpGlobs(test):
     test.globs['admin_browser'] = setupBrowser(
         auth="Basic foo.bar@canonical.com:test")
 
+    test.globs['ANONYMOUS'] = ANONYMOUS
+    # If a unicode URL is opened by the test browswer, later navigation
+    # raises ValueError exceptions in /usr/lib/python2.4/Cookie.py
+    test.globs['canonical_url'] = safe_canonical_url
+    test.globs['factory'] = LaunchpadObjectFactory()
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class
@@ -394,14 +607,21 @@ def setUpGlobs(test):
     test.globs['get_feedback_messages'] = get_feedback_messages
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
+    test.globs['login'] = login
+    test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_navigation'] = print_navigation
+    test.globs['print_navigation_links'] = print_navigation_links
     test.globs['print_portlet_links'] = print_portlet_links
     test.globs['print_comments'] = print_comments
     test.globs['print_submit_buttons'] = print_submit_buttons
     test.globs['print_radio_button_field'] = print_radio_button_field
     test.globs['print_batch_header'] = print_batch_header
+    test.globs['print_ppa_packages'] = print_ppa_packages
+    test.globs['print_self_link_of_entries'] = print_self_link_of_entries
+    test.globs['print_tag_with_id'] = print_tag_with_id
 
 
 class PageStoryTestCase(unittest.TestCase):

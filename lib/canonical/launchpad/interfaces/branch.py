@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005, 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Branch interfaces."""
@@ -6,35 +6,62 @@
 __metaclass__ = type
 
 __all__ = [
+    'BadBranchSearchContext',
+    'branch_name_validator',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreationNoTeamOwnedJunkBranches',
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
+    'BranchFormat',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
+    'BranchPersonSearchContext',
+    'BranchPersonSearchRestriction',
     'BranchType',
     'BranchTypeError',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'CannotDeleteBranch',
+    'ControlFormat',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchListingFilter',
+    'IBranchPersonSearchContext',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
+    'RepositoryFormat',
     'UICreatableBranchType',
     'UnknownBranchTypeError'
     ]
 
+from cgi import escape
 from datetime import timedelta
 import re
-from zope.interface import Interface, Attribute
 
+# ensure correct plugins are loaded
+import canonical.codehosting
+from bzrlib.branch import (
+    BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
+    BzrBranchFormat6)
+from bzrlib.bzrdir import (
+    BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
+from bzrlib.plugins.loom.branch import (
+    BzrBranchLoomFormat1, BzrBranchLoomFormat6)
+from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
+    RepositoryFormatKnit3, RepositoryFormatKnit4)
+from bzrlib.repofmt.pack_repo import (
+    RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
+    RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
+    RepositoryFormatPackDevelopment0Subtree)
+from bzrlib.repofmt.weaverepo import (
+    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
+    RepositoryFormat7)
 from zope.component import getUtility
+from zope.interface import implements, Interface, Attribute
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
@@ -45,6 +72,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.launchpad.webapp.menu import structured
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
@@ -140,6 +168,97 @@ class BranchType(DBEnumeratedType):
         """)
 
 
+def _format_enum(num, format, format_string=None):
+    instance = format()
+    if format_string is None:
+        format_string = instance.get_format_string()
+    return DBItem(num, format_string, instance.get_format_description())
+
+
+class BranchFormat(DBEnumeratedType):
+    """Branch on-disk format.
+
+    This indicates which (Bazaar) format is used on-disk.  The list must be
+    updated as the list of formats supported by Bazaar is updated.
+    """
+
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
+
+    # Branch 4 was only used with all-in-one formats, so it didn't have its
+    # own marker.  It was implied by the control directory marker.
+    BZR_BRANCH_4 = _format_enum(
+        4, BzrBranchFormat4, 'Fake Bazaar Branch 4 marker')
+
+    BRANCH_REFERENCE = _format_enum(1, BranchReferenceFormat)
+
+    BZR_BRANCH_5 = _format_enum(5, BzrBranchFormat5)
+
+    BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
+
+    BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
+
+    BZR_LOOM_2 = _format_enum(106, BzrBranchLoomFormat6)
+
+
+class RepositoryFormat(DBEnumeratedType):
+    """Repository on-disk format.
+
+    This indicates which (Bazaar) format is used on-disk.  The list must be
+    updated as the list of formats supported by Bazaar is updated.
+    """
+
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
+
+    # Repository formats prior to format 7 had no marker because they
+    # were implied by the control directory format.
+    BZR_REPOSITORY_4 = _format_enum(
+        4, RepositoryFormat4, 'Fake Bazaar repository 4 marker')
+
+    BZR_REPOSITORY_5 = _format_enum(
+        5, RepositoryFormat5, 'Fake Bazaar repository 5 marker')
+
+    BZR_REPOSITORY_6 = _format_enum(
+        6, RepositoryFormat6, 'Fake Bazaar repository 6 marker')
+
+    BZR_REPOSITORY_7 = _format_enum(7, RepositoryFormat7)
+
+    BZR_KNIT_1 = _format_enum(101, RepositoryFormatKnit1)
+
+    BZR_KNIT_3 = _format_enum(103, RepositoryFormatKnit3)
+
+    BZR_KNIT_4 = _format_enum(104, RepositoryFormatKnit4)
+
+    BZR_KNITPACK_1 = _format_enum(201, RepositoryFormatKnitPack1)
+
+    BZR_KNITPACK_3 = _format_enum(203, RepositoryFormatKnitPack3)
+
+    BZR_KNITPACK_4 = _format_enum(204, RepositoryFormatKnitPack4)
+
+    BZR_PACK_DEV_0 = _format_enum(
+        300, RepositoryFormatPackDevelopment0)
+
+    BZR_PACK_DEV_0_SUBTREE = _format_enum(
+        301, RepositoryFormatPackDevelopment0Subtree)
+
+
+class ControlFormat(DBEnumeratedType):
+    """Control directory (BzrDir) format.
+
+    This indicates what control directory format is on disk.  Must be updated
+    as new formats become available.
+    """
+
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
+
+    BZR_DIR_4 = _format_enum(4, BzrDirFormat4)
+
+    BZR_DIR_5 = _format_enum(5, BzrDirFormat5)
+
+    BZR_DIR_6 = _format_enum(6, BzrDirFormat6)
+
+    BZR_METADIR_1 = _format_enum(1, BzrDirMetaFormat1)
+
+
 class UICreatableBranchType(EnumeratedType):
     """The types of branches that can be created through the web UI."""
     use_template(BranchType, exclude='IMPORTED')
@@ -211,6 +330,10 @@ class BranchTypeError(Exception):
     """
 
 
+class BadBranchSearchContext(Exception):
+    """The context is not valid for a branch search."""
+
+
 class BranchURIField(URIField):
 
     def _validate(self, value):
@@ -232,8 +355,19 @@ class BranchURIField(URIField):
         if uri.underDomain(launchpad_domain):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
-                "cannot be on <code>%s</code>." % launchpad_domain)
-            raise LaunchpadValidationError(message)
+                "cannot be on <code>${domain}</code>.",
+                mapping={'domain': escape(launchpad_domain)})
+            raise LaunchpadValidationError(structured(message))
+
+        # As well as the check against the config, we also need to check
+        # against the actual text used in the database constraint.
+        constraint_text = 'http://bazaar.launchpad.net'
+        if value.startswith(constraint_text):
+            message = _(
+                "For Launchpad to mirror a branch, the original branch "
+                "cannot be on <code>${domain}</code>.",
+                mapping={'domain': escape(constraint_text)})
+            raise LaunchpadValidationError(structured(message))
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
             return # url was not changed
@@ -246,10 +380,11 @@ class BranchURIField(URIField):
         branch = getUtility(IBranchSet).getByUrl(str(uri))
         if branch is not None:
             message = _(
-                "The bzr branch <a href=\"%s\">%s</a> is already registered "
-                "with this URL.")
-            raise LaunchpadValidationError(
-                message, canonical_url(branch), branch.displayname)
+                'The bzr branch <a href="${url}">${branch}</a> is '
+                'already registered with this URL.',
+                mapping={'url': canonical_url(branch),
+                         'branch': escape(branch.displayname)})
+            raise LaunchpadValidationError(structured(message))
 
 
 BRANCH_NAME_VALIDATION_ERROR_MESSAGE = _(
@@ -278,8 +413,9 @@ def branch_name_validator(name):
     """
     if not valid_branch_name(name):
         raise LaunchpadValidationError(
-            _("Invalid branch name '%s'. %s"), name,
-            BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+            _("Invalid branch name '${name}'. ${message}",
+              mapping={'name': name,
+                       'message': BRANCH_NAME_VALIDATION_ERROR_MESSAGE}))
     return True
 
 
@@ -329,6 +465,17 @@ class IBranch(IHasOwner):
         description=_("This is the external location where the Bazaar "
                       "branch is hosted."))
 
+    branch_format = Choice(
+        title=_("Branch Format"), required=False, vocabulary=BranchFormat)
+
+    repository_format = Choice(
+        title=_("Repository Format"), required=False,
+        vocabulary=RepositoryFormat)
+
+    control_format = Choice(
+        title=_("Control Directory"), required=False,
+        vocabulary=ControlFormat)
+
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
     mirror_status_message = Text(
@@ -344,7 +491,7 @@ class IBranch(IHasOwner):
     registrant = Attribute("The user that registered the branch.")
     owner = PublicPersonChoice(
         title=_('Owner'), required=True,
-        vocabulary='PersonActiveMembershipPlusSelf',
+        vocabulary='UserTeamsParticipationPlusSelf',
         description=_("Either yourself or a team you are a member of. "
                       "This controls who can modify the branch."))
     author = PublicPersonChoice(
@@ -372,15 +519,6 @@ class IBranch(IHasOwner):
         "The branch title if provided, or the unique_name.")
     sort_key = Attribute(
         "Key for sorting branches for display.")
-
-
-    # Home page attributes
-    home_page = URIField(
-        title=_('Web Page'), required=False,
-        allowed_schemes=['http', 'https', 'ftp'],
-        allow_userinfo=False,
-        description=_("The URL of a web page describing the branch, "
-                      "if there is such a page."))
 
     # Stats and status attributes
     lifecycle_status = Choice(
@@ -515,25 +653,15 @@ class IBranch(IHasOwner):
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
-    # Don't use Object-- that would cause an import loop with ICodeImport
+    # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
 
-    def getBzrUploadURL(person=None):
-        """Return the URL for this person to push to the branch.
-
-        If user is None a placeholder is used for the username if
-        one is required.
-        """
-
-    def getBzrDownloadURL(person=None):
-        """Return the URL for this person to branch the branch.
-
-        If the branch is public, the anonymous http location is used,
-        otherwise the url uses the smartserver.
-
-        If user is None a placeholder is used for the username if
-        one is required.
-        """
+    bzr_identity = Attribute(
+        "The shortest lp spec URL for this branch. "
+        "If the branch is associated with a product as the primary "
+        "development focus, then the result should be lp:product.  If "
+        "the branch is related to a series, then lp:product/series. "
+        "Otherwise the result is lp:~user/product/branch-name.")
 
     def canBeDeleted():
         """Can this branch be deleted in its current state.
@@ -561,9 +689,17 @@ class IBranch(IHasOwner):
         """
 
     # subscription-related methods
-    def subscribe(person, notification_level, max_diff_lines):
+    def subscribe(person, notification_level, max_diff_lines,
+                  code_review_level):
         """Subscribe this person to the branch.
 
+        :param person: The `Person` to subscribe.
+        :param notification_level: The kinds of branch changes that cause
+            notification.
+        :param max_diff_lines: The maximum number of lines of diff that may
+            appear in a notification.
+        :param code_review_level: The kinds of code review activity that cause
+            notification.
         :return: new or existing BranchSubscription."""
 
     def getSubscription(person):
@@ -694,9 +830,9 @@ class IBranchSet(Interface):
     def getBranch(owner, product, branch_name):
         """Return the branch identified by owner/product/branch_name."""
 
-    def new(branch_type, name, creator, owner, product, url, title=None,
+    def new(branch_type, name, registrant, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, whiteboard=None, date_created=None):
+            summary=None, whiteboard=None, date_created=None):
         """Create a new branch.
 
         Raises BranchCreationForbidden if the creator is not allowed
@@ -705,6 +841,12 @@ class IBranchSet(Interface):
         If product is None (indicating a +junk branch) then the owner must not
         be a team, except for the special case of the ~vcs-imports celebrity.
         """
+
+    def getByProductAndName(product, name):
+        """Find all branches in a product with a given name."""
+
+    def getByProductAndNameStartsWith(product, name):
+        """Find all branches in a product a name that starts with `name`."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
@@ -808,30 +950,24 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getBranchesForPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches associated with person with appropriate lifecycle.
+    def getBranchesForContext(
+        context=None,
+        lifecycle_statuses=None,
+        visible_by_user=None,
+        sort_by=None):
+        """Branches associated with the context.
 
-        XXX: thumper 2007-03-23:
-        The intent here is to just show interesting branches for the
-        person.
-        Following a chat with lifeless we'd like this to be listed and
-        ordered by interest and last activity where activity is defined
-        as linking a bug or spec, changing the status of said link,
-        updating ui attributes of the branch, committing code to the
-        branch.
-        Branches of most interest to a person are their subscribed
-        branches, and the branches that they have registered or own.
-
-        All branches that are either registered or owned by person
-        are shown, as well as their subscribed branches.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
+        :param context: If None, all possible branches are returned, otherwise
+            the results will be appropriately filtered by the type of the
+            context.
+        :type context: Something that implements IProject, IProduct, or
+            IPerson.
+        :param lifecycle_statuses: If lifecycle_statuses evaluates to False
+            then branches of any lifecycle_status are returned, otherwise
+            only branches with a lifecycle_status of one of the
+            lifecycle_statuses are returned.
+        :type lifecycle_statuses: One or more values from the
+            BranchLifecycleStatus enumeration.
         :param visible_by_user: If a person is not supplied, only public
             branches are returned.  If a person is supplied both public
             branches, and the private branches that the person is entitled to
@@ -841,148 +977,6 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormant: Boolean.
-        """
-
-    def getBranchesOwnedByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches owned by person with appropriate lifecycle.
-
-        Only branches that are owned by the person are returned.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormant: Boolean.
-        """
-
-    def getBranchesRegisteredByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches registered by person with appropriate lifecycle.
-
-        Only branches registered by the person are returned.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormant: Boolean.
-        """
-
-    def getBranchesSubscribedByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches subscribed by person with appropriate lifecycle.
-
-        All branches where the person has subscribed to the branch
-        are returned.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormant: Boolean.
-        """
-
-    def getBranchesForProduct(
-        product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches associated with product with appropriate lifecycle.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormant: Boolean.
-        """
-
-    def getBranchesForProject(
-        project, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches associated with project with appropriate lifecycle.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormanty Boolean.
         """
 
     def getHostedBranchesForPerson(person):
@@ -1025,6 +1019,15 @@ class IBranchSet(Interface):
 
     def getTargetBranchesForUsersMergeProposals(user, product):
         """Return a sequence of branches the user has targetted before."""
+
+    def isBranchNameAvailable(owner, product, branch_name):
+        """Is the specified branch_name valid for the owner and product.
+
+        :param owner: A `Person` who may be an individual or team.
+        :param product: A `Product` or None for a junk branch.
+        :param branch_name: The proposed branch name.
+        """
+
 
 
 class IBranchDelta(Interface):
@@ -1080,6 +1083,12 @@ class BranchListingSort(EnumeratedType):
     # XXX: MichaelHudson 2007-10-17 bug=153891: We allow sorting on quantities
     # that are not visible in the listing!
 
+    DEFAULT = Item("""
+        by most interesting
+
+        Sort branches by the default ordering for the view.
+        """)
+
     PRODUCT = Item("""
         by project name
 
@@ -1090,12 +1099,6 @@ class BranchListingSort(EnumeratedType):
         by lifecycle status
 
         Sort branches by the lifecycle status.
-        """)
-
-    AUTHOR = Item("""
-        by author name
-
-        Sort branches by the display name of the author.
         """)
 
     NAME = Item("""
@@ -1157,6 +1160,54 @@ class IBranchListingFilter(Interface):
         title=_('ordered by'), vocabulary=BranchListingSort,
         default=BranchListingSort.LIFECYCLE)
 
-    hide_dormant = Bool(
-        title=_("Hide dormant branches"),
-        description=_("Hide dormant branches"))
+
+class BranchPersonSearchRestriction(EnumeratedType):
+    """How to further restrict the query for a branch search for people."""
+
+    ALL = Item("""
+        All related branches
+
+        All branches owned, registered or subscribed to by the person.
+        """)
+
+    REGISTERED = Item("""
+        Registered branches
+
+        Only return the branches registered by the person.
+        """)
+
+    OWNED = Item("""
+        Owned branches
+
+        Only return the branches owned by the person.
+        """)
+
+    SUBSCRIBED = Item("""
+        Subscribed branches
+
+        Only return the branches subscribed to by the person.
+        """)
+
+
+class IBranchPersonSearchContext(Interface):
+    """A `Person` with a search restriction."""
+
+    person = PublicPersonChoice(
+        title=_('Person'), required=True,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The person to restrict the branch search to."))
+
+    restriction = Choice(
+        title=_("Search restriction"), required=True,
+        vocabulary=BranchPersonSearchRestriction)
+
+
+class BranchPersonSearchContext:
+    """The simple implementation for the person search context."""
+    implements(IBranchPersonSearchContext)
+
+    def __init__(self, person, restriction=None):
+        self.person = person
+        if restriction is None:
+            restriction = BranchPersonSearchRestriction.ALL
+        self.restriction = restriction

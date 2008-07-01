@@ -40,7 +40,7 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
     layer="canonical.launchpad.layers.AnswersLayer"
-    name="+tickets"
+    name="+questions"
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
@@ -189,7 +189,7 @@
     name="+export"
     facet="translations"
     layer="canonical.launchpad.layers.TranslationsLayer"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.ExpensiveRequest"
     template="../templates/sourcepackage-export.pt"
     class="canonical.launchpad.browser.SourcePackageTranslationsExportView"
     />

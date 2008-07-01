@@ -40,7 +40,8 @@ def main():
 
     # Generate a list of all patches we might want to apply
     patches = []
-    all_patch_files = glob.glob(os.path.join(schema_dir, 'patch-???-??-?.sql'))
+    all_patch_files = glob.glob(
+            os.path.join(schema_dir, 'patch-???-??-?.sql'))
     all_patch_files.sort()
     for patch_file in all_patch_files:
         m = re.search('patch-(\d\d\d)-(\d\d)-(\d).sql$', patch_file)
@@ -89,8 +90,17 @@ def apply_patch(con, major, minor, patch, patch_file):
     full_sql = re.sub('(?xms) \/\* .*? \*\/', '', full_sql)
     full_sql = re.sub('(?xm) ^\s*-- .*? $', '', full_sql)
 
-    for sql in re.split('(?xm); \s* $', full_sql):
-        if sql.strip():
+    # Regular expression to extract a single statement.
+    # A statement may contain semicolons if it is a stored procedure
+    # definition, which requires a disgusting regexp or a parser for
+    # PostgreSQL specific SQL.
+    statement_re = re.compile(
+            r"( (?: [^;$] | \$ (?! \$) | \$\$.*? \$\$)+ )",
+            re.DOTALL | re.MULTILINE | re.VERBOSE
+            )
+    for sql in statement_re.split(full_sql):
+        sql = sql.strip()
+        if sql and sql != ';':
             cur.execute(sql) # Will die on a bad patch.
 
     # Ensure the patch updated LaunchpadDatabaseRevision. We could do this

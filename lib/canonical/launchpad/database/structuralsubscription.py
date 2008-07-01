@@ -16,9 +16,9 @@ from canonical.database.sqlbase import quote, SQLBase
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
     IDistribution, IDistributionSourcePackage, IDistroSeries, IMilestone,
-    IProduct, IProductSeries, IStructuralSubscription,
+    IProduct, IProductSeries, IProject, IStructuralSubscription,
     IStructuralSubscriptionTarget)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 class StructuralSubscription(SQLBase):
     """A subscription to a Launchpad structure."""
@@ -48,10 +48,10 @@ class StructuralSubscription(SQLBase):
         notNull=False, default=None)
     subscriber = ForeignKey(
         dbName='subscriber', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     bug_notification_level = EnumCol(
         enum=BugNotificationLevel,
         default=BugNotificationLevel.NOTHING,
@@ -110,11 +110,17 @@ class StructuralSubscriptionTargetMixin:
             args['sourcepackagename'] = self.sourcepackagename
         elif IProduct.providedBy(self):
             args['product'] = self
+        elif IProject.providedBy(self):
+            args['project'] = self
         elif IDistribution.providedBy(self):
             args['distribution'] = self
             args['sourcepackagename'] = None
         elif IMilestone.providedBy(self):
             args['milestone'] = self
+        elif IProductSeries.providedBy(self):
+            args['productseries'] = self
+        elif IDistroSeries.providedBy(self):
+            args['distroseries'] = self
         else:
             raise AssertionError(
                 '%s is not a valid structural subscription target.')

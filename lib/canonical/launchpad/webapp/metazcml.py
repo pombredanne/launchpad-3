@@ -5,42 +5,41 @@ __metaclass__ = type
 import os
 import inspect
 
-from zope.interface import Interface, implements
-from zope.component import getUtility
+import zope.app.form.browser.metaconfigure
+import zope.app.publisher.browser.metadirectives
 import zope.component.servicenames
-from zope.schema import TextLine
+from zope.app.component.contentdirective import ContentDirective
+from zope.app.component.fields import LayerField
+from zope.app.component.metaconfigure import (
+    adapter, handler, PublicPermission, utility, view)
+from zope.app.file.image import Image
+from zope.app.pagetemplate.engine import Engine
+from zope.app.publisher.browser.viewmeta import (
+    page as original_page, pages as original_pages)
+from zope.app.security.metadirectives import IDefinePermissionDirective
+from zope.app.security.permission import Permission
+from zope.component import getUtility
 from zope.configuration.exceptions import ConfigurationError
 from zope.configuration.fields import (
-    MessageID, GlobalObject, PythonIdentifier, Path, Tokens)
-
-from zope.security.checker import CheckerPublic, Checker, defineChecker
-from zope.security.proxy import ProxyFactory
+    GlobalObject, MessageID, Path, PythonIdentifier, Tokens)
+from zope.interface import Interface, implements
 from zope.publisher.interfaces.browser import (
-    IBrowserPublisher, IBrowserRequest)
-from zope.app.component.metaconfigure import (
-    handler, adapter, utility, view, PublicPermission)
-
-from zope.app.component.contentdirective import ContentDirective
-from zope.app.pagetemplate.engine import Engine
-from zope.app.component.fields import LayerField
-from zope.app.file.image import Image
-import zope.app.publisher.browser.metadirectives
-from zope.app.publisher.browser.viewmeta import page
-import zope.app.form.browser.metaconfigure
+    IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.app.publisher.browser.viewmeta import (
-    pages as original_pages,
-    page as original_page)
+from zope.schema import TextLine
+from zope.security.checker import Checker, CheckerPublic, defineChecker
+from zope.security.interfaces import IPermission
+from zope.security.proxy import ProxyFactory
 
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory)
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, IFacetMenu, IApplicationMenu,
-    IContextMenu, IAuthorization, IBreadcrumbProvider)
+    IApplicationMenu, IAuthorization, IBreadcrumbProvider,
+    ICanonicalUrlData, IContextMenu, IFacetMenu, INavigationMenu)
 from canonical.launchpad.webapp.launchpadtour import LaunchpadTourView
 from canonical.launchpad.webapp.publisher import RenamedView
+
 
 class IAuthorizationsDirective(Interface):
     """Set up authorizations as given in a module."""
@@ -94,7 +93,8 @@ class PermissionCollectingContext:
                 elif discriminator_name == 'protectSetAttribute':
                     self.set_permissions[name] = permission
                 else:
-                    raise RuntimeError("unrecognised discriminator name", name)
+                    raise RuntimeError(
+                        "unrecognised discriminator name", name)
 
 class SecuredUtilityDirective:
 
@@ -215,8 +215,8 @@ def menus(_context, module, classes):
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
-    menutypes = [IFacetMenu, IApplicationMenu, IContextMenu]
-    applicationmenutypes = [IApplicationMenu]
+    menutypes = [IFacetMenu, IApplicationMenu, IContextMenu, INavigationMenu]
+    applicationmenutypes = [IApplicationMenu, INavigationMenu]
     for menuname in classes:
         menuclass = getattr(module, menuname)
         implemented = None
@@ -539,9 +539,9 @@ def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
     _context.action(
         discriminator = ('view', for_, name, IBrowserRequest, layer),
         callable = handler,
-        args = ('provideAdapter',
-                (for_, layer), Interface, name, renamed_factory, _context.info),
-        )
+        args = (
+            'provideAdapter',
+            (for_, layer), Interface, name, renamed_factory, _context.info))
 
 
 class ITourPageDirective(Interface):
@@ -714,13 +714,6 @@ class GeneralFormDirective(
     arguments = None
     keyword_arguments = None
 
-    def _handle_menu(self):
-        if self.menu or self.title:
-            menuItemDirective(
-                self._context, self.menu, self.for_, '@@' + self.name,
-                self.title, permission=self.permission,
-                description=self.description)
-
     def _handle_arguments(self, leftover=None):
         schema = self.schema
         fields = self.fields
@@ -733,8 +726,8 @@ class GeneralFormDirective(
         if arguments:
             missing = [n for n in arguments if n not in fields]
             if missing:
-                raise ValueError("Some arguments are not included in the form",
-                                 missing)
+                raise ValueError(
+                    "Some arguments are not included in the form", missing)
             optional = [n for n in arguments if not schema[n].required]
             if optional:
                 raise ValueError("Some arguments are optional, use"
@@ -757,7 +750,6 @@ class GeneralFormDirective(
             new_class = type('SimpleLaunchpadViewClass', (), cdict)
             self.bases += (new_class, )
         self._processWidgets()
-        #self._handle_menu()
         self._handle_arguments()
         self._context.action(
             discriminator=self._discriminator(),
@@ -798,3 +790,32 @@ class SchemaDisplayDirective(
 
         zope.app.form.browser.metaconfigure.SchemaDisplayDirective.__call__(
             self)
+
+
+class IDefineLaunchpadPermissionDirective(IDefinePermissionDirective):
+
+    access_level = TextLine(
+        title=u"Access level", required=False,
+        description=u"Either read or write")
+
+
+class ILaunchpadPermission(IPermission):
+
+    access_level = IDefineLaunchpadPermissionDirective['access_level']
+
+
+class LaunchpadPermission(Permission):
+    implements(ILaunchpadPermission)
+
+    def __init__(self, id, title, access_level, description):
+        assert access_level in ["read", "write"], (
+            "Unknown access level (%s). Must be either read or write."
+            % access_level)
+        super(LaunchpadPermission, self).__init__(id, title, description)
+        self.access_level = access_level
+
+
+def definePermission(_context, id, title, access_level="write",
+                     description=''):
+    permission = LaunchpadPermission(id, title, access_level, description)
+    utility(_context, ILaunchpadPermission, permission, name=id)

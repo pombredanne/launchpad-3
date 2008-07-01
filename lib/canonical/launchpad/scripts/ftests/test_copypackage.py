@@ -7,15 +7,27 @@ import subprocess
 import sys
 import unittest
 
+from zope.component import getUtility
+
 from canonical.config import config
-from canonical.launchpad.scripts import FakeLogger
-from canonical.launchpad.scripts.ftpmaster import (
-    PackageLocationError, PackageCopier, SoyuzScriptError)
+from canonical.launchpad.components.packagelocation import (
+    PackageLocationError)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import PackagePublishingStatus
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.publishing import (
+    ISourcePackagePublishingHistory, PackagePublishingPocket,
+    PackagePublishingStatus)
+from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.launchpad.scripts.ftpmasterbase import SoyuzScriptError
+from canonical.launchpad.scripts.packagecopier import (
+    PackageCopier, UnembargoSecurityPackage)
+from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
+from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
 
 
 class TestCopyPackageScript(unittest.TestCase):
@@ -24,8 +36,10 @@ class TestCopyPackageScript(unittest.TestCase):
 
     def runCopyPackage(self, extra_args=None):
         """Run copy-package.py, returning the result and output.
+
         Returns a tuple of the process's return code, stdout output and
-        stderr output."""
+        stderr output.
+        """
         if extra_args is None:
             extra_args = []
         script = os.path.join(
@@ -34,6 +48,9 @@ class TestCopyPackageScript(unittest.TestCase):
         args.extend(extra_args)
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # The subprocess commits to the database so we need to tell the layer
+        # to fully tear down and restore the testing database.
+        DatabaseLayer.force_dirty_database()
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
@@ -134,11 +151,7 @@ class TestCopyPackage(unittest.TestCase):
         test_args.append(sourcename)
 
         copier = PackageCopier(name='copy-package', test_args=test_args)
-        # Swallowing all log messages.
-        copier.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        copier.logger.message = message
+        copier.logger = QuietFakeLogger()
         copier.setupLocation()
         return copier
 
@@ -169,10 +182,6 @@ class TestCopyPackage(unittest.TestCase):
         binaries_pending_ids = excludeOlds(
             binaries_pending, self.binaries_pending_ids)
 
-        # We have to compare IDs because the copied list is actually a
-        # list of Secure*PublishingHistory records and the lookups are
-        # the records from the correspondent DB view
-        # *PackagePublishingHistory.
         copied_ids = [pub.id for pub in copied]
         pending_ids = sources_pending_ids + binaries_pending_ids
 
@@ -217,6 +226,26 @@ class TestCopyPackage(unittest.TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 5)
 
+    def testCannotCopyTwice(self):
+        """When invoked twice, copy package doesn't re-copy publications.
+
+        As reported in bug #237353, duplicates are generally cruft and may
+        cause problems when they include architecture-independent binaries.
+
+        That's why PackageCopier refuses to copy publications with versions
+        older or equal the ones already present in the destination.
+        """
+        copy_helper = self.getCopier(
+            from_suite='warty', to_suite='warty-updates')
+        copied = copy_helper.mainTask()
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 5)
+
+        copy_helper = self.getCopier(
+            from_suite='warty', to_suite='warty-updates')
+        copied = copy_helper.mainTask()
+        self.assertEqual(len(copied), 0)
+
     def testCopyAcrossPartner(self):
         """Check the copy operation across PARTNER archive.
 
@@ -242,33 +271,98 @@ class TestCopyPackage(unittest.TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
 
-    def testCopyFromPPA(self):
-        """Check the copy operation from PPA to PRIMARY Archive.
+    def getTestPublisher(self, distroseries):
+        """Return a initialised `SoyuzTestPublisher` object.
+
+        Setup a i386 chroot for the given distroseries, so it can build
+        and publish binaries.
+        """
+        fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+        distroseries['i386'].addOrUpdateChroot(fake_chroot)
+        test_publisher = SoyuzTestPublisher()
+        test_publisher.person = getUtility(IPersonSet).getByName("name16")
+        return test_publisher
+
+    def testCopySourceFromPPA(self):
+        """Check the copy source operation from PPA to PRIMARY Archive.
+
+        A source package can get copied from PPA to the PRIMARY archive,
+        which will immediately result in a build record in the destination
+        context.
 
         That's the preliminary workflow for 'syncing' sources from PPA to
         the ubuntu PRIMARY archive.
         """
-        copy_helper = self.getCopier(
-            sourcename='iceweasel', from_ppa='cprov',
-            from_suite='warty', to_suite='hoary', include_binaries=False)
-        copied = copy_helper.mainTask()
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
 
-        self.assertEqual(
-            str(copy_helper.location),
-            'cprov: warty-RELEASE')
-        self.assertEqual(
-            str(copy_helper.destination),
-            'Primary Archive for Ubuntu Linux: hoary-RELEASE')
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        ppa_source = test_publisher.getPubSource(
+            archive=cprov.archive, version='1.0', distroseries=hoary,
+            status=PackagePublishingStatus.PUBLISHED)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=hoary,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        copy_helper = self.getCopier(
+            sourcename='foo', from_ppa='cprov', include_binaries=False,
+            from_suite='hoary', to_suite='hoary')
+        copied = copy_helper.mainTask()
 
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 1)
 
+        [copy] = copied
+        self.assertEqual(copy.displayname, 'foo 1.0 in hoary')
+        self.assertEqual(copy.getPublishedBinaries().count(), 0)
+        self.assertEqual(copy.getBuilds().count(), 1)
+
+    def testCopySourceAndBinariesFromPPA(self):
+        """Check the copy operation from PPA to PRIMARY Archive.
+
+        Source and binaries can get copied from PPA to the PRIMARY archive.
+
+        This action is typically used to copy invariant/harmless packages
+        built in PPA context, as language-packs.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
+
+        # There are no sources named 'boing' in ubuntu primary archive.
+        existing_sources = ubuntu.main_archive.getPublishedSources(
+            name='boing')
+        self.assertEqual(existing_sources.count(), 0)
+
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        ppa_source = test_publisher.getPubSource(
+            sourcename='boing', version='1.0',
+            archive=cprov.archive, distroseries=hoary,
+            status=PackagePublishingStatus.PENDING)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=hoary,
+            status=PackagePublishingStatus.PENDING)
+
+        copy_helper = self.getCopier(
+            sourcename='boing', from_ppa='cprov', include_binaries=True,
+            from_suite='hoary', to_suite='hoary')
+        copied = copy_helper.mainTask()
+
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 3)
+
+        [copied_source] = ubuntu.main_archive.getPublishedSources(
+            name='boing')
+        self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
+        self.assertEqual(copied_source.getPublishedBinaries().count(), 2)
+        self.assertEqual(copied_source.getBuilds().count(), 0)
+
     def testCopyAcrossPPAs(self):
         """Check the copy operation across PPAs.
 
-        This operation is useful to propagate deependencies accross
-        colaborative PPAs without requiring new uploads. Ideally, it
-        should be possible to perform such operation via the Launchpad UI.
+        This operation is useful to propagate dependencies across
+        collaborative PPAs without requiring new uploads.
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
@@ -289,7 +383,7 @@ class TestCopyPackage(unittest.TestCase):
                                 func, *args):
         """Check if the given exception is raised with given content.
 
-        If the expection isn't raised or the exception_content doesn't
+        If the exception isn't raised or the exception_content doesn't
         match what was raised an AssertionError is raised.
         """
         exception_name = str(exception).split('.')[-1]
@@ -440,6 +534,96 @@ class TestCopyPackage(unittest.TestCase):
         # The source and the binary got copied.
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
+
+    def testUnembargoing(self):
+        """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
+        # Set up a private PPA.
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        cprov.archive.buildd_secret = "secret"
+        cprov.archive.private = True
+
+        # Setup a SoyuzTestPublisher object, so we can create publication
+        # to be unembargoed.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        warty = ubuntu.getSeries('warty')
+        test_publisher = self.getTestPublisher(warty)
+
+        # Create a source and binary pair to be unembargoed from the PPA.
+        ppa_source = test_publisher.getPubSource(
+            archive=cprov.archive, version='1.1',
+            distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Also create a PackageUpload item with a fake changesfile.
+        ppa_queue_item = warty.createQueueEntry(
+            pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
+            changesfilename='foo_source.changes', changesfilecontent='x')
+        ppa_queue_item.addSource(ppa_source.sourcepackagerelease)
+        ppa_queue_item.setDone()
+
+        # Create ancestry environment in the primary archive, so we can
+        # test unembargoed overrides.
+        ancestry_source = test_publisher.getPubSource(
+            version='1.0', distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
+        ancestry_binaries = test_publisher.getPubBinaries(
+            pub_source=ancestry_source, distroseries=warty,
+            status=PackagePublishingStatus.SUPERSEDED)
+
+        # Override the published ancestry source to 'universe'
+        universe = getUtility(IComponentSet)['universe']
+        ancestry_source.secure_record.component = universe
+
+        # Override the copied binarypackagerelease to 'universe'.
+        for binary in ppa_binaries:
+            binary.binarypackagerelease.component = universe
+
+        self.layer.txn.commit()
+
+        # Now we can invoke the unembargo script and check its results.
+        test_args = [
+            "--ppa", "cprov",
+            "-s", "%s" % ppa_source.distroseries.name,
+            "foo"
+            ]
+
+        script = UnembargoSecurityPackage(
+            name='unembargo', test_args=test_args)
+        script.logger = QuietFakeLogger()
+        script.setupLocation()
+
+        copied = script.mainTask()
+
+        # Check the results.
+        self.checkCopies(copied, script.destination.archive, 3)
+
+        # Check that the librarian files are all unrestricted now.
+        # We must commit the txn for SQL object to see the change.
+        # Also check that the published records are in universe, which
+        # shows that the ancestry override worked.
+        self.layer.txn.commit()
+        for published in copied:
+            # This is cheating a bit but it's fine.  The script updates
+            # the secure publishing record but this change does not
+            # get reflected in SQLObject's cache on the object that comes
+            # from the SQL View, the non-secure record.  No amount of
+            # syncUpdate and flushing seems to want to make it update :(
+            # So, I am checking the secure record in this test.
+            self.assertEqual(
+                published.secure_record.component.name, universe.name,
+                "%s is in %s" % (published.displayname,
+                                 published.component.name))
+            for published_file in published.files:
+                self.assertFalse(published_file.libraryfilealias.restricted)
+            # Also check the sources' changesfiles.
+            if ISourcePackagePublishingHistory.providedBy(published):
+                queue = published.sourcepackagerelease.getQueueRecord(
+                    distroseries=published.distroseries)
+                self.assertFalse(queue.changesfile.restricted)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -329,8 +329,26 @@ ICodeImportEventSet.newOnline method.
     ONLINE
     >>> print online_event.machine.hostname
     bazaar-importer
+    >>> print online_event.person
+    None
     >>> print_items(online_event)
     <nothing>
+
+A new online event can optionally take a user and a reason.  This is the
+case when a user updates the state of the machine through the web UI.
+
+    >>> factory = LaunchpadObjectFactory()
+    >>> apollo = factory.makeCodeImportMachine(hostname="apollo")
+    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
+    >>> online_event = event_set.newOnline(apollo, ddaa, 'Fubar was fixed')
+    >>> verify_event(online_event)
+    ONLINE
+    >>> print online_event.machine.hostname
+    apollo
+    >>> print online_event.person.name
+    ddaa
+    >>> print_items(online_event)
+    MESSAGE u'Fubar was fixed'
 
 
 === OFFLINE ===
@@ -365,22 +383,34 @@ check that it is a legal value.
     AssertionError: reason must be a CodeImportMachineOfflineReason value,
     but was: ...
 
+A new offline event can optionally take a user and a reason.  This is the
+case when a user updates the state of the machine through the web UI.
+
+    >>> offline_event = event_set.newOffline(
+    ...     apollo, CodeImportMachineOfflineReason.STOPPED,
+    ...     ddaa, 'Down for fixing')
+    >>> verify_event(offline_event)
+    OFFLINE
+    >>> print offline_event.machine.hostname
+    apollo
+    >>> print offline_event.person.name
+    ddaa
+    >>> print_items(offline_event)
+    MESSAGE u'Down for fixing'
+    OFFLINE_REASON u'STOPPED'
+
 
 === QUIESCE ===
 
 When an operator quiesces a machine (this is an administrative
 operation), a QUIESCE event should be created to record the operator's
-identity, the affected machine, and a user-provided message explaining
-why quiescing was requested.
-
-    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
+identity, the affected machine, and an optional user-provided message
+explaining why quiescing was requested.
 
     >>> fail_if_argument_is_none(
     ...     event_set.newQuiesce, None, ddaa, 'Message.')
     >>> fail_if_argument_is_none(
     ...     event_set.newQuiesce, machine, None, 'Message.')
-    >>> fail_if_argument_is_none(
-    ...     event_set.newQuiesce, machine, ddaa, None)
 
     >>> quiesce_event = event_set.newQuiesce(
     ...     machine, ddaa, 'Production rollout.')

@@ -1,18 +1,18 @@
-## page was renamed from UsingMaloneEmail
-[[Anchor(support)]]
-This document describes the email interface to the bug tracker in Launchpad. If you have questions or comments about this document, please address them to {{{#launchpad}}} on freenode, or ask on the [https://lists.ubuntu.com/mailman/listinfo/launchpad-users launchpad-users mailing list].
+= Overview =
 
-[[TableOfContents()]]
+You can use Launchpad Bugs via its email interface, as well as the web. The email interface gives you access to most of the bug tracker's functionality. 
 
-== Summary ==
+Filtering mail sent from the bug tracker is easy, thanks to the ```X-Launchpad-Bug:``` header that it appends to any mail it sends you.
 
-Malone provides an email interface for commenting on and modifying bugs. It also provides an `X-Launchpad-Bug:` header you can use to filter the messages it sends you.
 
-== Example syntax for Malone commands ==
+= Syntax =
+
+
+== Example syntax for email to the bug tracker ==
 
 Email for reporting and editing bugs must be GPG-signed. Commenting on a bug can be done by simply replying to a bugmail. The commands, `affects`, `status`, etc., must each be indented at least one space character.
 
-Reporting a bug in Ubuntu firefox:
+Reporting a bug in Ubuntu's firefox package:
 
 {{{
 From: me@example.com
@@ -28,7 +28,7 @@ The foobar is busted.
  assignee salgado
 }}}
 
-Reporting a bug on Malone itself:
+Reporting a bug on Launchpad's bug tracker itself:
 
 {{{
 From: me@example.com
@@ -52,18 +52,36 @@ The foobar is busted.
  status fixreleased
 }}}
 
-== Example syntax for X-Launchpad-Bug: ==
+
+== Example syntax for X-Launchpad-Bug header ==
 
  * X-Launchpad-Bug: distribution=ubuntu; sourcepackage=linux; component=main; status=New; importance=High; assignee=ben.collins@ubuntu.com
  * X-Launchpad-Bug: product=bzr; status=New; importance=Untriaged; assignee=robert.collins@ubuntu.com
 
-== Example syntax for X-Launchpad-Message-Rationale: ==
+
+== Example syntax for X-Launchpad-Message-Rationale header ==
 
 When sending out most email Launchpad will include an X-Launchpad-Message-Rationale header which you can filter with.
 
 More information about the header can be found in LaunchpadMessageRationale
 
-== How to Get Started ==
+
+== Example syntax for X-Launchpad-Bug-Tags header ==
+
+If the bug has tags, they are presented in the ```X-Launchpad-Bug-Tags``` header, separated by spaces.
+
+ * X-Launchpad-Bug-Tags: tag1 tag2 tag3
+
+
+== Private and security email headers ==
+
+Launchpad adds two email headers with a value of yes or no:
+
+ * X-Launchpad-Bug-Private and
+ * X-Launchpad-Bug-Security-Vulnerability
+
+
+= Getting started =
 
 To add comments, you need only [https://launchpad.net/+login a Launchpad account].
 
@@ -77,7 +95,8 @@ Editing bugs requires GPG-signing the email you send. So you need:
 
 Click on "Edit OpenPGP Keys" and follow the instructions.
 
-== Reporting a Bug ==
+
+= Reporting a bug =
 
 Send a GPG signed email to `new@bugs.launchpad.net`. Use the `affects` command to specify where the bug exists, for example:
 
@@ -96,7 +115,8 @@ Every time I try to search for a product, I get a system error page.
 -----END PGP SIGNATURE-----
 }}}
 
-Filing a distro bug:
+
+== Filing a distro bug ==
 
 {{{
 From: Foo Bar <foo.bar@canonical.com>
@@ -112,6 +132,9 @@ The newest version of Firefox breaks with the web dev toolbar.
 ...
 -----END PGP SIGNATURE-----
 }}}
+
+
+== Filing a bug against multiple packages ==
 
 To file a bug on '''more than one package''', add another `affects` stanza. For example:
 
@@ -159,7 +182,7 @@ If the correct bug upstream/package still cannot be determined, the sender will 
  affects $productname
 }}}
 
-== Commenting on a Bug ==
+= Commenting on bugs =
 
 Send an email to `$bugid@bugs.launchpad.net`. Replying to a bugmail will add a comment to that bug. For example:
 
@@ -173,12 +196,27 @@ To: 42@bugs.launchpad.net
 Yes, it is a bug.
 }}}
 
-== Editing a Bug ==
+
+= Editing bugs =
 
 Just like commenting, send an email to `$bugid@bugs.launchpad.net` to edit a bug.
 
-[[Anchor(intersperse)]]
-=== Formatting Commands ===
+
+[[Anchor(attachments)]]
+= Attaching files to bugs =
+
+You can attach a file to a bug report by attaching the file to the email you send to Launchpad.
+
+The attachment must have its content-disposition set to "attachment" and not "inline". Images pasted into emails in Mozilla Thunderbird have a content-disposition of "inline".
+
+Launchpad filters attachments that are unlikely to be intended for the bug report, including:
+
+ * signatures
+ * VCards
+ * MacOS resource forks.
+
+
+= How to format your commands =
 
 Email commands are written one per line.
 
@@ -205,7 +243,8 @@ Malone always processes the entire email; there is no `done` command to explicit
 
 The following commands can be used to edit a bug (remember, each one must be indented with a space character, for now):
 
-=== summary "$summary" ===
+
+== summary "$summary" ==
 
 Change the one-line summary of the bug. Quotes are required.
 
@@ -213,7 +252,8 @@ Change the one-line summary of the bug. Quotes are required.
  summary "A better summary"
 }}}
 
-=== assignee [name|email|nobody] ===
+
+== assignee [name|email|nobody] ==
 
 Assign a bug to someone.
 
@@ -231,7 +271,10 @@ Unassign the bug.
  assignee nobody
 }}}
 
-=== status [new|incomplete|invalid|wontfix|confirmed|triaged|inprogress|fixcommitted|fixreleased] ===
+
+== status ==
+
+status [new|incomplete|invalid|wontfix|confirmed|triaged|inprogress|fixcommitted|fixreleased]
 
 Change the status of a bug.
 
@@ -239,7 +282,8 @@ Change the status of a bug.
  status fixreleased
 }}}
 
-=== importance [wishlist|low|medium|high|critical] ===
+
+== importance [wishlist|low|medium|high|critical] ==
 
 Change the importance of a bug.
 
@@ -247,7 +291,8 @@ Change the importance of a bug.
  importance high
 }}}
 
-=== milestone $milestone ===
+
+== milestone $milestone ==
 
 Sets or clears the milestone of the bug. The milestone must already exist in Launchpad (see [:FeatureHighlights/MilestoneUsage: MilestoneUsage]).
 
@@ -261,7 +306,8 @@ You can clear the milestone by sending a hyphen:
  milestone -
 }}}
 
-=== private [yes|no] ===
+
+== private [yes|no] ==
 
 Changes the visibility of the bug.
 
@@ -269,7 +315,8 @@ Changes the visibility of the bug.
  private yes
 }}}
 
-=== subscribe [name|email] ===
+
+== subscribe [name|email] ==
 
 Subscribes yourself or someone else to the bug. If you don't specify a name or email, the sender of the email will be subscribed.
 
@@ -289,11 +336,13 @@ Subscribe Bjorn to the bug.
  subscribe bjornt
 }}}
 
-=== unsubscribe [name|email] ===
+
+== unsubscribe [name|email] ==
 
 The opposite of the subscribe command.
 
-=== duplicate $bugid ===
+
+== duplicate $bugid ==
 
 Mark the bug as a duplicate of another bug.
 
@@ -307,7 +356,8 @@ To unmark the bug as a duplicate, specify 'no' as the bug id.
   duplicate no
 }}}
 
-=== bug $bugid ===
+
+== bug $bugid ==
 
 The `bug` command is intended for users who want to generate batch change emails. The batch change address is `edit@bugs.launchpad.net`.
 
@@ -323,7 +373,8 @@ Subject: <whatever>
  status confirmed
 }}}
 
-=== tag $tag ===
+
+== tag $tag ==
 
 The `tag` command can be used to assign a tag to a bug. Multiple tags can be specified with a single command.
 
@@ -339,7 +390,24 @@ Tags can also be removed by prefixing the tag name with `-`.
  tag -foo
 }}}
 
-=== Editing a Bug Affecting More Than One Package ===
+
+== done ==
+
+```done``` tells Launchpad not to process any further commands.
+
+For example:
+
+{{{
+ tag foo
+ status confirmed
+ done
+ affects everyone using version 1.0.1
+}}}
+
+The line below ```done``` looks like an ```affects``` command but Launchpad will ignore it.
+
+
+= Editing a bug that affects multiple packages =
 
 Every package or product affected by a bug has its own fix status, assignee, milestone, etc. Use the [#affects affects command] to edit a specific fix status, assignee, etc., when a bug affects more than one package.
 
@@ -356,11 +424,12 @@ Subject: <whatever>
 
 When a bug affects only one package or product, the `affects` command is unnecessary.
 
-== What To Expect When You Submit an Email ==
+= What to expect when you submit an email =
 
 Malone processes incoming mail every three minutes, so a '''slight delay between sending a mail and receiving a response is normal'''.
 
-=== On Success ===
+
+== On success ==
 
 If your email was processed successfully, you will receive a standard bugmail change notification, identical to the bugmail that would get sent if you made the same changes via the web UI. For example, if you send an email like:
 
@@ -391,7 +460,8 @@ launchpad-bugs@lists.canonical.com
 https://lists.ubuntu.com/mailman/listinfo/launchpad-bugs
 }}}
 
-=== On Failure ===
+
+== On failure ==
 
 If an error occurs while processing your email, you should receive a failure message from Malone. For example, if you forget to GPG-sign a filebug email, you'll receive an error message like:
 
@@ -417,8 +487,9 @@ https://wiki.launchpad.canonical.com/MaloneEmailInterfaceUserDoc.
 
 If you've waited several minutes and still not received either a bugmail change notification or an error message, please refer to the [#support support channels] mentioned at the beginning of this document.
 
+
 [[Anchor(knownissues)]]
-== Known Issues ==
+= Known issues =
 
 Requiring GPG-signed mail is probably too restrictive.
 

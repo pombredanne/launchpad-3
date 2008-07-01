@@ -6,6 +6,6 @@
   <td><a tal:content="context/owner/browsername"
          tal:attributes="href context/fmt:url">FooBar</a></td>
   <td tal:content="context/description/fmt:shorten/65" />
-  <td tal:content="context/number_of_sources" />
-  <td tal:content="context/number_of_binaries" />
+  <td tal:content="context/sources_cached" />
+  <td tal:content="context/binaries_cached" />
 </tr>

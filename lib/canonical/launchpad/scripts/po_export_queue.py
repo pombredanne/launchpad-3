@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd. All rights reserved.
+# Copyright 2005-2008 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 
@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 import os
-import psycopg
+import psycopg2
 import textwrap
 import traceback
 from StringIO import StringIO
@@ -43,9 +43,9 @@ class ExportResult:
         return textwrap.dedent('''
             Hello %s,
 
-            Rosetta encountered problems exporting the files you
-            requested. The Rosetta team has been notified of this
-            problem. Please reply to this email for further assistance.
+            Launchpad encountered problems exporting the files you requested.
+            The Launchpad Translations team has been notified of this problem.
+            Please reply to this email for further assistance.
             ''' % person.browsername)
 
     def _getSuccessEmailBody(self, person):
@@ -53,8 +53,8 @@ class ExportResult:
         return textwrap.dedent('''
             Hello %s,
 
-            The files you requested from Rosetta are ready for download
-            from the following location:
+            The translation files you requested from Launchpad are ready for
+            download from the following location:
 
             \t%s''' % (person.browsername, self.url)
             )
@@ -81,7 +81,7 @@ class ExportResult:
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
-                from_addr=config.rosetta.rosettaadmin.email,
+                from_addr=config.rosettaadmin.email,
                 to_addrs=[recipient],
                 subject='Translation download request: %s' % self.name,
                 body=body)
@@ -102,11 +102,12 @@ class ExportResult:
             admins_email_body = textwrap.dedent('''
                 Hello admins,
 
-                Rosetta encountered problems exporting some files requested by
-                %s. This means we have a bug in
-                Launchpad that needs to be fixed to be able to proceed with
-                this export. You can see the list of failed files with the
-                error we got:
+                Launchpad encountered problems exporting translation files
+                requested by %s.
+
+                This means we have a bug in Launchpad that needs to be fixed
+                before this export can proceed.  Here is the list of failed
+                files and the error we got:
 
                 %s%s''') % (
                     person.browsername, self.failure, template_sentence)
@@ -123,7 +124,7 @@ class ExportResult:
                 %s''') % (person.browsername, template_sentence)
 
         simple_sendmail(
-            from_addr=config.rosetta.rosettaadmin.email,
+            from_addr=config.rosettaadmin.email,
             to_addrs=[config.launchpad.errors_address],
             subject='Translation download errors: %s' % self.name,
             body=admins_email_body)
@@ -136,6 +137,16 @@ class ExportResult:
         exception.seek(0)
         # And store it.
         self.failure = exception.read()
+
+
+def generate_translationfiledata(file_list):
+    """Generate `TranslationFileData` objects for POFiles/templates in list.
+
+    This builds each `TranslationFileData` in memory only when it's needed, so
+    the memory usage for an export doesn't accumulate.
+    """
+    for file in file_list:
+        yield ITranslationFileData(file)
 
 
 def process_request(person, objects, format, logger):
@@ -151,9 +162,9 @@ def process_request(person, objects, format, logger):
         translation_exporter.getExporterProducingTargetFileFormat(format))
 
     result = ExportResult(person.name)
-    translation_file_list = []
+    translation_file_list = list(objects)
     last_template_name = None
-    for obj in objects:
+    for obj in translation_file_list:
         if IPOTemplate.providedBy(obj):
             template_name = obj.displayname
             object_name = template_name
@@ -166,15 +177,14 @@ def process_request(person, objects, format, logger):
                 'Exporting objects for %s, related to template %s'
                 % (person.displayname, template_name))
             last_template_name = template_name
-        translation_file_list.append(ITranslationFileData(obj))
 
     try:
         exported_file = translation_format_exporter.exportTranslationFiles(
-            translation_file_list)
+            generate_translationfiledata(translation_file_list))
     except (KeyboardInterrupt, SystemExit):
         # We should never catch KeyboardInterrupt or SystemExit.
         raise
-    except psycopg.Error:
+    except psycopg2.Error:
         # It's a DB exception, we don't catch it either, the export
         # should be done again in a new transaction.
         raise
@@ -202,6 +212,7 @@ def process_request(person, objects, format, logger):
             file=exported_file,
             contentType=exported_file.content_type)
         result.url = alias.http_url
+        logger.info("Stored file at %s" % result.url)
 
     result.notify(person)
 
@@ -225,7 +236,7 @@ def process_queue(transaction_manager, logger):
 
     try:
         process_request(person, objects, format, logger)
-    except psycopg.Error:
+    except psycopg2.Error:
         # We had a DB error, we don't try to recover it here, just exit
         # from the script and next run will retry the export.
         logger.error(

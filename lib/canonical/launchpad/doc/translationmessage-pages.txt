@@ -422,7 +422,8 @@ than the other choosen language, Spanish.
 
 We are going to work with a plural form message.
 
-    >>> potmsgset = potemplate_trunk.getPOTMsgSetByMsgIDText(u'%d contact')
+    >>> potmsgset = potemplate_trunk.getPOTMsgSetByMsgIDText(
+    ...     u'%d contact', u'%d contacts')
     >>> potmsgset.msgid_plural is None
     False
 
@@ -475,7 +476,7 @@ languages...
     1
     >>> sorted(suggestions.submissions[0].items())
     [('date_created', ...),
-     ('id', 703L),
+     ('id', 703),
      ('language', ...), ('person', ...),
      ('plural_index', 0),
      ('pofile', ...), ('potmsgset', ...),

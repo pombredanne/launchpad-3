@@ -16,17 +16,19 @@ import urlparse
 
 import pytz
 from zope.component import getUtility
-from bzrlib.branch import Branch
+from bzrlib.branch import Branch, BzrBranchFormat4
 from bzrlib.diff import show_diff_trees
 from bzrlib.errors import NoSuchRevision
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
+from bzrlib.repofmt.weaverepo import (
+    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, BugBranchStatus,
-    IBranchRevisionSet, IBugBranchSet, IBugSet,
-    IRevisionSet, NotFoundError)
+    BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
+    ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
+    NotFoundError, RepositoryFormat)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
 
@@ -205,7 +207,7 @@ class BranchMailer:
         self.pending_emails = []
         self.subscribers_want_notification = False
         self.initial_scan = None
-        self.email_from = config.noreply_from_address
+        self.email_from = config.canonical.noreply_from_address
 
     def initializeEmailQueue(self, initial_scan):
         """Create an email queue and determine whether to create diffs.
@@ -332,7 +334,7 @@ class BzrSync:
 
     def __init__(self, trans_manager, branch, logger=None):
         self.trans_manager = trans_manager
-        self.email_from = config.noreply_from_address
+        self.email_from = config.canonical.noreply_from_address
 
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
@@ -382,10 +384,13 @@ class BzrSync:
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
         self.trans_manager.begin()
+        self.setFormats(bzr_branch)
         self.retrieveDatabaseAncestry()
         (revisions_to_insert_or_check, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges()
-        self.syncRevisions(bzr_branch, revisions_to_insert_or_check)
+        self.syncRevisions(
+            bzr_branch, revisions_to_insert_or_check,
+            branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
@@ -420,6 +425,46 @@ class BzrSync:
         assert first_ancestor is None, 'history horizons are not supported'
         self.bzr_ancestry = set(bzr_ancestry_ordered)
         self.bzr_history = bzr_branch.revision_history()
+
+    def setFormats(self, bzr_branch):
+        """Record the stored formats in the database object.
+
+        The previous value is unconditionally overwritten.
+
+        Note that the strings associated with the formats themselves are used,
+        not the strings on disk.
+        """
+        def match_title(enum, title, default):
+            for value in enum.items:
+                if value.title == title:
+                    return value
+            else:
+                return default
+
+        # XXX: Aaron Bentley 2008-06-13
+        # Bazaar does not provide a public API for learning about format
+        # markers.  Fix this in Bazaar, then here.
+        control_string = bzr_branch.bzrdir._format.get_format_string()
+        if bzr_branch._format.__class__ is BzrBranchFormat4:
+            branch_string = BranchFormat.BZR_BRANCH_4.title
+        else:
+            branch_string = bzr_branch._format.get_format_string()
+        repository_format = bzr_branch.repository._format
+        if repository_format.__class__ is RepositoryFormat6:
+            repository_string = RepositoryFormat.BZR_REPOSITORY_6.title
+        elif repository_format.__class__ is RepositoryFormat5:
+            repository_string = RepositoryFormat.BZR_REPOSITORY_5.title
+        elif repository_format.__class__ is RepositoryFormat4:
+            repository_string = RepositoryFormat.BZR_REPOSITORY_4.title
+        else:
+            repository_string = repository_format.get_format_string()
+        self.db_branch.control_format = match_title(
+            ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
+        self.db_branch.branch_format = match_title(
+            BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
+        self.db_branch.repository_format = match_title(
+            RepositoryFormat, repository_string,
+            RepositoryFormat.UNRECOGNIZED)
 
     def planDatabaseChanges(self):
         """Plan database changes to synchronize with bzrlib data.
@@ -474,7 +519,7 @@ class BzrSync:
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
-        branchrevisions_to_insert = list(
+        branchrevisions_to_insert = dict(
             self.getRevisions(added_merged.union(added_history)))
 
         # We must insert, or check for consistency, all revisions which were
@@ -484,7 +529,8 @@ class BzrSync:
         return (revisions_to_insert_or_check, branchrevisions_to_delete,
             branchrevisions_to_insert)
 
-    def syncRevisions(self, bzr_branch, revisions_to_insert_or_check):
+    def syncRevisions(self, bzr_branch, revisions_to_insert_or_check,
+                      branchrevisions_to_insert):
         """Import all the revisions added to the ancestry of the branch."""
         self.logger.info("Inserting or checking %d revisions.",
             len(revisions_to_insert_or_check))
@@ -498,12 +544,13 @@ class BzrSync:
                 self.logger.debug("%d of %d: %s is a ghost",
                                   self.curr, self.last, revision_id)
                 continue
-            self.syncOneRevision(revision)
+            self.syncOneRevision(revision, branchrevisions_to_insert)
 
-    def syncOneRevision(self, bzr_revision):
+    def syncOneRevision(self, bzr_revision, branchrevisions_to_insert):
         """Import the revision with the given revision_id.
 
         :param bzr_revision: the revision to import
+        :param branchrevisions_to_insert: a dict of revision ids to revno
         :type bzr_revision: bzrlib.revision.Revision
         """
         revision_id = bzr_revision.revision_id
@@ -553,6 +600,9 @@ class BzrSync:
                 revision_author=bzr_revision.get_apparent_author(),
                 parent_ids=bzr_revision.parent_ids,
                 properties=bzr_revision.properties)
+            # If a mainline revision, add the bug branch link.
+            if branchrevisions_to_insert[revision_id] is not None:
+                self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
 
     def getRevisions(self, limit=None):
         """Generate revision IDs that make up the branch's ancestry.
@@ -568,9 +618,9 @@ class BzrSync:
         for (index, revision_id) in enumerate(self.bzr_history):
             if revision_id in limit:
                 # sequence numbers start from 1
-                yield index + 1, revision_id
+                yield revision_id, index + 1
         for revision_id in limit.difference(set(self.bzr_history)):
-            yield None, revision_id
+            yield revision_id, None
 
     def _timestampToDatetime(self, timestamp):
         """Convert the given timestamp to a datetime object.
@@ -603,7 +653,7 @@ class BzrSync:
         self.logger.info("Inserting %d branchrevision records.",
             len(branchrevisions_to_insert))
         revision_set = getUtility(IRevisionSet)
-        for sequence, revision_id in branchrevisions_to_insert:
+        for revision_id, sequence in branchrevisions_to_insert.iteritems():
             db_revision = revision_set.getByRevisionId(revision_id)
             self.db_branch.createBranchRevision(sequence, db_revision)
 
@@ -619,7 +669,6 @@ class BzrSync:
                     continue
                 self._branch_mailer.generateEmailForRevision(
                     bzr_branch, revision, sequence)
-                self._bug_linker.createBugBranchLinksForRevision(revision)
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""
@@ -635,4 +684,5 @@ class BzrSync:
         revision_count = len(self.bzr_history)
         if ((last_revision != self.db_branch.last_scanned_id)
                 or (revision_count != self.db_branch.revision_count)):
-            self.db_branch.updateScannedDetails(last_revision, revision_count)
+            self.db_branch.updateScannedDetails(
+                last_revision, revision_count)
