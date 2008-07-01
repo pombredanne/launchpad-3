@@ -324,7 +324,7 @@ class TracLPPlugin(Trac):
         auth_url = urlappend(base_auth_url, token_text)
         response = self.urlopen(auth_url)
         auth_cookie = self._extractAuthCookie(response.headers['Set-Cookie'])
-        self.xmlrpc_transport.auth_cookie = auth_cookie
+        self.xmlrpc_transport.setCookie(auth_cookie)
 
     @needs_authentication
     def getCurrentDBTime(self):

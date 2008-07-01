@@ -6,8 +6,6 @@ from xmlrpclib import Transport
 from urllib2 import build_opener, HTTPCookieProcessor, Request
 from urlparse import urlparse, urlunparse
 
-from canonical.config import config
-
 class UrlLib2Transport(Transport):
     """An XMLRPC transport which uses Launchpad's HTTP proxy.
 
@@ -32,6 +30,9 @@ class UrlLib2Transport(Transport):
         self.cookie_processor = HTTPCookieProcessor()
         self.opener = build_opener(self.cookie_processor)
 
+    def setCookie(self, auth_cookie):
+        self.cookie_processor.cookiejar.set_cookie(self.auth_cookie)
+
     def request(self, host, handler, request_body, verbose=0):
         """Make an XMLRPC request.
 
@@ -39,10 +40,6 @@ class UrlLib2Transport(Transport):
         """
         url = urlunparse((self.scheme, host, handler, '', '', ''))
         headers = {'Content-type': 'text/xml'}
-        if self.auth_cookie is not None:
-            self.cookie_processor.cookiejar.set_cookie(
-                self.auth_cookie)
-        http_proxy = config.launchpad.http_proxy
         request = Request(url, request_body, headers)
         response = self._parse_response(self.opener.open(request), None)
         return response
