@@ -10,7 +10,6 @@ __all__ = [
 
 from datetime import datetime
 import re
-import os
 
 import pytz
 
@@ -26,7 +25,6 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
-from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -586,8 +584,7 @@ class Branch(SQLBase):
         elif self.branch_type == BranchType.HOSTED:
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
-            prefix = config.codehosting.branches_root
-            return os.path.join(prefix, branch_id_to_path(self.id))
+            return 'lp-internal:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 
