@@ -68,6 +68,8 @@ elements.
     ...             "%s: %s" %(key, format_value(value))
     ...             for key, value in sorted(tag.items()))
     >>> print_export_tag(IBook)
+    plural_name: 'IBooks'
+    singular_name: 'IBook'
     type: 'entry'
     >>> print_export_tag(IBook['title'])
     as: 'title'

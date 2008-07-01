@@ -106,12 +106,12 @@ def export_as_webservice_entry(singular_name=None, plural_name=None):
         _check_interface('export_as_webservice_entry()', interface)
         if singular_name is None:
             # Default to the lowercased class name.
-            my_singular_name = interface.__class__.__name__
+            my_singular_name = interface.__name__
         else:
             my_singular_name = singular_name
         if plural_name is None:
             # Apply default pluralization rule.
-            my_plural_name = singular_name + 's'
+            my_plural_name = my_singular_name + 's'
         else:
             my_plural_name = plural_name
 
@@ -600,6 +600,7 @@ class CollectionEntrySchema:
         entry_class = getGlobalSiteManager().adapters.lookup1(
             self.model_schema, IEntry)
         return EntryAdapterUtility(entry_class).entry_adapter_interface
+
 
 class BaseCollectionAdapter(Collection):
     """Base for generated ICollection adapter."""
