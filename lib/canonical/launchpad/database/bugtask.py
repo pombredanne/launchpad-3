@@ -1666,6 +1666,7 @@ class BugTaskSet:
                     distroseries=nomination.distroseries,
                     sourcepackagename=sourcepackagename,
                     **non_target_create_params)
+                accepted_series_task.updateTargetNameCache()
 
         if bugtask.conjoined_slave:
             bugtask._syncFromConjoinedSlave()
