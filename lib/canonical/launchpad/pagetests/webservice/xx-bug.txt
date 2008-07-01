@@ -39,6 +39,8 @@ At the top level we provide a collection of bugs.
    (u'resource_type_link', u'http://api.launchpad.dev/beta/#BugEntryAdapter'),
    (u'security_related', False),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/11'),
+   (u'subscriptions_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/11/subscriptions'),
    (u'tags', []),
    (u'title', u'Make Jokosher use autoaudiosink'),
    (u'who_made_private_link', None)]
@@ -181,6 +183,49 @@ Let's try modifying the importance of a task.
   >>> body = webservice.get(bugtask_path).jsonBody()
   >>> body['importance']
   u'High'
+
+
+== Bug subscriptions ==
+
+We can get the the collection of subscriptions to a bug.
+
+  >>> bug_one_subscriptions_url = urlsplit(
+  ...     bug_one['subscriptions_collection_link'])[2]
+  >>> subscriptions = webservice.get(bug_one_subscriptions_url).jsonBody()
+  >>> pprint(sorted(entry.items() for entry in subscriptions['entries']))
+  [[(u'self_link',
+     u'http://api.launchpad.dev/beta/bugs/1/+subscription/name12'),
+    (u'person_link', u'http://api.launchpad.dev/beta/~name12'),
+    (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+    (u'resource_type_link',
+     u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+    (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]...]
+
+
+Each subscription can be accessed individually.
+
+  >>> subscription = webservice.get(subscriptions['entries'][0]['self_link']).jsonBody()
+  >>> pprint(sorted(subscription.items()))
+  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+   (u'person_link', u'http://api.launchpad.dev/beta/~stevea'),
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+   (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea'),
+   (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
+
+We can also create new subscriptions.
+
+    >>> new_subscription = webservice.named_post(
+    ...     bug_one['self_link'], 'subscribe',
+    ...     person='http://api.launchpad.dev/beta/~cprov').jsonBody()
+    >>> pprint(new_subscription)
+    {...u'self_link':
+        u'http://api.launchpad.dev/beta/bugs/1/+subscription/cprov'...}
+
+But we can only unsubscribe ourselves.
+
+    >>> print webservice.named_post(
+    ...     bug_one['self_link'], 'unsubscribe')
+    HTTP/1.1 200 Ok...
 
 
 == Bug Watches ==

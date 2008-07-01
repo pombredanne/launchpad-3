@@ -4,26 +4,29 @@
 __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
+    'ApplicationButtons',
     'Breadcrumbs',
+    'BrowserWindowDimensions',
+    'ContribIcingFolder',
+    'DefaultShortLink',
+    'EdubuntuIcingFolder',
+    'IcingFolder',
+    'KubuntuIcingFolder',
+    'LaunchpadRootNavigation',
+    'LaunchpadImageFolder',
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
-    'MenuBox',
-    'MaloneContextMenu',
-    'NavigationMenuTabs',
-    'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
-    'SoftTimeoutView',
+    'MaloneContextMenu',
+    'MenuBox',
+    'NavigationMenuTabs',
     'OneZeroTemplateStatus',
-    'IcingFolder',
-    'ContribIcingFolder',
-    'UbuntuIcingFolder',
-    'StructuralHeaderPresentationView',
+    'SoftTimeoutView',
     'StructuralHeaderPresentation',
+    'StructuralHeaderPresentationView',
     'StructuralObjectPresentation',
-    'ApplicationButtons',
-    'DefaultShortLink',
-    'BrowserWindowDimensions',
+    'UbuntuIcingFolder',
     ]
 
 import cgi
@@ -45,7 +48,7 @@ from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
 from canonical.config import config
-from canonical.lazr import ExportedFolder
+from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
     IAnnouncementSet,
@@ -742,6 +745,14 @@ class IcingFolder(ExportedFolder):
         os.path.dirname(os.path.realpath(__file__)), '../icing/')
 
 
+class LaunchpadImageFolder(ExportedImageFolder):
+    """Export the Launchpad images - supporting retrieval without extension.
+    """
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../images/')
+
+
 class ContribIcingFolder(ExportedFolder):
     """Export the contrib icing."""
 
@@ -754,6 +765,20 @@ class UbuntuIcingFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing-ubuntu/')
+
+
+class KubuntuIcingFolder(ExportedFolder):
+    """Export the Kubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-kubuntu/')
+
+
+class EdubuntuIcingFolder(ExportedFolder):
+    """Export the Edubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-edubuntu/')
 
 
 class StructuralHeaderPresentationView(LaunchpadView):

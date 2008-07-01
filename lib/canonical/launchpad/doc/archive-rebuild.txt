@@ -1,6 +1,6 @@
 == Archive rebuild ==
 
-We model archive rebuild attempt as distinct `IArchives` targeted to
+We model archive rebuild attempts as distinct `IArchive`s targeted to
 a `IDistroSeries`. This way we can have several rebuilds all with
 similar purposes for different distroseries individually published in
 the same location. See the example:
@@ -9,6 +9,9 @@ the same location. See the example:
  2. rebuilds.ubuntu.com/warty-gtk2.0
  3. rebuilds.ubuntu.com/hoary-gcc-toolchain
  4. rebuilds.ubuntu.com/hoary-glibc
+
+We rely on users to specify unique and meaningful names according to
+the rebuild context.
 
 
 == IArchiveRebuildSet utility ==
@@ -43,13 +46,13 @@ need a target IDistroSeries and an IPerson to be the registrant.
 `ArchiveRebuild`s get created with distinct names.
 
     >>> rebuild_warty = archiverebuild_set.new(
-    ...     name='gcc4.0-toolchain', distroseries=warty,
+    ...     name='warty-gcc4.0-toolchain', distroseries=warty,
     ...     registrant=cprov, reason="Because I can.")
     >>> print rebuild_warty.id, rebuild_warty.archive.name
     1 warty-gcc4.0-toolchain
 
     >>> rebuild_hoary = archiverebuild_set.new(
-    ...     name='gcc4.0-toolchain', distroseries=hoary,
+    ...     name='hoary-gcc4.0-toolchain', distroseries=hoary,
     ...     registrant=cprov, reason="Because I want.")
     >>> print rebuild_hoary.id, rebuild_hoary.archive.name
     2 hoary-gcc4.0-toolchain
@@ -72,12 +75,12 @@ Archive.name collisions are detected during creation and an error is
 raised.
 
     >>> archiverebuild_set.new(
-    ...     name='gcc4.0-toolchain', distroseries=hoary,
+    ...     name='warty-gcc4.0-toolchain', distroseries=hoary,
     ...     registrant=cprov, reason="Because I want.")
     Traceback (most recent call last):
     ...
     ArchiveRebuildAlreadyExists: An archive rebuild named
-    'gcc4.0-toolchain' for 'hoary' in 'ubuntu' already exists.
+    'warty-gcc4.0-toolchain' for 'ubuntu' already exists.
 
 An ArchiveRebuild can be retrieved by database ID.
 
@@ -102,11 +105,11 @@ Before verifying the results of getByDistroSeries() we will create
 other rebuilds for hoary.
 
     >>> rebuild_hoary_gtk = archiverebuild_set.new(
-    ...     name='gtk3', distroseries=hoary,
+    ...     name='hoary-gtk3', distroseries=hoary,
     ...     registrant=cprov, reason="Because we need.")
 
     >>> rebuild_hoary_qt = archiverebuild_set.new(
-    ...     name='qt4', distroseries=hoary,
+    ...     name='hoary-qt4', distroseries=hoary,
     ...     registrant=cprov, reason="Because we were forced.")
 
 The results of getByDistroSeries() are ordered by ascending 'status'

@@ -27,6 +27,12 @@
 
   <adapter
       for="canonical.launchpad.interfaces.IArchive"
+      provides="canonical.launchpad.interfaces.IPerson"
+      factory="canonical.launchpad.browser.archive_to_person"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IArchive"
       provides="canonical.launchpad.webapp.badge.IHasBadges"
       factory="canonical.launchpad.browser.ArchiveBadges"
       permission="zope.Public"
