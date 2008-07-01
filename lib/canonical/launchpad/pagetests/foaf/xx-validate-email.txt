@@ -126,3 +126,16 @@ information about Launchpad users.
     There is 1 error.
     'salgado...com&lt;br/&gt;&lt;script&gt;window.alert('XSS')&lt;/script&gt;'
     doesn't seem to be a valid email address.
+
+
+== +editemails for teams ==
+
+Because people and teams share the same namespace, it used to be possible to
+hack the url to get to a team's +editemails page.  This makes no sense, and
+for teams you should use the +contactaddress url.  The +editemails page is no
+longer available for teams.
+
+    >>> browser.open('http://launchpad.dev/~guadamen/+editemails')
+    Traceback (most recent call last):
+    ...
+    NotFoundError
