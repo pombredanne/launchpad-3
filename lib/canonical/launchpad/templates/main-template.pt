@@ -123,7 +123,52 @@
         </tr>
       </table>
     </div>
-    <tal:tabs replace="structure context/@@+apps" />
+
+
+
+    <!--
+     Current exact: <strong><span>Bugs</span></strong>
+     Current child: <strong><a>Bugs</a></strong>
+     Other enabled: <span><a>Code</a></span>
+    Other disabled: <span></span>Code</span></span>
+    -->
+    <div
+      tal:condition="view/macro:pagehas/applicationtabs"
+      tal:define="facetmenu CONTEXTS/menu:facet"
+      id="lp-apps"
+    >
+      <tal:facet repeat="link facetmenu">
+        <strong
+          tal:condition="link/selected"
+          tal:attributes="title link/summary; class link/name"
+        >
+          <span
+            tal:condition="not:link/linked"
+            tal:content="structure link/escapedtext"
+          />
+          <a
+            tal:condition="link/linked"
+            tal:attributes="href link/url"
+            tal:content="structure link/escapedtext"
+          />
+        </strong>
+        <span
+          tal:condition="not:link/selected"
+          tal:attributes="title link/summary; class link/name"
+        >
+          <span
+            tal:condition="not:link/linked"
+            tal:content="structure link/escapedtext"
+          />
+          <a
+            tal:condition="link/linked"
+            tal:attributes="href link/url"
+            tal:content="structure link/escapedtext"
+          />
+        </span>
+      </tal:facet>
+    </div>
+
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
