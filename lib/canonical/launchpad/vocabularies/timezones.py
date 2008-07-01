@@ -18,6 +18,9 @@ from canonical.lazr.interfaces.timezone import ITimezoneNameVocabulary
 _values = sorted(pytz.common_timezones)
 _values.remove('UTC')
 _values.insert(0, 'UTC')
+# US/Pacific-New has been removed from tzdata but not from pytz.
+if 'US/Pacific-New' in _values:
+    _values.remove('US/Pacific-New')
 
 _timezone_vocab = SimpleVocabulary.fromValues(_values)
 alsoProvides(_timezone_vocab, ITimezoneNameVocabulary)
