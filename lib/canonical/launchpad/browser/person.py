@@ -136,6 +136,8 @@ from canonical.launchpad.interfaces import (
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -2131,10 +2133,8 @@ class PersonVouchersView(LaunchpadFormView):
 
         Only unredeemed vouchers owned by the user are shown.
         """
-        unredeemed, redeemed = (
-            self.context.getCommercialSubscriptionVouchers())
         terms = []
-        for voucher in unredeemed:
+        for voucher in self.unredeemed_vouchers:
             text = "%s (%d months)" % (
                 voucher.voucher_id, voucher.term_months)
             terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
@@ -2144,10 +2144,16 @@ class PersonVouchersView(LaunchpadFormView):
                    title=_('Select a voucher'),
                    description=_('Choose one of these unredeemed vouchers'),
                    vocabulary=voucher_vocabulary,
-                   required=False),
+                   required=True),
             custom_widget=self.custom_widgets['voucher'],
             render_context=self.render_context)
         return field
+
+    @cachedproperty
+    def unredeemed_vouchers(self):
+        unredeemed, redeemed = (
+            self.context.getCommercialSubscriptionVouchers())
+        return unredeemed
 
     @cachedproperty
     def owned_commercial_projects(self):
@@ -2169,6 +2175,7 @@ class PersonVouchersView(LaunchpadFormView):
         salesforce_proxy = getUtility(ISalesforceVoucherProxy)
         project = data['project']
         voucher = data['voucher']
+
         try:
             # The call to redeemVoucher returns True if it succeeds or it
             # raises an exception.  Therefore the return value does not need
@@ -4270,11 +4277,16 @@ class SourcePackageReleaseWithStats:
 
     implements(ISourcePackageRelease)
     decorates(ISourcePackageRelease)
+    failed_builds = None
+    needs_building = None
 
-    def __init__(self, sourcepackage_release, open_bugs, open_questions):
+    def __init__(self, sourcepackage_release, open_bugs, open_questions,
+                 failed_builds, needs_building):
         self.context = sourcepackage_release
         self.open_bugs = open_bugs
         self.open_questions = open_questions
+        self.failed_builds = failed_builds
+        self.needs_building = needs_building
 
 
 class PersonPackagesView(LaunchpadView):
@@ -4320,6 +4332,40 @@ class PersonPackagesView(LaunchpadView):
         return self._addStatsToPackages(
             self.context.getLatestUploadedButNotMaintainedPackages())
 
+    def _calculateBuildStats(self, package_releases):
+        """Calculate failed builds and needs_build state.
+
+        For each of the package_releases, calculate the failed builds
+        and the needs_build state, and return a tuple of two dictionaries,
+        one containing the failed builds and the other containing
+        True or False according to the needs_build state, both keyed by
+        the source package release.
+        """
+        # Calculate all the failed builds with one query.
+        build_set = getUtility(IBuildSet)
+        package_release_ids = [
+            package_release.id for package_release in package_releases]
+        all_builds = build_set.getBuildsBySourcePackageRelease(
+            package_release_ids)
+        # Make a dictionary of lists of builds keyed by SourcePackageRelease
+        # and a dictionary of "needs build" state keyed by the same.
+        builds_by_package = {}
+        needs_build_by_package = {}
+        for package in package_releases:
+            builds_by_package[package] = []
+            needs_build_by_package[package] = False
+        for build in all_builds:
+            if build.buildstate == BuildStatus.FAILEDTOBUILD:
+                builds_by_package[build.sourcepackagerelease].append(build)
+            needs_build = build.buildstate in [
+                BuildStatus.NEEDSBUILD,
+                BuildStatus.MANUALDEPWAIT,
+                BuildStatus.CHROOTWAIT,
+                ]
+            needs_build_by_package[build.sourcepackagerelease] = needs_build
+
+        return (builds_by_package, needs_build_by_package)
+
     def _addStatsToPackages(self, package_releases):
         """Add stats to the given package releases, and return them."""
         distro_packages = [
@@ -4336,10 +4382,15 @@ class PersonPackagesView(LaunchpadView):
         package_question_counts = question_set.getOpenQuestionCountByPackages(
             distro_packages)
 
+        builds_by_package, needs_build_by_package = self._calculateBuildStats(
+            package_releases)
+
         return [
             SourcePackageReleaseWithStats(
                 package, open_bugs[package.distrosourcepackage],
-                package_question_counts[package.distrosourcepackage])
+                package_question_counts[package.distrosourcepackage],
+                builds_by_package[package],
+                needs_build_by_package[package])
             for package in package_releases]
 
 

@@ -211,7 +211,7 @@ Cleanup:
 
     >>> transaction.abort()
 
-The LaunchpadDatabaseAdapter assumes that each thread services a
+The Launchpad database adapter assumes that each thread services a
 different request, so a request timing out on one thread will not
 affect other threads:
 
