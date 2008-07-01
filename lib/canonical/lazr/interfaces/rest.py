@@ -120,8 +120,6 @@ class IEntry(Interface):
 
     schema = Attribute(
         'The schema describing the data fields on this entry.')
-    singular = Attribute('The singular name of this entry type.')
-    plural = Attribute('The plural name of this entry type.')
 
     @invariant
     def schemaIsProvided(value):

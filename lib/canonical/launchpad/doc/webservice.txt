@@ -474,13 +474,23 @@ simple, we can define IAuthorEntry and ICommentEntry this way:
     >>> class ICommentEntry(IComment, IEntry):
     ...     """The part of a comment we expose through the web service."""
 
-That usually doesn't work, though, because we usually don't want to
-expose to the web service the same data model we expose
-internally. Usually there are fields we don't want to expose,
-synthetic fields we do want to expose, fields we want to expose as a
-different type under a different name, and so on. This is why we have
-IEntry in the first place: the IEntry interface defines the interface
-we _do_ want to expose through the web service.
+The only extra step we have to take is to annotate the interfaces with
+human-readable names for the objects we're exposing.
+
+    >>> from canonical.lazr.rest.resource import LAZR_WEBSERVICE_NS
+    >>> def tag_with_names(interface, singular, plural):
+    ...     interface.setTaggedValue(
+    ...         LAZR_WEBSERVICE_NS, dict(singular=singular, plural=plural))
+    >>> tag_with_names(IAuthorEntry, 'author', 'authors')
+    >>> tag_with_names(ICommentEntry, 'comment', 'comments')
+
+Most of the time, it doesn't work to expose to the web service the
+same data model we expose internally. Usually there are fields we
+don't want to expose, synthetic fields we do want to expose, fields we
+want to expose as a different type under a different name, and so
+on. This is why we have IEntry in the first place: the IEntry
+interface defines the interface we _do_ want to expose through the web
+service.
 
 The reason we can't just define IDishEntry(IDish, IEntry) is that
 IDish defines the "recipes" collection as an Attribute. Attribute is
@@ -493,7 +503,7 @@ service we use CollectionField.
     >>> class IDishEntry(IEntry):
     ...     "The part of a dish that we expose through the web service."
     ...     recipes = CollectionField(value_type=Object(schema=IRecipe))
-
+    >>> tag_with_names(IDishEntry, 'dish', 'dishes')
 
 In the following code block we define an interface that exposes the
 underlying Recipe's name but not its ID. References to associated
@@ -507,6 +517,7 @@ recipe to its cookbook.
     ...     dish = Object(schema=IDish)
     ...     instructions = Text(title=u"Name", required=True)
     ...     comments = CollectionField(value_type=Object(schema=IComment))
+    >>> tag_with_names(IRecipeEntry, 'recipe', 'recipes')
 
     >>> from canonical.lazr.fields import ReferenceChoice
     >>> class ICookbookEntry(IEntry):
@@ -516,6 +527,7 @@ recipe to its cookbook.
     ...     recipes = CollectionField(value_type=Object(schema=IRecipe))
     ...     comments = CollectionField(value_type=Object(schema=IComment))
     ...     cover = Bytes(0, 5000, title=u"An image of the cookbook's cover.")
+    >>> tag_with_names(ICookbookEntry, 'cookbook', 'cookbooks')
 
 The 'author' field is a choice between Author objects. To make sure
 that the Author objects are properly marshalled to JSON, we need to
@@ -571,8 +583,6 @@ But the invariant will complain if that doesn't isn't true.
     ...     adapts(IAuthor)
     ...     decorates(IAuthorEntry)
     ...     schema = ICookbookEntry
-    ...     singular = 'author'
-    ...     plural = 'authors'
 
     >>> verifyObject(IAuthorEntry, InvalidAuthorEntry(A1))
     True
@@ -592,54 +602,23 @@ Other entries are defined similarly.
     ...     adapts(ICookbook)
     ...     decorates(ICookbookEntry)
     ...     schema = ICookbookEntry
-    ...     singular = 'cookbook'
-    ...     plural = 'cookbooks'
 
     >>> class DishEntry(Entry):
     ...     """A dish, as exposed through the web service."""
     ...     adapts(IDish)
     ...     decorates(IDishEntry)
     ...     schema = IDishEntry
-    ...     singular = 'dish'
-    ...     plural = 'dishes'
 
     >>> class CommentEntry(Entry):
     ...     """A comment, as exposed through the web service."""
     ...     adapts(IComment)
     ...     decorates(ICommentEntry)
     ...     schema = ICommentEntry
-    ...     singular = 'comment'
-    ...     plural = 'comments'
 
     >>> class RecipeEntry(Entry):
     ...     adapts(IRecipe)
     ...     decorates(IRecipeEntry)
     ...     schema = IRecipeEntry
-    ...     singular = 'recipe'
-    ...     plural = 'recipes'
-
-The 'singular' and 'plural' attributes are human-readable names for
-the type of entry. Both must be present.
-
-    >>> class InvalidAuthorEntry(Entry):
-    ...     adapts(IAuthor)
-    ...     decorates(IAuthorEntry)
-    ...     schema = IAuthorEntry
-    ...     singular = 'author'
-    >>> verifyObject(IAuthorEntry, InvalidAuthorEntry(A1))
-    Traceback (most recent call last):
-    ...
-    ...The plural attribute was not provided.
-
-    >>> class InvalidAuthorEntry(Entry):
-    ...     adapts(IAuthor)
-    ...     decorates(IAuthorEntry)
-    ...     schema = IAuthorEntry
-    ...     plural = 'authors'
-    >>> verifyObject(IAuthorEntry, InvalidAuthorEntry(A1))
-    Traceback (most recent call last):
-    ...
-    ...The singular attribute was not provided.
 
 We need to register these entries as an adapter from (eg.) IAuthor to
 (eg.) IAuthorEntry. In ZCML a registration would look like this.
@@ -671,7 +650,7 @@ collection.
     >>> class AuthorCollection(Collection):
     ...     """A collection of authors, as exposed through the web service."""
     ...
-    ...     entry_schema = AuthorEntry
+    ...     entry_schema = IAuthorEntry
     ...
     ...     def find(self):
     ...        """Find all the authors."""
@@ -686,7 +665,7 @@ collection.
     ...     """A collection of cookbooks, as exposed through the web service.
     ...     """
     ...
-    ...     entry_schema = CookbookEntry
+    ...     entry_schema = ICookbookEntry
     ...
     ...     def find(self):
     ...        """Find all the cookbooks."""
@@ -696,7 +675,7 @@ collection.
     >>> class DishCollection(Collection):
     ...     """A collection of dishes, as exposed through the web service."""
     ...
-    ...     entry_schema = DishEntry
+    ...     entry_schema = IDishEntry
     ...
     ...     def find(self):
     ...        """Find all the dishes."""
@@ -708,7 +687,7 @@ constructor. The 'entry_schema' attribute gives a Collection class
 knowledge about what kind of entry it's supposed to contain.
 
     >>> DishCollection.entry_schema
-    <InterfaceClass __builtin__.DishEntry>
+    <InterfaceClass __builtin__.IDishEntry>
 
 We also need to define a collection of the recipes associated with a
 cookbook. We say that the collection of recipes is scoped to a
@@ -742,7 +721,7 @@ cookbook was defined as one that contains Objects with a schema of
 IRecipe. This information is available to the ScopedCollection object.
 
     >>> scoped_collection.entry_schema
-    <InterfaceClass __builtin__.RecipeEntry>
+    <InterfaceClass __builtin__.IRecipeEntry>
 
 
 == Custom operations ==
@@ -914,13 +893,13 @@ top-level collections of authors, cookbooks, and dishes. It's the
     >>> response = app(request)
     >>> representation = simplejson.loads(response)
 
-    >>> representation["AuthorCollection_collection_link"]
+    >>> representation["authors_collection_link"]
     u'http://api.launchpad.dev/beta/authors'
 
-    >>> representation["CookbookCollection_collection_link"]
+    >>> representation["cookbooks_collection_link"]
     u'http://api.launchpad.dev/beta/cookbooks'
 
-    >>> representation["DishCollection_collection_link"]
+    >>> representation["dishes_collection_link"]
     u'http://api.launchpad.dev/beta/dishes'
 
 The standard canonical_url() function can be used to generate URLs to
@@ -988,7 +967,7 @@ parsed with standard tools.
 
     >>> representation = simplejson.loads(collection())
     >>> representation['resource_type_link']
-    u'http://api.launchpad.dev/beta/#CookbookCollection'
+    u'http://api.launchpad.dev/beta/#cookbooks'
 
 
 === Pagination ===
@@ -1197,7 +1176,7 @@ value (Brazilian) specified in CookbookFactoryOperation for it.
      (u'recipes_collection_link',
       u'http://api.launchpad.dev/beta/cookbooks/Feijoada/recipes'),
      (u'resource_type_link',
-      u'http://api.launchpad.dev/beta/#CookbookEntry'),
+      u'http://api.launchpad.dev/beta/#cookbook'),
      (u'self_link', u'http://api.launchpad.dev/beta/cookbooks/Feijoada')]
 
 You can also traverse from an entry to an item in a scoped collection:
@@ -1232,7 +1211,7 @@ Another example traversing to a comment:
     >>> comment_one_resource = request.traverse(app)
     >>> comment_one = simplejson.loads(comment_one_resource())
     >>> sorted(comment_one.items())
-    [(u'resource_type_link', u'http://api.launchpad.dev/beta/#CommentEntry'),
+    [(u'resource_type_link', u'http://api.launchpad.dev/beta/#comment'),
      (u'self_link',
       u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments/1'),
      (u'text', u'Clear and concise.')]
