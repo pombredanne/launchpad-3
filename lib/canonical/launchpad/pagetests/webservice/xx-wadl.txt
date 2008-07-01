@@ -229,7 +229,6 @@ resources. It's a big document.
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
     >>> wadl_schema.validate(wadl)
     True
-    >>> open("/home/leonardr/foo.wadl", "w").write(wadl)
     >>> wadl_schema.error_log
     ''
     >>> tree = etree.fromstring(wadl)
