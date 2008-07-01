@@ -599,6 +599,8 @@ class CollectionEntrySchema:
         """Look up the entry schema that adapts the model schema."""
         entry_class = getGlobalSiteManager().adapters.lookup1(
             self.model_schema, IEntry)
+        if entry_class is None:
+            return None
         return EntryAdapterUtility(entry_class).entry_adapter_interface
 
 
