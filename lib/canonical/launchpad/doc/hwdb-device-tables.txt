@@ -1309,3 +1309,27 @@ Finally, a scanner may be connected to the USB hub.
     ...     parent=submitted_scanner_usb,
     ...      hal_device_id=6)
 
+IHWSubmissionDevice records belonging to a submission are retrieved by
+IHWSubmissionDeviceSet.getDevicesOfSubmission()
+
+    >>> submitted_devices = submission_device_set.getDevicesOfSubmission(
+    ...     submission=sample_submission)
+    >>> for submission_device in submitted_devices:
+    ...     device = submission_device.device_driver_link.device
+    ...     driver = submission_device.device_driver_link.driver
+    ...     print submission_device.id,
+    ...     print device.bus_vendor.vendor_name.name, device.name,
+    ...     if driver is not None:
+    ...         print driver.name,
+    ...     else:
+    ...         print '(no driver)',
+    ...     if submission_device.parent is not None:
+    ...         print submission_device.parent.id
+    ...     else:
+    ...         print '(no parent)'
+    2 Intel   82801GBM/GHM (ICH7 Family) USB2 EHCI Controller  ehci_hcd  1
+    3 Intel   82801GBM/GHM (ICH7 Family) USB2 EHCI Controller  usb       2
+    4 Unknown Intel USB hub                                    usb       3
+    5 Plustek OpticPro UT12                                    usb       4
+    6 Plustek OpticPro UT12                                    plustek   5
+    1 Tonka   Tuffbook 2600                        (no driver) (no parent)

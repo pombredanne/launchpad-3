@@ -548,3 +548,9 @@ class IHWSubmissionDeviceSet(Interface):
         :param parent: The parent of this device in the device tree in
             the submission.
         """
+    def getDevicesOfSubmission(submission):
+        """Return the IHWSubmissionDevice records of a submission
+
+        :return: A sequence of IHWSubmissionDevice records.
+        :param submission: An IHWSubmission instance.
+        """

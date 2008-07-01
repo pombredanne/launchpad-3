@@ -588,3 +588,9 @@ class HWSubmissionDeviceSet:
         return HWSubmissionDevice(device_driver_link=device_driver_link,
                                   submission=submission, parent=parent,
                                   hal_device_id=hal_device_id)
+
+    def getDevicesOfSubmission(self, submission):
+        """See `IHWSubmissionDeviceSet`."""
+        return HWSubmissionDevice.selectBy(
+            submission=submission,
+            orderBy=['parent', 'device_driver_link', 'hal_device_id'])
