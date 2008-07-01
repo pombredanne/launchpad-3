@@ -158,8 +158,7 @@
           <div class="project series"
                tal:repeat="series view/sorted_series_list">
 
-            <div tal:define="
-                   is_focus python:context.development_focus == series"
+            <div tal:define="is_focus python:view.is_development_focus(series)"
                  tal:attributes="
                    class python:is_focus and 'highlighted' or 'unhighlighted'">
               <metal:series use-macro="series/@@+macros/detailed_display" />
