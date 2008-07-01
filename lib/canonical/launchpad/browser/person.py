@@ -81,9 +81,11 @@ __all__ = [
     'TeamNavigation',
     'TeamOverviewMenu',
     'TeamMembershipView',
+    'TeamMugshotView',
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'UbunteroListView',
+    'archive_to_person',
     ]
 
 import cgi
@@ -136,6 +138,9 @@ from canonical.launchpad.interfaces import (
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IBuildSet)
+from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -144,7 +149,8 @@ from canonical.launchpad.interfaces.salesforce import (
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
-    ITranslationRelicensingAgreementEdit)
+    ITranslationRelicensingAgreementEdit,
+    TranslationRelicensingAgreementOptions)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -1116,10 +1122,13 @@ class IPersonRelatedSoftwareMenu(Interface):
 class PersonOverviewNavigationMenu(NavigationMenu):
     """The top-level menu of actions a Person may take."""
 
-    usedfor = IPerson
+    usedfor = IHasPersonNavigationMenu
     facet = 'overview'
-    title = 'Profile'
     links = ('profile', 'related_software', 'karma', 'show_ppa')
+
+    def __init__(self, context):
+        context = IPerson(context)
+        super(PersonOverviewNavigationMenu, self).__init__(context)
 
     def profile(self):
         target = '+index'
@@ -1137,9 +1146,30 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def show_ppa(self):
-        target = '+archive'
+        """Show the link to a Personal Package Archive.
+
+        The person's archive link changes depending on the status of the
+        archive and the privileges of the viewer.
+        """
+        archive = self.context.archive
+        has_archive = archive is not None
+        user_can_edit_archive = check_permission('launchpad.Edit',
+                                                 self.context)
+
         text = 'Personal Package Archive'
-        return Link(target, text)
+        summary = 'Browse Personal Package Archive packages.'
+        if has_archive:
+            target = '+archive'
+            enable_link = check_permission('launchpad.View', archive)
+        elif user_can_edit_archive:
+            summary = 'Activate Personal Package Archive'
+            target = '+activate-ppa'
+            enable_link = True
+        else:
+            target = '+archive'
+            enable_link = False
+
+        return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
 class PersonEditNavigationMenu(NavigationMenu):
@@ -1638,7 +1668,7 @@ class PersonRdfView:
     """A view that embeds PersonRdfContentsView in a standalone page."""
 
     template = ViewPageTemplateFile(
-        '../templates/person-foaf.pt')
+        '../templates/person-rdf.pt')
 
     def __call__(self):
         """Render RDF output, and return it as a string encoded in UTF-8.
@@ -1665,7 +1695,7 @@ class PersonRdfContentsView:
     # preserve the case of the elements (which is not preserved in the
     # parsing of the default text/html content-type.)
     template = ViewPageTemplateFile(
-        '../templates/person-foaf-contents.pt',
+        '../templates/person-rdf-contents.pt',
         content_type="application/rdf+xml")
 
     def __init__(self, context, request):
@@ -1675,13 +1705,16 @@ class PersonRdfContentsView:
     def buildMemberData(self):
         members = []
         members_by_id = {}
-        for member in self.context.allmembers:
-            member = PersonWithKeysAndPreferredEmail(member)
-            members.append(member)
-            members_by_id[member.id] = member
-        if not members:
+        raw_members = list(self.context.allmembers)
+        if not raw_members:
             # Empty teams have nothing to offer.
             return []
+        personset = getUtility(IPersonSet)
+        personset.cacheBrandingForPeople(raw_members)
+        for member in raw_members:
+            decorated_member = PersonWithKeysAndPreferredEmail(member)
+            members.append(decorated_member)
+            members_by_id[member.id] = decorated_member
         sshkeyset = getUtility(ISSHKeySet)
         gpgkeyset = getUtility(IGPGKeySet)
         emailset = getUtility(IEmailAddressSet)
@@ -2963,9 +2996,10 @@ class PersonTranslationView(LaunchpadView):
 
 class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
-    label = "Use BSD licence for your translations?"
     schema = ITranslationRelicensingAgreementEdit
     field_names = ['allow_relicensing', 'back_to']
+    custom_widget(
+        'allow_relicensing', LaunchpadRadioWidget, orientation='vertical')
     custom_widget('back_to', TextWidget, visible=False)
 
     @property
@@ -2975,8 +3009,22 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         if default is None:
             default = True
         return {
-            "allow_relicensing" : default,
-            "back_to" : self.request.get('back_to'),
+            "allow_relicensing": default,
+            "back_to": self.request.get('back_to'),
+            }
+
+    @property
+    def initial_values(self):
+        """Set the default value for the relicensing radio buttons."""
+        # If the person has previously made a choice, we default to that.
+        # Otherwise, we default to BSD, because that's what we'd prefer.
+        if self.context.translations_relicensing_agreement == False:
+            default = TranslationRelicensingAgreementOptions.REMOVE
+        else:
+            default = TranslationRelicensingAgreementOptions.BSD
+        return {
+            "allow_relicensing": default,
+            "back_to": self.request.get('back_to'),
             }
 
     @property
@@ -2991,7 +3039,7 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         else:
             return canonical_url(self.context)
 
-    @action(_("Update my decision"), name="submit")
+    @action(_("Confirm"), name="submit")
     def submit_action(self, action, data):
         """Store person's decision about translations relicensing.
 
@@ -3000,18 +3048,21 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         which uses TranslationRelicensingAgreement table.
         """
         allow_relicensing = data['allow_relicensing']
-        self.context.translations_relicensing_agreement = allow_relicensing
-        if allow_relicensing:
+        if allow_relicensing == TranslationRelicensingAgreementOptions.BSD:
+            self.context.translations_relicensing_agreement = True
             self.request.response.addInfoNotification(_(
-                "Your choice has been saved. "
-                "Thank you for deciding to license your translations under "
-                "BSD license."))
+                "Thank you for BSD-licensing your translations."))
+        elif (allow_relicensing ==
+            TranslationRelicensingAgreementOptions.REMOVE):
+            self.context.translations_relicensing_agreement = False
+            self.request.response.addInfoNotification(_(
+                "We respect your choice. "
+                "Your translations will be removed once we complete the "
+                "switch to the BSD license. "
+                "Thanks for trying out Launchpad Translations."))
         else:
-            self.request.response.addInfoNotification(_(
-                "Your choice has been saved. "
-                "Your translations will be removed once we completely "
-                "switch to BSD license for translations."))
-
+            raise AssertionError(
+                "Unknown allow_relicensing value: %r" % allow_relicensing)
         self.next_url = self.getSafeRedirectURL(data['back_to'])
 
 
@@ -3957,6 +4008,17 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.next_url = self.action_url
 
 
+class TeamMugshotView(LaunchpadView):
+    """A view for the team mugshot (team photo) page"""
+    def initialize(self):
+        """Cache images to avoid dying from a million cuts."""
+        getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
+
+    @cachedproperty
+    def allmembers(self):
+        return list(self.context.allmembers)
+
+
 class TeamReassignmentView(ObjectReassignmentView):
 
     ownerOrMaintainerAttr = 'teamowner'
@@ -4275,15 +4337,22 @@ class SourcePackageReleaseWithStats:
 
     implements(ISourcePackageRelease)
     decorates(ISourcePackageRelease)
+    failed_builds = None
+    needs_building = None
 
-    def __init__(self, sourcepackage_release, open_bugs, open_questions):
+    def __init__(self, sourcepackage_release, open_bugs, open_questions,
+                 failed_builds, needs_building):
         self.context = sourcepackage_release
         self.open_bugs = open_bugs
         self.open_questions = open_questions
+        self.failed_builds = failed_builds
+        self.needs_building = needs_building
 
 
 class PersonPackagesView(LaunchpadView):
     """View for +packages."""
+
+    PACKAGE_LIMIT = 50
 
     def getLatestUploadedPPAPackagesWithStats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
@@ -4301,7 +4370,7 @@ class PersonPackagesView(LaunchpadView):
         # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
         # query is virtually impossible!
         results = []
-        for package in packages:
+        for package in packages[:self.PACKAGE_LIMIT]:
             # Make a shallow copy to remove the Zope security.
             archives = set(package.published_archives)
             # Ensure the SPR.upload_archive is also considered.
@@ -4314,16 +4383,50 @@ class PersonPackagesView(LaunchpadView):
 
     def getLatestMaintainedPackagesWithStats(self):
         """Return the latest maintained packages, including stats."""
-        return self._addStatsToPackages(
-            self.context.getLatestMaintainedPackages())
+        packages = self.context.getLatestMaintainedPackages()
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
     def getLatestUploadedButNotMaintainedPackagesWithStats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
         """
-        return self._addStatsToPackages(
-            self.context.getLatestUploadedButNotMaintainedPackages())
+        packages = self.context.getLatestUploadedButNotMaintainedPackages()
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
+
+    def _calculateBuildStats(self, package_releases):
+        """Calculate failed builds and needs_build state.
+
+        For each of the package_releases, calculate the failed builds
+        and the needs_build state, and return a tuple of two dictionaries,
+        one containing the failed builds and the other containing
+        True or False according to the needs_build state, both keyed by
+        the source package release.
+        """
+        # Calculate all the failed builds with one query.
+        build_set = getUtility(IBuildSet)
+        package_release_ids = [
+            package_release.id for package_release in package_releases]
+        all_builds = build_set.getBuildsBySourcePackageRelease(
+            package_release_ids)
+        # Make a dictionary of lists of builds keyed by SourcePackageRelease
+        # and a dictionary of "needs build" state keyed by the same.
+        builds_by_package = {}
+        needs_build_by_package = {}
+        for package in package_releases:
+            builds_by_package[package] = []
+            needs_build_by_package[package] = False
+        for build in all_builds:
+            if build.buildstate == BuildStatus.FAILEDTOBUILD:
+                builds_by_package[build.sourcepackagerelease].append(build)
+            needs_build = build.buildstate in [
+                BuildStatus.NEEDSBUILD,
+                BuildStatus.MANUALDEPWAIT,
+                BuildStatus.CHROOTWAIT,
+                ]
+            needs_build_by_package[build.sourcepackagerelease] = needs_build
+
+        return (builds_by_package, needs_build_by_package)
 
     def _addStatsToPackages(self, package_releases):
         """Add stats to the given package releases, and return them."""
@@ -4341,10 +4444,15 @@ class PersonPackagesView(LaunchpadView):
         package_question_counts = question_set.getOpenQuestionCountByPackages(
             distro_packages)
 
+        builds_by_package, needs_build_by_package = self._calculateBuildStats(
+            package_releases)
+
         return [
             SourcePackageReleaseWithStats(
                 package, open_bugs[package.distrosourcepackage],
-                package_question_counts[package.distrosourcepackage])
+                package_question_counts[package.distrosourcepackage],
+                builds_by_package[package],
+                needs_build_by_package[package])
             for package in package_releases]
 
 
@@ -4443,3 +4551,8 @@ class PersonApprovedMergesView(BranchMergeProposalListingView):
     def no_proposal_message(self):
         """Shown when there is no table to show."""
         return "%s has no approved merges." % self.context.displayname
+
+
+def archive_to_person(archive):
+    """Adapts an `IArchive` to an `IPerson`."""
+    return IPerson(archive.owner)

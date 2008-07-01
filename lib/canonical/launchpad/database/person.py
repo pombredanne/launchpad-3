@@ -86,9 +86,10 @@ from canonical.launchpad.interfaces.mailinglist import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
-    InvalidName, IPerson, IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility, PersonalStanding,
-    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+    InvalidName, IPerson, IPersonSet, ITeam, IHasPersonNavigationMenu,
+    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
+    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -179,7 +180,8 @@ def validate_person_visibility(person, attr, value):
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
-    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
+    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot,
+               IHasPersonNavigationMenu)
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -233,7 +235,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
-   
+
     # XXX StuartBishop 2008-05-13 bug=237280: The openid_identifier, password,
     # account_status and account_status_comment properties should go. Note
     # that they override # the current strict controls on Account, allowing
@@ -424,7 +426,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setLocation(self, latitude, longitude, time_zone, user):
         """See `ISetLocation`."""
         assert not self.is_team, 'Cannot edit team location.'
-        assert ((latitude is None and longitude is None) or 
+        assert ((latitude is None and longitude is None) or
                 (latitude is not None and longitude is not None)), (
             "Cannot set a latitude without longitude (and vice-versa).")
 
@@ -2939,7 +2941,8 @@ class PersonSet:
                 UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
                 WHERE owner = %(from_id)s AND name = %(name)s
                     AND (%(product)s IS NULL OR product = %(product)s)
-                ''', vars())
+                ''', dict(to_id=to_id, from_id=from_id,
+                          name=name, new_name=new_name, product=product))
         skip.append(('branch','owner'))
 
         # Update MailingListSubscription. Note that no remaining records
@@ -3089,9 +3092,9 @@ class PersonSet:
 
         # Update PackageBugSupervisor entries.
         cur.execute('''
-            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)s
-            WHERE bug_supervisor=%(from_id)s
-            ''', vars())
+            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)d
+            WHERE bug_supervisor=%(from_id)d
+            ''' % vars())
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
         # Update the SpecificationFeedback entries that will not conflict
@@ -3266,7 +3269,7 @@ class PersonSet:
                 AND ( (a.ip IS NULL AND b.ip IS NULL) OR (a.ip = b.ip) )
                 )
             ''' % vars())
-        # And delete the rest 
+        # And delete the rest
         cur.execute('''
             DELETE FROM WebServiceBan WHERE person=%(from_id)d
             ''' % vars())
@@ -3485,6 +3488,22 @@ class PersonSet:
                         PostedMessageStatus.APPROVED,
                         config.standingupdater.approvals_needed))
 
+    def cacheBrandingForPeople(self, people):
+        """See `IPersonSet`."""
+        from canonical.launchpad.database import LibraryFileAlias
+        aliases = []
+        aliases.extend(person.iconID for person in people
+                       if person.iconID is not None)
+        aliases.extend(person.logoID for person in people
+                       if person.logoID is not None)
+        aliases.extend(person.mugshotID for person in people
+                       if person.mugshotID is not None)
+        if not aliases:
+            return
+        # Listify, since this is a pure cache.
+        list(LibraryFileAlias.select("LibraryFileAlias.id IN %s"
+             % sqlvalues(aliases), prejoins=["content"]))
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'
@@ -3627,3 +3646,4 @@ class IrcIDSet:
     def new(self, person, network, nickname):
         """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)
+

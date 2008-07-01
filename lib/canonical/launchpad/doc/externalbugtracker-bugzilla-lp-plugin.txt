@@ -84,7 +84,7 @@ method which requires authentication.
     ...
     ...     @needs_authentication
     ...     def testAuthentication(self):
-    ...         return self.server.Test.login_required()
+    ...         return self.xmlrpc_proxy.Test.login_required()
 
     >>> test_bugzilla = AuthenticatingBugzillaLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport,
@@ -95,7 +95,7 @@ authenticated. We'll expire the current auth_cookie so that
 login_required() raises a fault.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
-    >>> test_bugzilla.server.Test.login_required()
+    >>> test_bugzilla.xmlrpc_proxy.Test.login_required()
     Traceback (most recent call last):
       ...
     Fault: <Fault 410: 'Login Required'>
@@ -126,13 +126,12 @@ current time on the remote server.
     >>> from datetime import datetime
     >>> # It seems there's no way to create a UTC timestamp without
     >>> # monkey-patching the TZ environment variable. Rather than do
-    >>> # that, we create our own timestamp and work with that.
-    >>> datetime.utcfromtimestamp(1210953200.0)
-    datetime.datetime(2008, 5, 16, 15, 53, 20)
+    >>> # that, we create our own datetime and work with that.
+    >>> remote_time = datetime(2008, 5, 16, 16, 53, 20)
 
     >>> test_transport.utc_offset = 60**2
     >>> test_transport.timezone = 'CET'
-    >>> test_transport.seconds_since_epoch = 1210956800.0
+    >>> test_transport.local_datetime = remote_time
     >>> bugzilla.getCurrentDBTime()
     datetime.datetime(2008, 5, 16, 15, 53, 20, tzinfo=<UTC>)
 
@@ -264,7 +263,8 @@ means that we can use it to import comments from the remote Bugzilla
 instance.
 
     >>> from canonical.launchpad.interfaces import ISupportsCommentImport
-    >>> ISupportsCommentImport.providedBy(bugzilla)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(ISupportsCommentImport, bugzilla)
     True
 
 To test the comment importing methods we need to add an example bug,
@@ -391,3 +391,53 @@ field on the imported comment.
 
     >>> print message.datecreated
     2008-06-16 13:08:08+00:00
+
+
+== Pushing comments to remote systems ==
+
+BugzillaLPPlugin implements the ISupportsCommentPushing interface, which
+defines the necessary methods for pushing comments to remote servers.
+
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     ISupportsCommentPushing)
+    >>> verifyObject(ISupportsCommentPushing, bugzilla)
+    True
+
+ISupportsCommentPushing defines a method, addRemoteComment(), which can
+be used to push a comment to the remote system. It takes three
+parameters: the remote bug ID, the body of the comment to push and the
+rfc822msgid of the comment being pushed. For the BugzillaLPPlugin
+bugtracker we can pass None as the rfc822msgid, since Bugzilla won't use
+it. addRemoteComment() returns the ID of the new comment on the remote
+server.
+
+addRemoteComment() calls Bug.add_comment() on the remote server, which
+requires authentication. To demonstrate this, we'll expire the
+authorization cookie so that it gets regenerated.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+    >>> bugzilla.xmlrpc_transport.expireCookie(
+    ...     bugzilla.xmlrpc_transport.auth_cookie)
+
+    >>> comment_id  = bugzilla.addRemoteComment(
+    ...     1, "This is a new remote comment.", None)
+    Using XML-RPC to generate token.
+    CALLED Launchpad.login({'token': '...'})
+    Successfully validated the token.
+    CALLED Bug.add_comment({'comment': 'This is a new remote comment.',
+        'id': 1})
+
+    >>> print comment_id
+    5
+
+The comment will be stored on the remote server with the other comments.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = False
+    >>> print sorted(bugzilla.getCommentIds(bug_watch))
+    [1, 3, 5]
+
+    >>> bugzilla.fetchComments(bug_watch, [5])
+    >>> message = bugzilla.getMessageForComment(bug_watch, 5, sample_person)
+    >>> print message.text_contents
+    This is a new remote comment.
+    <BLANKLINE>
