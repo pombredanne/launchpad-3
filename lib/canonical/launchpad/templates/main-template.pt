@@ -299,6 +299,7 @@
         tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch"
         action=""
+        xml:lang="en" lang="en" dir="ltr"
         method="get"
         accept-charset="UTF-8"
         tal:attributes="action string:${rooturl}+search"
