@@ -214,7 +214,8 @@ class OpenIDRPSummarySet:
         :raise AssertionError: If the identifier is used by more than
             one account.
         """
-        return OpenIDRPSummary.selectBy(openid_identifier=identifier)
+        return OpenIDRPSummary.selectBy(
+            openid_identifier=identifier, orderBy='id')
 
     def _assert_identifier_is_not_reused(self, account, identifier):
         """Assert no other account in the summaries has the identifier."""
