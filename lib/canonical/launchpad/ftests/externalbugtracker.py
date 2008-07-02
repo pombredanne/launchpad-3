@@ -29,6 +29,8 @@ from canonical.launchpad.components.externalbugtracker import (
 from canonical.launchpad.components.externalbugtracker.trac import (
     LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
     LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
+from canonical.launchpad.components.externalbugtracker.xmlrpc import (
+    UrlLib2Transport)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
@@ -346,6 +348,332 @@ class FakeHTTPConnection:
         print "%s: %s" % (header, value)
 
 
+class TestBugzillaXMLRPCTransport(UrlLib2Transport):
+    """A test implementation of the Bugzilla XML-RPC interface."""
+
+    local_datetime = None
+    timezone = 'UTC'
+    utc_offset = 0
+    print_method_calls = False
+
+    bugs = {
+        1: {'alias': '',
+            'assigned_to': 'test@canonical.com',
+            'component': 'GPPSystems',
+            'creation_time': datetime(2008, 6, 10, 16, 19, 53),
+            'id': 1,
+            'internals': {},
+            'is_open': True,
+            'last_change_time': datetime(2008, 6, 10, 16, 19, 53),
+            'priority': 'P1',
+            'product': 'HeartOfGold',
+            'resolution': 'FIXED',
+            'severity': 'normal',
+            'status': 'RESOLVED',
+            'summary': "That bloody robot still exists.",
+            },
+        2: {'alias': 'bug-two',
+            'assigned_to': 'marvin@heartofgold.ship',
+            'component': 'Crew',
+            'creation_time': datetime(2008, 6, 11, 9, 23, 12),
+            'id': 2,
+            'internals': {},
+            'is_open': True,
+            'last_change_time': datetime(2008, 6, 11, 9, 24, 29),
+            'priority': 'P1',
+            'product': 'HeartOfGold',
+            'resolution': '',
+            'severity': 'high',
+            'status': 'NEW',
+            'summary': 'Collect unknown persons in docking bay 2.',
+            },
+        }
+
+    # Map aliases onto bugs.
+    bug_aliases = {
+        'bug-two': 2,
+        }
+
+    # Comments are mapped to bug IDs.
+    comment_id_index = 4
+    new_comment_time = datetime(2008, 6, 20, 11, 42, 42)
+    bug_comments = {
+        1: {
+            1: {'author': 'trillian',
+                'id': 1,
+                'number': 1,
+                'text': "I'd really appreciate it if Marvin would "
+                        "enjoy life a bit.",
+                'time': datetime(2008, 6, 16, 12, 44, 29),
+                },
+            2: {'author': 'marvin',
+                'id': 3,
+                'number': 2,
+                'text': "Life? Don't talk to me about life.",
+                'time': datetime(2008, 6, 16, 13, 22, 29),
+                },
+            },
+        2: {
+            1: {'author': 'trillian',
+                'id': 2,
+                'number': 1,
+                'text': "Bring the passengers to the bridge please Marvin.",
+                'time': datetime(2008, 6, 16, 13, 8, 8),
+                },
+             2: {'author': 'Ford Prefect <ford.prefect@h2g2.com>',
+                'id': 4,
+                'number': 2,
+                'text': "I appear to have become a perfectly safe penguin.",
+                'time': datetime(2008, 6, 17, 20, 28, 40),
+                },
+            },
+        }
+
+    # Map namespaces onto method names.
+    methods = {
+        'Bug': ['add_comment', 'comments', 'get_bugs'],
+        'Launchpad': ['login', 'time'],
+        'Test': ['login_required']
+        }
+
+    # Methods that require authentication.
+    auth_required_methods = [
+        'add_comment',
+        'login_required',
+        ]
+
+    expired_cookie = None
+
+    def expireCookie(self, cookie):
+        """Mark the cookie as expired."""
+        self.expired_cookie = cookie
+
+    @property
+    def auth_cookie(self):
+        cookies = self.cookie_processor.cookiejar._cookies
+        return cookies.get('example.com', {}).get(None, {}).get('auth')
+
+    @property
+    def has_valid_auth_cookie(self):
+        return (self.auth_cookie is not None and
+                self.auth_cookie is not self.expired_cookie)
+
+    def request(self, host, handler, request, verbose=None):
+        """Call the corresponding XML-RPC method.
+
+        The method name and arguments are extracted from `request`. The
+        method on this class with the same name as the XML-RPC method is
+        called, with the extracted arguments passed on to it.
+        """
+        args, method_name = xmlrpclib.loads(request)
+        method_prefix, method_name = method_name.split('.')
+
+        assert method_prefix in self.methods, (
+            "All methods should be in one of the following namespaces: %s"
+            % self.methods.keys())
+
+        assert method_name in self.methods[method_prefix], (
+            "No method '%s' in namespace '%s'." %
+            (method_name, method_prefix))
+
+        # If the method requires authentication and we have no auth
+        # cookie, throw a Fault.
+        if (method_name in self.auth_required_methods and
+            not self.has_valid_auth_cookie):
+            raise xmlrpclib.Fault(410, 'Login Required')
+
+        if self.print_method_calls:
+            if len(args) > 0:
+                arguments = ordered_dict_as_string(args[0])
+            else:
+                arguments = ''
+
+            print "CALLED %s.%s(%s)" % (method_prefix, method_name, arguments)
+
+        method = getattr(self, method_name)
+        return method(*args)
+
+    def time(self):
+        """Return a dict of the local time, UTC time and the timezone."""
+        local_datetime = self.local_datetime
+        if local_datetime is None:
+            local_datetime = datetime(2008, 5, 1, 1, 1, 1)
+
+        # We return xmlrpc dateTimes rather than doubles since that's
+        # what BugZilla will return.
+        local_time = xmlrpclib.DateTime(local_datetime.timetuple())
+
+        utc_date_time = local_datetime - timedelta(seconds=self.utc_offset)
+        utc_time = xmlrpclib.DateTime(utc_date_time.timetuple())
+        return {
+            'local_time': local_time,
+            'utc_time': utc_time,
+            'tz_name': self.timezone,
+            }
+
+    def login_required(self):
+        # This method only exists to demonstrate login required methods.
+        return "Wonderful, you've logged in! Aren't you a clever biped?"
+
+    def _consumeLoginToken(self, token_text):
+        """Try to consume a login token."""
+        token = getUtility(ILoginTokenSet)[token_text]
+
+        if token.tokentype.name != 'BUGTRACKER':
+            raise AssertionError(
+                'Invalid token type: %s' % token.tokentype.name)
+        if token.date_consumed is not None:
+            raise AssertionError("Token has already been consumed.")
+        token.consume()
+
+        if self.print_method_calls:
+            print "Successfully validated the token."
+
+    def _handleLoginToken(self, token_text):
+        """A wrapper around _consumeLoginToken().
+
+        We can override this method when we need to do things Zopelessly.
+        """
+        self._consumeLoginToken(token_text)
+
+    def login(self, arguments):
+        token_text = arguments['token']
+
+        self._handleLoginToken(token_text)
+
+        # Generate some random cookies to use.
+        random_cookie_1 = str(random.random())
+        random_cookie_2 = str(random.random())
+
+        # Reset the headers so that we don't end up with long strings of
+        # repeating cookies.
+        self.last_response_headers = HTTPMessage(StringIO())
+
+        self.last_response_headers.addheader(
+            'set-cookie', 'Bugzilla_login=%s;' % random_cookie_1)
+        self.last_response_headers.addheader(
+            'set-cookie', 'Bugzilla_logincookie=%s;' % random_cookie_2)
+
+        # We always return the same user ID.
+        # This has to be listified because xmlrpclib tries to expand
+        # sequences of length 1.
+        return [{'user_id': 42}]
+
+    def get_bugs(self, arguments):
+        """Return a list of bug dicts for a given set of bug IDs."""
+        bug_ids = arguments['ids']
+        bugs_to_return = []
+        bugs = dict(self.bugs)
+
+        # We enforce permissiveness, since we'll always call this method
+        # with permissive=True in the Real World.
+        permissive = arguments.get('permissive', False)
+        assert permissive, "get_bugs() must be called with permissive=True"
+
+        for id in bug_ids:
+            # If the ID is an int, look up the bug directly. We copy the
+            # bug dict into a local variable so we can manipulate the
+            # data in it.
+            try:
+                id = int(id)
+                bug_dict = dict(self.bugs[int(id)])
+            except ValueError:
+                bug_dict = dict(self.bugs[self.bug_aliases[id]])
+
+            # Update the DateTime fields of the bug dict so that they
+            # look like ones that would be sent over XML-RPC.
+            for time_field in ('creation_time', 'last_change_time'):
+                datetime_value = bug_dict[time_field]
+                timestamp = time.mktime(datetime_value.timetuple())
+                xmlrpc_datetime = xmlrpclib.DateTime(timestamp)
+                bug_dict[time_field] = xmlrpc_datetime
+
+            bugs_to_return.append(bug_dict)
+
+        # "Why are you returning a list here?" I hear you cry. Well,
+        # dear reader, it's because xmlrpclib:1387 tries to expand
+        # sequences of length 1. When you return a dict, that line
+        # explodes in your face. Annoying? Insane? You bet.
+        return [{'bugs': bugs_to_return}]
+
+    def comments(self, arguments):
+        """Return comments for a given set of bugs."""
+        # We'll always pass bug IDs when we call comments().
+        assert 'bug_ids' in arguments, (
+            "Bug.comments() must always be called with a bug_ids parameter.")
+
+        bug_ids = arguments['bug_ids']
+        comment_ids = arguments.get('ids')
+        fields_to_return = arguments.get('include')
+        comments_by_bug_id = {}
+
+        def copy_comment(comment):
+            # Copy wanted fields.
+            comment = dict(
+                (key, value) for (key, value) in comment.iteritems()
+                if fields_to_return is None or key in fields_to_return)
+            # Replace the time field with an XML-RPC DateTime.
+            if 'time' in comment:
+                comment['time'] = xmlrpclib.DateTime(
+                    comment['time'].timetuple())
+            return comment
+
+        for bug_id in bug_ids:
+            comments_for_bug = self.bug_comments[bug_id].values()
+            comments_by_bug_id[bug_id] = [
+                copy_comment(comment) for comment in comments_for_bug
+                if comment_ids is None or comment['id'] in comment_ids]
+
+        # More xmlrpclib:1387 odd-knobbery avoidance.
+        return [{'bugs': comments_by_bug_id}]
+
+    def add_comment(self, arguments):
+        """Add a comment to a bug."""
+        assert 'id' in arguments, (
+            "Bug.add_comment() must always be called with an id parameter.")
+        assert 'comment' in arguments, (
+            "Bug.add_comment() must always be called with an comment "
+            "parameter.")
+
+        bug_id = arguments['id']
+        comment = arguments['comment']
+
+        # If the bug doesn't exist, raise a fault.
+        if int(bug_id) not in self.bugs:
+            raise xmlrpclib.Fault(101, "Bug #%s does not exist." % bug_id)
+
+        # If we don't have comments for the bug already, create an empty
+        # comment dict.
+        if bug_id not in self.bug_comments:
+            self.bug_comments[bug_id] = {}
+
+        # Work out the number for the new comment on that bug.
+        if len(self.bug_comments[bug_id]) == 0:
+            comment_number = 1
+        else:
+            comment_numbers = sorted(self.bug_comments[bug_id].keys())
+            latest_comment_number = comment_numbers[-1]
+            comment_number = latest_comment_number + 1
+
+        # Add the comment to the bug.
+        comment_id = self.comment_id_index + 1
+        comment_dict = {
+            'author': 'launchpad',
+            'id': comment_id,
+            'number': comment_number,
+            'time': self.new_comment_time,
+            'text': comment,
+            }
+        self.bug_comments[bug_id][comment_number] = comment_dict
+
+        self.comment_id_index = comment_id
+
+        # We have to return a list here because xmlrpclib will try to
+        # expand sequences of length 1. Trying to do that on a dict will
+        # cause it to explode.
+        return [{'comment_id': comment_id}]
+
+
 class TestMantis(Mantis):
     """Mantis ExternalSystem for use in tests.
 
@@ -472,6 +800,220 @@ def strip_trac_comment(comment):
         del comment['user']
 
     return comment
+
+
+class TestTracXMLRPCTransport(UrlLib2Transport):
+    """An XML-RPC transport to be used when testing Trac."""
+
+    remote_bugs = {}
+    seconds_since_epoch = None
+    local_timezone = 'UTC'
+    utc_offset = 0
+    expired_cookie = None
+
+    def expireCookie(self, cookie):
+        """Mark the cookie as expired."""
+        self.expired_cookie = cookie
+
+    @property
+    def auth_cookie(self):
+        cookies = self.cookie_processor.cookiejar._cookies
+        return cookies.get('example.com', {}).get(None, {}).get('auth')
+
+    @property
+    def has_valid_auth_cookie(self):
+        return (self.auth_cookie is not None and
+                self.auth_cookie is not self.expired_cookie)
+
+    def request(self, host, handler, request, verbose=None):
+        """Call the corresponding XML-RPC method.
+
+        The method name and arguments are extracted from `request`. The
+        method on this class with the same name as the XML-RPC method is
+        called, with the extracted arguments passed on to it.
+        """
+        assert handler.endswith('/xmlrpc'), (
+            'The Trac endpoint must end with /xmlrpc')
+        args, method_name = xmlrpclib.loads(request)
+        prefix = 'launchpad.'
+        assert method_name.startswith(prefix), (
+            'All methods should be in the launchpad namespace')
+        if (self.auth_cookie is None or
+            self.auth_cookie == self.expired_cookie):
+            # All the Trac XML-RPC methods need authentication.
+            raise xmlrpclib.ProtocolError(
+                method_name, errcode=403, errmsg="Forbidden",
+                headers=None)
+
+        method_name = method_name[len(prefix):]
+        method = getattr(self, method_name)
+        return method(*args)
+
+    def bugtracker_version(self):
+        """Return the bug tracker version information."""
+        return ['0.11.0', '1.0', False]
+
+    def time_snapshot(self):
+        """Return the current time."""
+        if self.seconds_since_epoch is None:
+            local_time = int(time.time())
+        else:
+            local_time = self.seconds_since_epoch
+        utc_time = local_time - self.utc_offset
+        return [self.local_timezone, local_time, utc_time]
+
+    @property
+    def utc_time(self):
+        """Return the current UTC time for this bug tracker."""
+        # This is here for the sake of not having to use
+        # time_snapshot()[2] all the time, which is a bit opaque.
+        return self.time_snapshot()[2]
+
+    def bug_info(self, level, criteria=None):
+        """Return info about a bug or set of bugs.
+
+        :param level: The level of detail to return about the bugs
+            requested. This can be one of:
+            0: Return IDs only.
+            1: Return Metadata only.
+            2: Return Metadata + comment IDs.
+            3: Return all data about each bug.
+
+        :param criteria: The selection criteria by which bugs will be
+            returned. Possible keys include:
+            modified_since: An integer timestamp. If specified, only
+                bugs modified since this timestamp will
+                be returned.
+            bugs: A list of bug IDs. If specified, only bugs whose IDs are in
+                this list will be returned.
+
+        Return a list of [ts, bugs] where ts is a utc timestamp as
+        returned by `time_snapshot()` and bugs is a list of bug dicts.
+        """
+        # XXX 2008-04-12 gmb:
+        #     This is only a partial implementation of this; it will
+        #     grow over time as implement different methods that call
+        #     this method. See bugs 203564, 158703 and 158705.
+
+        # We sort the list of bugs for the sake of testing.
+        bug_ids = sorted([bug_id for bug_id in self.remote_bugs.keys()])
+        bugs_to_return = []
+        missing_bugs = []
+
+        for bug_id in bug_ids:
+            bugs_to_return.append(self.remote_bugs[bug_id])
+
+        if criteria is None:
+            criteria = {}
+
+        # If we have a modified_since timestamp, we return bugs modified
+        # since that time.
+        if 'modified_since' in criteria:
+            # modified_since is an integer timestamp, so we convert it
+            # to a datetime.
+            modified_since = datetime.fromtimestamp(
+                criteria['modified_since'])
+
+            bugs_to_return = [
+                bug for bug in bugs_to_return
+                if bug.last_modified > modified_since]
+
+        # If we have a list of bug IDs specified, we only return
+        # those members of bugs_to_return that are in that
+        # list.
+        if 'bugs' in criteria:
+            bugs_to_return = [
+                bug for bug in bugs_to_return
+                if bug.id in criteria['bugs']]
+
+            # We make a separate list of bugs that don't exist so that
+            # we can return them with a status of 'missing' later.
+            missing_bugs = [
+                bug_id for bug_id in criteria['bugs']
+                if bug_id not in self.remote_bugs]
+
+        # We only return what's required based on the level parameter.
+        # For level 0, only IDs are returned.
+        if level == LP_PLUGIN_BUG_IDS_ONLY:
+            bugs_to_return = [{'id': bug.id} for bug in bugs_to_return]
+        # For level 1, we return the bug's metadata, too.
+        elif level == LP_PLUGIN_METADATA_ONLY:
+            bugs_to_return = [bug.asDict() for bug in bugs_to_return]
+        # At level 2, we also return comment IDs for each bug.
+        elif level == LP_PLUGIN_METADATA_AND_COMMENTS:
+            bugs_to_return = [
+                dict(bug.asDict(), comments=[
+                    comment['id'] for comment in bug.comments])
+                for bug in bugs_to_return]
+        # At level 3, we return the full comment dicts along with the
+        # bug metadata. Tne comment dicts do not include the user field,
+        # however.
+        elif level == LP_PLUGIN_FULL:
+            bugs_to_return = [
+                dict(bug.asDict(),
+                     comments=[strip_trac_comment(dict(comment))
+                               for comment in bug.comments])
+                for bug in bugs_to_return]
+
+        # Tack the missing bugs onto the end of our list of bugs. These
+        # will always be returned in the same way, no matter what the
+        # value of the level argument.
+        missing_bugs = [
+            {'id': bug_id, 'status': 'missing'} for bug_id in missing_bugs]
+
+        return [self.utc_time, bugs_to_return + missing_bugs]
+
+    def get_comments(self, comments):
+        """Return a list of comment dicts.
+
+        :param comments: The IDs of the comments to return. Comments
+            that don't exist will be returned with a type value of
+            'missing'.
+        """
+        # It's a bit tedious having to loop through all the bugs and
+        # their comments like this, but it's easier than creating a
+        # horribly complex implementation for the sake of testing.
+        comments_to_return = []
+
+        for bug in self.remote_bugs.values():
+            for comment in bug.comments:
+                if comment['id'] in comments:
+                    comments_to_return.append(comment)
+
+        # For each of the missing ones, return a dict with a type of
+        # 'missing'.
+        comment_ids_to_return = sorted([
+            comment['id'] for comment in comments_to_return])
+        missing_comments = [
+            {'id': comment_id, 'type': 'missing'}
+            for comment_id in comments
+            if comment_id not in comment_ids_to_return]
+
+        return [self.utc_time, comments_to_return + missing_comments]
+
+    def add_comment(self, bugid, comment):
+        """Add a comment to a bug.
+
+        :param bugid: The integer ID of the bug to which the comment
+            should be added.
+        :param comment: The comment to be added as a string.
+        """
+        # Calculate the comment ID from the bug's ID and the number of
+        # comments against that bug.
+        comments = self.remote_bugs[str(bugid)].comments
+        comment_id = "%s-%s" % (bugid, len(comments) + 1)
+
+        comment_dict = {
+            'comment': comment,
+            'id': comment_id,
+            'time': self.utc_time,
+            'type': 'comment',
+            'user': 'launchpad',
+            }
+
+        comments.append(comment_dict)
+
+        return [self.utc_time, comment_id]
 
 
 class TestRoundup(Roundup):
