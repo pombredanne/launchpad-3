@@ -7,6 +7,7 @@ __all__ = [
 __metaclass__ = type
 
 import pytz
+import traceback
 
 from zope.interface import alsoProvides
 from zope.schema.vocabulary import SimpleVocabulary
@@ -18,9 +19,17 @@ from canonical.lazr.interfaces.timezone import ITimezoneNameVocabulary
 _values = sorted(pytz.common_timezones)
 _values.remove('UTC')
 _values.insert(0, 'UTC')
-# US/Pacific-New has been removed from tzdata but not from pytz.
-if 'US/Pacific-New' in _values:
-    _values.remove('US/Pacific-New')
+# The tzdata package may not contain all the timezone files that pytz
+# thinks exist.
+for timezone_name in _values:
+    # pylint: disable-msg=W0702
+    try:
+        pytz.timezone(timezone_name)
+    except:
+        # We already know that this timezone is failing.
+        if timezone_name != 'US/Pacific-New':
+            traceback.print_exc()
+        _values.remove(timezone_name)
 
 _timezone_vocab = SimpleVocabulary.fromValues(_values)
 alsoProvides(_timezone_vocab, ITimezoneNameVocabulary)

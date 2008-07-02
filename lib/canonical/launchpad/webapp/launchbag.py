@@ -7,6 +7,7 @@ The collection of stuff we have traversed.
 __metaclass__ = type
 
 import pytz
+import traceback
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -155,10 +156,13 @@ class LaunchBag:
     @property
     def time_zone(self):
         if self.user and self.user.time_zone:
+            # pylint: disable-msg=W0702
             try:
                 return pytz.timezone(self.user.time_zone)
-            except (KeyError, IOError):
-                pass # unknown time zone name
+            except:
+                # There is an unknown time zone name in the
+                # PersonLocation table.
+                traceback.print_exc()
         # fall back to UTC
         return _utc_tz
 
