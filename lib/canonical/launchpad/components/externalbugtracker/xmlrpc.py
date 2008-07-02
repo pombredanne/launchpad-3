@@ -2,9 +2,11 @@
 
 """An XMLRPC transport which uses Launchpad's HTTP proxy."""
 
-from xmlrpclib import Transport
+
+from cookielib import Cookie
 from urllib2 import build_opener, HTTPCookieProcessor, Request
 from urlparse import urlparse, urlunparse
+from xmlrpclib import Transport
 
 class UrlLib2Transport(Transport):
     """An XMLRPC transport which uses Launchpad's HTTP proxy.
@@ -17,21 +19,30 @@ class UrlLib2Transport(Transport):
 
     Note: this transport isn't fit for general XML-RPC use. It is just
     good enough for some of our extrnal bug tracker implementations.
+
+    :param endpoint: The URL of the XMLRPC server.
+    :param _opener_wrapper: Optional parameter for testing the transport.
     """
 
     verbose = False
-    auth_cookie = None
 
-    def __init__(self, endpoint):
-        self.scheme = urlparse(endpoint)[0]
+    def __init__(self, endpoint, _opener_wrapper=None):
+        self.scheme, self.host = urlparse(endpoint)[:2]
         assert (
             self.scheme in ('http', 'https'),
             "Unsupported URL schene: %s" % self.scheme)
         self.cookie_processor = HTTPCookieProcessor()
         self.opener = build_opener(self.cookie_processor)
+        if _opener_wrapper is not None:
+            self.opener = _opener_wrapper(self.opener)
 
-    def setCookie(self, auth_cookie):
-        self.cookie_processor.cookiejar.set_cookie(self.auth_cookie)
+    def setCookie(self, cookie_str):
+        name, value = cookie_str.split('=')
+        cookie = Cookie(
+            0, name, value, None, False, self.host,
+            True, False, None, False, None, None, None,
+            None, None, None)
+        self.cookie_processor.cookiejar.set_cookie(cookie)
 
     def request(self, host, handler, request_body, verbose=0):
         """Make an XMLRPC request.
