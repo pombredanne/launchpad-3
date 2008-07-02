@@ -39,10 +39,11 @@ class DistributionSourcePackageRelease:
     decorates(ISourcePackageRelease, context='sourcepackagerelease')
 
     def __init__(self, distribution, sourcepackagerelease,
-                 publishing_history=None):
+                 publishing_history=None, package_diffs=None):
         self.distribution = distribution
         self.sourcepackagerelease = sourcepackagerelease
         self._publishing_history_list = publishing_history
+        self._package_diffs = package_diffs
 
     @property
     def sourcepackage(self):
@@ -78,9 +79,19 @@ class DistributionSourcePackageRelease:
 
     @property
     def publishing_history_list(self):
-        if self._publishing_history_list is None:
-            self._publishing_history_list = list(self.publishing_history)
-        return self._publishing_history_list
+        if self._publishing_history_list is not None:
+            return self._publishing_history_list
+        return list(self.publishing_history)
+
+    @property
+    def package_diffs(self):
+        """See ISourcePackageRelease."""
+        if self._package_diffs is not None:
+            # XXX 2008-07-02 jamesh:
+            # This is a list rather than a result set, but is close
+            # enough for the +diffs view.
+            return self._package_diffs
+        return self.sourcepackagerelease.package_diffs
 
     @property
     def builds(self):

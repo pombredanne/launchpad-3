@@ -28,6 +28,7 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
+from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -270,13 +271,29 @@ class DistributionSourcePackage(BugTargetBase,
             Desc(SourcePackagePublishingHistory.datecreated),
             Desc(SourcePackagePublishingHistory.id))
 
-        dsprs = []
+        # Collate the publishing history by SourcePackageRelease.
+        spr_pubs = []
+        spr_ids = []
         for spr, pubs in itertools.groupby(result, operator.itemgetter(0)):
-            dsprs.append(DistributionSourcePackageRelease(
-                    distribution=self.distribution,
-                    sourcepackagerelease=spr,
-                    publishing_history=[spph for (spr, spph) in pubs]))
-        return dsprs
+            spr_pubs.append((spr, [spph for (spr, spph) in pubs]))
+            spr_ids.append(spr.id)
+
+        # Get package diffs to each SourcePackageRelease.
+        result = store.find(PackageDiff, In(PackageDiff.to_sourceID, spr_ids))
+        result.order_by(PackageDiff.to_sourceID,
+                        Desc(PackageDiff.date_requested))
+        spr_diffs = {}
+        for spr_id, diffs in itertools.groupby(
+            result, operator.attrgetter('to_sourceID')):
+            spr_diffs[spr_id] = list(diffs)
+
+        return [
+            DistributionSourcePackageRelease(
+                distribution=self.distribution,
+                sourcepackagerelease=spr,
+                publishing_history=spphs,
+                package_diffs=spr_diffs.get(spr.id, []))
+            for spr, spphs in spr_pubs]
 
     def __eq__(self, other):
         """See `IDistributionSourcePackage`."""
