@@ -1,5 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
-
+# pylint: disable-msg=E0211,E0213
 """Account interfaces."""
 
 __metaclass__ = type
@@ -15,7 +15,7 @@ __all__ = [
         ]
 
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
@@ -210,6 +210,8 @@ class IAccountPrivate(Interface):
 
     password = PasswordField(
             title=_("Password."), readonly=False, required=True)
+
+    openid_identity_url = Attribute("The OpenID identity URL.")
 
 
 class IAccount(IAccountPublic, IAccountPrivate):

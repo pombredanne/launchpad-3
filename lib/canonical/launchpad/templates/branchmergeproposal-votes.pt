@@ -18,6 +18,11 @@
     <tbody>
       <tr tal:repeat="review view/current_reviews">
         <td>
+          <tal:show-link condition="view/show_comment_links">
+            <a tal:attributes="href string:#comment${review/comment/id}">
+              <img src="/@@/arrowDown"/></a>
+          </tal:show-link>
+
           <a tal:attributes="href review/comment/fmt:url"
              tal:content="review/comment/vote/title">
           Approved</a>

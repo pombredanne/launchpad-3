@@ -42,6 +42,14 @@ The service root resource supports GET.
    >>> get_method.id
    'service-root-get'
 
+If we want to invoke this method, we send a GET request to the service
+root URL.
+
+   >>> get_method.name
+   'GET'
+   >>> get_method.build_request_url()
+   'http://api.launchpad.dev/beta/'
+
 The WADL description of a resource knows which representations are
 available for that resource. In this case, the server root resource
 has a a JSON representation, and it defines parameters like
@@ -130,12 +138,37 @@ The method name passed into get_method() is treated case-insensitively.
    'people-get'
 
 To invoke the special GET request, the client sets the 'ws.op' query
-variable to the fixed string 'find':
+parameter to the fixed string 'find'.
 
    >>> find_method = personset_resource.get_method(
    ...     'get', fixed_params={'ws.op' : 'findPerson'})
    >>> find_method.id
    'people-findPerson'
+
+Given an end-user's values for the non-fixed parameters, it's possible
+to get the URL that should be used to invoke the method.
+
+   >>> find_method.build_request_url(text='foo')
+   u'http://api.launchpad.dev/beta/people?text=foo&ws.op=findPerson'
+
+   >>> find_method.build_request_url({'ws.op' : 'findPerson', 'text' : 'bar'})
+   u'http://api.launchpad.dev/beta/people?text=bar&ws.op=findPerson'
+
+An error occurs if the end-user gives an incorrect value for a fixed
+parameter value, or omits a required parameter.
+
+   >>> find_method.build_request_url()
+   Traceback (most recent call last):
+   ...
+   KeyError: "No value for required parameter 'text'"
+
+   >>> find_method.build_request_url(
+   ...     {'ws.op' : 'findAPerson', 'text' : 'foo'})
+   ... # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+   Traceback (most recent call last):
+   ...
+   KeyError: "Value 'findAPerson' for parameter 'ws.op' conflicts
+   with fixed value 'findPerson'"
 
 To invoke the overloaded POST request, the client sets the 'ws.op'
 query variable to the fixed string 'newTeam':

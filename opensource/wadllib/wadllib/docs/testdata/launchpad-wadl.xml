@@ -2502,3 +2502,4 @@
     <wadl:method name="DELETE" id="HostedFile-put"/>
   </wadl:resource_type>
 </wadl:application>
+
