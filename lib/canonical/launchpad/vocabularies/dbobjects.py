@@ -744,15 +744,12 @@ class ValidPersonOrTeamVocabulary(
         # Short circuit if there is no search text - all valid people and
         # teams have been requested.
         if not text:
-            if self.extra_clause:
-                extra_clause = " AND %s" % self.extra_clause
-            else:
-                extra_clause = ""
             query = """
                 Person.id = ValidPersonOrTeamCache.id
                 AND Person.visibility = %s
                 """ % quote(PersonVisibility.PUBLIC)
-            query += extra_clause
+            if self.extra_clause:
+                query += " AND %s" % self.extra_clause
             return Person.select(
                 query, clauseTables=['ValidPersonOrTeamCache'])
 
@@ -764,13 +761,15 @@ class ValidPersonOrTeamVocabulary(
             LeftJoin(Account, EmailAddress.account == Account.id),
             ]
 
+        # Note we use lower() instead of the non-standard ILIKE because
+        # ILIKE doesn't seem to hit the indexes.
         inner_select = SQL("""
             SELECT Person.id
             FROM Person
             WHERE Person.fti @@ ftq(%s)
             UNION ALL
             SELECT Person.id
-            FROM Person, IRCId
+            FROM Person, IrcId
             WHERE IrcId.person = Person.id
                 AND lower(IrcId.nickname) = %s
             UNION ALL
@@ -791,12 +790,15 @@ class ValidPersonOrTeamVocabulary(
             extra_clause = True
         result = store.using(*tables).find(
             Person,
-            AND(
+            And(
                 Person.id.is_in(inner_select),
                 Person.visibility == PersonVisibility.PUBLIC,
                 Person.merged == None,
                 Or(
-                    Not(Person.teamowner == None),
+                    # A valid person-or-team is either a team...
+                    Not(Person.teamowner == None), # 'Not' due to Bug 244768
+
+                    # or has an active account and a working email address.
                     And(
                         Account.status == AccountStatus.ACTIVE,
                         EmailAddress.status.is_in((

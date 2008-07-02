@@ -4,7 +4,7 @@
 #
 #   python -i harness.py
 #
-# At that point, you will have the Launchpad SQLObject classes, all interface
+# At that point, you will have the Launchpad Storm classes, all interface
 # classes and the zope3 CA-fu at your fingertips, connected to launchpad_dev
 # or your LP_DBNAME environment variable (if you have one set).
 #
@@ -66,7 +66,7 @@ from storm.locals import *
 from storm.expr import *
 from storm.zope.interfaces import IZStorm
 store = getUtility(IZStorm).get('main')
-  
+
 #
 # Let's get a few handy objects going
 #
