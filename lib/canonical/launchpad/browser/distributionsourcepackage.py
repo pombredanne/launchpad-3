@@ -262,4 +262,5 @@ class DistributionSourcePackageView(LaunchpadFormView):
         return [
             DecoratedDistributionSourcePackageRelease(
                 dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
-            for (dspr, spphs) in self.context.getReleasesAndPublishingHistory()]
+            for (dspr, spphs)
+                in self.context.getReleasesAndPublishingHistory()]
