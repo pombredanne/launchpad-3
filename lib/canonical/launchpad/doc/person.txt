@@ -55,13 +55,14 @@ You can create a new person using the createPersonAndEmail method of
 IPersonSet. All you need for that is a valid email address. You can also
 hide the user email addresses.
 
-Some of our scripts may create Person entries, and in these cases they must
-provide a rationale and a comment (optional) for the creation of that Person
-entry. These are displayed on the home pages of unvalidated Launchpad
-profiles, to make it clear that those profiles were not created by the
-people they represent and why they had to be created. Because the comment
-will be displayed verbatim in a web page, it must start with the word "when"
-followed by a description of the action that caused the entry to be created.
+Some of our scripts may create Person entries, and in these cases they
+must provide a rationale and a comment (optional) for the creation of
+that Person entry. These are displayed on the home pages of unvalidated
+Launchpad profiles, to make it clear that those profiles were not
+created by the people they represent and why they had to be created.
+Because the comment will be displayed verbatim in a web page, it must
+start with the word "when" followed by a description of the action that
+caused the entry to be created.
 
     >>> from canonical.launchpad.interfaces import (
     ...     EmailAddressStatus, PersonCreationRationale)
@@ -78,8 +79,8 @@ followed by a description of the action that caused the entry to be created.
     >>> p.hide_email_addresses
     True
 
-Since this person has chosen to hide his email addresses they won't be visible
-to other users which are not admins.
+Since this person has chosen to hide his email addresses they won't be
+visible to other users which are not admins.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> login(email.email)
@@ -95,18 +96,65 @@ to other users which are not admins.
     True
     >>> login(ANONYMOUS)
 
-By default, newly created Person entries will have AccountStatus.NOACCOUNT as
-their account_status.  This is only changed if/when we turn that entry into an
-actual user account. (Currently, we assume that a Person entry is turned into
-a user account when its first email address is confirmed)
+By default, newly created Person entries will have
+AccountStatus.NOACCOUNT as their account_status. This is only changed
+if/when we turn that entry into an actual user account. (Currently, we
+assume that a Person entry is turned into a user account when its first
+email address is confirmed) Note that both the Person and the
+EmailAddress have accounts when they are created using the
+createPersonAndEmail() method.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    # Only the user may access his hidden email address while
+    # hide_email_addresses is True.
+    >>> login('randomuser@randomhost.com')
 
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
+    >>> removeSecurityProxy(email).account == p.account
+    True
+
     >>> p.setPreferredEmail(email)
     >>> email.status
     <DBItem EmailAddressStatus.PREFERRED...
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
+
+The user can add additional email addresses. The
+validateAndEnsurePreferredEmail() method verifies that the email belongs
+to the person, and it updates the email address's status and account.
+
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> validated_email = emailset.new('validated@canonical.com', p)
+    >>> validated_email.status
+    <DBItem EmailAddressStatus.NEW...
+    >>> print removeSecurityProxy(validated_email).account
+    None
+
+    >>> p.validateAndEnsurePreferredEmail(validated_email)
+    >>> validated_email.status
+    <DBItem EmailAddressStatus.VALIDATED...
+    >>> removeSecurityProxy(validated_email).account == p.account
+    True
+
+The user can add a new address and set it as the preferred address.
+The setPreferredEmail() method updated the address's status and
+account.
+
+    >>> preferred_email = emailset.new('preferred@canonical.com', p)
+    >>> preferred_email.status
+    <DBItem EmailAddressStatus.NEW...
+    >>> print removeSecurityProxy(preferred_email).account
+    None
+
+    >>> p.setPreferredEmail(preferred_email)
+    >>> preferred_email.status
+    <DBItem EmailAddressStatus.PREFERRED...
+    >>> removeSecurityProxy(preferred_email).account == p.account
+    True
+
+    >>> login(ANONYMOUS)
 
 In the case of teams, though, the account_status is not changed as their
 account_status must always be set to NOACCOUNT. (Notice how we use
@@ -117,7 +165,6 @@ can be used only for people and the former only for teams)
     >>> shipit_admins.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> emailset = getUtility(IEmailAddressSet)
     >>> email = emailset.new('foo@baz.com', shipit_admins)
     >>> shipit_admins.setContactAddress(email)
     >>> email.status

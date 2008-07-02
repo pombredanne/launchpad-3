@@ -2033,6 +2033,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
+            email.account = email.person.account
             getUtility(IHWSubmissionSet).setOwnership(email)
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
@@ -2063,6 +2064,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.account.status = AccountStatus.ACTIVE
             self.account.status_comment = None
             self.account.sync() # sync so validpersoncache updates.
+        email.account = self.account
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
