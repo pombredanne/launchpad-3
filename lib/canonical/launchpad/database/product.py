@@ -316,13 +316,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         if self.license_approved:
             return LicenseStatus.OPEN_SOURCE
-        elif len(self.licenses) == 0:
+        licenses = self.licenses
+        if len(licenses) == 0:
             # We don't know what the license is.
             return LicenseStatus.UNREVIEWED
-        elif License.OTHER_PROPRIETARY in self.licenses:
+        elif License.OTHER_PROPRIETARY in licenses:
             # Notice the difference between the License and LicenseStatus.
             return LicenseStatus.PROPRIETARY
-        elif License.OTHER_OPEN_SOURCE in self.licenses:
+        elif License.OTHER_OPEN_SOURCE in licenses:
             if self.license_reviewed:
                 # The OTHER_OPEN_SOURCE license was not manually approved
                 # by setting license_approved to true.
