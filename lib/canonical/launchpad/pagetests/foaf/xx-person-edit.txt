@@ -78,9 +78,6 @@ He will also change his timezone:
 If he decides that he doesn't want to change anything, he can click 'Cancel'
 to return to the index page.
 
-    >>> browser.url
-    'http://launchpad.dev/~foobar'
-    >>> browser.getLink('Change details').click()
     >>> browser.getLink('Cancel').click()
     >>> browser.url
     'http://launchpad.dev/~foobar'
