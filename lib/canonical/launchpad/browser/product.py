@@ -631,12 +631,12 @@ class SortSeriesMixin:
         The series list is sorted by version in reverse order.
         The development focus is always first in the list.
         """
-        series_list = list(self.product.serieses)
-        series_list.remove(self.product.development_focus)
+        series_list = list(self.context.serieses)
+        series_list.remove(self.context.development_focus)
         # Now sort the list by name with newer versions before older.
         series_list = sorted_version_numbers(series_list,
                                              key=attrgetter('name'))
-        series_list.insert(0, self.product.development_focus)
+        series_list.insert(0, self.context.development_focus)
         return series_list
 
 
