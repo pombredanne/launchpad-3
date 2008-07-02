@@ -79,7 +79,7 @@ He will also change his timezone:
     ['Africa/Dakar']
 
 Selecting a time zone that is not supported by the tzdata package
-will raise an error.
+will cause the form to display an error.
 
     >>> from canonical.launchpad.vocabularies import timezones
     >>> from zope.schema.vocabulary import SimpleVocabulary
