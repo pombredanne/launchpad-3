@@ -98,10 +98,18 @@ class SubmissionParser:
         self.logger.error(
             'Parsing submission %s: %s' % (submission_key, message))
 
-    def _logWarning(self, message):
+    def _logWarning(self, message, warning_id=None):
         """Log `message` for a warning in submission submission_key`."""
-        self.logger.warning(
-            'Parsing submission %s: %s' % (self.submission_key, message))
+        if warning_id is None:
+            issue_warning = True
+        elif warning_id not in self._logged_warnings:
+            issue_warning = True
+            self._logged_warnings.add(warning_id)
+        else:
+            issue_warning = False
+        if issue_warning:
+            self.logger.warning(
+                'Parsing submission %s: %s' % (self.submission_key, message))
 
     def _getValidatedEtree(self, submission, submission_key):
         """Create an etree doc from the XML string submission and validate it.
@@ -910,28 +918,22 @@ class SubmissionParser:
         root_hal_device = self.hal_devices[ROOT_UDI]
         kernel_version = root_hal_device.getProperty('system.kernel.version')
         if kernel_version is None:
-            if not WARNING_NO_HAL_KERNEL_VERSION in self._logged_warnings:
-                # This method is called very often; one warning per
-                # submission is enough.
-                self._logged_warnings.add(WARNING_NO_HAL_KERNEL_VERSION)
-                self._logWarning(
-                    'Submission does not provide property '
-                    'system.kernel.version for '
-                    '/org/freedesktop/Hal/devices/computer.')
+            self._logWarning(
+                'Submission does not provide property system.kernel.version '
+                'for /org/freedesktop/Hal/devices/computer.',
+                WARNING_NO_HAL_KERNEL_VERSION)
             return None
         kernel_package_name = 'linux-image-' + kernel_version
-        if not 'packages' in self.parsed_data['software']:
+        if 'packages' not in self.parsed_data['software']:
             # The RelaxNG schema does not require package data.
             return None
         packages = self.parsed_data['software']['packages']
         if kernel_package_name not in packages:
-            if not WARNING_NO_KERNEL_PACKAGE_DATA in self._logged_warnings:
-                self._logged_warnings.add(WARNING_NO_KERNEL_PACKAGE_DATA)
-                self._logWarning(
-                    'Inconsistent kernel version data: According to HAL the '
-                    'kernel is %s, but the submission does not know about a '
-                    'kernel package %s'
-                    % (kernel_version, kernel_package_name))
+            self._logWarning(
+                'Inconsistent kernel version data: According to HAL the '
+                'kernel is %s, but the submission does not know about a '
+                'kernel package %s' % (kernel_version, kernel_package_name),
+                WARNING_NO_HAL_KERNEL_VERSION)
             return None
         return kernel_package_name
 

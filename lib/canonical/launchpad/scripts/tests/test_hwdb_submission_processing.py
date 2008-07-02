@@ -171,7 +171,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
 
         self.assertEqual(len(self.handler.records), 0,
             'One or more warning messages were logged by '
-            'getKernelPackageName, where none is expected.')
+            'getKernelPackageName, where zero was expected.')
 
     def testKernelPackageNameInconsistent(self):
         """Test of SubmissionParser.getKernelPackageName.
@@ -1082,9 +1082,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
-        has_reliable_data = parser.hal_devices[
-            self.UDI_SATA_CONTROLLER].has_reliable_data
-        self.failUnless(has_reliable_data,
+        device = parser.hal_devices[self.UDI_SATA_CONTROLLER]
+        self.failUnless(device.has_reliable_data,
                         'Regular device treated as not having reliable data.')
 
     def testHasReliableDataNotProcessible(self):
@@ -1108,9 +1107,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         for bus in ('pnp', 'platform', 'ieee1394', 'pcmcia'):
             properties['info.bus'] = (bus, 'str')
             parser.buildDeviceList(parsed_data)
-            has_reliable_data = parser.hal_devices[
-                self.UDI_SATA_CONTROLLER].has_reliable_data
-            self.failIf(has_reliable_data,
+            device = parser.hal_devices[self.UDI_SATA_CONTROLLER]
+            self.failIf(device.has_reliable_data,
                 'Device with bus=%s treated as having reliable data.' % bus)
 
     def testHALDeviceVendorFromInfoVendor(self):
@@ -1680,6 +1678,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         properties = devices[0]['properties']
         parser = SubmissionParser(self.log)
+        # SCSI vendor names have a length of exactly 8 bytes; we use
+        # this format for HWDevice.bus_product_id too.
         testdata = (('pci', (0x123, 'int'), '0x0123'),
                     ('usb_device', (0x234, 'int'), '0x0234'),
                     ('scsi', ('SEAGATE', 'str'), 'SEAGATE '),
@@ -1742,6 +1742,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         properties = devices[0]['properties']
         parser = SubmissionParser(self.log)
+        # SCSI product names (called "model" in the SCSI specifications)
+        # have a length of exactly 16 bytes; we use this format for
+        # HWDevice.bus_product_id too.
         testdata = (('pci', (0x123, 'int'), '0x0123'),
                     ('usb_device', (0x234, 'int'), '0x0234'),
                     ('scsi', ('ST1234567890', 'str'), 'ST1234567890    '),
