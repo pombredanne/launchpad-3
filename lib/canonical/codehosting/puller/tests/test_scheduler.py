@@ -340,6 +340,11 @@ class TestPullerMonitorProtocol(
         """If the process prints to stderr, then the Deferred fires an
         errback, even if it terminated successfully.
         """
+        def fail_if_succeeded(ignored):
+            self.fail("stderr did not cause failure")
+
+        self.termination_deferred.addCallback(fail_if_succeeded)
+
         def check_failure(failure):
             failure.trap(Exception)
             self.assertEqual('error message', failure.error)
