@@ -11,6 +11,9 @@ __all__ = [
     'DistributionSourcePackageView'
     ]
 
+import itertools
+import operator
+
 from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Choice
@@ -19,7 +22,7 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IDistributionSourcePackageRelease,
-    IPackagingUtil, pocketsuffix)
+    IPackageDiffSet, IPackagingUtil, pocketsuffix)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import (
@@ -246,6 +249,17 @@ class DistributionSourcePackageView(LaunchpadFormView):
         return result
 
     def releases(self):
+        dspr_pubs = self.context.getReleasesAndPublishingHistory()
+
+        # Collate diffs for relevant SourcePackageReleases
+        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
+            [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs])
+        spr_diffs = {}
+        for spr, diffs in itertools.groupby(pkg_diffs,
+                                            operator.attrgetter('to_source')):
+            spr_diffs[spr] = list(diffs)
+
         return [
-            DecoratedDistributionSourcePackageRelease(dspr, spphs, [])
+            DecoratedDistributionSourcePackageRelease(
+                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
             for (dspr, spphs) in self.context.getReleasesAndPublishingHistory()]
