@@ -708,7 +708,7 @@ class ReleaseWithFiles:
 class ProductDownloadFileMixin:
     """Provides methods for managing download files."""
 
-    def _constructProductData(self):
+    def _fetchProductData(self):
         """Fetch all series, release and file data for the product.
 
         Decorated classes are created rooted at self.product and they
@@ -757,7 +757,6 @@ class ProductDownloadFileMixin:
         for file in files:
             release = release_by_id[file.productrelease.id]
             release.addFile(file)
-
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
@@ -846,7 +845,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin,
 
     def initialize(self):
         self.status_message = None
-        self._constructProductData()
+        self._fetchProductData()
 
     @property
     def freshmeat_url(self):
@@ -981,7 +980,7 @@ class ProductDownloadFilesView(LaunchpadView,
 
     def initialize(self):
         self.form = self.request.form
-        self._constructProductData()
+        self._fetchProductData()
         # Manually process action for the 'Delete' button.
         self.processDeleteFiles()
 
