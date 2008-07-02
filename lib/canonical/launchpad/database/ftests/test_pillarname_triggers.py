@@ -38,7 +38,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                     AND PillarName.product IS NULL
                     AND PillarName.project IS NULL
                     AND Distribution.name = %(name)s
-                """, vars())
+                """, dict(name=name))
             return cur.fetchone()[0] == 1
 
         # Inserting a new Distribution will populate PillarName
@@ -94,7 +94,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                     AND PillarName.distribution IS NULL
                     AND PillarName.project IS NULL
                     AND Product.name = %(name)s
-                """, vars())
+                """, dict(name=name))
             return cur.fetchone()[0] == 1
 
         # Inserting a new Product will populate PillarName
@@ -146,7 +146,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                     AND PillarName.product IS NULL
                     AND PillarName.distribution IS NULL
                     AND Project.name = %(name)s
-                """, vars())
+                """, dict(name=name))
             return cur.fetchone()[0] == 1
 
         # Inserting a new Project will populate PillarName

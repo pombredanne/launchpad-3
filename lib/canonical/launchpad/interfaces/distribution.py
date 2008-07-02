@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDistribution',
+    'IDistributionMirrorMenuMarker',
     'IDistributionSet',
     ]
 
@@ -33,6 +34,10 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
+
+
+class IDistributionMirrorMenuMarker(Interface):
+    """Marker interface for Mirror navigation."""
 
 
 class DistributionNameField(PillarNameField):

@@ -1027,7 +1027,9 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 AssigneeDisplayWidget)
 
-        if self.form_fields.get('assignee', False):
+        if (self.context.bugwatch is None and
+            self.form_fields.get('assignee', False)):
+            # Make the assignee field editable
             self.form_fields = self.form_fields.omit('assignee')
             self.form_fields += formlib.form.Fields(PublicPersonChoice(
                 __name__='assignee', title=_('Assigned to'), required=False,
