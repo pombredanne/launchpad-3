@@ -652,6 +652,5 @@ class Urlib2TransportTestHandler(BaseHandler):
         return response
 
 
-def wrap_opener(opener):
-    opener.add_handler(Urlib2TransportTestHandler())
-    return opener
+def patch_transport_opener(transport):
+    transport.opener.add_handler(Urlib2TransportTestHandler())

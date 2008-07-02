@@ -5,7 +5,7 @@ use a special transport, which processes http cookies correctly, and
 which can connect through an http proxy server.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     wrap_opener)
+    ...     patch_transport_opener)
     >>> from canonical.launchpad.components.externalbugtracker.xmlrpc import (
     ...     UrlLib2Transport)
 
@@ -13,8 +13,24 @@ We create the transport, and pass it a wrapper which returns a response
 without actually opening a connection. The response returns the request
 url as an XMLRPC parameter, and sets a cookie from the server, 'foo=bar'.
 
-    >>> transport = UrlLib2Transport(
-    ...     'http://www.example.com/xmlrpc', wrap_opener)
+    >>> transport = UrlLib2Transport('http://www.example.com/xmlrpc')
+
+The transport uses an opener with a ProxyHandler, to make sure it works
+in environments where http connections are made over a proxy.
+
+    >>> transport.opener.handlers
+    [<urllib2.ProxyHandler instance ...]
+
+We patch the opener to return a fixed response without actually opening
+a connection.
+
+    >>> patch_transport_opener(transport)
+
+Before sending the request, the transport's cookie jar is empty.
+
+    >>> transport.cookie_processor.cookiejar
+    <cookielib.CookieJar[]>
+
     >>> request_body = """<?xml version="1.0"?>
     ... <methodCall>
     ...   <methodName>examples.testMethod</methodName>
@@ -27,11 +43,6 @@ url as an XMLRPC parameter, and sets a cookie from the server, 'foo=bar'.
     ...   </params>
     ... </methodCall>
     ... """
-
-Before sending the request, the transport's cookie jar is empty.
-
-    >>> transport.cookie_processor.cookiejar
-    <cookielib.CookieJar[]>
     >>> transport.request('www.example.com', 'xmlrpc', request_body)
     ('http://www.example.com/xmlrpc',)
 

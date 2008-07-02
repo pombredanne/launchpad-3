@@ -21,22 +21,20 @@ class UrlLib2Transport(Transport):
     good enough for some of our extrnal bug tracker implementations.
 
     :param endpoint: The URL of the XMLRPC server.
-    :param _opener_wrapper: Optional parameter for testing the transport.
     """
 
     verbose = False
 
-    def __init__(self, endpoint, _opener_wrapper=None):
+    def __init__(self, endpoint):
         self.scheme, self.host = urlparse(endpoint)[:2]
         assert (
             self.scheme in ('http', 'https'),
             "Unsupported URL schene: %s" % self.scheme)
         self.cookie_processor = HTTPCookieProcessor()
         self.opener = build_opener(self.cookie_processor)
-        if _opener_wrapper is not None:
-            self.opener = _opener_wrapper(self.opener)
 
     def setCookie(self, cookie_str):
+        """Set a cookie for the transport to use in future connections."""
         name, value = cookie_str.split('=')
         cookie = Cookie(
             0, name, value, None, False, self.host,
