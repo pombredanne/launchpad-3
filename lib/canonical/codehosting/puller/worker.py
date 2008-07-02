@@ -14,7 +14,8 @@ from bzrlib.errors import (
     BzrError, NotBranchError, ParamikoNotPresent,
     UnknownFormatError, UnsupportedFormatError)
 from bzrlib.progress import DummyProgress
-from bzrlib.transport import get_transport, register_transport
+from bzrlib.transport import (
+    get_transport, register_transport, unregister_transport)
 from bzrlib.transport.http._urllib import HttpTransport_urllib
 from bzrlib.transport.nosmart import NoSmartTransportDecorator
 import bzrlib.ui
@@ -158,9 +159,6 @@ class PullerWorker:
             self.protocol.branch_id = branch_id
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
-        register_transport(
-            'http://', self._get_http_transport,
-            override=True)
 
     def _get_http_transport(self, url):
         return NoSmartTransportDecorator(
@@ -328,10 +326,16 @@ class PullerWorker:
         """
         self.protocol.startMirroring(self)
         try:
-            self._checkSourceUrl()
-            self._checkBranchReference()
-            self._openSourceBranch()
-            self._mirrorToDestBranch()
+            register_transport(
+                'http://', self._get_http_transport,
+                override=True)
+            try:
+                self._checkSourceUrl()
+                self._checkBranchReference()
+                self._openSourceBranch()
+                self._mirrorToDestBranch()
+            finally:
+                unregister_transport('http://', self._get_http_transport)
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #

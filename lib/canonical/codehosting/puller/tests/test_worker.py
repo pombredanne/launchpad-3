@@ -59,6 +59,17 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         self.assertEqual(
             source_tree.last_revision(), mirrored_branch.last_revision())
 
+    def testHttpTransportStillThere(self):
+        # We tweak the http:// transport in the worker. Make sure that it's
+        # still available after mirroring.
+        http = get_transport('http://example.com')
+        source_branch = self.make_branch('source-branch')
+        to_mirror = self.makePullerWorker(source_branch.base)
+        to_mirror.mirror()
+        new_http = get_transport('http://example.com')
+        self.assertEqual(get_transport('http://example.com').base, http.base)
+        self.assertEqual(new_http.__class__, http.__class__)
+
 
 class TestCanTraverseReferences(TestCaseInTempDir, PullerWorkerMixin):
     """Unit tests for PullerWorker._canTraverseReferences."""
