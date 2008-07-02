@@ -32,10 +32,7 @@ class IDistributionSourcePackageRelease(ISourcePackageRelease):
     displayname = Attribute("Display name for this package.")
     title = Attribute("Title for this package.")
 
-    publishing_history = Attribute("Return a result set of publishing "
-        "records for this source package release in this distribution.")
-
-    publishing_history_list = Attribute("Return a list of publishing "
+    publishing_history = Attribute("Return a list of publishing "
         "records for this source package release in this distribution.")
 
     current_publishings = Attribute("Return a list of the places where "
