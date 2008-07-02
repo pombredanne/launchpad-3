@@ -668,4 +668,12 @@ origins = {
     "dsc": "can be unsigned",
     },
 
+"mirror.err.no-uqm": {
+    "name": "mirror.err.no-uqm",
+    "url": "http://mirror.err.no/uqm/",
+    "default suite": "unstable",
+    "default component": "",
+    "dsc": "can be unsigned"
+    },
+
 }
