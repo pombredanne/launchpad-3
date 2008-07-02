@@ -9,9 +9,12 @@ __all__ = [
     'DistributionSourcePackage',
     ]
 
+import itertools
 import operator
-from sqlobject.sqlbuilder import SQLConstant
 
+from sqlobject.sqlbuilder import SQLConstant
+from storm.expr import Desc, In
+from storm.store import Store
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
@@ -250,28 +253,30 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def releases(self):
         """See `IDistributionSourcePackage`."""
-        ret = SourcePackagePublishingHistory.select("""
-            sourcepackagepublishinghistory.distroseries = DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            sourcepackagepublishinghistory.archive IN %s AND
-            sourcepackagepublishinghistory.sourcepackagerelease =
-                sourcepackagerelease.id AND
-            sourcepackagerelease.sourcepackagename = %s
-            """ % sqlvalues(self.distribution,
-                            self.distribution.all_distro_archive_ids,
-                            self.sourcepackagename),
-            orderBy=['-datecreated', '-id'],
-            clauseTables=['distroseries', 'sourcepackagerelease'])
-        result = []
-        versions = set()
-        for spp in ret:
-            if spp.sourcepackagerelease.version not in versions:
-                versions.add(spp.sourcepackagerelease.version)
-                dspr = DistributionSourcePackageRelease(
+        # Local import of DistroSeries to avoid import loop.
+        from canonical.launchpad.database import DistroSeries
+        store = Store.of(self.distribution)
+        result = store.find(
+            (SourcePackageRelease, SourcePackagePublishingHistory),
+            SourcePackagePublishingHistory.distroseries == DistroSeries.id,
+            DistroSeries.distribution == self.distribution,
+            In(SourcePackagePublishingHistory.archiveID,
+               self.distribution.all_distro_archive_ids),
+            SourcePackagePublishingHistory.sourcepackagerelease ==
+                SourcePackageRelease.id,
+            SourcePackageRelease.sourcepackagename == self.sourcepackagename)
+        result.order_by(
+            Desc(SourcePackageRelease.id),
+            Desc(SourcePackagePublishingHistory.datecreated),
+            Desc(SourcePackagePublishingHistory.id))
+
+        dsprs = []
+        for spr, pubs in itertools.groupby(result, operator.itemgetter(0)):
+            dsprs.append(DistributionSourcePackageRelease(
                     distribution=self.distribution,
-                    sourcepackagerelease=spp.sourcepackagerelease)
-                result.append(dspr)
-        return sorted(result, key=operator.attrgetter('id'), reverse=True)
+                    sourcepackagerelease=spr,
+                    publishing_history=[spph for (spr, spph) in pubs]))
+        return dsprs
 
     def __eq__(self, other):
         """See `IDistributionSourcePackage`."""

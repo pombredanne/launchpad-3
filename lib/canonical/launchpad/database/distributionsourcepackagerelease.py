@@ -38,9 +38,11 @@ class DistributionSourcePackageRelease:
     implements(IDistributionSourcePackageRelease)
     decorates(ISourcePackageRelease, context='sourcepackagerelease')
 
-    def __init__(self, distribution, sourcepackagerelease):
+    def __init__(self, distribution, sourcepackagerelease,
+                 publishing_history=None):
         self.distribution = distribution
         self.sourcepackagerelease = sourcepackagerelease
+        self._publishing_history_list = publishing_history
 
     @property
     def sourcepackage(self):
@@ -73,6 +75,12 @@ class DistributionSourcePackageRelease:
                             self.sourcepackagerelease),
             clauseTables=['DistroSeries'],
             orderBy='-datecreated')
+
+    @property
+    def publishing_history_list(self):
+        if self._publishing_history_list is None:
+            self._publishing_history_list = list(self.publishing_history)
+        return self._publishing_history_list
 
     @property
     def builds(self):

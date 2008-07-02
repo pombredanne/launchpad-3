@@ -12,7 +12,7 @@
     </div>
     <table>
       <tbody>
-        <tal:block repeat="publishing context/publishing_history"
+        <tal:block repeat="publishing context/publishing_history_list"
                    replace="structure publishing/@@+listing-compact">
         </tal:block>
       </tbody>
