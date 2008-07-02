@@ -36,10 +36,10 @@ Get the current counts of stuff in the database:
 
 Create a distribution release and an arch release for breezy:
 
-    >>> from canonical.launchpad.database import (DistroSeriesSet,
+    >>> from canonical.launchpad.database import (
     ...     ProcessorFamily, DistroArchSeries)
-    >>> from canonical.launchpad.interfaces import (ILaunchpadCelebrities,
-    ... IDistroSeriesSet)
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IDistroSeriesSet)
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
     >>> drs = getUtility(IDistroSeriesSet)
@@ -72,7 +72,7 @@ packages successfully (at least partially):
      Sources list, but some binaries are in the Packages file. However, these
      binaries are unchaged in Breezy.
    * ubuntu-meta, a source package that generates 3 binary packages in
-     Hoary and 5 in breezy. However, its breezy version is /not/ listed in the 
+     Hoary and 5 in breezy. However, its breezy version is /not/ listed in the
      Sources list, so the binary packages will need to discover it.
    * ed, a source package what generates one binary package and
      misses a section entry in Sources. The same version exists in
@@ -538,7 +538,7 @@ changed, etc.
     16
     >>> print Person.select().count() - orig_person_count
     12
-    >>> print TeamParticipation.select().count() - orig_tp_count 
+    >>> print TeamParticipation.select().count() - orig_tp_count
     12
     >>> print EmailAddress.select().count() - orig_email_count
     12
