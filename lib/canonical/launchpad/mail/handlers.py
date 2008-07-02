@@ -514,6 +514,7 @@ class CodeHandler:
     """Mail handler for the code domain."""
 
     addr_pattern = re.compile(r'(mp\+)([^@]+).*')
+    allow_unknown_users = False
 
     def process(self, mail, email_addr, file_alias):
         """Process an email and create a CodeReviewComment.
