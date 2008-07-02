@@ -273,7 +273,6 @@ def handleMail(trans=transaction):
                     user, domain = email_addr.split('@')
                     handler = mail_handlers.get(domain)
                     if handler is not None:
-                        handler.allow_unknown_users = False
                         break
 
                 if handler is None:
