@@ -639,13 +639,14 @@ class SortSeriesMixin:
         series_list.insert(0, self.product.development_focus)
         return series_list
 
-    def is_development_focus(self, series):
-        """Is the specified series the current development focus."""
-        return self.product.development_focus == series
-
 
 class ProductWithSeries:
-    """A decorated product that includes series data."""
+    """A decorated product that includes series data.
+
+    The extra data is included in this class to avoid repeated
+    database queries.  Rather than hitting the database, the data is
+    cached locally and simply returned.
+    """
 
     # These need to be predeclared to avoid decorates taking them
     # over.
@@ -661,8 +662,8 @@ class ProductWithSeries:
     def setSeries(self, serieses):
         """Set the serieses to the provided collection."""
         self.serieses = serieses
-        for series in self.serieses:
-            self.series_by_id[series.id] = series
+        self.series_by_id = dict(
+            (series.id, series) for series in self.serieses)
 
     def getSeriesById(self, id):
         """Look up and return a ProductSeries by id."""
@@ -670,7 +671,12 @@ class ProductWithSeries:
 
 
 class SeriesWithReleases:
-    """A decorated series that includes releases."""
+    """A decorated series that includes releases.
+
+    The extra data is included in this class to avoid repeated
+    database queries.  Rather than hitting the database, the data is
+    cached locally and simply returned.
+    """
 
     # These need to be predeclared to avoid decorates taking them
     # over.
@@ -684,13 +690,14 @@ class SeriesWithReleases:
     def addRelease(self, release):
         self.releases.append(release)
 
-    def sortReleases(self):
-        self.releases.sort(key=attrgetter('datereleased'),
-                           reverse=True)
-
 
 class ReleaseWithFiles:
-    """A decorated release that includes product release files."""
+    """A decorated release that includes product release files.
+
+    The extra data is included in this class to avoid repeated
+    database queries.  Rather than hitting the database, the data is
+    cached locally and simply returned.
+    """
 
     # These need to be predeclared to avoid decorates taking them
     # over.
@@ -720,7 +727,7 @@ class ProductDownloadFileMixin:
         try:
             original_serieses = original_product.serieses
         except AttributeError:
-            # PillarSearchItems pretend to provide IProduct but
+            # PillarSearchItem pretends to provide IProduct but
             # doesn't really because it does not have a 'serieses'
             # attribute.  When the attribute isn't present we can just
             # return.

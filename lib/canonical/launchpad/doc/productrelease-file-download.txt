@@ -61,8 +61,6 @@ Add a file alias to the productrelease.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> def add_file_alias(release, file_content, name, description,
     ...                    date_uploaded=None):
-    ...     if date_uploaded is None:
-    ...         date_uploaded = datetime.now(UTC)
     ...     user = getUtility(ILaunchBag).user
     ...     file_alias = getUtility(ILibraryFileAliasSet).create(
     ...         name=name, size=len(file_content),
@@ -72,8 +70,7 @@ Add a file alias to the productrelease.
     ...         uploader=user,
     ...         description=description)
     ...     if date_uploaded is not None:
-    ...         naked_result = removeSecurityProxy(result)
-    ...         naked_result.date_uploaded = date_uploaded
+    ...         removeSecurityProxy(result).date_uploaded = date_uploaded
     ...     return result
     >>> product_release_file = add_file_alias(
     ...    rel, 'Some useful information.',
