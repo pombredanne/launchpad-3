@@ -163,7 +163,9 @@ class IProductReleaseFile(Interface):
                       default=UpstreamFileType.CODETARBALL)
     description = Text(title=_("Description"), required=False,
         description=_('A detailed description of the file contents'))
-
+    date_uploaded = Datetime(title=_('Upload date'),
+        description=_('The date this file was uploaded'),
+        required=True, readonly=True)
 
 class IProductReleaseFileAddForm(Interface):
     """Schema for adding ProductReleaseFiles to a project."""

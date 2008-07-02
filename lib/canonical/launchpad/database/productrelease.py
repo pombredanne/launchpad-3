@@ -26,7 +26,6 @@ class ProductRelease(SQLBase):
     _defaultOrder = ['-datereleased']
 
     datereleased = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     version = StringCol(notNull=True)
     codename = StringCol(notNull=False, default=None)
     summary = StringCol(notNull=False, default=None)
