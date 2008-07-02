@@ -316,6 +316,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         if self.license_approved:
             return LicenseStatus.OPEN_SOURCE
+        # Since accesses to the licenses property performs a query on
+        # the ProductLicense table, store the value to avoid doing the
+        # query 3 times.
         licenses = self.licenses
         if len(licenses) == 0:
             # We don't know what the license is.
