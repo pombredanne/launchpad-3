@@ -1501,7 +1501,6 @@ An email can contain multiple commands, even for different bugs.
     >>> from canonical.launchpad.event.interfaces import (
     ...     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.interfaces.bug import IBug
     >>> from canonical.launchpad.interfaces.bugtask import IBugTask
     >>> bugtask_modified_listener = TestEventListener(
     ...     IBugTask, ISQLObjectModifiedEvent, print_bugtask_modified_event)

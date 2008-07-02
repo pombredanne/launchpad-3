@@ -24,6 +24,7 @@ GLOBAL_NAMES = set([
     'flush_database_updates',
     'getUtility',
     'login',
+    'login_person',
     'logout',
     'transaction',
     'LaunchpadObjectFactory',
@@ -61,6 +62,7 @@ GLOBAL_NAMES = set([
     'webservice',
     'public_webservice',
     'user_webservice',
+    'verifyObject',
     # For OpenID per-version tests
     'PROTOCOL_URI',
     # For buildd tests
