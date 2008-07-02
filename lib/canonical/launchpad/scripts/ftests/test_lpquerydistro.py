@@ -70,7 +70,8 @@ class TestLpQueryDistroScript(unittest.TestCase):
             extra_args=[])
 
         self.assertEqual(
-            1, returncode, "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
+            1, returncode,
+            "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
             % (returncode, out, err))
         self.assertEqual(out.strip(), '')
         self.assertEqual(err.strip(), 'ERROR   <action> is required')
@@ -81,16 +82,19 @@ class TestLpQueryDistroScript(unittest.TestCase):
         Check if:
          * return code is ONE,
          * standard output is empty
-         * standard error contains the additional information about the failure.
+         * standard error contains the additional information about the
+           failure.
         """
         returncode, out, err = self.runLpQueryDistro(
             extra_args=['nahhh'])
 
         self.assertEqual(
-            1, returncode, "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
+            1, returncode,
+            "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
             % (returncode, out, err))
         self.assertEqual(out.strip(), '')
-        self.assertEqual(err.strip(), 'ERROR   Action "nahhh" is not supported')
+        self.assertEqual(
+            err.strip(), 'ERROR   Action "nahhh" is not supported')
 
     def testUnexpectedArgument(self):
         """Making lp-query-distro.py to fail by passing unexpected action.
@@ -104,7 +108,8 @@ class TestLpQueryDistroScript(unittest.TestCase):
             extra_args=['-s', 'hoary', 'current'])
 
         self.assertEqual(
-            1, returncode, "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
+            1, returncode,
+            "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
             % (returncode, out, err))
         self.assertEqual(out.strip(), '')
         self.assertEqual(
@@ -142,7 +147,7 @@ class TestLpQueryDistro(unittest.TestCase):
         self.assertEqual(self.test_output, u'warty')
 
     def testDevelopmentAndFrozenDistroSeries(self):
-        """Check if the 'developement' action copes with FROZEN distroseries."""
+        """'developement' action copes with FROZEN distroseries."""
         helper = self.getLpQueryDistro(test_args=['development'])
         helper.runAction(presenter=self.presenter)
         hoary = self.ubuntu['hoary']
