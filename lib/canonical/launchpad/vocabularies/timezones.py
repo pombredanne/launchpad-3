@@ -7,7 +7,6 @@ __all__ = [
 __metaclass__ = type
 
 import pytz
-import traceback
 
 from zope.interface import alsoProvides
 from zope.schema.vocabulary import SimpleVocabulary

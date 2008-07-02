@@ -7,7 +7,6 @@ The collection of stuff we have traversed.
 __metaclass__ = type
 
 import pytz
-import traceback
 
 from zope.interface import implements
 from zope.component import getUtility
