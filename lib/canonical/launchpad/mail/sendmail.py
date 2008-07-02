@@ -143,8 +143,9 @@ def simple_sendmail_from_person(
     It works just like simple_sendmail, excepts that it ensures that the
     From header is properly encoded.
     """
-    from_addr = format_address(
-        person.displayname, person.preferredemail.email)
+    from zope.security.proxy import removeSecurityProxy
+    naked_email = removeSecurityProxy(person.preferredemail)
+    from_addr = format_address(person.displayname, naked_email.email)
     return simple_sendmail(
         from_addr, to_addrs, subject, body, headers=headers)
 

@@ -22,7 +22,7 @@ from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
     UnknownBranchTypeError)
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import login, login_person, logout, ANONYMOUS
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.database.sqlbase import clear_current_connection_cache
@@ -96,7 +96,7 @@ def run_as_requester(function):
             # and expect `function` to use `removeSecurityProxy` or similar.
             return function(self, LAUNCHPAD_SERVICES, *args, **kwargs)
         requester = self._getPerson(loginID)
-        login(requester.preferredemail.email)
+        login_person(requester)
         try:
             return function(self, requester, *args, **kwargs)
         finally:
@@ -113,9 +113,7 @@ class UserDetailsStorageMixin:
     def _getEmailAddresses(self, person):
         """Get the email addresses for a person"""
         emails = [person.preferredemail] + list(person.validatedemails)
-        return (
-            [person.preferredemail.email] +
-            [email.email for email in person.validatedemails])
+        return [removeSecurityProxy(email).email for email in emails]
 
     def getSSHKeys(self, loginID):
         """See `IUserDetailsStorage`."""

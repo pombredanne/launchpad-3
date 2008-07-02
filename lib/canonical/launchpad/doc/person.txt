@@ -9,8 +9,6 @@ Launchpad users.
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IEmailAddressSet, IHasStanding,
     ...     IHasTranslationImports)
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
-    >>> login(ANONYMOUS)
 
 Any Person object (either a person or a team) implements IPerson...
 
@@ -82,7 +80,7 @@ Since this person has chosen to hide his email addresses they won't be visible
 to other users which are not admins.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
-    >>> login(email.email)
+    >>> login('randomuser@randomhost.com')
     >>> check_permission('launchpad.View', email)
     True
 
@@ -167,10 +165,10 @@ it issuing a DB query.
 
 A Person may be linked to an Account.
 
->>> login('no-priv@canonical.com')
->>> person = personset.getByEmail('no-priv@canonical.com')
->>> person.account.openid_identifier
-u'no-priv_oid'
+    >>> login('no-priv@canonical.com')
+    >>> person = personset.getByEmail('no-priv@canonical.com')
+    >>> person.account.openid_identifier
+    u'no-priv_oid'
 
 
 === Personal standing ===
