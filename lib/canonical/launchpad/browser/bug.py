@@ -367,7 +367,7 @@ class BugView(LaunchpadView):
         """
         duplicate_bugs = list(self.context.duplicates)
         current_task = self.currentBugTask()
-        current_task_dupes = dict(
+        dupes_in_current_context = dict(
             (bugtask.bug, bugtask)
             for bugtask in current_task.target.searchTasks(
                 BugTaskSearchParams(self.user, bug=any(*duplicate_bugs))))
@@ -381,8 +381,8 @@ class BugView(LaunchpadView):
             dupe['id'] = bug.id
             # If the dupe has the same context as the one we're in, link
             # to that bug task directly.
-            if bug in current_task_dupes:
-                dupe['url'] = canonical_url(current_task_dupes[bug])
+            if bug in dupes_in_current_context:
+                dupe['url'] = canonical_url(dupes_in_current_context[bug])
             else:
                 dupe['url'] = canonical_url(bug)
             dupes.append(dupe)
