@@ -8,9 +8,9 @@ and the additional Launchpad plugin API.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestBugzillaXMLRPCTransport)
     >>> bugzilla_transport = TestBugzillaXMLRPCTransport(
-    ...     'http://example.com/')
+    ...     'http://example.com/xmlrpc.cgi')
     >>> server = xmlrpclib.ServerProxy(
-    ...     'http://example.com/', transport=bugzilla_transport)
+    ...     'http://example.com/xmlrpc.cgi', transport=bugzilla_transport)
 
 The test transport will only allow calls to methods in a predefined set
 of namespaces.
@@ -58,7 +58,7 @@ Some methods require authentication.
 To be authenticated, we need to provide a login cookie. The test
 transport doesn't validate this cookie, it just checks that it exists.
 
-    >>> bugzilla_transport.setCookie("auth=Want moar cookies plz")
+    >>> bugzilla_transport.setCookie("Bugzilla_logincookie=Want moar cookies plz")
     >>> print server.Test.login_required()
     Wonderful, you've logged in! Aren't you a clever biped?
 

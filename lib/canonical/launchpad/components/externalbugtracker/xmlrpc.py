@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""An XMLRPC transport which uses Launchpad's HTTP proxy."""
+"""An XMLRPC transport which uses urllib2."""
 
 
 from cookielib import Cookie
@@ -9,7 +9,7 @@ from urlparse import urlparse, urlunparse
 from xmlrpclib import Transport
 
 class UrlLib2Transport(Transport):
-    """An XMLRPC transport which uses Launchpad's HTTP proxy.
+    """An XMLRPC transport which uses urllib2.
 
     This XMLRPC transport uses the Python urllib2 module to make the
     request, and connects via the HTTP proxy specified in the
@@ -37,9 +37,13 @@ class UrlLib2Transport(Transport):
         """Set a cookie for the transport to use in future connections."""
         name, value = cookie_str.split('=')
         cookie = Cookie(
-            0, name, value, None, False, self.host,
-            True, False, None, False, None, None, None,
-            None, None, None)
+            version=0, name=name, value=value,
+            port=None, port_specified=False,
+            domain=self.host, domain_specified=True,
+            domain_initial_dot=None,
+            path=None, path_specified=False,
+            secure=False, expires=False, discard=None,
+            comment=None, comment_url=None, rest=None)
         self.cookie_processor.cookiejar.set_cookie(cookie)
 
     def request(self, host, handler, request_body, verbose=0):

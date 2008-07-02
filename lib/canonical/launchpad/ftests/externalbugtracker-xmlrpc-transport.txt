@@ -56,4 +56,5 @@ In addition to cookies sent by the server, we can set cookies locally.
 
     >>> transport.setCookie('ding=dong')
     >>> transport.cookie_processor.cookiejar
-    <cookielib.CookieJar[Cookie(version=0, name='ding', value='dong'...), Cookie(version=0, name='foo', value='bar'...)]>
+    <cookielib.CookieJar[Cookie(version=0, name='ding', value='dong'...),
+                         Cookie(version=0, name='foo', value='bar'...)]>

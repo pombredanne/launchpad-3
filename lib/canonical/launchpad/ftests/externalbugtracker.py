@@ -451,7 +451,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get('example.com', {}).get(None, {}).get('auth')
+        return cookies.get('example.com', {}).get(None, {}).get('Bugzilla_logincookie')
 
     @property
     def has_valid_auth_cookie(self):
@@ -818,7 +818,7 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get('example.com', {}).get(None, {}).get('auth')
+        return cookies.get('example.com', {}).get(None, {}).get('trac_auth')
 
     @property
     def has_valid_auth_cookie(self):
@@ -1166,14 +1166,24 @@ class TestDebBugs(DebBugs):
 
 
 class Urlib2TransportTestInfo:
+    """A url info object for use in the test, returning
+    a hard-coded cookie header.
+    """
     cookies = 'foo=bar'
     def getheaders(self, header):
+        """Return the hard-coded cookie header."""
         if header.lower() in ('cookie', 'set-cookie', 'set-cookie2'):
             return [self.cookies]
 
 
 class Urlib2TransportTestHandler(BaseHandler):
+    """A test urllib2 handler returning a hard-coded response."""
     def default_open(self, req):
+        """Catch all requests and return a hard-coded response.
+
+        The response body is an XMLRPC response. In addition we set the
+        info of the response to contain a cookie.
+        """
         assert (
             isinstance(req, Request),
             'Expected a urllib2.Request, got %s' % req)
@@ -1195,4 +1205,7 @@ class Urlib2TransportTestHandler(BaseHandler):
 
 
 def patch_transport_opener(transport):
+    """Patch the transport's opener to use a test handler
+    returning a hard-coded response.
+    """
     transport.opener.add_handler(Urlib2TransportTestHandler())

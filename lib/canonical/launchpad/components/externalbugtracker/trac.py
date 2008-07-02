@@ -282,7 +282,7 @@ class TracLPPlugin(Trac):
         super(TracLPPlugin, self).__init__(baseurl)
 
         if xmlrpc_transport is None:
-            xmlrpc_transport = UrlLib2Transport(self.xmlrpc_endpoint)
+            xmlrpc_transport = UrlLib2Transport(baseurl)
         self.xmlrpc_transport = xmlrpc_transport
         self.internal_xmlrpc_transport = internal_xmlrpc_transport
 
