@@ -100,7 +100,7 @@
   <h2>Version history</h2>
 
   <tal:block
-    repeat="dspr context/releases"
+    repeat="dspr view/releases"
     replace="structure dspr/@@+changes">
   </tal:block>
 

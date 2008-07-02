@@ -19,7 +19,8 @@
                   bugtargetdisplayname bugtargetname getMostCommonBugs
                   getBugCounts bug_subscriptions getSubscriptions
                   getSubscription parent_subscription_target
-                  getBugNotificationsRecipients" />
+                  getBugNotificationsRecipients
+                  getReleasesAndPublishingHistory" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addSubscription addBugSubscription

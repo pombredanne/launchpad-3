@@ -76,3 +76,12 @@ class IPackageDiffSet(Interface):
 
         :return a `SelectResult` ordered by id respecting the given limit.
         """
+
+    def getDiffsToReleases(self, sprs):
+        """Return all diffs that targetting a set of source package releases.
+
+        :param sprs: a sequence of `SourcePackageRelease` objects.
+
+        :return a `ResultSet` ordered by `SourcePackageRelease` ID and
+        then diff request date in descending order.
+        """

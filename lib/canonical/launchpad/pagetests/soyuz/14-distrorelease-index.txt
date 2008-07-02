@@ -13,6 +13,19 @@ packages within the distroseries in context:
   '...Mozilla Firefox Web Browser...'
 
 
+== Breadcrumbs ==
+
+The DistroSeries page has a breadcrumb that allows navigation to the
+DistroArchSeries pages.
+
+  >>> anon_browser.open("http://launchpad.dev/ubuntu/warty/+menudata")
+  >>> print anon_browser.contents
+  <ul class="menu">
+  <li class="item"><a href="http://launchpad.dev/ubuntu/warty/hppa/">hppa</a></li>
+  <li class="item"><a href="http://launchpad.dev/ubuntu/warty/i386/">i386</a></li>
+  </ul>
+
+
 == Latest uploads page ==
 
 This page provides raw list of the last five source packages uploaded
