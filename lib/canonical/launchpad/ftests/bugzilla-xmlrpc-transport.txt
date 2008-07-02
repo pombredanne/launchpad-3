@@ -108,7 +108,6 @@ current UTC time.
 We can set the local time value on the remote server to make testing
 more useful.
 
-    >>> import time
     >>> from datetime import datetime
 
     >>> remote_datetime = datetime(2008, 5, 15, 16, 19, 53)
