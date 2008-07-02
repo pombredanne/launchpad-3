@@ -663,7 +663,8 @@ class BugTask(SQLBase, BugTaskMixin):
         # will be executed.
         if self.productID is not None or self.product is not None:
             alsoProvides(self, IUpstreamBugTask)
-        elif self.productseriesID is not None or self.productseries is not None:
+        elif (self.productseriesID is not None or
+              self.productseries is not None):
             alsoProvides(self, IProductSeriesBugTask)
         elif self.distroseriesID is not None or self.distroseries is not None:
             alsoProvides(self, IDistroSeriesBugTask)
@@ -1676,6 +1677,7 @@ class BugTaskSet:
                     distroseries=nomination.distroseries,
                     sourcepackagename=sourcepackagename,
                     **non_target_create_params)
+                accepted_series_task.updateTargetNameCache()
 
         if bugtask.conjoined_slave:
             bugtask._syncFromConjoinedSlave()
