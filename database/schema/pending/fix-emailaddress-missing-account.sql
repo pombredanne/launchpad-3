@@ -33,7 +33,7 @@ WHERE
     Account.id = Person.account
     AND Person.id = EmailAddress.person
     AND Account.status = 20
-    AND EmailAddress.Status = 4
+    AND EmailAddress.Status in (2, 4)
     AND EmailAddress.account is NULL;
 
 */
