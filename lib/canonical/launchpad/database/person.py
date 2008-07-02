@@ -2026,6 +2026,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if self.preferredemail == email:
             return
 
+        # A non-proxied email address is needed to set the account.
+        email = EmailAddress.get(email.id)
         if self.preferredemail is None:
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
@@ -2055,6 +2057,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setPreferredEmail(self, email):
         """See `IPerson`."""
         assert not self.is_team, "This method must not be used for teams."
+        # A non-proxied email address is needed to set the account.
+        email = EmailAddress.get(email.id)
         if self.preferredemail is None:
             # This is the first time we're confirming this person's email
             # address, so we now assume this person has a Launchpad account.
