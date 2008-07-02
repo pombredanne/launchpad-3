@@ -287,16 +287,6 @@ form.primary.search {
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
 
-hr {
-  border: 0;
-  margin: 8px 0px 0px 0px;
-  padding: 6px 0px 0px 0px;
-  width: 100%;
-  height: 2px;
-  border-top: 2px solid #000000;
-  overflow: hidden;
-  display: none;
-}
 h1 em, h2 em, h3 em, h4 em, h5 em {
   font-style: normal;
   color: #353535;
@@ -581,7 +571,7 @@ ul#menuroot li.selected a.breadcrumb {
 /* Allow dyn menus to appear ouside of the locationbar, even though they
  * overflow its bounds.
  */
-#locationbar {margin-bottom: 10px; overflow: visible;}
+#locationbar {overflow: visible;}
 /* Prevent the text in links in menu items from wrapping.
  * Apply appropriate formatting to links in menu items.
  */
@@ -628,6 +618,68 @@ ul#menuroot li.selected a.breadcrumb {
 #logincontrol a {
     color: #000000;
 }
+
+/* === Application tabs === */
+/* In most pages, the location bar includes six centered application tabs: */
+#lp-apps {text-align: center; position: relative; top: -1px;}
+/* The tabs are preceded by a bar joined to the hierarchy: */
+hr.locationbar {
+  background: #ddd;
+  border: 2px solid #ccc;
+  -moz-border-left-colors: #ccc #fff;
+  -moz-border-top-colors: #ccc #fff;
+  -moz-border-right-colors: #ccc #ddd;
+  -moz-border-bottom-colors: #ccc #ddd;
+  display: block;
+  height: 5px;
+  margin: 0;
+}
+/* The tabs have text separators for the benefit of those without CSS: */
+#lp-apps small {display: none;}
+/* Each tab is nearly a sixth of the available width, but not too wide: */
+#lp-apps > strong, #lp-apps > span {
+  display: inline-block;
+  text-align: center;
+  width: 16.5%; /* = (100% - 1%) / 6 */
+  max-width: 12em;
+}
+/* Each tab is light grey, with bevelled and rounded borders: */
+#lp-apps * span, #lp-apps * a {
+  background: #eee;
+  border-style: solid;
+  -moz-border-right-colors: #ccc #ccc #ddd;
+  -moz-border-bottom-colors: #ccc #ccc #ddd;
+  -moz-border-left-colors: #ccc #fff #eee;
+  border-width: 0 3px 2px;
+  -moz-border-radius: 0 0 4px 4px;
+  color: #333;
+  display: block;
+  line-height: 1.5em;
+  margin: 0 1px;
+  overflow: hidden;
+}
+/* The active tab is darker: */
+#lp-apps strong span, #lp-apps strong a {background: #ddd;}
+/* It's also contiguous with the hierarchy above: */
+#lp-apps strong {border-top: 1px solid #ddd;}
+/* Disabled tabs don't look clickable: */
+#lp-apps span span {
+  border-color: #ccc;
+  border-width: 0 1px 2px;
+  /* An invisible inner border achieves the same height as the other tabs: */
+  -moz-border-bottom-colors: #ccc #eee;
+  color: #ccc;
+}
+
+/*
+     Current exact: <strong><span>Bugs</span></strong>
+     Current child: <strong><a>Bugs</a></strong>
+     Other enabled: <span><a>Code</a></span>
+    Other disabled: <span></span>Code</span></span>
+*/
+
+/* The currently selected*/
+
 
 /*
 Inline help is contained in a <div> and dynamically positioned by JavaScript.

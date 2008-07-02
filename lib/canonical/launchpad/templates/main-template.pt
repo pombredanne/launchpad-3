@@ -123,52 +123,39 @@
         </tr>
       </table>
     </div>
-
-
-
-    <!--
-     Current exact: <strong><span>Bugs</span></strong>
-     Current child: <strong><a>Bugs</a></strong>
-     Other enabled: <span><a>Code</a></span>
-    Other disabled: <span></span>Code</span></span>
-    -->
+    <hr class="locationbar" />
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
       tal:define="facetmenu CONTEXTS/menu:facet"
       id="lp-apps"
     >
-      <tal:facet repeat="link facetmenu">
-        <strong
+      <tal:XXX replace="nothing">
+        # XXX mpt 20080702: The HTML comment works around bug 229931.
+      </tal:XXX>
+      <!-- :-) --><tal:facet repeat="link facetmenu"
+        ><strong
           tal:condition="link/selected"
           tal:attributes="title link/summary; class link/name"
-        >
-          <span
+          ><span
             tal:condition="not:link/linked"
             tal:content="structure link/escapedtext"
-          />
-          <a
+          /><a
             tal:condition="link/linked"
             tal:attributes="href link/url"
             tal:content="structure link/escapedtext"
-          />
-        </strong>
-        <span
+        /></strong><span
           tal:condition="not:link/selected"
           tal:attributes="title link/summary; class link/name"
-        >
-          <span
-            tal:condition="not:link/linked"
+          ><span
+            tal:condition="not:link/enabled"
             tal:content="structure link/escapedtext"
-          />
-          <a
-            tal:condition="link/linked"
+          /><a
+            tal:condition="link/enabled"
             tal:attributes="href link/url"
             tal:content="structure link/escapedtext"
-          />
-        </span>
-      </tal:facet>
+        /></span><small tal:condition="not:repeat/link/end"
+      > / </small></tal:facet>
     </div>
-
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
