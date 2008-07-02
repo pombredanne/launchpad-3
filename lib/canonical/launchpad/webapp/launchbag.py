@@ -20,7 +20,6 @@ from canonical.launchpad.interfaces import (
         ISpecification, IBugTask, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, ILaunchpadApplication, ILoggedInEvent, IOpenLaunchBag)
-from canonical.launchpad.webapp.errorlog import report_timezone_oops
 
 _utc_tz = pytz.timezone('UTC')
 
@@ -156,14 +155,10 @@ class LaunchBag:
     @property
     def time_zone(self):
         if self.user and self.user.time_zone:
-            # pylint: disable-msg=W0702
-            # Disabling pylint warning for "except:" block which
-            # doesn't specify an exception.
             try:
                 return pytz.timezone(self.user.time_zone)
-            except:
-                report_timezone_oops('Invalid timezone %s for user %s' % (
-                    self.user.time_zone, self.user.name))
+            except (pytz.UnknownTimeZoneError, IOError):
+                pass # unknown time zone name
         # fall back to UTC
         return _utc_tz
 

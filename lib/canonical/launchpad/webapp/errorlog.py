@@ -15,7 +15,6 @@ import rfc822
 import logging
 import types
 import urllib
-import sys
 
 from zope.interface import implements
 
@@ -30,7 +29,6 @@ from canonical.launchpad.webapp.adapter import (
 from canonical.launchpad.webapp.interfaces import (
     IErrorReport, IErrorReportRequest)
 from canonical.launchpad.webapp.opstats import OpStats
-from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 UTC = pytz.utc
 
@@ -554,33 +552,3 @@ def end_request(event):
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)
 
-
-class TimezoneErrorUtility(ErrorReportingUtility):
-    """An error utility that doesn't ignore exceptions."""
-
-    _ignored_exceptions = set()
-
-def report_timezone_oops(message):
-    """Record an oops for the current exception.
-
-    This must only be called while handling an exception.
-
-    :param message: custom explanatory error message. Do not use
-        str(exception) to fill in this parameter, it should only be
-        set when a human readable error has been explicitly generated.
-    """
-    # Get the current exception info first of all.
-    info = sys.exc_info()
-
-    # pylint: disable-msg=W0702
-    # Disabling pylint warning for "except:" block which
-    # doesn't specify an exception.
-    try:
-        request = get_current_browser_request()
-    except:
-        # Create the dummy request object.
-        properties = [('error-details', message)]
-        request = ScriptRequest(properties)
-    error_utility = TimezoneErrorUtility()
-    error_utility.raising(info, request)
-    return request
