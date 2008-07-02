@@ -70,7 +70,7 @@ from canonical.launchpad.interfaces.product import (
 from canonical.launchpad.interfaces.productrelease import (
     IProductRelease, IProductReleaseSet)
 from canonical.launchpad.interfaces.productseries import (
-    IProductSeries, IProductSeriesSet)
+    IProductSeries)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter, BranchMergeProposalStatus)
 from canonical.launchpad import helpers
