@@ -189,7 +189,7 @@ We can get the the collection of subscriptions to a bug.
     (u'person_link', u'http://api.launchpad.dev/beta/~name12'),
     (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
     (u'resource_type_link',
-     u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+     u'http://api.launchpad.dev/beta/#bug_subscription'),
     (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]...]
 
 
@@ -199,7 +199,7 @@ Each subscription can be accessed individually.
   >>> pprint(sorted(subscription.items()))
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'person_link', u'http://api.launchpad.dev/beta/~stevea'),
-   (u'resource_type_link', u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#bug_subscription'),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea'),
    (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
 

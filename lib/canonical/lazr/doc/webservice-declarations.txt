@@ -309,7 +309,6 @@ operation returns a collection of entries.
     ...     operation_returns_entry, operation_returns_collection_of,
     ...     rename_parameters_as)
     >>> from canonical.lazr.interface import copy_field
-    >>> from canonical.lazr.fields import Reference
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
     ...     export_as_webservice_collection(IBook)
