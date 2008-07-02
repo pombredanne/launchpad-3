@@ -27,6 +27,8 @@ from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
     LookupTree, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion)
+from canonical.launchpad.components.externalbugtracker.xmlrpc import (
+    UrlLib2Transport)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.interfaces.externalbugtracker import (
@@ -350,7 +352,7 @@ class BugzillaLPPlugin(Bugzilla):
 
         self.internal_xmlrpc_transport = internal_xmlrpc_transport
         if xmlrpc_transport is None:
-            self.xmlrpc_transport = BugzillaXMLRPCTransport()
+            self.xmlrpc_transport = UrlLib2Transport(self.xmlrpc_endpoint)
         else:
             self.xmlrpc_transport = xmlrpc_transport
 
@@ -376,10 +378,10 @@ class BugzillaLPPlugin(Bugzilla):
 
         user_id = self.xmlrpc_proxy.Launchpad.login({'token': token_text})
 
-        auth_cookie = self._extractAuthCookie(
+        auth_cookies = self._extractAuthCookie(
             self.xmlrpc_transport.last_response_headers['Set-Cookie'])
-
-        self.xmlrpc_transport.auth_cookie = auth_cookie
+        for cookie in auth_cookies.split(';'):
+            self.xmlrpc_transport.setCookie(cookie.strip())
 
     def _extractAuthCookie(self, cookie_header):
         """Extract the Bugzilla authentication cookies from the header."""
@@ -547,57 +549,3 @@ class BugzillaLPPlugin(Bugzilla):
         return_dict = self.xmlrpc_proxy.Bug.add_comment(request_params)
 
         return return_dict['comment_id']
-
-
-class BugzillaXMLRPCTransport(xmlrpclib.Transport):
-    """XML-RPC Transport for Bugzilla bug trackers.
-
-    Sends a cookie header for authentication.
-    """
-
-    def __init__(self):
-        self.last_response_headers = None
-        self.auth_cookie = None
-
-    def send_host(self, connection, host):
-        """Send the host and cookie headers."""
-        xmlrpclib.Transport.send_host(self, connection, host)
-
-        if self.auth_cookie is not None:
-            connection.putheader('Cookie', self.auth_cookie)
-
-    # Yes, this is really, really, really nasty. This is basically an
-    # exact copy of the request() method in xmlrpclib. The trouble is
-    # that the original just discards the response headers, with which
-    # we actually want to do something.
-    def request(self, host, handler, request_body, verbose=0):
-        """Issue an XML-RPC request.
-
-        This method overrides the original request() method of Transport in
-        order to allow us to handle cookies correctly.
-        """
-        connection = self.make_connection(host)
-        if verbose:
-            connection.set_debuglevel(1)
-
-        self.send_request(connection, handler, request_body)
-        self.send_host(connection, host)
-        self.send_user_agent(connection)
-        self.send_content(connection, request_body)
-
-        errcode, errmsg, headers = connection.getreply()
-        self.last_response_headers = headers
-
-        if errcode != 200:
-            raise xmlrpclib.ProtocolError(
-                host + handler, errcode, errmsg, headers)
-
-        self.verbose = verbose
-
-        try:
-            sock = connection._conn.sock
-        except AttributeError:
-            sock = None
-
-        return self._parse_response(connection.getfile(), sock)
-

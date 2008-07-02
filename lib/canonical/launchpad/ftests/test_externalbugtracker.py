@@ -21,5 +21,9 @@ def test_suite():
     suite.addTest(LayeredDocFileSuite(
         'trac-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer))
+    suite.addTest(LayeredDocFileSuite(
+        'externalbugtracker-xmlrpc-transport.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer))
 
     return suite
