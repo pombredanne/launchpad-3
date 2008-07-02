@@ -11,8 +11,8 @@ import traceback
 
 from zope.interface import implements
 from zope.component import getUtility
-import zope.security.management
-import zope.thread
+from zope.security import management
+from zope import thread
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
@@ -44,7 +44,7 @@ class LaunchBag:
         IBugTask: 'bugtask',
         }
 
-    _store = zope.thread.local()
+    _store = thread.local()
 
     def setLogin(self, login):
         '''See IOpenLaunchBag.'''
@@ -65,7 +65,7 @@ class LaunchBag:
     @property
     @block_implicit_flushes
     def user(self):
-        interaction = zope.security.management.queryInteraction()
+        interaction = management.queryInteraction()
         if interaction is None:
             return None
         principals = [
