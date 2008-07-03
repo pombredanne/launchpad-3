@@ -10,7 +10,7 @@ so that we can avoid network traffic in tests.
     ...     BugzillaLPPlugin)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestBugzillaXMLRPCTransport)
-    >>> test_transport = TestBugzillaXMLRPCTransport()
+    >>> test_transport = TestBugzillaXMLRPCTransport('http://example.com/')
     >>> bugzilla = BugzillaLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport)
     >>> bugzilla.xmlrpc_transport == test_transport
@@ -46,7 +46,8 @@ work with the right database user.
     ...         LaunchpadZopelessLayer.switchDbUser(
     ...             config.checkwatches.dbuser)
 
-    >>> test_transport = ZopelessBugzillaXMLRPCTransport()
+    >>> test_transport = ZopelessBugzillaXMLRPCTransport(
+    ...     'http://example.com/')
     >>> test_transport.print_method_calls = True
     >>> bugzilla = BugzillaLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport,
@@ -60,15 +61,12 @@ work with the right database user.
 The authorisation cookie will be stored in the auth_cookie property of
 the XML-RPC transport.
 
-    >>> print test_transport.auth_cookie
-    Bugzilla_login=...
-    Bugzilla_logincookie=...
+    >>> test_transport.cookie_processor.cookiejar
+    <cookielib.CookieJar[Cookie(version=0, name='Bugzilla_login'...),
+                         Cookie(version=0, name='Bugzilla_logincookie'...)]>
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     FakeHTTPConnection)
-    >>> test_transport.send_host(FakeHTTPConnection(), 'example.com')
-    Host: example.com
-    Cookie: Bugzilla_login=...; Bugzilla_logincookie=...
 
 The externalbugtracker.bugzilla module contains a decorator,
 needs_authentication, which can be used to ensure that a
@@ -126,13 +124,12 @@ current time on the remote server.
     >>> from datetime import datetime
     >>> # It seems there's no way to create a UTC timestamp without
     >>> # monkey-patching the TZ environment variable. Rather than do
-    >>> # that, we create our own timestamp and work with that.
-    >>> datetime.utcfromtimestamp(1210953200.0)
-    datetime.datetime(2008, 5, 16, 15, 53, 20)
+    >>> # that, we create our own datetime and work with that.
+    >>> remote_time = datetime(2008, 5, 16, 16, 53, 20)
 
     >>> test_transport.utc_offset = 60**2
     >>> test_transport.timezone = 'CET'
-    >>> test_transport.seconds_since_epoch = 1210956800.0
+    >>> test_transport.local_datetime = remote_time
     >>> bugzilla.getCurrentDBTime()
     datetime.datetime(2008, 5, 16, 15, 53, 20, tzinfo=<UTC>)
 

@@ -364,7 +364,7 @@
       </tal:not-logged-in>
     </tal:noaccount>
 
-    <tal:deactivated-account 
+    <tal:deactivated-account
         condition="context/account_status/enumvalue:DEACTIVATED">
       <p>
         <span tal:replace="context/browsername" /> does not use

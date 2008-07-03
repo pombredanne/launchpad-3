@@ -2941,7 +2941,8 @@ class PersonSet:
                 UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
                 WHERE owner = %(from_id)s AND name = %(name)s
                     AND (%(product)s IS NULL OR product = %(product)s)
-                ''', vars())
+                ''', dict(to_id=to_id, from_id=from_id,
+                          name=name, new_name=new_name, product=product))
         skip.append(('branch','owner'))
 
         # Update MailingListSubscription. Note that no remaining records
@@ -3091,9 +3092,9 @@ class PersonSet:
 
         # Update PackageBugSupervisor entries.
         cur.execute('''
-            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)s
-            WHERE bug_supervisor=%(from_id)s
-            ''', vars())
+            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)d
+            WHERE bug_supervisor=%(from_id)d
+            ''' % vars())
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
         # Update the SpecificationFeedback entries that will not conflict
@@ -3487,6 +3488,22 @@ class PersonSet:
                         PostedMessageStatus.APPROVED,
                         config.standingupdater.approvals_needed))
 
+    def cacheBrandingForPeople(self, people):
+        """See `IPersonSet`."""
+        from canonical.launchpad.database import LibraryFileAlias
+        aliases = []
+        aliases.extend(person.iconID for person in people
+                       if person.iconID is not None)
+        aliases.extend(person.logoID for person in people
+                       if person.logoID is not None)
+        aliases.extend(person.mugshotID for person in people
+                       if person.mugshotID is not None)
+        if not aliases:
+            return
+        # Listify, since this is a pure cache.
+        list(LibraryFileAlias.select("LibraryFileAlias.id IN %s"
+             % sqlvalues(aliases), prejoins=["content"]))
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'
@@ -3629,3 +3646,4 @@ class IrcIDSet:
     def new(self, person, network, nickname):
         """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)
+
