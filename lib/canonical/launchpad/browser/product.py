@@ -631,12 +631,12 @@ class SortSeriesMixin:
         The series list is sorted by version in reverse order.
         The development focus is always first in the list.
         """
-        series_list = list(self.context.serieses)
-        series_list.remove(self.context.development_focus)
+        series_list = list(self.product.serieses)
+        series_list.remove(self.product.development_focus)
         # Now sort the list by name with newer versions before older.
         series_list = sorted_version_numbers(series_list,
                                              key=attrgetter('name'))
-        series_list.insert(0, self.context.development_focus)
+        series_list.insert(0, self.product.development_focus)
         return series_list
 
 
@@ -681,6 +681,7 @@ class SeriesWithReleases:
     # These need to be predeclared to avoid decorates taking them
     # over.
     releases = None
+    release_files = None
     decorates(IProductSeries, 'series')
 
     def __init__(self, series):
@@ -689,6 +690,13 @@ class SeriesWithReleases:
 
     def addRelease(self, release):
         self.releases.append(release)
+
+    @cachedproperty
+    def release_files(self):
+        files = set()
+        for release in self.releases:
+            files = files.union(release.files)
+        return files
 
 
 class ReleaseWithFiles:
