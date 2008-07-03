@@ -1,8 +1,8 @@
 = Person =
 
 The Person class is what we use to represent Launchpad users, teams and
-some people which have done work on the free software community but are not
-Launchpad users.
+some people which have done work on the free software community but are
+not Launchpad users.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -104,15 +104,13 @@ email address is confirmed) Note that both the Person and the
 EmailAddress have accounts when they are created using the
 createPersonAndEmail() method.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-
     # Only the user may access his hidden email address while
     # hide_email_addresses is True.
     >>> login('randomuser@randomhost.com')
 
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
-    >>> removeSecurityProxy(email).account == p.account
+    >>> email.account == p.account
     True
 
     >>> p.setPreferredEmail(email)
@@ -129,13 +127,13 @@ to the person, and it updates the email address's status and account.
     >>> validated_email = emailset.new('validated@canonical.com', p)
     >>> validated_email.status
     <DBItem EmailAddressStatus.NEW...
-    >>> print removeSecurityProxy(validated_email).account
+    >>> print validated_email.account
     None
 
     >>> p.validateAndEnsurePreferredEmail(validated_email)
     >>> validated_email.status
     <DBItem EmailAddressStatus.VALIDATED...
-    >>> removeSecurityProxy(validated_email).account == p.account
+    >>> validated_email.account == p.account
     True
 
 The user can add a new address and set it as the preferred address.
@@ -145,13 +143,13 @@ account.
     >>> preferred_email = emailset.new('preferred@canonical.com', p)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.NEW...
-    >>> print removeSecurityProxy(preferred_email).account
+    >>> print preferred_email.account
     None
 
     >>> p.setPreferredEmail(preferred_email)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.PREFERRED...
-    >>> removeSecurityProxy(preferred_email).account == p.account
+    >>> preferred_email.account == p.account
     True
 
     >>> login(ANONYMOUS)
@@ -368,9 +366,9 @@ raised.
 === Turning people into teams ===
 
 Launchpad may create Person entries automatically and it always assumes
-these are actual people.  Sometimes, though, these should actually be teams,
-so we provide an easy way to turn one of these auto created entries into
-teams.
+these are actual people.  Sometimes, though, these should actually be
+teams, so we provide an easy way to turn one of these auto created
+entries into teams.
 
     >>> not_a_person, dummy = personset.createPersonAndEmail(
     ...     'foo@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
@@ -387,6 +385,8 @@ teams.
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
+    >>> from zope.security.proxy import removeSecurityProxy
+
     >>> not_a_person.convertToTeam(team_owner=ddaa)
     >>> not_a_person.isTeam()
     True
@@ -394,7 +394,6 @@ teams.
     True
     >>> verifyObject(ITeam, not_a_person)
     True
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> print removeSecurityProxy(not_a_person).password
     None
 
@@ -525,7 +524,6 @@ entries for themselves.
 The inTeam method is cached to avoid unnecessary database lookups - this
 was a cause of a number of timeouts
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_lifeless = removeSecurityProxy(lifeless)
     >>> naked_lifeless._inTeam_cache[vcs_imports.id]
     True
