@@ -78,7 +78,7 @@ it's currently the team contact method.
 
     >>> browser.open('http://launchpad.dev/~carlos/')
     >>> browser.getLink("Change details").click()
-    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.getLink("E-mail Settings").click()
     >>> browser.title
     "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
 
@@ -203,7 +203,7 @@ Admins team, and he should know if the list is available.
 
     >>> browser.open('http://launchpad.dev/~carlos/')
     >>> browser.getLink("Change details").click()
-    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.getLink("E-mail Settings").click()
     >>> browser.title
     "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
 
@@ -237,7 +237,7 @@ screen.
 
     >>> browser.open('http://launchpad.dev/~jdub/')
     >>> browser.getLink("Change details").click()
-    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.getLink("E-mail Settings").click()
     >>> browser.title
     "Jeff Waugh's e-mail addresses"
 
@@ -262,7 +262,7 @@ His mailing list subscription is now available to be managed.
 
     >>> browser.open('http://launchpad.dev/~jdub/')
     >>> browser.getLink("Change details").click()
-    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.getLink("E-mail Settings").click()
     >>> browser.title
     "Jeff Waugh's e-mail addresses"
 
@@ -343,7 +343,7 @@ has an active mailing list.
     # Subscribe to the list using the normal technique.
     >>> browser.open('http://launchpad.dev/~carlos/')
     >>> browser.getLink("Change details").click()
-    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.getLink("E-mail Settings").click()
     >>> rosetta_admins = browser.getControl(
     ...     name='field.subscription.rosetta-admins')
     >>> rosetta_admins.value = ['Preferred address']
@@ -403,7 +403,7 @@ Email preferences page.
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~carlos')
     >>> browser.getLink("Change details").click()
-    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.getLink("E-mail Settings").click()
     >>> browser.title
     "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
 
@@ -470,7 +470,7 @@ subscription settings will see the box checked by default.
 
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink("Change details").click()
-    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.getLink("E-mail Settings").click()
     >>> print_radio_button_field(browser.contents,
     ...     'mailing_list_auto_subscribe_policy')
     ( ) Never subscribe to mailing lists
@@ -488,7 +488,7 @@ subscription settings will see the box checked by default.
     # Change James' setting
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink("Change details").click()
-    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.getLink("E-mail Settings").click()
     >>> set_autosubscribe_policy_and_submit('ALWAYS')
     ( ) Never subscribe to mailing lists
     ( ) Ask me when I join a team
@@ -505,7 +505,7 @@ lists will not have the box checked.
     # Change James' setting
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink("Change details").click()
-    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.getLink("E-mail Settings").click()
     >>> set_autosubscribe_policy_and_submit('NEVER')
     (*) Never subscribe to mailing lists
     ( ) Ask me when I join a team
@@ -519,7 +519,7 @@ lists will not have the box checked.
     # Restore James' setting.
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink("Change details").click()
-    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.getLink("E-mail Settings").click()
     >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION')
     ( ) Never subscribe to mailing lists
     (*) Ask me when I join a team

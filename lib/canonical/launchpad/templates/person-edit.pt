@@ -21,6 +21,12 @@
           <tbody>
             <p><span
                  tal:replace="
+                 structure context/menu:overview/editlanguages/render"
+                 >Set your preferred language</span>
+            </p>
+
+            <p><span
+                 tal:replace="
                  structure context/menu:overview/editwikinames/render"
                  >Edit your wiki names</span>
             </p>

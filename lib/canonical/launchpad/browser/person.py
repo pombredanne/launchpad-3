@@ -33,7 +33,6 @@ __all__ = [
     'PersonEditJabberIDsView',
     'PersonEditSSHKeysView',
     'PersonEditView',
-    'PersonEditViewObsolete',
     'PersonEditWikiNamesView',
     'PersonFacets',
     'PersonGPGView',
@@ -82,6 +81,7 @@ __all__ = [
     'TeamNavigation',
     'TeamOverviewMenu',
     'TeamMembershipView',
+    'TeamMugshotView',
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'UbunteroListView',
@@ -1669,7 +1669,7 @@ class PersonRdfView:
     """A view that embeds PersonRdfContentsView in a standalone page."""
 
     template = ViewPageTemplateFile(
-        '../templates/person-foaf.pt')
+        '../templates/person-rdf.pt')
 
     def __call__(self):
         """Render RDF output, and return it as a string encoded in UTF-8.
@@ -1696,7 +1696,7 @@ class PersonRdfContentsView:
     # preserve the case of the elements (which is not preserved in the
     # parsing of the default text/html content-type.)
     template = ViewPageTemplateFile(
-        '../templates/person-foaf-contents.pt',
+        '../templates/person-rdf-contents.pt',
         content_type="application/rdf+xml")
 
     def __init__(self, context, request):
@@ -1706,13 +1706,16 @@ class PersonRdfContentsView:
     def buildMemberData(self):
         members = []
         members_by_id = {}
-        for member in self.context.allmembers:
-            member = PersonWithKeysAndPreferredEmail(member)
-            members.append(member)
-            members_by_id[member.id] = member
-        if not members:
+        raw_members = list(self.context.allmembers)
+        if not raw_members:
             # Empty teams have nothing to offer.
             return []
+        personset = getUtility(IPersonSet)
+        personset.cacheBrandingForPeople(raw_members)
+        for member in raw_members:
+            decorated_member = PersonWithKeysAndPreferredEmail(member)
+            members.append(decorated_member)
+            members_by_id[member.id] = decorated_member
         sshkeyset = getUtility(ISSHKeySet)
         gpgkeyset = getUtility(IGPGKeySet)
         emailset = getUtility(IEmailAddressSet)
@@ -3295,7 +3298,7 @@ class PersonEditHomePageView(BasePersonEditView):
 
 
 class PersonEditView(BasePersonEditView):
-    """The Launchpad 2.0 Person 'Edit' page."""
+    """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
                    'hide_email_addresses', 'verbose_bugnotifications',
@@ -3320,21 +3323,6 @@ class PersonEditView(BasePersonEditView):
         return [convertToHtmlCode(jabber.jabberid)
                 for jabber in self.context.jabberids]
 
-    @action(_("Save Changes"), name="save")
-    def action_save(self, action, data):
-        self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
-
-
-class PersonEditViewObsolete(BasePersonEditView):
-    """The Launchpad 1.0 Person 'Edit' page."""
-
-    implements(IPersonEditMenu)
-
-    field_names = ['displayname', 'name', 'hide_email_addresses',
-                   'verbose_bugnotifications', 'time_zone']
-    custom_widget('time_zone', SelectWidget, size=15)
-
     # XXX: salgado, 2008-06-19: This will be removed as soon as the new UI
     # for setting a person's location/time_zone lands.
     def updateContextFromData(self, data):
@@ -3344,6 +3332,11 @@ class PersonEditViewObsolete(BasePersonEditView):
             self.context.latitude, self.context.longitude,
             time_zone, self.user)
         super(PersonEditView, self).updateContextFromData(data)
+
+    @action(_("Save Changes"), name="save")
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class PersonBrandingView(BrandingChangeView):
@@ -3584,6 +3577,13 @@ class PersonEditEmailsView(LaunchpadFormView):
                   orientation='vertical')
     custom_widget('mailing_list_auto_subscribe_policy',
                   LaunchpadRadioWidgetWithDescription)
+
+    def initialize(self):
+        if self.context.is_team:
+            # +editemails is not available on teams.
+            name = self.request['PATH_INFO'].split('/')[-1]
+            raise NotFound(self, name, request=self.request)
+        super(PersonEditEmailsView, self).initialize()
 
     def setUpFields(self):
         """Set up fields for this view.
@@ -4039,6 +4039,17 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.next_url = self.action_url
 
 
+class TeamMugshotView(LaunchpadView):
+    """A view for the team mugshot (team photo) page"""
+    def initialize(self):
+        """Cache images to avoid dying from a million cuts."""
+        getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
+
+    @cachedproperty
+    def allmembers(self):
+        return list(self.context.allmembers)
+
+
 class TeamReassignmentView(ObjectReassignmentView):
 
     ownerOrMaintainerAttr = 'teamowner'
@@ -4372,6 +4383,8 @@ class SourcePackageReleaseWithStats:
 class PersonPackagesView(LaunchpadView):
     """View for +packages."""
 
+    PACKAGE_LIMIT = 50
+
     def getLatestUploadedPPAPackagesWithStats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
@@ -4388,7 +4401,7 @@ class PersonPackagesView(LaunchpadView):
         # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
         # query is virtually impossible!
         results = []
-        for package in packages:
+        for package in packages[:self.PACKAGE_LIMIT]:
             # Make a shallow copy to remove the Zope security.
             archives = set(package.published_archives)
             # Ensure the SPR.upload_archive is also considered.
@@ -4401,16 +4414,16 @@ class PersonPackagesView(LaunchpadView):
 
     def getLatestMaintainedPackagesWithStats(self):
         """Return the latest maintained packages, including stats."""
-        return self._addStatsToPackages(
-            self.context.getLatestMaintainedPackages())
+        packages = self.context.getLatestMaintainedPackages()
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
     def getLatestUploadedButNotMaintainedPackagesWithStats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
         """
-        return self._addStatsToPackages(
-            self.context.getLatestUploadedButNotMaintainedPackages())
+        packages = self.context.getLatestUploadedButNotMaintainedPackages()
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
     def _calculateBuildStats(self, package_releases):
         """Calculate failed builds and needs_build state.

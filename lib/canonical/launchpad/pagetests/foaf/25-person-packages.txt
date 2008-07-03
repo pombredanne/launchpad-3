@@ -19,6 +19,7 @@ number of open bugs and questions filed against each package.
     >>> maintained = find_tag_by_id(anon_browser.contents, 'packages')
     >>> print extract_text(maintained)
     Maintained packages
+    50 Most recently uploaded packages
     Name
     Uploaded to
     Version
@@ -76,6 +77,7 @@ number of open bugs and questions filed against each package.
     0
     0
     Uploaded packages
+    50 Most recently uploaded packages
     Name
     Uploaded to
     Version
@@ -119,6 +121,7 @@ number of open bugs and questions filed against each package.
     0
     0
     PPA packages
+    50 Most recently uploaded packages
     Name
     Uploaded to
     Version
