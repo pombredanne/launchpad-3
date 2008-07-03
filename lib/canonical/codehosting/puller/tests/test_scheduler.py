@@ -340,6 +340,11 @@ class TestPullerMonitorProtocol(
         """If the process prints to stderr, then the Deferred fires an
         errback, even if it terminated successfully.
         """
+        def fail_if_succeeded(ignored):
+            self.fail("stderr did not cause failure")
+
+        self.termination_deferred.addCallback(fail_if_succeeded)
+
         def check_failure(failure):
             failure.trap(Exception)
             self.assertEqual('error message', failure.error)
@@ -350,6 +355,15 @@ class TestPullerMonitorProtocol(
         self.simulateProcessExit()
 
         return self.termination_deferred
+
+    def test_prematureFailureWithoutStderr(self):
+        # If the worker dies without reporting failure and doesn't have any
+        # output on standard error, then we report failure using the reason we
+        # have for the worker's death.
+        self.protocol.do_startMirroring()
+        self.simulateProcessExit(clean=False)
+        return self.assertFailure(
+            self.termination_deferred, error.ProcessTerminated)
 
     def test_errorBeforeStatusReport(self):
         # If the subprocess exits before reporting success or failure, the
@@ -567,7 +581,8 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         print error
         return failure
 
-    def makePullerMaster(self, cls=scheduler.PullerMaster, script_text=None):
+    def makePullerMaster(self, cls=scheduler.PullerMaster, script_text=None,
+                         use_header=True):
         """Construct a PullerMaster suited to the test environment.
 
         :param cls: The class of the PullerMaster to construct, defaulting to
@@ -587,7 +602,9 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         puller_master.destination_url = os.path.abspath('dest-branch')
         if script_text is not None:
             script = open('script.py', 'w')
-            script.write(script_header + textwrap.dedent(script_text))
+            if use_header:
+                script.write(script_header)
+            script.write(textwrap.dedent(script_text))
             script.close()
             puller_master.path_to_script = os.path.abspath('script.py')
         return puller_master
@@ -623,6 +640,29 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         # This test actually launches a worker process and makes sure that it
         # runs successfully and that we report the successful run.
         return self.doDefaultMirroring().addErrback(self._dumpError)
+
+    def test_stderrLoggedToOOPS(self):
+        # When the child process prints to stderr and exits cleanly, the
+        # contents of stderr are logged in an OOPS report.
+        expected_output = 'foo\nbar'
+        stderr_script = """
+        import sys
+        sys.stderr.write(%r)
+        """ % (expected_output,)
+        master = self.makePullerMaster(
+            script_text=stderr_script, use_header=False)
+        deferred = master.run()
+
+        def check_oops_report(ignored):
+            oops = errorlog.globalErrorUtility.getLastOopsReport()
+            self.assertEqual('UnexpectedStderr', oops.type)
+            last_line = expected_output.splitlines()[-1]
+            self.assertEqual(
+                'Unexpected standard error from subprocess: %s' % last_line,
+                oops.value)
+            self.assertEqual(expected_output, oops.tb_text)
+
+        return deferred.addCallback(check_oops_report)
 
     def test_lock_with_magic_id(self):
         # When the subprocess locks a branch, it is locked with the right ID.
