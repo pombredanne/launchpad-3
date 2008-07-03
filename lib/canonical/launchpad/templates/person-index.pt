@@ -50,13 +50,13 @@
     />
 
     <div
-      style="float:right; clear:both;"
+      style="float:right;"
       tal:define="link context/menu:overview/edit"
       tal:condition="link/enabled"
       tal:content="structure link/render" />
 
     <div
-      style="float:right; clear:both;"
+      style="float:right;"
       tal:define="link context/menu:overview/administer"
       tal:condition="link/enabled"
       tal:content="structure link/render" />
