@@ -16,11 +16,9 @@ import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
     LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
-from bzrlib.repofmt.weaverepo import RepositoryFormat7
-from bzrlib.repository import format_registry
 
 from bzrlib.urlutils import local_path_from_url
-from bzrlib.tests import default_transport, TestCaseWithTransport
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
 from twisted.python.util import mergeFunctionMetadata
@@ -648,7 +646,8 @@ def make_smoke_tests(base_suite):
     scenarios = repository_implementations.all_repository_format_scenarios()
     scenarios = [
         scenario for scenario in scenarios
-        if scenario[0] not in excluded_scenarios]
+        if scenario[0] not in excluded_scenarios
+        and not scenario[0].startswith('RemoteRepositoryFormat')]
     adapter = tests.TestScenarioApplier()
     adapter.scenarios = scenarios
     new_suite = unittest.TestSuite()
