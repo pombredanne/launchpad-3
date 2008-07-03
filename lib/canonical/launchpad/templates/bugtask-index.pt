@@ -212,7 +212,7 @@
                  tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
                                  onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
                 <tal:bug_branch_status replace="bug_branch/status/title"/>
-                <img src="/@@/expand"/>
+                <img src="/@@/bug-status-expand"/>
               </a>
               <dl tal:condition="bug_branch/whiteboard"
                   tal:attributes="id string:bugbranch${bug_branch/id}-wb">

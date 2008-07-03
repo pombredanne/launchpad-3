@@ -12,9 +12,11 @@ import time
 import urlparse
 import xmlrpclib
 
-from cStringIO import StringIO
+from StringIO import StringIO
+from cgi import escape
 from datetime import datetime, timedelta
 from httplib import HTTPMessage
+from urllib2 import BaseHandler, Request
 
 from zope.component import getUtility
 
@@ -23,12 +25,12 @@ from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
     ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
-    Trac, TracXMLRPCTransport)
-from canonical.launchpad.components.externalbugtracker.bugzilla import (
-    BugzillaXMLRPCTransport)
+    Trac)
 from canonical.launchpad.components.externalbugtracker.trac import (
     LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
     LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
+from canonical.launchpad.components.externalbugtracker.xmlrpc import (
+    UrlLib2Transport)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
@@ -346,7 +348,7 @@ class FakeHTTPConnection:
         print "%s: %s" % (header, value)
 
 
-class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
+class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     """A test implementation of the Bugzilla XML-RPC interface."""
 
     local_datetime = None
@@ -446,6 +448,16 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
         """Mark the cookie as expired."""
         self.expired_cookie = cookie
 
+    @property
+    def auth_cookie(self):
+        cookies = self.cookie_processor.cookiejar._cookies
+        return cookies.get('example.com', {}).get(None, {}).get('Bugzilla_logincookie')
+
+    @property
+    def has_valid_auth_cookie(self):
+        return (self.auth_cookie is not None and
+                self.auth_cookie is not self.expired_cookie)
+
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
 
@@ -467,8 +479,7 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
         # If the method requires authentication and we have no auth
         # cookie, throw a Fault.
         if (method_name in self.auth_required_methods and
-            (self.auth_cookie is None or
-             self.auth_cookie == self.expired_cookie)):
+            not self.has_valid_auth_cookie):
             raise xmlrpclib.Fault(410, 'Login Required')
 
         if self.print_method_calls:
@@ -791,7 +802,7 @@ def strip_trac_comment(comment):
     return comment
 
 
-class TestTracXMLRPCTransport(TracXMLRPCTransport):
+class TestTracXMLRPCTransport(UrlLib2Transport):
     """An XML-RPC transport to be used when testing Trac."""
 
     remote_bugs = {}
@@ -803,6 +814,16 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
     def expireCookie(self, cookie):
         """Mark the cookie as expired."""
         self.expired_cookie = cookie
+
+    @property
+    def auth_cookie(self):
+        cookies = self.cookie_processor.cookiejar._cookies
+        return cookies.get('example.com', {}).get(None, {}).get('trac_auth')
+
+    @property
+    def has_valid_auth_cookie(self):
+        return (self.auth_cookie is not None and
+                self.auth_cookie is not self.expired_cookie)
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
@@ -1143,3 +1164,48 @@ class TestDebBugs(DebBugs):
         self.debbugs_db.load_log(bug)
         return bug
 
+
+class Urlib2TransportTestInfo:
+    """A url info object for use in the test, returning
+    a hard-coded cookie header.
+    """
+    cookies = 'foo=bar'
+    def getheaders(self, header):
+        """Return the hard-coded cookie header."""
+        if header.lower() in ('cookie', 'set-cookie', 'set-cookie2'):
+            return [self.cookies]
+
+
+class Urlib2TransportTestHandler(BaseHandler):
+    """A test urllib2 handler returning a hard-coded response."""
+    def default_open(self, req):
+        """Catch all requests and return a hard-coded response.
+
+        The response body is an XMLRPC response. In addition we set the
+        info of the response to contain a cookie.
+        """
+        assert (
+            isinstance(req, Request),
+            'Expected a urllib2.Request, got %s' % req)
+        response = StringIO("""<?xml version="1.0"?>
+        <methodResponse>
+          <params>
+            <param>
+              <value>%s</value>
+            </param>
+          </params>
+        </methodResponse>
+        """ % escape(req.get_full_url()))
+        info = Urlib2TransportTestInfo()
+        response.info = lambda: info
+        response.geturl = lambda: req.get_full_url()
+        response.code = 200
+        response.msg = ''
+        return response
+
+
+def patch_transport_opener(transport):
+    """Patch the transport's opener to use a test handler
+    returning a hard-coded response.
+    """
+    transport.opener.add_handler(Urlib2TransportTestHandler())

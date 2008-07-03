@@ -62,12 +62,11 @@ class PublishingTunableLoop(object):
         self.task = task
         self.logger = logger
         self.total_updated = 0
-        self.total_size = input.count()
         self.offset = 0
 
     def isDone(self):
         """See `ITunableLoop`."""
-        return self.offset == self.total_size
+        return self.offset == self.input.count()
 
     def __call__(self, chunk_size):
         """Run the initialized 'task' with a limited batch of 'input'.
