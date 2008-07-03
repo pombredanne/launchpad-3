@@ -16,7 +16,7 @@ from StringIO import StringIO
 from cgi import escape
 from datetime import datetime, timedelta
 from httplib import HTTPMessage
-from urllib2 import BaseHandler, Request
+from urllib2 import BaseHandler, HTTPError, Request
 
 from zope.component import getUtility
 
@@ -1187,6 +1187,11 @@ class Urlib2TransportTestHandler(BaseHandler):
         assert (
             isinstance(req, Request),
             'Expected a urllib2.Request, got %s' % req)
+
+        if 'testError' in req.data:
+            raise HTTPError(
+                req.get_full_url(), 500, 'Internal Error', {}, None)
+
         response = StringIO("""<?xml version="1.0"?>
         <methodResponse>
           <params>

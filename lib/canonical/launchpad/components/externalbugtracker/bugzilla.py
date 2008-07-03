@@ -66,7 +66,8 @@ class Bugzilla(ExternalBugTracker):
         try:
             # We try calling Launchpad.plugin_version() on the remote
             # server because it's the most lightweight method there is.
-            self.xmlrpc_proxy.Launchpad.plugin_version()
+            plugin = BugzillaLPPlugin(self.baseurl)
+            plugin.xmlrpc_proxy.Launchpad.plugin_version()
         except xmlrpclib.Fault, fault:
             if fault.faultCode == 'Client':
                 return self
