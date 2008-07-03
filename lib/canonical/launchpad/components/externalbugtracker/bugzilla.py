@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'Bugzilla',
     'BugzillaLPPlugin',
+    'needs_authentication',
     ]
 
 import pytz
@@ -21,14 +22,17 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical import encoding
+from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
     LookupTree, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion)
+from canonical.launchpad.components.externalbugtracker.xmlrpc import (
+    UrlLib2Transport)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.interfaces.externalbugtracker import (
-    ISupportsCommentImport)
+    ISupportsCommentImport, ISupportsCommentPushing)
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import urlappend
 
@@ -37,12 +41,40 @@ class Bugzilla(ExternalBugTracker):
     """An ExternalBugTrack for dealing with remote Bugzilla systems."""
 
     batch_query_threshold = 0 # Always use the batch method.
+    _test_xmlrpc_proxy = None
 
     def __init__(self, baseurl, version=None):
         super(Bugzilla, self).__init__(baseurl)
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
+
+    def getExternalBugTrackerToUse(self):
+        """Return the correct `Bugzilla` subclass for the current bugtracker.
+
+        See `IExternalBugTracker`.
+        """
+        plugin = BugzillaLPPlugin(self.baseurl)
+        try:
+            # We try calling Launchpad.plugin_version() on the remote
+            # server because it's the most lightweight method there is.
+            if self._test_xmlrpc_proxy is not None:
+                proxy = self._test_xmlrpc_proxy
+            else:
+                proxy = plugin.xmlrpc_proxy
+            proxy.Launchpad.plugin_version()
+        except xmlrpclib.Fault, fault:
+            if fault.faultCode == 'Client':
+                return self
+            else:
+                raise
+        except xmlrpclib.ProtocolError, error:
+            if error.errcode == 404:
+                return self
+            else:
+                raise
+        else:
+            return plugin
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""
@@ -287,22 +319,85 @@ class Bugzilla(ExternalBugTracker):
             raise BugNotFound(bug_id)
 
 
+def needs_authentication(func):
+    """Decorator for automatically authenticating if needed.
+
+    If an `xmlrpclib.Fault` with error code 410 is raised by the
+    function, we'll try to authenticate and call the function again.
+    """
+    def decorator(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except xmlrpclib.Fault, fault:
+            # Catch authentication errors only.
+            if fault.faultCode != 410:
+                raise
+            self._authenticate()
+            return func(self, *args, **kwargs)
+    return decorator
+
+
 class BugzillaLPPlugin(Bugzilla):
-    """An `ExternalBugTracker` to handle BugZillas using the LP Plugin."""
+    """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
 
-    implements(ISupportsCommentImport)
+    implements(ISupportsCommentImport, ISupportsCommentPushing)
 
-    def __init__(self, baseurl, xmlrpc_transport=None):
+    def __init__(self, baseurl, xmlrpc_transport=None,
+                 internal_xmlrpc_transport=None):
         super(BugzillaLPPlugin, self).__init__(baseurl)
 
+        self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
+
+        self.internal_xmlrpc_transport = internal_xmlrpc_transport
         if xmlrpc_transport is None:
-            xmlrpc_transport = BugzillaXMLRPCTransport()
+            self.xmlrpc_transport = UrlLib2Transport(self.xmlrpc_endpoint)
         else:
             self.xmlrpc_transport = xmlrpc_transport
 
-        self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
-        self.server = xmlrpclib.ServerProxy(
+    @property
+    def xmlrpc_proxy(self):
+        """Return an `xmlrpclib.ServerProxy` to self.xmlrpc_endpoint."""
+        return xmlrpclib.ServerProxy(
             self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+    def _authenticate(self):
+        """Authenticate with the remote Bugzilla instance.
+
+        Authentication works by means of using a LoginToken of type
+        BUGTRACKER. We send the token text to the remote server as a
+        parameter to Launchpad.login(), which verifies it using the
+        standard launchpad.net/token/$token/+bugtracker-handshake URL.
+
+        If the token is valid, Bugzilla will send us a user ID as a
+        return value for the call to Launchpad.login() and will set two
+        cookies in the response header, Bugzilla_login and
+        Bugzilla_logincookie, which we can then use to re-authenticate
+        ourselves for each subsequent method call.
+        """
+        internal_xmlrpc_server = xmlrpclib.ServerProxy(
+            config.checkwatches.xmlrpc_url,
+            transport=self.internal_xmlrpc_transport)
+
+        token_text = internal_xmlrpc_server.newBugTrackerToken()
+
+        user_id = self.xmlrpc_proxy.Launchpad.login({'token': token_text})
+
+        auth_cookies = self._extractAuthCookie(
+            self.xmlrpc_transport.last_response_headers['Set-Cookie'])
+        for cookie in auth_cookies.split(';'):
+            self.xmlrpc_transport.setCookie(cookie.strip())
+
+    def _extractAuthCookie(self, cookie_header):
+        """Extract the Bugzilla authentication cookies from the header."""
+        cookies = []
+        for cookie_header_part in cookie_header.split(','):
+            cookie = cookie_header_part.split(';')[0]
+            cookie = cookie.strip()
+
+            if cookie.startswith('Bugzilla_login'):
+                cookies.append(cookie)
+
+        return '; '.join(cookies)
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
@@ -314,7 +409,7 @@ class BugzillaLPPlugin(Bugzilla):
             'ids': bug_ids,
             'permissive': True,
             }
-        response_dict = self.server.Bug.get_bugs(request_args)
+        response_dict = self.xmlrpc_proxy.Bug.get_bugs(request_args)
         remote_bugs = response_dict['bugs']
 
         # Now copy them into the local bugs dict.
@@ -330,15 +425,14 @@ class BugzillaLPPlugin(Bugzilla):
 
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
-        time_dict = self.server.Launchpad.time()
+        time_dict = self.xmlrpc_proxy.Launchpad.time()
 
         # Return the UTC time sent by the server so that we don't have
         # to care about timezones.
-        server_timestamp = time.mktime(
-            time.strptime(
-                str(time_dict['utc_time']), '%Y%m%dT%H:%M:%S'))
+        server_timetuple = time.strptime(
+            str(time_dict['utc_time']), '%Y%m%dT%H:%M:%S')
 
-        server_utc_time = datetime.utcfromtimestamp(server_timestamp)
+        server_utc_time = datetime(*server_timetuple[:6])
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
 
     def _getActualBugId(self, bug_id):
@@ -388,7 +482,7 @@ class BugzillaLPPlugin(Bugzilla):
             'bug_ids': [actual_bug_id],
             'include': ['id'],
             }
-        bug_comments_dict = self.server.Bug.comments(request_params)
+        bug_comments_dict = self.xmlrpc_proxy.Bug.comments(request_params)
 
         bug_comments = bug_comments_dict['bugs'][actual_bug_id]
         return [comment['id'] for comment in bug_comments]
@@ -402,7 +496,7 @@ class BugzillaLPPlugin(Bugzilla):
             'bug_ids': [actual_bug_id],
             'ids': comment_ids,
             }
-        bug_comments_dict = self.server.Bug.comments(request_params)
+        bug_comments_dict = self.xmlrpc_proxy.Bug.comments(request_params)
         comment_list = bug_comments_dict['bugs'][actual_bug_id]
 
         # Transfer the comment list into a dict.
@@ -444,17 +538,18 @@ class BugzillaLPPlugin(Bugzilla):
 
         return message
 
+    @needs_authentication
+    def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
+        """Add a comment to the remote bugtracker.
 
-class BugzillaXMLRPCTransport(xmlrpclib.Transport):
-    """XML-RPC Transport for Bugzilla bug trackers.
+        See `ISupportsCommentPushing`.
+        """
+        actual_bug_id = self._getActualBugId(remote_bug)
 
-    Sends a cookie header for authentication.
-    """
+        request_params = {
+            'id': actual_bug_id,
+            'comment': comment_body,
+            }
+        return_dict = self.xmlrpc_proxy.Bug.add_comment(request_params)
 
-    auth_cookie = None
-
-    def send_host(self, connection, host):
-        """Send the host and cookie headers."""
-        xmlrpclib.Transport.send_host(self, connection, host)
-        if self.auth_cookie is not None:
-            connection.putheader('Cookie', self.auth_cookie)
+        return return_dict['comment_id']

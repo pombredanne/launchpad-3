@@ -79,7 +79,7 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
         if _valid_nick(generated_nick):
             return generated_nick
 
-    # We seed the random number generator so we get consistant results,
+    # We seed the random number generator so we get consistent results,
     # making the algorithm repeatable and thus testable.
     random_state = random.getstate()
     random.seed(sum(ord(letter) for letter in generated_nick))
@@ -148,15 +148,16 @@ def generate_wikiname(displayname, registered):
     # and the like), and see if that's free.
     #       -- Andrew Bennetts, 2005-06-14
     wikinameparts = re.split(r'(?u)\W+', displayname)
-    wikiname = ''.join([part.capitalize() for part in wikinameparts])
+    wikiname = ''.join(part.capitalize() for part in wikinameparts)
     if not registered(wikiname):
         return wikiname
-
-    # Append a number to uniquify, and keep incrementing it until we succeed.
-    counter = 2
+    # The pure wikiname is not unique.  Generate a random number, appending it
+    # to the base wikiname and check again.  Even if we have a gobnormous
+    # number of similar displaynames, this should produce a unique wikiname
+    # in a small (i.e. reasonable) number of tries.  This is good in that it
+    # keeps the number of queries down.  See bug 50384.
     while True:
-        candidate = wikiname + str(counter)
+        suffix = str(random.randint(2, 10000000))
+        candidate = wikiname + suffix
         if not registered(candidate):
             return candidate
-        counter += 1
-

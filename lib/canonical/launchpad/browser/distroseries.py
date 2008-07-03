@@ -212,13 +212,20 @@ class DistroSeriesBugsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'bugs'
-    links = ['cve', 'nominations']
+    links = (
+        'cve',
+        'nominations',
+        'subscribe',
+        )
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
 
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
+
+    def subscribe(self):
+        return Link('+subscribe', 'Subscribe to bug mail')
 
 
 class DistroSeriesSpecificationsMenu(ApplicationMenu):
@@ -449,7 +456,8 @@ class DistroSeriesDynMenu(DynMenu):
 
     def mainMenu(self):
         for architecture in self.context.architectures:
-            yield self.makeBreadcrumbLink(architecture)
+            yield self.makeLink(
+                architecture.architecturetag, target=architecture)
 
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):

@@ -279,7 +279,8 @@ An IBugComment.
     >>> from canonical.launchpad.browser import BugComment
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugtask_one = bug_one.bugtasks[0]
-    >>> bug_comment = BugComment(1, bug_one.initial_message, bugtask_one)
+    >>> bug_comment = BugComment(
+    ...     1, bug_one.initial_message, bugtask_one, True)
     >>> canonical_url(bug_comment)
     u'http://launchpad.dev/firefox/+bug/1/comments/1'
 
