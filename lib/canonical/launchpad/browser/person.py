@@ -3298,7 +3298,7 @@ class PersonEditHomePageView(BasePersonEditView):
 
 
 class PersonEditView(BasePersonEditView):
-    """The Launchpad 2.0 Person 'Edit' page."""
+    """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
                    'hide_email_addresses', 'verbose_bugnotifications',
