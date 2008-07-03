@@ -250,6 +250,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
 
     def releases(self):
         dspr_pubs = self.context.getReleasesAndPublishingHistory()
+        # Return early as possible to avoid unnecessary processing.
         if len(dspr_pubs) == 0:
             return []
 
