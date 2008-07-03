@@ -15,11 +15,11 @@ lot of state and many relationships to other objects.
 
 At the top level we provide a collection of bugs.
 
-  >>> import operator
+  >>> from operator import itemgetter
   >>> bugs = webservice.get("/beta/bugs").jsonBody()
   >>> bugs['total_size']
   15
-  >>> bug_entries = sorted(bugs['entries'], key=operator.itemgetter('id'))
+  >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
   >>> show(bug_entries[0])
   [(u'bug_tasks_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/bug_tasks'),
@@ -200,20 +200,30 @@ We can get the the collection of subscriptions to a bug.
   >>> bug_one_subscriptions_url = urlsplit(
   ...     bug_one['subscriptions_collection_link'])[2]
   >>> subscriptions = webservice.get(bug_one_subscriptions_url).jsonBody()
-  >>> pprint(sorted(entry.items() for entry in subscriptions['entries']))
-  [[(u'self_link',
-     u'http://api.launchpad.dev/beta/bugs/1/+subscription/name12'),
-    (u'person_link', u'http://api.launchpad.dev/beta/~name12'),
-    (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
-    (u'resource_type_link',
-     u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
-    (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]...]
-
+  >>> subscription_entries = sorted(
+  ...     subscriptions['entries'], key=itemgetter('self_link'))
+  >>> for entry in subscription_entries:
+  ...     show(entry)
+  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+   (u'person_link', u'http://api.launchpad.dev/beta/~name12'),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+   (u'self_link',
+    u'http://api.launchpad.dev/beta/bugs/1/+subscription/name12'),
+   (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
+  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+   (u'person_link', u'http://api.launchpad.dev/beta/~stevea'),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+   (u'self_link',
+    u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea'),
+   (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
 
 Each subscription can be accessed individually.
 
-  >>> subscription = webservice.get(subscriptions['entries'][0]['self_link']).jsonBody()
-  >>> pprint(sorted(subscription.items()))
+  >>> subscription = webservice.get(
+  ...     subscription_entries[1]['self_link']).jsonBody()
+  >>> show(subscription)
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'person_link', u'http://api.launchpad.dev/beta/~stevea'),
    (u'resource_type_link', u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
