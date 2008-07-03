@@ -36,6 +36,16 @@ records to disk, including configuration and indexes.
     3
     >>> cprov_archive.is_ppa
     True
+    >>> cprov_archive.total_count
+    4
+    >>> cprov_archive.pending_count
+    0
+    >>> cprov_archive.succeeded_count
+    3
+    >>> cprov_archive.building_count
+    0
+    >>> cprov_archive.failed_count
+    1
 
 The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
