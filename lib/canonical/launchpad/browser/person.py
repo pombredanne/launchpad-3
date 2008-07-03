@@ -4383,6 +4383,8 @@ class SourcePackageReleaseWithStats:
 class PersonPackagesView(LaunchpadView):
     """View for +packages."""
 
+    implements(IPersonRelatedSoftwareMenu)
+
     PACKAGE_LIMIT = 50
 
     def getLatestUploadedPPAPackagesWithStats(self):
