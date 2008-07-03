@@ -83,5 +83,6 @@ class IPackageDiffSet(Interface):
         :param sprs: a sequence of `SourcePackageRelease` objects.
 
         :return a `ResultSet` ordered by `SourcePackageRelease` ID and
-        then diff request date in descending order.
+        then diff request date in descending order.  If sprs is empty,
+        EmptyResultSet is returned.
         """
