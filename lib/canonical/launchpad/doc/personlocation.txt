@@ -57,14 +57,6 @@ location data in the sampledata.
     >>> print cprov.time_zone
     America/Sao_Paulo
 
-An invalid timezone can't be set.
-
-    >>> cprov.setLocation(-43.0, -62.1, 'asdf', jdub)
-    Traceback (most recent call last):
-    ...
-    ValueError: Invalid timezone (asdf) for <PersonLocation...>.time_zone
-
-
 When a person's location is changed by somebody else, we notify the
 person through email.
 

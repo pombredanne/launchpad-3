@@ -3304,13 +3304,6 @@ class PersonEditView(BasePersonEditView):
         'verbose_bugnotifications', 'time_zone']
     custom_widget('time_zone', SelectWidget, size=15)
 
-    def validate(self, data):
-        if 'time_zone' in data:
-            try:
-                pytz.timezone(data['time_zone'])
-            except (pytz.UnknownTimeZoneError, IOError):
-                self.setFieldError('time_zone', 'Invalid time zone')
-
     # XXX: salgado, 2008-06-19: This will be removed as soon as the new UI
     # for setting a person's location/time_zone lands.
     def updateContextFromData(self, data):

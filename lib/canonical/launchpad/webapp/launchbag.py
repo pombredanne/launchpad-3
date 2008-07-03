@@ -155,10 +155,7 @@ class LaunchBag:
     @property
     def time_zone(self):
         if self.user and self.user.time_zone:
-            try:
-                return pytz.timezone(self.user.time_zone)
-            except (pytz.UnknownTimeZoneError, IOError):
-                pass # unknown time zone name
+            return pytz.timezone(self.user.time_zone)
         # fall back to UTC
         return _utc_tz
 

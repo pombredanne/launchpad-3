@@ -13,7 +13,6 @@ __all__ = [
     'PersonLocation',
     ]
 
-import pytz
 from sqlobject import FloatCol, ForeignKey, StringCol
 
 from zope.interface import implements
@@ -23,18 +22,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.location import ILocationRecord
 from canonical.launchpad.validators.person import validate_public_person
-
-def validate_timezone(self, attr, value):
-    """Checks that the timzone file exists.
-
-    :raises ValueError if the timezone does not exist.
-    """
-    try:
-        pytz.timezone(value)
-    except (pytz.UnknownTimeZoneError, IOError), info:
-        raise ValueError, "Invalid timezone (%s) for %r.%s" % (
-            value, self, attr)
-    return value
 
 
 class PersonLocation(SQLBase):
@@ -50,7 +37,7 @@ class PersonLocation(SQLBase):
         storm_validator=validate_public_person, notNull=True, unique=True)
     latitude = FloatCol(notNull=False)
     longitude = FloatCol(notNull=False)
-    time_zone = StringCol(notNull=True, storm_validator=validate_timezone)
+    time_zone = StringCol(notNull=True)
     last_modified_by = ForeignKey(
         dbName='last_modified_by', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
