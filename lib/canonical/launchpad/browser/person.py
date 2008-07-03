@@ -1183,7 +1183,7 @@ class PersonEditNavigationMenu(NavigationMenu):
              'sshkeys', 'gpgkeys', 'passwords')
 
     def personal(self):
-        target = '+edit2.0'
+        target = '+edit'
         text = 'Personal'
         return Link(target, text)
 
