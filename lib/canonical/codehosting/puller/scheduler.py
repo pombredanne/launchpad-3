@@ -211,11 +211,12 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
         If the worker process exited uncleanly, it probably didn't report
         success or failure, so we should report failure.  If there was output
         on stderr, it's probably a traceback, so we use the last line of that
-        as a failure reason."""
+        as a failure reason.
+        """
         if not self.reported_mirror_finished:
             stderr = self._stderr.getvalue()
             reason.error = stderr
-            if error:
+            if stderr:
                 errorline = stderr.splitlines()[-1]
             else:
                 errorline = str(reason.value)

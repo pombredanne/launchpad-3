@@ -356,6 +356,15 @@ class TestPullerMonitorProtocol(
 
         return self.termination_deferred
 
+    def test_prematureFailureWithoutStderr(self):
+        # If the worker dies without reporting failure and doesn't have any
+        # output on standard error, then we report failure using the reason we
+        # have for the worker's death.
+        self.protocol.do_startMirroring()
+        self.simulateProcessExit(clean=False)
+        return self.assertFailure(
+            self.termination_deferred, error.ProcessTerminated)
+
     def test_errorBeforeStatusReport(self):
         # If the subprocess exits before reporting success or failure, the
         # puller master should record failure.
