@@ -451,7 +451,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get('example.com', {}).get(None, {}).get('Bugzilla_logincookie')
+        return cookies.get('example.com', {}).get('', {}).get('Bugzilla_logincookie')
 
     @property
     def has_valid_auth_cookie(self):
@@ -818,7 +818,7 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get('example.com', {}).get(None, {}).get('trac_auth')
+        return cookies.get('example.com', {}).get('', {}).get('trac_auth')
 
     @property
     def has_valid_auth_cookie(self):
