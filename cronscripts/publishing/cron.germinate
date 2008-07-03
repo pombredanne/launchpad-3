@@ -34,7 +34,7 @@ rm -f all_* all.sources_*
 
 # Grab a local copy of Sources files
 for component in main universe restricted; do
-  zcat $ARCHIVEROOT/dists/"$suite"/"$component"/source/Sources.gz > "$suite"_"$component"_Sources;
+  zcat $ARCHIVEROOT/dists/"$suite"/"$component"/source/Sources.gz > archive.ubuntu.com_"$suite"_"$component"_Sources;
 done
 
 > "$MISCROOT/more-extra.override.$suite.main.new"
@@ -49,8 +49,8 @@ for distro in ubuntu kubuntu edubuntu xubuntu; do
   for arch in i386 amd64 lpia powerpc sparc ia64 hppa; do
     # Grab local copy of Packages and InstallerPackages files
     for component in main universe restricted; do
-      zcat $ARCHIVEROOT/dists/"$suite"/"$component"/binary-$arch/Packages.gz > "$suite"_"$component"_Packages
-      zcat $ARCHIVEROOT/dists/"$suite"/"$component"/debian-installer/binary-$arch/Packages.gz > "$suite"_"$component"_InstallerPackages
+      zcat $ARCHIVEROOT/dists/"$suite"/"$component"/binary-$arch/Packages.gz > archive.ubuntu.com_"$suite"_"$component"_Packages
+      zcat $ARCHIVEROOT/dists/"$suite"/"$component"/debian-installer/binary-$arch/Packages.gz > archive.ubuntu.com_"$suite"_"$component"_InstallerPackages
     done
 
     # Run germinate

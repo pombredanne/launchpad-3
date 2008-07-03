@@ -227,6 +227,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def valid_specifications(self):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
+    @property
+    def is_development_focus(self):
+        """See `IProductSeries`."""
+        return self == self.product.development_focus
+
     def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications.
