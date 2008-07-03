@@ -1088,7 +1088,8 @@ Create some sources with builds:
     ...     source_one.sourcepackagerelease.id,
     ...     source_two.sourcepackagerelease.id,
     ...     )
-    >>> builds = bs.getBuildsBySourcePackageRelease(source_ids)
+    >>> builds = removeSecurityProxy(bs).getBuildsBySourcePackageRelease(
+    ...     source_ids)
     >>> import operator
     >>> for build in sorted(builds, key=operator.attrgetter("id")):
     ...     print build.title, build.buildstate.name
@@ -1099,7 +1100,7 @@ Create some sources with builds:
 
 The results can also be filtered on build state:
 
-    >>> builds = bs.getBuildsBySourcePackageRelease(
+    >>> builds = removeSecurityProxy(bs).getBuildsBySourcePackageRelease(
     ...     source_ids, buildstate=BuildStatus.FULLYBUILT)
     >>> for build in sorted(builds, key=operator.attrgetter("id")):
     ...     print build.title, build.buildstate.name
@@ -1108,7 +1109,7 @@ The results can also be filtered on build state:
 
 If there are no matching results then it returns an empty SelectResults.
 
-    >>> builds = bs.getBuildsBySourcePackageRelease(
+    >>> builds = removeSecurityProxy(bs).getBuildsBySourcePackageRelease(
     ...     source_ids, buildstate=BuildStatus.CHROOTWAIT)
     >>> print builds.count()
     0
@@ -1116,9 +1117,9 @@ If there are no matching results then it returns an empty SelectResults.
 Supplying an empty list or None for the IDs results in an empty list
 being returned.
 
-    >>> bs.getBuildsBySourcePackageRelease(None)
+    >>> removeSecurityProxy(bs).getBuildsBySourcePackageRelease(None)
     []
 
-    >>> bs.getBuildsBySourcePackageRelease([])
+    >>> removeSecurityProxy(bs).getBuildsBySourcePackageRelease([])
     []
 
