@@ -26,11 +26,10 @@
                       products projects summary title watches" />
       <require
           permission="launchpad.Edit"
-          attributes="destroySelf"
+          attributes="destroySelf getBugWatchesNeedingUpdate getBugsWatching
+                      getLinkedPersonByName linkPersonToSelf"
           set_attributes="aliases baseurl bugtrackertype contactdetails
-                          getBugWatchesNeedingUpdate getBugsWatching
-                          getLinkedPersonByName linkPersonToSelf name
-                          owner summary title" />
+                          name owner summary title" />
     </content>
 
     <browser:defaultView
