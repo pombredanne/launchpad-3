@@ -4,15 +4,20 @@ Administrators can check the list of people that have signed the Code of
 Conduct. Foo Bar should appear on the list even though he signed the 1.0
 version, which is non-current but still valid.
 
+    # A useful helper
+    >>> def is_ubuntero(page):
+    ...     return find_tag_by_id(page, 'ubuntero').renderContents()
+
     >>> admin_browser.open('http://launchpad.dev/people/+ubunterolist')
     >>> admin_browser.title
     'Ubunteros registered in Launchpad'
     >>> admin_browser.getLink('Foo Bar (name16)').click()
     >>> admin_browser.url
     'http://launchpad.dev/~name16'
+    >>> print is_ubuntero(admin_browser.contents)
+    Yes
 
     >>> admin_browser.getLink(url='+codesofconduct').click()
-
     >>> '2005-09-27' in admin_browser.contents
     True
     >>> '1024D/12345678' in admin_browser.contents
@@ -20,10 +25,12 @@ version, which is non-current but still valid.
 
 Administrators can't sign the Code of Conduct for other users.  If the
 administrator views the page of someone who isn't an Ubuntero, then the
-application link is missing.
+application link and their Ubuntero status is missing.
 
     >>> admin_browser.open('http://launchpad.dev/~sabdfl')
-    >>> admin_browser.getLink(url='codesofconduct')
+    >>> print find_tag_by_id(admin_browser.contents, 'ubuntero')
+    None
+    >>> admin_browser.getLink(url='codeofconduct')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -31,7 +38,12 @@ application link is missing.
 No-priv hasn't signed up to be an Ubuntero yet.  His homepage will have
 a link to the Ubuntero Code of Conduct forms.
 
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
-    >>> browser.open('http://launchpad.dev/~name16')
-    >>> browser.getLink(url='codesofconduct')
-    <Link text='Yes' url='http://launchpad.dev/~name16/+codesofconduct'>
+    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~no-priv')
+    >>> print is_ubuntero(browser.contents)
+    No
+
+    >>> browser.getLink(url='codeofconduct')
+    <Link
+      text='Apply to become an Ubuntero[IMG]'
+      url='http://launchpad.dev/codeofconduct'>
