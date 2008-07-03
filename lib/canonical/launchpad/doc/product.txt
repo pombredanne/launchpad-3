@@ -6,7 +6,6 @@ software. It can be part of a Project or it can be standalone.
 
     >>> from zope.component import getUtility
     >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database.product import (
     ...     get_allowed_default_stacking_names)
     >>> from canonical.launchpad.interfaces import (
@@ -79,7 +78,6 @@ primary_translatable is nonexistent:
 Now, to test the active flag. If we disabled a product:
 
     >>> a52dec.active = False
-    >>> flush_database_updates()
 
 It should no longer be retrievable via ProductSet's __getitem__:
 
@@ -335,7 +333,6 @@ Only milestones which have visible=True are returned by the .milestones
 property.
 
     >>> firefox_milestone.visible = False
-    >>> flush_database_updates()
     >>> [milestone.name for milestone in firefox.milestones]
     [u'1.0']
 
@@ -387,7 +384,6 @@ no longer appear in the result set.
     ...     # away from SQLObject.
     ...     branch = getUtility(IBranchSet).get(branch_view.id)
     ...     branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
-    >>> flush_database_updates()
 
     >>> for product in productset.getProductsWithBranches():
     ...     print product.name
@@ -468,7 +464,6 @@ And set that product as using translations officially. We need it so
 translations are available.
 
     >>> firefox.official_rosetta = True
-    >>> flush_database_updates()
 
 The primary_translatable now points at firefox 1.0:
 
