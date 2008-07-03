@@ -48,25 +48,15 @@ class Bugzilla(ExternalBugTracker):
         self.is_issuezilla = False
         self.remote_bug_status = {}
 
-        # The XML-RPC endpoint used by getExternalBugTrackerToUse()
-        self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
-        self.xmlrpc_transport = None
-
-    @property
-    def xmlrpc_proxy(self):
-        """Return an `xmlrpclib.ServerProxy` to self.xmlrpc_endpoint."""
-        return xmlrpclib.ServerProxy(
-            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
-
     def getExternalBugTrackerToUse(self):
         """Return the correct `Bugzilla` subclass for the current bugtracker.
 
         See `IExternalBugTracker`.
         """
+        plugin = BugzillaLPPlugin(self.baseurl)
         try:
             # We try calling Launchpad.plugin_version() on the remote
             # server because it's the most lightweight method there is.
-            plugin = BugzillaLPPlugin(self.baseurl)
             plugin.xmlrpc_proxy.Launchpad.plugin_version()
         except xmlrpclib.Fault, fault:
             if fault.faultCode == 'Client':
@@ -79,7 +69,7 @@ class Bugzilla(ExternalBugTracker):
             else:
                 raise
         else:
-            return BugzillaLPPlugin(self.baseurl)
+            return plugin
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""
@@ -351,11 +341,20 @@ class BugzillaLPPlugin(Bugzilla):
                  internal_xmlrpc_transport=None):
         super(BugzillaLPPlugin, self).__init__(baseurl)
 
+        self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
+        self.xmlrpc_transport = None
+
         self.internal_xmlrpc_transport = internal_xmlrpc_transport
         if xmlrpc_transport is None:
             self.xmlrpc_transport = UrlLib2Transport(self.xmlrpc_endpoint)
         else:
             self.xmlrpc_transport = xmlrpc_transport
+
+    @property
+    def xmlrpc_proxy(self):
+        """Return an `xmlrpclib.ServerProxy` to self.xmlrpc_endpoint."""
+        return xmlrpclib.ServerProxy(
+            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
 
     def _authenticate(self):
         """Authenticate with the remote Bugzilla instance.
