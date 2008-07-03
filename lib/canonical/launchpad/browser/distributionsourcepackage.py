@@ -252,8 +252,11 @@ class DistributionSourcePackageView(LaunchpadFormView):
         dspr_pubs = self.context.getReleasesAndPublishingHistory()
 
         # Collate diffs for relevant SourcePackageReleases
-        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
-            [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs])
+        sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
+        if sprs == []:
+            return []
+
+        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
         spr_diffs = {}
         for spr, diffs in itertools.groupby(pkg_diffs,
                                             operator.attrgetter('to_source')):
