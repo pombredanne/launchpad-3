@@ -2026,8 +2026,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if self.preferredemail == email:
             return
 
-        # A non-proxied email address is needed to set the account.
-        email = EmailAddress.get(email.id)
         if self.preferredemail is None:
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
@@ -2035,7 +2033,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
-            email.account = email.person.account
+            # Automated processes need access to set the account().
+            removeSecurityProxy(email).account = email.person.account
             getUtility(IHWSubmissionSet).setOwnership(email)
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
@@ -2057,8 +2056,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setPreferredEmail(self, email):
         """See `IPerson`."""
         assert not self.is_team, "This method must not be used for teams."
-        # A non-proxied email address is needed to set the account.
-        email = EmailAddress.get(email.id)
         if self.preferredemail is None:
             # This is the first time we're confirming this person's email
             # address, so we now assume this person has a Launchpad account.
@@ -2068,7 +2065,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.account.status = AccountStatus.ACTIVE
             self.account.status_comment = None
             self.account.sync() # sync so validpersoncache updates.
-        email.account = self.account
+        # Anonymous users may claim their profile; remove the proxy
+        # to set the account.
+        removeSecurityProxy(email).account = self.account
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2095,7 +2094,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.
-        email = EmailAddress.get(email.id)
+        email = removeSecurityProxy(email)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
         getUtility(IHWSubmissionSet).setOwnership(email)
