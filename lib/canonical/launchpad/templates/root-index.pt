@@ -110,20 +110,6 @@
                 Hear the latest from the Launchpad team, with interviews and
                 news in Launchpod - the Launchpad team podcast.
               </a>
-           </li>
-            <li class="news">
-              <a href="http://news.launchpad.net/?p=75">
-                <strong>Package diffs</strong><br />
-                View a diff of your newly uploaded source package with the
-                currently published package
-              </a>
-            </li>
-            <li class="news">
-              <a href="http://news.launchpad.net/?p=74">
-                <strong>Search translations</strong><br />
-                Find words and phrases within translation files. Ideal for
-                locating and correcting errors.
-              </a>
             </li>
           </ul>
           <div class="discreet" style="text-align: right">
