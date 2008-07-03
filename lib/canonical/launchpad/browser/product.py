@@ -681,7 +681,6 @@ class SeriesWithReleases:
     # These need to be predeclared to avoid decorates taking them
     # over.
     releases = None
-    release_files = None
     decorates(IProductSeries, 'series')
 
     def __init__(self, series):
