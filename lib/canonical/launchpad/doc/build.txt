@@ -9,29 +9,13 @@ launchpad build daemon.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...    BuildStatus, IArchiveSet, IBuildSet, IDistributionSet)
+    ...    BuildStatus, IDistributionSet, IBuildSet)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
     >>> hoary = ubuntu['hoary']
     >>> breezy = ubuntu['breezy-autotest']
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.database.sqlbase import sqlvalues, commit
-    >>> archive_id = \
-    ...     sqlvalues(removeSecurityProxy(hoary).distribution.main_archive)[0]
-
-    >>> def print_counts_for_archive(archive_id):
-    ...     archive = getUtility(IArchiveSet).get(archive_id)
-    ...     print ("total: %s, pending: %s, succeeded: %s, building: %s "
-    ...            "failed: %s" % (archive.total_count,
-    ...            archive.pending_count, archive.succeeded_count,
-    ...            archive.building_count, archive.failed_count))
-
-Show the archive build counters before anything changes.
-
-    >>> print_counts_for_archive(archive_id)
-    total: 15, pending: 1, succeeded: 8, building: 1 failed: 5
 
 First up, can we get the builds out of the sample data?
 
@@ -184,12 +168,6 @@ retried.
     >>> active_build.can_be_retried
     True
 
-These are the archive build counters before the build is retried.
-
-    >>> commit()
-    >>> print_counts_for_archive(archive_id)
-    total: 15, pending: 1, succeeded: 8, building: 1 failed: 5
-
 Retry Build record in question:
 
     >>> active_build.retry()
@@ -213,11 +191,6 @@ it won't interfere in the next tests.
     >>> warty.status = DistroSeriesStatus.SUPPORTED
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
-
-The archive build counters will reflect the retried build.
-
-    >>> print_counts_for_archive(archive_id)
-    total: 15, pending: 2, succeeded: 8, building: 1 failed: 4
 
 Initialize all the required arguments to create a binary package for a
 given build record entry.
@@ -916,11 +889,6 @@ In order to allow depwait_build to be retried we will forge a
     >>> depwait_build.dependencies = 'pmount'
     >>> flush_database_updates()
 
-These are the archive build counters before retrying the DEPWAIT build.
-
-    >>> print_counts_for_archive(archive_id)
-    total: 15, pending: 2, succeeded: 8, building: 1 failed: 4
-
 Then we can run the utility method for the target distroarchseries and
 expect depwait_build to be 'retried' and scored.
 
@@ -936,27 +904,6 @@ The 'retryDepWaiting' task is performed periodically via cronjob by
 cronscript/buildd-retry-depwait.py. It can be run in parallel with
 other buildd tasks because the procedure is 'atomic' enough, i.e.,
 after the commit the retried jobs are ready to be dispatched.
-
-The archive build counters will reflect the retried build.
-
-    >>> print_counts_for_archive(archive_id)
-    total: 15, pending: 3, succeeded: 8, building: 1 failed: 3
-
-Please note that the repeated setting of the same build state value
-has no bearing on the archive counters.
-
-    >>> depwait_build.buildstate = BuildStatus.NEEDSBUILD
-    >>> depwait_build.buildstate = BuildStatus.NEEDSBUILD
-    >>> print_counts_for_archive(archive_id)
-    total: 15, pending: 3, succeeded: 8, building: 1 failed: 3
-
-Invalid build state transitions will result in an assertion error,
-e.g.:
-
-    >>> depwait_build.buildstate = BuildStatus.FULLYBUILT
-    Traceback (most recent call last):
-    ...
-    BuildstateTransitionError: ... (Needs building -> Successfully built)
 
 
 == Build record security ==
@@ -1075,14 +1022,6 @@ Create most recent SourcePackageRelease instance.
     >>> recent_spr = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='ebdtest')
-
-Invalid build state transitions will result in an assertion error,
-e.g.:
-
-    >>> medium_build.buildstate = BuildStatus.NEEDSBUILD
-    Traceback (most recent call last):
-    ...
-    BuildstateTransitionError: ... (Successfully built -> Needs building)
 
 Create most recent build instance. Please note: this one is in state
 NEEDSBUILD.
