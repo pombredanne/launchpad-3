@@ -57,15 +57,20 @@ from zope.interface import alsoProvides, implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.lazr import decorates
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatusFilter, BranchListingSort,
-    IBranchSet, IBugTracker, ICountry, IDistribution,
-    IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IPersonSet, IPillarNameSet, IProduct,
-    IProductReviewSearch, IProductSeries, IProductSet,
+    BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
+    ICountry, IDistribution, IHasIcon, ILaunchBag, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IPersonSet, IPillarNameSet, IProductReviewSearch,
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet)
+from canonical.launchpad.interfaces.productrelease import (
+    IProductRelease, IProductReleaseSet)
+from canonical.launchpad.interfaces.productseries import (
+    IProductSeries)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter, BranchMergeProposalStatus)
 from canonical.launchpad import helpers
@@ -399,7 +404,12 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['bugsupervisor', 'securitycontact', 'cve']
+    links = (
+        'bugsupervisor',
+        'securitycontact',
+        'cve',
+        'subscribe'
+        )
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
@@ -413,6 +423,10 @@ class ProductBugsMenu(ApplicationMenu):
     def securitycontact(self):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text)
 
 
 class ProductReviewCountMixin:
@@ -626,8 +640,130 @@ class SortSeriesMixin:
         return series_list
 
 
+class ProductWithSeries:
+    """A decorated product that includes series data.
+
+    The extra data is included in this class to avoid repeated
+    database queries.  Rather than hitting the database, the data is
+    cached locally and simply returned.
+    """
+
+    # These need to be predeclared to avoid decorates taking them
+    # over.
+    serieses = None
+    development_focus = None
+    decorates(IProduct, 'product')
+
+    def __init__(self, product):
+        self.product = product
+        self.serieses = []
+        self.series_by_id = {}
+
+    def setSeries(self, serieses):
+        """Set the serieses to the provided collection."""
+        self.serieses = serieses
+        self.series_by_id = dict(
+            (series.id, series) for series in self.serieses)
+
+    def getSeriesById(self, id):
+        """Look up and return a ProductSeries by id."""
+        return self.series_by_id.get(id)
+
+
+class SeriesWithReleases:
+    """A decorated series that includes releases.
+
+    The extra data is included in this class to avoid repeated
+    database queries.  Rather than hitting the database, the data is
+    cached locally and simply returned.
+    """
+
+    # These need to be predeclared to avoid decorates taking them
+    # over.
+    releases = None
+    decorates(IProductSeries, 'series')
+
+    def __init__(self, series):
+        self.series = series
+        self.releases = []
+
+    def addRelease(self, release):
+        self.releases.append(release)
+
+
+class ReleaseWithFiles:
+    """A decorated release that includes product release files.
+
+    The extra data is included in this class to avoid repeated
+    database queries.  Rather than hitting the database, the data is
+    cached locally and simply returned.
+    """
+
+    # These need to be predeclared to avoid decorates taking them
+    # over.
+    files = None
+    decorates(IProductRelease, 'release')
+
+    def __init__(self, release):
+        self.release = release
+        self.files = []
+
+    def addFile(self, file):
+        self.files.append(file)
+
+
 class ProductDownloadFileMixin:
     """Provides methods for managing download files."""
+
+    def _fetchProductData(self):
+        """Fetch all series, release and file data for the product.
+
+        Decorated classes are created rooted at self.product and they
+        contain cached data obtained with a few queries rather than
+        many iterated queries.
+        """
+        # Create the decorated product and set the list of series.
+        original_product = self.context
+        try:
+            original_serieses = original_product.serieses
+        except AttributeError:
+            # PillarSearchItem pretends to provide IProduct but
+            # doesn't really because it does not have a 'serieses'
+            # attribute.  When the attribute isn't present we can just
+            # return.
+            self.product = original_product
+            return
+
+        self.product = ProductWithSeries(original_product)
+        serieses = []
+        for series in original_serieses:
+            series_with_releases = SeriesWithReleases(series)
+            serieses.append(series_with_releases)
+            if original_product.development_focus == series:
+                self.product.development_focus = series_with_releases
+
+        self.product.setSeries(serieses)
+
+        # Get all of the releases for all of the serieses in a single
+        # query.  The query sorts the releases properly so we know the
+        # resulting list is sorted correctly.
+        release_set = getUtility(IProductReleaseSet)
+        release_by_id = {}
+        releases = release_set.getReleasesForSerieses(
+            self.product.serieses)
+        for release in releases:
+            series = self.product.getSeriesById(
+                release.productseries.id)
+            decorated_release = ReleaseWithFiles(release)
+            series.addRelease(decorated_release)
+            release_by_id[release.id] = decorated_release
+
+        # Get all of the files for all of the releases.  The query
+        # returns all releases sorted properly.
+        files = release_set.getFilesForReleases(releases)
+        for file in files:
+            release = release_by_id[file.productrelease.id]
+            release.addFile(file)
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
@@ -692,7 +828,7 @@ class ProductDownloadFileMixin:
     def seriesHasDownloadFiles(self, series):
         """Determine whether a series has any download files."""
         for release in series.releases:
-            if release.files.count() > 0:
+            if len(release.files) > 0:
                 return True
 
     @cachedproperty
@@ -700,7 +836,7 @@ class ProductDownloadFileMixin:
         """Return the latest release with download files."""
         for series in self.sorted_series_list:
             for release in series.releases:
-                if release.files.count() > 0:
+                if len(list(release.files)) > 0:
                     return release
         return None
 
@@ -715,8 +851,8 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin,
         self.form = request.form_ng
 
     def initialize(self):
-        self.product = self.context
         self.status_message = None
+        self._fetchProductData()
 
     @property
     def freshmeat_url(self):
@@ -851,7 +987,8 @@ class ProductDownloadFilesView(LaunchpadView,
 
     def initialize(self):
         self.form = self.request.form
-        self.product = self.context
+        self._fetchProductData()
+        # Manually process action for the 'Delete' button.
         self.processDeleteFiles()
 
     def getReleases(self):
@@ -885,17 +1022,17 @@ class ProductDownloadFilesView(LaunchpadView,
         """A mapping between series and releases that are milestones."""
         result = dict()
         for series in self.product.serieses:
-            result[series] = dict()
+            result[series.name] = set()
             milestone_list = [m.name for m in series.milestones]
             for release in series.releases:
                 if release.version in milestone_list:
-                    result[series][release] = True
+                    result[series.name].add(release.version)
         return result
 
     def is_milestone(self, series, release):
         """Determine whether a release is milestone for the series."""
-        return (series in self.milestones and
-                release in self.milestones[series])
+        return (series.name in self.milestones and
+                release.version in self.milestones[series.name])
 
 
 class ProductBrandingView(BrandingChangeView):
@@ -1215,6 +1352,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         'license_reviewed',
         'license_info_is_empty',
         'licenses',
+        'has_zero_licenses',
         ]
 
     side_by_side_field_names = [
@@ -1229,6 +1367,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget('active', LaunchpadRadioWidget)
     custom_widget('license_reviewed', LaunchpadRadioWidget)
     custom_widget('license_info_is_empty', LaunchpadRadioWidget)
+    custom_widget('has_zero_licenses', LaunchpadRadioWidget)
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)
     custom_widget('subscription_expires_after', DateWidget)
@@ -1392,6 +1531,9 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
         ProductBranchesFeedLink,
         )
 
+    def initialize(self):
+        self.product = self.context
+
     @cachedproperty
     def recent_revision_branches(self):
         """Branches that have the most recent revisions."""
@@ -1454,6 +1596,10 @@ class ProductBranchListingView(BranchListingView):
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                            ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
+
+    def initialize(self):
+        ProductBranchListingView.initialize(self)
+        self.product = self.context
 
     @property
     def form_action(self):
@@ -1592,7 +1738,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
-        return self.context.development_focus.series_branch is not None
+        return self.product.development_focus.series_branch is not None
 
     def _getPluralText(self, count, singular, plural):
         if count == 1:

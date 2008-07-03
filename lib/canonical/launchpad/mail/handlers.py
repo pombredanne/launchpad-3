@@ -260,7 +260,11 @@ class MaloneHandler:
                     if IBugEmailCommand.providedBy(command):
                         if bug_event is not None:
                             notify(bug_event)
-                            bug_event = None
+                        if (bugtask_event is not None and
+                            not ISQLObjectCreatedEvent.providedBy(bug_event)):
+                            notify(bugtask_event)
+                        bugtask = None
+                        bugtask_event = None
 
                         bug, bug_event = command.execute(
                             signed_msg, filealias)
@@ -510,6 +514,7 @@ class CodeHandler:
     """Mail handler for the code domain."""
 
     addr_pattern = re.compile(r'(mp\+)([^@]+).*')
+    allow_unknown_users = False
 
     def process(self, mail, email_addr, file_alias):
         """Process an email and create a CodeReviewComment.
@@ -700,7 +705,7 @@ class MailHandlers:
             # XXX flacoste 2007-04-23 Backward compatibility for old domain.
             # We probably want to remove it in the future.
             'support.launchpad.net': AnswerTrackerHandler(),
-            config.vhost.code.hostname: CodeHandler(),
+            config.launchpad.code_domain: CodeHandler(),
             }
 
     def get(self, domain):
