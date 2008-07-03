@@ -13,7 +13,7 @@ from sqlobject import (
     SQLMultipleJoin)
 
 from canonical.launchpad.interfaces import (
-    IHasBugs, IMilestone, IMilestoneSet, IProjectMilestone,
+    IBugTaskSet, IHasBugs, IMilestone, IMilestoneSet, IProjectMilestone,
     IStructuralSubscriptionTarget, NotFoundError)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.bugtarget import HasBugsBase
@@ -74,6 +74,12 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """See IMilestone."""
         title = 'Milestone %s for %s' % (self.name, self.target.displayname)
         return title
+
+    def searchTasks(self, search_params, *args):
+        """See `IHasBugs`."""
+        search_params.setMilestone(self)
+        returnI getUtility(IBugTaskSet).search(search_params, *args)
+
 
 
 class MilestoneSet:

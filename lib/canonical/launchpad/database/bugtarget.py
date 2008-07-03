@@ -38,7 +38,7 @@ class HasBugsBase:
 
     @property
     def closed_bugtasks(self):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         closed_tasks_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user,
             status=any(*RESOLVED_BUGTASK_STATUSES),
@@ -48,7 +48,7 @@ class HasBugsBase:
 
     @property
     def open_bugtasks(self):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         open_tasks_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user,
             status=any(*UNRESOLVED_BUGTASK_STATUSES),
@@ -58,7 +58,7 @@ class HasBugsBase:
 
     @property
     def new_bugtasks(self):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         open_tasks_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user, status=BugTaskStatus.NEW,
             omit_dupes=True)
@@ -67,7 +67,7 @@ class HasBugsBase:
 
     @property
     def critical_bugtasks(self):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         critical_tasks_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user,
             importance=BugTaskImportance.CRITICAL,
@@ -78,7 +78,7 @@ class HasBugsBase:
 
     @property
     def inprogress_bugtasks(self):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         inprogress_tasks_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user, status=BugTaskStatus.INPROGRESS,
             omit_dupes=True)
@@ -87,7 +87,7 @@ class HasBugsBase:
 
     @property
     def unassigned_bugtasks(self):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         unassigned_tasks_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user, assignee=NULL,
             status=any(*UNRESOLVED_BUGTASK_STATUSES), omit_dupes=True)
@@ -96,7 +96,7 @@ class HasBugsBase:
 
     @property
     def all_bugtasks(self):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         all_tasks_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user,
             status=not_equals(BugTaskStatus.UNKNOWN))
@@ -104,7 +104,7 @@ class HasBugsBase:
         return self.searchTasks(all_tasks_query)
 
     def getBugCounts(self, user, statuses=None):
-        """See IBugTarget."""
+        """See `IHasBugs`."""
         if statuses is None:
             statuses = BugTaskStatus.items
         statuses = list(statuses)
