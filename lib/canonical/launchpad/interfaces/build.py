@@ -282,6 +282,16 @@ class IBuildSet(Interface):
     def getCurrentPublication():
         """Return the publishing record for this build."""
 
+    def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
+                                        buildstate=None):
+        """Return all builds related with the given list of source releases.
+
+        :param sourcepackagerelease_ids: list of `ISourcePackageRelease`s;
+        :param buildstate: option build state filter.
+
+        :return: a list of `IBuild` records not target to PPA archives.
+        """
+
 
 class IHasBuildRecords(Interface):
     """An Object that has build records"""
