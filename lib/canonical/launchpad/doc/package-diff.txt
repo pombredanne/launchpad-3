@@ -438,6 +438,12 @@ ID:
     biscuit 1.0-1 to 1.0-8 True 0
     biscuit 1.0-8 to 1.0-9 False 1
 
+The method will return an empty result if no source package releases
+are passed to it:
+
+    >>> packagediff_set.getDiffsToReleases([]).count()
+    0
+
 A arbitrary PackageDiff object can be easily retrieved by database ID
 if necessary.
 
