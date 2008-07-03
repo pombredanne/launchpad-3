@@ -67,8 +67,7 @@ class ProcessTestsMixin:
     def makeProtocol(self):
         """Construct an `ProcessProtocol` instance to be tested.
 
-        Override this in subclasses.
-        """
+        Override this in subclasses."""
         raise NotImplementedError
 
     def simulateProcessExit(self, clean=True):
