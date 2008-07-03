@@ -342,7 +342,6 @@ class BugzillaLPPlugin(Bugzilla):
         super(BugzillaLPPlugin, self).__init__(baseurl)
 
         self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
-        self.xmlrpc_transport = None
 
         self.internal_xmlrpc_transport = internal_xmlrpc_transport
         if xmlrpc_transport is None:
