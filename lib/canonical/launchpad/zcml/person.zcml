@@ -177,14 +177,6 @@
   <browser:page
     name="+edit"
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonEditViewObsolete"
-    permission="launchpad.Edit"
-    template="../templates/person-edit-obsolete.pt"
-    />
-
-  <browser:page
-    name="+edit2.0"
-    for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonEditView"
     permission="launchpad.Edit"
     template="../templates/person-edit.pt"
@@ -669,6 +661,7 @@
     permission="zope.Public"
     name="+mugshots"
     template="../templates/team-mugshots.pt"
+    class="canonical.launchpad.browser.TeamMugshotView"
     />
 
   <browser:page

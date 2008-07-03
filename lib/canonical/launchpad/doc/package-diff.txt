@@ -428,6 +428,16 @@ the list length.
     >>> len(list(r))
     2
 
+All package diffs targeting a set of source package releases can also
+be requested.  The results are ordered by the source package release
+ID:
+
+    >>> sprs = [biscuit_eight_pub.sourcepackagerelease,
+    ...         biscuit_nine_pub.sourcepackagerelease]
+    >>> print_diffs(packagediff_set.getDiffsToReleases(sprs))
+    biscuit 1.0-1 to 1.0-8 True 0
+    biscuit 1.0-8 to 1.0-9 False 1
+
 A arbitrary PackageDiff object can be easily retrieved by database ID
 if necessary.
 

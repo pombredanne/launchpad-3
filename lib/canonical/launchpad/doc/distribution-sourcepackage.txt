@@ -97,6 +97,18 @@ Releases of 'pmount in Ubuntu':
     >>> [release.version for release in dsp.releases]
     [u'0.1-2', u'0.1-1']
 
+We can also get the releases of 'pmount in Ubuntu' along with the
+relevant publishing information:
+
+    >>> for release, pubs in dsp.getReleasesAndPublishingHistory():
+    ...     print release.version
+    ...     for pub in pubs:
+    ...         print ' * %s - %s' % (pub.distroseries.name, pub.status.name)
+    0.1-2
+     * hoary - PUBLISHED
+    0.1-1
+     * hoary - SUPERSEDED
+
 Binary packages of 'pmount in Ubuntu':
 
     >>> dsp.binary_package_names

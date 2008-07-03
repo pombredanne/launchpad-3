@@ -6,28 +6,30 @@
   <div id="working-on"
        tal:define="bugtasks view/getBugsInProgress;
                    specs context/assigned_specs_in_progress"
-       tal:condition="python: bugtasks or specs">
+       tal:condition="bugtasks|specs|nothing">
     <div class="section">
       <div class="portlet">
         <h2>Working on&#8230;</h2>
-        <table>
-          <tr tal:repeat="bugtask bugtasks"
-              tal:replace="structure bugtask/@@+listing-detailed" />
-        </table>
-        <div tal:condition="bugtasks">
-          <a tal:attributes="href view/getURLToAssignedBugsInProgress">
-            &raquo; Show all bugs in progress
-          </a>
-        </div>
+        <tal:has-bugtasks condition="bugtasks">
+          <table>
+            <tr tal:repeat="bugtask bugtasks"
+                tal:replace="structure bugtask/@@+listing-detailed" />
+          </table>
+          <div>
+            <a tal:attributes="href view/getURLToAssignedBugsInProgress">
+              &raquo; Show all bugs in progress
+            </a>
+          </div>
+        </tal:has-bugtasks>
       </div>
     </div>
-    <div class="section">
+    <div class="section" tal:condition="specs">
       <div class="portlet">
         <table>
           <tr tal:repeat="spec specs"
               tal:replace="structure spec/@@+listing-simple" />
         </table>
-        <div tal:condition="specs">
+        <div>
           <tal:comment condition="nothing">
             <!-- XXX: Guilherme Salgado 2007-02-12:
                  This link should point to a list of the in-progress specs
@@ -35,7 +37,8 @@
                  right now, so we'll have to list all incomplete specs assigned
                  to the person. -->
           </tal:comment>
-          <a tal:attributes="href string:${context/fmt:url}/+specs?role=assignee">
+          <a
+            tal:attributes="href string:${context/fmt:url}/+specs?role=assignee">
             &raquo; Show all assigned blueprints
           </a>
         </div>
