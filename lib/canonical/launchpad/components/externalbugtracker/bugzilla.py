@@ -41,6 +41,7 @@ class Bugzilla(ExternalBugTracker):
     """An ExternalBugTrack for dealing with remote Bugzilla systems."""
 
     batch_query_threshold = 0 # Always use the batch method.
+    _test_xmlrpc_proxy = None
 
     def __init__(self, baseurl, version=None):
         super(Bugzilla, self).__init__(baseurl)
@@ -57,7 +58,11 @@ class Bugzilla(ExternalBugTracker):
         try:
             # We try calling Launchpad.plugin_version() on the remote
             # server because it's the most lightweight method there is.
-            plugin.xmlrpc_proxy.Launchpad.plugin_version()
+            if self._test_xmlrpc_proxy is not None:
+                proxy = self._test_xmlrpc_proxy
+            else:
+                proxy = plugin.xmlrpc_proxy
+            proxy.Launchpad.plugin_version()
         except xmlrpclib.Fault, fault:
             if fault.faultCode == 'Client':
                 return self
