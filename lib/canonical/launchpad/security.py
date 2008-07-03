@@ -1137,9 +1137,13 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
              user.inTeam(translation_group.owner)))
 
 
-class EditBugTracker(EditByRegistryExpertsOrOwnersOrAdmins):
+class EditBugTracker(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
+
+    def checkAuthenticated(self, user):
+        """Any logged-in user can edit a bug tracker."""
+        return True
 
 
 class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
@@ -1159,7 +1163,7 @@ class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        """Allow who added the entry, experts and admis.
+        """Allow who added the entry, experts and admins.
         """
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
