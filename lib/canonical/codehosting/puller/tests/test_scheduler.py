@@ -644,6 +644,17 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
     def test_stderrLoggedToOOPS(self):
         # When the child process prints to stderr and exits cleanly, the
         # contents of stderr are logged in an OOPS report.
+        oops_logged = []
+
+        def new_oops_raising((type, value, tb), request, now):
+            oops_logged.append((type, value, tb))
+
+        old_oops_raising = errorlog.globalErrorUtility.raising
+        errorlog.globalErrorUtility.raising = new_oops_raising
+        def restore_oops():
+            errorlog.globalErrorUtility.raising = old_oops_raising
+        self.addCleanup(restore_oops)
+
         expected_output = 'foo\nbar'
         stderr_script = """
         import sys
@@ -654,13 +665,14 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         deferred = master.run()
 
         def check_oops_report(ignored):
-            oops = errorlog.globalErrorUtility.getLastOopsReport()
-            self.assertEqual('UnexpectedStderr', oops.type)
+            self.assertEqual(1, len(oops_logged))
+            oops = oops_logged[0]
+            self.assertEqual(scheduler.UnexpectedStderr, oops[0])
             last_line = expected_output.splitlines()[-1]
             self.assertEqual(
                 'Unexpected standard error from subprocess: %s' % last_line,
-                oops.value)
-            self.assertEqual(expected_output, oops.tb_text)
+                str(oops[1]))
+            self.assertEqual(expected_output, oops[2])
 
         return deferred.addCallback(check_oops_report)
 
