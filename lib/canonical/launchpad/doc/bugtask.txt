@@ -572,6 +572,19 @@ require extra privileges.)
     >>> print current_series_netapplet_task.importance.title
     Medium
 
+Not everyone can edit the importance, though. If an unauthorised user
+is passed to transitionToImportance an exception is raised.
+
+    >>> current_series_netapplet_task.transitionToImportance(
+    ...     BugTaskImportance.LOW, no_priv)
+    Traceback (most recent call last):
+    ...
+    UserCannotEditBugTaskImportance:
+      User does not have sufficient permissions to edit the bug task importance.
+
+    >>> print generic_netapplet_task.importance.title
+    Medium
+
 4. Milestone
 
     >>> test_milestone = alsa_utils.development_focus.newMilestone("test")

@@ -2,8 +2,8 @@ This file lists all the karma events that Malone produces. First let's
 import some stuff and define a function to help us make the
 documentation cleaner:
 
-    >>> from canonical.launchpad.interfaces import (IPersonSet, IMessageSet,
-    ...     IKarmaActionSet, IDistributionSet, IBugSet)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IDistributionSet, IKarmaActionSet, IPersonSet)
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
 Setup an event listener to help ensure karma is assigned when it should.

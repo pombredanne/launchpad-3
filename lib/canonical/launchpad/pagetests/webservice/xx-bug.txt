@@ -178,6 +178,17 @@ Let's try modifying the importance of a task.
   >>> body['importance']
   u'High'
 
+Only bug supervisors or people who can otherwise edit the bugtask's
+pillar are authorised to edit the importance.
+
+  >>> print user_webservice.named_post(
+  ...     bugtask_path, 'transitionToImportance', importance='Low')
+  HTTP/1.1 401 Unauthorized...
+
+  >>> body = webservice.get(bugtask_path).jsonBody()
+  >>> body['importance']
+  u'High'
+
 
 == Bug subscriptions ==
 

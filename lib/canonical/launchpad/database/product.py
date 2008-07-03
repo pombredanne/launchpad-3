@@ -839,9 +839,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def userCanEdit(self, user):
         """See `IProduct`."""
+        celebs = getUtility(ILaunchpadCelebrities)
         return (
-            user.inTeam(getUtility(ILaunchpadCelebrities).registry_experts) or
-            user.inTeam(getUtility(ILaunchpadCelebrities).admin) or
+            user.inTeam(celebs.registry_experts) or
+            user.inTeam(celebs.admin) or
             user.inTeam(self.owner))
 
 class ProductSet:

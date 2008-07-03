@@ -529,8 +529,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         """
 
     @rename_parameters_as(new_importance='importance')
-    @operation_parameters(
-        new_importance=copy_field(importance))
+    @operation_parameters(new_importance=copy_field(importance))
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def transitionToImportance(new_importance, user):

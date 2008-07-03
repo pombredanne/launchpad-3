@@ -45,22 +45,35 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lazr.enum import DBItem
 
-from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
-from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.interfaces import (
-    BUG_SUPERVISOR_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
-    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
-    ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
-    IDistribution, IDistributionSet, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IDistroSeriesSet,
-    ILaunchpadCelebrities, INullBugTask, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProductSeriesSet, IProductSet, IProject,
-    IProjectMilestone, ISourcePackage, ISourcePackageNameSet,
-    IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.bugnomination import BugNominationStatus
+from canonical.launchpad.interfaces.bugtask import (
+    BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
+    BugTaskStatus, BugTaskStatusSearch, ConjoinedBugTaskEditError, IBugTask,
+    IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
+    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.distribution import (
+    IDistribution, IDistributionSet)
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import (
+    IDistroSeries, IDistroSeriesSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.milestone import IProjectMilestone
+from canonical.launchpad.interfaces.product import IProduct, IProductSet
+from canonical.launchpad.interfaces.productseries import (
+    IProductSeries, IProductSeriesSet)
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
+from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
+from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
@@ -986,30 +999,27 @@ class BugTask(SQLBase, BugTaskMixin):
         else:
             return None
 
-    def _getProductOrDistro(self):
-        """Return the product or distribution relevant to this bug task."""
+    def _userIsPillarEditor(self, user):
+        """Can the user edit this tasks's pillar?"""
         if IUpstreamBugTask.providedBy(self):
-            return self.product
+            pillar = self.product
         elif IProductSeriesBugTask.providedBy(self):
-            return self.productseries.product
+            pillar = self.productseries.product
         elif IDistroBugTask.providedBy(self):
-            return self.distribution
+            pillar = self.distribution
         else:
-            return self.distroseries.distribution
+            pillar = self.distroseries.distribution
+        return ((pillar.bug_supervisor is not None and
+                 user.inTeam(pillar.bug_supervisor)) or
+                pillar.userCanEdit(user))
 
     def userCanEditMilestone(self, user):
         """See `IBugTask`."""
-        product_or_distro = self._getProductOrDistro()
-        return ((product_or_distro.bug_supervisor and
-                 user.inTeam(product_or_distro.bug_supervisor)) or
-                product_or_distro.userCanEdit(user))
+        return self._userIsPillarEditor(user)
 
     def userCanEditImportance(self, user):
         """See `IBugTask`."""
-        product_or_distro = self._getProductOrDistro()
-        return ((product_or_distro.bug_supervisor and
-                 user.inTeam(product_or_distro.bug_supervisor)) or
-                product_or_distro.userCanEdit(user) or
+        return (self._userIsPillarEditor(user) or
                 user == getUtility(ILaunchpadCelebrities).bug_watch_updater)
 
 
