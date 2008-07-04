@@ -187,7 +187,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """
         project = getUtility(IProductSet).getByName(project_name)
         if project is None:
-            return faults.NoSuchProduct(project_name)
+            #pillar = getUtility(IPillarNameSet).getByName(project_name)
+            raise faults.NoSuchProduct(project_name)
         series = project.development_focus
         return self._getSeriesBranch(series)
 
@@ -201,10 +202,10 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """
         project = getUtility(IProductSet).getByName(project_name)
         if project is None:
-            return faults.NoSuchProduct(project_name)
+            raise faults.NoSuchProduct(project_name)
         series = project.getSeries(series_name)
         if series is None:
-            return faults.NoSuchSeries(series_name, project)
+            raise faults.NoSuchSeries(series_name, project)
         return self._getSeriesBranch(series)
 
     def _getBranch(self, unique_name):
@@ -216,7 +217,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             unique_name is invalid, return a `faults.InvalidBranchIdentifier`.
         """
         if unique_name[0] != '~':
-            return faults.InvalidBranchIdentifier(unique_name)
+            raise faults.InvalidBranchIdentifier(unique_name)
         branch = getUtility(IBranchSet).getByUniqueName(unique_name)
         if check_permission('launchpad.View', branch):
             return branch
@@ -233,11 +234,11 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         owner_name, project_name, branch_name = unique_name[1:].split('/')
         owner = getUtility(IPersonSet).getByName(owner_name)
         if owner is None:
-            return faults.NoSuchPersonWithUsername(owner_name)
+            raise faults.NoSuchPersonWithUsername(owner_name)
         if project_name != '+junk':
             project = getUtility(IProductSet).getByName(project_name)
             if project is None:
-                return faults.NoSuchProduct(project_name)
+                raise faults.NoSuchProduct(project_name)
         return _NonexistentBranch(unique_name)
 
     def _getResultDict(self, branch, suffix=None):
@@ -265,7 +266,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """See `IPublicCodehostingAPI`."""
         strip_path = path.strip('/')
         if strip_path == '':
-            return faults.InvalidBranchIdentifier(path)
+            raise faults.InvalidBranchIdentifier(path)
         path_segments = strip_path.split('/', 3)
         suffix = None
         if len(path_segments) == 1:

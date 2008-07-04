@@ -8,6 +8,7 @@ __all__ = []
 
 import os
 import unittest
+import xmlrpclib
 
 from zope.security.proxy import removeSecurityProxy
 
@@ -67,7 +68,10 @@ class TestExpandURL(TestCaseWithFactory):
         """Assert that trying to resolve lp_url_path returns the expected
         fault.
         """
-        fault = self.api.resolve_lp_path(lp_url_path)
+        try:
+            fault = self.api.resolve_lp_path(lp_url_path)
+        except xmlrpclib.Fault, fault:
+            pass
         self.assertEqual(expected_fault.__class__, fault.__class__)
         self.assertEqual(expected_fault.faultString, fault.faultString)
 
