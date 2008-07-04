@@ -4,9 +4,9 @@
 
 
 from cookielib import Cookie
-from urllib2 import build_opener, HTTPCookieProcessor, Request
+from urllib2 import build_opener, HTTPCookieProcessor, HTTPError, Request
 from urlparse import urlparse, urlunparse
-from xmlrpclib import Transport
+from xmlrpclib import ProtocolError, Transport
 
 class UrlLib2Transport(Transport):
     """An XMLRPC transport which uses urllib2.
@@ -41,7 +41,7 @@ class UrlLib2Transport(Transport):
             port=None, port_specified=False,
             domain=self.host, domain_specified=True,
             domain_initial_dot=None,
-            path=None, path_specified=False,
+            path='', path_specified=False,
             secure=False, expires=False, discard=None,
             comment=None, comment_url=None, rest=None)
         self.cookie_processor.cookiejar.set_cookie(cookie)
@@ -54,5 +54,9 @@ class UrlLib2Transport(Transport):
         url = urlunparse((self.scheme, host, handler, '', '', ''))
         headers = {'Content-type': 'text/xml'}
         request = Request(url, request_body, headers)
-        response = self._parse_response(self.opener.open(request), None)
+        try:
+            response = self._parse_response(self.opener.open(request), None)
+        except HTTPError, he:
+            raise ProtocolError(
+                request.get_full_url(), he.code, he.msg, he.hdrs)
         return response

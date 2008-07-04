@@ -154,7 +154,8 @@ class ProductReleaseSet(object):
         """See `IProductReleaseSet`."""
         if len(list(releases)) == 0:
             return ProductReleaseFile.select('1 = 2')
-        return ProductReleaseFile.select("""
-            ProductReleaseFile.productrelease IN %s
-            """ % sqlvalues([release.id for release in releases]),
-            orderBy='-date_uploaded')
+        return ProductReleaseFile.select(
+            """ProductReleaseFile.productrelease IN %s""" % (
+            sqlvalues([release.id for release in releases])),
+            orderBy='-date_uploaded',
+            prejoins=['libraryfile'])

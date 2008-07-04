@@ -231,9 +231,7 @@ class SoyuzTestPublisher:
             restricted=build.archive.private)
         binarypackagerelease.addFile(alias)
 
-        # Going from pending to succeeded is an invalid build state
-        # transition. That's why we are forcing it here.
-        build.forceState(BuildStatus.FULLYBUILT)
+        build.buildstate = BuildStatus.FULLYBUILT
 
         return binarypackagerelease
 

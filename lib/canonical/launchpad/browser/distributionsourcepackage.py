@@ -250,10 +250,13 @@ class DistributionSourcePackageView(LaunchpadFormView):
 
     def releases(self):
         dspr_pubs = self.context.getReleasesAndPublishingHistory()
+        # Return early as possible to avoid unnecessary processing.
+        if len(dspr_pubs) == 0:
+            return []
 
         # Collate diffs for relevant SourcePackageReleases
-        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
-            [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs])
+        sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
+        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
         spr_diffs = {}
         for spr, diffs in itertools.groupby(pkg_diffs,
                                             operator.attrgetter('to_source')):
@@ -262,5 +265,4 @@ class DistributionSourcePackageView(LaunchpadFormView):
         return [
             DecoratedDistributionSourcePackageRelease(
                 dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
-            for (dspr, spphs)
-                in self.context.getReleasesAndPublishingHistory()]
+            for (dspr, spphs) in dspr_pubs]
