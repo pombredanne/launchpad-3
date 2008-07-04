@@ -23,7 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.sqlbase import cursor, sqlvalues
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.interfaces.branch import (
     BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE, IBranchSet)
