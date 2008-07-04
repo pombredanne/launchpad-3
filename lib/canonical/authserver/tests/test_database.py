@@ -592,7 +592,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         login(ANONYMOUS)
         try:
             person = getUtility(IPersonSet).get(12)
-            login_email = person.preferredemail.email
+            login_email = removeSecurityProxy(person.preferredemail).email
         finally:
             logout()
 
