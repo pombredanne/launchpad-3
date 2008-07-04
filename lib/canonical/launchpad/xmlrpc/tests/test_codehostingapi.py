@@ -108,7 +108,7 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertFault(
             'doesntexist/trunk', faults.NoSuchProduct('doesntexist'))
 
-    def test_projectGroupInURL(self):
+    def test_projectGroup(self):
         # Resolving lp:///project_group_name' should explain that project
         # groups don't have default branches.
         project_group = self.factory.makeProject()
@@ -117,7 +117,7 @@ class TestExpandURL(TestCaseWithFactory):
             faults.NoDefaultBranchForPillar(
                 project_group.name, 'project group'))
 
-    def test_distroNameInURL(self):
+    def test_distroName(self):
         # Resolving lp:///distro_name' should explain that distributions don't
         # have default branches.
         distro = self.factory.makeDistribution()

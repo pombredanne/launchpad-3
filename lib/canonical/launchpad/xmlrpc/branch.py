@@ -20,7 +20,9 @@ from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
     IBranchSet, IBugSet,
     ILaunchBag, IPersonSet, IProductSet, NotFoundError)
+from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
@@ -195,7 +197,15 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         if project is None:
             pillar = getUtility(IPillarNameSet).getByName(project_name)
             if pillar:
-                raise faults.NoDefaultBranchForPillar(project_name, 'xxx')
+                if IProject.providedBy(pillar):
+                    pillar_type = 'project group'
+                elif IDistribution.providedBy(pillar):
+                    pillar_type = 'distribution'
+                else:
+                    raise AssertionError(
+                        "pillar of unknown type %s" % pillar)
+                raise faults.NoDefaultBranchForPillar(
+                    project_name, pillar_type)
             else:
                 raise faults.NoSuchProduct(project_name)
         series = project.development_focus
