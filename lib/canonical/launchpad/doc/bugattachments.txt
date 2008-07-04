@@ -105,7 +105,7 @@ The content type is guessed based on the information provided.
     >>> debdiff.libraryfile.filename
     u'something.debdiff'
     >>> debdiff.libraryfile.mimetype
-    u'text/x-diff'
+    u'text/plain'
 
 The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:
