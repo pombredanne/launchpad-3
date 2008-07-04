@@ -1131,7 +1131,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         super(PersonOverviewNavigationMenu, self).__init__(context)
 
     def profile(self):
-        target = '+index'
+        target = ''
         text = 'Profile'
         return Link(target, text, menu=IPersonEditMenu)
 
