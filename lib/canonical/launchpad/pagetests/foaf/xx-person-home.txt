@@ -167,9 +167,9 @@ Details portlet.
     ...     admin_browser.contents, 'contact-details'))
     Contact details
     ...
-    OpenID login:
+    OpenID login: http://openid.launchpad.dev/+id/name16_oid
     (What&rsquo;s this?)
-    http://openid.launchpad.dev/+id/name16_oid
+
 
 Foo Bar can learn about OpenID from the 'What's this?' link.
 
