@@ -190,7 +190,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             order_by = '-datepublished'
 
         return SourcePackagePublishingHistory.select(
-            query, orderBy=order_by, clauseTables=['SourcePackageRelease'])
+            query, orderBy=order_by, clauseTables=['SourcePackageRelease'],
+            prejoinClauseTables=['SourcePackageRelease'])
 
     def _getFirstPublishingHistory(self, version=None, include_status=None,
                                    exclude_status=None, order_by=None):
