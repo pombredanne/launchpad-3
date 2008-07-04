@@ -722,7 +722,7 @@ span.help {font-weight: normal;}
   background-image: url(/+icing/navigation-se-selected.png);
 }
 
-/* Immediately above the global footer is a global search field: */
+/* Immediately above the global footer, on most pages, is a search field: */
 #globalsearch {font-size: smaller; margin: 4em 0 2em; text-align: center;}
 #globalsearch input {display: block; margin: 0 auto;}
 /* The last element on every page is a standard footer. */
@@ -1822,4 +1822,11 @@ div.popupTitle {
 
 #no-results span.search_text {
   font-weight: bold;
+}
+
+/* From nice_pre in tales.py */
+pre.wrap {
+  white-space: -moz-pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
 }

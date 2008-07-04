@@ -411,7 +411,7 @@ class MailingList(SQLBase):
             """ % sqlvalues(self, self.team,
                             MailingListStatus.INACTIVE,
                             EmailAddressStatus.PREFERRED),
-            clauseTables=clause_tables)
+            clauseTables=clause_tables, prejoins=['person'])
         specific = EmailAddress.select("""
             EmailAddress.id = MailingListSubscription.email_address AND
             MailingList.id = MailingListSubscription.mailing_list AND
@@ -420,7 +420,7 @@ class MailingList(SQLBase):
             TeamParticipation.team = %s AND
             MailingList.status <> %s
             """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
-            clauseTables=clause_tables)
+            clauseTables=clause_tables, prejoins=['person'])
         return preferred.union(specific)
 
     def getSenderAddresses(self):
@@ -438,9 +438,10 @@ class MailingList(SQLBase):
             """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE,
                             (EmailAddressStatus.VALIDATED,
                              EmailAddressStatus.PREFERRED)),
-            distinct=True, clauseTables=['MailingListSubscription',
-                                         'TeamParticipation',
-                                         'MailingList'])
+            distinct=True, prejoins=['person'],
+            clauseTables=['MailingListSubscription',
+                          'TeamParticipation',
+                          'MailingList'])
 
     def holdMessage(self, message):
         """See `IMailingList`."""
