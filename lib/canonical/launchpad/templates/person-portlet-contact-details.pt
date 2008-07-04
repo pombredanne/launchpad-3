@@ -116,6 +116,21 @@
             </tal:block>
           </td>
         </tr>
+
+        <tal:keys repeat="sshkey context/sshkeys">
+          <tr>
+            <th tal:condition="repeat/sshkey/start">
+              SSH Keys:</th>
+            <th tal:condition="not: repeat/sshkey/start">
+            </th>
+            <td tal:content="sshkey/comment" />
+          </tr>
+          <tr tal:condition="repeat/sshkey/end">
+            <td>&nbsp;</td>
+            <td><small><a href="+sshkeys">(view key text)</a></small></td>
+          </tr>
+        </tal:keys>
+
         <tal:can-view-openid-login
 	   condition="context/required:launchpad.Edit">
 	  <tr tal:condition="context/is_openid_enabled">

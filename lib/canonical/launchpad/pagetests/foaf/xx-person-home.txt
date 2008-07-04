@@ -197,9 +197,6 @@ A person's homepage also lists time zone, Karma and status information:
     Karma: 130
     Timezone: None given
     Member since: 2005-06-06
-    SSH Keys:
-      Private key in lib/canonical/codehosting/tests/id_dsa
-      (view key text)
 
 Negative Ubuntero status is only displayed for yourself; others won't
 see it:
