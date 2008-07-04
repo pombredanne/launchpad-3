@@ -65,15 +65,15 @@ class TestExpandURL(TestCaseWithFactory):
             self.assertEqual('/' + unique_name, URI(url).path)
 
     def assertFault(self, lp_url_path, expected_fault):
-        """Assert that trying to resolve lp_url_path returns the expected
-        fault.
-        """
+        """Trying to resolve lp_url_path raises the expected fault."""
         try:
             fault = self.api.resolve_lp_path(lp_url_path)
         except xmlrpclib.Fault, fault:
-            pass
-        self.assertEqual(expected_fault.__class__, fault.__class__)
-        self.assertEqual(expected_fault.faultString, fault.faultString)
+            self.assertEqual(expected_fault.__class__, fault.__class__)
+            self.assertEqual(expected_fault.faultString, fault.faultString)
+        else:
+            self.fail(
+                "resolve_lp_path(%r) did not raise a Fault." % lp_url_path)
 
     def test_resultDict(self):
         """A given lp url path maps to a single branch available from a number
