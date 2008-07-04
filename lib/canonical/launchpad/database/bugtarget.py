@@ -9,7 +9,6 @@ __all__ = ['BugTargetBase', 'HasBugsBase']
 from zope.component import getUtility
 
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugtask import get_bug_privacy_filter
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import BugTaskStatus, ILaunchBag
@@ -163,5 +162,8 @@ class BugTargetBase(HasBugsBase):
 
         if not common_bug_ids:
             return []
+        # import this database class here, in order to avoid
+        # circular dependencies.
+        from canonical.launchpad.database.bug import Bug
         return list(
             Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))

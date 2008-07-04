@@ -6,6 +6,7 @@ __all__ = ['Milestone',
            'MilestoneSet',
            'ProjectMilestone']
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
@@ -78,7 +79,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     def searchTasks(self, search_params, *args):
         """See `IHasBugs`."""
         search_params.setMilestone(self)
-        returnI getUtility(IBugTaskSet).search(search_params, *args)
+        return getUtility(IBugTaskSet).search(search_params, *args)
 
 
 
