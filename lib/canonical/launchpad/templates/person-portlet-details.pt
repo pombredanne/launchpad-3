@@ -12,8 +12,26 @@
 
     <tal:valid_person condition="context/is_valid_person">
 
+      <b>Member since:</b>
+      <span
+        id="member-since"
+        tal:content="context/datecreated/fmt:date" /><br />
+
+      <div id="teams_with_icons"
+           tal:condition="context/@@+restricted-membership/teams_with_icons">
+        <a tal:repeat="team context/@@+restricted-membership/teams_with_icons"
+           tal:attributes="href team/fmt:url"
+          ><img tal:attributes="src team/icon/getURL;
+                                title string:Icon of ${team/name}"
+        /></a>
+      </div>
+
       <b>Karma:</b>
-      <span id="karma-total" tal:content="context/karma">342</span><br />
+      <a
+        id="karma-total"
+        tal:define="link context/menu:overview/karma"
+        tal:attributes="href link/url"
+        tal:content="context/karma">342</a><br />
 
       <b>Timezone:</b>
       <tal:timezone replace="context/time_zone">UTC</tal:timezone>
@@ -29,19 +47,6 @@
           <br />
         </tal:is_request_person>
       </tal:not-ubuntero>
-
-      <b>Member since:</b>
-      <span id="member-since"
-      tal:content="context/datecreated/fmt:date" /><br />
-
-      <div id="teams_with_icons"
-           tal:condition="context/@@+restricted-membership/teams_with_icons">
-        <a tal:repeat="team context/@@+restricted-membership/teams_with_icons"
-           tal:attributes="href team/fmt:url"
-          ><img tal:attributes="src team/icon/getURL;
-                                title string:Icon of ${team/name}"
-        /></a>
-      </div>
 
       <table tal:condition="context/sshkeys" class="slimpadding">
         <tal:keys repeat="sshkey context/sshkeys">

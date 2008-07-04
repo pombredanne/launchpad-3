@@ -194,9 +194,9 @@ A person's homepage also lists time zone, Karma and status information:
     >>> browser.open('http://launchpad.dev/~sabdfl')
     >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
     Summary
+    Member since: 2005-06-06
     Karma: 130
     Timezone: None given
-    Member since: 2005-06-06
     SSH Keys:
       Private key in lib/canonical/codehosting/tests/id_dsa
       (view key text)
