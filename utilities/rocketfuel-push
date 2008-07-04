@@ -1,14 +1,10 @@
 #! /bin/bash
 
-LP_PROJECT_ROOT=${LP_PROJECT_ROOT:=~/canonical}
-LP_BRANCHES_DIR=${LP_BRANCHES_DIR:=lp-branches}
-LP_PROJECT_PATH=$LP_PROJECT_ROOT/$LP_BRANCHES_DIR
-LP_TRUNK_NAME=${LP_TRUNK_NAME:=trunk}
-LP_TRUNK_PATH=$LP_PROJECT_PATH/$LP_TRUNK_NAME
+# Push all of your branches to devpad, so that you have a server-side backup
+# of everything, assuming your ~/.bazaar/locations.conf has been setup
+# correctly by rocketfuel-setup.
 
-# This script pushes each of your branches in your Launchpad repository to
-# devpad.canonical.com, assuming your ~/.bazaar/locations.conf has been setup
-# correctly by rocketfuel-setup
+source utilities/rocketfuel-env.sh
 
 cd $LP_PROJECT_PATH
 for branch in *; do
