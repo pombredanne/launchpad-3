@@ -81,7 +81,7 @@ Since this person has chosen to hide his email addresses they won't be
 visible to other users which are not admins.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
-    >>> login(email.email)
+    >>> login('randomuser@randomhost.com')
     >>> check_permission('launchpad.View', email)
     True
 
@@ -101,10 +101,6 @@ assume that a Person entry is turned into a user account when its first
 email address is confirmed) Note that both the Person and the
 EmailAddress have accounts when they are created using the
 createPersonAndEmail() method.
-
-    # Only the user may access his hidden email address while
-    # hide_email_addresses is True.
-    >>> login('randomuser@randomhost.com')
 
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
@@ -128,6 +124,7 @@ to the person, and it updates the email address's status and account.
     >>> print validated_email.account
     None
 
+    >>> login('randomuser@randomhost.com')
     >>> p.validateAndEnsurePreferredEmail(validated_email)
     >>> validated_email.status
     <DBItem EmailAddressStatus.VALIDATED...
