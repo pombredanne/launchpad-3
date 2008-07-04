@@ -149,6 +149,7 @@ class IProductRelease(Interface):
 
 class IProductReleaseFile(Interface):
 
+    id = Int(title=_('ID'), required=True, readonly=True)
     productrelease = Choice(title=_('Project release'), required=True,
                             vocabulary='ProductRelease')
     libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
@@ -162,7 +163,9 @@ class IProductReleaseFile(Interface):
                       default=UpstreamFileType.CODETARBALL)
     description = Text(title=_("Description"), required=False,
         description=_('A detailed description of the file contents'))
-
+    date_uploaded = Datetime(title=_('Upload date'),
+        description=_('The date this file was uploaded'),
+        required=True, readonly=True)
 
 class IProductReleaseFileAddForm(Interface):
     """Schema for adding ProductReleaseFiles to a project."""
@@ -193,3 +196,9 @@ class IProductReleaseSet(Interface):
 
         If no release is found, default will be returned.
         """
+
+    def getReleasesForSerieses(serieses):
+        """Get all releases for the serieses."""
+
+    def getFilesForReleases(releases):
+        """Get all files for the releases."""
