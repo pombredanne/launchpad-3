@@ -11,7 +11,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, IArchive)
+    IArchive)
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.archiverebuild import IArchiveRebuild
@@ -1251,10 +1251,7 @@ class EditBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
 
     def _ppaCheckAuthenticated(self, user):
-        """Allow only BuilddAdmins and PPA owner."""
-        if AdminByBuilddAdmin.checkAuthenticated(self, user):
-            return True
-
+        """Only allow the PPA owner."""
         if self.obj.archive.owner and user.inTeam(self.obj.archive.owner):
             return True
 
@@ -1264,13 +1261,16 @@ class EditBuildRecord(AdminByBuilddAdmin):
         """Check write access for user and different kinds of archives.
 
         Allow
-        
-            * BuilddAdmins and PPA owner for PPAs
+            * BuilddAdmins, for any archive.
+            * The PPA owner for PPAs
             * users with upload permissions (for the respective distribution)
               otherwise.
         """
+        if AdminByBuilddAdmin.checkAuthenticated(self, user):
+            return True
+
         # Is this a PPA? Call the respective method if so.
-        if self.obj.archive.purpose == ArchivePurpose.PPA:
+        if self.obj.archive.is_ppa:
             return self._ppaCheckAuthenticated(user)
 
         # Primary or partner section here: is the user in question allowed
