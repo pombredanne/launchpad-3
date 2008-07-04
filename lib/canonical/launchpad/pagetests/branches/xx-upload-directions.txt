@@ -80,7 +80,7 @@ First, unregister the existing SSH key for Sample Person.
     >>> name12_browser.open('http://launchpad.dev/')
     >>> name12_browser.getLink('Sample Person').click()
     >>> name12_browser.getLink('Change details').click()
-    >>> name12_browser.getLink('Update SSH keys').click()
+    >>> name12_browser.getLink('SSH Keys').click()
     >>> name12_browser.getControl('Remove').click()
 
 The branch page now displays directions and a link to register a SSH key.
