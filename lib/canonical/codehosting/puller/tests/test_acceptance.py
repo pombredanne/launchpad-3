@@ -69,8 +69,8 @@ class TestBranchPuller(BranchTestCase):
     def assertRanSuccessfully(self, command, retcode, stdout, stderr):
         """Assert that the command ran successfully.
 
-        'Successfully' means that it's return code was 0 and it printed nothing
-        to stdout or stderr.
+        'Successfully' means that it's return code was 0 and it printed
+        nothing to stdout or stderr.
         """
         message = '\n'.join(
             ['Command: %r' % (command,),

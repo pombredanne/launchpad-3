@@ -6,7 +6,7 @@
 
     <content class="canonical.launchpad.database.EmailAddress">
         <allow interface="canonical.launchpad.interfaces.IHasOwner" />
-        <allow attributes="id person email status rdf_sha1" />
+        <allow attributes="id person account email status rdf_sha1" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IEmailAddress"
