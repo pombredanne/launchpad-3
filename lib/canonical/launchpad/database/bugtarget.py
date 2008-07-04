@@ -4,7 +4,7 @@
 """Components related to IBugTarget."""
 
 __metaclass__ = type
-__all__ = ['BugTargetBase']
+__all__ = ['BugTargetBase', 'HasBugsBase']
 
 from zope.component import getUtility
 
