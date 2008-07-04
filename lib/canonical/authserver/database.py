@@ -72,6 +72,7 @@ def writing_transaction(function):
         except:
             logout()
             transaction.abort()
+            getUtility(IZStorm).get('main').reset()
             raise
         logout()
         transaction.commit()

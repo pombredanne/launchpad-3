@@ -924,6 +924,16 @@ class TestTransactionDecorators(DatabaseTest):
             self.no_priv is self.store.find(Person, name='no-priv').one(),
             "Store wasn't reset properly.")
 
+    def test_writing_transaction_reset_store_with_raise(self):
+        """Make sure that the store is reset after the transaction."""
+        @writing_transaction
+        def no_op():
+            raise RuntimeError('die, die, die!')
+        self.assertRaises(RuntimeError, no_op)
+        self.failIf(
+            self.no_priv is self.store.find(Person, name='no-priv').one(),
+            "Store wasn't reset properly.")
+
 
 class UserDetailsStorageV2Test(DatabaseTest):
     """Test the implementation of `IUserDetailsStorageV2`."""
