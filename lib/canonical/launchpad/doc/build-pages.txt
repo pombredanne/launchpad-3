@@ -132,22 +132,20 @@ case, the 'user_can_retry_build' property finally returns True.
     >>> cprov_failed_build_view.user_can_retry_build
     True
 
-Buildd admins can retry any build as long is it's in a retryable state.
+Buildd admins can retry any build as long is it's in a state that
+permits it to be re-tried.  FAILEDTOBUILD is one of those states:
 
     >>> from canonical.launchpad.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from canonical.launchpad.interfaces.publishing import (
-    ...     PackagePublishingStatus, PackagePublishingPocket)
+    ...     PackagePublishingStatus)
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
     >>> test_source = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='sourceone')
-    >>> failed_build = test_source.sourcepackagerelease.createBuild(
-    ...     test_publisher.breezy_autotest_hppa,
-    ...     PackagePublishingPocket.RELEASE,
-    ...     test_publisher.breezy_autotest.main_archive,
-    ...     status=BuildStatus.FAILEDTOBUILD)
+    >>> [failed_build] = test_source.createMissingBuilds()
+    >>> failed_build.buildstate = BuildStatus.FAILEDTOBUILD
 
     >>> failed_build.can_be_retried
     True
