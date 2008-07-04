@@ -10,8 +10,8 @@ import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
-import zope.security.management
-import zope.thread
+from zope.security import management
+from zope import thread
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
@@ -43,7 +43,7 @@ class LaunchBag:
         IBugTask: 'bugtask',
         }
 
-    _store = zope.thread.local()
+    _store = thread.local()
 
     def setLogin(self, login):
         '''See IOpenLaunchBag.'''
@@ -64,7 +64,7 @@ class LaunchBag:
     @property
     @block_implicit_flushes
     def user(self):
-        interaction = zope.security.management.queryInteraction()
+        interaction = management.queryInteraction()
         if interaction is None:
             return None
         principals = [
@@ -155,10 +155,7 @@ class LaunchBag:
     @property
     def time_zone(self):
         if self.user and self.user.time_zone:
-            try:
-                return pytz.timezone(self.user.time_zone)
-            except KeyError:
-                pass # unknown time zone name
+            return pytz.timezone(self.user.time_zone)
         # fall back to UTC
         return _utc_tz
 
@@ -171,7 +168,7 @@ class LaunchBagView(object):
 
 
 def set_login_in_launchbag_when_principal_identified(event):
-    """Subscriber for IPrincipalIdentifiedEvent that sets 'login' in launchbag.
+    """This IPrincipalIdentifiedEvent subscriber sets 'login' in launchbag.
     """
     launchbag = getUtility(IOpenLaunchBag)
     # Basic auths principal identified event is also an ILoggedInEvent.

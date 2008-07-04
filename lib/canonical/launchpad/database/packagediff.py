@@ -11,10 +11,12 @@ import shutil
 from subprocess import Popen
 import tempfile
 
+from sqlobject import ForeignKey
+from storm.expr import Desc, In
+from storm.store import EmptyResultSet
+from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
-
-from sqlobject import ForeignKey
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -226,3 +228,14 @@ class PackageDiffSet:
         """
         return PackageDiff.select(
             query, limit=limit, orderBy=['id'])
+
+    def getDiffsToReleases(self, sprs):
+        """See `IPackageDiffSet`."""
+        if len(sprs) == 0:
+            return EmptyResultSet()
+        store = getUtility(IZStorm).get('main')
+        spr_ids = [spr.id for spr in sprs]
+        result = store.find(PackageDiff, In(PackageDiff.to_sourceID, spr_ids))
+        result.order_by(PackageDiff.to_sourceID,
+                        Desc(PackageDiff.date_requested))
+        return result
