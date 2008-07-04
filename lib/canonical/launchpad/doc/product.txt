@@ -200,7 +200,7 @@ answers to questions.
 
     >>> firefox.official_answers
     True
-    
+
 Alsa does not use Launchpad to track answers.
 
     >>> alsa.official_answers
@@ -230,7 +230,7 @@ When creating a product, a default product series is created for it:
     >>> print trunk.name
     trunk
 
-A product's licenses is now being tracked. Previously registered products 
+A product's licenses is now being tracked. Previously registered products
 may not have a license set, so an empty tuple is valid. If the licenses
 or license_info attributes are changed, the license_reviewed is reset
 to false.
@@ -491,7 +491,7 @@ If we change the development_focus, primary_translatable changes as well.
     1.0
 
 
-= Series list = 
+= Series list =
 
 The series for a product are returned as a sorted list, with the
 exception that the current development focus is first.
@@ -500,15 +500,21 @@ exception that the current development focus is first.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> firefox_view = getMultiAdapter((firefox, request), name="+index")
+    >>> firefox_view.initialize()
     >>> sorted_series = firefox_view.sorted_series_list
     >>> for series in sorted_series:
     ...     print series.name
     1.0
     trunk
 
-Change the development focus and the sort order changes.
+Change the development focus and the sort order changes.  Since the
+view is using cached data for the product we must re-instantiate the
+view to see the data change reflected.
 
-    >>> firefox.development_focus = sorted_series[-1]
+    >>> first_series = firefox.getSeries(sorted_series[-1].name)
+    >>> firefox.development_focus = first_series
+    >>> firefox_view = getMultiAdapter((firefox, request), name="+index")
+    >>> firefox_view.initialize()
     >>> sorted_series = firefox_view.sorted_series_list
     >>> for series in sorted_series:
     ...     print series.name

@@ -382,6 +382,9 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     new_style_import = Attribute(_("The new-style import that was created "
         "from this import, if any."))
 
+    is_development_focus = Attribute(
+        _("Is this series the development focus for the product?"))
+
 
 class IProductSeriesSourceAdmin(Interface):
     """Administrative interface to approve syncing on a Product Series
