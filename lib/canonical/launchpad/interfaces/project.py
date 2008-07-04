@@ -46,10 +46,9 @@ class ProjectNameField(PillarNameField):
 
 class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
                IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IHasOwner, IHasSpecifications, IHasSprints,
-               IHasTranslationGroup, IMakesAnnouncements,
-               IKarmaContext, IPillar):
+               IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
+               IHasSpecifications, IHasSprints, IHasTranslationGroup,
+               IMakesAnnouncements, IKarmaContext, IPillar):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)

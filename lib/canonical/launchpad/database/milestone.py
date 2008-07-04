@@ -6,6 +6,7 @@ __all__ = ['Milestone',
            'MilestoneSet',
            'ProjectMilestone']
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
@@ -13,16 +14,17 @@ from sqlobject import (
     SQLMultipleJoin)
 
 from canonical.launchpad.interfaces import (
-    IMilestone, IMilestoneSet, IProjectMilestone,
+    IBugTaskSet, IHasBugs, IMilestone, IMilestoneSet, IProjectMilestone,
     IStructuralSubscriptionTarget, NotFoundError)
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 
 
-class Milestone(SQLBase, StructuralSubscriptionTargetMixin):
-    implements(IMilestone, IStructuralSubscriptionTarget)
+class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
+    implements(IHasBugs, IMilestone, IStructuralSubscriptionTarget)
 
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
     # Milestones should be associated with productseries/distroseriess
@@ -73,6 +75,12 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin):
         """See IMilestone."""
         title = 'Milestone %s for %s' % (self.name, self.target.displayname)
         return title
+
+    def searchTasks(self, search_params, *args):
+        """See `IHasBugs`."""
+        search_params.setMilestone(self)
+        return getUtility(IBugTaskSet).search(search_params, *args)
+
 
 
 class MilestoneSet:

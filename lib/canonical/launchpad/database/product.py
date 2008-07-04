@@ -401,10 +401,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return None
 
-    def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+    def searchTasks(self, search_params, *args):
+        """See `IHasBugs`."""
         search_params.setProduct(self)
-        return BugTaskSet().search(search_params)
+        return BugTaskSet().search(search_params, *args)
 
     def getUsedBugTags(self):
         """See `IBugTarget`."""

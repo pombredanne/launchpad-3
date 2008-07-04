@@ -7,22 +7,17 @@ __metaclass__ = type
 
 
 __all__ = [
+    'BugDistroSeriesTargetDetails',
     'IBugTarget',
-    'BugDistroSeriesTargetDetails']
+    'IHasBugs',
+    ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import Text
 
 
-class IBugTarget(Interface):
-    """An entity on which a bug can be reported.
-
-    Examples include an IDistribution, an IDistroSeries and an
-    IProduct.
-    """
-    # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
-    bugtargetdisplayname = Attribute("A display name for this bug target")
-    bugtargetname = Attribute("The target as shown in mail notifications.")
+class IHasBugs(Interface):
+    """An entity which has a collection of bug tasks."""
 
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
@@ -32,37 +27,16 @@ class IBugTarget(Interface):
     unassigned_bugtasks = Attribute("A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute("A list of all BugTasks ever reported for this target.")
 
-    bug_reporting_guidelines = Text(
-        title=(
-            u"If I\N{right single quotation mark}m reporting a bug, "
-            u"I should include, if possible"),
-        description=(
-            u"These guidelines will be shown to anyone reporting a bug."),
-        required=False, max_length=50000)
-
-    def searchTasks(search_params):
+    def searchTasks(search_params, *args):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
+        :args: additional BugTaskSearchParams objects
 
         Return an iterable of matching results.
 
         Note: milestone is currently ignored for all IBugTargets
         except IProduct.
-        """
-
-    def getMostCommonBugs(user, limit=10):
-        """Return the list of most commonly-reported bugs.
-
-        This is the list of bugs that have the most dupes, ordered from
-        most to least duped.
-        """
-
-    def createBug(bug_params):
-        """Create a new bug on this target.
-
-        bug_params is an instance of
-        canonical.launchpad.interfaces.CreateBugParams.
         """
 
     def getUsedBugTags():
@@ -87,6 +61,39 @@ class IBugTarget(Interface):
         """
 
 
+class IBugTarget(IHasBugs):
+    """An entity on which a bug can be reported.
+
+    Examples include an IDistribution, an IDistroSeries and an
+    IProduct.
+    """
+    # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
+    bugtargetdisplayname = Attribute("A display name for this bug target")
+    bugtargetname = Attribute("The target as shown in mail notifications.")
+
+    bug_reporting_guidelines = Text(
+        title=(
+            u"If I\N{right single quotation mark}m reporting a bug, "
+            u"I should include, if possible"),
+        description=(
+            u"These guidelines will be shown to anyone reporting a bug."),
+        required=False, max_length=50000)
+
+    def getMostCommonBugs(user, limit=10):
+        """Return the list of most commonly-reported bugs.
+
+        This is the list of bugs that have the most dupes, ordered from
+        most to least duped.
+        """
+
+    def createBug(bug_params):
+        """Create a new bug on this target.
+
+        bug_params is an instance of
+        canonical.launchpad.interfaces.CreateBugParams.
+        """
+
+
 class BugDistroSeriesTargetDetails:
     """The details of a bug targeted to a specific IDistroSeries.
 
@@ -105,4 +112,3 @@ class BugDistroSeriesTargetDetails:
         self.sourcepackage = sourcepackage
         self.assignee = assignee
         self.status = status
-
