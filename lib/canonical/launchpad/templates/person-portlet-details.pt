@@ -22,13 +22,13 @@
       <tal:ubuntero condition="context/is_ubuntero"><b>Ubuntero:</b>
         <a
           id="ubuntero"
-          tal:condition="view/viewingOwnPage"
+          tal:condition="context/required:launchpad.Edit"
           tal:define="link context/menu:overview/codesofconduct"
           tal:attributes="href link/url"
           >Yes</a>
          <span
            id="ubuntero"
-           tal:condition="not: view/viewingOwnPage">Yes</span>
+           tal:condition="not: context/required:launchpad.Edit">Yes</span>
          <br />
        </tal:ubuntero>
 
