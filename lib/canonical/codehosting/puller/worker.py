@@ -1,9 +1,8 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
 import httplib
-import os
 import shutil
 import socket
 import sys
@@ -15,10 +14,15 @@ from bzrlib.errors import (
     BzrError, NotBranchError, ParamikoNotPresent,
     UnknownFormatError, UnsupportedFormatError)
 from bzrlib.progress import DummyProgress
+from bzrlib.transport import (
+    get_transport, register_transport, unregister_transport)
+from bzrlib.transport.http._urllib import HttpTransport_urllib
+from bzrlib.transport.nosmart import NoSmartTransportDecorator
 import bzrlib.ui
 
 from canonical.config import config
 from canonical.codehosting import ProgressUIFactory
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
@@ -156,6 +160,10 @@ class PullerWorker:
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
+    def _get_http_transport(self, url):
+        return NoSmartTransportDecorator(
+            'nosmart+' + url, HttpTransport_urllib(url))
+
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
 
@@ -282,7 +290,7 @@ class PullerWorker:
         #    Bzrdir.sprout is *almost* what we want here, except that sprout
         #    creates a working tree that we don't need. Instead, we do some
         #    low-level operations.
-        os.makedirs(self.dest)
+        ensure_base(get_transport(self.dest))
         bzrdir_format = self._source_branch.bzrdir._format
         bzrdir = bzrdir_format.initialize(self.dest)
         repo_format = self._source_branch.repository._format
@@ -318,10 +326,16 @@ class PullerWorker:
         """
         self.protocol.startMirroring(self)
         try:
-            self._checkSourceUrl()
-            self._checkBranchReference()
-            self._openSourceBranch()
-            self._mirrorToDestBranch()
+            register_transport(
+                'http://', self._get_http_transport,
+                override=True)
+            try:
+                self._checkSourceUrl()
+                self._checkBranchReference()
+                self._openSourceBranch()
+                self._mirrorToDestBranch()
+            finally:
+                unregister_transport('http://', self._get_http_transport)
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
