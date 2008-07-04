@@ -283,3 +283,14 @@ class BranchNameInUse(LaunchpadFault):
 
     def __init__(self, error):
         LaunchpadFault.__init__(self, error=error)
+
+
+class NoDefaultBrancheForPillar(LaunchpadFault):
+    error_code = 230
+    msg_template = (
+        "%(pillar_name)s is a %(pillar_type)s, and a %(pillar_type)s doesn't "
+        "have a default branch.")
+
+    def __init__(self, pillar_name, pillar_type):
+        LaunchpadFault.__init__(
+            self, pillar_name=pillar_name, pillar_type=pillar_type)

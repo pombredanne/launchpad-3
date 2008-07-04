@@ -108,6 +108,30 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertFault(
             'doesntexist/trunk', faults.NoSuchProduct('doesntexist'))
 
+    def test_projectGroupInURL(self):
+        # We shouldn't say 'no such product' when the user says 'bzr
+        # get lp:///project_group'
+        project_group = self.factory.makeProject()
+        self.assertFault(
+            project_group.name,
+            faults.NoDefaultBrancheForPillar(project_group.name, 'project group'))
+
+    def test_distroNameInURL(self):
+        # We shouldn't say 'no such product' when the user says 'bzr
+        # get lp:///distro_name'
+        distro = self.factory.makeDistribution()
+        self.assertFault(
+            distro.name,
+            faults.NoDefaultBrancheForPillar(distro.name, 'distribution'))
+
+    def test_personNameForURL(self):
+        # We shouldn't say 'no such product' when the user says 'bzr
+        # get lp:///~person'
+        person = self.factory.makeProject()
+        self.assertFault(
+            '~' + person.name,
+            faults.NoDefaultBrancheForPillar('~' + person.name, 'person or team'))
+
     def test_productAndSeries(self):
         """lp:product/series expands to the branch associated with the product
         series 'series' on 'product'.

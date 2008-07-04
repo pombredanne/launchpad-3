@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportResultSet,
     ICodeImportSet,
     ICountrySet,
+    IDistributionSet,
     IEmailAddressSet,
     ILibraryFileAliasSet,
     IPersonSet,
@@ -635,3 +636,17 @@ class LaunchpadObjectFactory:
         log_alias_id = getUtility(ILibrarianClient).addFile(
             filename, len(log_data), StringIO(log_data), 'text/plain')
         return getUtility(ILibraryFileAliasSet)[log_alias_id]
+
+    def makeDistribution(self):
+        """Make a new distribution."""
+        name = self.getUniqueString()
+        displayname = self.getUniqueString()
+        title = self.getUniqueString()
+        description = self.getUniqueString()
+        summary = self.getUniqueString()
+        domainname = self.getUniqueString()
+        owner = self.makePerson()
+        members = self.makeTeam(owner)
+        return getUtility(IDistributionSet).new(
+            name, displayname, title, description, summary, domainname,
+            members, owner)
