@@ -533,7 +533,7 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.status()
 
-    def transferSlaveFileToLibrarian(self, file_sha1, filename):
+    def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """See IBuilder."""
         out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
         out_file = os.fdopen(out_file_fd, "r+")
@@ -557,15 +557,15 @@ class Builder(SQLBase):
             bytes_written = out_file.tell()
             out_file.seek(0)
 
-            library_file_id = getUtility(ILibrarianClient).addFile(
+            library_file = getUtility(ILibraryFileAliasSet).create(
                 filename, bytes_written, out_file,
-                contentType=filenameToContentType(filename))
+                contentType=filenameToContentType(filename),
+                restricted=private)
         finally:
             # Finally, remove the temporary file
             out_file.close()
             os.remove(out_file_name)
 
-        library_file = getUtility(ILibraryFileAliasSet)[library_file_id]
         return library_file.id
 
     @property

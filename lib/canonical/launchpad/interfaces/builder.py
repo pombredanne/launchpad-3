@@ -246,7 +246,7 @@ class IBuilder(IHasOwner):
             other than the build slave failing.
         """
 
-    def transferSlaveFileToLibrarian(file_sha1, filename):
+    def transferSlaveFileToLibrarian(file_sha1, filename, private):
         """Transfer a file from the slave to the librarian.
 
         :param file_sha1: The file's sha1, which is how the file is addressed
@@ -254,6 +254,8 @@ class IBuilder(IHasOwner):
             will cause the build log to be retrieved and gzipped.
         :param filename: The name of the file to be given to the librarian file
             alias.
+        :param private: This flag is set if the build in question is for a
+            private archive.
         :return: A librarian file alias.
         """
 
