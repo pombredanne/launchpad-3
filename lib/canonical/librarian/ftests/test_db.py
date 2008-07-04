@@ -89,6 +89,29 @@ class TestTransactionDecorators(unittest.TestCase):
             self.file_content is self._getTestFileContent(),
             "Store wasn't reset properly.")
 
+    def test_writing_transaction_reset_store_on_commit_failure(self):
+        """The store should be reset even if committing the transaction fails.
+        """
+        class TransactionAborter:
+            """Make the next commit() fails."""
+            def newTransaction(self, txn):
+                pass
+
+            def beforeCompletion(self, txn):
+                raise RuntimeError('the commit will fail')
+        aborter = TransactionAborter()
+        transaction.manager.registerSynch(aborter)
+        try:
+            @db.write_transaction
+            def no_op():
+                pass
+            self.assertRaises(RuntimeError, no_op)
+            self.failIf(
+                self.file_content is self._getTestFileContent(),
+                "Store wasn't reset properly.")
+        finally:
+            transaction.manager.unregisterSynch(aborter)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

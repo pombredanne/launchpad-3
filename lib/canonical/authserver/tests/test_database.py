@@ -934,6 +934,26 @@ class TestTransactionDecorators(DatabaseTest):
             self.no_priv is self.store.find(Person, name='no-priv').one(),
             "Store wasn't reset properly.")
 
+    def test_writing_transaction_reset_store_on_commit_failure(self):
+        """The store should be reset even if committing the transaction fails.
+        """
+        class TransactionAborter:
+            """Make the next commit() fails."""
+            def beforeCompletion(self, txn):
+                raise RuntimeError('the commit will fail')
+        aborter = TransactionAborter()
+        transaction.manager.registerSynch(aborter)
+        try:
+            @writing_transaction
+            def no_op():
+                pass
+            self.assertRaises(RuntimeError, no_op)
+            self.failIf(
+                self.no_priv is self.store.find(Person, name='no-priv').one(),
+                "Store wasn't reset properly.")
+        finally:
+            transaction.manager.unregisterSynch(aborter)
+
 
 class UserDetailsStorageV2Test(DatabaseTest):
     """Test the implementation of `IUserDetailsStorageV2`."""

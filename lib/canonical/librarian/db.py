@@ -12,12 +12,12 @@ __all__ = [
 from psycopg2.extensions import TransactionRollbackError
 from sqlobject.sqlbuilder import AND
 from storm.exceptions import DisconnectionError, IntegrityError
-from storm.zope.interfaces import IZStorm
 import transaction
 from twisted.python.util import mergeFunctionMetadata
-from zope.component import getUtility
 
-from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
+from canonical.database.sqlbase import reset_store
+from canonical.launchpad.database.librarian import (
+    LibraryFileContent, LibraryFileAlias)
 
 
 RETRY_ATTEMPTS = 3
@@ -48,13 +48,13 @@ def read_transaction(func):
     The transaction will be aborted on successful completion of the
     function.  The transaction will be retried if appropriate.
     """
+    @reset_store
     def wrapper(*args, **kwargs):
         transaction.begin()
         try:
             return func(*args, **kwargs)
         finally:
             transaction.abort()
-            getUtility(IZStorm).get('main').reset()
     return retry_transaction(mergeFunctionMetadata(func, wrapper))
 
 
@@ -65,16 +65,15 @@ def write_transaction(func):
     function, and aborted on failure.  The transaction will be retried
     if appropriate.
     """
+    @reset_store
     def wrapper(*args, **kwargs):
         transaction.begin()
         try:
             ret = func(*args, **kwargs)
         except:
             transaction.abort()
-            getUtility(IZStorm).get('main').reset()
             raise
         transaction.commit()
-        getUtility(IZStorm).get('main').reset()
         return ret
     return retry_transaction(mergeFunctionMetadata(func, wrapper))
 

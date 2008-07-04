@@ -11,7 +11,6 @@ __all__ = [
 import datetime
 import pytz
 
-from storm.zope.interfaces import IZStorm
 import transaction
 
 from zope.component import getUtility
@@ -26,7 +25,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.database.sqlbase import clear_current_connection_cache
+from canonical.database.sqlbase import (
+    clear_current_connection_cache, reset_store)
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
@@ -48,6 +48,7 @@ def utf8(x):
 
 def read_only_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
+    @reset_store
     def transacted(*args, **kwargs):
         transaction.begin()
         clear_current_connection_cache()
@@ -57,26 +58,23 @@ def read_only_transaction(function):
         finally:
             logout()
             transaction.abort()
-            getUtility(IZStorm).get('main').reset()
     return mergeFunctionMetadata(function, transacted)
 
 
 def writing_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
+    @reset_store
     def transacted(*args, **kwargs):
         transaction.begin()
-        clear_current_connection_cache()
         login(ANONYMOUS)
         try:
             ret = function(*args, **kwargs)
         except:
             logout()
             transaction.abort()
-            getUtility(IZStorm).get('main').reset()
             raise
         logout()
         transaction.commit()
-        getUtility(IZStorm).get('main').reset()
         return ret
     return mergeFunctionMetadata(function, transacted)
 
