@@ -1179,17 +1179,12 @@ class PersonEditNavigationMenu(NavigationMenu):
     usedfor = IPersonEditMenu
     facet = 'overview'
     title = 'Edit your profile'
-    links = ('personal', 'contact_details', 'email_settings',
+    links = ('personal', 'email_settings',
              'sshkeys', 'gpgkeys', 'passwords')
 
     def personal(self):
         target = '+edit'
         text = 'Personal'
-        return Link(target, text)
-
-    def contact_details(self):
-        target = '+editcontactdetails'
-        text = 'Contact Details'
         return Link(target, text)
 
     def email_settings(self):
