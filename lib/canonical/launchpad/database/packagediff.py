@@ -13,6 +13,7 @@ import tempfile
 
 from sqlobject import ForeignKey
 from storm.expr import Desc, In
+from storm.store import EmptyResultSet
 from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
@@ -230,6 +231,8 @@ class PackageDiffSet:
 
     def getDiffsToReleases(self, sprs):
         """See `IPackageDiffSet`."""
+        if len(sprs) == 0:
+            return EmptyResultSet()
         store = getUtility(IZStorm).get('main')
         spr_ids = [spr.id for spr in sprs]
         result = store.find(PackageDiff, In(PackageDiff.to_sourceID, spr_ids))
