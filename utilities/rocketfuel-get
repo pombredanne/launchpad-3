@@ -1,9 +1,16 @@
 #! /bin/bash
 
-SOURCEDEPS="~/canonical/lp-sourcedeps/sourcecode"
+LP_PROJECT_ROOT=${LP_PROJECT_ROOT:=~/canonical}
+LP_BRANCHES_DIR=${LP_BRANCHES_DIR:=lp-branches}
+LP_PROJECT_PATH=$LP_PROJECT_ROOT/$LP_BRANCHES_DIR
+LP_TRUNK_NAME=${LP_TRUNK_NAME:=trunk}
+LP_TRUNK_PATH=$LP_PROJECT_PATH/$LP_TRUNK_NAME
+
+LP_SOURCEDEPS_DIR=lp-sourcedeps
+LP_SOURCEDEPS_PATH=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/sourcecode
 
 # Force tilde expansion
-SOURCEDEPS=$(eval echo ${SOURCEDEPS})
+LP_SOURCEDEPS_PATH=$(eval echo ${LP_SOURCEDEPS_PATH})
 
 DEVPAD="devpad.canonical.com"
 ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"
@@ -15,7 +22,7 @@ ssh-add -l
 if [ $? -gt 0 ]; then ssh-add; fi
 
 # Pull from devpad trunk
-cd ~/canonical/lp-branches/trunk
+cd $LP_TRUNK_PATH
 INITIAL_REV=$(bzr revno)
 bzr pull
 FINAL_REV=$(bzr revno)
@@ -25,21 +32,21 @@ if [ $FINAL_REV = $INITIAL_REV ]; then exit 0; fi
 
 
 # Update the source dependencies
-if [ ! -d $SOURCEDEPS ]; then mkdir -p $SOURCEDEPS; fi
+if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
 
 # Several (*) have tried, and failed, to get the --filter to fit neatly
 # into RSYNCOPTIONS, so we put it here. Bash arrays do not count.
 #   * elmo, sabdfl
-rsync --filter=". utilities/sourcedeps.filter" $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $SOURCEDEPS/
+rsync --filter=". utilities/sourcedeps.filter" $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $LP_SOURCEDEPS_PATH/
 
-cd ~/canonical/lp-branches
+cd $LP_PROJECT_PATH
 for branch in *; do
   if [ -d $branch/sourcecode ]
   then
     echo "Updating sourcecode dependencies for ${branch}"
-    trunk/utilities/link-external-sourcecode --target=$branch --parent=../lp-sourcedeps
+    $LP_TRUNK_NAME/utilities/link-external-sourcecode --target=$branch --parent=../$LP_SOURCEDEPS_DIR
   fi
 done
 
-cd trunk
+cd $LP_TRUNK_NAME
 make
