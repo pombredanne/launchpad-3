@@ -134,7 +134,9 @@
          <a tal:condition="bug_branch/required:launchpad.Edit"
             tal:attributes="href string:+bug/${bug_branch/bug/id}/+edit;
                             onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
-<tal:bug_branch_status replace="bug_branch/status/title"/>         <img src="/@@/expand"/></a>
+           <tal:bug_branch_status replace="bug_branch/status/title"/>
+           <img src="/@@/bug-status-expand"/>
+         </a>
        </tal:show-edit>
        <tal:show-whiteboard condition="show_whiteboard|nothing">
          <dl tal:condition="bug_branch/whiteboard"
@@ -184,7 +186,7 @@
          -
          <a tal:attributes="href spec_branch/fmt:url;
                             onclick string:return switchSpecBranchFormAndSummary('${spec_branch/id}')">
-         edit <img src="/@@/expand"/></a>
+         edit <img src="/@@/bug-status-expand"/></a>
        </tal:show-edit>
        <tal:show-whiteboard condition="show_whiteboard|nothing">
          <dl tal:condition="spec_branch/summary"

@@ -5,6 +5,7 @@ from select import select
 import subprocess
 from StringIO import StringIO
 
+from canonical.archivepublisher.utils import process_in_batches
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
@@ -368,14 +369,24 @@ class FTPArchiveHandler:
             else:
                 suboverride['src'].add((packagename, section))
 
+        number_of_sources = source_publications.count()
+        self.log.debug(
+            "Updating overrides for %d sources" % number_of_sources)
         for pub in source_publications:
             updateOverride(pub, pub.sourcepackagerelease.name,
                            pub.distroseries.name)
 
-        for pub in binary_publications:
-            updateOverride(pub, pub.binarypackagerelease.name,
-                           pub.distroarchseries.distroseries.name,
-                           pub.priority)
+        number_of_binaries = binary_publications.count()
+        self.log.debug(
+            "Updating overrides for %d binaries" % number_of_binaries)
+        # Process this huge iteration (180 records) in batches.
+        # See `PublishingTunableLoop`.
+        def update_binary_override(pub):
+            updateOverride(
+                pub, pub.binarypackagerelease.name,
+                pub.distroarchseries.distroseries.name, pub.priority)
+        process_in_batches(
+            binary_publications, update_binary_override, self.log)
 
         # Now generate the files on disk...
         for distroseries in overrides:
@@ -540,14 +551,21 @@ class FTPArchiveHandler:
                 this_file[component].setdefault('source', [])
                 this_file[component]['source'].append(ondiskname)
 
-        self.log.debug("Collating lists of source files...")
+        self.log.debug(
+            "Collating lists of %d source files..." % sourcefiles.count())
         for file_publishing in sourcefiles:
             updateFileList(file_publishing)
 
-        self.log.debug("Collating lists of binary files...")
-        for file_publishing in binaryfiles:
-            architecturetag = "binary-%s" % file_publishing.architecturetag
+        self.log.debug(
+            "Collating lists of %d binary files..." % binaryfiles.count())
+        # Process this huge iteration (180 records) in batches.
+        # See `PublishingTunableLoop`.
+        def update_binary_filelist(file_publishing):
+            architecturetag = (
+                "binary-%s" % file_publishing.architecturetag)
             updateFileList(file_publishing, architecturetag)
+        process_in_batches(
+            binaryfiles, update_binary_filelist, self.log)
 
         for dr_pocketed, components in filelist.items():
             self.log.debug("Writing file lists for %s" % dr_pocketed)

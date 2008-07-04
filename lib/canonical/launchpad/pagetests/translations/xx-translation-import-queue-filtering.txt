@@ -8,7 +8,7 @@ is no human readable labels associated with them.
     >>> import os.path
     >>> test_file_name = os.path.join(
     ...     os.path.dirname(canonical.launchpad.__file__),
-    ...     'pagetests/rosetta/xx-translation-import-queue-filtering.tar.gz')
+    ...     'pagetests/translations/xx-translation-import-queue-filtering.tar.gz')
     >>> tarball = open(test_file_name)
 
 Our star for this session is Carlos, who has full access rights to the

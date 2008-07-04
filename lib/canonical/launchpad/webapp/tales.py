@@ -560,9 +560,8 @@ class ObjectImageDisplayAPI:
             url = context.mugshot.getURL()
         else:
             url = self.default_mugshot_resource(context)
-        mugshot = """<div style="width: 200; height: 200; float: right">
-            <img alt="" width="192" height="192" src="%s" />
-            </div>"""
+        mugshot = """<img alt="" class="mugshot"
+            width="192" height="192" src="%s" />"""
         return mugshot % url
 
     def badges(self):
@@ -977,10 +976,11 @@ class PillarFormatterAPI(CustomizableFormatter):
     def link(self, extra_path):
         html = super(PillarFormatterAPI, self).link(extra_path)
         if IProduct.providedBy(self._context):
-            if self._context.license_status != LicenseStatus.OPEN_SOURCE:
-                html += ' <span title="%s">(%s)</span>' % (
-                    escape(self._context.license_status.description),
-                    escape(self._context.license_status.title))
+            license_status = self._context.license_status
+            if license_status != LicenseStatus.OPEN_SOURCE:
+                html = '<span title="%s">%s (%s)</span>' % (
+                    license_status.description, html,
+                    license_status.title)
         return html
 
 

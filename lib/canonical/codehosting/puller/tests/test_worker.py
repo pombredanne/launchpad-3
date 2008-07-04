@@ -10,7 +10,9 @@ import unittest
 import bzrlib.branch
 from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
+from bzrlib.transport import get_transport
 
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.codehosting.puller.worker import (
     PullerWorker, BranchReferenceLoopError,
@@ -43,6 +45,30 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
+
+    def testCanMirrorWhenDestDirExists(self):
+        # We can mirror a branch even if the destination exists but contains
+        # nothing.
+        source_tree = self.make_branch_and_tree('source-branch')
+        to_mirror = self.makePullerWorker(source_tree.branch.base)
+        source_tree.commit('commit message')
+        # Make the directory.
+        ensure_base(get_transport(to_mirror.dest))
+        to_mirror.mirror()
+        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        self.assertEqual(
+            source_tree.last_revision(), mirrored_branch.last_revision())
+
+    def testHttpTransportStillThere(self):
+        # We tweak the http:// transport in the worker. Make sure that it's
+        # still available after mirroring.
+        http = get_transport('http://example.com')
+        source_branch = self.make_branch('source-branch')
+        to_mirror = self.makePullerWorker(source_branch.base)
+        to_mirror.mirror()
+        new_http = get_transport('http://example.com')
+        self.assertEqual(get_transport('http://example.com').base, http.base)
+        self.assertEqual(new_http.__class__, http.__class__)
 
 
 class TestCanTraverseReferences(TestCaseInTempDir, PullerWorkerMixin):

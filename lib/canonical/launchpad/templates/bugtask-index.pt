@@ -28,22 +28,21 @@
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
       <div style="clear: both">
         <div style="float: right; width: 65%; text-align: right">
-          <tal:activitylog
-              define="link context_menu/activitylog"
-              condition="link/enabled"
-              replace="structure link/render" />
-          &mdash;
-          reported
+          Reported
           <span
               tal:attributes="title context/bug/datecreated/fmt:datetime"
               tal:content="context/bug/datecreated/fmt:displaydate" />
           by <tal:reporter replace="structure context/bug/owner/fmt:link" />
+          <tal:activitylog
+            define="link context_menu/activitylog"
+            condition="link/enabled"
+          >(<tal:link replace="structure link/render" />)</tal:activitylog>
         </div>
         <div style="float: left; width: 25%;">
           <tal:icon replace="structure context/image:icon" />
-          Bug #<tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
+          Bug <tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
           condition="context/bug/name">
-          (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>
+          (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>:
         </div>
       </div>
       <h1 style="clear: both;">
@@ -171,28 +170,24 @@
               define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
         </tal:not-user>
 
-        <div id="bug-description"
-             tal:content="structure description" />
-
-        <div style="margin-bottom: 1em; text-align: center; clear: both">
-          <span tal:condition="view/wasDescriptionModified">
-          This description was updated. <a href="comments/0">View original description</a>.</span>
-        </div>
+        <div id="bug-description" tal:content="structure description" />
 
         <div style="width: 100%; clear: both;">
           <div id="bug-tags" tal:define="tags context/bug/tags" tal:condition="tags"
-               style="width: 45%: text-align: left; float: left;">
+               style="width: 45%: text-align: left; float: right;">
             Tags:
             <a tal:repeat="tag tags"
                tal:content="tag"
                tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
           </div>
 
-          <div style="width: 45%: text-align: right; float: right;">
+          <div style="width: 45%: text-align: right; float: left;">
             <tal:editdescription
                 define="link context_menu/editdescription"
                 condition="link/enabled"
                 replace="structure link/render" />
+            <span tal:condition="view/wasDescriptionModified" class="discreet"
+            >(see <a href="comments/0">original description</a>)</span>
           </div>
         </div>
         <div style="clear:both; height: 1em;"></div>
@@ -217,7 +212,7 @@
                  tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
                                  onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
                 <tal:bug_branch_status replace="bug_branch/status/title"/>
-                <img src="/@@/expand"/>
+                <img src="/@@/bug-status-expand"/>
               </a>
               <dl tal:condition="bug_branch/whiteboard"
                   tal:attributes="id string:bugbranch${bug_branch/id}-wb">
@@ -247,7 +242,7 @@
             replace="structure link/render" />
       </p>
 
-      <div condition="context/bug/cves">
+      <div tal:condition="context/bug/cves">
         <h2>CVE References</h2>
         <ul>
           <li class="cve" tal:repeat="cve context/bug/cves">
@@ -258,8 +253,7 @@
           </li>
         </ul>
       </div>
-
-      <p>
+      <div class="actions">
         <tal:linktocve
             define="link context_menu/linktocve"
             condition="link/enabled"
@@ -268,30 +262,8 @@
             define="link context_menu/unlinkcve"
             condition="link/enabled"
             replace="structure link/render" />
-      </p>
-
-      <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
-                   condition="mentoring_offers">
-        <p>
-          <img src="/@@/mentoring" alt="Mentoring"
-               title="People have offered to mentor this work" />
-          <b>Mentors:</b>
-          <tal:block repeat="mentoring_offer mentoring_offers">
-            <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
-          </tal:block>
-        </p>
-        <tal:block condition="not: context/bug/is_complete">
-          <div tal:condition="view/userIsMentor"
-               class="action">
-            <img class="inlineLinkIcon" src="/@@/remove" alt=""/><a href="+retractmentoring">Retract my offer of mentorship</a>
-          </div>
-        </tal:block>
-      </tal:mentors>
-      <div tal:define="link context_menu/offermentoring"
-           tal:condition="link/enabled"
-           class="action">
-        <img class="inlineLinkIcon" src="/@@/add" alt=""/><a tal:attributes="href link/url">Offer to mentor someone fixing this bug</a>
       </div>
+
       <tal:comment repeat="comment view/getBugCommentsForDisplay">
         <tal:comment-box condition="comment/can_be_shown">
           <metal:comment-box
@@ -312,7 +284,26 @@
           To post a comment you must <a href="+login">log in</a>.
         </div>
       </tal:not-logged-in>
-
+      <div id="mentoring" style="margin-top: 2em;">
+        <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
+                     condition="mentoring_offers">
+          <p>
+            <b>Mentors:</b>
+            <tal:block repeat="mentoring_offer mentoring_offers">
+              <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
+            </tal:block>
+          </p>
+          <tal:block condition="not: context/bug/is_complete">
+            <div tal:condition="view/userIsMentor" class="actions">
+              <img class="inlineLinkIcon" src="/@@/remove" alt=""/><a href="+retractmentoring">Retract my offer of mentorship</a>
+            </div>
+          </tal:block>
+        </tal:mentors>
+        <p tal:define="link context_menu/offermentoring"
+             tal:condition="link/enabled"
+             tal:content="structure link/render"
+        />
+      </div>
       <div class="related">
         <h2>What next?</h2>
         <ul>

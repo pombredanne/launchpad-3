@@ -299,8 +299,7 @@ class Branch(SQLBase):
     @property
     def warehouse_url(self):
         """See `IBranch`."""
-        root = config.supermirror.warehouse_root_url
-        return "%s%08x" % (root, self.id)
+        return 'lp-internal:///%s' % self.unique_name
 
     @property
     def product_name(self):

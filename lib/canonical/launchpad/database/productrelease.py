@@ -8,7 +8,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -26,7 +26,6 @@ class ProductRelease(SQLBase):
     _defaultOrder = ['-datereleased']
 
     datereleased = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     version = StringCol(notNull=True)
     codename = StringCol(notNull=False, default=None)
     summary = StringCol(notNull=False, default=None)
@@ -141,3 +140,22 @@ class ProductReleaseSet(object):
         if productrelease is None:
             return default
         return productrelease
+
+    def getReleasesForSerieses(self, serieses):
+        """See `IProductReleaseSet`."""
+        if len(list(serieses)) == 0:
+            return ProductRelease.select('1 = 2')
+        return ProductRelease.select("""
+            ProductRelease.productseries IN %s
+            """ % sqlvalues([series.id for series in serieses]),
+            orderBy='-datereleased')
+
+    def getFilesForReleases(self, releases):
+        """See `IProductReleaseSet`."""
+        if len(list(releases)) == 0:
+            return ProductReleaseFile.select('1 = 2')
+        return ProductReleaseFile.select(
+            """ProductReleaseFile.productrelease IN %s""" % (
+            sqlvalues([release.id for release in releases])),
+            orderBy='-date_uploaded',
+            prejoins=['libraryfile'])

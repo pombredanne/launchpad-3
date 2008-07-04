@@ -92,7 +92,7 @@ FORBIDDEN_DIRECTORY_ERROR = (
 
 def is_lock_directory(absolute_path):
     """Is 'absolute_path' a Bazaar branch lock directory?"""
-    return os.path.basename(absolute_path) == 'held'
+    return absolute_path.endswith('/.bzr/branch/lock/held')
 
 
 def get_chrooted_transport(url):
@@ -626,7 +626,7 @@ class LaunchpadServer(Server):
             least a valid path to a branch.
         """
         branch, ignored = self._getBranch(virtual_url_fragment)
-        branch.requestMirror()
+        return branch.requestMirror()
 
     def translateVirtualPath(self, virtual_url_fragment):
         """Translate 'virtual_url_fragment' into a transport and sub-fragment.
@@ -938,8 +938,12 @@ class AsyncLaunchpadTransport(VirtualTransport):
         # can request a mirror once a branch is unlocked.
         abs_from = self._abspath(rel_from)
         if is_lock_directory(abs_from):
-            self.server.requestMirror(abs_from)
-        return VirtualTransport.rename(self, rel_from, rel_to)
+            deferred = self.server.requestMirror(abs_from)
+        else:
+            deferred = defer.succeed(None)
+        deferred = deferred.addCallback(
+            lambda ignored: VirtualTransport.rename(self, rel_from, rel_to))
+        return self._extractResult(deferred)
 
     def rmdir(self, relpath):
         # We hook into rmdir in order to prevent users from deleting branches,
