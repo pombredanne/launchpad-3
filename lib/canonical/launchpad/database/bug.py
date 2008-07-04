@@ -414,7 +414,7 @@ class Bug(SQLBase):
             BugSubscription.select("""
                 BugSubscription.bug = Bug.id AND
                 Bug.duplicateof = %d""" % self.id,
-                clauseTables=["Bug"]))
+                prejoins=["person"], clauseTables=["Bug"]))
 
         # Direct and "also notified" subscribers take precedence
         # over subscribers from duplicates.
