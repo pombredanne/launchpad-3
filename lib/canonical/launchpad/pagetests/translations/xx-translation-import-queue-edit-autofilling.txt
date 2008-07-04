@@ -7,7 +7,7 @@ First, we need to feed the import queue.
   >>> import os.path
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/rosetta/xx-translation-import-queue-edit-autofilling.tar.gz')
+  ...     'pagetests/translations/xx-translation-import-queue-edit-autofilling.tar.gz')
   >>> tarball = open(test_file_name)
 
   >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
