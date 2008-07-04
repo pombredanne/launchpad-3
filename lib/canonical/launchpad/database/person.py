@@ -2035,6 +2035,8 @@ class Person(
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
+            # Automated processes need access to set the account().
+            removeSecurityProxy(email).account = email.person.account
             getUtility(IHWSubmissionSet).setOwnership(email)
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
@@ -2065,6 +2067,9 @@ class Person(
             self.account.status = AccountStatus.ACTIVE
             self.account.status_comment = None
             self.account.sync() # sync so validpersoncache updates.
+        # Anonymous users may claim their profile; remove the proxy
+        # to set the account.
+        removeSecurityProxy(email).account = self.account
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2091,7 +2096,7 @@ class Person(
 
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.
-        email = EmailAddress.get(email.id)
+        email = removeSecurityProxy(email)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
         getUtility(IHWSubmissionSet).setOwnership(email)

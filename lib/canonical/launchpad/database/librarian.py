@@ -151,6 +151,11 @@ class LibraryFileAlias(SQLBase):
                                  intermediateTable='SourcePackageReleaseFile')
 
 
+    def __storm_invalidated__(self):
+        """Make sure that the file is closed across transaction boundary."""
+        self.close()
+
+
 class LibraryFileAliasSet(object):
     """Create and find LibraryFileAliases."""
 
