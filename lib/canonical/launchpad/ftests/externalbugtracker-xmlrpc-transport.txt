@@ -58,3 +58,23 @@ In addition to cookies sent by the server, we can set cookies locally.
     >>> transport.cookie_processor.cookiejar
     <cookielib.CookieJar[Cookie(version=0, name='ding', value='dong'...),
                          Cookie(version=0, name='foo', value='bar'...)]>
+
+If an error occurs trying to make the request, an
+`xmlrpclib.ProtocolError` is raised.
+
+    >>> request_body = """<?xml version="1.0"?>
+    ... <methodCall>
+    ...   <methodName>examples.testError</methodName>
+    ...   <params>
+    ...     <param>
+    ...       <value>
+    ...         <int>42</int>
+    ...       </value>
+    ...     </param>
+    ...   </params>
+    ... </methodCall>
+    ... """
+    >>> transport.request('www.example.com', 'xmlrpc', request_body)
+    Traceback (most recent call last):
+    ...
+    ProtocolError: <ProtocolError for http://www.example.com/xmlrpc: 500 Internal Error>
