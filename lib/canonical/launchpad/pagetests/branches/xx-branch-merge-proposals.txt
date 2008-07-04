@@ -211,8 +211,8 @@ target branches or the registrant of the merge proposal.
     Edit details: .../+merge/.../+edit
     Delete proposal to merge: .../+merge/.../+delete
     Work in progress (disabled)
-    Request review: .../+merge/.../+request-review
-    Add comment: .../+merge/.../+comment
+    Request a review: .../+merge/.../+request-review
+    Add a comment/review: .../+merge/.../+comment
     Review proposal: .../+merge/.../+review
     Mark as merged: .../+merge/.../+merged
     Queue for merging: .../+merge/.../+enqueue
@@ -227,8 +227,8 @@ proposal to merge get no actions.
     Edit details (disabled)
     Delete proposal to merge (disabled)
     Work in progress (disabled)
-    Request review (disabled)
-    Add comment (disabled)
+    Request a review (disabled)
+    Add a comment/review (disabled)
     Review proposal (disabled)
     Mark as merged (disabled)
     Queue for merging (disabled)
@@ -240,8 +240,8 @@ proposal to merge get no actions.
     Edit details (disabled)
     Delete proposal to merge (disabled)
     Work in progress (disabled)
-    Request review (disabled)
-    Add comment (disabled)
+    Request a review (disabled)
+    Add a comment/review (disabled)
     Review proposal (disabled)
     Mark as merged (disabled)
     Queue for merging (disabled)
@@ -337,7 +337,7 @@ You can request a review of a merge proposal.
     >>> sample_browser.open(
     ...    'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1'
     ...    )
-    >>> sample_browser.getLink('Request review').click()
+    >>> sample_browser.getLink('Request a review').click()
     >>> sample_browser.getControl('Reviewer').value = 'sabdfl'
     >>> sample_browser.getControl('Review type').value = 'first'
     >>> sample_browser.getControl('Request review').click()
