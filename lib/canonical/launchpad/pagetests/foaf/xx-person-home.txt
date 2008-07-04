@@ -170,7 +170,6 @@ Details portlet.
     OpenID login: http://openid.launchpad.dev/+id/name16_oid
     (What&rsquo;s this?)
 
-
 Foo Bar can learn about OpenID from the 'What's this?' link.
 
     >>> admin_browser.open('http://launchpad.dev/~name16')
