@@ -3,13 +3,14 @@
 
 import unittest
 
+from storm.zope.interfaces import IZStorm
+import transaction
+from zope.component import getUtility
+
+from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.librarian import db
 from canonical.testing import LaunchpadZopelessLayer
 
-def sorted(l):
-    l = list(l)
-    l.sort()
-    return l
 
 class DBTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
@@ -40,6 +41,53 @@ class DBTestCase(unittest.TestCase):
         alias = library.getAlias(aliasID)
         self.assertEqual('file1', alias.filename)
         self.assertEqual('text/unknown', alias.mimetype)
+
+
+class TestTransactionDecorators(unittest.TestCase):
+    """Tests for the transaction decorators used by the librarian."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.layer.switchDbUser('librarian')
+        self.store = getUtility(IZStorm).get('main')
+        self.content_id = db.Library().add('deadbeef', 1234, 'abababab')
+        self.file_content = self._getTestFileContent()
+        transaction.commit()
+
+    def _getTestFileContent(self):
+        """Return the file content object that created."""
+        return self.store.find(LibraryFileContent, id=self.content_id).one()
+
+    def test_read_transaction_reset_store(self):
+        """Make sure that the store is reset after the transaction."""
+        @db.read_transaction
+        def no_op():
+            pass
+        no_op()
+        self.failIf(
+            self.file_content is self._getTestFileContent(),
+            "Store wasn't reset properly.")
+
+    def test_write_transaction_reset_store(self):
+        """Make sure that the store is reset after the transaction."""
+        @db.write_transaction
+        def no_op():
+            pass
+        no_op()
+        self.failIf(
+            self.file_content is self._getTestFileContent(),
+            "Store wasn't reset properly.")
+
+    def test_write_transaction_reset_store_with_raise(self):
+        """Make sure that the store is reset after the transaction."""
+        @db.write_transaction
+        def no_op():
+            raise RuntimeError('an error occured')
+        self.assertRaises(RuntimeError, no_op)
+        self.failIf(
+            self.file_content is self._getTestFileContent(),
+            "Store wasn't reset properly.")
 
 
 def test_suite():

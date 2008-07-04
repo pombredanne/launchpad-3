@@ -12,8 +12,10 @@ __all__ = [
 from psycopg2.extensions import TransactionRollbackError
 from sqlobject.sqlbuilder import AND
 from storm.exceptions import DisconnectionError, IntegrityError
+from storm.zope.interfaces import IZStorm
 import transaction
 from twisted.python.util import mergeFunctionMetadata
+from zope.component import getUtility
 
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
 
@@ -52,6 +54,7 @@ def read_transaction(func):
             return func(*args, **kwargs)
         finally:
             transaction.abort()
+            getUtility(IZStorm).get('main').reset()
     return retry_transaction(mergeFunctionMetadata(func, wrapper))
 
 
@@ -68,8 +71,10 @@ def write_transaction(func):
             ret = func(*args, **kwargs)
         except:
             transaction.abort()
+            getUtility(IZStorm).get('main').reset()
             raise
         transaction.commit()
+        getUtility(IZStorm).get('main').reset()
         return ret
     return retry_transaction(mergeFunctionMetadata(func, wrapper))
 
