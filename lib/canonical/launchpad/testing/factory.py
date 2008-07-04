@@ -600,7 +600,8 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString()
         series = product.newSeries(
             product.owner, name, self.getUniqueString(), user_branch)
-        series.import_branch = import_branch
+        if import_branch is not None:
+            series.import_branch = import_branch
         syncUpdate(series)
         return series
 
