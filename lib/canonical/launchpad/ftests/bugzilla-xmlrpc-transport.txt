@@ -11,8 +11,8 @@ and the additional Launchpad plugin API.
     >>> server = xmlrpclib.ServerProxy(
     ...     'http://example.com/', transport=bugzilla_transport)
 
-The transport will only allow calls to methods in a predefined set of
-namespaces.
+The test transport will only allow calls to methods in a predefined set
+of namespaces.
 
     >>> server.spam.eggs()
     Traceback (most recent call last):
@@ -28,7 +28,7 @@ error will be raised.
     >>> server.spam.eggs()
     Traceback (most recent call last):
       ...
-    AttributeError: 'TestBugzillaXMLRPCTransport' object has no
+    AttributeError: TestBugzillaXMLRPCTransport instance has no
     attribute 'eggs'
 
     >>> del bugzilla_transport.methods['spam']
@@ -43,6 +43,52 @@ namespace with a given method name, an AssertionError will be raised.
     Traceback (most recent call last):
       ...
     AssertionError: No method 'unregistered_method' in namespace 'Bug'.
+
+
+== Authentication ==
+
+Some methods require authentication.
+
+    >>> server.Test.login_required()
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 410: 'Login Required'>
+
+To be authenticated, we need to provide a login cookie. The test
+transport doesn't validate this cookie, it just checks that it exists.
+
+    >>> bugzilla_transport.auth_cookie = "Want moar cookies plz"
+    >>> print server.Test.login_required()
+    Wonderful, you've logged in! Aren't you a clever biped?
+
+
+== Launchpad.login() ==
+
+The Launchpad.login() method is used to log in to the remote service. It
+takes a single parameter, token, which is a Launchpad LoginToken.
+
+We can use the internal XML-RPC API to generate such a token.
+
+    >>> from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
+    >>> token_api = ExternalBugTrackerTokenAPI(None, None)
+    >>> token_text = token_api.newBugTrackerToken()
+
+Launchpad.login() will check that the token is valid and will set two
+cookies, Bugzilla_logincookie and Bugzilla_login, in its response. It
+will also return the user ID of the user on the Bugzilla instance.
+
+In the test instance, the cookie is randomly generated. The returned
+user id is always the same.
+
+    >>> response_dict = server.Launchpad.login({'token': token_text})
+    >>> print response_dict['user_id']
+    42
+
+The login cookies are in the response headers.
+
+    >>> print bugzilla_transport.last_response_headers['Set-Cookie']
+    Bugzilla_login=...
+    Bugzilla_logincookie=...
 
 
 == Launchpad.time() ==
@@ -65,8 +111,7 @@ more useful.
     >>> from datetime import datetime
 
     >>> remote_datetime = datetime(2008, 5, 15, 16, 19, 53)
-    >>> bugzilla_transport.seconds_since_epoch = time.mktime(
-    ...     remote_datetime.timetuple())
+    >>> bugzilla_transport.local_datetime = remote_datetime
     >>> bugzilla_transport.timezone = "US/Central"
     >>> bugzilla_transport.utc_offset = -6*60*60
 
@@ -267,3 +312,48 @@ returned for each comment.
     <BLANKLINE>
         author: Ford Prefect <ford.prefect@h2g2.com>
         id: 4
+
+
+== Bug.add_comment() ==
+
+The standard Bugzilla API offers a method, Bug.add_comment(), which can
+be used to add comments to a remote bug. It takes two arguments: the ID
+of the remote comment and the body of the comment to be added to it.
+
+add_comment() requires authentication.
+
+    >>> bugzilla_transport.expireCookie(bugzilla_transport.auth_cookie)
+    >>> server.Bug.add_comment({'id': 1, 'comment': "This won't work"})
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 410: 'Login Required'>
+
+Bug.add_comment() will return the integer comment ID of the new comment
+on the remote server.
+
+    >>> comment = "Didn't we have a lovely time the day we went to Bangor?"
+    >>> bugzilla_transport.auth_cookie = 'open sesame'
+    >>> return_dict = server.Bug.add_comment({'id': 1, 'comment': comment})
+    >>> print return_dict['comment_id']
+    5
+
+The comment will be stored with the other comments on the remote server.
+
+    >>> return_dict = server.Bug.comments({'bug_ids': [1], 'ids': [5]})
+    >>> bugs_dict = return_dict['bugs']
+
+    >>> print_bug_comments(bugs_dict, sort_key='id')
+    Bug 1:
+        author: launchpad
+        id: 5
+        number: 3
+        text: Didn't we have a lovely time the day we went to Bangor?
+        time: ...
+
+If add_comment is called on a bug that doesn't exist a fault will be
+raised.
+
+    >>> server.Bug.add_comment({'id': 42, 'comment': "This won't work"})
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 101: 'Bug #42 does not exist.'>

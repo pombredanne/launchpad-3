@@ -127,7 +127,7 @@ Administrator can change the translation focus for a distribution.
     ['ubuntu hoary']
     >>> editor_browser.getControl('Translation Focus').displayValue = [
     ...     'ubuntu grumpy']
-    >>> editor_browser.getControl('Change').click()
+    >>> editor_browser.getControl('Change', index=3).click()
     >>> editor_browser.getLink('Change distribution details').click()
     >>> editor_browser.getControl('Translation Focus').displayValue
     ['ubuntu grumpy']
