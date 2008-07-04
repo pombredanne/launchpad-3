@@ -487,13 +487,12 @@
         />
 
     <!-- Resource unnamed view, allowing Z3 preferred spelling
-        /@@/launchpad-icon-small to access resource and resourceDirectory -->
+        /@@/launchpad-icon-small to access the images directory -->
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->

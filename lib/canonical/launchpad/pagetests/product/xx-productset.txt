@@ -119,10 +119,16 @@ First, add a product with a proprietary license.
     >>> user_browser.open('http://launchpad.dev/projects/+all')
     >>> div = find_tag_by_id(user_browser.contents, 'product-listing')
     >>> for subdiv in div.next.findNextSiblings('div'):
-    ...     print ' '.join(text.strip()
-    ...                    for text in subdiv.findAllNext(text=True)[:4])
-    &nbsp;Proprietary Product  (Proprietary)
+    ...     pillar = subdiv.find()
+    ...     print ''.join(pillar.findAll(text=True))
+    ...     print '     ', pillar.get('title')
+    &nbsp;Proprietary Product (Proprietary)
+          This project&lsquo;s license is proprietary.
     &nbsp;Derby
-    &nbsp;Redfish  (Unreviewed)
-    &nbsp;Bazaar  (Unreviewed)
-    &nbsp;Jokosher  (Unreviewed)
+          None
+    &nbsp;Redfish (Unreviewed)
+          This project&lsquo;s license has not been reviewed.
+    &nbsp;Bazaar (Unreviewed)
+          This project&lsquo;s license has not been reviewed.
+    &nbsp;Jokosher (Unreviewed)
+          This project&lsquo;s license has not been reviewed.

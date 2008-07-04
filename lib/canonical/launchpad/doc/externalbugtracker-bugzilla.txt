@@ -60,11 +60,8 @@ override for the purpose of this test.
 
     >>> class BugzillaWithFakeProxy(Bugzilla):
     ...
-    ...     @property
-    ...     def xmlrpc_proxy(self):
-    ...         return xmlrpclib.ServerProxy(
-    ...             'http://example.com/xmlrpc.cgi',
-    ...             transport=test_transport)
+    ...     _test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...         'http://example.com/xmlrpc.cgi', transport=test_transport)
 
     >>> bugzilla = BugzillaWithFakeProxy('http://example.com')
 
