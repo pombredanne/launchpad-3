@@ -11,6 +11,7 @@ __all__ = [
 import datetime
 import pytz
 
+from storm.zope.interfaces import IZStorm
 import transaction
 
 from zope.component import getUtility
@@ -56,6 +57,7 @@ def read_only_transaction(function):
         finally:
             logout()
             transaction.abort()
+            getUtility(IZStorm).get('main').reset()
     return mergeFunctionMetadata(function, transacted)
 
 
@@ -73,6 +75,7 @@ def writing_transaction(function):
             raise
         logout()
         transaction.commit()
+        getUtility(IZStorm).get('main').reset()
         return ret
     return mergeFunctionMetadata(function, transacted)
 

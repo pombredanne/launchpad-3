@@ -11,6 +11,8 @@ import datetime
 import pytz
 import transaction
 
+from storm.zope.interfaces import IZStorm
+
 from twisted.web.xmlrpc import Fault
 
 from zope.component import getUtility
@@ -22,6 +24,7 @@ from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.interfaces.branch import (
     BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE, IBranchSet)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -40,7 +43,8 @@ from canonical.authserver.interfaces import (
 from canonical.authserver.database import (
     DatabaseBranchDetailsStorage, DatabaseUserDetailsStorage,
     DatabaseUserDetailsStorageV2, NOT_FOUND_FAULT_CODE,
-    PERMISSION_DENIED_FAULT_CODE, run_as_requester, writing_transaction)
+    PERMISSION_DENIED_FAULT_CODE, run_as_requester, read_only_transaction,
+    writing_transaction)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 
 from canonical.testing.layers import (
@@ -890,6 +894,35 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         storage._mirrorCompleteInteraction(hosted_branch_id, 'rev-1')
 
         self.assertEqual(None, self.getNextMirrorTime(hosted_branch_id))
+
+
+class TestTransactionDecorators(DatabaseTest):
+    """Tests for the transaction decorators used by the authserver."""
+
+    def setUp(self):
+        super(TestTransactionDecorators, self).setUp()
+        self.store = getUtility(IZStorm).get('main')
+        self.no_priv = self.store.find(Person, name='no-priv').one()
+
+    def test_read_only_transaction_reset_store(self):
+        """Make sure that the store is reset after the transaction."""
+        @read_only_transaction
+        def no_op():
+            pass
+        no_op()
+        self.failIf(
+            self.no_priv is self.store.find(Person, name='no-priv').one(),
+            "Store wasn't reset properly.")
+
+    def test_writing_transaction_reset_store(self):
+        """Make sure that the store is reset after the transaction."""
+        @writing_transaction
+        def no_op():
+            pass
+        no_op()
+        self.failIf(
+            self.no_priv is self.store.find(Person, name='no-priv').one(),
+            "Store wasn't reset properly.")
 
 
 class UserDetailsStorageV2Test(DatabaseTest):
