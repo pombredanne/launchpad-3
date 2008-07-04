@@ -1,7 +1,7 @@
 <tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
-  tal:omit-tag="">
-
+  tal:omit-tag=""
+>
   <form
     action=""
     method="get"
@@ -12,7 +12,6 @@
       name string:sitesearch${view/id_suffix};
     "
   >
-
     <p class="error message"
        tal:condition="view/errors"
        tal:content="view/error_count" />
@@ -31,20 +30,25 @@
           class="textType"
           type="text"
           size="36"
-          name="field.text"
-          tal:attributes="id string:field.text${view/id_suffix};
-                          value view/text;" />
+          tal:attributes="
+            id string:field.text${view/id_suffix};
+            name string:field.text${view/id_suffix};
+            value view/text;
+          "
+        />
         <script
           type="text/javascript"
           tal:define="script view/focusedElementScript"
           tal:condition="script"
           tal:content="structure script">javascript</script>
         <input
-          name="field.actions.search"
           class="button"
           type="submit"
           value="Search"
-          tal:attributes="id string:field.text${view/id_suffix};" />
+          tal:attributes="
+            id string:field.text${view/id_suffix};
+            name string:field.actions.search${view/id_suffix};
+          " />
       </div>
       <div class="message" style="max-width:25em;"
         tal:condition="view/error"
