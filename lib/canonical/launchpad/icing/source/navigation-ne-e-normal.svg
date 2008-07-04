@@ -15,17 +15,28 @@
    sodipodi:version="0.32"
    inkscape:version="0.46"
    version="1.0"
-   sodipodi:docname="navigation-nw-w-selected.svg"
+   sodipodi:docname="navigation-ne-e.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-05-translation/lib/canonical/launchpad/images/navigation-nw-w-selected.png"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-launchpad-2.0/lib/canonical/launchpad/images/navigation-ne-e.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <defs
      id="defs3193">
     <linearGradient
+       id="linearGradient6188">
+      <stop
+         id="stop6190"
+         offset="0"
+         style="stop-color:#eeeeee;stop-opacity:1;" />
+      <stop
+         id="stop6192"
+         offset="1"
+         style="stop-color:#cccccc;stop-opacity:1;" />
+    </linearGradient>
+    <linearGradient
        id="linearGradient3716">
       <stop
-         style="stop-color:#ffffff;stop-opacity:0;"
+         style="stop-color:#eeeeee;stop-opacity:1;"
          offset="0"
          id="stop3718" />
       <stop
@@ -51,10 +62,20 @@
        r="3"
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(0,-1,1,0,0,8)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6188"
+       id="linearGradient3740"
+       x1="4"
+       y1="299"
+       x2="1"
+       y2="299"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,148,-4.0000001,-44100)" />
     <radialGradient
        inkscape:collect="always"
        xlink:href="#linearGradient3716"
-       id="radialGradient3728"
+       id="radialGradient6182"
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(0,-1,1,0,0,8)"
        cx="4"
@@ -62,16 +83,17 @@
        fx="4"
        fy="4"
        r="3" />
-    <linearGradient
+    <radialGradient
        inkscape:collect="always"
-       xlink:href="#linearGradient3716"
-       id="linearGradient3740"
-       x1="4"
-       y1="299"
-       x2="1"
-       y2="299"
+       xlink:href="#linearGradient6188"
+       id="radialGradient6186"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1,0,0,148,0,-44100)" />
+       gradientTransform="matrix(0,-1,1,0,0,8)"
+       cx="4"
+       cy="4"
+       fx="4"
+       fy="4"
+       r="3" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -84,7 +106,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="63.75"
-     inkscape:cx="0.77621776"
+     inkscape:cx="3.4585707"
      inkscape:cy="296.10879"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -118,19 +140,19 @@
      id="layer1">
     <path
        sodipodi:type="arc"
-       style="fill:#888888;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#dddddd;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path6178"
        sodipodi:cx="3.5"
        sodipodi:cy="0"
        sodipodi:rx="2.5"
        sodipodi:ry="2"
        d="M 6,0 A 2.5,2 0 0 1 3.4949908,1.999996 L 3.5,0 z"
-       transform="matrix(-1.2,0,0,-1.5,8.193989,4)"
+       transform="matrix(1.2,0,0,-1.5,-4.1939889,4)"
        sodipodi:start="0"
        sodipodi:end="1.5728" />
     <path
        sodipodi:type="arc"
-       style="fill:#888888;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078000000000"
+       style="fill:#cccccc;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078"
        id="path3203"
        sodipodi:cx="4"
        sodipodi:cy="4"
@@ -139,22 +161,48 @@
        d="M 8,4 A 4,4 0 0 1 4.0000001,8 L 4,4 z"
        sodipodi:start="0"
        sodipodi:end="1.5707963"
-       transform="matrix(-1,0,0,-1,8.0000001,8)" />
+       transform="matrix(1,0,0,-1,-4,8)" />
+    <path
+       sodipodi:type="arc"
+       style="fill:url(#radialGradient6182);fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078"
+       id="path3714"
+       sodipodi:cx="4"
+       sodipodi:cy="4"
+       sodipodi:rx="3"
+       sodipodi:ry="3"
+       d="M 6.1213204,6.1213203 A 3,3 0 0 1 4,7 L 4,4 z"
+       sodipodi:start="0.78539816"
+       sodipodi:end="1.5707963"
+       transform="matrix(1,0,0,-1,-4,8)" />
     <rect
-       style="fill:#888888;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       id="rect6172"
+       style="fill:url(#linearGradient3740);fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078"
+       id="rect3732"
        width="3"
        height="296"
-       x="1"
-       y="4" />
+       x="-3"
+       y="4"
+       transform="scale(-1,1)" />
     <rect
-       style="fill:#888888;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078000000000"
+       style="fill:#cccccc;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078"
        id="rect3730"
        width="1"
        height="296"
-       x="0"
+       x="-4"
        y="4"
        inkscape:export-xdpi="90"
-       inkscape:export-ydpi="90" />
+       inkscape:export-ydpi="90"
+       transform="scale(-1,1)" />
+    <path
+       transform="matrix(0,-1,1,0,-4,8)"
+       sodipodi:end="1.5707963"
+       sodipodi:start="0.78539816"
+       d="M 6.1213204,6.1213203 A 3,3 0 0 1 4.0000001,7 L 4,4 z"
+       sodipodi:ry="3"
+       sodipodi:rx="3"
+       sodipodi:cy="4"
+       sodipodi:cx="4"
+       id="path6184"
+       style="fill:url(#radialGradient6186);fill-opacity:1.0;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078000000000"
+       sodipodi:type="arc" />
   </g>
 </svg>
