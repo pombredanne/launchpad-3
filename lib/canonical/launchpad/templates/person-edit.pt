@@ -42,18 +42,6 @@
                  structure context/menu:overview/editjabberids/render"
                  >Edit your Jabber contact names</span>
             </p>
-
-            <p><span
-                 tal:replace="
-                 structure context/menu:overview/editsshkeys/render"
-                 >Change your SSH keys</span>
-            </p>
-
-            <p><span
-                 tal:replace="
-                 structure context/menu:overview/editpgpkeys/render"
-                 >Change your OpenPGP keys</span>
-            </p>
           </tbody>
         </table>
       </div>
