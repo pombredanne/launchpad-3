@@ -113,6 +113,7 @@ class UserDetailsStorageMixin:
     def _getEmailAddresses(self, person):
         """Get the email addresses for a person"""
         emails = [person.preferredemail] + list(person.validatedemails)
+        # Bypass zope's security because IEmailAddress.email is not public.
         return [removeSecurityProxy(email).email for email in emails]
 
     def getSSHKeys(self, loginID):

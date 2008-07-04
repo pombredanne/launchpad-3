@@ -95,6 +95,8 @@ class NotificationRecipientSet:
             self._personToRationale[person] = reason, header
             for receiving_person in emailPeople(person):
                 self._receiving_people.add(receiving_person)
+                # Bypass zope's security because IEmailAddress.email is not
+                # public.
                 preferred_email = removeSecurityProxy(
                     receiving_person.preferredemail)
                 email = str(preferred_email.email)

@@ -144,6 +144,7 @@ def simple_sendmail_from_person(
     From header is properly encoded.
     """
     from zope.security.proxy import removeSecurityProxy
+    # Bypass zope's security because IEmailAddress.email is not public.
     naked_email = removeSecurityProxy(person.preferredemail)
     from_addr = format_address(person.displayname, naked_email.email)
     return simple_sendmail(
