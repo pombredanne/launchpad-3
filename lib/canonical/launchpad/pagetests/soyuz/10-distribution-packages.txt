@@ -197,3 +197,11 @@ changelog:
     ...src="/@@/person" />&nbsp;foo.bar@canonical.com</a>
 
 
+== Packages that are not published ==
+
+If the package being viewed has no publishing history, a blank table is
+displayed:
+
+    >>> user_browser.open("http://launchpad.dev/ubuntu/+source/a52dec")
+    >>> print extract_text(find_tag_by_id(user_browser.contents, 'packaging'))
+            Test Distro version                  Upstream version

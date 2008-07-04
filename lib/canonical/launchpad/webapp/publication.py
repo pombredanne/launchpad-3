@@ -17,6 +17,7 @@ import tickcount
 
 from psycopg2.extensions import TransactionRollbackError
 from storm.exceptions import DisconnectionError, IntegrityError
+from storm.zope.interfaces import IZStorm
 import transaction
 
 from zope.app import zapi  # used to get at the adapters service
@@ -481,6 +482,12 @@ class LaunchpadBrowserPublication(
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
 
+        # Reset all Storm stores when not running the test suite. We could
+        # reset them when running the test suite but that'd make writing tests
+        # a much more painful task.
+        if threading.currentThread().getName() != 'MainThread':
+            for name, store in getUtility(IZStorm).iterstores():
+                store.reset()
 
     def startProfilingHook(self):
         """Handle profiling.

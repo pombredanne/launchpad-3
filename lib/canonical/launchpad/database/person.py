@@ -2033,6 +2033,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
+            # Automated processes need access to set the account().
+            removeSecurityProxy(email).account = email.person.account
             getUtility(IHWSubmissionSet).setOwnership(email)
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
@@ -2063,6 +2065,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.account.status = AccountStatus.ACTIVE
             self.account.status_comment = None
             self.account.sync() # sync so validpersoncache updates.
+        # Anonymous users may claim their profile; remove the proxy
+        # to set the account.
+        removeSecurityProxy(email).account = self.account
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2089,7 +2094,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.
-        email = EmailAddress.get(email.id)
+        email = removeSecurityProxy(email)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
         getUtility(IHWSubmissionSet).setOwnership(email)
@@ -2941,7 +2946,8 @@ class PersonSet:
                 UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
                 WHERE owner = %(from_id)s AND name = %(name)s
                     AND (%(product)s IS NULL OR product = %(product)s)
-                ''', vars())
+                ''', dict(to_id=to_id, from_id=from_id,
+                          name=name, new_name=new_name, product=product))
         skip.append(('branch','owner'))
 
         # Update MailingListSubscription. Note that no remaining records
@@ -3091,9 +3097,9 @@ class PersonSet:
 
         # Update PackageBugSupervisor entries.
         cur.execute('''
-            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)s
-            WHERE bug_supervisor=%(from_id)s
-            ''', vars())
+            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)d
+            WHERE bug_supervisor=%(from_id)d
+            ''' % vars())
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
         # Update the SpecificationFeedback entries that will not conflict
