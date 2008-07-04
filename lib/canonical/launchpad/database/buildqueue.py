@@ -225,7 +225,7 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.builder = builder
         self.buildstart = UTC_NOW
-        self.build.forceState(BuildStatus.BUILDING)
+        self.build.buildstate = BuildStatus.BUILDING
         # The build started, set the start time if not set already.
         if self.build.date_first_dispatched is None:
             self.build.date_first_dispatched = UTC_NOW
@@ -238,7 +238,7 @@ class BuildQueue(SQLBase):
             % (self.builder.url, self.build.title))
         self.builder = None
         self.buildstart = None
-        self.build.forceState(BuildStatus.NEEDSBUILD)
+        self.build.buildstate = BuildStatus.NEEDSBUILD
 
     def updateBuild_BUILDING(self, build_id, build_status,
                              logtail, filemap, dependencies, logger):
@@ -256,7 +256,7 @@ class BuildQueue(SQLBase):
         self.builder.cleanSlave()
         self.builder = None
         self.buildstart = None
-        self.build.forceState(BuildStatus.BUILDING)
+        self.build.buildstate = BuildStatus.BUILDING
 
 
 class BuildQueueSet(object):

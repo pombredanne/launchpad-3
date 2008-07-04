@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuildstateTransitionError',
     'BuildStatus',
     'IBuild',
     'IBuildSet',
@@ -19,10 +18,6 @@ from zope.schema import Timedelta
 
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
-
-
-class BuildstateTransitionError(Exception):
-    """Error raised when an invalid buildstate transition occurs."""
 
 
 class BuildStatus(DBEnumeratedType):
@@ -235,10 +230,6 @@ class IBuild(Interface):
             `BuildStatus.NEEDSBUILD` state.
         """
 
-    def forceState(value):
-        """Set the build state to the value passed no matter what."""
-
-
 class IBuildSet(Interface):
     """Interface for BuildSet"""
 
@@ -292,12 +283,15 @@ class IBuildSet(Interface):
     def getCurrentPublication():
         """Return the publishing record for this build."""
 
-    def newBuild(
-        sourcepackagerelease, distroarchseries, pocket, processor, archive,
-        buildstate=BuildStatus.NEEDSBUILD, buildduration=None,
-        datecreated=None, datebuilt=None, estimated_build_duration=None,
-        builder=None, buildlog=None):
-        """Creates a new build object using the parameter values passed."""
+    def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
+                                        buildstate=None):
+        """Return all builds related with the given list of source releases.
+
+        :param sourcepackagerelease_ids: list of `ISourcePackageRelease`s;
+        :param buildstate: option build state filter.
+
+        :return: a list of `IBuild` records not target to PPA archives.
+        """
 
 
 class IHasBuildRecords(Interface):

@@ -40,7 +40,7 @@ that takes care of profiling (among other things).
     # We need to close the default interaction.
     >>> logout()
 
-    >>> http = HTTPCaller()
+    >>> http = HTTPCaller(host='launchpad.dev')
     >>> response = http('GET / HTTP/1.0')
     >>> profile_count = len(PageTestLayer.profiler.getstats())
     >>> profile_count > 0
@@ -119,7 +119,16 @@ directory for the request.
 The profile is named on the time of the request start, the pageid, and
 the thread that processed it.
 
-    >>> profiles = os.listdir(profile_dir)
+    >>> old_stat_float_times = os.stat_float_times()
+    >>> os.stat_float_times(True)
+    >>> def get_profiles():
+    ...     """Return the profile file names sorted by ctime."""
+    ...     profiles = [(os.stat(os.path.join(profile_dir, name)).st_ctime,
+    ...                  name)
+    ...                 for name in os.listdir(profile_dir)]
+    ...     return [name for ctime, name in sorted(profiles)]
+
+    >>> profiles = get_profiles()
     >>> print "\n".join(profiles)
     20...-RootObject:index.html-MainThread.prof
 
@@ -132,10 +141,21 @@ Making another request will create another profile.
 
     >>> response = http('GET / HTTP/1.0')
 
-    >>> profiles = os.listdir(profile_dir)
-    >>> print "\n".join(profiles)
+    >>> print "\n".join(get_profiles())
     20...-RootObject:index.html-MainThread.prof
     20...-RootObject:index.html-MainThread.prof
+
+If the request resulted in an OOPS, the OOPS id will be included in the
+filename:
+
+    >>> http('GET /no-such-file HTTP/1.0', handle_errors=False)
+    Traceback (most recent call last):
+      ...
+    NotFound:...
+    >>> print "\n".join(get_profiles())
+    20...-RootObject:index.html-MainThread.prof
+    20...-RootObject:index.html-MainThread.prof
+    20...-Unknown-OOPS-...-MainThread.prof
 
 
 == Profiling scripts ==
@@ -161,6 +181,49 @@ The profile data is saved in the argument when the program exits.
     >>> stats = pstats2.Stats(profile_file)
 
 
+== Memory profiling ==
+
+It is possible to keep a log of the memory profile of the application. That's
+useful to try to figure out what requests are causing the memory usage of the
+server to increase.
+
+To create that log, you set the configuration variable memory_profile_log.
+
+    >>> memory_profile_log = os.path.join(profile_dir, 'memory.log')
+    >>> config.push('memory_profile', dedent("""
+    ...     [profiling]
+    ...     profile_request: False
+    ...     memory_profile_log: %s""" % memory_profile_log))
+
+After each request is done, that log will have the timestamp of the request,
+the page id, the oops id, the duration, the starting VSS and RSS, and the
+ending VSS and RSS.
+
+    >>> response = http('GET / HTTP/1.0')
+    >>> memory_profile_fh = file(memory_profile_log)
+    >>> (timestamp, page_id, oops_id, duration,
+    ...  start_vss, start_rss, end_vss, end_rss) = (
+    ...     memory_profile_fh.readline().split())
+    >>> print timestamp
+    20...
+    >>> print oops_id
+    -
+    >>> print page_id
+    RootObject:index.html
+
+When an OOPS is triggered by the request, its identifier is logged:
+
+    >>> http('GET /no-such-file HTTP/1.0', handle_errors=False)
+    Traceback (most recent call last):
+      ...
+    NotFound:...
+    >>> (timestamp, page_id, oops_id, duration,
+    ...  start_vss, start_rss, end_vss, end_rss) = (
+    ...     memory_profile_fh.readline().split())
+    >>> print oops_id
+    OOPS-...
+
+
 == Clean up ==
 
     >>> import shutil
@@ -171,3 +234,5 @@ The profile data is saved in the argument when the program exits.
     >>> shutil.rmtree(profile_dir)
 
     >>> old_config = config.pop('profile_dir')
+
+    >>> os.stat_float_times(old_stat_float_times)

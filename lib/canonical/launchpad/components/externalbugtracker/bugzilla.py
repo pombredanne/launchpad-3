@@ -27,6 +27,8 @@ from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
     LookupTree, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion)
+from canonical.launchpad.components.externalbugtracker.xmlrpc import (
+    UrlLib2Transport)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.interfaces.externalbugtracker import (
@@ -39,6 +41,7 @@ class Bugzilla(ExternalBugTracker):
     """An ExternalBugTrack for dealing with remote Bugzilla systems."""
 
     batch_query_threshold = 0 # Always use the batch method.
+    _test_xmlrpc_proxy = None
 
     def __init__(self, baseurl, version=None):
         super(Bugzilla, self).__init__(baseurl)
@@ -46,25 +49,20 @@ class Bugzilla(ExternalBugTracker):
         self.is_issuezilla = False
         self.remote_bug_status = {}
 
-        # The XML-RPC endpoint used by getExternalBugTrackerToUse()
-        self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
-        self.xmlrpc_transport = None
-
-    @property
-    def xmlrpc_proxy(self):
-        """Return an `xmlrpclib.ServerProxy` to self.xmlrpc_endpoint."""
-        return xmlrpclib.ServerProxy(
-            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
-
     def getExternalBugTrackerToUse(self):
         """Return the correct `Bugzilla` subclass for the current bugtracker.
 
         See `IExternalBugTracker`.
         """
+        plugin = BugzillaLPPlugin(self.baseurl)
         try:
             # We try calling Launchpad.plugin_version() on the remote
             # server because it's the most lightweight method there is.
-            self.xmlrpc_proxy.Launchpad.plugin_version()
+            if self._test_xmlrpc_proxy is not None:
+                proxy = self._test_xmlrpc_proxy
+            else:
+                proxy = plugin.xmlrpc_proxy
+            proxy.Launchpad.plugin_version()
         except xmlrpclib.Fault, fault:
             if fault.faultCode == 'Client':
                 return self
@@ -76,7 +74,7 @@ class Bugzilla(ExternalBugTracker):
             else:
                 raise
         else:
-            return BugzillaLPPlugin(self.baseurl)
+            return plugin
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""
@@ -348,11 +346,19 @@ class BugzillaLPPlugin(Bugzilla):
                  internal_xmlrpc_transport=None):
         super(BugzillaLPPlugin, self).__init__(baseurl)
 
+        self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
+
         self.internal_xmlrpc_transport = internal_xmlrpc_transport
         if xmlrpc_transport is None:
-            self.xmlrpc_transport = BugzillaXMLRPCTransport()
+            self.xmlrpc_transport = UrlLib2Transport(self.xmlrpc_endpoint)
         else:
             self.xmlrpc_transport = xmlrpc_transport
+
+    @property
+    def xmlrpc_proxy(self):
+        """Return an `xmlrpclib.ServerProxy` to self.xmlrpc_endpoint."""
+        return xmlrpclib.ServerProxy(
+            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
 
     def _authenticate(self):
         """Authenticate with the remote Bugzilla instance.
@@ -376,10 +382,10 @@ class BugzillaLPPlugin(Bugzilla):
 
         user_id = self.xmlrpc_proxy.Launchpad.login({'token': token_text})
 
-        auth_cookie = self._extractAuthCookie(
+        auth_cookies = self._extractAuthCookie(
             self.xmlrpc_transport.last_response_headers['Set-Cookie'])
-
-        self.xmlrpc_transport.auth_cookie = auth_cookie
+        for cookie in auth_cookies.split(';'):
+            self.xmlrpc_transport.setCookie(cookie.strip())
 
     def _extractAuthCookie(self, cookie_header):
         """Extract the Bugzilla authentication cookies from the header."""
@@ -423,11 +429,10 @@ class BugzillaLPPlugin(Bugzilla):
 
         # Return the UTC time sent by the server so that we don't have
         # to care about timezones.
-        server_timestamp = time.mktime(
-            time.strptime(
-                str(time_dict['utc_time']), '%Y%m%dT%H:%M:%S'))
+        server_timetuple = time.strptime(
+            str(time_dict['utc_time']), '%Y%m%dT%H:%M:%S')
 
-        server_utc_time = datetime.utcfromtimestamp(server_timestamp)
+        server_utc_time = datetime(*server_timetuple[:6])
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
 
     def _getActualBugId(self, bug_id):
@@ -548,57 +553,3 @@ class BugzillaLPPlugin(Bugzilla):
         return_dict = self.xmlrpc_proxy.Bug.add_comment(request_params)
 
         return return_dict['comment_id']
-
-
-class BugzillaXMLRPCTransport(xmlrpclib.Transport):
-    """XML-RPC Transport for Bugzilla bug trackers.
-
-    Sends a cookie header for authentication.
-    """
-
-    def __init__(self):
-        self.last_response_headers = None
-        self.auth_cookie = None
-
-    def send_host(self, connection, host):
-        """Send the host and cookie headers."""
-        xmlrpclib.Transport.send_host(self, connection, host)
-
-        if self.auth_cookie is not None:
-            connection.putheader('Cookie', self.auth_cookie)
-
-    # Yes, this is really, really, really nasty. This is basically an
-    # exact copy of the request() method in xmlrpclib. The trouble is
-    # that the original just discards the response headers, with which
-    # we actually want to do something.
-    def request(self, host, handler, request_body, verbose=0):
-        """Issue an XML-RPC request.
-
-        This method overrides the original request() method of Transport in
-        order to allow us to handle cookies correctly.
-        """
-        connection = self.make_connection(host)
-        if verbose:
-            connection.set_debuglevel(1)
-
-        self.send_request(connection, handler, request_body)
-        self.send_host(connection, host)
-        self.send_user_agent(connection)
-        self.send_content(connection, request_body)
-
-        errcode, errmsg, headers = connection.getreply()
-        self.last_response_headers = headers
-
-        if errcode != 200:
-            raise xmlrpclib.ProtocolError(
-                host + handler, errcode, errmsg, headers)
-
-        self.verbose = verbose
-
-        try:
-            sock = connection._conn.sock
-        except AttributeError:
-            sock = None
-
-        return self._parse_response(connection.getfile(), sock)
-
