@@ -109,28 +109,30 @@ class TestExpandURL(TestCaseWithFactory):
             'doesntexist/trunk', faults.NoSuchProduct('doesntexist'))
 
     def test_projectGroupInURL(self):
-        # We shouldn't say 'no such product' when the user says 'bzr
-        # get lp:///project_group'
+        # Resolving lp:///project_group_name' should explain that project
+        # groups don't have default branches.
         project_group = self.factory.makeProject()
         self.assertFault(
             project_group.name,
-            faults.NoDefaultBrancheForPillar(project_group.name, 'project group'))
+            faults.NoDefaultBranchForPillar(
+                project_group.name, 'project group'))
 
     def test_distroNameInURL(self):
-        # We shouldn't say 'no such product' when the user says 'bzr
-        # get lp:///distro_name'
+        # Resolving lp:///distro_name' should explain that distributions don't
+        # have default branches.
         distro = self.factory.makeDistribution()
         self.assertFault(
             distro.name,
-            faults.NoDefaultBrancheForPillar(distro.name, 'distribution'))
+            faults.NoDefaultBranchForPillar(
+                distro.name, 'distribution'))
 
-    def test_personNameForURL(self):
-        # We shouldn't say 'no such product' when the user says 'bzr
-        # get lp:///~person'
-        person = self.factory.makeProject()
+    def test_invalidProductName(self):
+        # If we get a string that cannot be a name for a product where we
+        # expect the name of a product, we should error appropriately.
+        invalid_name = '+' + self.factory.getUniqueString()
         self.assertFault(
-            '~' + person.name,
-            faults.NoDefaultBrancheForPillar('~' + person.name, 'person or team'))
+            invalid_name,
+            faults.InvalidProductIdentifier(invalid_name))
 
     def test_productAndSeries(self):
         """lp:product/series expands to the branch associated with the product

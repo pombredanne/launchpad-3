@@ -20,7 +20,9 @@ from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
     IBranchSet, IBugSet,
     ILaunchBag, IPersonSet, IProductSet, NotFoundError)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
@@ -187,10 +189,15 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         :return: The Branch object.
         :raise faults.NoSuchProduct: If there's no project by that name.
         """
+        if not valid_name(project_name):
+            raise faults.InvalidProductIdentifier(project_name)
         project = getUtility(IProductSet).getByName(project_name)
         if project is None:
-            #pillar = getUtility(IPillarNameSet).getByName(project_name)
-            raise faults.NoSuchProduct(project_name)
+            pillar = getUtility(IPillarNameSet).getByName(project_name)
+            if pillar:
+                raise faults.NoDefaultBranchForPillar(project_name, 'xxx')
+            else:
+                raise faults.NoSuchProduct(project_name)
         series = project.development_focus
         return self._getSeriesBranch(series)
 
