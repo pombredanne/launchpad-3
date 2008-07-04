@@ -42,11 +42,12 @@ Create a distribution release and an arch release for breezy:
     ...     ILaunchpadCelebrities, IDistroSeriesSet)
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
-    >>> drs = getUtility(IDistroSeriesSet)
+    >>> distroseries_set = getUtility(IDistroSeriesSet)
     >>> hoary = ubuntu.getSeries("hoary")
-    >>> breezy = drs.new(ubuntu, "breezy", "Breezy Badger", "My title",
-    ...                  "My summary", "My description", "5.10",
-    ...                  hoary, celebs.launchpad_developers)
+    >>> breezy = distroseries_set.new(
+    ...     ubuntu, "breezy", "Breezy Badger", "My title",
+    ...     "My summary", "My description", "5.10",
+    ...     hoary, celebs.launchpad_developers)
     >>> pf = ProcessorFamily.selectOneBy(name="x86")
     >>> breezy_i386 = DistroArchSeries(distroseries=breezy,
     ...                         processorfamily=pf,
@@ -657,10 +658,10 @@ Gina has a 'source-only' configuration option which allows it to
 import only sources from the configured archive.
 
 That's how we intend to start importing all debian source releases to
-the launchpad system. This way we would have precise records of ubuntu
-- debian packages relationships and expose this information, not only
-in Soyuz (package managing) but also in Bugs and Blueprints, for
-instance.
+the launchpad system. This way we would have precise records of
+"Ubuntu-Debian" packages relationships and expose this information,
+not only in Soyuz (package managing) but also in Bugs and Blueprints,
+for instance.
 
 We will restore the initial 'gina_test_archive' because it contains a
 entry for a suite called 'testing' which contains only the source
@@ -679,13 +680,13 @@ specified in the testing configuration.
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
     >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> lenny = drs.new(
+    >>> lenny = distroseries_set.new(
     ...     debian, "lenny", "lenny", "Lenny",
     ...     "---", "!!!", "8.06",
     ...     hoary, celebs.launchpad_developers)
 
 Note that we will create a Lenny/i386 port (DistroArchSeries) to check
-if not binaries were imported by mistake. However this is not required
+if no binaries get imported by mistake. However this is not required
 in production, i.e., just creating 'lenny' should suffice for the
 source-only import to happen.
 
@@ -714,8 +715,8 @@ Commit the changes and run the importer script.
 
     >>> transaction.commit()
 
-There will now be a number of source publications in PENDING status for
-the targetted distroseries, 'lenny'.
+There is now a number of source publications in PENDING status for the
+targetted distroseries, 'lenny'.
 
     >>> lenny_sources = SSPPH.select("distroseries = %s" % sqlvalues(lenny))
     >>> lenny_sources.count()
@@ -724,9 +725,9 @@ the targetted distroseries, 'lenny'.
     >>> print set([pub.status.name for pub in lenny_sources])
     set(['PENDING'])
 
-As mentioned no before, lenny/i386 is empty, no binaries
-imported. Also the number of binaries published in the whole debian
-distribution hasn't changed.
+As mentioned before, lenny/i386 is empty, no binaries were imported.
+Also, the number of binaries published in the whole debian distribution
+hasn't changed.
 
     >>> lenny_binaries = SBPPH.selectBy(distroarchseries=lenny_i386)
     >>> lenny_binaries.count()

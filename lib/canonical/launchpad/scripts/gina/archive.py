@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Archive pool classes.
 
 This module has the classes resposable for locate and extract the package
@@ -61,7 +61,7 @@ class ArchiveFilesystemInfo:
         sources_zipped = os.path.join(root, "dists", distroseries,
                                       component, "source", "Sources.gz")
         if not os.path.exists(sources_zipped):
-            raise MangledArchiveError("Archive mising Sources.gz at %s"
+            raise MangledArchiveError("Archive missing Sources.gz at %s"
                                       % sources_zipped)
 
         # Extract Sources index.
@@ -106,18 +106,11 @@ class ArchiveFilesystemInfo:
         self.difile = difile
 
     def cleanup(self):
-        # XXX cprov 20080619: This is a dirty hack probably caused by
-        # bad testing design, which relies in binaries indexes being
-        # processed before sources.
-        def safe_remove(filepath):
-            if os.path.exists(filepath):
-                os.unlink(filepath)
-
-        safe_remove(self.sources_tagfile)
+        os.unlink(self.sources_tagfile)
         if self.source_only:
             return
-        safe_remove(self.binaries_tagfile)
-        safe_remove(self.di_tagfile)
+        os.unlink(self.binaries_tagfile)
+        os.unlink(self.di_tagfile)
 
 
 class ArchiveComponentItems:
@@ -126,11 +119,13 @@ class ArchiveComponentItems:
     This class holds ArchiveFilesystemInfo instances
     for each architecture/component pair that will be imported
     """
-    _archive_archs = []
 
     def __init__(self, archive_root, distroseries, components, archs,
                  source_only=False):
-        # Dectect source-only mode and store only ArchiveFilesystemInfo
+        # Store ArchiveFilesystemInfo objects built in this context.
+        self._archive_archs = []
+
+        # Detect source-only mode and store only the ArchiveFilesystemInfo
         # object for the given components.
         if source_only:
             for component in components:
@@ -139,7 +134,7 @@ class ArchiveComponentItems:
                     source_only=source_only)
             return
 
-        # Runs through components and architectures.
+        # Run through components and architectures.
         for component in components:
             for arch in archs:
                 self._buildArchiveFilesystemInfo(
