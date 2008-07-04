@@ -21,11 +21,15 @@ class IHasBugs(Interface):
 
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
-    inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")
-    critical_bugtasks = Attribute("A list of critical BugTasks for this target.")
+    inprogress_bugtasks = Attribute(
+        "A list of in-progress bugTasks for this target.")
+    critical_bugtasks = Attribute(
+        "A list of critical BugTasks for this target.")
     new_bugtasks = Attribute("A list of New BugTasks for this target.")
-    unassigned_bugtasks = Attribute("A list of unassigned BugTasks for this target.")
-    all_bugtasks = Attribute("A list of all BugTasks ever reported for this target.")
+    unassigned_bugtasks = Attribute(
+        "A list of unassigned BugTasks for this target.")
+    all_bugtasks = Attribute(
+        "A list of all BugTasks ever reported for this target.")
 
     def searchTasks(search_params, *args):
         """Search the IBugTasks reported on this entity.
