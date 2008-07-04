@@ -79,7 +79,8 @@ class SoyuzTestPublisher:
                      dsc_standards_version='3.6.2', dsc_format='1.0',
                      dsc_binaries='foo-bin', build_conflicts=None,
                      build_conflicts_indep=None,
-                     dsc_maintainer_rfc822='Foo Bar <foo@bar.com>'):
+                     dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
+                     maintainer=None):
         """Return a mock source publishing record."""
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
 
@@ -90,10 +91,12 @@ class SoyuzTestPublisher:
             distroseries = self.breezy_autotest
         if archive is None:
             archive = distroseries.main_archive
+        if maintainer is None:
+            maintainer = self.person
 
         spr = distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
-            maintainer=self.person,
+            maintainer=maintainer,
             creator=self.person,
             component=component,
             section=section,
@@ -228,9 +231,7 @@ class SoyuzTestPublisher:
             restricted=build.archive.private)
         binarypackagerelease.addFile(alias)
 
-        # Going from pending to succeeded is an invalid build state
-        # transition. That's why we are forcing it here.
-        build.forceState(BuildStatus.FULLYBUILT)
+        build.buildstate = BuildStatus.FULLYBUILT
 
         return binarypackagerelease
 
