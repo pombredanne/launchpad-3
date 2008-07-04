@@ -726,7 +726,7 @@ span.help {font-weight: normal;}
 #globalsearch {font-size: smaller; margin: 4em 0 2em; text-align: center;}
 #globalsearch input {display: block; margin: 0 auto;}
 /* The last element on every page is a standard footer. */
-#globalfooter {clear: both; margin: 0.5em 20px;}
+#globalfooter {clear: both; margin: 0.5em 0;}
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
