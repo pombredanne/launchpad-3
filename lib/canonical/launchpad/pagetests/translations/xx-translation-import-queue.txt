@@ -18,7 +18,7 @@ translations.
     >>> import os.path
     >>> test_file_name = os.path.join(
     ...     os.path.dirname(canonical.launchpad.__file__),
-    ...     'pagetests/rosetta/xx-translation-import-queue.tar.gz')
+    ...     'pagetests/translations/xx-translation-import-queue.tar.gz')
     >>> tarball = open(test_file_name, "rb")
     >>> upload = ff_owner_browser.getControl('File')
     >>> upload
@@ -263,7 +263,7 @@ Let's check tar.bz2 uploads. They work ;-)
 
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/rosetta/xx-translation-import-queue.tar.bz2')
+  ...     'pagetests/translations/xx-translation-import-queue.tar.bz2')
   >>> tarball = open(test_file_name)
 
   >>> evo_owner_browser.getControl('File').add_file(
@@ -296,7 +296,7 @@ Let's try now a tarball upload. Should work:
 
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/rosetta/xx-translation-import-queue.tar')
+  ...     'pagetests/translations/xx-translation-import-queue.tar')
   >>> tarball = open(test_file_name)
 
   >>> evo_owner_browser.getControl('File').add_file(
@@ -317,7 +317,7 @@ We can handle an empty file disguised as a bzipped tarfile:
 
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/rosetta/empty.tar.bz2')
+  ...     'pagetests/translations/empty.tar.bz2')
   >>> tarball = open(test_file_name)
 
   >>> evo_owner_browser.getControl('File').add_file(
@@ -337,7 +337,7 @@ And also a truncated tarball inside a bzip2 wrapper:
 
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/rosetta/truncated.tar.bz2')
+  ...     'pagetests/translations/truncated.tar.bz2')
   >>> tarball = open(test_file_name)
 
   >>> evo_owner_browser.getControl('File').add_file(

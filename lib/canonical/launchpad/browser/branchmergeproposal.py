@@ -19,6 +19,7 @@ __all__ = [
     'BranchMergeProposalResubmitView',
     'BranchMergeProposalReviewView',
     'BranchMergeProposalView',
+    'BranchMergeProposalVoteLinkView',
     'BranchMergeProposalVoteView',
     'BranchMergeProposalWorkInProgressView',
     ]
@@ -111,7 +112,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def add_comment(self):
-        return Link('+comment', 'Add comment', icon='add')
+        return Link('+comment', 'Add a comment/review', icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -145,7 +146,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def request_review(self):
-        text = 'Request review'
+        text = 'Request a review'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.NEEDS_REVIEW)
         if (self.context.queue_status ==
@@ -336,6 +337,9 @@ class BranchMergeProposalVoteView(LaunchpadView):
 
     __used_for__ = IBranchMergeProposal
 
+    # Show hyperlinks to the comments?
+    show_comment_links = False
+
     @cachedproperty
     def reviews(self):
         """Return the decorated votes for the proposal."""
@@ -367,6 +371,12 @@ class BranchMergeProposalVoteView(LaunchpadView):
         # Now sort so the most recently created is first.
         return sorted(reviews, key=operator.attrgetter('date_created'),
                       reverse=True)
+
+class BranchMergeProposalVoteLinkView(BranchMergeProposalVoteView):
+    """A view to show the votes with hyperlinks to the comments."""
+
+    # Show hyperlinks to the comments?
+    show_comment_links = True
 
 
 class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):

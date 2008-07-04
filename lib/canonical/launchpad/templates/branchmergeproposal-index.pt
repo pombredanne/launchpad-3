@@ -47,7 +47,7 @@
     </div>
   </tal:whiteboard>
 
-  <tal:votes replace="structure context/@@+votes"/>
+  <tal:votes replace="structure context/@@+votes-with-links"/>
 
   <div tal:define="link context/menu:context/request_review"
        tal:condition="link/enabled"
@@ -55,16 +55,17 @@
        Request review
   </div>
 
+  <tal:comments repeat="row view/comments" >
+    <div tal:content="structure row/comment/@@+fragment-summary"
+         tal:attributes="style row/style" />
+  </tal:comments>
+
   <div tal:define="link context/menu:context/add_comment"
        tal:condition="link/enabled"
        tal:content="structure link/render">
        Add comment
   </div>
 
-      <tal:comments repeat="row view/comments" >
-      <div tal:content="structure row/comment/@@+fragment-summary"
-           tal:attributes="style row/style" />
-      </tal:comments>
 
   <div id="source-revisions"
        tal:condition="not: context/queue_status/enumvalue:MERGED">
