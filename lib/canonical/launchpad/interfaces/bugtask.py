@@ -357,13 +357,18 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         Text(title=_("The target as presented in mail notifications"),
              readonly=True),
         exported_as='bug_target_name')
-    bugwatch = Choice(title=_("Remote Bug Details"), required=False,
-        vocabulary='BugWatch', description=_("Select the bug watch that "
-        "represents this task in the relevant bug tracker. If none of the "
-        "bug watches represents this particular bug task, leave it as "
-        "(None). Linking the remote bug watch with the task in "
-        "this way means that a change in the remote bug status will change "
-        "the status of this bug task in Launchpad."))
+    bugwatch = exported(
+        Choice(
+            title=_("Remote Bug Details"), required=False,
+            vocabulary='BugWatch', description=_(
+                "Select the bug watch that "
+                "represents this task in the relevant bug tracker. If none "
+                "of the bug watches represents this particular bug task, "
+                "leave it as (None). Linking the remote bug watch with the "
+                "task in this way means that a change in the remote bug "
+                "status will change the status of this bug task in "
+                "Launchpad.")),
+        exported_as='bug_watch')
     date_assigned = exported(
         Datetime(title=_("Date Assigned"),
                  description=_("The date on which this task was assigned "
