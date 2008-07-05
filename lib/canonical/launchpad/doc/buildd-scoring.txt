@@ -45,7 +45,6 @@ BuildQueue entries.
 
     >>> version = 1
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> def setUpBuildQueueEntry(
     ...     component_name='main', urgency=SourcePackageUrgency.HIGH,
     ...     pocket=PackagePublishingPocket.RELEASE,
@@ -64,7 +63,7 @@ BuildQueue entries.
     ...     build = pub.sourcepackagerelease.createBuild(
     ...         hoary386, pub.pocket, pub.archive)
     ...
-    ...     build_queue = removeSecurityProxy(build.createBuildQueueEntry())
+    ...     build_queue = build.createBuildQueueEntry()
     ...     build_queue.created = date_created
     ...     build_queue.manual = manual
     ...

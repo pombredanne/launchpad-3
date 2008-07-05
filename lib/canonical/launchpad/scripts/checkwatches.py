@@ -6,7 +6,6 @@ __metaclass__ = type
 
 
 from datetime import datetime, timedelta
-from logging import getLogger
 import socket
 import sys
 
@@ -28,6 +27,7 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.scripts.logger import log as default_log
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -145,13 +145,9 @@ class BugWatchUpdater(object):
 
     ACCEPTABLE_TIME_SKEW = timedelta(minutes=10)
 
-    def __init__(self, txn, log=None):
-        if log is None:
-            self.log = getLogger()
-        else:
-            self.log = log
-
+    def __init__(self, txn, log=default_log):
         self.txn = txn
+        self.log = log
 
     def _login(self):
         """Set up an interaction as the Bug Watch Updater"""

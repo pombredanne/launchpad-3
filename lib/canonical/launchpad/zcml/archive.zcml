@@ -15,7 +15,7 @@
     <require
       permission="launchpad.Admin"
       set_attributes="authorized_size buildd_secret distribution enabled
-                      private require_virtualized"
+                      private name require_virtualized"
       />
   </content>
 
@@ -61,9 +61,9 @@
 
   <browser:page
    for="*"
-   name="+form-macros"
+   name="+macros"
    permission="zope.Public"
-   template="../templates/archive-form-macros.pt"
+   template="../templates/archive-macros.pt"
    />
 
   <browser:pages
