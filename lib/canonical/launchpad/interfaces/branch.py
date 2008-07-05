@@ -64,6 +64,12 @@ from zope.component import getUtility
 from zope.interface import implements, Interface, Attribute
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
+from canonical.lazr.enum import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+
 from canonical.config import config
 
 from canonical.launchpad import _
@@ -71,10 +77,9 @@ from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -426,6 +431,9 @@ class IBranchBatchNavigator(ITableBatchNavigator):
 class IBranch(IHasOwner):
     """A Bazaar branch."""
 
+    # Mark branches as exported entries for the Launchpad API.
+    export_as_webservice_entry()
+
     id = Int(title=_('ID'), readonly=True, required=True)
 
     # XXX: TimPenhey 2007-08-31
@@ -438,32 +446,45 @@ class IBranch(IHasOwner):
     #   1) define a separate schema to use in the UI (sledgehammer solution)
     #   2) work out some way to specify a restricted vocabulary in the view
     # Personally I'd like a LAZR way to do number 2.
-    branch_type = Choice(
-        title=_("Branch Type"), required=True,
-        vocabulary=UICreatableBranchType)
+    branch_type = exported(
+        Choice(
+            title=_("Branch Type"), required=True, readonly=True,
+            vocabulary=UICreatableBranchType))
 
-    name = TextLine(
-        title=_('Name'), required=True, description=_("Keep very "
-        "short, unique, and descriptive, because it will be used in URLs. "
-        "Examples: main, devel, release-1.0, gnome-vfs."),
-        constraint=branch_name_validator)
-    title = Title(
-        title=_('Title'), required=False, description=_("Describe the "
-        "branch as clearly as possible in up to 70 characters. This "
-        "title is displayed in every branch list or report."))
-    summary = Summary(
-        title=_('Summary'), required=False, description=_("A "
-        "single-paragraph description of the branch. This will be "
-        "displayed on the branch page."))
-    url = BranchURIField(
-        title=_('Branch URL'), required=False,
-        allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
-        allow_userinfo=False,
-        allow_query=False,
-        allow_fragment=False,
-        trailing_slash=False,
-        description=_("This is the external location where the Bazaar "
-                      "branch is hosted."))
+    name = exported(
+        TextLine(
+            title=_('Name'), required=True, constraint=branch_name_validator,
+            description=_(
+                "Keep very short, unique, and descriptive, because it will "
+                "be used in URLs.  "
+                "Examples: main, devel, release-1.0, gnome-vfs.")))
+
+    title = exported(
+        Title(
+            title=_('Title'), required=False,
+            description=_(
+                "Describe the branch as clearly as possible in up to 70 "
+                "characters. This title is displayed in every branch list "
+                "or report.")))
+
+    summary = exported(
+        Summary(
+            title=_('Summary'), required=False,
+            description=_(
+                "A single-paragraph description of the branch. This will be "
+                "displayed on the branch page.")))
+
+    url = exported(
+        BranchURIField(
+            title=_('Branch URL'), required=False,
+            allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
+            allow_userinfo=False,
+            allow_query=False,
+            allow_fragment=False,
+            trailing_slash=False,
+            description=_(
+                "This is the external location where the Bazaar "
+                "branch is hosted.")))
 
     branch_format = Choice(
         title=_("Branch Format"), required=False, vocabulary=BranchFormat)
@@ -476,8 +497,11 @@ class IBranch(IHasOwner):
         title=_("Control Directory"), required=False,
         vocabulary=ControlFormat)
 
-    whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
-        description=_('Notes on the current status of the branch.'))
+    whiteboard = exported(
+        Whiteboard(
+            title=_('Whiteboard'), required=False,
+            description=_('Notes on the current status of the branch.')))
+
     mirror_status_message = Text(
         title=_('The last message we got when mirroring this branch '
                 'into supermirror.'), required=False, readonly=False)
@@ -488,35 +512,54 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
-    registrant = Attribute("The user that registered the branch.")
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True,
-        vocabulary='UserTeamsParticipationPlusSelf',
-        description=_("Either yourself or a team you are a member of. "
-                      "This controls who can modify the branch."))
+    registrant = exported(
+        Reference(
+            title=_("Registrant"),
+            description=_("The user that registered the branch."),
+            readonly=True, required=True, schema=IPerson))
+
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'), required=True,
+            vocabulary='UserTeamsParticipationPlusSelf',
+            description=_("Either yourself or a team you are a member of. "
+                          "This controls who can modify the branch.")))
+
     author = PublicPersonChoice(
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
                       "does not have a Launchpad account."))
-    reviewer = PublicPersonChoice(
-        title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
-        description=_("The reviewer of a branch is the person or team that "
-                      "is responsible for authorising code to be merged."))
+
+    reviewer = exported(
+        PublicPersonChoice(
+            title=_('Reviewer'), required=False,
+            vocabulary='ValidPersonOrTeam',
+            description=_(
+                "The reviewer of a branch is the person or team that "
+                "is responsible for authorising code to be merged.")))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
     # Product attributes
-    product = Choice(
-        title=_('Project'), required=False, vocabulary='Product',
-        description=_("The project this branch belongs to."))
+    product = exported(
+        Choice(
+            title=_('Project'), required=False, vocabulary='Product',
+            description=_("The project this branch belongs to.")))
+
     product_name = Attribute("The name of the project, or '+junk'.")
 
     # Display attributes
-    unique_name = Attribute(
-        "Unique name of the branch, including the owner and project names.")
-    displayname = Attribute(
-        "The branch title if provided, or the unique_name.")
+    unique_name = exported(
+        Text(title=_('Unique name'), readonly=True,
+             description=_("Unique name of the branch, including the "
+                           "owner and project names.")))
+
+    displayname = exported(
+        Text(title=_('Display name'), readonly=True,
+             description=_(
+                "The branch title if provided, or the unique_name.")))
+
     sort_key = Attribute(
         "Key for sorting branches for display.")
 
@@ -596,10 +639,12 @@ class IBranch(IHasOwner):
         "BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
-    date_created = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    date_last_modified = Datetime(
-        title=_('Date Last Modified'), required=True, readonly=False)
+    date_created = exported(
+        Datetime(title=_('Date Created'), required=True, readonly=True))
+
+    date_last_modified = exported(
+        Datetime(title=_('Date Last Modified'), required=True,
+                 readonly=False))
 
     def destroySelf(break_references=False):
         """Delete the specified branch.
