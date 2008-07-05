@@ -140,6 +140,7 @@ in devmode.
     >>> from canonical.config import config
     >>> from canonical.launchpad.browser.pofile import POFileNavigationMenu
 
+    >>> original_enable_only = POFileNavigationMenu.enable_only
     >>> POFileNavigationMenu.enable_only = ['description', 'translate']
     >>> config.devmode
     True
@@ -179,8 +180,9 @@ When devmode is False, the links are not included.
       enabled: True
       linked: True
 
-    # Restore the real config attribute.
+    # Restore the real config attribute and the enabled links.
     >>> config.devmode = True
+    >>> POFileNavigationMenu.enable_only = original_enable_only
 
 The view renders the html for the navigation menu when there are links.
 
