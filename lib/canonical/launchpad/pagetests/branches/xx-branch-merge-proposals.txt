@@ -1088,10 +1088,10 @@ they'll get a 404.
 
 == Approving proposals for remote branches ==
 
-Launchpad does not have any revision data for remote branches, so
-we cannot validate that the user has entered a valid revision number
-for the source branch when approving.  What we do instead is just to
-record the stringified revision number.
+Launchpad does not have any revision data for remote branches, so we
+cannot validate that the user has entered a valid revision number for
+the source branch when approving.  What we do instead is record the
+stringified revision number.
 
     >>> # Create an interaction needed to create branches.
     >>> login('test@canonical.com')
