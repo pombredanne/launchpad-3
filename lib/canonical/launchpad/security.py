@@ -1757,6 +1757,10 @@ class ViewEmailAddress(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IEmailAddress
 
+    def checkUnauthenticated(self):
+        """See `AuthorizationBase`."""
+        return not self.obj.person.hide_email_addresses
+
     def checkAuthenticated(self, user):
         """Can the user see the details of this email address?
 
@@ -1767,6 +1771,6 @@ class ViewEmailAddress(AuthorizationBase):
         if not self.obj.person.hide_email_addresses:
             return True
         celebrities = getUtility(ILaunchpadCelebrities)
-        return (user == self.obj.person
+        return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.admin))

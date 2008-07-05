@@ -3004,17 +3004,6 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        """Set the user's current relicensing preference or a True default."""
-        default = self.context.translations_relicensing_agreement
-        if default is None:
-            default = True
-        return {
-            "allow_relicensing": default,
-            "back_to": self.request.get('back_to'),
-            }
-
-    @property
-    def initial_values(self):
         """Set the default value for the relicensing radio buttons."""
         # If the person has previously made a choice, we default to that.
         # Otherwise, we default to BSD, because that's what we'd prefer.

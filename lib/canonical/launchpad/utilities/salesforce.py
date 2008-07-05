@@ -145,8 +145,11 @@ class SalesforceVoucherProxy:
     @fault_mapper
     def grantVoucher(self, admin, approver, recipient, term_months):
         """See `ISalesforceVoucherProxy`."""
+        from zope.security.proxy import removeSecurityProxy
+        # Bypass zope's security because IEmailAddress.email is not public.
+        naked_email = removeSecurityProxy(recipient.preferredemail)
         voucher_id = self.server.grantVoucher(
             admin.openid_identifier, approver.openid_identifier,
             recipient.openid_identifier, recipient.name,
-            recipient.preferredemail.email, term_months)
+            naked_email.email, term_months)
         return voucher_id
