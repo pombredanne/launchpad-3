@@ -51,7 +51,7 @@ It lists the active imports, sorted by product then branch name:
 You can filter the list by product:
 
    >>> browser.getControl(name='text').value = 'hisproj'
-   >>> browser.getControl('Search').click()
+   >>> browser.getControl('Search', index=0).click()
    >>> print_import_table()
    Project   Branch Name Source Details                         Last Updated
    hisproj   main        :pserver:anon@example.com:/cvs hisproj 2007-01-02

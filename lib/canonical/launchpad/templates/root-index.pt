@@ -9,7 +9,7 @@
   metal:use-macro="view/macro:page/freeform"
   i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="main" class="freeform">
+    <div metal:fill-slot="main">
 
   <div class="informational message" tal:condition="view/canRedirect">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
@@ -30,6 +30,7 @@
 
       <div id="applications" tal:content="structure context/@@+applicationbuttons/main" />
       <form
+        id="project-search"
         class="central front_page"
         style="text-align: center;"
         action="/projects/"
@@ -110,24 +111,10 @@
                 Hear the latest from the Launchpad team, with interviews and
                 news in Launchpod - the Launchpad team podcast.
               </a>
-           </li>
-            <li class="news">
-              <a href="http://news.launchpad.net/?p=75">
-                <strong>Package diffs</strong><br />
-                View a diff of your newly uploaded source package with the
-                currently published package
-              </a>
-            </li>
-            <li class="news">
-              <a href="http://news.launchpad.net/?p=74">
-                <strong>Search translations</strong><br />
-                Find words and phrases within translation files. Ideal for
-                locating and correcting errors.
-              </a>
             </li>
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2008-06-30.
+            Updated 2008-07-02.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>
