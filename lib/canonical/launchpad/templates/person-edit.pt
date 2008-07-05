@@ -12,10 +12,7 @@
   <body>
 
   <div metal:fill-slot="main">
-    <h1 tal:condition="not: view/label">Change account details</h1>
-
     <div metal:use-macro="context/@@launchpad_form/form">
-
       <div metal:fill-slot="extra_bottom">
         <table>
           <tbody>
@@ -52,7 +49,6 @@
           >Deactivate your account</a>.
       </p>
     </div>
-
   </div>
 
   </body>
