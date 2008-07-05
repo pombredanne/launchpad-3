@@ -281,6 +281,20 @@ class TestCodeHandler(TestCaseWithFactory):
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, CodeReviewVote.ABSTAIN)
 
+    def test_getVoteAbstainAliasPlus(self):
+        """Test the abstain alias of +0."""
+        mail = self.factory.makeSignedMessage(body=' vote +0')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.ABSTAIN)
+
+    def test_getVoteAbstainAliasMinus(self):
+        """Test the abstain alias of -0."""
+        mail = self.factory.makeSignedMessage(body=' vote -0')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.ABSTAIN)
+
     def test_getVoteDisapproveAlias(self):
         """Test the disapprove alias of -1."""
         mail = self.factory.makeSignedMessage(body=' vote -1')

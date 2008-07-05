@@ -518,9 +518,9 @@ class CodeHandler:
 
     _vote_alias = {
         '+1': CodeReviewVote.APPROVE,
-        # A question is what we should do with the commonly used
-        # +0 and -0???.
+        '+0': CodeReviewVote.ABSTAIN,
         '0': CodeReviewVote.ABSTAIN,
+        '-0': CodeReviewVote.ABSTAIN,
         '-1': CodeReviewVote.DISAPPROVE,
         }
 
