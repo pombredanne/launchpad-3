@@ -10,8 +10,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.announcement import IAnnouncement
-from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, IArchive)
+from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.archiverebuild import IArchiveRebuild
@@ -1250,28 +1249,22 @@ class EditBuildRecord(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
     usedfor = IBuild
 
-    def _ppaCheckAuthenticated(self, user):
-        """Allow only BuilddAdmins and PPA owner."""
-        if AdminByBuilddAdmin.checkAuthenticated(self, user):
-            return True
-
-        if self.obj.archive.owner and user.inTeam(self.obj.archive.owner):
-            return True
-
-        return False
-
     def checkAuthenticated(self, user):
         """Check write access for user and different kinds of archives.
 
         Allow
-        
-            * BuilddAdmins and PPA owner for PPAs
+            * BuilddAdmins, for any archive.
+            * The PPA owner for PPAs
             * users with upload permissions (for the respective distribution)
               otherwise.
         """
-        # Is this a PPA? Call the respective method if so.
-        if self.obj.archive.purpose == ArchivePurpose.PPA:
-            return self._ppaCheckAuthenticated(user)
+        if AdminByBuilddAdmin.checkAuthenticated(self, user):
+            return True
+
+        # If it's a PPA only allow its owner.
+        if self.obj.archive.is_ppa:
+            return (self.obj.archive.owner and
+                    user.inTeam(self.obj.archive.owner))
 
         # Primary or partner section here: is the user in question allowed
         # to upload to the respective component? Allow user to retry build
