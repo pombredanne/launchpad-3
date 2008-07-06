@@ -67,6 +67,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, stepthrough, stepto)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError)
+from canonical.launchpad.webapp.tales import formatTextList
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
@@ -594,24 +595,6 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
 
-    def formatInEnglish(self, list_of_words):
-        """Return an English grammar formatted sentence,
-
-        Take the string items in list_of_words, and return a string
-        formatted with English grammar rules; comma separated until the
-        last item, which is preceded with 'and' instead.  If the list only
-        has one item, it is returned on its own as a string.
-        """
-        if len(list_of_words) > 1:
-            text = ", ".join(list_of_words[:-1])
-            text += " and " + list_of_words[-1]
-        elif len(list_of_words) == 1:
-            text = list_of_words[0]
-        else:
-            text = ""
-
-        return text
-
     def usesLaunchpadFor(self):
         """Return a string of LP apps (comma-separated) this distro uses."""
         if (not self.context.full_functionality or
@@ -629,15 +612,16 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
             if self.context.official_rosetta:
                 uses.append("<strong>Translations</strong>")
 
-            apps = self.formatInEnglish(uses)
+            apps = formatTextList(uses)
 
             return "%s uses Launchpad for %s." % (self.context.title, apps)
 
     def linkedMilestonesForSeries(self, series):
         """Return a string of linkified milestones in the series."""
+        # Listify to remove repeated queries.
         milestones = list(series.milestones)
-        if not milestones:
-            return
+        if len(milestones) == 0:
+            return ""
 
         linked_milestones = []
         for milestone in milestones:
@@ -645,7 +629,7 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
                 "<a href=%s>%s</a>" % (
                     canonical_url(milestone), milestone.name))
 
-        return self.formatInEnglish(linked_milestones)
+        return formatTextList(linked_milestones)
 
 
 class DistributionPPASearchView(LaunchpadView):
