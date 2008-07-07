@@ -755,6 +755,10 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         :return: The new Product and the new Branch.
         """
         product = self.factory.makeProduct()
+        # Only products that are explicitly specified in
+        # allow_default_stacking will have values for default stacked-on. Here
+        # we add the just-created product to allow_default_stacking so we can
+        # test stacking with private branches.
         section = (
             "[codehosting]\n"
             "allow_default_stacking: %s,%s"
