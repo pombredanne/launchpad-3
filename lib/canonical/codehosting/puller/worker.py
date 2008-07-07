@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 import httplib
+import os
 import shutil
 import socket
 import sys
@@ -273,7 +274,6 @@ class PullerWorker:
             else:
                 # The destination is in a different format to the source, so
                 # we'll delete it and mirror from scratch.
-                shutil.rmtree(self.dest)
                 branch = self._createDestBranch()
         self._dest_branch = branch
 
@@ -283,6 +283,8 @@ class PullerWorker:
         #    Bzrdir.sprout is *almost* what we want here, except that sprout
         #    creates a working tree that we don't need. Instead, we do some
         #    low-level operations.
+        if os.path.exists(self.dest):
+            shutil.rmtree(self.dest)
         ensure_base(get_transport(self.dest))
         bzrdir_format = self._source_branch.bzrdir._format
         bzrdir = bzrdir_format.initialize(self.dest)
