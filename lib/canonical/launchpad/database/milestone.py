@@ -13,14 +13,18 @@ from sqlobject import (
     ForeignKey, StringCol, AND, SQLObjectNotFound, BoolCol, DateCol,
     SQLMultipleJoin)
 
-from canonical.launchpad.interfaces import (
-    IBugTaskSet, IHasBugs, IMilestone, IMilestoneSet, IProjectMilestone,
-    IStructuralSubscriptionTarget, NotFoundError)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
+from canonical.launchpad.interfaces.bugtarget import IHasBugs
+from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.milestone import (
+    IMilestone, IMilestoneSet, IProjectMilestone)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):

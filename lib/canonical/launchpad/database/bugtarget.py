@@ -4,7 +4,10 @@
 """Components related to IBugTarget."""
 
 __metaclass__ = type
-__all__ = ['BugTargetBase', 'HasBugsBase']
+__all__ = [
+    'BugTargetBase',
+    'HasBugsBase',
+    ]
 
 from zope.component import getUtility
 
@@ -24,7 +27,7 @@ class HasBugsBase:
     or from `BugTargetBase`.
     """
     def searchTasks(self, search_params, *args):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         raise NotImplementedError
 
     def _getBugTaskContextWhereClause(self):
