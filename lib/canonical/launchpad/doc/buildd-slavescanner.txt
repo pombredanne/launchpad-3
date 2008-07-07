@@ -1084,6 +1084,19 @@ credentials, unlike the archive itself.
 
     >>> candidate.destroySelf()
 
+Since this is a build in a private archive, the buildlog was uploaded to
+the restricted librarian.
+
+    >>> candidate = a_build.createBuildQueueEntry()
+    >>> setupBuildQueue(candidate, a_builder)
+    >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+    >>> buildergroup.updateBuild(candidate)
+
+    >>> candidate.build.archive.private
+    True
+    >>> candidate.build.buildlog.restricted
+    True
+
 A PPA can depend on another PPA. We can make Celso's PPA depend on
 Mark's PPA:
 
