@@ -136,7 +136,8 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 .debugging.message::before     {content: url(/@@/info-large);}
 /* Form errors use the color as a border instead of a background, avoiding
 the problem of horizontal padding vs. horizontal alignment of fields: */
-table.form .error {background: inherit; border-top: 6px solid #ffe4e4;}
+table.form tr.error {background: inherit; border-top: 6px solid #ffe4e4;}
+table.form tr.error th, table.form tr.error td {padding-top: 8px;}
 /* And inside, the error message itself uses a smaller icon: */
 .error .message {
   background: url(/@@/error) center left no-repeat;
@@ -186,6 +187,7 @@ textarea {width: 100%;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
 table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
+table.form th, table.form td {padding-bottom: 1em;}
 
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
@@ -1618,7 +1620,6 @@ table.summary ul, table.summary ul li {
   margin: 0;
   padding: 0;
 }
-th, td {padding: 0.25em;}
 th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
 th.icon.left, td.icon.left {padding-right: 0;}
 th.icon.right, td.icon.right {padding-left: 0;}
