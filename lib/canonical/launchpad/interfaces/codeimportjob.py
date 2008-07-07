@@ -241,9 +241,23 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: A FINISH `CodeImportEvent` was created.
         """
 
-
     def reclaimJob(import_job):
         """Record that `import_job` has been reclaimed.
 
+        This should be called when the job's heartbeat has not been updated
+        for what the code import watchdog deems is 'too long'.
+
+        This method creates a CodeImportResult object that records that the
+        job was reclaimed, deletes `import_job` from the database and creates
+        a new job that is due again immediately.
+
+        In the conditions below, let `code_import = import_job.code_import`.
+
         :param import_job: `CodeImportJob` object.
+        :precondition: `import_job`.state == RUNNING.
+        :postcondition: `import_job` is deleted.
+        :postcondition: `code_import.import_job` is not None.
+        :postcondition: `code_import.import_job.date_due` is UTC_NOW.
+        :postcondition: A `CodeImportResult` was created.
+        :postcondition: A FINISH `CodeImportEvent` was created.
         """

@@ -446,7 +446,7 @@ It just takes a running code import job as a parameter.
     >>> print new_events.summary()
     RECLAIM ...
 
-4) creates a new due job for the code import.
+4) creates a new, already due, job for the code import.
 
     >>> print_date_attribute(running_import.import_job, 'date_due')
     UTC_NOW
