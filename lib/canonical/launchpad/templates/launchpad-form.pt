@@ -143,8 +143,11 @@
           <input type="checkbox" tal:replace="structure widget" />
           <label tal:attributes="for widget/name"
                  tal:content="widget/label">Label</label>
-          <div class="message" tal:condition="error"
-               tal:content="structure error">Error message</div>
+          <div
+            tal:condition="error"
+            tal:content="structure error"
+            class="message"
+          >Error message</div>
           <p class="formHelp"
              tal:condition="widget/hint"
              tal:content="widget/hint">Some Help Text
