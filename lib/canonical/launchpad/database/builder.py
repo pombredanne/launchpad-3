@@ -41,7 +41,6 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus, ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp import urlappend
-from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 
 
