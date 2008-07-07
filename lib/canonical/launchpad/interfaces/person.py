@@ -1668,6 +1668,10 @@ class IPersonSet(Interface):
         default ordering specified in Person._defaultOrder.
         """
 
+    @collection_default_content()
+    def getAllValidPersonsAndTeams():
+        """Return all valid persons and teams."""
+
     def updateStatistics(ztm):
         """Update statistics caches and commit."""
 
@@ -1681,7 +1685,6 @@ class IPersonSet(Interface):
            statistics update.
         """
 
-    @collection_default_content()
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @export_read_operation()

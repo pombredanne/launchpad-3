@@ -267,6 +267,41 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertRaises(InvalidBranchMergeProposalAddress,
                           self.code_handler.getBranchMergeProposal, 'mp+abc@')
 
+    def test_getVoteApproveAlias(self):
+        """Test the approve alias of +1."""
+        mail = self.factory.makeSignedMessage(body=' vote +1')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.APPROVE)
+
+    def test_getVoteAbstainAlias(self):
+        """Test the abstain alias of 0."""
+        mail = self.factory.makeSignedMessage(body=' vote 0')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.ABSTAIN)
+
+    def test_getVoteAbstainAliasPlus(self):
+        """Test the abstain alias of +0."""
+        mail = self.factory.makeSignedMessage(body=' vote +0')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.ABSTAIN)
+
+    def test_getVoteAbstainAliasMinus(self):
+        """Test the abstain alias of -0."""
+        mail = self.factory.makeSignedMessage(body=' vote -0')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.ABSTAIN)
+
+    def test_getVoteDisapproveAlias(self):
+        """Test the disapprove alias of -1."""
+        mail = self.factory.makeSignedMessage(body=' vote -1')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.DISAPPROVE)
+
 
 class TestMaloneHandler(TestCaseWithFactory):
     """Test that the Malone/bugs handler works."""

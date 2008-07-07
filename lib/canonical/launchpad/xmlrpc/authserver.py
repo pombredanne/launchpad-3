@@ -114,7 +114,6 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
     def _getEmailAddresses(self, person):
         """Get the email addresses for a person"""
         emails = [person.preferredemail] + list(person.validatedemails)
-        return (
-            [person.preferredemail.email] +
-            [email.email for email in person.validatedemails])
-
+        # Bypass zope's security because IEmailAddress.email is not public.
+        from zope.security.proxy import removeSecurityProxy
+        return [removeSecurityProxy(email).email for email in emails]
