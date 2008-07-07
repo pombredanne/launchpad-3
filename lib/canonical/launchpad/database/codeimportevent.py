@@ -23,8 +23,6 @@ from canonical.launchpad.interfaces import (
     CodeImportEventDataType, CodeImportEventType,
     ICodeImportEvent, ICodeImportEventSet, ICodeImportEventToken,
     CodeImportMachineOfflineReason, RevisionControlSystems)
-from canonical.launchpad.interfaces.codeimportjob import (
-    CodeImportJobKillReason)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.lazr.enum import DBItem
 
@@ -187,26 +185,13 @@ class CodeImportEventSet:
             event_type=CodeImportEventType.FINISH,
             code_import=code_import, machine=machine)
 
-    def newKill(self, code_import, machine, reason, job_id):
+    def newKill(self, code_import, machine):
         """See `ICodeImportEventSet`."""
         assert code_import is not None, "code_import must not be None"
         assert machine is not None, "machine must not be None"
-        assert (type(reason) == DBItem
-                and reason.enum == CodeImportJobKillReason), (
-            "reason must be a CodeImportJobKillReason value, "
-            "but was: %r" % (reason,))
-        assert isinstance(job_id, int), (
-            "job_id must be an int, was: %r" % job_id)
-        event = CodeImportEvent(
+        return CodeImportEvent(
             event_type=CodeImportEventType.KILL,
             code_import=code_import, machine=machine)
-        _CodeImportEventData(
-            event=event, data_type=CodeImportEventDataType.KILL_REASON,
-            data_value=reason.name)
-        _CodeImportEventData(
-            event=event, data_type=CodeImportEventDataType.KILLED_JOB_ID,
-            data_value=str(job_id))
-        return event
 
     def _recordSnapshot(self, event, code_import):
         """Record a snapshot of the code import in the event data."""

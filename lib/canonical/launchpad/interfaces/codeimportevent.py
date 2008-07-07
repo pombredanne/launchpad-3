@@ -241,19 +241,6 @@ class CodeImportEventDataType(DBEnumeratedType):
     Reason why a code import machine went offline.
     """)
 
-    # Data related to machine events
-
-    KILL_REASON = DBItem(510, """Kill Reason
-
-    Reason why a code import job was killed.
-    """)
-
-    KILLED_JOB_ID = DBItem(520, """Killed Job ID
-
-    The ID of the row in the CodeImportJob table that was deleted -- recorded
-    to allow the relevant log files to be examined.
-    """)
-
 
 class ICodeImportEvent(Interface):
     """One event in the code-import audit trail."""
@@ -393,13 +380,11 @@ class ICodeImportEventSet(Interface):
         :return: `CodeImportEvent` of FINISH type.
         """
 
-    def newKill(code_import, machine, reason, job_id):
+    def newKill(code_import, machine):
         """Record that a code import job was killed.
 
         :param code_import: The `CodeImport` killed job was working on.
         :param machine: `CodeImportMachine` on which the job was running.
-        :param reason: `CodeImportJobKillReason` enum value.
-        :param job_id: Database ID of the killed CodeImportJob.
         :return: `CodeImportEvent` of KILL type.
         """
 

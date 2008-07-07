@@ -471,26 +471,15 @@ event should be created to record that the job has been finished.
 === KILL ===
 
 When a job is killed from outside of the worker, a KILL event records
-that this was done.  The parameters are mostly self-explanatory:
-code_import, machine, reason, job_id.  'reason' records whether the
-job was killed by the watchdog process or because the code import was
-suspended in the web application.
-
-    >>> from canonical.launchpad.interfaces.codeimportjob import (
-    ...     CodeImportJobKillReason)
-    >>> reason = CodeImportJobKillReason.WATCHDOG # Arbitrary choice
-    >>> job_id = 42 # Also arbitrary
+that this was done.  The parameters are self-explanatory: code_import
+and machine
 
     >>> fail_if_argument_is_none(
-    ...     event_set.newKill, None, machine, reason, job_id)
+    ...     event_set.newKill, None, machine)
     >>> fail_if_argument_is_none(
-    ...     event_set.newKill, svn_import, None, reason, job_id)
-    >>> fail_if_argument_is_none(
-    ...     event_set.newKill, svn_import, machine, None, job_id)
-    >>> fail_if_argument_is_none(
-    ...     event_set.newKill, svn_import, machine, reason, None)
+    ...     event_set.newKill, svn_import, None)
 
-    >>> kill_event = event_set.newKill(svn_import, machine, reason, job_id)
+    >>> kill_event = event_set.newKill(svn_import, machine)
     >>> verify_event(kill_event)
     KILL
 
@@ -500,6 +489,5 @@ suspended in the web application.
     None
     >>> print kill_event.machine.hostname
     bazaar-importer
-    >>> print_items(kill_event)
-    KILL_REASON u'WATCHDOG'
-    KILLED_JOB_ID u'42'
+    >>> kill_event.items()
+    []

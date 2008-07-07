@@ -8,7 +8,6 @@ CodeImportJobs represent pending and running updates of a code import.
 
 __metaclass__ = type
 __all__ = [
-    'CodeImportJobKillReason',
     'CodeImportJobState',
     'ICodeImportJob',
     'ICodeImportJobSet',
@@ -48,24 +47,6 @@ class CodeImportJobState(DBEnumeratedType):
         Running
 
         The job is running.
-        """)
-
-
-class CodeImportJobKillReason(DBEnumeratedType):
-    """Reason why a CodeImportJob was killed."""
-
-    IMPORT_SUSPENDED = DBItem(10, """
-        Import Suspended
-
-        The code import was suspended while an import job was running and so
-        the job was killed.
-        """)
-
-    WATCHDOG = DBItem(20, """
-        Watchdog
-
-        The watchdog detected that the job's heartbeat has not been
-        updated recently.
         """)
 
 
