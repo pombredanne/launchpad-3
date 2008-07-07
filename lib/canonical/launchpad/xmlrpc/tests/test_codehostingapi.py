@@ -8,19 +8,23 @@ __all__ = []
 
 import os
 import unittest
+import xmlrpclib
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.tests.helpers import BranchTestCase
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.xmlrpc.branch import PublicCodehostingAPI
 from canonical.launchpad.xmlrpc import faults
+from canonical.testing import LaunchpadFunctionalLayer
 
 
-class TestExpandURL(BranchTestCase):
+class TestExpandURL(TestCaseWithFactory):
     """Test the way that URLs are expanded."""
+
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Set up the fixture for these unit tests.
@@ -29,46 +33,25 @@ class TestExpandURL(BranchTestCase):
         - 'trunk' is a branch on 'project', associated with the development
           focus.
         """
-        BranchTestCase.setUp(self)
-        login(ANONYMOUS)
-        self.addCleanup(logout)
+        TestCaseWithFactory.setUp(self)
         self.api = PublicCodehostingAPI(None, None)
-        # BranchType is only signficiant insofar as it is not a REMOTE branch.
-        self.product = self.makeProduct()
-
+        self.product = self.factory.makeProduct()
         # Associate 'trunk' with the product's development focus. Use
         # removeSecurityProxy so that we can assign directly to user_branch.
         trunk_series = removeSecurityProxy(self.product).development_focus
+        # BranchType is only signficiant insofar as it is not a REMOTE branch.
         trunk_series.user_branch = (
-            self.makeBranch(BranchType.HOSTED, product=self.product))
+            self.factory.makeBranch(BranchType.HOSTED, product=self.product))
 
     def makePrivateBranch(self, **kwargs):
         """Create an arbitrary private branch using `makeBranch`.
 
         See `BranchTestCase`.
         """
-        branch = self.makeBranch(**kwargs)
+        branch = self.factory.makeBranch(**kwargs)
         naked_branch = removeSecurityProxy(branch)
         naked_branch.private = True
         return branch
-
-    def makeProductSeries(self, product=None, owner=None, name=None,
-                          summary=None, branch=None):
-        """Make a new, arbitrary product series.
-
-        Arbitrary values will be provided for product, owner, name and summary
-        if they are not provided. If branch is not provided, then the series
-        will have no associated branch.
-        """
-        if product is None:
-            product = self.makeProduct()
-        if owner is None:
-            owner = self.makePerson()
-        if name is None:
-            name = self.getUniqueString()
-        if summary is None:
-            summary = self.getUniqueString()
-        return product.newSeries(owner, name, summary, branch=branch)
 
     def assertResolves(self, lp_url_path, unique_name):
         """Assert that the given lp URL path expands to the unique name of
@@ -82,12 +65,15 @@ class TestExpandURL(BranchTestCase):
             self.assertEqual('/' + unique_name, URI(url).path)
 
     def assertFault(self, lp_url_path, expected_fault):
-        """Assert that trying to resolve lp_url_path returns the expected
-        fault.
-        """
-        fault = self.api.resolve_lp_path(lp_url_path)
-        self.assertEqual(expected_fault.__class__, fault.__class__)
-        self.assertEqual(expected_fault.faultString, fault.faultString)
+        """Trying to resolve lp_url_path raises the expected fault."""
+        try:
+            fault = self.api.resolve_lp_path(lp_url_path)
+        except xmlrpclib.Fault, fault:
+            self.assertEqual(expected_fault.__class__, fault.__class__)
+            self.assertEqual(expected_fault.faultString, fault.faultString)
+        else:
+            self.fail(
+                "resolve_lp_path(%r) did not raise a Fault." % lp_url_path)
 
     def test_resultDict(self):
         """A given lp url path maps to a single branch available from a number
@@ -110,7 +96,7 @@ class TestExpandURL(BranchTestCase):
         trunk = self.product.development_focus.user_branch
         self.assertResolves(self.product.name, trunk.unique_name)
         trunk_series = removeSecurityProxy(self.product).development_focus
-        trunk_series.user_branch = self.makeBranch(
+        trunk_series.user_branch = self.factory.makeBranch(
             BranchType.HOSTED, product=self.product)
         self.assertResolves(
             self.product.name, trunk_series.user_branch.unique_name)
@@ -122,12 +108,38 @@ class TestExpandURL(BranchTestCase):
         self.assertFault(
             'doesntexist/trunk', faults.NoSuchProduct('doesntexist'))
 
+    def test_projectGroup(self):
+        # Resolving lp:///project_group_name' should explain that project
+        # groups don't have default branches.
+        project_group = self.factory.makeProject()
+        self.assertFault(
+            project_group.name,
+            faults.NoDefaultBranchForPillar(
+                project_group.name, 'project group'))
+
+    def test_distroName(self):
+        # Resolving lp:///distro_name' should explain that distributions don't
+        # have default branches.
+        distro = self.factory.makeDistribution()
+        self.assertFault(
+            distro.name,
+            faults.NoDefaultBranchForPillar(
+                distro.name, 'distribution'))
+
+    def test_invalidProductName(self):
+        # If we get a string that cannot be a name for a product where we
+        # expect the name of a product, we should error appropriately.
+        invalid_name = '+' + self.factory.getUniqueString()
+        self.assertFault(
+            invalid_name,
+            faults.InvalidProductIdentifier(invalid_name))
+
     def test_productAndSeries(self):
         """lp:product/series expands to the branch associated with the product
         series 'series' on 'product'.
         """
-        series = self.makeProductSeries(
-            self.product, branch=self.makeBranch())
+        series = self.factory.makeSeries(
+            product=self.product, user_branch=self.factory.makeBranch())
         self.assertResolves(
             '%s/%s' % (self.product.name, series.name),
             series.user_branch.unique_name)
@@ -142,7 +154,7 @@ class TestExpandURL(BranchTestCase):
         """Return a NoBranchForSeries fault if the development focus has no
         branch associated with it.
         """
-        product = self.makeProduct()
+        product = self.factory.makeProduct()
         self.assertEqual(None, product.development_focus.user_branch)
         self.assertFault(
             product.name, faults.NoBranchForSeries(product.development_focus))
@@ -151,7 +163,7 @@ class TestExpandURL(BranchTestCase):
         """Return a NoBranchForSeries fault if the series has no branch
         associated with it.
         """
-        series = self.makeProductSeries(branch=None)
+        series = self.factory.makeSeries(user_branch=None)
         self.assertFault(
             '%s/%s' % (series.product.name, series.name),
             faults.NoBranchForSeries(series))
@@ -168,7 +180,7 @@ class TestExpandURL(BranchTestCase):
         """The unique name of a branch resolves to the unique name of the
         branch.
         """
-        arbitrary_branch = self.makeBranch()
+        arbitrary_branch = self.factory.makeBranch()
         self.assertResolves(
             arbitrary_branch.unique_name, arbitrary_branch.unique_name)
         trunk = self.product.development_focus.user_branch
@@ -178,7 +190,8 @@ class TestExpandURL(BranchTestCase):
         """The unique name of a mirrored branch resolves to the unique name of
         the branch.
         """
-        arbitrary_branch = self.makeBranch(BranchType.MIRRORED)
+        arbitrary_branch = self.factory.makeBranch(
+            branch_type=BranchType.MIRRORED)
         self.assertResolves(
             arbitrary_branch.unique_name, arbitrary_branch.unique_name)
 
@@ -187,7 +200,7 @@ class TestExpandURL(BranchTestCase):
 
         We do this so that users can push new branches to lp: URLs.
         """
-        owner = self.makePerson()
+        owner = self.factory.makePerson()
         nonexistent_branch = '~%s/%s/doesntexist' % (
             owner.name, self.product.name)
         self.assertResolves(nonexistent_branch, nonexistent_branch)
@@ -196,7 +209,7 @@ class TestExpandURL(BranchTestCase):
         """Resolve paths to junk branches."""
         # This test added to make sure we don't raise a fault when looking for
         # the '+junk' project, which doesn't actually exist.
-        owner = self.makePerson()
+        owner = self.factory.makePerson()
         nonexistent_branch = '~%s/+junk/doesntexist' % owner.name
         self.assertResolves(nonexistent_branch, nonexistent_branch)
 
@@ -204,9 +217,9 @@ class TestExpandURL(BranchTestCase):
         """If we try to resolve a branch that refers to a non-existent
         product, then we return a NoSuchProduct fault.
         """
-        owner = self.makePerson()
+        owner = self.factory.makePerson()
         nonexistent_product_branch = "~%s/doesntexist/%s" % (
-            owner.name, self.getUniqueString())
+            owner.name, self.factory.getUniqueString())
         self.assertFault(
             nonexistent_product_branch, faults.NoSuchProduct('doesntexist'))
 
@@ -215,7 +228,7 @@ class TestExpandURL(BranchTestCase):
         then we return a NoSuchPerson fault.
         """
         nonexistent_owner_branch = "~doesntexist/%s/%s" % (
-            self.getUniqueString(), self.getUniqueString())
+            self.factory.getUniqueString(), self.factory.getUniqueString())
         self.assertFault(
             nonexistent_owner_branch,
             faults.NoSuchPersonWithUsername('doesntexist'))
@@ -227,7 +240,7 @@ class TestExpandURL(BranchTestCase):
         We do this so that users can do operations like 'bzr cat
         lp:path/to/branch/README.txt'.
         """
-        arbitrary_branch = self.makeBranch()
+        arbitrary_branch = self.factory.makeBranch()
         longer_path = os.path.join(arbitrary_branch.unique_name, 'qux')
         self.assertResolves(longer_path, longer_path)
 
@@ -263,7 +276,7 @@ class TestExpandURL(BranchTestCase):
         self.assertResolves(self.product.name + '//', trunk.unique_name)
 
         # Trailing slashes on lp:~owner/product/branch//
-        arbitrary_branch = self.makeBranch()
+        arbitrary_branch = self.factory.makeBranch()
         self.assertResolves(
             arbitrary_branch.unique_name + '/', arbitrary_branch.unique_name)
         self.assertResolves(
@@ -292,7 +305,7 @@ class TestExpandURL(BranchTestCase):
         # attributes of a private branch and these tests are running as an
         # anonymous user.
         branch = removeSecurityProxy(self.makePrivateBranch())
-        series = self.makeProductSeries(branch=branch)
+        series = self.factory.makeSeries(user_branch=branch)
         self.assertFault(
             '%s/%s' % (series.product.name, series.name),
             faults.NoBranchForSeries(series))
@@ -322,9 +335,9 @@ class TestExpandURL(BranchTestCase):
         """
         # Create the owner explicitly so that we can get its email without
         # resorting to removeSecurityProxy.
-        email = "%s@example.com" % self.getUniqueString('email')
+        email = self.factory.getUniqueEmailAddress()
         arbitrary_branch = self.makePrivateBranch(
-            owner=self.makePerson(email=email))
+            owner=self.factory.makePerson(email=email))
         login(email)
         try:
             self.assertResolves(
@@ -336,7 +349,7 @@ class TestExpandURL(BranchTestCase):
         """For remote branches, return results that link to the actual remote
         branch URL.
         """
-        branch = self.makeBranch(BranchType.REMOTE)
+        branch = self.factory.makeBranch(branch_type=BranchType.REMOTE)
         result = self.api.resolve_lp_path(branch.unique_name)
         self.assertEqual([branch.url], result['urls'])
 

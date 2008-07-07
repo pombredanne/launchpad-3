@@ -1,16 +1,17 @@
 #! /bin/bash
 
-# This script pushes each of your branches in ~/canonical/lp-branches/ to
-# devpad.canonical.com, assuming your ~/.bazaar/locations.conf has been
-# setup correctly by rocketfuel-setup
+# Push all of your branches to devpad, so that you have a server-side backup
+# of everything, assuming your ~/.bazaar/locations.conf has been setup
+# correctly by rocketfuel-setup.
 
-cd ~/canonical/lp-branches
+source utilities/rocketfuel-env.sh
+
+cd $LP_PROJECT_PATH
 for branch in *; do
-  if [ ${branch} != "trunk" ] && test -d ${branch} ; then
+  if [ ${branch} != "$LP_TRUNK_NAME" ] && test -d ${branch} ; then
     echo "Pushing ${branch}"
     cd ${branch}
     bzr push
     cd ..
   fi;
 done;
-

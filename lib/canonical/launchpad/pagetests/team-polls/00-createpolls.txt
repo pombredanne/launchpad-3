@@ -120,7 +120,6 @@ We're redirected to the newly created poll
     'Poll: \xe2\x80\x9cDebian Project Leader Election 2080\xe2\x80\x9d'
     >>> print_navigation(team_admin_browser.contents)
     Location: ?Ubuntu Team? team
-    Structural title: Ubuntu Team
     Tabs:
     * Overview (http://launchpad.dev/~ubuntu-team)
     * Code (http://code.launchpad.dev/~ubuntu-team)

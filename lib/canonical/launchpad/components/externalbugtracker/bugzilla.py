@@ -54,6 +54,11 @@ class Bugzilla(ExternalBugTracker):
 
         See `IExternalBugTracker`.
         """
+        # XXX, intellectronica, bug #245586:
+        # Short circuit to always use the old-style plugin
+        # while the new XMLRPC transport isn't quite working.
+        return self
+
         plugin = BugzillaLPPlugin(self.baseurl)
         try:
             # We try calling Launchpad.plugin_version() on the remote

@@ -268,12 +268,8 @@ class DistributionNavigationMenu(NavigationMenu):
              'ppas',
              )
 
-    # XXX Julian 2008-06-25
-    # The navigation to the details page should not use '+index' here
-    # but if the code is changed to use '' instead then the tab
-    # highlighting/disabling breaks.  See bug 242860.
     def details(self):
-        target = '+index'
+        target = ''
         text = 'Details'
         return Link(target, text)
 
