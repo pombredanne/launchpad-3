@@ -976,11 +976,11 @@ class PillarFormatterAPI(CustomizableFormatter):
     def link(self, extra_path):
         html = super(PillarFormatterAPI, self).link(extra_path)
         if IProduct.providedBy(self._context):
-            if self._context.license_status != LicenseStatus.OPEN_SOURCE:
+            license_status = self._context.license_status
+            if license_status != LicenseStatus.OPEN_SOURCE:
                 html = '<span title="%s">%s (%s)</span>' % (
-                    self._context.license_status.description,
-                    html,
-                    self._context.license_status.title)
+                    license_status.description, html,
+                    license_status.title)
         return html
 
 
@@ -2416,7 +2416,6 @@ class PageMacroDispatcher:
         view/macro:pagehas/heading
         view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
-        view/macro:pagehas/structuralheaderobject
 
         view/macro:pagetype
 
@@ -2479,7 +2478,6 @@ class PageMacroDispatcher:
             heading=False,
             pageheading=True,
             portlets=False,
-            structuralheaderobject=False,
             pagetypewasset=True,
             actionsmenu=True,
             navigationtabs=False
@@ -2496,15 +2494,13 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
-                structuralheaderobject=True,
                 pagetypewasset=False),
         'default':
             LayoutElements(
                 applicationborder=True,
                 applicationtabs=True,
                 globalsearch=True,
-                portlets=True,
-                structuralheaderobject=True),
+                portlets=True),
         'default2.0':
             LayoutElements(
                 actionsmenu=False,
@@ -2512,7 +2508,6 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
-                structuralheaderobject=True,
                 navigationtabs=True),
         'onecolumn':
             # XXX 20080130 mpt: Should eventually become the new 'default'.
@@ -2522,20 +2517,19 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 navigationtabs=True,
-                portlets=False,
-                structuralheaderobject=True),
+                portlets=False),
         'applicationhome':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                globalsearch=True,
                 pageheading=False,
-                globalsearch=False,
                 heading=True),
         'pillarindex':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
-                globalsearch=False,
+                globalsearch=True,
                 heading=True,
                 pageheading=False,
                 portlets=True),
@@ -2547,8 +2541,7 @@ class PageMacroDispatcher:
                 globalsearch=False,
                 heading=False,
                 pageheading=False,
-                portlets=False,
-                structuralheaderobject=False),
+                portlets=False),
        'freeform':
             LayoutElements(),
         }

@@ -1,0 +1,79 @@
+= Person Packages =
+
+The page at ~user/+packages contains three sections,
+"Maintained Packages", "Uploaded Packages" and "PPA Packages".
+
+Each section is limited to displaying at most 50 packages so that
+the page does not time out before Zope can render it.
+
+Before continuing, create lots of packages that will appear in each
+section of Foo Bar's +packages page, such that there's more available
+that we're willing to display.
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+    >>> from canonical.launchpad.browser.person import PersonPackagesView
+    >>> name16 = getUtility(IPersonSet).getByName('name16')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> warty = ubuntu['warty']
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_pub = SoyuzTestPublisher()
+    >>> test_pub.person = name16
+    >>> for count in range(0, PersonPackagesView.PACKAGE_LIMIT + 3):
+    ...     source_name = "foo" + str(count)
+    ...     # Add the PPA packages.
+    ...     discard = test_pub.getPubSource(
+    ...         sourcename=source_name,
+    ...         status=PackagePublishingStatus.PUBLISHED,
+    ...         archive=sabdfl.archive,
+    ...         distroseries=warty)
+    ...     # Add the maintained packages.
+    ...     discard = test_pub.getPubSource(
+    ...         sourcename=source_name,
+    ...         status=PackagePublishingStatus.PUBLISHED,
+    ...         distroseries=warty)
+    ...     # Add the uploaded packages.
+    ...     discard = test_pub.getPubSource(
+    ...         maintainer=sabdfl,
+    ...         sourcename=source_name,
+    ...         status=PackagePublishingStatus.PUBLISHED,
+    ...         distroseries=warty)
+    >>> import transaction
+    >>> transaction.commit()
+
+There are many more new packages to be displayed on the page now:
+
+    >>> name16.getLatestUploadedPPAPackages().count() > 50
+    True
+
+    >>> name16.getLatestMaintainedPackages().count() > 50
+    True
+
+    >>> name16.getLatestUploadedButNotMaintainedPackages().count() > 50
+    True
+
+The view enforces the limit.
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> view = getMultiAdapter(
+    ...     (name16, LaunchpadTestRequest()), name='+packages')
+    >>> view.initialize()
+
+    >>> packages = list(view.getLatestUploadedPPAPackagesWithStats())
+    >>> len(packages)
+    50
+
+    >>> packages = list(view.getLatestMaintainedPackagesWithStats())
+    >>> len(packages)
+    50
+
+    >>> packages = list(
+    ...     view.getLatestUploadedButNotMaintainedPackagesWithStats())
+    >>> len(packages)
+    50

@@ -60,11 +60,8 @@ override for the purpose of this test.
 
     >>> class BugzillaWithFakeProxy(Bugzilla):
     ...
-    ...     @property
-    ...     def xmlrpc_proxy(self):
-    ...         return xmlrpclib.ServerProxy(
-    ...             'http://example.com/xmlrpc.cgi',
-    ...             transport=test_transport)
+    ...     _test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...         'http://example.com/xmlrpc.cgi', transport=test_transport)
 
     >>> bugzilla = BugzillaWithFakeProxy('http://example.com')
 
@@ -95,14 +92,17 @@ from the remote server.
     ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
     True
 
-If getExternalBugTrackerToUse() doesn't encounter an error when checking
-for the Bugzilla LP Plugin it assumes that the plugin is installed and
-returns an instance of BugzillaLPPlugin.
-
-    >>> test_transport.error = None
-    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
-    >>> isinstance(bugzilla_to_use, BugzillaLPPlugin)
-    True
+# XXX, intellectronica, bug #245586:
+# Short circuit to always use the old-style plugin
+# while the new XMLRPC transport isn't quite working.
+# If getExternalBugTrackerToUse() doesn't encounter an error when checking
+# for the Bugzilla LP Plugin it assumes that the plugin is installed and
+# returns an instance of BugzillaLPPlugin.
+#
+#     >>> test_transport.error = None
+#     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+#     >>> isinstance(bugzilla_to_use, BugzillaLPPlugin)
+#     True
 
 
 == Status Conversion ==

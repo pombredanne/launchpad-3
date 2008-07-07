@@ -18,8 +18,16 @@ from zope.schema import Choice, Datetime, Int, TextLine, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine
-from canonical.launchpad.interfaces import IHasBug
+from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.launchpad import IHasBug
+from canonical.launchpad.interfaces.person import IPerson
+
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+from canonical.lazr.fields import CollectionField, Reference
+
 
 class BugWatchErrorType(DBEnumeratedType):
     """An enumeration of possible BugWatch errors."""
@@ -66,7 +74,7 @@ class BugWatchErrorType(DBEnumeratedType):
     UNPARSABLE_BUG_TRACKER = DBItem(6, """
         Unparsable Bug Tracker Version
 
-        Launchpad could not determine the version of the bug tracker 
+        Launchpad could not determine the version of the bug tracker
         software running on the remote server.
         """)
 
@@ -87,43 +95,65 @@ class BugWatchErrorType(DBEnumeratedType):
 
 class IBugWatch(IHasBug):
     """A bug on a remote system."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
+    bug = exported(
+        Reference(title=_('Bug'), schema=IBug, required=True, readonly=True))
     bugtracker = Choice(title=_('Bug System'), required=True,
         vocabulary='BugTracker', description=_("You can register "
         "new bug trackers from the Launchpad Bugs home page."))
-    remotebug = StrippedTextLine(title=_('Remote Bug'), required=True,
-        readonly=False, description=_("The bug number of this bug in the "
-        "remote bug tracker."))
-    remotestatus = TextLine(title=_('Remote Status'))
-    remote_importance = TextLine(title=_('Remote Importance'))
-    lastchanged = Datetime(title=_('Last Changed'))
-    lastchecked = Datetime(title=_('Last Checked'))
-    last_error_type = Choice(title=_('Last Error Type'),
-        vocabulary=BugWatchErrorType)
-    datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True)
-    owner = Int(title=_('Owner'), required=True, readonly=True)
+    remotebug = exported(
+        StrippedTextLine(
+            title=_('Remote Bug'), required=True,
+            readonly=False, description=_("The bug number of this bug in the "
+                                          "remote bug tracker.")),
+        exported_as='remote_bug')
+    remotestatus = exported(
+        TextLine(title=_('Remote Status')),
+        exported_as='remote_status')
+    remote_importance = exported(
+        TextLine(title=_('Remote Importance')))
+    lastchanged = exported(
+        Datetime(title=_('Last Changed')),
+        exported_as='date_last_changed')
+    lastchecked = exported(
+        Datetime(title=_('Last Checked')),
+        exported_as='date_last_checked')
+    last_error_type = exported(
+        Choice(title=_('Last Error Type'), vocabulary=BugWatchErrorType))
+    datecreated = exported(
+        Datetime(title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created')
+    owner = exported(
+        Reference(title=_('Owner'), required=True,
+                  readonly=True, schema=IPerson))
 
-    # useful joins
-    bugtasks = Attribute('The tasks which this watch will affect. '
-        'In Launchpad, a bug watch can be linked to one or more tasks, and '
-        'if it is linked and we notice a status change in the watched '
-        'bug then we will try to update the Launchpad bug task accordingly.')
+    # Useful joins.
+    bugtasks = exported(
+        CollectionField(
+            description=_(
+                'The tasks which this watch will affect. '
+                'In Launchpad, a bug watch can be linked to one or more '
+                'tasks, and if it is linked and we notice a status change '
+                'in the watched bug then we will try to update the '
+                'Launchpad bug task accordingly.'),
+            value_type=Reference(schema=IBugTask)))
 
-    # properties
+    # Properties.
     needscheck = Attribute("A True or False indicator of whether or not "
         "this watch needs to be synchronised. The algorithm used considers "
         "the severity of the bug, as well as the activity on the bug, to "
         "ensure that we spend most effort on high-importance and "
         "high-activity bugs.")
 
-    # required for launchpad pages
-    title = Text(title=_('Bug watch title'), readonly=True)
+    # Required for Launchpad pages.
+    title = exported(
+        Text(title=_('Bug watch title'), readonly=True))
 
-    url = Text(title=_('The URL at which to view the remote bug.'),
-        readonly=True)
+    url = exported(
+        Text(title=_('The URL at which to view the remote bug.'),
+             readonly=True))
 
     def updateImportance(remote_importance, malone_importance):
         """Update the importance of the bug watch and any linked bug task.
@@ -160,8 +190,13 @@ class IBugWatch(IHasBug):
         """
 
 
+# Set the schema for watches in IBug. It's not possible to do this
+# earlier because of circular imports.
+IBug['watches'].value_type.schema = IBugWatch
+
+
 class IBugWatchSet(Interface):
-    """The set of IBugWatch's."""
+    """The set of `IBugWatch`es."""
 
     bug = Int(title=_("Bug id"), readonly=True)
     title = Attribute('Title')
