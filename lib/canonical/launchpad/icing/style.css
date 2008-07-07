@@ -108,34 +108,42 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 .unavailable {color: #999; background: none;}
 
 /* === Error, warning, and informational messages === */
-/* Error, warning, and informational messages are in a centered box: */
+/* Error, warning, and informational alerts are in a centered box: */
 .error.message, .warning.message, .informational.message {
   border: solid #666;
   border-width: 1px 2px 2px 1px;
   color: black;
-  margin: 26px auto 10px auto;
+  margin: 0 auto 10px auto;
   padding: 0 10px 10px 20px;
   width: 30em;
 }
-/* The messages are preceded with an icon overlaying the top left corner: */
-.message::before               {display: block; margin: -15px 0 -6px -35px;}
-/* Error messages are pink, with an error icon: */
-.error         {background: #ffd6d6;}
+/* The alerts are preceded with an icon overlaying the top left corner: */
+.error.message::before, .warning.message::before,
+.informational.message::before {
+  display: block; margin: -15px 0 -6px -35px;
+}
+/* Error messages are pink, with alerts having an error icon: */
+.error         {background: #ffe4e4;}
 .error.message::before         {content: url(/@@/error-large);}
-/* Warning messages are orange, with a warning icon: */
+/* Warning messages are orange, with alerts having a warning icon: */
 .warning       {background: #fff59c;}
 .warning.message::before       {content: url(/@@/warning-large);}
-/* Informational messages are blue-fading-to-grey, with an info icon: */
+/* Informational messages are blue-to-grey, with alerts having an info icon: */
 .informational {background: #d4e8ff url(/+icing/blue-fade-to-grey);}
 .informational.message::before {content: url(/@@/info-large);}
-/* Debugging messages are white on dark grey, with an info icon: */
+/* Debugging messages are white on grey, with alerts having an info icon: */
 .debugging     {background: #666; color: white;}
 .debugging.message::before     {content: url(/@@/info-large);}
-
-td.error {
-  border: 1px solid #db1f22;
-  background-color: #ffffff;
+/* Form errors use the color as a border instead of a background, avoiding
+the problem of horizontal padding vs. horizontal alignment of fields: */
+table.form .error {background: inherit; border-top: 6px solid #ffe4e4;}
+/* And inside, the error message itself uses a smaller icon: */
+.error .message {
+  background: url(/@@/error) center left no-repeat;
+  margin-bottom: 0.25em;
+  padding-left: 18px;
 }
+
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
 }
@@ -176,8 +184,8 @@ right side being clipped (bug 156202). This should be rechecked post-2.0. */
 textarea {width: 100%;}
 /* This is currently overridden for Internet Explorer in main-template.pt. */
 
-table.form {margin-top: 1em; width: 100%;}
-  /* http://launchpad.dev/firefox/+edit */
+/* Many forms are laid out using tables, with appropriate spacing: */
+table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
 
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
