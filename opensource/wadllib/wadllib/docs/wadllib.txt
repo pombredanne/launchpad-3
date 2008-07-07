@@ -31,6 +31,8 @@ retrieves the definition of the root resource.
    >>> service_root = wadl.get_resource_by_path('')
    >>> service_root.url
    'http://api.launchpad.dev/beta/'
+   >>> service_root.type_url
+   '#service-root'
 
 The service root resource supports GET.
 
@@ -116,6 +118,8 @@ Now the bound resource object has a JSON representation, and now
    <class 'wadllib.application.Resource'>
    >>> personset_resource.url
    u'http://api.launchpad.dev/beta/people'
+   >>> personset_resource.type_url
+   'http://api.launchpad.dev/beta/#people'
 
 This new resource is a collection of people.
 

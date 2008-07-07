@@ -28,7 +28,6 @@ __all__ = [
     ]
 
 import urllib
-from urlparse import urlparse
 import simplejson
 try:
     import xml.etree.cElementTree as ET
@@ -181,6 +180,25 @@ class Resource(WADLResolvableDefinition):
     def url(self):
         """Return the URL to this resource."""
         return self._url
+
+    @property
+    def type_url(self):
+        """Return the URL to the type definition for this resource, if any."""
+        url = self.tag.attrib.get('type')
+        if url is not None:
+            # This resource is defined in the WADL file.
+            return url
+        type_id = self.tag.attrib.get('id')
+        if type_id is not None:
+            # This resource was obtained by following a link.
+            if self.application.markup_url.endswith('/'):
+                anchor = '#'
+            else:
+                anchor = '/#'
+            return self.application.markup_url + anchor + type_id
+
+        # This resource does not have any associated resource type.
+        return None
 
     @property
     def id(self):
@@ -594,13 +612,22 @@ class Application(WADLBase):
         WADL document.
         :returns: The XML ID corresponding to the anchor.
         """
-        parts = urlparse(url)
-        all_but_anchor = parts[:5]
-        if (all_but_anchor == (('',) * 5)
-            or all_but_anchor == urlparse(self.markup_url)[:5]):
+        markup_uri = uri.URI(self.markup_url).ensureNoSlash()
+        markup_uri.fragment = None
+
+        if url.startswith('http'):
+            # It's an absolute URI.
+            this_uri = uri.URI(url).ensureNoSlash()
+        else:
+            # It's a relative URI.
+            this_uri = markup_uri.resolve(url)
+        possible_xml_id = this_uri.fragment
+        this_uri.fragment = None
+
+        if this_uri == markup_uri:
             # The URL pointed elsewhere within the same WADL document.
-            # Return the anchor within the document.
-            return parts[-1]
+            # Return its fragment.
+            return possible_xml_id
 
         # XXX leonardr 2008-05-28:
         # This needs to be implemented eventually for Launchpad so
@@ -608,7 +635,7 @@ class Application(WADLBase):
         # representation of a non-root resource to its definition at
         # the server root.
         raise NotImplementedError("Can't look up definition in another "
-                                  "url (%s)" % url)
+                                  "url (%s)" % (url))
 
     def get_resource_by_path(self, path):
         """Locate one of the resources described by this document.

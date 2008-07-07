@@ -31,11 +31,11 @@ import httplib2
 import simplejson
 
 from urllib import urlencode
-
+from wadllib.application import Application
 from launchpadlib._oauth.oauth import (
     OAuthRequest, OAuthSignatureMethod_PLAINTEXT)
 from launchpadlib.errors import HTTPError
-
+from launchpadlib._utils import uri
 
 OAUTH_REALM = 'https://api.launchpad.net'
 
@@ -47,7 +47,8 @@ class Browser:
         self.credentials = credentials
         self._connection = httplib2.Http()
 
-    def _request(self, url, data=None, method='GET', **extra_headers):
+    def _request(self, url, data=None, method='GET',
+                 media_type="application/json", **extra_headers):
         """Create an authenticated request object."""
         oauth_request = OAuthRequest.from_consumer_and_token(
             self.credentials.consumer,
@@ -58,7 +59,7 @@ class Browser:
             self.credentials.consumer,
             self.credentials.access_token)
         # Calculate the headers for the request.
-        headers = {}
+        headers = {'Accept' : media_type}
         headers.update(oauth_request.to_header(OAUTH_REALM))
         headers.update(extra_headers)
         # Make the request.
@@ -69,10 +70,18 @@ class Browser:
             raise HTTPError(response, content)
         return response, content
 
-    def get(self, url):
-        """GET the resource at the requested url."""
+    def get(self, resource):
+        """GET a representation of the given resource."""
+        method = resource.get_method('get')
+        url = method.build_request_url()
         response, content = self._request(url)
-        return simplejson.loads(content)
+        return content
+
+    def getWADL(self, url):
+        """GET a WADL representation of the resource at the requested url."""
+        response, content = self._request(
+            url, media_type='application/vd.sun.wadl+xml')
+        return Application(str(url), content)
 
     def post(self, url, method_name, **kws):
         """POST a request to the web service."""
