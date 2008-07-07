@@ -254,7 +254,6 @@ button options are:
     >>> sample_browser.getLink('Edit details').click()
     >>> print_submit_buttons(sample_browser.contents)
     Update
-    Cancel
 
     >>> print sample_browser.title
     Edit proposal to merge branch
