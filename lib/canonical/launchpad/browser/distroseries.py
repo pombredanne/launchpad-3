@@ -456,7 +456,8 @@ class DistroSeriesDynMenu(DynMenu):
 
     def mainMenu(self):
         for architecture in self.context.architectures:
-            yield architecture.architecturetag
+            yield self.makeLink(
+                architecture.architecturetag, target=architecture)
 
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):

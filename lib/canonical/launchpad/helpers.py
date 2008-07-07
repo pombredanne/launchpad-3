@@ -231,7 +231,10 @@ def contactEmailAddresses(person):
     # This str() call can be removed as soon as Andrew lands his
     # unicode-simple-sendmail branch, because that will make
     # simple_sendmail handle unicode email addresses.
-    return set(str(mail_person.preferredemail.email)
+    # Need to remove the security proxy of the email address because the
+    # logged in user may not have permission to see it.
+    from zope.security.proxy import removeSecurityProxy
+    return set(str(removeSecurityProxy(mail_person.preferredemail).email)
         for mail_person in emailPeople(person))
 
 
@@ -601,7 +604,7 @@ def truncate_text(text, max_length):
 def english_list(items, conjunction='and'):
     """Return all the items concatenated into a English-style string.
 
-    Follows the advice given in The Elements of Style, chapter II,
+    Follows the advice given in The Elements of Style, chapter I,
     section 2:
 
     "In a series of three or more terms with a single conjunction, use
