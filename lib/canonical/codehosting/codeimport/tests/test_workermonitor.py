@@ -25,7 +25,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.worker import (
     CodeImportSourceDetails, get_default_bazaar_branch_store)
-from canonical.codehosting.codeimport.worker_monitor import (
+from canonical.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
@@ -96,7 +96,8 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
         self.worker_monitor.calls = []
         self.simulateProcessExit()
         # Advance the simulated time past the time the next update is due.
-        self.clock.advance(self.protocol.UPDATE_HEARTBEAT_INTERVAL + 1)
+        self.clock.advance(
+            config.codeimportworker.heartbeat_update_interval + 1)
         # Check that updateHeartbeat was not called.
         self.assertEqual(self.worker_monitor.calls, [])
 
