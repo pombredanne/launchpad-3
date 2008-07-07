@@ -7,7 +7,7 @@
 <div
   class="portlet"
   id="portlet-latest-announcements">
-  <h2>Latest news</h2>
+  <h2>Announcements</h2>
   <div class="portletBody portletContent">
     <a title="Atom 1.0 feed"
        tal:attributes="href view/feed_url"><img src="/@@/rss" align="right"/>
