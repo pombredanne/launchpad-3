@@ -409,9 +409,9 @@ class NavigationMenu(MenuBase):
         for link in super(NavigationMenu, self).iterlinks():
             # The link should be unlinked if it is the current URL, or if
             # the menu for the current view is the link's menu.
+            link.url = link.url.ensureNoSlash()
             link.linked = not (self._is_current_url(request_url, link.url)
                                or self._is_menulink_for_view(link, view))
-            link.url = link.url.ensureNoSlash()
             yield link
 
     def _is_current_url(self, request_url, link_url):
@@ -428,7 +428,7 @@ class NavigationMenu(MenuBase):
         else:
             request_url_without_query = (
                 request_url.replace(query=None).ensureNoSlash())
-            return link_url.ensureNoSlash() == request_url_without_query
+            return link_url == request_url_without_query
 
     def _is_menulink_for_view(self, link, view):
         """Return True if the menu-link is for the current view.

@@ -5,6 +5,8 @@ No Privileges Person should be able to translate any strings in Ubuntu
 to Welsh. In other languages, No Privileges Person should be warned that
 he is not a designated translator.
 
+    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/+changetranslators')
 
@@ -31,16 +33,30 @@ suggestions.
     ...     else:
     ...         return labels[0].renderContents()
 
+    >>> def get_detail_tag(browser, tag_class):
+    ...     """Find tag of given class in translation page."""
+    ...     tag = find_tag_by_id(browser.contents, tag_class)
+    ...     if not tag:
+    ...         return None
+    ...     else:
+    ...         return tag.renderContents()
+
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/'
     ...     '+pots/evolution-2.2/st/+translate')
+
     >>> print find_translation_input_label(browser.contents)
     None
 
-    >>> 'Your suggestions will be held for review' in find_main_content(
-    ...     browser.contents).renderContents()
-    False
+    >>> managers = get_detail_tag(browser, 'translation-managers')
+    >>> print managers
+    This translation is managed by <...> translation group
+    <...>polyglot<...>.
+
+    >>> print get_detail_tag(browser, 'translation-access')
+    There is nobody to manage translation into this particular language.  If
+    you are interested in working on it, please contact the translation group.
 
 The Polyglot translation group now assigns a Southern Sotho translation
 team, of which No Privileges however is not a member.
@@ -54,21 +70,30 @@ team, of which No Privileges however is not a member.
 No Privileges Person can now enter text, but the page does warn that it
 will only accept suggestions.
 
-    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/'
     ...     '+pots/evolution-2.2/st/+translate')
+
     >>> print find_translation_input_label(browser.contents)
     New suggestion:
 
-    >>> print find_main_content(browser.contents).renderContents()
-    <...Your suggestions will be held for review...
+    >>> managers = get_detail_tag(browser, 'translation-managers')
+    >>> print managers
+    This translation is managed by <...>...Hoary Gnome Team<...>, assigned
+    by <...>polyglot<...>.
 
-However, in Welsh, No Privileges Person DOES have the ability to edit
-directly.
+The translation-managers detail may use ", and" to separate items, but
+since there is only one item in this case, we don't see that.
 
-First, we show that the message 137 is not translated.
+    >>> import re
+    >>> print re.search('\band\b', managers)
+    None
+
+    >>> print get_detail_tag(browser, 'translation-access')
+    Your suggestions will be held for review...
+
+In Welsh, No Privileges Person does have the ability to edit directly.
 
     >>> def find_no_translation_marker(contents):
     ...     """Find first "no translation yet" marker in contents."""
@@ -82,17 +107,28 @@ First, we show that the message 137 is not translated.
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/'
     ...     '+pots/evolution-2.2/cy/8/+translate')
+
+    >>> print get_detail_tag(browser, 'translation-managers')
+    This translation is managed by <...No Privileges Person<...>, assigned by
+    <...>polyglot<...>.
+
+    >>> print get_detail_tag(browser, 'translation-access')
+    You have full access to this translation.
+
+Message number 137 is not yet translated.
+
     >>> print find_no_translation_marker(browser.contents)
     (no translation yet)
 
-Now, we need to show that it is translated after a post. Let's go ahead
-and POST and see that all goes well:
+Now, we need to show that it is translated after a post. Let's go ahead and
+POST and see that all goes well:
 
     >>> browser.getControl(
     ...     name='msgset_137_cy_translation_0_radiobutton').value = [
     ...         'msgset_137_cy_translation_0_new']
     >>> msg_137 = browser.getControl(name='msgset_137_cy_translation_0_new')
     >>> msg_137.value = 'evolution minikaart'
+
     >>> browser.getControl(name='submit_translations').click()
     >>> print browser.url
     http://.../ubuntu/.../+pots/evolution-2.2/cy/9/+translate
@@ -106,5 +142,4 @@ added.
 
     >>> print find_main_content(browser.contents).renderContents()
     <...evolution minikaart...
-
 

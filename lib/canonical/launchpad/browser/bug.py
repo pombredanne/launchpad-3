@@ -48,6 +48,7 @@ from canonical.launchpad.event import SQLObjectModifiedEvent
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView, LaunchpadEditFormView, stepthrough,
@@ -364,33 +365,29 @@ class BugView(LaunchpadView):
         object itself. This allows us to protect private bugs using a
         title like 'Private Bug'.
         """
+        duplicate_bugs = list(self.context.duplicates)
+        current_task = self.currentBugTask()
+        dupes_in_current_context = dict(
+            (bugtask.bug, bugtask)
+            for bugtask in current_task.target.searchTasks(
+                BugTaskSearchParams(self.user, bug=any(*duplicate_bugs))))
         dupes = []
-        for bug in self.context.duplicates:
+        for bug in duplicate_bugs:
             dupe = {}
             try:
                 dupe['title'] = bug.title
             except Unauthorized:
                 dupe['title'] = 'Private Bug'
             dupe['id'] = bug.id
-            dupe['url'] = self.getDupeBugLink(bug)
+            # If the dupe has the same context as the one we're in, link
+            # to that bug task directly.
+            if bug in dupes_in_current_context:
+                dupe['url'] = canonical_url(dupes_in_current_context[bug])
+            else:
+                dupe['url'] = canonical_url(bug)
             dupes.append(dupe)
 
         return dupes
-
-    def getDupeBugLink(self, dupe):
-        """Return a URL for a duplicate of this bug.
-
-        The link will be in the current context if the dupe is also
-        reported in this context, otherwise a default /bugs/$bug.id
-        style URL will be returned.
-        """
-        current_task = self.currentBugTask()
-
-        for task in dupe.bugtasks:
-            if task.target == current_task.target:
-                return canonical_url(task)
-
-        return canonical_url(dupe)
 
 
 class BugWithoutContextView:

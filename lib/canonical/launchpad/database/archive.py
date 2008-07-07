@@ -14,7 +14,7 @@ from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, alsoProvides
 
 
 from canonical.archivepublisher.config import Config as PubConfig
@@ -32,11 +32,18 @@ from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    ArchiveDependencyError, ArchivePermissionType, ArchivePurpose, IArchive,
-    IArchivePermissionSet, IArchiveSet, IHasOwner, IHasBuildRecords,
-    IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
+from canonical.launchpad.interfaces.archive import (
+    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet)
+from canonical.launchpad.interfaces.archivepermission import (
+    ArchivePermissionType, IArchivePermissionSet)
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IHasBuildRecords, IBuildSet)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasOwner, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -49,15 +56,27 @@ class Archive(SQLBase):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
 
-    name = StringCol(dbName='name', notNull=True)
+    def _validate_archive_name(self, attr, value):
+        """Only allow renaming of REBUILD archives.
+
+        Also assert the name is valid when set via an unproxied object.
+        """
+        if not self._SO_creating:
+            assert self.purpose == ArchivePurpose.REBUILD, (
+                "Only REBUILD archives can be renamed.")
+        assert valid_name(value), "Invalid name given to unproxied object."
+        return value
+
+    name = StringCol(
+        dbName='name', notNull=True, storm_validator=_validate_archive_name)
 
     description = StringCol(dbName='description', notNull=False, default=None)
 
     distribution = ForeignKey(
         foreignKey='Distribution', dbName='distribution', notNull=False)
 
-    purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
-        schema=ArchivePurpose)
+    purpose = EnumCol(
+        dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
     enabled = BoolCol(dbName='enabled', notNull=True, default=True)
 
@@ -113,10 +132,10 @@ class Archive(SQLBase):
     def series_with_sources(self):
         """See `IArchive`."""
         cur = cursor()
-        q = """SELECT DISTINCT distroseries FROM
+        query = """SELECT DISTINCT distroseries FROM
                       SourcePackagePublishingHistory WHERE
                       SourcePackagePublishingHistory.archive = %s"""
-        cur.execute(q % self.id)
+        cur.execute(query % self.id)
         published_series_ids = [int(row[0]) for row in cur.fetchall()]
         return [s for s in self.distribution.serieses if s.id in
                 published_series_ids]
@@ -168,6 +187,16 @@ class Archive(SQLBase):
                 self.purpose)
         return urlappend(config.archivepublisher.base_url,
             self.distribution.name + postfix)
+
+    def _init(self, *args, **kwargs):
+        """Mark PPA archives with the IHasPersonNavigationMenu interface.
+
+        Called when the object is created or fetched from the database.
+        """
+        SQLBase._init(self, *args, **kwargs)
+
+        if self.is_ppa:
+            alsoProvides(self, IHasPersonNavigationMenu)
 
     def getPubConfig(self):
         """See `IArchive`."""
@@ -739,11 +768,11 @@ class ArchiveSet:
     @property
     def number_of_ppa_sources(self):
         cur = cursor()
-        q = """
+        query = """
              SELECT SUM(sources_cached) FROM Archive
              WHERE purpose = %s AND private = FALSE
         """ % sqlvalues(ArchivePurpose.PPA)
-        cur.execute(q)
+        cur.execute(query)
         size = cur.fetchall()[0][0]
         if size is None:
             return 0
@@ -752,11 +781,11 @@ class ArchiveSet:
     @property
     def number_of_ppa_binaries(self):
         cur = cursor()
-        q = """
+        query = """
              SELECT SUM(binaries_cached) FROM Archive
              WHERE purpose = %s AND private = FALSE
         """ % sqlvalues(ArchivePurpose.PPA)
-        cur.execute(q)
+        cur.execute(query)
         size = cur.fetchall()[0][0]
         if size is None:
             return 0
@@ -818,3 +847,45 @@ class ArchiveSet:
 
         return most_active
 
+    def getBuildCountersForArchitecture(self, archive, distroarchseries):
+        """See `IArchiveSet`."""
+        cur = cursor()
+        query = """
+            SELECT buildstate, count(id) FROM Build
+            WHERE archive = %s AND distroarchseries = %s
+            GROUP BY buildstate ORDER BY buildstate;
+        """ % sqlvalues(archive, distroarchseries)
+        cur.execute(query)
+        result = cur.fetchall()
+
+        status_map = {
+            'failed': (
+                BuildStatus.CHROOTWAIT,
+                BuildStatus.FAILEDTOBUILD,
+                BuildStatus.FAILEDTOUPLOAD,
+                BuildStatus.MANUALDEPWAIT,
+                ),
+            'pending': (
+                BuildStatus.BUILDING,
+                BuildStatus.NEEDSBUILD,
+                ),
+            'succeeded': (
+                BuildStatus.FULLYBUILT,
+                ),
+            }
+
+        status_and_counters = {}
+
+        # Set 'total' counter
+        status_and_counters['total'] = sum(
+            [counter for status, counter in result])
+
+        # Set each counter according 'status_map'
+        for key, status in status_map.iteritems():
+            status_and_counters[key] = 0
+            for status_value, status_counter in result:
+                status_values = [item.value for item in status]
+                if status_value in status_values:
+                    status_and_counters[key] += status_counter
+
+        return status_and_counters

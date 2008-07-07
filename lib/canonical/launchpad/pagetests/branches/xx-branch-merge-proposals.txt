@@ -1084,3 +1084,34 @@ they'll get a 404.
     Traceback (most recent call last):
     ...
     NotFound: ...
+
+
+== Approving proposals for remote branches ==
+
+Launchpad does not have any revision data for remote branches, so we
+cannot validate that the user has entered a valid revision number for
+the source branch when approving.  What we do instead is record the
+stringified revision number.
+
+    >>> # Create an interaction needed to create branches.
+    >>> login('test@canonical.com')
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> from canonical.launchpad.interfaces.branch import BranchType
+    >>> eric = factory.makePerson(email='eric@example.com', password='test')
+    >>> source_branch = factory.makeBranch(
+    ...     branch_type=BranchType.REMOTE, owner=eric)
+    >>> # In order to approve easily, make the owner of the branches the same.
+    >>> target_branch = factory.makeBranch(
+    ...     product=source_branch.product, owner=eric)
+    >>> proposal = source_branch.addLandingTarget(eric, target_branch)
+    >>> proposal_url = canonical_url(proposal)
+    >>> logout()
+
+Now use a browser with eric's credentials.
+
+    >>> browser = setupBrowser(auth='Basic eric@example.com:test')
+    >>> browser.open(proposal_url)
+    >>> browser.getLink('Review proposal').click()
+    >>> browser.getControl('Reviewed Revision').value = '1234'
+    >>> browser.getControl('Approve').click()
