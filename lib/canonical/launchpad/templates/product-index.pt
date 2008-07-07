@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/default"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
@@ -15,7 +15,7 @@
       <div tal:replace="structure context/@@+portlet-milestones" />
     </metal:portlets>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main" id="maincontent" class="pillar">
 
   <p id="project-inactive" tal:condition="not: context/active" class="warning message">
     This project is currently inactive
@@ -33,11 +33,33 @@
     (<a href="+review-license">edit reviewer whiteboard</a>)
   </p>
 
-  <div
-    style="width: 200px; height: 200px; float: right;"
-    tal:content="structure context/image:mugshot"
-  />
+  <tal:mugshot replace="structure context/image:mugshot" />
 
+  <div style="float:right">
+    <span tal:define="link context/menu:overview/review_license"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    <span tal:define="link context/menu:overview/administer"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    <span tal:define="link context/menu:overview/edit"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    (Deprecated:
+    <span tal:define="link context/menu:overview/driver"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    <span tal:define="link context/menu:overview/rdf"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    <span tal:define="link context/menu:overview/subscribe"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    <span tal:define="link context/menu:overview/branding"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    )
+  </div>
   <h1 tal:content="context/title">Name of project</h1>
   <p>
     <strong tal:content="structure context/license_status/description">
@@ -61,25 +83,20 @@
     detailed information about the open source project in question.
   </div>
 
-      <ul class="buttons">
-        <li>
-          <a href="+filebug">
-            <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
-          </a>
-        </li>
-        <li tal:content="structure context/@@+ask-a-question-button" />
-        <li tal:content="structure context/@@+help-translate-button" />
-        <li tal:define="has_mentoring context/mentoring_offers/count">
-          <a href="+mentoring" tal:condition="has_mentoring">
-            <img alt="Mentoring available"
-                 src="/+icing/but-sml-mentoring.gif"/>
-          </a>
-          <a href="+mentoring" tal:condition="not: has_mentoring">
-            <img alt="No mentoring available"
-                 src="/+icing/but-sml-mentoring-off.gif" />
-          </a>
-        </li>
-      </ul>
+  <div class="actions">
+    <tal:reportbug define="link context/menu:bugs/filebug"
+                    condition="context/official_malone"
+                    replace="structure link/render" />
+    <tal:helptranslate define="link context/menu:translations/help_translate"
+                        condition="context/official_rosetta"
+                        replace="structure link/render" />
+    <tal:askquestion define="link context/menu:answers/new"
+                      condition="context/official_answers"
+                      replace="structure link/render" />
+    <tal:mentoring condition="context/mentoring_offers/count"
+                    define="link context/menu:overview/mentorship"
+                    replace="structure link/render"/>
+  </div>
       <tal:has-external-links condition="view/has_external_links">
         <h2 id="external-links-heading">External Resources</h2>
         <ul>
@@ -115,88 +132,79 @@
           </li>
         </ul>
       </tal:has-external-links>
-      <div class="left">
-        <tal:activate-feature
-          tal:define="config modules/canonical.config/config"
-          condition="config/commercial/is_subscription_feature_active">
-          <tal:comment condition="nothing">
-          XXX EdwinGrubbs 2008-05-22 bug=234070
-          Remove condition referencing is_subscription_feature_active after
-          this feature has launched.
-          </tal:comment>
 
-          <tal:warning-for-owner
-            condition="context/required:launchpad.Edit
-                       | context/required:launchpad.Commercial">
-            <div
-              class="section"
-              tal:content="structure context/@@+portlet-requires-subscription"
-              tal:condition="view/requires_commercial_subscription"
-            />
-            <div
-              class="section"
-              tal:content="structure context/@@+portlet-license-missing"
-              tal:condition="not: context/licenses"
-            />
-          </tal:warning-for-owner>
-        </tal:activate-feature>
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-coming-sprints"
-        />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestannouncements"
-        />
+      <div class="section" tal:content="structure context/@@+details" />
+
         <div
           class="section"
           tal:content="structure context/@@+portlet-productfiles"
         />
-        <div class="portlet">
-          <h2>Timeline</h2>
 
-          <div class="project series"
-               tal:repeat="series view/sorted_series_list">
+      <tal:activate-feature
+        tal:define="config modules/canonical.config/config"
+        condition="config/commercial/is_subscription_feature_active">
+        <tal:comment condition="nothing">
+        XXX EdwinGrubbs 2008-05-22 bug=234070
+        Remove condition referencing is_subscription_feature_active after
+        this feature has launched.
+        </tal:comment>
 
-            <div tal:define="is_focus series/is_development_focus"
-                 tal:attributes="
-                   class python:is_focus and 'highlighted' or 'unhighlighted'">
-              <metal:series use-macro="series/@@+macros/detailed_display" />
-            </div>
+        <tal:warning-for-owner
+          condition="context/required:launchpad.Edit
+                      | context/required:launchpad.Commercial">
+          <div
+            class="section"
+            tal:content="structure context/@@+portlet-requires-subscription"
+            tal:condition="view/requires_commercial_subscription"
+          />
+          <div
+            class="section"
+            tal:content="structure context/@@+portlet-license-missing"
+            tal:condition="not: context/licenses"
+          />
+        </tal:warning-for-owner>
+      </tal:activate-feature>
+      <div
+        class="section"
+        tal:content="structure context/@@+portlet-coming-sprints"
+      />
+      <div
+        class="section"
+        tal:content="structure context/@@+portlet-latestannouncements"
+      />
+      <div class="portlet">
+        <h2>Series and milestones</h2>
 
+        <div class="project series"
+              tal:repeat="series view/sorted_series_list">
+
+          <div tal:define="is_focus series/is_development_focus"
+               tal:attributes="
+                  class python:is_focus and 'highlighted' or 'unhighlighted'">
+            <metal:series use-macro="series/@@+macros/detailed_display" />
           </div>
-
+          <div
+            class="actions"
+            tal:define="link context/menu:overview/series_add"
+            tal:condition="link/enabled"
+            tal:content="structure link/render"
+          />
         </div>
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestspecs"
-        />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestbranches"
-        />
+
       </div>
-      <div class="right">
-        <div
-          class="two column section"
-          tal:content="structure context/@@+details"
-        />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-top-contributors"
-        />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestbugs"
-        />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestquestions"
-        />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-packages"
-        />
+      <div
+        class="section"
+        tal:content="structure context/@@+portlet-top-contributors"
+      />
+      <div
+        class="section"
+        tal:content="structure context/@@+portlet-packages"
+      />
+      <div class="section">
+        <h2>Registered</h2>
+        <tal:created replace="context/datecreated/fmt:approximatedate" />
+        <br />
+        <a href="+rdf">RDF metadata</a>
       </div>
     </div>
   </body>

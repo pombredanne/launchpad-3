@@ -10,6 +10,7 @@ __all__ = [
     'ProductShortLink',
     'ProductSOP',
     'ProductFacets',
+    'ProductNavigationMenu',
     'ProductOverviewMenu',
     'ProductBugsMenu',
     'ProductSpecificationsMenu',
@@ -104,6 +105,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
+from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
@@ -303,6 +305,25 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
+class ProductNavigationMenu(NavigationMenu):
+
+    usedfor = IProduct
+    facet = 'overview'
+    links = ['details', 'announcements', 'downloads']
+
+    def details(self):
+        text = 'Details'
+        return Link('+index', text)
+
+    def announcements(self):
+        text = 'Announcements'
+        return Link('+announcements', text)
+
+    def downloads(self):
+        text = 'Downloads'
+        return Link('+download', text)
+
+
 class ProductOverviewMenu(ApplicationMenu):
 
     usedfor = IProduct
@@ -405,11 +426,16 @@ class ProductBugsMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'bugs'
     links = (
+        'filebug',
         'bugsupervisor',
         'securitycontact',
         'cve',
         'subscribe'
         )
+
+    def filebug(self):
+        text = 'Report a bug'
+        return Link('+filebug', text, icon='bug')
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
@@ -533,7 +559,12 @@ class ProductTranslationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = ['translators', 'imports', 'translationdownload']
+    links = [
+        'translators',
+        'imports',
+        'translationdownload',
+        'help_translate',
+        ]
 
     def imports(self):
         text = 'See import queue'
@@ -554,6 +585,11 @@ class ProductTranslationsMenu(ApplicationMenu):
             link = '%s/+export' % preferred_series.name
 
         return Link(link, text, icon='download', enabled=enabled)
+
+    def help_translate(self):
+        text = 'Help translate'
+        link = canonical_url(self.context, rootsite='translations')
+        return Link(link, text, icon='translation')
 
 
 def _sort_distros(a, b):
@@ -1102,8 +1138,8 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
             data['enable_bug_expiration'] = False
         ProductLicenseMixin.validate(self, data)
 
-    @action("Change", name='change')
-    def change_action(self, action, data):
+    @action("Save changes", name='save')
+    def save_action(self, action, data):
         previous_licenses = self.context.licenses
         self.updateContextFromData(data)
         # only send email the first time licenses are set
