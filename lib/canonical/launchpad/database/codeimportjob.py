@@ -11,6 +11,8 @@ __all__ = [
 
 from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
 
+from storm.zope.interfaces import IZStorm
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -117,7 +119,9 @@ class CodeImportJobSet(object):
 
     def getReclaimableJobs(self):
         """See `ICodeImportJobSet`."""
-        return CodeImportJob.select(
+        store = getUtility(IZStorm).get('main')
+        return store.find(
+            CodeImportJob,
             "state = %s and heartbeat < %s + '-%s seconds'"
             % sqlvalues(CodeImportJobState.RUNNING, UTC_NOW,
                         config.codeimportworker.maximum_heartbeat_interval))

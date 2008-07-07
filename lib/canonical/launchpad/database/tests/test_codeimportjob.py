@@ -219,20 +219,19 @@ class TestCodeImportJobSetGetReclaimableJobs(TestCaseWithFactory):
         return code_import.import_job
 
     def assertReclaimableJobs(self, jobs):
-        """Assert that the set of reclaimable jobs equals jobs."""
+        """Assert that the set of reclaimable jobs equals `jobs`."""
         self.assertEqual(
             set(jobs),
             set(getUtility(ICodeImportJobSet).getReclaimableJobs()))
 
     def test_upToDateJob(self):
-        # A job that was updated recently should not be considered
-        # reclaimable.
+        # A job that was updated recently is not considered reclaimable.
         self.makeJobWithHeartbeatInPast(self.LIMIT/2)
         self.assertReclaimableJobs([])
 
     def test_staleJob(self):
-        # A job that hasn't been updated for a long time should be
-        # considered reclaimable.
+        # A job that hasn't been updated for a long time is considered
+        # reclaimable.
         stale_job = self.makeJobWithHeartbeatInPast(self.LIMIT * 2)
         self.assertReclaimableJobs([stale_job])
 
