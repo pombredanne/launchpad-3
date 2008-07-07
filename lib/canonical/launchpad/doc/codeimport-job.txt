@@ -400,3 +400,53 @@ Finally, the finishJob() method created a FINISH CodeImportEvent.
 
     >>> print new_events.summary()
     FINISH ~vcs-imports/gnome-terminal/import bazaar-importer
+
+
+== Reclaiming a job that appears to be stuck ==
+
+The code import worker is meant to update the heartbeat field of the
+row of CodeImportJob frequently.  The code import watchdog
+periodically checks the heartbeats of the running jobs and if it finds
+that a heartbeat was not updated recently enough, it assumes it has
+become stuck somehow and 'reclaims' the job -- removes the job from
+the database and creates a pending job for the same import that is due
+immediately.  This reclaiming is done by the 'reclaimJob' code import
+job workflow method.
+
+It just takes a running code import job as a parameter.
+
+    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    ...     make_running_import)
+    >>> factory = LaunchpadObjectFactory()
+    >>> running_import = make_running_import(factory=factory)
+    >>> running_import_job = running_import.import_job
+
+'reclaimJob' does four separate things:
+
+    >>> running_import_job_id = running_import_job.id
+    >>> new_events = NewEvents()
+    >>> workflow.reclaimJob(running_import_job)
+
+1) deletes the passed in job,
+
+    >>> print job_set.getById(running_import_job_id)
+    None
+
+2) creates a CodeImportResult with a status of 'RECLAIMED',
+
+    >>> results = list(running_import.results)
+    >>> len(results)
+    1
+    >>> [result] = results
+    >>> result.status.name
+    'RECLAIMED'
+
+3) logs a 'RECLAIM' CodeImportEvent, and
+
+    >>> print new_events.summary()
+    RECLAIM ...
+
+4) creates a new due job for the code import.
+
+    >>> print_date_attribute(running_import.import_job, 'date_due')
+    UTC_NOW

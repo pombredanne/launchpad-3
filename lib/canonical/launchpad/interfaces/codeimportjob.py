@@ -205,6 +205,20 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: `import_job`.logtail == logtail.
         """
 
+    def startJob(import_job, machine):
+        """Record that `machine` is about to start work on `import_job`.
+
+        :param import_job: `CodeImportJob` object.
+        :param machine: `CodeImportMachine` that will be working on the job.
+        :precondition: `import_job`.state == PENDING.
+        :precondition: `machine`.state == ONLINE.
+        :postcondition: `import_job`.state == RUNNING.
+        :postcondition: `import_job`.machine == machine.
+        :postcondition: `import_job`.date_started == UTC_NOW.
+        :postcondition: `import_job`.heartbeat == UTC_NOW.
+        :postcondition: A START `CodeImportEvent` was created.
+        """
+
     def finishJob(import_job, status, logfile_alias):
         """Record that a job finished running.
 
@@ -227,16 +241,9 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: A FINISH `CodeImportEvent` was created.
         """
 
-    def startJob(import_job, machine):
-        """Record that `machine` is about to start work on `import_job`.
+
+    def reclaimJob(import_job):
+        """Record that `import_job` has been reclaimed.
 
         :param import_job: `CodeImportJob` object.
-        :param machine: `CodeImportMachine` that will be working on the job.
-        :precondition: `import_job`.state == PENDING.
-        :precondition: `machine`.state == ONLINE.
-        :postcondition: `import_job`.state == RUNNING.
-        :postcondition: `import_job`.machine == machine.
-        :postcondition: `import_job`.date_started == UTC_NOW.
-        :postcondition: `import_job`.heartbeat == UTC_NOW.
-        :postcondition: A START `CodeImportEvent` was created.
         """

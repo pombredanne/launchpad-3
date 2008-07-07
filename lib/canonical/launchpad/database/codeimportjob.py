@@ -120,7 +120,7 @@ class CodeImportJobWorkflow:
 
     implements(ICodeImportJobWorkflow)
 
-    def newJob(self, code_import):
+    def newJob(self, code_import, date_due=None):
         """See `ICodeImportJobWorkflow`."""
         assert code_import.review_status == CodeImportReviewStatus.REVIEWED, (
             "Review status of %s is not REVIEWED: %s" % (
@@ -131,18 +131,21 @@ class CodeImportJobWorkflow:
 
         job = CodeImportJob(code_import=code_import, date_due=UTC_NOW)
 
-        # Find the most recent CodeImportResult for this CodeImport. We sort
-        # by date_created because we do not have an index on date_job_started
-        # in the database, and that should give the same sort order.
-        most_recent_result_list = list(CodeImportResult.selectBy(
-            code_import=code_import).orderBy(['-date_created']).limit(1))
+        if date_due is None:
+            # Find the most recent CodeImportResult for this CodeImport. We
+            # sort by date_created because we do not have an index on
+            # date_job_started in the database, and that should give the same
+            # sort order.
+            most_recent_result_list = list(CodeImportResult.selectBy(
+                code_import=code_import).orderBy(['-date_created']).limit(1))
 
-        if len(most_recent_result_list) != 0:
-            [most_recent_result] = most_recent_result_list
-            interval = code_import.effective_update_interval
-            date_due = most_recent_result.date_job_started + interval
-            job.date_due = max(job.date_due, date_due)
-            job.sync()
+            if len(most_recent_result_list) != 0:
+                [most_recent_result] = most_recent_result_list
+                interval = code_import.effective_update_interval
+                date_due = most_recent_result.date_job_started + interval
+                job.date_due = max(job.date_due, date_due)
+        else:
+            job.date_due = date_due
 
         return job
 
@@ -219,16 +222,9 @@ class CodeImportJobWorkflow:
         naked_job.heartbeat = UTC_NOW
         naked_job.logtail = logtail
 
-    def finishJob(self, import_job, status, logfile_alias):
-        """See `ICodeImportJobWorkflow`."""
-        assert import_job.state == CodeImportJobState.RUNNING, (
-            "The CodeImportJob associated with %s is %s."
-            % (import_job.code_import.branch.unique_name,
-               import_job.state.name))
-        code_import = import_job.code_import
-        machine = import_job.machine
+    def _makeResultAndDeleteJob(self, import_job, status, logfile_alias):
         result = getUtility(ICodeImportResultSet).new(
-            code_import=code_import, machine=machine,
+            code_import=import_job.code_import, machine=import_job.machine,
             log_excerpt=import_job.logtail,
             requesting_user=import_job.requesting_user,
             log_file=logfile_alias, status=status,
@@ -238,6 +234,18 @@ class CodeImportJobWorkflow:
         # interface to do this. So we must use removeSecurityProxy here.
         naked_job = removeSecurityProxy(import_job)
         naked_job.destroySelf()
+        return result
+
+    def finishJob(self, import_job, status, logfile_alias):
+        """See `ICodeImportJobWorkflow`."""
+        assert import_job.state == CodeImportJobState.RUNNING, (
+            "The CodeImportJob associated with %s is %s."
+            % (import_job.code_import.branch.unique_name,
+               import_job.state.name))
+        code_import = import_job.code_import
+        machine = import_job.machine
+        result = self._makeResultAndDeleteJob(
+            import_job, status, logfile_alias)
         # Only start a new one if the import is still in the REVIEWED state.
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
             self.newJob(code_import)
@@ -249,3 +257,19 @@ class CodeImportJobWorkflow:
             code_import.branch.requestMirror()
         getUtility(ICodeImportEventSet).newFinish(
             code_import, machine)
+
+    def reclaimJob(self, import_job):
+        """See `ICodeImportJobWorkflow`."""
+        assert import_job.state == CodeImportJobState.RUNNING, (
+            "The CodeImportJob associated with %s is %s."
+            % (import_job.code_import.branch.unique_name,
+               import_job.state.name))
+        job_id = import_job.id
+        self._makeResultAndDeleteJob(
+            import_job, CodeImportResultStatus.RECLAIMED, None)
+        code_import = import_job.code_import
+        machine = import_job.machine
+        if code_import.review_status == CodeImportReviewStatus.REVIEWED:
+            self.newJob(code_import, UTC_NOW)
+        getUtility(ICodeImportEventSet).newReclaim(
+            code_import, machine, job_id)
