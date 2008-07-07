@@ -516,6 +516,14 @@ class CodeHandler:
     addr_pattern = re.compile(r'(mp\+)([^@]+).*')
     allow_unknown_users = False
 
+    _vote_alias = {
+        '+1': CodeReviewVote.APPROVE,
+        '+0': CodeReviewVote.ABSTAIN,
+        '0': CodeReviewVote.ABSTAIN,
+        '-0': CodeReviewVote.ABSTAIN,
+        '-1': CodeReviewVote.DISAPPROVE,
+        }
+
     def process(self, mail, email_addr, file_alias):
         """Process an email and create a CodeReviewComment.
 
@@ -573,7 +581,10 @@ class CodeHandler:
         try:
             vote = CodeReviewVote.items[vote_string.upper()]
         except KeyError:
-            raise InvalidVoteString(vote_string)
+            # If the word doesn't match, check aliases that we allow.
+            vote = CodeHandler._vote_alias.get(vote_string)
+            if vote is None:
+                raise InvalidVoteString(vote_string)
         if len(vote_tag_list) == 0:
             vote_tag = None
         else:

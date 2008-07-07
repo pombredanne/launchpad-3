@@ -512,7 +512,7 @@ class MergeProposalEditView(LaunchpadEditFormView,
         source_branch = self.context.source_branch
         # Get the revision number out of the data.
         if source_branch.branch_type == BranchType.REMOTE:
-            return data.pop('revision_number')
+            return str(data.pop('revision_number'))
         else:
             branch_revision = source_branch.getBranchRevision(
                 data.pop('revision_number'))

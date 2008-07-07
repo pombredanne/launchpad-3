@@ -1132,7 +1132,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         super(PersonOverviewNavigationMenu, self).__init__(context)
 
     def profile(self):
-        target = '+index'
+        target = ''
         text = 'Profile'
         return Link(target, text, menu=IPersonEditMenu)
 
@@ -3002,17 +3002,6 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     custom_widget(
         'allow_relicensing', LaunchpadRadioWidget, orientation='vertical')
     custom_widget('back_to', TextWidget, visible=False)
-
-    @property
-    def initial_values(self):
-        """Set the user's current relicensing preference or a True default."""
-        default = self.context.translations_relicensing_agreement
-        if default is None:
-            default = True
-        return {
-            "allow_relicensing": default,
-            "back_to": self.request.get('back_to'),
-            }
 
     @property
     def initial_values(self):
