@@ -202,7 +202,6 @@ class TestCodeImportJobSetGetReclaimableJobs(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    INTERVAL = config.codeimportworker.heartbeat_update_interval
     LIMIT = config.codeimportworker.maximum_heartbeat_interval
 
     def setUp(self):
