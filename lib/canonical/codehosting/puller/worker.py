@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 import httplib
+import os
 import shutil
 import socket
 import sys
@@ -14,10 +15,7 @@ from bzrlib.errors import (
     BzrError, NotBranchError, ParamikoNotPresent,
     UnknownFormatError, UnsupportedFormatError)
 from bzrlib.progress import DummyProgress
-from bzrlib.transport import (
-    get_transport, register_transport, unregister_transport)
-from bzrlib.transport.http._urllib import HttpTransport_urllib
-from bzrlib.transport.nosmart import NoSmartTransportDecorator
+from bzrlib.transport import get_transport
 import bzrlib.ui
 
 from canonical.config import config
@@ -160,10 +158,6 @@ class PullerWorker:
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
-    def _get_http_transport(self, url):
-        return NoSmartTransportDecorator(
-            'nosmart+' + url, HttpTransport_urllib(url))
-
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
 
@@ -280,7 +274,6 @@ class PullerWorker:
             else:
                 # The destination is in a different format to the source, so
                 # we'll delete it and mirror from scratch.
-                shutil.rmtree(self.dest)
                 branch = self._createDestBranch()
         self._dest_branch = branch
 
@@ -290,6 +283,8 @@ class PullerWorker:
         #    Bzrdir.sprout is *almost* what we want here, except that sprout
         #    creates a working tree that we don't need. Instead, we do some
         #    low-level operations.
+        if os.path.exists(self.dest):
+            shutil.rmtree(self.dest)
         ensure_base(get_transport(self.dest))
         bzrdir_format = self._source_branch.bzrdir._format
         bzrdir = bzrdir_format.initialize(self.dest)
@@ -326,16 +321,10 @@ class PullerWorker:
         """
         self.protocol.startMirroring(self)
         try:
-            register_transport(
-                'http://', self._get_http_transport,
-                override=True)
-            try:
-                self._checkSourceUrl()
-                self._checkBranchReference()
-                self._openSourceBranch()
-                self._mirrorToDestBranch()
-            finally:
-                unregister_transport('http://', self._get_http_transport)
+            self._checkSourceUrl()
+            self._checkBranchReference()
+            self._openSourceBranch()
+            self._mirrorToDestBranch()
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
