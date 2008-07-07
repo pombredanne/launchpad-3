@@ -191,9 +191,8 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     # interfaces, as soon as SQLobject allows using the object directly
     # instead of using object.id.
     id = Int(title=_('ID'))
-    # field names
     product = exported(
-        Choice(title=_('Project'), readonly=True, vocabulary='Product'),
+        Choice(title=_('Project'), required=True, vocabulary='Product'),
         exported_as='project')
     status = Choice(
         title=_('Status'), required=True, vocabulary=DistroSeriesStatus,
