@@ -601,7 +601,7 @@ def truncate_text(text, max_length):
 def english_list(items, conjunction='and'):
     """Return all the items concatenated into a English-style string.
 
-    Follows the advice given in The Elements of Style, chapter II,
+    Follows the advice given in The Elements of Style, chapter I,
     section 2:
 
     "In a series of three or more terms with a single conjunction, use
