@@ -235,6 +235,8 @@ class IBuild(Interface):
 
         Store the given content in librarian and update the context
         'upload_log' to point to it.
+        The library file will be restricted according to the targeted
+        archive privacy.
 
         :param content: string containing the upload-processor log output for
             the binaries created in this build.

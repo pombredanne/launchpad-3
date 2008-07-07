@@ -186,8 +186,8 @@ visible on librarian side and then we can retrieve its content.
     >>> print active_build.upload_log.read()
     sample upload log.
 
-The 'upload_log' library file privateness is set according to the
-build target archive.
+The 'upload_log' library file privacy is set according to the build
+target archive.
 
     >>> print active_build.archive.private
     False
