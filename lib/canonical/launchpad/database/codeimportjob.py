@@ -223,6 +223,18 @@ class CodeImportJobWorkflow:
         naked_job.logtail = logtail
 
     def _makeResultAndDeleteJob(self, import_job, status, logfile_alias):
+        """Create a result for and delete 'import_job'.
+
+        This method does some of the housekeeping required when a job has
+        ended, no matter if it has finished normally or been killed or
+        reclaimed.
+
+        :param import_job: The job that has ended.
+        :param status: The member of CodeImportResultStatus to create the
+            result with.
+        :param logfile_alias: A reference to the log file of the job, can be
+            None.
+        """
         result = getUtility(ICodeImportResultSet).new(
             code_import=import_job.code_import, machine=import_job.machine,
             log_excerpt=import_job.logtail,
