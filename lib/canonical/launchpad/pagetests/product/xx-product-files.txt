@@ -7,7 +7,7 @@ Look at a project with no releases and ensure the download page does
 not show any files.
 
     >>> anon_browser.open('http://launchpad.dev/aptoncd')
-    >>> anon_browser.getLink('Download project files').click()
+    >>> anon_browser.getLink('Downloads').click()
     >>> anon_browser.url
     'http://launchpad.dev/aptoncd/+download'
     >>> anon_browser.title
@@ -22,7 +22,7 @@ Look at a project with a release but no download files.  Ensure the
 download page does not show any files.
 
     >>> anon_browser.open('http://launchpad.dev/thunderbird')
-    >>> anon_browser.getLink('Download project files').click()
+    >>> anon_browser.getLink('Downloads').click()
     >>> anon_browser.url
     'http://launchpad.dev/thunderbird/+download'
     >>> content = find_main_content(anon_browser.contents)
@@ -81,7 +81,7 @@ A project owner should not see the delete button when there are no files.
     >>> tbird_owner = setupBrowser(
     ...     auth='Basic foo.bar@canonical.com:test')
     >>> tbird_owner.open('http://launchpad.dev/thunderbird')
-    >>> tbird_owner.getLink('Download project files').click()
+    >>> tbird_owner.getLink('Downloads').click()
     >>> tbird_owner.title
     'Mozilla Thunderbird project files'
     >>> content = find_main_content(tbird_owner.contents)

@@ -15,7 +15,7 @@
       <div tal:replace="structure context/@@+portlet-milestones" />
     </metal:portlets>
 
-<div metal:fill-slot="main" class="pillar">
+<div metal:fill-slot="main" id="maincontent" class="pillar">
 
   <p id="project-inactive" tal:condition="not: context/active" class="warning message">
     This project is currently inactive
@@ -45,6 +45,20 @@
     <span tal:define="link context/menu:overview/edit"
           tal:condition="link/enabled"
           tal:content="structure link/render" />
+    (Deprecated:
+    <span tal:define="link context/menu:overview/driver"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    <span tal:define="link context/menu:overview/rdf"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    <span tal:define="link context/menu:overview/subscribe"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    <span tal:define="link context/menu:overview/branding"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    )
   </div>
   <h1 tal:content="context/title">Name of project</h1>
   <p>
@@ -121,6 +135,11 @@
 
       <div class="section" tal:content="structure context/@@+details" />
 
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-productfiles"
+        />
+
       <tal:activate-feature
         tal:define="config modules/canonical.config/config"
         condition="config/commercial/is_subscription_feature_active">
@@ -165,7 +184,12 @@
                   class python:is_focus and 'highlighted' or 'unhighlighted'">
             <metal:series use-macro="series/@@+macros/detailed_display" />
           </div>
-
+          <div
+            class="actions"
+            tal:define="link context/menu:overview/series_add"
+            tal:condition="link/enabled"
+            tal:content="structure link/render"
+          />
         </div>
 
       </div>

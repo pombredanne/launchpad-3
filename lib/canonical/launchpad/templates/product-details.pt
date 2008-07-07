@@ -4,11 +4,11 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
+<h2 id="licensing">Licensing</h2>
 <table id="table-details">
   <tbody>
-    <h2 id="external-links-heading">Licensing</h2>
     <tr>
-      <td>
+      <td id="details-data">
         <ul>
           <li tal:condition="context/license_reviewed">License reviewed</li>
           <li tal:condition="context/active">Active</li>
