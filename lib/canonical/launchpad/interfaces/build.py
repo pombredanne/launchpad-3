@@ -115,7 +115,7 @@ class IBuild(Interface):
     buildstate = Attribute("BinaryBuild State")
     datebuilt = Attribute("Binary Date of Built")
     buildduration = Attribute("Build Duration Interval")
-    buildlog = Attribute("The Build LOG Referency")
+    buildlog = Attribute("The LibraryFileAlias containing the buildlog.")
     builder = Attribute("The Builder")
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
     pocket = Attribute("Target pocket of this build")
@@ -124,6 +124,7 @@ class IBuild(Interface):
     estimated_build_duration = Timedelta(
         title=_("Estimated Build Duration"), required=False,
         description=_("Estimated build duration interval"))
+    upload_log = Attribute("The LibraryFileAlias containing the upload log.")
 
     # Properties
     current_component = Attribute(
@@ -228,6 +229,17 @@ class IBuild(Interface):
         :raise: AssertionError when the build job is not in the
             `BuildStatus.NEEDSBUILD` state.
         """
+
+    def storeUploadLog(content):
+        """Store the given content as the build upload_log.
+
+        Store the given content in librarian and update the context
+        'upload_log' to point to it.
+
+        :param content: string containing the upload-processor log output for
+            the binaries created in this build.
+        """
+
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
