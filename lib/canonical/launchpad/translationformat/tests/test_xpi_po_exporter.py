@@ -186,7 +186,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
             #. Translators, if you're older than six, don't translate this
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:3(foozilla.happytitle)
             msgctxt "main/test1.properties"
-            msgid "FooZillingy"
+            msgid "http://foozillingy.happy.net/"
             msgstr ""
 
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:4(foozilla.nocomment)

@@ -428,12 +428,6 @@ class PropertyFile:
                         # Jump the processed char.
                         line = line[1:]
                     continue
-                elif line.startswith(u'//'):
-                    # It's an 'end of the line comment'
-                    last_comment = '%s\n' % line[2:].strip()
-                    last_comment_line_num = line_num
-                    # Jump to next line
-                    break
                 elif line.startswith(u'/*'):
                     # It's a multi line comment
                     is_multi_line_comment = True
