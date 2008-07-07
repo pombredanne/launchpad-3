@@ -12,6 +12,7 @@
   <body>
     <metal:portlets fill-slot="portlets">
 
+      <div tal:replace="structure context/bug/@@+portlet-privacy" />
       <div tal:replace="structure context/bug/@@+portlet-duplicates" />
       <div tal:replace="structure context/bug/@@+portlet-subscribers" />
       <div tal:replace="structure context/bug/@@+portlet-questions" />
