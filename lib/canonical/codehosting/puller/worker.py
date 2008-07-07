@@ -162,14 +162,13 @@ class PullerWorker:
             self.protocol.branch_id = branch_id
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
-        self._registerLaunchpadServer()
 
-    def _registerLaunchpadServer(self):
+    def _getLaunchpadServer(self):
+        """Return a LaunchpadInternalServer for fetching hosted branches."""
         authserver = BlockingProxy(ServerProxy(config.codehosting.authserver))
         branch_transport = get_chrooted_transport(
             config.codehosting.branches_root)
-        server = LaunchpadInternalServer(authserver, branch_transport)
-        server.setUp()
+        return LaunchpadInternalServer(authserver, branch_transport)
 
     def _get_http_transport(self, url):
         return NoSmartTransportDecorator(
@@ -339,6 +338,8 @@ class PullerWorker:
         particularly useful for tests that want to mirror a branch and be
         informed immediately of any errors.
         """
+        server = self._getLaunchpadServer()
+        server.setUp()
         register_transport(
             'http://', self._get_http_transport,
             override=True)
@@ -349,6 +350,7 @@ class PullerWorker:
             self._mirrorToDestBranch()
         finally:
             unregister_transport('http://', self._get_http_transport)
+            server.tearDown()
 
     def mirror(self):
         """Open source and destination branches and pull source into
