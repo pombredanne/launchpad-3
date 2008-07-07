@@ -10,7 +10,6 @@ __all__ = [
 
 from datetime import datetime
 import re
-import os
 
 import pytz
 
@@ -26,7 +25,6 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
-from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -40,15 +38,15 @@ from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden,
     BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
-    BranchPersonSearchRestriction, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
-    BranchVisibilityRule, CannotDeleteBranch, CodeReviewNotificationLevel,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchPersonSearchContext, IBranchSet,
-    ILaunchpadCelebrities, InvalidBranchMergeProposal,
-    IPerson, IProduct, IProject,
-    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
+    BranchFormat, BranchLifecycleStatus, BranchListingSort,
+    BranchMergeProposalStatus, BranchPersonSearchRestriction,
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    BranchType, BranchTypeError, BranchVisibilityRule, CannotDeleteBranch,
+    CodeReviewNotificationLevel, ControlFormat,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
+    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
+    IProduct, IProject, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
+    NotFoundError, RepositoryFormat)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -73,6 +71,11 @@ class Branch(SQLBase):
     title = StringCol(notNull=False)
     summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
+    branch_format = EnumCol(enum=BranchFormat)
+    repository_format = EnumCol(enum=RepositoryFormat)
+    # XXX: Aaron Bentley 2008-06-13
+    # Rename the metadir_format in the database, see bug 239746
+    control_format = EnumCol(enum=ControlFormat, dbName='metadir_format')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
@@ -294,8 +297,7 @@ class Branch(SQLBase):
     @property
     def warehouse_url(self):
         """See `IBranch`."""
-        root = config.supermirror.warehouse_root_url
-        return "%s%08x" % (root, self.id)
+        return 'lp-internal:///%s' % self.unique_name
 
     @property
     def product_name(self):
@@ -387,7 +389,7 @@ class Branch(SQLBase):
             deletion_operations.append(
                 DeletionCallable(merge_proposal,
                     _('This branch is the source branch of this merge'
-                    ' proposal.'), merge_proposal.destroySelf))
+                    ' proposal.'), merge_proposal.deleteProposal))
         # Cannot use self.landing_candidates, because it ignores merged
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
@@ -395,7 +397,7 @@ class Branch(SQLBase):
             deletion_operations.append(
                 DeletionCallable(merge_proposal,
                     _('This branch is the target branch of this merge'
-                    ' proposal.'), merge_proposal.destroySelf))
+                    ' proposal.'), merge_proposal.deleteProposal))
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
             alteration_operations.append(ClearDependentBranch(merge_proposal))
@@ -581,8 +583,7 @@ class Branch(SQLBase):
         elif self.branch_type == BranchType.HOSTED:
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
-            prefix = config.codehosting.branches_root
-            return os.path.join(prefix, branch_id_to_path(self.id))
+            return 'lp-internal:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 
@@ -894,7 +895,8 @@ class BranchSet:
     def new(self, branch_type, name, registrant, owner, product,
             url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, whiteboard=None, date_created=None):
+            summary=None, whiteboard=None, date_created=None,
+            branch_format=None, repository_format=None, control_format=None):
         """See `IBranchSet`."""
         if date_created is None:
             date_created = UTC_NOW
@@ -930,7 +932,9 @@ class BranchSet:
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard, private=private,
             date_created=date_created, branch_type=branch_type,
-            date_last_modified=date_created)
+            date_last_modified=date_created, branch_format=branch_format,
+            repository_format=repository_format,
+            control_format=control_format)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
@@ -1103,6 +1107,36 @@ class BranchSet:
             results = results.limit(branch_count)
         return results
 
+    @staticmethod
+    def _getBranchVisibilitySubQuery(visible_by_user):
+        # Logged in people can see public branches (first part of the union),
+        # branches owned by teams they are in (second part),
+        # and all branches they are subscribed to (third part).
+        return """
+            SELECT Branch.id
+            FROM Branch
+            WHERE
+                NOT Branch.private
+
+            UNION
+
+            SELECT Branch.id
+            FROM Branch, TeamParticipation
+            WHERE
+                Branch.owner = TeamParticipation.team
+            AND TeamParticipation.person = %d
+
+            UNION
+
+            SELECT Branch.id
+            FROM Branch, BranchSubscription, TeamParticipation
+            WHERE
+                Branch.private
+            AND Branch.id = BranchSubscription.branch
+            AND BranchSubscription.person = TeamParticipation.team
+            AND TeamParticipation.person = %d
+            """ % (visible_by_user.id, visible_by_user.id)
+
     def _generateBranchClause(self, query, visible_by_user):
         # If the visible_by_user is a member of the Launchpad admins team,
         # then don't filter the results at all.
@@ -1117,35 +1151,9 @@ class BranchSet:
         if visible_by_user is None:
             return '%sNOT Branch.private' % query
 
-        # Logged in people can see public branches (first part of the union),
-        # branches owned by teams they are in (second part),
-        # and all branches they are subscribed to (third part).
-        clause = ('''
-            %sBranch.id IN (
-                SELECT Branch.id
-                FROM Branch
-                WHERE
-                    NOT Branch.private
-
-                UNION
-
-                SELECT Branch.id
-                FROM Branch, TeamParticipation
-                WHERE
-                    Branch.owner = TeamParticipation.team
-                AND TeamParticipation.person = %d
-
-                UNION
-
-                SELECT Branch.id
-                FROM Branch, BranchSubscription, TeamParticipation
-                WHERE
-                    Branch.private
-                AND Branch.id = BranchSubscription.branch
-                AND BranchSubscription.person = TeamParticipation.team
-                AND TeamParticipation.person = %d)
-            '''
-            % (query, visible_by_user.id, visible_by_user.id))
+        clause = (
+            '%sBranch.id IN (%s)'
+            % (query, self._getBranchVisibilitySubQuery(visible_by_user)))
 
         return clause
 

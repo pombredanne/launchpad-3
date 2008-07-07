@@ -227,6 +227,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def valid_specifications(self):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
+    @property
+    def is_development_focus(self):
+        """See `IProductSeries`."""
+        return self == self.product.development_focus
+
     def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications.
@@ -436,28 +441,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
-    def markTestFailed(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = ImportStatus.TESTFAILED
-        self.import_branch = None
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.syncinterval = None
-
-    def markDontSync(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = ImportStatus.DONTSYNC
-        self.import_branch = None
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.datestarted = None
-        self.datefinished = None
-        self.syncinterval = None
-
     def markStopped(self):
         """See `IProductSeriesSourceAdmin`."""
         self.importstatus = ImportStatus.STOPPED
@@ -487,23 +470,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.cvsbranch = None
         self.cvstarfileurl = None
         self.svnrepository = None
-
-    def syncCertified(self):
-        """Return true or false indicating if the sync is enabled"""
-        return self.dateprocessapproved is not None
-
-    def autoSyncEnabled(self):
-        """Is the sync automatically scheduling?"""
-        return self.importstatus == ImportStatus.SYNCING
-
-    def enableAutoSync(self):
-        """Enable autosyncing."""
-        self.datesyncapproved = UTC_NOW
-        self.importstatus = ImportStatus.SYNCING
-
-    def autoTestFailed(self):
-        """Has the series source failed automatic testing by roomba?"""
-        return self.importstatus == ImportStatus.TESTFAILED
 
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""

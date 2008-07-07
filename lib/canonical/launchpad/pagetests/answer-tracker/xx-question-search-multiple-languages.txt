@@ -43,7 +43,7 @@ whatever the language they are written in are displayed. Doing so,
 the anonymous user will see a Spanish question.
 
     >>> anon_browser.getControl('English (en)').selected = False
-    >>> anon_browser.getControl('Search').click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> table = find_tag_by_id(anon_browser.contents, 'question-listing')
     >>> for question in table.findAll('td', 'question'):
     ...     question.first('a').renderContents()
@@ -193,7 +193,7 @@ By unchecking a checkbox, Carlos can exclude English questions from
 the search results.
 
     >>> browser.getControl('English (en)').selected = False
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
     >>> content = find_main_content(browser.contents)
     >>> for question in content.fetch('td', 'question'):
     ...     question.first('a').renderContents()
@@ -234,7 +234,7 @@ English, and can use it to locate English questions.
     ['en']
 
     >>> daf_browser.getControl('English (en)').selected = True
-    >>> daf_browser.getControl('Search').click()
+    >>> daf_browser.getControl('Search', index=0).click()
     >>> content = find_main_content(daf_browser.contents)
     >>> for question in content.fetch('td', 'question'):
     ...     question.first('a').renderContents()
@@ -305,5 +305,43 @@ the preceding page.
     >>> for question in content.findAll('td', 'question'):
     ...     question.first('a').renderContents()
     'Problemas de Impress\xc3\xa3o no Firefox'
-    
+
 The page in all other respects behaves like a question search page.
+
+
+== My questions ignores preferred languages ==
+
+The "My questions" view ignores the user's language preferences, because
+he may change them over time, but he must always see his questions. For
+example, Sample Person has asked a question in Arabic in the Ubuntu
+project. He can see the question on the second page of "My questions"...
+
+    >>> sample_person_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
+    >>> sample_person_browser.open('http://answers.launchpad.dev/ubuntu')
+    >>> sample_person_browser.getLink('My questions').click()
+    >>> sample_person_browser.getLink('Next').click()
+    >>> sample_person_browser.title
+    'Questions you asked about Ubuntu'
+
+    >>> questions = find_tag_by_id(
+    ...     sample_person_browser.contents, 'question-listing')
+    >>> for key in ('lang', 'dir'):
+    ...     print '%s: %s ' % (key, questions.tbody.tr[key])
+    lang: ar
+    dir: rtl
+
+    >>> for question in questions.findAll('td', {'class': 'question'}):
+    ...     question.find('a').renderContents()
+    '\xd8\xb9\xd9\x83\xd8\xb3 \xd8\xa7\xd9\x84\xd8\xaa\xd8\xba...'
+
+...even though he has not set Arabic as one of his preferred languages.
+
+    >>> sample_person_browser.getLink(
+    ...     'Change your preferred languages').click()
+    >>> sample_person_browser.title
+    "Sample Person's preferred languages"
+
+    >>> sample_person_browser.getControl('Arabic', index=0).selected
+    False
+

@@ -4,8 +4,6 @@ __metaclass__ = type
 
 import warnings
 
-from storm.zope.interfaces import IZStorm
-
 from zope.interface import classProvides
 from zope.component import getUtility, queryAdapter
 from zope.component.interfaces import IView
@@ -65,15 +63,14 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         If the object is private and the principal's access level doesn't give
         access to private objects, return False.  Return True otherwise.
         """
-        if IObjectPrivacy(object).is_private:
-            required_access_level = [
-                AccessLevel.READ_PRIVATE, AccessLevel.WRITE_PRIVATE]
-            if principal.access_level not in required_access_level:
-                return False
-        else:
-            # Non-private object; nothing to do.
-            pass
-        return True
+        private_access_levels = [
+            AccessLevel.READ_PRIVATE, AccessLevel.WRITE_PRIVATE]
+        if principal.access_level in private_access_levels:
+            # The user has access to private objects. Return early,
+            # before checking whether the object is private, since
+            # checking it might be expensive.
+            return True
+        return not IObjectPrivacy(object).is_private
 
     @block_implicit_flushes
     def checkPermission(self, permission, object):

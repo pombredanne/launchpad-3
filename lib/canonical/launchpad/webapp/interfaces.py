@@ -9,7 +9,6 @@ import zope.app.publication.interfaces
 from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
@@ -312,12 +311,11 @@ class IDBSchemaItem(Interface):
     def __hash__():
         """Returns a hash value."""
 
-# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a
-# truly generic thing. The problem lies in the fact that half of this (user,
-# login, timezone, developer) is actually useful inside webapp/, and the other
-# half is very Launchpad-specific. I suggest we split the interface and
-# implementation into two parts, having a different name for the webapp/
-# bits.
+# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
+# generic thing. The problem lies in the fact that half of this (user, login,
+# time zone, developer) is actually useful inside webapp/, and the other half
+# is very Launchpad-specific. I suggest we split the interface and
+# implementation into two parts, having a different name for the webapp/ bits.
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
@@ -335,7 +333,7 @@ class ILaunchBag(Interface):
     user = Attribute('Currently authenticated IPerson, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
-    timezone = Attribute("The user's time zone")
+    time_zone = Attribute("The user's time zone")
 
     developer = Bool(
         title=u'True if a member of the launchpad developers celebrity'
@@ -508,8 +506,11 @@ class IPlacelessAuthUtility(IAuthenticationService):
     login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        The principal's password is set to None if want_password is False.
+        """
 
 
 class IPlacelessLoginSource(IPrincipalSource):
@@ -518,8 +519,15 @@ class IPlacelessLoginSource(IPrincipalSource):
     between the user id and login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    # want_password is temporary. Eventually we will have accounts
+    # without passwords at all, authenticated via other means such as external
+    # OpenID providers or SSL certificates. Principals having passwords
+    # doesn't really make sense.
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        If want_password is False, the principal's password is set to None.
+        """
 
     def getPrincipals(name):
         """Not implemented.
@@ -585,31 +593,8 @@ class ILaunchpadPrincipal(IPrincipal):
         title=_("The level of access this principal has."),
         vocabulary=AccessLevel, default=AccessLevel.WRITE_PRIVATE)
 
+    person = Attribute("The IPerson the principal represents.")
 
-class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
-    """The Launchpad customized database adapter"""
-    def readonly():
-        """Set the connection to read only.
-
-        This should only be called at the start of the transaction to
-        avoid confusing code that defers making database changes until
-        transaction commit time.
-        """
-
-    def switchUser(self, dbuser=None):
-        """Change the PostgreSQL user we are connected as.
-
-        This involves closing the existing connection and reopening it;
-        uncommitted changes will be lost. The new connection will also open
-        in read/write mode so calls to readonly() will need to be made
-        after switchUser.
-        """
-
-    def getUser(self):
-        """Return the current PostgreSQL user we are connected as.
-
-        The default user comes from config.launchpad.dbuser.
-        """
 
 #
 # Browser notifications
@@ -746,6 +731,12 @@ class IBatchNavigator(Interface):
     """A batch navigator for a specified set of results."""
 
     batch = Attribute("The IBatch for which navigation links are provided.")
+
+    heading = Attribute(
+        "The heading describing the kind of objects in the batch.")
+
+    def setHeadings(singular, plural):
+        """Set the heading for singular and plural results."""
 
     def prevBatchURL():
         """Return a URL to the previous chunk of results."""

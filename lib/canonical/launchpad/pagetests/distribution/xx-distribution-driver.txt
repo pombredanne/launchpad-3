@@ -15,19 +15,19 @@ Appoint Sample Person as the driver of the Ubuntu distribution.
   >>> browser.getControl('Driver').value = 'name12'
   >>> browser.getControl('Change').click()
 
-After changing the driver, the user is redirected to the overview page where a
-message inform him of the driver change.
+After changing the driver, the user is redirected to the overview page
+where a message informs him of the driver change.
 
   >>> browser.url
   'http://launchpad.dev/ubuntu'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     tag.renderContents()
-  'Successfully changed the driver to test@canonical.com'
+  'Successfully changed the driver to Sample Person'
 
 Sample Person is listed as the driver of the distribution.
 
-  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
-  ...     'Sample Person' in tag.find(text='Driver:').findNext('a').renderContents()
-  True
+  >>> print extract_text(find_tag_by_id(browser.contents, 'table-details'))
+  Driver: Sample Person
+  ...
 

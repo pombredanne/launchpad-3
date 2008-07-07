@@ -47,8 +47,6 @@
       tal:content="string:@import url(${icingroot}/style.css);"/>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background-image: url(/@@/demo) !important;}</style>
-    <style tal:condition="site_message" type="text/css"
-    >#help {top: 47px !important;}</style>
 
     <tal:XXX condition="nothing">
       20080131 mpt: We make text fields slightly narrower in IE to avoid the
@@ -71,19 +69,17 @@
     <![endif]-->
 
     <tal:comment condition="nothing">
-      This CSS collapses portlets and the contents of collapsible fieldsets,
+      This CSS collapses the contents of collapsible fieldsets,
       without the flashing that would result from doing it in JavaScript.
       activateCollapsibles() removes the class="collapsed" from fieldsets, to
       re-show their divs, once the children themselves have been collapsed.
     </tal:comment>
     <style type="text/css">
-      #portlets .portletBody, fieldset.collapsed div,
-      fieldset div.collapsed {display: none;}
+      fieldset.collapsed div, fieldset div.collapsed {display: none;}
     </style>
     <noscript>
       <style type="text/css">
-        #portlets .portletBody, fieldset.collapsible div,
-        fieldset div.collapsed {display: block;}
+        fieldset.collapsible div, fieldset div.collapsed {display: block;}
       </style>
     </noscript>
 
@@ -99,9 +95,7 @@
         lpmenu.initialize(['menuroot'], '/', 'menupreload',
                            [], '1.3em', 16, true);
         sortables_init();
-        initHelpPanel();
         initInlineHelp();
-        PortletManager.initialize(cookie_scope);
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>
@@ -129,7 +123,7 @@
         </tr>
       </table>
     </div>
-    <div id="nonhelp">
+
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
         tal:condition="view/macro:pagehas/applicationbuttons"
@@ -149,47 +143,8 @@
           </tr>
         </tbody>
       </table>
-      <div
-        id="structuralobject" xml:lang="en" lang="en" dir="ltr"
-        tal:define="structuralheaderobject CONTEXTS/lp:structuralheaderobject"
-        tal:condition="view/macro:pagehas/structuralheaderobject"
-      >
-        <tal:header
-          condition="structuralheaderobject"
-          replace="structure structuralheaderobject/@@+structural-header"
-        />
-        <tal:no condition="not:structuralheaderobject"
-        >No structural object</tal:no>
-      </div>
-      <form
-        tal:condition="view/macro:pagehas/globalsearch"
-        id="globalsearch" xml:lang="en" lang="en" dir="ltr"
-        action=""
-        method="get"
-        accept-charset="UTF-8"
-        tal:attributes="action string:${rooturl}+search"
-      >
-        <div>
-          <input
-            type="text"
-            id="search-text"
-            name="field.text"
-            value="Search"
-            onfocus="if(this.value=='Search'){this.value='';};"
-          />
-          <input
-            type="image"
-            id="searchbutton"
-            name="field.actions.search"
-            src="/+icing/but_search.gif"
-            title="Search"
-          />
-        </div>
-      </form>
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
 
-            <div class="v">
-              <div class="w">
                 <div class="x">
                   <div class="y">
                     <div class="z">
@@ -260,10 +215,9 @@
                                 "context/@@+main-template-macros/notifications"
                             />
                           </tal:notifications>
-                          <metal:block define-slot="main" />
                         </tal:noportlets>
                         <div id="navigation-tabs"
-                             tal:condition="not:view/macro:show_actions_menu">
+                             tal:condition="view/macro:pagehas/navigationtabs">
                           <div id="context-navigation-tabs"
                                tal:condition="context/menu:navigation">
                             <tal:menu
@@ -277,10 +231,15 @@
                               />
                           </div>
                         </div>
+                        <tal:noportlets condition="not: view/macro:pagehas/portlets">
+                          <metal:block define-slot="main" />
+                        </tal:noportlets>
                         <div
                           id="maincontent"
                           tal:condition="view/macro:pagehas/portlets"
                         >
+                          <div id="nonportlets">
+
                           <div id="big-badges" style="float: right">
                             <tal:big-badges replace="structure context/badges:large"/>
                           </div>
@@ -298,12 +257,14 @@
                               use-macro="context/@@+main-template-macros/notifications" />
                           </tal:notifications>
                           <metal:block define-slot="main" />
+
+                          </div>
                         </div>
                         <div
                           id="portlets" xml:lang="en" lang="en" dir="ltr"
                           tal:condition="view/macro:pagehas/portlets"
                         >
-                          <tal:menu condition="view/macro:show_actions_menu"
+                          <tal:menu condition="view/macro:pagehas/actionsmenu"
                                     replace="structure CONTEXTS/@@+menubox" />
                           <metal:portlets define-slot="portlets" />
                           <metal:portlets define-slot="portlets_two" />
@@ -315,8 +276,6 @@
                     </div><!--id="z"-->
                   </div><!--id="y"-->
                 </div><!--id="x"-->
-              </div><!--id="w"-->
-            </div><!--id="v"-->
 
       </div><!--id="mainarea"-->
       <tal:noborder condition="not:view/macro:pagehas/applicationborder">
@@ -333,7 +292,21 @@
           top margin for a cleared item is ignored.
         </tal:comment>
       </tal:noborder>
-      <div id="globalfooter" xml:lang="en" lang="en" dir="ltr">
+      <form
+        tal:condition="view/macro:pagehas/globalsearch"
+        id="globalsearch"
+        action=""
+        xml:lang="en" lang="en" dir="ltr"
+        method="get"
+        accept-charset="UTF-8"
+        tal:attributes="action string:${rooturl}+search"
+      >
+        <label>
+          Search Launchpad:
+          <input type="search" id="search-text" name="field.text" />
+        </label>
+      </form>
+     <div id="globalfooter" class="clearfix" xml:lang="en" lang="en" dir="ltr">
         <div id="applications-footer"
           tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
           tal:replace="nothing">
@@ -355,7 +328,7 @@
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           <tal:block>
               | <a href="https://help.launchpad.net/LaunchpadReleases">
-              Version 1.2.6</a> | build
+              Version 1.99</a> | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>
@@ -387,20 +360,6 @@
             </li>
         </ul>
       </div><!--id="globalfooter"-->
-    </div><!--id="nonhelp"-->
-    <div id="help" class="closed" xml:lang="en" lang="en" dir="ltr">
-      <h2 id="help-tab">Help</h2>
-      <div id="help-panel">
-        <div id="help-content">
-          <div id="help-text">
-            <p metal:define-slot="help">
-              Sorry, help isn&rsquo;t available for this page.
-            </p>
-          </div>
-        </div>
-        <div id="help-bottom">&nbsp;</div>
-      </div>
-    </div>
 
     <div id="help-pane" class="invisible">
       <div id="help-body">
@@ -410,7 +369,6 @@
         <a href="#" id="help-close-btn">Close</a>
       </div>
     </div>
-
     <div id="menupreload" style="visibility:hidden"
       xml:lang="en" lang="en" dir="ltr">
       <ul class="menu" lpm:mid="root">
@@ -449,9 +407,6 @@
           frameborder="0"
           style="visibility:visible; z-index:999; position:absolute;
                  top:-500px; left:-500px;">
-        <LAYER name="gToday:datetimepicker:agenda.js"
-               src="/+popcalxp/npopeng.htm"
-               background="/+popcalxp/npopeng.htm">     </LAYER>
       </iframe>
     </tal:datetimepicker>
     <tal:datepicker condition="request/needs_datepicker_iframe">

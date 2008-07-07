@@ -31,7 +31,7 @@
             <a tal:condition="not: context/isTeam" href="+editemails">
               Manage Addresses
             </a>
-            <a tal:condition="context/isTeam" href="+editemail">
+            <a tal:condition="context/isTeam" href="+contactaddress">
               Manage Addresses
             </a>
           </li>

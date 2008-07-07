@@ -32,11 +32,11 @@ from canonical.launchpad.webapp.opstats import OpStats
 
 __all__ = [
     'DisconnectionError',
-    'LaunchpadDatabaseAdapter',
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
     'get_request_statements',
+    'get_request_start_time',
     'get_request_duration',
     'hard_timeout_expired',
     'soft_timeout_expired',
@@ -114,6 +114,11 @@ def get_request_statements():
     Times are given in milliseconds since the start of the request.
     """
     return getattr(_local, 'request_statements', [])
+
+
+def get_request_start_time():
+    """Get the time at which the request started."""
+    return getattr(_local, 'request_start_time', None)
 
 
 def get_request_duration(now=None):
@@ -195,6 +200,7 @@ def break_main_thread_db_access(*ignored):
     for using connections from the main thread.
     """
     # Record the ID of the main thread.
+    # pylint: disable-msg=W0603
     global _main_thread_id
     _main_thread_id = thread.get_ident()
 
@@ -335,8 +341,6 @@ class LaunchpadStatementTracer:
 
     def connection_raw_execute(self, connection, raw_cursor,
                                statement, params):
-        if not isinstance(connection._database, LaunchpadDatabase):
-            return
         if self._debug_sql_extra:
             traceback.print_stack()
             sys.stderr.write("." * 70 + "\n")
@@ -349,8 +353,6 @@ class LaunchpadStatementTracer:
 
     def connection_raw_execute_success(self, connection, raw_cursor,
                                        statement, params):
-        if not isinstance(connection._database, LaunchpadDatabase):
-            return
         end = time()
         start = getattr(connection, '_lp_statement_start_time', end)
         _log_statement(start, end, connection, statement)

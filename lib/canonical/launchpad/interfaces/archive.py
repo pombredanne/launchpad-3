@@ -22,6 +22,8 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.validators.name import name_validator
+
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -44,6 +46,11 @@ class IArchive(IHasOwner):
     owner = Choice(
         title=_('Owner'), required=True, vocabulary='ValidOwner',
         description=_("""The PPA owner."""))
+
+    name = TextLine(
+        title=_("Name"), required=True,
+        constraint=name_validator,
+        description=_("The name of this archive."))
 
     description = Text(
         title=_("PPA contents description"), required=False,
@@ -121,6 +128,33 @@ class IArchive(IHasOwner):
     binaries_size = Attribute(
         'The size of binaries published in the context archive.')
     estimated_size = Attribute('Estimated archive size.')
+
+    total_count = Int(
+        title=_("Total number of builds in archive"), required=True,
+        default=0,
+        description=_("The total number of builds in this archive. "
+                      "This counter does not include discontinued "
+                      "(superseded, cancelled, obsoleted) builds"))
+
+    pending_count = Int(
+        title=_("Number of pending builds in archive"), required=True,
+        default=0,
+        description=_("The number of pending builds in this archive."))
+
+    succeeded_count = Int(
+        title=_("Number of successful builds in archive"), required=True,
+        default=0,
+        description=_("The number of successful builds in this archive."))
+
+    building_count = Int(
+        title=_("Number of active builds in archive"), required=True,
+        default=0,
+        description=_("The number of active builds in this archive."))
+
+    failed_count = Int(
+        title=_("Number of failed builds in archive"), required=True,
+        default=0,
+        description=_("The number of failed builds in this archive."))
 
     def getPubConfig():
         """Return an overridden Publisher Configuration instance.
@@ -334,14 +368,21 @@ class IArchiveSet(Interface):
     number_of_ppa_binaries = Attribute(
         'Number of published binaries in public PPAs.')
 
-    def new(distribution=None, purpose=None, owner=None, description=None):
+    def new(purpose, owner, name=None, distribution=None, description=None):
         """Create a new archive.
 
-        If purpose is ArchivePurpose.PPA, owner must be set.
-        """
+        :param purpose: `ArchivePurpose`;
+        :param owner: `IPerson` owning the Archive;
+        :param name: optional text to be used as the archive name, if not
+            given it uses the names defined in
+            `IArchiveSet._getDefaultArchiveNameForPurpose`;
+        :param distribution: optional `IDistribution` to which the archive
+            will be attached;
+        :param description: optional text to be set as the archive
+            description;
 
-    def ensure(owner, distribution, purpose, description):
-        """Ensure the owner has a valid archive."""
+        :return: an `IArchive` object.
+        """
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
@@ -349,8 +390,14 @@ class IArchiveSet(Interface):
     def getPPAByDistributionAndOwnerName(distribution, name):
         """Return a single PPA the given (distribution, name) pair."""
 
-    def getByDistroPurpose(distribution, purpose):
-        """Return the IArchive with the given distribution and purpose."""
+    def getByDistroPurpose(distribution, purpose, name=None):
+        """Return the IArchive with the given distribution and purpose.
+
+        It uses the default names defined in
+        `IArchiveSet._getDefaultArchiveNameForPurpose`.
+
+        :raises AssertionError if used for with ArchivePurpose.PPA.
+        """
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
@@ -379,6 +426,24 @@ class IArchiveSet(Interface):
             and the number of 'uploads' keys and corresponding values.
         """
 
+    def getBuildCountersForArchitecture(archive, distroarchseries):
+        """Return a dictionary containing the build counters per status.
+
+        The result is restricted to the given archive and distroarchseries.
+
+        The returned dictionary contains the follwoing keys and values:
+
+         * 'total': total number of builds (includes SUPERSEDED);
+         * 'pending': number of builds in NEEDSBUILD or BUILDING state;
+         * 'failed': number of builds in FAILEDTOBUILD, MANUALDEPWAIT,
+           CHROOTWAIT and FAILEDTOUPLOAD state;
+         * 'succeeded': number of SUCCESSFULLYBUILT builds.
+
+        :param archive: target `IArchive`;
+        :param distroarchseries: target `IDistroArchSeries`.
+
+        :return a dictionary with the 4 keys specified above.
+        """
 
 class ArchivePurpose(DBEnumeratedType):
     """The purpose, or type, of an archive.

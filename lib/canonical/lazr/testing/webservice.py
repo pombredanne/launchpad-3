@@ -18,7 +18,7 @@ from canonical.lazr.interfaces.rest import WebServiceLayer
 class FakeResponse(object):
     """Simple response wrapper object."""
     def __init__(self):
-        self.status = 200
+        self.status = 599
         self.headers = {}
 
     def setStatus(self, new_status):
@@ -27,6 +27,13 @@ class FakeResponse(object):
     def setHeader(self, name, value):
         self.headers[name] = value
 
+    def getHeader(self, name):
+        """Return the value of the named header."""
+        return self.headers.get(name)
+
+    def getStatus(self):
+        """Return the response status code."""
+        return self.status
 
 class FakeRequest(object):
     """Simple request object for testing purpose."""
