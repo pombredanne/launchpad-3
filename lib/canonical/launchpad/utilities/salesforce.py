@@ -72,7 +72,7 @@ class Voucher:
         if self.project is None:
             project_name = "unassigned"
         else:
-            project_name = self.project.displayname
+            project_name = self.project.name
         return "%s,%s,%s,%s" % (self.voucher_id,
                                 self.status,
                                 self.term_months,

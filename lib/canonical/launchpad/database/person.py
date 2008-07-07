@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # _valid_nick() in generate_nick causes E1101
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,E1101,W0612
@@ -1084,24 +1084,22 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                                  orderBy=['displayname'])
         return results
 
-    commercial_vouchers = None
     def getCommercialSubscriptionVouchers(self):
         """See `IPerson`."""
         voucher_proxy = getUtility(ISalesforceVoucherProxy)
-        if self.commercial_vouchers is None:
-            self.commercial_vouchers = voucher_proxy.getAllVouchers(self)
-            self.unredeemed_commercial_vouchers = []
-            self.redeemed_commercial_vouchers = []
-            for voucher in self.commercial_vouchers:
-                assert voucher.status in VOUCHER_STATUSES, (
-                    "Voucher %s has unrecoginzed status %s" %
-                    (voucher.voucher_id, voucher.status))
-                if voucher.status == 'Redeemed':
-                    self.redeemed_commercial_vouchers.append(voucher)
-                else:
-                    self.unredeemed_commercial_vouchers.append(voucher)
-        return (self.unredeemed_commercial_vouchers,
-                self.redeemed_commercial_vouchers)
+        commercial_vouchers = voucher_proxy.getAllVouchers(self)
+        unredeemed_commercial_vouchers = []
+        redeemed_commercial_vouchers = []
+        for voucher in commercial_vouchers:
+            assert voucher.status in VOUCHER_STATUSES, (
+                "Voucher %s has unrecognized status %s" %
+                (voucher.voucher_id, voucher.status))
+            if voucher.status == 'Redeemed':
+                redeemed_commercial_vouchers.append(voucher)
+            else:
+                unredeemed_commercial_vouchers.append(voucher)
+        return (unredeemed_commercial_vouchers,
+                redeemed_commercial_vouchers)
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName

@@ -1,6 +1,6 @@
 # Copyright 2004-2008 Canonical Ltd
 
-"""Person-related wiew classes."""
+"""Person-related view classes."""
 
 __metaclass__ = type
 
@@ -2111,14 +2111,11 @@ class PersonVouchersView(LaunchpadFormView):
     custom_widget('project', SinglePopupWidget)
 
     def setUpFields(self):
-        """Set up the fields for this view.
+        """Set up the fields for this view."""
 
-        If there are no commercial project or vouchers then the form isn't
-        created as there is nothing to redeem.
-        """
         self.form_fields = []
-        # Make the less expense test for commercial projects first to avoid
-        # the more expensive fetching of unredeemed vouchers.
+        # Make the less expensive test for commercial projects first
+        # to avoid the more costly fetching of unredeemed vouchers.
         if (len(self.owned_commercial_projects) > 0 and
             len(self.unredeemed_vouchers) > 0):
             self.form_fields = (self.createProjectField() +
@@ -2202,18 +2199,14 @@ class PersonVouchersView(LaunchpadFormView):
                 subscription_months=voucher.term_months)
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
-            # Force the page to reload so the just consumed voucher is not
-            # displayed again (since the field has already been created.)
-            # In the case of the error condition this allows the error message to
-            # be displayed.
+            # Force the page to reload so the just consumed voucher is
+            # not displayed again (since the field has already been
+            # created).
             self.next_url = self.request.URL
-            from zope.security.proxy import removeSecurityProxy
-            person = removeSecurityProxy(self.context)
-            person.commercial_subscriptions = None
         except SalesforceVoucherProxyException, error:
             self.addError(
                 _("The voucher could not be redeemed at this time."))
-            # Log an oops report with raising an error.
+            # Log an OOPS report without raising an error.
             info = (error.__class__, error, None)
             globalErrorUtility = getUtility(IErrorReportingUtility)
             globalErrorUtility.raising(info, self.request)
