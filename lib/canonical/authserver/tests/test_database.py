@@ -749,17 +749,19 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
             'some-branch')
         self.assertEqual((branch_id, 'r'), branch_info)
 
-    @writing_transaction
     def _makeProductWithPrivateDevFocus(self):
         """Make a product with a private development focus.
 
         :return: The new Product and the new Branch.
         """
+        login(ANONYMOUS)
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product)
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = branch
         removeSecurityProxy(branch).private = True
+        transaction.commit()
+        logout()
         return product, branch
 
     def test_getDefaultStackedOnBranch_invisible(self):
@@ -780,9 +782,10 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         # should be allowed to know such things.
         branch = removeSecurityProxy(branch)
         store = DatabaseUserDetailsStorageV2(None)
+        unique_name = branch.unique_name
         stacked_on_url = store._getDefaultStackedOnBranchInteraction(
             branch.owner.id, product.name)
-        self.assertEqual('/' + branch.unique_name, stacked_on_url)
+        self.assertEqual('/' + unique_name, stacked_on_url)
 
     def test_getDefaultStackedOnBranch_junk(self):
         # getDefaultStackedOnBranch returns the empty string for '+junk'.
@@ -1195,16 +1198,20 @@ class BranchPullQueueTest(BranchTestCase):
 
     def assertBranchQueues(self, hosted, mirrored, imported):
         login(ANONYMOUS)
+        expected_hosted = [
+            self.storage._getBranchPullInfo(branch) for branch in hosted]
+        expected_mirrored = [
+            self.storage._getBranchPullInfo(branch) for branch in mirrored]
+        expected_imported = [
+            self.storage._getBranchPullInfo(branch) for branch in imported]
         self.assertEqual(
-            map(self.storage._getBranchPullInfo, hosted),
+            expected_hosted,
             self.storage._getBranchPullQueueInteraction('HOSTED'))
-        login(ANONYMOUS)
         self.assertEqual(
-            map(self.storage._getBranchPullInfo, mirrored),
+            expected_mirrored,
             self.storage._getBranchPullQueueInteraction('MIRRORED'))
-        login(ANONYMOUS)
         self.assertEqual(
-            map(self.storage._getBranchPullInfo, imported),
+            expected_imported,
             self.storage._getBranchPullQueueInteraction('IMPORTED'))
 
     def test_pullQueuesEmpty(self):
