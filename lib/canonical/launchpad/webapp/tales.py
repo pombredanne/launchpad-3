@@ -1825,25 +1825,6 @@ def next_word_chunk(word, pos, minlen, maxlen):
     return word[pos:endpos], endpos
 
 
-def formatTextList(list_of_words):
-    """Return a grammatically-correct formatted sentence,
-
-    Take the string items in list_of_words, and return a string
-    formatted with English grammar rules; comma separated until the
-    last item, which is preceded with 'and' instead.  If the list only
-    has one item, it is returned on its own as a string.
-    """
-    if len(list_of_words) > 1:
-        text = ", ".join(list_of_words[:-1])
-        text += " and " + list_of_words[-1]
-    elif len(list_of_words) == 1:
-        text = list_of_words[0]
-    else:
-        text = ""
-
-    return text
-
-
 def add_word_breaks(word):
     """Insert manual word breaks into a string.
 

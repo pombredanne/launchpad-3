@@ -42,7 +42,7 @@ rules.
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'sandm'))
     Series &amp; milestones
     ...
-        Milestones: testmilestone, 3.1 and 3.1-rc1
+        Milestones: testmilestone, 3.1, and 3.1-rc1
     ...
 
 Each series and milestone are links that take you to that

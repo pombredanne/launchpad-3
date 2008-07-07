@@ -952,31 +952,3 @@ approximate durations.
     'two minutes'
     >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
     '2 minutes'
-
-
-== Formatting lists of English words ==
-
-formatTextList() takes a list of strings of English words and formats
-them into a single string according to normal grammar rules: comma
-separated until the last item, which is preceded with 'and' instead.
-
-    >>> from canonical.launchpad.webapp.tales import formatTextList
-
-    >>> words = ["Ham"]
-    >>> print formatTextList(words)
-    Ham
-
-    >>> words = ["Ham", "Eggs"]
-    >>> print formatTextList(words)
-    Ham and Eggs
-
-    >>> words = ["Ham", "Eggs", "Spam"]
-    >>> print formatTextList(words)
-    Ham, Eggs and Spam
-
-    >>> words = ["Chips", "Beans", "Ham", "Eggs", "Spam"]
-    >>> print formatTextList(words)
-    Chips, Beans, Ham, Eggs and Spam
-
-    >>> formatTextList([])
-    ''
