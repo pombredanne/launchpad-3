@@ -19,11 +19,10 @@ from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database import (
     CodeImportMachine, CodeImportResult)
-
 from canonical.launchpad.database import CodeImportJob
 from canonical.launchpad.interfaces import (
     CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
@@ -33,12 +32,13 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.codeimporthelpers import (
-    make_finished_import)
+    make_finished_import, make_running_import)
 from canonical.launchpad.testing.pages import (
     get_feedback_messages, setupBrowser)
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing import LaunchpadFunctionalLayer, PageTestLayer
+
 
 def login_for_code_imports():
     """Login as a member of the vcs-imports team.
@@ -74,9 +74,9 @@ class TestCodeImportJobSet(unittest.TestCase):
 class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
     """Tests for the CodeImportJobSet.getJobForMachine method.
 
-    For brevity, these test cases describe jobs using specs: a 2- or 3-tuple:
+    For brevity, these test cases describe jobs using specs: a 2- or 3-tuple::
 
-       (<job state>, <date_due time delta>, <requesting user, if present>).
+        (<job state>, <date_due time delta>, <requesting user, if present>).
 
     The time delta is measured in seconds relative to the present, so using a
     value of -1 creates a job with a date_due of 1 second ago.  The instance
@@ -109,7 +109,6 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
 
     def assertJobIsSelected(self, desired_job):
         """Assert that the expected job is chosen by getJobForMachine."""
-        flush_database_updates()
         observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
             self.machine.hostname)
         self.assert_(observed_job is not None, "No job was selected.")
@@ -118,7 +117,6 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
 
     def assertNoJobSelected(self):
         """Assert that no job is selected."""
-        flush_database_updates()
         observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
             'machine')
         self.assert_(observed_job is None, "Job unexpectedly selected.")
@@ -193,11 +191,67 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
 
     def test_notReturnedTwice(self):
         # Once a job has been selected by getJobForMachine, it should not be
-        # selected again (NB: without the flush_database_updates() chicken
-        # bones in the helper methods, this test would fail).
+        # selected again.
         self.assertJobIsSelected(
             self.makeJob(CodeImportJobState.PENDING, -1))
         self.assertNoJobSelected()
+
+
+class TestCodeImportJobSetGetReclaimableJobs(TestCaseWithFactory):
+    """Tests for the CodeImportJobSet.getReclaimableJobs method."""
+
+    layer = LaunchpadFunctionalLayer
+
+    INTERVAL = config.codeimportworker.heartbeat_update_interval
+    LIMIT = config.codeimportworker.maximum_heartbeat_interval
+
+    def setUp(self):
+        super(TestCodeImportJobSetGetReclaimableJobs, self).setUp()
+        login_for_code_imports()
+        for job in CodeImportJob.select():
+            job.destroySelf()
+
+    def makeJobWithHeartbeatInPast(self, seconds_in_past):
+        code_import = make_running_import(factory=self.factory)
+        naked_job = removeSecurityProxy(code_import.import_job)
+        naked_job.heartbeat = SQLConstant(
+            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d seconds'"
+            % (-seconds_in_past,))
+        return code_import.import_job
+
+    def assertReclaimableJobs(self, jobs):
+        """Assert that the set of reclaimable jobs equals jobs."""
+        self.assertEqual(
+            set(jobs),
+            set(getUtility(ICodeImportJobSet).getReclaimableJobs()))
+
+    def test_upToDateJob(self):
+        # A job that was updated recently should not be considered
+        # reclaimable.
+        self.makeJobWithHeartbeatInPast(self.LIMIT/2)
+        self.assertReclaimableJobs([])
+
+    def test_staleJob(self):
+        # A job that hasn't been updated for a long time should be
+        # considered reclaimable.
+        stale_job = self.makeJobWithHeartbeatInPast(self.LIMIT * 2)
+        self.assertReclaimableJobs([stale_job])
+
+    def test_pendingJob(self):
+        # A pending job (which cannot have a non-NULL heartbeat) is
+        # not returned.
+        pending_job = self.factory.makeCodeImportJob()
+        self.assertEqual(
+            pending_job.state, CodeImportJobState.PENDING,
+            "makeCodeImportJob() made non-pending job!")
+        self.assertReclaimableJobs([])
+
+    def test_staleAndFreshJobs(self):
+        # If there are both fresh and stake jobs in the DB, only the
+        # stale ones are returned by getReclaimableJobs().
+        self.makeJobWithHeartbeatInPast(self.LIMIT/2)
+        stale_job = self.makeJobWithHeartbeatInPast(self.LIMIT*2)
+        self.assertReclaimableJobs([stale_job])
 
 
 class AssertFailureMixin:
@@ -903,7 +957,6 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         getUtility(ICodeImportJobWorkflow).requestJob(
             getUtility(ICodeImportSet).get(code_import_id).import_job,
             self.factory.makePerson(displayname=displayname))
-        flush_database_updates()
 
     @logged_in_for_code_imports
     def deleteJob(self, code_import_id):
@@ -912,7 +965,6 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         user = self.factory.makePerson()
         getUtility(ICodeImportSet).get(code_import_id).suspend(
             {}, user)
-        flush_database_updates()
 
     @logged_in_as(ANONYMOUS)
     def startJob(self, code_import_id):
@@ -920,7 +972,6 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         getUtility(ICodeImportJobWorkflow).startJob(
             getUtility(ICodeImportSet).get(code_import_id).import_job,
             self.factory.makeCodeImportMachine(set_online=True))
-        flush_database_updates()
 
     def test_pressButtonImportAlreadyRequested(self):
         # If the import has been requested by another user, we display a

@@ -127,6 +127,13 @@ class ICodeImportJobSet(Interface):
         :return: A `CodeImportJob` or None if this database id is not found.
         """
 
+    def getReclaimableJobs():
+        """Get the set of jobs that can be reclaimed.
+
+        A job is reclaimable if its heartbeat has not been updated for
+        config.codeimportworker.maximum_heartbeat_interval seconds.
+        """
+
 
 class ICodeImportJobSetPublic(Interface):
     """Parts of the CodeImportJobSet interface that need to be public.

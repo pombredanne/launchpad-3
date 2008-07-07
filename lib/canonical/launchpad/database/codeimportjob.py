@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -113,6 +114,13 @@ class CodeImportJobSet(object):
             return job
         else:
             return None
+
+    def getReclaimableJobs(self):
+        """See `ICodeImportJobSet`."""
+        return CodeImportJob.select(
+            "state = %s and heartbeat < %s + '-%s seconds'"
+            % sqlvalues(CodeImportJobState.RUNNING, UTC_NOW,
+                        config.codeimportworker.maximum_heartbeat_interval))
 
 
 class CodeImportJobWorkflow:
