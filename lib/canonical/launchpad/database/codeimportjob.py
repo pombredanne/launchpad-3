@@ -99,6 +99,9 @@ class CodeImportJobSet(object):
 
     def getJobForMachine(self, hostname):
         """See `ICodeImportJobSet`."""
+        job_workflow = getUtility(ICodeImportJobWorkflow)
+        for job in self.getReclaimableJobs():
+            job_workflow.reclaimJob(job)
         machine = getUtility(ICodeImportMachineSet).getByHostname(hostname)
         if machine is None:
             machine = getUtility(ICodeImportMachineSet).new(
@@ -112,7 +115,7 @@ class CodeImportJobSet(object):
                LIMIT 1)"""
             % sqlvalues(UTC_NOW, CodeImportJobState.PENDING))
         if job is not None:
-            getUtility(ICodeImportJobWorkflow).startJob(job, machine)
+            job_workflow.startJob(job, machine)
             return job
         else:
             return None

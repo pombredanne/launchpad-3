@@ -197,15 +197,13 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
         self.assertNoJobSelected()
 
 
-class TestCodeImportJobSetGetReclaimableJobs(TestCaseWithFactory):
-    """Tests for the CodeImportJobSet.getReclaimableJobs method."""
-
-    layer = LaunchpadFunctionalLayer
+class ReclaimableJobTestMixin:
+    """Helpers for tests that need to create reclaimable jobs."""
 
     LIMIT = config.codeimportworker.maximum_heartbeat_interval
 
     def setUp(self):
-        super(TestCodeImportJobSetGetReclaimableJobs, self).setUp()
+        super(ReclaimableJobTestMixin, self).setUp()
         login_for_code_imports()
         for job in CodeImportJob.select():
             job.destroySelf()
@@ -217,6 +215,12 @@ class TestCodeImportJobSetGetReclaimableJobs(TestCaseWithFactory):
             "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d seconds'"
             % (-seconds_in_past,))
         return code_import.import_job
+
+
+class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTestMixin):
+    """Tests for the CodeImportJobSet.getReclaimableJobs method."""
+
+    layer = LaunchpadFunctionalLayer
 
     def assertReclaimableJobs(self, jobs):
         """Assert that the set of reclaimable jobs equals `jobs`."""
@@ -250,6 +254,21 @@ class TestCodeImportJobSetGetReclaimableJobs(TestCaseWithFactory):
         self.makeJobWithHeartbeatInPast(self.LIMIT/2)
         stale_job = self.makeJobWithHeartbeatInPast(self.LIMIT*2)
         self.assertReclaimableJobs([stale_job])
+
+
+class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTestMixin):
+    """Test that getJobForMachine gardens stale code import jobs."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_getJobForMachineGardens(self):
+        # getJobForMachine reclaims all reclaimable jobs each time it is
+        # called.
+        stale_job_id = self.makeJobWithHeartbeatInPast(self.LIMIT*2).id
+        job = getUtility(ICodeImportJobSet).getJobForMachine(
+            self.machine.hostname)
+        stale_job = getUtility(ICodeImportJobSet).get(stale_job_id)
+        self.assertTrue(stale_job is None)
 
 
 class AssertFailureMixin:
