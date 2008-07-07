@@ -4,7 +4,7 @@ Bugs are some of the more complex objects in Launchpad. They have a
 lot of state and many relationships to other objects.
 
   >>> from pprint import PrettyPrinter
-  >>> pprint = PrettyPrinter(width=72).pprint
+  >>> pprint = PrettyPrinter(width=76).pprint
   >>> def show(thing):
   ...     if isinstance(thing, dict):
   ...         thing = sorted(thing.iteritems())
