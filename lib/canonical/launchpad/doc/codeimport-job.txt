@@ -441,12 +441,13 @@ It just takes a running code import job as a parameter.
     >>> result.status.name
     'RECLAIMED'
 
-3) logs a 'RECLAIM' CodeImportEvent, and
+3) creates a new, already due, job for the code import, and
+
+    >>> print_date_attribute(running_import.import_job, 'date_due')
+    UTC_NOW
+
+4) logs a 'RECLAIM' CodeImportEvent.
 
     >>> print new_events.summary()
     RECLAIM ...
 
-4) creates a new, already due, job for the code import.
-
-    >>> print_date_attribute(running_import.import_job, 'date_due')
-    UTC_NOW

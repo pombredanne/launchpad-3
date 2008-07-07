@@ -264,12 +264,20 @@ class CodeImportJobWorkflow:
             "The CodeImportJob associated with %s is %s."
             % (import_job.code_import.branch.unique_name,
                import_job.state.name))
+        # Cribbing from codeimport-job.txt, this method does four things:
+        # 1) deletes the passed in job,
+        # 2) creates a CodeImportResult with a status of 'RECLAIMED',
+        # 3) creates a new, already due, job for the code import, and
+        # 4) logs a 'RECLAIM' CodeImportEvent.
         job_id = import_job.id
-        self._makeResultAndDeleteJob(
-            import_job, CodeImportResultStatus.RECLAIMED, None)
         code_import = import_job.code_import
         machine = import_job.machine
+        # 1) and 2)
+        self._makeResultAndDeleteJob(
+            import_job, CodeImportResultStatus.RECLAIMED, None)
+        # 3)
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
             self.newJob(code_import, UTC_NOW)
+        # 4)
         getUtility(ICodeImportEventSet).newReclaim(
             code_import, machine, job_id)
