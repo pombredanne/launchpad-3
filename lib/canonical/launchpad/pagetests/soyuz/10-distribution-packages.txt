@@ -55,7 +55,7 @@ Now run a search for mozilla-firefox and check that it is found:
     >>> browser.open("http://localhost/ubuntu/+search")
     >>> field = browser.getControl(name="text")
     >>> field.value = 'mozilla-firefox'
-    >>> browser.getControl("Search").click()
+    >>> browser.getControl('Search', index=0).click()
     >>> for tag in find_tags_by_class(browser.contents, 'sources'):
     ...     print extract_text(tag).encode('us-ascii', 'replace')
     ?mozilla-firefox? source package in ...
@@ -78,7 +78,7 @@ The search page will also present commercial packages:
     >>> browser.goBack()
     >>> field = browser.getControl(name="text")
     >>> field.value = 'commercialpackage'
-    >>> browser.getControl("Search").click()
+    >>> browser.getControl('Search', index=0).click()
     >>> extract_text(find_main_content(browser.contents))
     u'...commercialpackage... source package...'
 
@@ -91,7 +91,7 @@ text is not mentioned in anything else that is indexed.
     >>> browser.open("http://localhost/ubuntu/+search")
     >>> field = browser.getControl(name="text")
     >>> field.value = 'placeholder'
-    >>> browser.getControl("Search").click()
+    >>> browser.getControl('Search', index=0).click()
     >>> for tag in find_tags_by_class(
     ...     browser.contents, 'batch-navigation-index'):
     ...     print extract_text(tag)
