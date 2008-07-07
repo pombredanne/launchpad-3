@@ -107,47 +107,37 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 .unavailable {color: #999; background: none;}
 
-/* --- Error, warning, and info messages --- */
+/* === Error, warning, and informational messages === */
+/* Error, warning, and informational messages are in a centered box: */
+.error.message, .warning.message, .informational.message {
+  border: solid #666;
+  border-width: 1px 2px 2px 1px;
+  color: black;
+  margin: 26px auto 10px auto;
+  padding: 0 10px 10px 20px;
+  width: 30em;
+}
+/* The messages are preceded with an icon overlaying the top left corner: */
+.message::before               {display: block; margin: -15px 0 -6px -35px;}
+/* Error messages are pink, with an error icon: */
+.error         {background: #ffd6d6;}
+.error.message::before         {content: url(/@@/error-large);}
+/* Warning messages are orange, with a warning icon: */
+.warning       {background: #fff59c;}
+.warning.message::before       {content: url(/@@/warning-large);}
+/* Informational messages are blue-fading-to-grey, with an info icon: */
+.informational {background: #d4e8ff url(/+icing/blue-fade-to-grey);}
+.informational.message::before {content: url(/@@/info-large);}
+/* Debugging messages are white on dark grey, with an info icon: */
+.debugging     {background: #666; color: white;}
+.debugging.message::before     {content: url(/@@/info-large);}
 
-.error, .warning, .informational {
-  padding: 0.5em;
-}
-.message {
-  background: 5px 0.5em no-repeat;
-  font-weight: bold;
-  margin: 1em 0 0.5em;
-  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
-}
-.error .message, .warning .message, .informational .message {
-  margin: 0.25em 0 0;
-  padding: 0 0 0 25px;
-  background: 0 0 no-repeat;
-}
-.error {color: #db1f22;}
-.error.message, .error .message {
-  background-image: url(/@@/error);
-}
 td.error {
   border: 1px solid #db1f22;
   background-color: #ffffff;
 }
-.warning {background-color: #fcdd99; color: black;}
-.warning.message, .warning .message {
-  background-image: url(/@@/warning);
-}
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
-}
-.helpwanted.message, .helpwanted .message {
-  background-image: url(/@@/helpwanted);
-}
-.informational {background-color: #fcfc99; color: black;}
-.informational.message, .informational .message {
-  background-image: url(/@@/info);
-}
-.debugging {background-color: #666; color: white;}
-.debugging.message, .debugging .message {
-  background-image: url(/@@/info);
 }
 .whiteboard {
   color: #666;
