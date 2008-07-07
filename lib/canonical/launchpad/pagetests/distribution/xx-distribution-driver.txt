@@ -23,7 +23,7 @@ where a message informs him of the driver change.
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     tag.renderContents()
-  'Successfully changed the driver to test@canonical.com'
+  'Successfully changed the driver to Sample Person'
 
 Sample Person is listed as the driver of the distribution.
 

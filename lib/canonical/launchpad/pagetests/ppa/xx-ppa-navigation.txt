@@ -15,7 +15,6 @@ While navigating around the PPA the "structural location" remains the
 
     >>> print_navigation(anon_browser.contents)
     Location: Celso Providelo
-    Structural title: Celso Providelo
     Tabs:
     * Overview (http://launchpad.dev/~cprov)
     * Code (http://code.launchpad.dev/~cprov)
@@ -50,7 +49,6 @@ The user can navigate to an individual build details:
 
     >>> print_navigation(anon_browser.contents)
     Location: Celso Providelo
-    Structural title: Celso Providelo
     Tabs:
     * Overview (http://launchpad.dev/~cprov)
     * Code (http://code.launchpad.dev/~cprov)
