@@ -1,4 +1,4 @@
-<p
+<div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
@@ -9,4 +9,4 @@
   >This report is <a href="+secrecy">public</a></tal:public>
   <tal:private condition="context/private"
   >This report is <a href="+secrecy">private</a></tal:private>
-</p>
+</div>

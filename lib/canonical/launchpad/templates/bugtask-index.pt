@@ -145,13 +145,13 @@
 
       <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
-      <div tal:replace="structure context/bug/@@+portlet-duplicates" />
-      <div tal:replace="structure context/bug/@@+portlet-subscribers" />
-      <div tal:replace="structure context/bug/@@+portlet-questions" />
-      <div tal:replace="structure context/bug/@@+portlet-specs" />
-      <div tal:replace="structure context/bug/@@+portlet-attachments" />
-      <div tal:replace="structure context/bug/@@+portlet-watch" />
-      <div tal:replace="structure context/@@+portlet-search" />
+      <aside tal:content="structure context/bug/@@+portlet-duplicates" />
+      <aside tal:content="structure context/bug/@@+portlet-subscribers" />
+      <aside tal:content="structure context/bug/@@+portlet-questions" />
+      <aside tal:content="structure context/bug/@@+portlet-specs" />
+      <aside tal:content="structure context/bug/@@+portlet-attachments" />
+      <aside tal:content="structure context/bug/@@+portlet-watch" />
+      <aside tal:content="structure context/@@+portlet-search" />
 
       <div
           tal:replace="structure context/target/@@+portlet-details | nothing"

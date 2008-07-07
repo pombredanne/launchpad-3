@@ -869,6 +869,8 @@ top left (y), and top right (z) of the rounded border. */
 /* To avoid overlap, we need an extra container with positive right margin: */
 #nonportlets {margin-right: 220px;}
 #portlets .portlet {width: 200px;}
+/* Pages using the one-column layout can construct portlets using <aside>: */
+aside {clear: right; float: right; width: 200px;}
 
 ul#applicationchooser {
   position: absolute;
@@ -963,7 +965,8 @@ ul#applicationchooser li#applicationchooser_selected {
 .pillar div.portlet, .pillar div.section {clear: left; padding-top: 2em;}
 .pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
 
-/* --- Portlets --- */
+/* === Portlets === */
+/* The two-column layout includes a column of portlets: */
 #portlets {
   display: inline;
   float: right;
@@ -977,12 +980,11 @@ ul#applicationchooser li#applicationchooser_selected {
 * html #portlets {left: 20px;}
 /* IE7 gets the padding right but overcalculates the left margin, so we use
 a conditional comment in main-template.pt to work around the above rule. */
-#portlets .portlet {
+/* An <aside> element looks the same as a portlet: */
+#portlets .portlet, aside .portlet {
   background-color: #ebebeb;
   border: 1px solid;
   border-color: #fff #ccc #ccc #fff;
-  clear: both;
-  float: left;
   margin: 0 0 0.5em 0;
   color: #717171;
   padding: 4px 8px;
@@ -994,10 +996,12 @@ highlighting menu items, so padding is handled by the contents instead: */
 #portlets #actions {
   padding: 4px 0; width: 198px; /* 200px column - 2*1px vertical border */
 }
-#portlets .portlet, #portlets .portlet h2 {font-size: 12px;}
-#portlets .portlet h2 {
+#portlets .portlet, aside .portlet, #portlets .portlet h2, aside .portlet h2 {
+  font-size: 12px;
+}
+#portlets .portlet h2, aside .portlet h2 {
   border-bottom: 1px solid #ccc;
-  color: inherit;
+  color: inherit !important; /* !important prevents <aside> colored headings */
   font-weight: bold;
   margin: 0 0 1em;
   padding: 0 0 1px;
