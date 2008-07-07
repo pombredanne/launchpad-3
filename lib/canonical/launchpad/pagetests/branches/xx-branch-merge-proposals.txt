@@ -62,7 +62,7 @@ Registering the merge proposal takes the user back to the
 main page for the source branch.
 
     >>> print nopriv_browser.url
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
 
 An email notification is emitted when the merge proposal is created.
 
@@ -90,6 +90,8 @@ merge proposal is considered a "landing target" with an optional
     ...         for mp in tag.findAll(attrs={'class': 'mergeproposal'}):
     ...             print extract_text(mp)
 
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
     This is the whiteboard
@@ -112,6 +114,8 @@ shown.
     ...     'This is the whiteboard')
     >>> sample_browser.getControl('Register').click()
 
+    >>> sample_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> printMergeProposals(sample_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
     This is the whiteboard
@@ -160,6 +164,8 @@ and merging, so we have to settle for the sample data.
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'This is the whiteboard')
     >>> sample_browser.getControl('Register').click()
+    >>> sample_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9')
     >>> printMergeProposals(sample_browser, 'landing-targets')
     ~name12/firefox/main - view proposal details
       This is the whiteboard
@@ -254,6 +260,7 @@ button options are:
     >>> sample_browser.getLink('Edit details').click()
     >>> print_submit_buttons(sample_browser.contents)
     Update
+    Cancel
 
     >>> print sample_browser.title
     Edit proposal to merge branch
