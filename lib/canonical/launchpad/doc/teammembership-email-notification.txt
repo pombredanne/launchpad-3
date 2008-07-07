@@ -41,7 +41,7 @@ Now Robert Collins proposes himself as a member of the Ubuntu Team. This
 generates a notification email only to Ubuntu Team administrators.
 
     >>> lifeless = personset.getByName('lifeless')
-    >>> login(lifeless.preferredemail.email)
+    >>> login_person(lifeless)
     >>> lifeless.join(ubuntu_team)
     >>> membership = membershipset.getByPersonAndTeam(lifeless, ubuntu_team)
     >>> membership.status.title
@@ -637,7 +637,7 @@ sent to all team admins.
     >>> print karl_on_mirroradmins.dateexpires
     None
 
-    >>> login(mirror_admins.teamowner.preferredemail.email)
+    >>> login_person(mirror_admins.teamowner)
     >>> karl_on_mirroradmins.setExpirationDate(
     ...     tomorrow, mirror_admins.teamowner)
     >>> ondemand = TeamMembershipRenewalPolicy.ONDEMAND
@@ -645,7 +645,7 @@ sent to all team admins.
     >>> mirror_admins.defaultrenewalperiod = 365
     >>> flush_database_updates()
 
-    >>> login(karl.preferredemail.email)
+    >>> login_person(karl)
     >>> karl.renewTeamMembership(mirror_admins)
     >>> transaction.commit()
     >>> len(stub.test_emails)

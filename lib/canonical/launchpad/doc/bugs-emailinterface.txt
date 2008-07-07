@@ -1357,7 +1357,7 @@ Bug supervisors can set some restricted statuses:
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> sync(bug_four)
-    >>> login(email_user.preferredemail.email)
+    >>> login_person(email_user)
 
     >>> submit_commands(bug_four, 'status wontfix')
     >>> sync(upstream_task)
@@ -1393,7 +1393,7 @@ Everyone else gets an explanatory error message:
 Let's take a look at all the other error messages that the sub
 commands can produce.
 
-    >>> login(email_user.preferredemail.email)
+    >>> login_person(email_user)
 
 Invalid status:
 
@@ -1501,7 +1501,6 @@ An email can contain multiple commands, even for different bugs.
     >>> from canonical.launchpad.event.interfaces import (
     ...     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.interfaces.bug import IBug
     >>> from canonical.launchpad.interfaces.bugtask import IBugTask
     >>> bugtask_modified_listener = TestEventListener(
     ...     IBugTask, ISQLObjectModifiedEvent, print_bugtask_modified_event)
