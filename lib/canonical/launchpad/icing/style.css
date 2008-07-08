@@ -675,7 +675,7 @@ it out of the page flow. */
 span.help {font-weight: normal;}
 
 /* === ID and timestamp === */
-/* The first text in many pages is their timestamp and identifier. */
+/* The first text in many pages is the object's timestamp and identifier. */
 /* The timestamp is the date last modified or (more usually) registered: */
 .object.timestamp {float: right;}
 /* An identifier is a unique label, such as a bug number or branch ID: */
@@ -1005,12 +1005,10 @@ highlighting menu items, so padding is handled by the contents instead: */
 #portlets #actions {
   padding: 4px 0; width: 198px; /* 200px column - 2*1px vertical border */
 }
-#portlets .portlet, aside, #portlets .portlet h2, aside h2 {
-  font-size: 12px;
-}
+#portlets .portlet, aside, #portlets .portlet h2, aside h2 {font-size: 12px;}
 #portlets .portlet h2, aside h2 {
   border-bottom: 1px solid #ccc;
-  color: inherit !important; /* !important prevents <aside> colored headings */
+  color: inherit;
   font-weight: bold;
   margin: 0 0 1em;
   padding: 0 0 1px;

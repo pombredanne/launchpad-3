@@ -12,12 +12,11 @@
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
       <p class="clearfix">
         <span class="object timestamp">
-          Reported by
-          <tal:reporter replace="structure context/bug/owner/fmt:link" />
+          Reported
+          by <tal:reporter replace="structure context/bug/owner/fmt:link" />
           <span
-            tal:attributes="title context/bug/datecreated/fmt:datetime"
-            tal:content="context/bug/datecreated/fmt:displaydate"
-          />
+              tal:attributes="title context/bug/datecreated/fmt:datetime"
+              tal:content="context/bug/datecreated/fmt:displaydate" />
           <tal:activitylog
             define="link context_menu/activitylog"
             condition="link/enabled"
