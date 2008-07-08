@@ -90,7 +90,8 @@ the actual time value.
 The NewEvents class helps testing the creation of CodeImportEvent
 objects.
 
-    >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
+    >>> from canonical.launchpad.database.tests.test_codeimportjob import (
+    ...     NewEvents)
 
 
 == Testing whether a job is overdue ==
@@ -344,7 +345,8 @@ mirroring, so the 'next_mirror_time' field is empty:
     None
 
 We just document the successful case here, when a log is not recorded.
-The details are tested in unit tests in ../tests/test_codeimportjob.py.
+The details are tested in unit tests in
+../database/tests/test_codeimportjob.py.
 
     >>> new_events = NewEvents()
     >>> finished_job_id = running_job.id
@@ -372,7 +374,6 @@ A CodeImportResult object has now been created to record the result of
 this run, containing details such as the import worked on, the dates
 the import started and finished and the final status of the run.
 
-    >>> from canonical.launchpad.interfaces import ICodeImportResultSet
     >>> results = list(code_import.results)
     >>> len(results)
     1
