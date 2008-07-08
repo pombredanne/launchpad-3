@@ -287,16 +287,6 @@ form.primary.search {
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
 
-hr {
-  border: 0;
-  margin: 8px 0px 0px 0px;
-  padding: 6px 0px 0px 0px;
-  width: 100%;
-  height: 2px;
-  border-top: 2px solid #000000;
-  overflow: hidden;
-  display: none;
-}
 h1 em, h2 em, h3 em, h4 em, h5 em {
   font-style: normal;
   color: #353535;
@@ -581,7 +571,7 @@ ul#menuroot li.selected a.breadcrumb {
 /* Allow dyn menus to appear ouside of the locationbar, even though they
  * overflow its bounds.
  */
-#locationbar {margin-bottom: 10px; overflow: visible;}
+#locationbar {overflow: visible;}
 /* Prevent the text in links in menu items from wrapping.
  * Apply appropriate formatting to links in menu items.
  */
@@ -653,23 +643,76 @@ ul#menuroot li.selected a.breadcrumb {
   color: #FFFFFF;
   font-size: 11px;
   font-weight: bold;
+
+/* === Login control === */
+/* The login control goes at the top right of almost every page: */
+#logincontrol {float: right;}
+/* The "Log Out" button doesn't make the line too tall: */
+#logincontrol input {
+  font-size: smaller;
+  display: inline-block; 
   vertical-align: middle;
-  /* Reset vertical padding specified by the "td" style. It causes the
-     "#logincontrol" background area to exceed the "#locationbar" height for
-     even modest increases in font size. */
-  padding-top: 0;
-  padding-bottom: 0;
-  /* Set horizontal padding to 10px, which is also the left padding of the
-     "#yourlocation" box (hence the visible space left of the location bar). */
-  padding-left: 10px;
-  padding-right: 10px;
 }
-/* Reset standard margin from "input[type='submit']" to avoid unwanted spacing
-   when logged in. */
-#logincontrol input[type='submit'] { margin-right: 0; }
-/* Link text is black. */
-#logincontrol a {
-    color: #000000;
+
+/* === Application tabs === */
+/* In most pages, the location bar includes six centered application tabs: */
+#lp-apps {text-align: center;}
+/* The tabs are preceded by a bar joined to the hierarchy: */
+#lp-apps hr {
+  background: #ddd;
+  border: 2px solid #ccc;
+  -moz-border-left-colors: #ccc #fff;
+  -moz-border-top-colors: #ccc #fff;
+  -moz-border-right-colors: #ccc #ddd;
+  -moz-border-bottom-colors: #ccc #ddd;
+  display: block;
+  height: 5px;
+  margin: 0;
+}
+/* The tabs have text separators for the benefit of those without CSS: */
+#lp-apps small {display: none;}
+/* The tabs are equal size, not too wide, and attached to the center bar: */
+#lp-apps > strong, #lp-apps > span {
+  display: inline-block;
+  text-align: center;
+  width: 16.5%; /* = (100% - 1%) / 6 */
+  max-width: 12em;
+  position: relative;
+  top: -1px;
+}
+/* Each tab is light grey, with bevelled and rounded borders: */
+#lp-apps * span, #lp-apps * a {
+  background: #eee;
+  border-style: solid;
+  -moz-border-right-colors: #ccc #ccc #ddd;
+  -moz-border-bottom-colors: #ccc #ccc #ddd;
+  -moz-border-left-colors: #ccc #fff #eee;
+  border-width: 0 3px 4px;
+  -moz-border-radius: 0 0 6px 7px;
+  color: #333;
+  display: block;
+  line-height: 1.5em;
+  margin: 0 1px;
+  overflow: hidden;
+}
+/* Each tab also has a colored line matching the application theme: */
+#lp-apps *.overview       * {-moz-border-bottom-colors: #ccc #ddd #83ad23;}
+#lp-apps *.branches       * {-moz-border-bottom-colors: #ccc #ddd #d18b39;}
+#lp-apps *.bugs           * {-moz-border-bottom-colors: #ccc #ddd #9f2b33;}
+#lp-apps *.specifications * {-moz-border-bottom-colors: #ccc #ddd #3594bb;}
+#lp-apps *.translations   * {-moz-border-bottom-colors: #ccc #ddd #bb3a84;}
+#lp-apps *.answers        * {-moz-border-bottom-colors: #ccc #ddd #3840be;}
+/* The active tab is darker: */
+#lp-apps strong span, #lp-apps strong a {background: #ddd;}
+/* It's also contiguous with the hierarchy above: */
+#lp-apps strong {border-top: 1px solid #ddd;}
+/* Disabled tabs don't look clickable: */
+#lp-apps span span {
+  border-color: #ccc;
+  border-width: 0 1px 4px;
+  /* An invisible inner border achieves the same height as the other tabs: */
+  -moz-border-bottom-colors: #ccc #eee #eee !important;
+  color: #ccc;
 }
 
 /*
@@ -877,26 +920,11 @@ top left (y), and top right (z) of the rounded border. */
   background-position: bottom left;
   position: relative;
 }
-#mainarea div.x {
-  position: relative;
-  width: 100%;
-  background: url(mainarea_top.gif) top left repeat-x;
-}
-#mainarea div.y {
-  position: relative;
-  width: 100%;
-  background: url(mainarea_topleft.gif) top left no-repeat;
-}
-#mainarea div.z {
-  position: relative;
-  width: 100%;
-  background: url(mainarea_topright.gif) 100% top no-repeat;
-}
 
 /* Inside those is a container for the main content, and the portlets if any. */
 #container {
-  margin-top: 30px;
-  padding: 48px 0 40px;
+  margin: 30px 0 0;
+  padding: 0 0 40px;
   position: relative;
 }
 * html #container {margin-top: 0; position: static;} /* fixes in IE6 */
@@ -912,82 +940,6 @@ top left (y), and top right (z) of the rounded border. */
 /* To avoid overlap, we need an extra container with positive right margin: */
 #nonportlets {margin-right: 220px;}
 #portlets .portlet {width: 200px;}
-
-ul#applicationchooser {
-  position: absolute;
-  right: 0;
-  width: 510px;
-  height: 32px;
-  overflow: hidden;
-  margin: 0px 0px 18px 0px;
-  padding: 0;
-  list-style: none;
-  font-size: 11px;
-  background-image: url(mainarea_topright.gif);
-  background-repeat: no-repeat;
-  background-position: top right;
-}
-/* If there are no tabs, a substitute div maintains the same spacing. */
-div#noapplicationchooser {clear: both; margin-bottom: -28px;}
-ul#applicationchooser li {
-  float: left;
-  display: block;
-  width: 82px;
-  height: 40px;
-  background-image: url(appchoose_a.gif);
-  background-repeat: no-repeat;
-  background-position: -100px 0px;
-  overflow: hidden;
-  text-align: center;
-  font-weight: bold;
-  color: #000000;
-}
-
-/* We make the anchor display block, and use the same height as the li,
- * to ensure the whole tab area is clickable. */
-ul#applicationchooser li a {
-  display: block;
-  padding: 7px 0px 0px 0px;
-  height: 40px;
-}
-
-/* For the selected and unavailable tabs, we need to provide the padding
- * (since there's no anchor), and change the cursor to avoid it being an
- * i-beam when hovering over the text of the tab. */
-ul#applicationchooser li span.selected,
-ul#applicationchooser li span.disabled,
-ul#applicationchooser li.unavailable
-{
-  display: block;
-  padding: 8px 0px 0px 0px;
-  cursor: default;
-}
-
-/* Disabled icons shouldn't hover up */
-ul#applicationchooser li span.disabled:hover,
-ul#applicationchooser li.unavailable:hover
-{
-  background-position: -100px 0px;
-}
-
-ul#applicationchooser li span.disabled,
-ul#applicationchooser li.unavailable
-{
-  color: lightgrey;
-}
-
-ul#applicationchooser li:hover {
-  background-position: 0px 0px;
-}
-
-/* Avoid underlining anchors inside the tabs */
-ul#applicationchooser a:hover {
-  text-decoration: none;
-}
-
-ul#applicationchooser li#applicationchooser_selected {
-  background-position: -200px 0px;
-}
 
 /* -- Pillar indexes -- */
 
@@ -1157,21 +1109,6 @@ dl.faq dd {margin: 1em 0 2em 4em;}
 
 /* --- Overview --- */
 
-body.tab-overview #mainarea div.x {
-  background-image: url(mainarea_top.gif);
-}
-body.tab-overview #mainarea div.y {
-  background-image: url(mainarea_topleft.gif);
-}
-body.tab-overview #mainarea div.z {
-  background-image: url(mainarea_topright.gif);
-}
-body.tab-overview #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_a.gif);
-}
-body.tab-overview #mainarea ul#applicationchooser li.tab-overview {
-  background-position: -200px 0px !important;
-}
 body.tab-overview #mainarea #portlets .portlet.active h2 a,
 body.tab-overview #mainarea div#portlets div.portlet.active a {
   background-color: #F0CB00;
@@ -1210,22 +1147,6 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
-body.tab-branches #mainarea div.x {
-  background-image: url(mainarea_tab1_top.gif);
-}
-body.tab-branches #mainarea div.y {
-  background-image: url(mainarea_tab1_topleft.gif);
-}
-body.tab-branches #mainarea div.z,
-body.tab-branches #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab1_topright.gif);
-}
-body.tab-branches #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_tab1_a.gif);
-}
-body.tab-branches #mainarea ul#applicationchooser li.tab-branches {
-  background-position: -200px 0px !important;
-}
 body.tab-branches #mainarea #portlets .portlet.active h2 a,
 body.tab-branches #mainarea div#portlets div.portlet.active a {
   background-color: #CE4227;
@@ -1272,22 +1193,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 /* --- Bugs --- */
 
 body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}
-body.tab-bugs #mainarea div.x {
-  background-image: url(mainarea_tab2_top.gif);
-}
-body.tab-bugs #mainarea div.y {
-  background-image: url(mainarea_tab2_topleft.gif);
-}
-body.tab-bugs #mainarea div.z,
-body.tab-bugs #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab2_topright.gif);
-}
-body.tab-bugs #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_tab2_a.gif);
-}
-body.tab-bugs #mainarea ul#applicationchooser li.tab-bugs {
-  background-position: -200px 0px !important;
-}
 body.tab-bugs #mainarea #portlets .portlet.active h2 a,
 body.tab-bugs #mainarea div#portlets div.portlet.active a {
   background-color: #F0CB00;
@@ -1342,22 +1247,6 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 
 body.tab-specifications #applications {
   background: url(app-blueprints-wm.gif) no-repeat;
-}
-body.tab-specifications #mainarea div.x {
-  background-image: url(mainarea_tab4_top.gif);
-}
-body.tab-specifications #mainarea div.y {
-  background-image: url(mainarea_tab4_topleft.gif);
-}
-body.tab-specifications #mainarea div.z,
-body.tab-specifications #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab4_topright.gif);
-}
-body.tab-specifications #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_tab4_a.gif);
-}
-body.tab-specifications #mainarea ul#applicationchooser li.tab-specifications {
-  background-position: -200px 0px !important;
 }
 body.tab-specifications #mainarea #portlets .portlet.active h2 a,
 body.tab-specifications #mainarea div#portlets div.portlet.active a {
@@ -1421,22 +1310,6 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 body.tab-translations #applications {
   background: url(app-translations-wm.gif) no-repeat;
 }
-body.tab-translations #mainarea div.x {
-  background-image: url(mainarea_tab5_top.gif);
-}
-body.tab-translations #mainarea div.y {
-  background-image: url(mainarea_tab5_topleft.gif);
-}
-body.tab-translations #mainarea div.z,
-body.tab-translations #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab5_topright.gif);
-}
-body.tab-translations #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_tab5_a.gif);
-}
-body.tab-translations #mainarea ul#applicationchooser li.tab-translations {
-  background-position: -200px 0px !important;
-}
 body.tab-translations #mainarea #portlets .portlet.active h2 a,
 body.tab-translations #mainarea div#portlets div.portlet.active a {
   background-color: #3594bb;
@@ -1480,22 +1353,6 @@ body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
 /* --- Answers --- */
 
 body.tab-answers #applications {background: url(app-answers-wm.gif) no-repeat;}
-body.tab-answers #mainarea div.x {
-  background-image: url(mainarea_tab6_top.gif);
-}
-body.tab-answers #mainarea div.y {
-  background-image: url(mainarea_tab6_topleft.gif);
-}
-body.tab-answers #mainarea div.z,
-body.tab-answers #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab6_topright.gif);
-}
-body.tab-answers #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_tab6_a.gif);
-}
-body.tab-answers #mainarea ul#applicationchooser li.tab-answers {
-  background-position: -200px 0px !important;
-}
 body.tab-answers #mainarea #portlets .portlet.active h2 a,
 body.tab-answers #mainarea div#portlets div.portlet.active a {
   background-color: #3840be;
