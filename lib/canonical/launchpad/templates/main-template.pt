@@ -107,6 +107,8 @@
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
     <tal:login replace="structure context/@@login_status" />
+    <tal:hierarchy replace="structure context/@@+hierarchy" />
+    
     <div id="globalheader"  xml:lang="en" lang="en" dir="ltr"
       tal:condition="site_message">
       <div class="sitemessage" tal:content="structure site_message"/>

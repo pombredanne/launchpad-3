@@ -361,6 +361,26 @@ hr {
   margin: 0;
   background-color: #6D6D6D;
 }
+/* === Hierarchy === */
+/* The location bar begins with hierarchy segments showing your context: */
+#lp-hierarchy {
+  background: #eee url(navigation-n.png) top repeat-x;
+  float: left;
+}
+/* Each hierarchy element is a <span>:
+#lp-hierarchy span {
+  padding: 2px 0;
+}
+#xlp-hierarchy .first {
+  background: url(navigation-nw-w-normal.png) top left no-repeat;
+}
+#xlp-hierarchy .first::before {
+  content: '';
+  background: url(navigation-sw-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+  vertical-align: -1px;
+}
+*/
 /* Next is a location bar. */
 
 #locationbar {
@@ -591,7 +611,7 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-hierarchy:before {
   vertical-align: top;
   float: left;
-  content: url(bc_top_left.gif);
+  content: url(navigation-hierarchy-nw);
 }
 #lp-hierarchy .item {
   background-image: url(navigation-hierarchy-chevron-normal);

@@ -10,6 +10,7 @@ __all__ = [
     'ContribIcingFolder',
     'DefaultShortLink',
     'EdubuntuIcingFolder',
+    'Hierarchy',
     'IcingFolder',
     'KubuntuIcingFolder',
     'LaunchpadRootNavigation',
@@ -232,6 +233,48 @@ class LinkView(LaunchpadView):
         else:
             return ''
 
+
+class Hierarchy(LaunchpadView):
+    """The hierarchy part of the location bar on each page."""
+
+    def render(self):
+        """Render the hierarchy HTML.
+
+        The hierarchy elements are taken from the request.breadcrumbs list.
+        For each element, element.text is cgi escaped.
+        """
+        prefix = '<div id="lp-hierarchy">'
+        suffix = '</div>'
+        elements = list(self.request.breadcrumbs)
+
+        L = []
+        L.append(
+            '<span class="first item">'
+            '<a href="/" class="breadcrumb container" id="homebreadcrumb">'
+            '<img alt="" src="/@@/launchpad-logo-and-name-hierarchy.png"/></a>'
+            '</span>')
+
+        if elements:
+            last_element = elements[-1]
+            before_last_element = elements[-2]
+            for element in elements:
+                cssclass = 'item'
+                if element.has_menu:
+                    menudata = ' lpm:mid="%s/+menudata"' % element.url
+                    cssclass = ' '.join([cssclass, 'container'])
+                else:
+                    menudata = ''
+                if element is before_last_element:
+                    cssclass = ' '.join(['before-last', cssclass])
+                elif element is last_element:
+                    cssclass = ' '.join(['last', cssclass])
+                L.append('<span class="%s"%s>'
+                         '<a href="%s">%s</a>'
+                         '</span>'
+                         % (cssclass, menudata, element.url,
+                            cgi.escape(element.text)))
+
+        return prefix + '<small> &gt; </small>'.join(L) + suffix
 
 class Breadcrumbs(LaunchpadView):
     """Page fragment to display the breadcrumbs text."""
