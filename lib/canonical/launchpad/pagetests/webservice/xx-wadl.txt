@@ -663,7 +663,7 @@ look up the element called "bug_link".
 A parameter may also have human-readable documentation: an optional
 name for the parameter and an optional short description.
 
-    >>> doc = full_params[1][0]
+    >>> doc = full_params[2][0]
     >>> doc.tag
     '...doc'
     >>> print doc.text
@@ -716,6 +716,10 @@ define a second representation for use with PATCH requests.
     >>> 'self_link' in full_rep_names
     True
     >>> 'self_link' in diff_rep_names
+    False
+    >>> 'resource_type_link' in full_rep_names
+    True
+    >>> 'resource_type_link' in diff_rep_names
     False
     >>> 'related_tasks_collection_link' in full_rep_names
     True
@@ -947,9 +951,10 @@ collection).
 All collection representations have the same five <param> tags.
 
     >>> [param.attrib['name'] for param in collection_rep]
-    ['total_size', 'start', 'next_collection_link', 'prev_collection_link',
-     'entries', 'entry_links']
-    >>> size, start, next, prev, entries, entry_links = collection_rep
+    ['resource_type_link', 'total_size', 'start', 'next_collection_link',
+     'prev_collection_link', 'entries', 'entry_links']
+    >>> (type_link, size, start, next, prev, entries,
+    ...  entry_links) = collection_rep
 
 So what's the difference between a collection of people and a
 collection of bug tasks? Well, the ID is different, but that's just a
