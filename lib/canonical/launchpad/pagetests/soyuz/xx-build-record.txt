@@ -29,26 +29,10 @@ See further information about this issue in bug #69988.
     Finished: 2005-10-02 (took three minutes)
 
 'Upload log' is only mentioned when it contains a reference to a
-library file.
+library file and it only happens for FAILEDTOUPLOAD builds.
 
-We will create a fake upload log for the build being inspected.
-
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.build import IBuildSet
-
-    >>> login('foo.bar@canonical.com')
-
-    >>> a_build = getUtility(IBuildSet).getByBuildID(9)
-    >>> a_build.storeUploadLog('something ...')
-
-    >>> import transaction
-    >>> transaction.commit()
-    >>> logout()
-
-Then, when we reload the page the link for the 'Upload log' is
-presented, right below the 'Build log'.
-
-    >>> anon_browser.reload()
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/22")
     >>> build_details = extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'build-details'))
 
@@ -56,16 +40,16 @@ presented, right below the 'Build log'.
     Changes file: not available
     Archive: ubuntu archive
     Component: main
-    Status: Failed to build
-    Queued: 2005-10-01
-    Started: 2005-10-01
+    Status: Failed to upload
+    Queued: 2007-04-20
+    Started: 2007-04-19
     Builder: Bob The Builder
     Build log: netapplet-1.0.0.tar.gz
-    Upload log: upload_9_log.txt
-    Finished: 2005-10-02 (took three minutes)
+    Upload log: upload_22_log.txt
+    Finished: 2007-04-20 (took a minute)
 
-    >>> print anon_browser.getLink("upload_9_log.txt").url
-    http://.../upload_9_log.txt
+    >>> print anon_browser.getLink("upload_22_log.txt").url
+    http://.../upload_22_log.txt
 
 Let's also check a successfully built record.
 
@@ -120,6 +104,7 @@ still in the build queue.
 In order to test build retrying action we have to make ubuntu/warty
 active for development.
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, DistroSeriesStatus)
     >>> login('foo.bar@canonical.com')
@@ -127,6 +112,7 @@ active for development.
     >>> warty = ubuntu['warty']
     >>> warty.status = DistroSeriesStatus.DEVELOPMENT
     >>> logout()
+    >>> import transaction
     >>> transaction.commit()
 
 With anonymous access, Retry Build link should not be there.

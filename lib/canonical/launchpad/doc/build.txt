@@ -181,8 +181,8 @@ build-failedtoupload-workflow.txt for further information.
     >>> print active_build.upload_log.filename
     upload_9_log.txt
 
-After committing the transaction, so the new LibraryFileAlias gets
-visible on librarian side and then we can retrieve its content.
+Once the transaction is committed, the file is available in the
+librarian, and we can retrieve its contents.
 
     >>> transaction.commit()
     >>> active_build.upload_log.open()
@@ -198,13 +198,31 @@ target archive.
     >>> print active_build.upload_log.restricted
     False
 
-Making ubuntu primary archive private makes storeUploaLog() to upload
-the given content as a restricted file.
+Transforming ubuntu primary archive in a private archive makes
+storeUploadLog() to upload the given content as a restricted file.
 
     >>> login('foo.bar@canonical.com')
     >>> active_build.archive.buildd_secret = "secret"
     >>> active_build.archive.private = True
     >>> login(ANONYMOUS)
+
+Simply changing the archive privacy after the 'upload_log' is stored
+doesn't change make it restricted. The archive privacy will be
+respected in the next upload attempt only.
+
+    >>> print active_build.upload_log.restricted
+    False
+
+In order to run storeUploadLog again for the same build we have to
+remove the previously stored 'upload_log' see the more information
+about the check below in 'AssertionErrors in IBuild' section.
+
+    >>> login('foo.bar@canonical.com')
+    >>> active_build.upload_log = None
+    >>> login(ANONYMOUS)
+
+Once targeted to a private archive the 'upload_log' gets stored in the
+restricted librarian instance.
 
     >>> print active_build.archive.private
     True
@@ -271,7 +289,7 @@ BuildQueue record was created.
     <...BuildQueue...>
 
 'buildlog' and 'upload_log' librarian references were removed when the
-built was retried. They will be garbage-collected later by
+build was retried. They will be garbage-collected later by
 'librariangc' and replaced by new ones when the build re-attempt
 finishes.
 
@@ -777,6 +795,34 @@ they will happen in another archive.
 
     >>> failed_build.can_be_retried
     True
+
+storeUploadLog() refuses to override any previously stored
+'upload_log'.
+
+    >>> failedtoupload_build = getUtility(IBuildSet).getByBuildID(22)
+    >>> print failedtoupload_build.title
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+
+    >>> print failedtoupload_build.upload_log.filename
+    upload_22_log.txt
+
+    >>> failedtoupload_build.storeUploadLog('something')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Upload log information already exist and cannot be
+    overridden.
+
+It's only possible to store another 'upload_log' content once the
+build is retried.
+
+    >>> failedtoupload_build.retry()
+    >>> print failedtoupload_build.upload_log
+    None
+
+    >>> failedtoupload_build.storeUploadLog('something')
+
+    >>> print failedtoupload_build.upload_log.filename
+    upload_22_log.txt
 
 
 == 'Ogre' components ==

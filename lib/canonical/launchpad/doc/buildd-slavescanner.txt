@@ -491,9 +491,9 @@ upload log information:
     DEBUG   Removing lock file: /var/lock/process-upload-buildd.lock
     ...
 
-Addtionally to the immediate notification with the upload-processor
-log output about a failure when processing the generated binaries,
-the same output is stored in librarian for future references.
+When a failure in processing the generated binaries occurs, the log
+output is both emailed in an immediate notification, and stored in the
+librarian for future reference.
 
     >>> bqItem10.build.upload_log is not None
     True
@@ -557,8 +557,8 @@ notification and updating the build information:
     >>> check_mail_sent(last_stub_mail_count)
     False
 
-Differently that FAILEDTOUPLOAD procedure, we do not store any
-information about successfully performed binary upload processing.
+We do not store any build log information when the binary upload
+processing succeeded.
 
     >>> bqItem10.build.upload_log is None
     True

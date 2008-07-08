@@ -672,6 +672,9 @@ class Build(SQLBase):
 
     def storeUploadLog(self, content):
         """See `IBuild`."""
+        assert self.upload_log is None, (
+            "Upload log information already exist and cannot be overridden.")
+
         filename = 'upload_%s_log.txt' % self.id
         contentType = filenameToContentType(filename)
         file_size = len(content)
