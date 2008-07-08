@@ -614,16 +614,15 @@ ul#menuroot li.selected a.breadcrumb {
   content: url(navigation-hierarchy-nw);
 }
 #lp-hierarchy .item {
-  background-image: url(navigation-hierarchy-chevron-normal);
-  background-repeat: no-repeat;
-  background-position: right;
-  padding: 4px 22px 0 8px;
+  background: url(navigation-hierarchy-chevron-normal) no-repeat right;
   display: inline-block;
   min-height: 25px;
   vertical-align: middle;
 }
 #lp-hierarchy a {
   color: #000;
+  display: inline-block;
+  padding: 4px 22px 0 8px;
 }
 #lp-hierarchy .before-last {
   background-image: url(navigation-hierarchy-chevron-selected);
@@ -633,12 +632,12 @@ ul#menuroot li.selected a.breadcrumb {
 }
 #lp-hierarchy .last a {
   font-weight: bold;
+  padding-right: 4px;
 }
-#lp-hierarchy .last-after {
-  background-image: url(navigation-hierarchy-nw);
-  background-repeat: no-repeat;
-  background-position: right;
-  width: 6px;
+.last-rounded {
+  background: #ddd url(navigation-hierarchy-ne) no-repeat top right;
+  min-height: 25px;
+  display: inline-block;
 }
 #lp-hierarchy small {
   display: none;

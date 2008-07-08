@@ -244,7 +244,7 @@ class Hierarchy(LaunchpadView):
         For each element, element.text is cgi escaped.
         """
         prefix = '<div id="lp-hierarchy">'
-        suffix = '</div>'
+        suffix = '</div><span class="last-rounded">&nbsp;</span>'
         elements = list(self.request.breadcrumbs)
 
         L = []
@@ -252,7 +252,7 @@ class Hierarchy(LaunchpadView):
             '<span class="first item">'
             '<a href="/" class="breadcrumb container" id="homebreadcrumb">'
             '<img alt="" src="/@@/launchpad-logo-and-name-hierarchy.png"/></a>'
-            '</span>')
+            '&nbsp;</span>')
 
         if elements:
             last_element = elements[-1]
