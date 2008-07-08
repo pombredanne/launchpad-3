@@ -166,11 +166,15 @@ ucci\u00F3n
             url = https://admin.example.com/ // Double slash in URL!
             '''
         property_file = PropertyFile('test.properties', None, dedent(content))
-        parsed = dict(
-            (message.msgid_singular, message.source_comment)
-            for message in property_file.messages
-            )
-        self.assertEquals(parsed, { u'url': u'Double slash in URL!\n'})
+        message = None
+        for entry in property_file.messages:
+            self.assertEquals(message, None, "More messages than expected.")
+            message = entry
+
+        self.assertEquals(message.msgid_singular, u"url")
+        self.assertEquals(
+            message.singular_text, u"https://admin.example.com/")
+        self.assertEquals(message.source_comment, u"Double slash in URL!\n")
 
     def test_InvalidLinePropertyFileTest(self):
         """Test whether an invalid line is ignored."""
