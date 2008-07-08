@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd. All rights reserved.
+# Copyright 2007-2008 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 
@@ -159,6 +159,18 @@ ucci\u00F3n
         parsed = dict([(message.msgid_singular, message.source_comment)
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
+
+    def test_URLNotComment(self):
+        """Double slash in a URL is not treated as end-of-line comment."""
+        content = '''
+            url = https://admin.example.com/ // Double slash in URL!
+            '''
+        property_file = PropertyFile('test.properties', None, dedent(content))
+        parsed = dict(
+            (message.msgid_singular, message.source_comment)
+            for message in property_file.messages
+            )
+        self.assertEquals(parsed, { u'url': u'Double slash in URL!\n'})
 
     def test_InvalidLinePropertyFileTest(self):
         """Test whether an invalid line is ignored."""
