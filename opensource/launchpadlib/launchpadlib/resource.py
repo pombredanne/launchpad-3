@@ -34,6 +34,7 @@ from wadllib.application import Resource as WadlResource
 class Resource:
 
     def __init__(self, root, wadl_resource):
+        """Initialize with respect to a wadllib Resource object."""
         if root is None:
             # This _is_ the root.
             root = self
@@ -64,10 +65,25 @@ class Resource:
             raise KeyError("No such parameter: %s" % param_name)
         return param.get_value()
 
-    def _wrap_resource(self, resource, representation=None, param_name=None):
+    def _wrap_resource(self, resource, representation=None,
+                       representation_media_type='application/json',
+                       param_name=None):
+        """Create a launchpadlib Resource from a wadllib Resource.
+
+        :param resource: The wadllib Resource to wrap.
+        :param representation: A previously fetched representation of
+                               this resource, to be reused.
+        :param representation_media_type: The media type of the previously
+                                          fetched representation.
+        :param param_name: The name of the link that was followed to get
+                           to this resource.
+        :return: An instance of the appropriate launchpadlib Resource
+        subclass.
+        """
         if representation is None:
             # Get a representation of the linked resource.
             representation = self.root._browser.get(resource)
+            representation_media_type = 'application/json'
 
         # We happen to know that all Launchpad resource types are
         # defined in a single document. Turn the resource's type_url
@@ -81,10 +97,12 @@ class Resource:
             if param_name.endswith('_collection_link'):
                 default = Collection
         r_class = RESOURCE_TYPE_CLASSES.get(resource_type, default)
-        return r_class(self.root,
-                       resource.bind(representation, 'application/json'))
+        return r_class(
+            self.root, resource.bind(representation,
+                                     representation_media_type))
 
     def refresh(self, new_url=None):
+        """Update this resource's representation."""
         if new_url is not None:
             self.wadl_resource._url = new_url
         representation = self.root._browser.get(self.wadl_resource)
@@ -140,7 +158,7 @@ class Resource:
 
 
 class Entry(Resource):
-    """Simple bag-like class for collection entry attributes."""
+    """A class for an entry-type resource that can be updated with PATCH."""
 
     def __init__(self, root, wadl_resource):
         super(Entry, self).__init__(root, wadl_resource)
@@ -165,12 +183,14 @@ class Entry(Resource):
         return super(Entry, self).__getattr__(name)
 
     def __setattr__(self, name, value):
+        """Set the parameter of the given name."""
         if not self.has_param(name):
             raise AttributeError("'%s' object has no attribute '%s'" %
                                  (self.__class__.__name__, name))
         self._dirty_attributes[name] = value
 
     def refresh(self, new_url=None):
+        """Update this resource's representation."""
         super(Entry, self).refresh(new_url)
         self._dirty_attributes.clear()
 
@@ -191,7 +211,7 @@ class Entry(Resource):
 
 
 class Collection(Resource):
-    """Base class for web service collections."""
+    """A collection-type resource that supports pagination."""
 
     def __init__(self, root, wadl_resource):
         """Create a collection object."""
@@ -240,6 +260,7 @@ class PersonSet(Collection):
     """A custom subclass capable of person lookup by username."""
 
     def uniqueIdToUrlPath(self, key):
+        """Transform a username into the URL to a person resource."""
         return self.root.SERVICE_ROOT + '~' + str(key)
 
     def newTeam(self, name, display_name):

@@ -198,11 +198,8 @@ class Resource(WADLResolvableDefinition):
         type_id = self.tag.attrib.get('id')
         if type_id is not None:
             # This resource was obtained by following a link.
-            if self.application.markup_url.endswith('/'):
-                anchor = '#'
-            else:
-                anchor = '/#'
-            return self.application.markup_url + anchor + type_id
+            base = uri.URI(self.application.markup_url).ensureSlash()
+            return str(base) + '#' + type_id
 
         # This resource does not have any associated resource type.
         return None
@@ -642,7 +639,7 @@ class Application(WADLBase):
         # representation of a non-root resource to its definition at
         # the server root.
         raise NotImplementedError("Can't look up definition in another "
-                                  "url (%s)" % (url))
+                                  "url (%s)" % url)
 
     def get_resource_by_path(self, path):
         """Locate one of the resources described by this document.
