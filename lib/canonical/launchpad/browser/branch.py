@@ -17,6 +17,7 @@ __all__ = [
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchNavigation',
+    'BranchNavigationMenu',
     'BranchInPersonView',
     'BranchInProductView',
     'BranchView',
@@ -51,6 +52,7 @@ from canonical.launchpad.interfaces import (
     CodeImportJobState,
     IBranch,
     IBranchMergeProposal,
+    IBranchNavigationMenu,
     IBranchSet,
     IBranchSubscription,
     IBugBranch,
@@ -65,8 +67,8 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
-    LaunchpadEditFormView, action, custom_widget)
+    LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
+    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.menu import structured
@@ -156,6 +158,40 @@ class BranchNavigation(Navigation):
         for proposal in self.context.landing_targets:
             if proposal.id == id:
                 return proposal
+
+
+class BranchNavigationMenu(NavigationMenu):
+    """Internal menu tabs."""
+
+    usedfor = IBranchNavigationMenu
+    facet = 'branches'
+    links = ['details', 'merges', 'source']
+
+    def __init__(self, context):
+        NavigationMenu.__init__(self, context)
+        if IBranch.providedBy(context):
+            self.branch = context
+        elif IBranchMergeProposal.providedBy(context):
+            self.branch = context.source_branch
+        elif IBranchSubscription.providedBy(context):
+            self.branch = context.branch
+
+    def details(self):
+        url = canonical_url(self.branch)
+        return Link(url, 'Details')
+
+    def merges(self):
+        url = canonical_url(self.branch, view_name="+merges")
+        return Link(url, 'Merging')
+
+    def source(self):
+        """Return a link to the branch's file listing on codebrowse."""
+        text = 'Source Code'
+        enabled = self.branch.code_is_browseable
+        url = (config.codehosting.codebrowse_root
+               + self.branch.unique_name
+               + '/files')
+        return Link(url, text, icon='info', enabled=enabled)
 
 
 class BranchContextMenu(ContextMenu):
