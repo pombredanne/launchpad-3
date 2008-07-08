@@ -16,12 +16,12 @@ __all__ = [
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Choice, Int, List, Object, Text, TextLine)
+from zope.schema.interfaces import IObject
 from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, StrippedTextLine, URIField)
-from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -202,7 +202,7 @@ class IBugTracker(Interface):
     watches = exported(
         CollectionField(
             title=_('The remote watches on this bug tracker.'),
-            value_type=Reference(schema=IBugWatch)))
+            value_type=Reference(schema=IObject)))
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
     latestwatches = Attribute('The last 10 watches created.')
