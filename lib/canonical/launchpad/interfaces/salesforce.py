@@ -8,12 +8,45 @@ __metaclass__ = type
 __all__ = [
     'ISalesforceVoucher',
     'ISalesforceVoucherProxy',
+    'SalesforceVoucherProxyException',
+    'SFDCError',
+    'SVPAlreadyRedeemedException',
+    'SVPNotAllowedException',
+    'SVPNotFoundException',
+    'VOUCHER_STATUSES',
     ]
 
 from zope.interface import Interface
 from zope.schema import Choice, Int, TextLine
 
 from canonical.launchpad import _
+
+
+VOUCHER_STATUSES = [
+    'Unredeemed',
+    'Redeemed',
+    'Reserved',
+    ]
+
+
+class SalesforceVoucherProxyException(Exception):
+    """Exception raised on failed call to the SalesforceVoucherProxy."""
+
+
+class SFDCError(SalesforceVoucherProxyException):
+    """An exception was reported by salesforce.com."""
+
+
+class SVPNotFoundException(SalesforceVoucherProxyException):
+    """A named object was not found."""
+
+
+class SVPAlreadyRedeemedException(SalesforceVoucherProxyException):
+    """The voucher has already been redeemed."""
+
+
+class SVPNotAllowedException(SalesforceVoucherProxyException):
+    """The operation is not allowed by the current user."""
 
 
 class ISalesforceVoucherProxy(Interface):
@@ -54,6 +87,23 @@ class ISalesforceVoucherProxy(Interface):
         :return: integer representing the number of vouchers found for this
             project which were updated.
         """
+
+    def grantVoucher(admin, approver, recipient, term_months):
+        """An administrator can grant a voucher to a Launchpad user.
+
+        :param admin: the admin who is making the grant.
+        :param approver: the manager who approved the grant.
+        :param recipient: the user who is being given the voucher.
+        :param term_months: integer representing the number of months for the
+            voucher.
+        :return: the voucher id of the newly granted voucher.
+
+        This call assumes the admin and approver already exist in the
+        Salesforce database and can be looked up via their OpenID.  The
+        recipient may or may not exist, therefore basic information about the
+        recipient is sent in the call.
+        """
+
 
 class ISalesforceVoucher(Interface):
     """Vouchers in Salesforce."""

@@ -10,7 +10,6 @@ __all__ = [
     'BugNominationsView',
     'BugTargetTraversalMixin',
     'BugTargetView',
-    'BugTaskBadges',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
     'BugTaskEditView',
@@ -35,6 +34,7 @@ __all__ = [
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
+    'get_visible_comments',
     ]
 
 from datetime import datetime, timedelta
@@ -66,14 +66,13 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
 from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
-from canonical.launchpad.webapp.badge import HasBadgeBase
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -1027,6 +1026,16 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields.get('assignee', False)):
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 AssigneeDisplayWidget)
+
+        if (self.context.bugwatch is None and
+            self.form_fields.get('assignee', False)):
+            # Make the assignee field editable
+            self.form_fields = self.form_fields.omit('assignee')
+            self.form_fields += formlib.form.Fields(PublicPersonChoice(
+                __name__='assignee', title=_('Assigned to'), required=False,
+                vocabulary='ValidAssignee', readonly=False))
+            self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
+                BugTaskAssigneeWidget)
 
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
@@ -2730,37 +2739,6 @@ class BugTaskPrivacyAdapter:
     def is_private(self):
         """Return True if the bug is private, otherwise False."""
         return self.context.bug.private
-
-
-class BugTaskBadges(HasBadgeBase):
-    """Provides `IHasBadges` for `IBugTask`."""
-
-    badges = ('security', 'private', 'mentoring', 'branch')
-
-    def isBranchBadgeVisible(self):
-        return self.context.bug.bug_branches.count() > 0
-
-    def isMentoringBadgeVisible(self):
-        return self.context.bug.mentoring_offers.count() > 0
-
-    def isSecurityBadgeVisible(self):
-        return self.context.bug.security_related
-
-    def getSecurityBadgeTitle(self):
-        """Return info useful for a tooltip."""
-        return "This bug report is about a security vulnerability"
-
-    # HasBadgeBase supplies isPrivateBadgeVisible().
-    def getPrivateBadgeTitle(self):
-        """Return info useful for a tooltip."""
-        if self.context.bug.date_made_private is None:
-            return "This bug report is private"
-        else:
-            date_formatter = DateTimeFormatterAPI(
-                self.context.bug.date_made_private)
-            return "This bug report was made private by %s %s" % (
-                self.context.bug.who_made_private.displayname,
-                date_formatter.displaydate())
 
 
 class BugTaskSOP(StructuralObjectPresentation):

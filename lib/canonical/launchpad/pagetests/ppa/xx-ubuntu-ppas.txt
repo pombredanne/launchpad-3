@@ -3,7 +3,7 @@
 The Ubuntu Linux page contains a link to get to the Personal Package Archives.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
-    >>> anon_browser.getLink("Personal Package Archives").click()
+    >>> anon_browser.getLink("PPAs").click()
     >>> anon_browser.title
     'Ubuntu Linux Personal Package Archives'
 
@@ -74,7 +74,7 @@ Description, Sources and Binaries, the latter two being a count.
 The default search shows only active (those with, at least one,
 PENDING or PUBLISHED source record) PPAs.
 
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(
     ...     anon_browser.contents, 'ppa_batch_row'):
     ...     print extract_text(ppa_row)
@@ -106,7 +106,7 @@ The information section will be only rendered if the page is reloaded
 with no 'name_filter' GET argument, in other words, when no search was
 request.
 
-    >>> anon_browser.getLink("Personal Package Archives").click()
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+ppas")
 
     >>> find_tag_by_id(
     ...     anon_browser.contents, 'ppa_statistics') is not None
@@ -129,7 +129,7 @@ to allow inactive PPA results.
 
     >>> anon_browser.getControl(
     ...     "Including descriptions of empty PPAs").selected = True
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
 
     >>> for ppa_row in find_tags_by_class(anon_browser.contents,
     ...                                   'ppa_batch_row'):
@@ -157,7 +157,7 @@ No data matches the non-existent search string "bustmybuffers".
 
     >>> field = anon_browser.getControl("Show PPAs matching:")
     >>> field.value = 'bustmybuffers'
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
     0
 
@@ -180,7 +180,7 @@ In the three sample data PPAs, only one matches the search string "Celso".
 
     >>> field = anon_browser.getControl("Show PPAs matching:")
     >>> field.value = 'Celso'
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
     1
 
@@ -209,9 +209,7 @@ The PPA page "Actions" portlet list all the related pages, only
 'View build records' and 'View PPA' is allowed for unprivileged
 access.
 
-    >>> print extract_text(
-    ...    find_portlet(anon_browser.contents, 'Actions'))
-    Actions
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'actions'))
     View PPA
     Administer archive (disabled)
     Change details (disabled)
@@ -373,7 +371,7 @@ no results.
 
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = 'nonexistentpackage'
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_package_row'))
     0
 
@@ -381,7 +379,7 @@ Searching for the package iceweasel shows that Celso is providing this.
 
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = 'iceweasel'
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_package_row'))
     2
 
@@ -409,7 +407,7 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
 
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = ''
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
     Source          Published   Status     Series           Section  Built
@@ -419,7 +417,7 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
 Use can explicitly select 'published' filter and will get the same result.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['published']
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
     Source          Published   Status     Series           Section  Built
@@ -430,7 +428,7 @@ When needed the users can select the 'superseded' filter and the
 result will only contain packages SUPERSEDED or DELETED.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['superseded']
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
     Source            Published    Status        Series   Section  Built
@@ -441,7 +439,7 @@ The 'Any Status' filter is also available, so the user can search over
 any package ever published in the context PPA.
 
     >>> anon_browser.getControl(name='field.status_filter').value = ['any']
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
     Source             Published    Status     Series      Section  Built
@@ -528,7 +526,7 @@ PPAs are targeted to a specific distribution and currently we only
 allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntutest")
-    >>> anon_browser.getLink("Personal Package Archives").click()
+    >>> anon_browser.getLink("PPAs").click()
     >>> anon_browser.title
     'Ubuntu Test Personal Package Archives'
 
@@ -643,7 +641,7 @@ of downloading the buildlog).
     >>> anon_browser.getLink('i386').click()
 
     >>> print anon_browser.title
-    Build details for i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
 This feature is also useful from the PPA owner perspective. When
 Celso's visualise there that there was a failure while building
@@ -669,7 +667,7 @@ corresponding build page.
 
     >>> anon_browser.getLink('i386').click()
     >>> print anon_browser.title
-    Build details for i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
 
 == Populating 'Most Active' section ==

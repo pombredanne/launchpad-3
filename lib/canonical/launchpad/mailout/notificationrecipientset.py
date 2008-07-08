@@ -82,7 +82,7 @@ class NotificationRecipientSet:
 
     def add(self, persons, reason, header):
         """See `INotificationRecipientSet`."""
-
+        from zope.security.proxy import removeSecurityProxy
         if IPerson.providedBy(persons):
             persons = [persons]
 
@@ -95,7 +95,11 @@ class NotificationRecipientSet:
             self._personToRationale[person] = reason, header
             for receiving_person in emailPeople(person):
                 self._receiving_people.add(receiving_person)
-                email = str(receiving_person.preferredemail.email)
+                # Bypass zope's security because IEmailAddress.email is not
+                # public.
+                preferred_email = removeSecurityProxy(
+                    receiving_person.preferredemail)
+                email = str(preferred_email.email)
                 old_person = self._emailToPerson.get(email)
                 # Only associate this email to the person, if there was
                 # no association or if the previous one was to a team and

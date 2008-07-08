@@ -193,7 +193,7 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
 
         email.person.validateAndEnsurePreferredEmail(email)
         self.context.consume()
-        self.logInPersonByEmail(email.email)
+        self.logInPersonByEmail(removeSecurityProxy(email).email)
         self.request.response.addInfoNotification(_(
             "Profile claimed successfully"))
 
@@ -692,6 +692,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         If everything went ok, we consume the LoginToken (self.context), so
         nobody can use it again.
         """
+        from zope.security.proxy import removeSecurityProxy
         if self.email is not None:
             # This is a placeholder profile automatically created by one of
             # our scripts, let's just confirm its email address and set a
@@ -708,7 +709,6 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             # We should be able to login with this person and set the
             # password, to avoid removing the security proxy, but it didn't
             # work, so I'm leaving this hack for now.
-            from zope.security.proxy import removeSecurityProxy
             naked_person = removeSecurityProxy(person)
             naked_person.displayname = data['displayname']
             naked_person.hide_email_addresses = data['hide_email_addresses']
@@ -723,7 +723,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         self.created_person = person
         person.validateAndEnsurePreferredEmail(email)
         self.context.consume()
-        self.logInPersonByEmail(email.email)
+        self.logInPersonByEmail(removeSecurityProxy(email).email)
         self.request.response.addInfoNotification(_(
             "Registration completed successfully"))
         self.setNextUrl()
@@ -823,13 +823,14 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
+        # EmailAddress.{person,status} are readonly fields, so we need to
+        # remove the security proxy before changing them.
+        from zope.security.proxy import removeSecurityProxy
         # As a person can have at most one preferred email, ensure
         # that this new email does not have the PREFERRED status.
-        email.status = EmailAddressStatus.NEW
-        # EmailAddress.person is a readonly field, so we need to remove the
-        # security proxy here.
-        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(email).status = EmailAddressStatus.NEW
         removeSecurityProxy(email).person = requester.id
+        email.account = requester.account
         requester.validateAndEnsurePreferredEmail(email)
 
         # Need to flush all changes we made, so subsequent queries we make

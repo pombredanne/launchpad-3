@@ -4,13 +4,9 @@ The distribution overview page indicates for what usage the
 distribution officially uses Launchpad.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu')
-    >>> content = find_main_content(anon_browser.contents)
-    >>> label_cell = content.find('th', text='Uses Launchpad for:')
-    >>> print extract_text(label_cell.findNext())
-    Answers
-    Bug tracking
-    Blueprints
-    Translations
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'uses'))
+    Ubuntu Linux uses Launchpad for
+        Answers, Bug Tracking, Blueprints, and Translations.
 
 Unprivileged Launchpad users cannot access the page for changing these
 details.
@@ -82,22 +78,15 @@ distribution Overview page.
     >>> admin_browser.getControl(name='field.official_blueprints').value = (
     ... False)
     >>> admin_browser.getControl(name='field.official_answers').value = False
-    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.getControl('Change', index=3).click()
 
     >>> print admin_browser.url
     http://launchpad.dev/ubuntu
 
-    >>> admin_browser.getLink('Change distribution details').click()
-    >>> admin_browser.getControl(name='field.official_blueprints').value = (
-    ... False)
-    >>> admin_browser.getControl('Change').click()
-    >>> content = find_main_content(admin_browser.contents)
-    >>> label_cell = content.find('th', text='Uses Launchpad for:')
+Say "nothing" when the distribution uses nothing:
 
-Print an emdash when distribution uses nothing
-
-    >>> print extract_text(label_cell.findNext())
-    &mdash;
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))
+    Ubuntu Linux does not use Launchpad.
 
 
 == enable_bug_expiration and JavaScript ==
@@ -115,12 +104,12 @@ bug expiration.
     >>> admin_browser.getControl(
     ...     name='field.enable_bug_expiration').value = True
     >>> admin_browser.getControl(name='field.official_malone').value = True
-    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.getControl('Change', index=3).click()
 
     >>> content = find_main_content(admin_browser.contents)
-    >>> label_cell = content.find('th', text='Uses Launchpad for:')
-    >>> print extract_text(label_cell.findNext())
-    Bug tracking
+
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))
+    Ubuntu Linux uses Launchpad for Bug Tracking.
 
 Foo Bar chooses to switch the bug tracker again, but this time he
 does not change the the expiration check box, and he does the whole
@@ -135,12 +124,11 @@ operation before the page complete loading.
     True
 
     >>> admin_browser.getControl(name='field.official_malone').value = False
-    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.getControl('Change', index=3).click()
 
     >>> content = find_main_content(admin_browser.contents)
-    >>> label_cell = content.find('th', text='Uses Launchpad for:')
-    >>> print extract_text(label_cell.findNext())
-    &mdash;
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))
+    Ubuntu Linux does not use Launchpad.
 
 Returning to the edit page, Foo Bar can see that bug expiration was
 also disabled.

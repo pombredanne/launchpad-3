@@ -22,8 +22,6 @@ But Launchpad administrators can see the mailing list approval page.
     >>> admin_browser.open('http://launchpad.dev/+mailinglists')
     >>> admin_browser.title
     'Pending mailing lists requests'
-    >>> print extract_text(first_tag_by_class(admin_browser.contents, 'main'))
-    Team mailing lists
 
 Additionally, members of the Mailing List Experts team can see the approval
 page.  Sample Person is not a mailing list expert, and cannot view the page.

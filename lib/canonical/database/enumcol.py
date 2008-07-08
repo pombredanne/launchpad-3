@@ -18,6 +18,7 @@ __all__ = [
 
 class DBEnumVariable(Variable):
     """A Storm variable class representing a DBEnumeratedType."""
+    __slots__ = ("_enum",)
 
     def __init__(self, *args, **kwargs):
         self._enum = kwargs.pop("enum")

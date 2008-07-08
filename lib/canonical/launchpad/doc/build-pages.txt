@@ -25,13 +25,13 @@ IBuild.archive header.
     >>> import zope.i18n
 
 As mentioned above, the build is targeted to the ubuntu PRIMARY
-archive, so the page header refers to the distribution (see
+archive, so the page header refers to the distribution source package (see
 browser.archive.archive_to_structuralheading).
 
     >>> hoary_failed_build_shp = build_to_structuralheading(
     ...     hoary_failed_build)
     >>> print zope.i18n.translate(hoary_failed_build_shp.getMainHeading())
-    Ubuntu Linux
+    pmount
 
 In a similar way, the menu presented in the build page depends on the
 targeted archive. For instance the 'PPA' action-menu link is not
@@ -130,6 +130,47 @@ case, the 'user_can_retry_build' property finally returns True.
     ...     (cprov_failed_build, empty_request), name="+index")
 
     >>> cprov_failed_build_view.user_can_retry_build
+    True
+
+Buildd admins can retry any build as long is it's in a state that
+permits it to be re-tried.  FAILEDTOBUILD is one of those states:
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> test_source = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='sourceone')
+    >>> [failed_build] = test_source.createMissingBuilds()
+    >>> failed_build.buildstate = BuildStatus.FAILEDTOBUILD
+
+    >>> failed_build.can_be_retried
+    True
+
+Mr "no privileges" has no rights to retry the build:
+
+    >>> login("no-priv@canonical.com")
+    >>> failed_build_view = getMultiAdapter(
+    ...     (failed_build, empty_request), name="+index")
+    >>> failed_build_view.user_can_retry_build
+    False
+
+If he is put in the buildd-admins group, however, he is now able to
+retry it.
+
+    >>> buildd_admins = getUtility(IPersonSet).getByName(
+    ...     "launchpad-buildd-admins")
+    >>> nopriv = getUtility(IPersonSet).getByName("no-priv")
+    >>> login("foo.bar@canonical.com")
+    >>> buildd_admins.addMember(nopriv, nopriv)
+
+    >>> login("no-priv@canonical.com")
+    >>> failed_build_view = getMultiAdapter(
+    ...     (failed_build, empty_request), name="+index")
+    >>> failed_build_view.user_can_retry_build
     True
 
 See pagetests/soyuz/xx-build-record.txt for further information about

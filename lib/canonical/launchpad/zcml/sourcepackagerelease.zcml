@@ -9,6 +9,12 @@
       <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
     </content>
 
+    <adapter
+      for="canonical.launchpad.interfaces.ISourcePackageRelease"
+      provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+      factory="canonical.launchpad.browser.sourcepackagerelease_to_structuralheading"
+      />
+
     <browser:url
         for="canonical.launchpad.interfaces.ISourcePackageRelease"
         path_expression="string:${version}"

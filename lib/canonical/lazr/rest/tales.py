@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+all = ['entry_adapter_for_schema']
+
 import textwrap
 import urllib
 
@@ -16,34 +18,20 @@ from zope.schema.interfaces import IBytes, IChoice, IObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollection, IEntry, IResourceGETOperation, IResourceOperation,
     IResourcePOSTOperation, IScopedCollection)
-from canonical.lazr.interfaces.fields import ICollectionField
+from canonical.lazr.interfaces.fields import (
+    ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import WebServiceLayer
-from canonical.lazr.rest import CollectionResource
+from canonical.lazr.rest import (
+    CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
 
 
-class WadlAPI:
+class WadlAPI(RESTUtilityBase):
     """Base class for WADL-related function namespaces."""
-
-    def _service_root_url(self):
-        """Return the URL to the service root."""
-        request = get_current_browser_request()
-        return canonical_url(request.publication.getApplication(request))
-
-    def _entry_adapter_for_schema(self, model_schema):
-        """Retrieve an entry adapter for a model interface.
-
-        This method locates the IEntry subclass corresponding to the
-        model interface, and creates a WadlEntryAdapterAPI for it.
-        """
-        entry_class = getGlobalSiteManager().adapters.lookup(
-            (model_schema,), IEntry)
-        return WadlEntryAdapterAPI(entry_class)
 
     def docstringToXHTML(self, doc):
         """Convert an epydoc docstring to XHTML."""
@@ -87,9 +75,7 @@ class WadlEntryResourceAPI(WadlResourceAPI):
 
     @property
     def type_link(self):
-        "The URL to the resource type for the object."
-        return "%s#%s" % (self._service_root_url(),
-                          self.entry.__class__.__name__)
+        return self.resource.type_url
 
 
 class WadlCollectionResourceAPI(WadlResourceAPI):
@@ -119,14 +105,7 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
     @property
     def type_link(self):
         "The URL to the resource type for the object."
-        if IScopedCollection.providedBy(self.resource.collection):
-            adapter = self._entry_adapter_for_schema(
-                self.context.relationship.value_type.schema)
-            return adapter.scoped_collection_type_link
-        else:
-            collection_class = self.resource.collection.__class__
-            adapter = WadlCollectionAdapterAPI(collection_class)
-            return adapter.type_link
+        return self.resource.type_url
 
 
 class WadlByteStorageResourceAPI(WadlResourceAPI):
@@ -226,23 +205,22 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
 
     def __init__(self, adapter):
         super(WadlEntryAdapterAPI, self).__init__(adapter, IEntry)
+        self.utility = EntryAdapterUtility(adapter)
 
     @property
     def singular_type(self):
         """Return the singular name for this object type."""
-        return self.adapter.__name__
+        return self.utility.singular_type
 
     @property
     def type_link(self):
         """The URL to the type definition for this kind of resource."""
-        return "%s#%s" % (
-            self._service_root_url(), self.singular_type)
+        return self.utility.type_link
 
     @property
     def full_representation_link(self):
         """The URL to the description of the object's full representation."""
-        return "%s#%s-full" % (
-            self._service_root_url(), self.singular_type)
+        return self.utility.full_representation_link
 
     @property
     def patch_representation_link(self):
@@ -251,27 +229,24 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
             self._service_root_url(), self.singular_type)
 
     @property
-    def scoped_collection_type(self):
+    def entry_page_type(self):
         """The definition of a collection of this kind of object."""
-        return "%s-scoped-collection" % self.singular_type
+        return self.utility.entry_page_type
 
     @property
-    def scoped_collection_type_link(self):
+    def entry_page_type_link(self):
         "The URL to the definition of a collection of this kind of object."
-        return "%s#%s" % (
-            self._service_root_url(), self.scoped_collection_type)
+        return self.utility.entry_page_type_link
 
     @property
     def entry_page_representation_id(self):
         "The name of the description of a colleciton of this kind of object."
-        return "%s-page" % self.singular_type
+        return self.utility.entry_page_representation_id
 
     @property
     def entry_page_representation_link(self):
         "The URL to the description of a collection of this kind of object."
-        return "%s#%s" % (
-            self._service_root_url(),
-            self.entry_page_representation_id)
+        return self.utility.entry_page_representation_link
 
     @property
     def all_fields(self):
@@ -319,6 +294,14 @@ class WadlFieldAPI(WadlAPI):
         self.field = field
 
     @property
+    def required(self):
+        """An xsd:bool value for whether or not this field is required."""
+        if self.field.required:
+            return 'true'
+        else:
+            return 'false'
+
+    @property
     def name(self):
         """The name of this field."""
         # It would be nice to farm this out to IFieldMarshaller, but
@@ -355,10 +338,17 @@ class WadlFieldAPI(WadlAPI):
 
     @property
     def is_link(self):
-        """Is this field a link to another resource?"""
+        """Does this field have real data or is it just a link?"""
+        return IObjectLink.providedBy(self.field)
+
+    @property
+    def is_represented_as_link(self):
+        """Is this field represented as a link to another resource?"""
         return (IObject.providedBy(self.field) or
+                IReferenceChoice.providedBy(self.field) or
                 ICollectionField.providedBy(self.field) or
-                IBytes.providedBy(self.field))
+                IBytes.providedBy(self.field) or
+                self.is_link)
 
     @property
     def type_link(self):
@@ -368,18 +358,34 @@ class WadlFieldAPI(WadlAPI):
             return "%s#HostedFile" % self._service_root_url()
 
         # Handle entries and collections of entries.
+        utility = self._entry_adapter_utility
+        if ICollectionField.providedBy(self.field):
+            return utility.entry_page_type_link
+        else:
+            return utility.type_link
+
+    @property
+    def representation_link(self):
+        """The URL of the description of the representation of this field."""
+        utility = self._entry_adapter_utility
+        if ICollectionField.providedBy(self.field):
+            return utility.entry_page_representation_link
+        else:
+            return utility.full_representation_link
+
+    @property
+    def _entry_adapter_utility(self):
+        """Find an entry adapter for this field."""
         if ICollectionField.providedBy(self.field):
             schema = self.field.value_type.schema
-        elif IObject.providedBy(self.field):
+        elif (IObject.providedBy(self.field)
+              or IObjectLink.providedBy(self.field)
+              or IReferenceChoice.providedBy(self.field)):
             schema = self.field.schema
         else:
-            raise AssertionError("Field is not a link to another resource.")
-        adapter = self._entry_adapter_for_schema(schema)
+            raise TypeError("Field is not of a supported type.")
+        return EntryAdapterUtility.forSchemaInterface(schema)
 
-        if ICollectionField.providedBy(self.field):
-            return adapter.scoped_collection_type_link
-        else:
-            return adapter.type_link
 
     @property
     def options(self):
@@ -415,3 +421,46 @@ class WadlOperationAPI(WadlAPI):
     def doc(self):
         """Human-readable documentation for this operation."""
         return self.docstringToXHTML(self.operation.__doc__)
+
+    @property
+    def has_return_type(self):
+        """Does this operation declare a return type?"""
+        return_field = getattr(self.operation, 'return_type', None)
+        return return_field is not None
+
+    @property
+    def returns_link(self):
+        """Does this operation return a link to an object?"""
+        return_field = getattr(self.operation, 'return_type', None)
+        if return_field is not None:
+            field_adapter = WadlFieldAPI(return_field)
+            return field_adapter.is_link
+        return False
+
+    @property
+    def return_type_resource_type_link(self):
+        """Link to the description of this operation's return value."""
+        return_field = getattr(self.operation, 'return_type', None)
+        if return_field is not None:
+            field_adapter = WadlFieldAPI(return_field)
+            try:
+                return field_adapter.type_link
+            except TypeError:
+                # The operation does not return any object exposed
+                # through the web service.
+                pass
+        return None
+
+    @property
+    def return_type_representation_link(self):
+        """Link to the representation of this operation's return value."""
+        return_field = getattr(self.operation, 'return_type', None)
+        if return_field is not None:
+            field_adapter = WadlFieldAPI(return_field)
+            try:
+                return field_adapter.representation_link
+            except TypeError:
+                # The operation does not return any object exposed
+                # through the web service.
+                pass
+        return None

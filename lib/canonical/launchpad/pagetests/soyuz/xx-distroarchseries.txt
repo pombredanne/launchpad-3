@@ -12,7 +12,7 @@ presented in the DistroSeries page. See further details of this
 feature in 'DistroArchSeries Actions'.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/')
-    >>> anon_browser.getLink('4.10 "Warty"').click()
+    >>> anon_browser.getLink('4.10').click()
     >>> anon_browser.getLink('i386').click()
 
     >>> anon_browser.title
@@ -56,10 +56,10 @@ A search may yield no result. In this case, we describe the search
 that was done, and explain that no matches were found.
 
     >>> anon_browser.getControl(name="text").value = "biscoito"
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'search-results'))
-    No packages matching "biscoito" are published in warty i386.
+    No packages matching "biscoito" are published in Ubuntu Warty i386.
 
 
 == DistroArchseries Actions ==
@@ -67,8 +67,7 @@ that was done, and explain that no matches were found.
 All users can browse to the builds page from the DistroArchSeries
 page. The builds page is described in 23-builds-page.txt.
 
-    >>> print extract_text(find_portlet(anon_browser.contents, 'Actions'))
-    Actions
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'actions'))
     Administer (disabled)
     Show builds
 
@@ -76,8 +75,7 @@ Only administrators can edit ('administer', in fact) the
 distroarchseries details.
 
     >>> admin_browser.open("http://launchpad.dev/ubuntu/warty/i386/")
-    >>> print extract_text(find_portlet(admin_browser.contents, 'Actions'))
-    Actions
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'actions'))
     Administer
     Show builds
 

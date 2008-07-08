@@ -53,18 +53,14 @@ from canonical.launchpad.interfaces import (
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
     ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
     IDistribution, IDistributionSet, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesSet, IDistroSeriesBugTask,
+    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IDistroSeriesSet,
     ILaunchpadCelebrities, INullBugTask, IProduct, IProductSeries,
     IProductSeriesBugTask, IProductSeriesSet, IProductSet, IProject,
     IProjectMilestone, ISourcePackage, ISourcePackageNameSet,
     IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.interfaces.distribution import (
-    IDistributionSet)
-from canonical.launchpad.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    UserCannotEditBugTaskStatus)
 from canonical.launchpad.helpers import shortlist
-# XXX: kiko 2006-06-14 bug=49029
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
@@ -667,7 +663,8 @@ class BugTask(SQLBase, BugTaskMixin):
         # will be executed.
         if self.productID is not None or self.product is not None:
             alsoProvides(self, IUpstreamBugTask)
-        elif self.productseriesID is not None or self.productseries is not None:
+        elif (self.productseriesID is not None or
+              self.productseries is not None):
             alsoProvides(self, IProductSeriesBugTask)
         elif self.distroseriesID is not None or self.distroseries is not None:
             alsoProvides(self, IDistroSeriesBugTask)
@@ -712,7 +709,7 @@ class BugTask(SQLBase, BugTaskMixin):
             return
 
         if not self.canTransitionToStatus(new_status, user):
-            raise AssertionError(
+            raise UserCannotEditBugTaskStatus(
                 "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
@@ -1319,6 +1316,9 @@ class BugTaskSet:
             else:
                 component_ids = sqlvalues(params.component)
 
+            distro_archive_ids = [
+                archive.id
+                for archive in distroseries.distribution.all_distro_archives]
             extra_clauses.extend(["""
             BugTask.sourcepackagename =
                 SourcePackageRelease.sourcepackagename AND
@@ -1329,7 +1329,7 @@ class BugTaskSet:
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
             """ % sqlvalues(distroseries,
-                            distroseries.distribution.all_distro_archive_ids,
+                            distro_archive_ids,
                             component_ids,
                             PackagePublishingStatus.PUBLISHED)])
 
@@ -1592,6 +1592,16 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         store = getUtility(IZStorm).get('main')
         query, clauseTables, orderby = self.buildQuery(params)
+        if len(args) == 0:
+            # Do normal prejoins, if we don't have to do any UNION
+            # queries.  Prejoins don't work well with UNION, and the way
+            # we prefetch objects without prejoins cause problems with
+            # COUNT(*) queries, which get inefficient.
+            return BugTask.select(
+                query, clauseTables=clauseTables, orderBy=orderby,
+                prejoins=['product', 'sourcepackagename'],
+                prejoinClauseTables=['Bug'])
+
         bugtask_fti = SQL('BugTask.fti')
         result = store.find((BugTask, bugtask_fti), query,
                             AutoTables(SQL("1=1"), clauseTables))
@@ -1667,6 +1677,7 @@ class BugTaskSet:
                     distroseries=nomination.distroseries,
                     sourcepackagename=sourcepackagename,
                     **non_target_create_params)
+                accepted_series_task.updateTargetNameCache()
 
         if bugtask.conjoined_slave:
             bugtask._syncFromConjoinedSlave()

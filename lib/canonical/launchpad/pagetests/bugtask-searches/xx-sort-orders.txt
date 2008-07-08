@@ -19,7 +19,7 @@ Default view:
 Newest:
 
     >>> anon_browser.getControl(name="orderby").displayValue = ["newest"]
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
 
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
@@ -46,7 +46,7 @@ By most recently changed:
 
     >>> anon_browser.getControl(name="orderby").displayValue = [
     ...     'most recently changed']
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
     mozilla-firefox Unknown New
@@ -59,7 +59,7 @@ By least recently changed:
 
     >>> anon_browser.getControl(name="orderby").displayValue = [
     ...     "least recently changed"]
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
     mozilla-firefox Low Confirmed
@@ -72,7 +72,7 @@ By status:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+bugs")
     >>> anon_browser.getControl(name="orderby").displayValue = ["by status"]
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
     mozilla-firefox Medium New
@@ -97,7 +97,7 @@ Default view:
 Newest:
 
     >>> anon_browser.getControl(name="orderby").displayValue = ["newest"]
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
     mozilla-firefox Medium New
@@ -122,7 +122,7 @@ Sort by importance:
 
     >>> anon_browser.getControl(name="orderby").displayValue = [
     ...     "by importance"]
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
     Unknown New

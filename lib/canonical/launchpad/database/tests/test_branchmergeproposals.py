@@ -8,7 +8,8 @@ from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
 
-from canonical.launchpad.database import BranchMergeProposalGetter
+from canonical.launchpad.database.branchmergeproposal import (
+    BranchMergeProposalGetter)
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
@@ -16,8 +17,11 @@ from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
-     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
+    LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -490,6 +494,283 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
         utility = getUtility(IBranchMergeProposalGetter)
         retrieved = utility.get(merge_proposal.id)
         self.assertEqual(merge_proposal, retrieved)
+
+
+class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
+    """Test the getProposalsForContext method."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Use an administrator so the permission checks for things
+        # like adding landing targets and setting privacy on the branches
+        # are allowed.
+        TestCaseWithFactory.setUp(self, user='foo.bar@canonical.com')
+
+    def _make_merge_proposal(self, owner_name, product_name, branch_name,
+                             needs_review=False, registrant=None):
+        # A helper method to make the tests readable.
+        owner = getUtility(IPersonSet).getByName(owner_name)
+        if owner is None:
+            owner = self.factory.makePerson(name=owner_name)
+        product = getUtility(IProductSet).getByName(product_name)
+        if product is None:
+            product = self.factory.makeProduct(name=product_name)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner, registrant=registrant,
+            name=branch_name)
+        if registrant is None:
+            registrant = owner
+        bmp = branch.addLandingTarget(
+            registrant=registrant,
+            target_branch=self.factory.makeBranch(product=product))
+        if needs_review:
+            bmp.requestReview()
+        return bmp
+
+    def _get_merge_proposals(self, context, status=None,
+                             visible_by_user=None):
+        # Helper method to return tuples of source branch details.
+        results = BranchMergeProposalGetter.getProposalsForContext(
+            context, status, visible_by_user)
+        return sorted([bmp.source_branch.unique_name for bmp in results])
+
+    def test_created_proposal_default_status(self):
+        # When we create a merge proposal using the helper method, the default
+        # status of the proposal is work in progress.
+        in_progress = self._make_merge_proposal('albert', 'november', 'work')
+        self.assertEqual(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            in_progress.queue_status)
+
+    def test_created_proposal_review_status(self):
+        # If needs_review is set to True, the created merge proposal is set in
+        # the needs review state.
+        needs_review = self._make_merge_proposal(
+            'bob', 'november', 'work', needs_review=True)
+        self.assertEqual(
+            BranchMergeProposalStatus.NEEDS_REVIEW,
+            needs_review.queue_status)
+
+    def test_all_for_product_restrictions(self):
+        # Queries on product should limit results to that product.
+        self._make_merge_proposal('albert', 'november', 'work')
+        self._make_merge_proposal('bob', 'november', 'work')
+        # And make a proposal for another product to make sure that it doesn't
+        # appear
+        self._make_merge_proposal('charles', 'mike', 'work')
+
+        self.assertEqual(
+            ['~albert/november/work', '~bob/november/work'],
+            self._get_merge_proposals(
+                getUtility(IProductSet).getByName('november')))
+
+    def test_wip_for_product_restrictions(self):
+        # Check queries on product limited on status.
+        in_progress = self._make_merge_proposal('albert', 'november', 'work')
+        needs_review = self._make_merge_proposal(
+            'bob', 'november', 'work', needs_review=True)
+        self.assertEqual(
+            ['~albert/november/work'],
+            self._get_merge_proposals(
+                getUtility(IProductSet).getByName('november'),
+                status=[BranchMergeProposalStatus.WORK_IN_PROGRESS]))
+
+    def test_all_for_person_restrictions(self):
+        # Queries on person should limit results to that person.
+        self._make_merge_proposal('albert', 'november', 'work')
+        self._make_merge_proposal('albert', 'mike', 'work')
+        # And make a proposal for another product to make sure that it doesn't
+        # appear
+        self._make_merge_proposal('charles', 'mike', 'work')
+
+        self.assertEqual(
+            ['~albert/mike/work', '~albert/november/work'],
+            self._get_merge_proposals(
+                getUtility(IPersonSet).getByName('albert')))
+
+    def test_wip_for_person_restrictions(self):
+        # If looking for the merge proposals for a person, and the status is
+        # specified, then the resulting proposals will have one of the states
+        # specified.
+        self._make_merge_proposal('albert', 'november', 'work')
+        self._make_merge_proposal(
+            'albert', 'november', 'review', needs_review=True)
+        self.assertEqual(
+            ['~albert/november/work'],
+            self._get_merge_proposals(
+                getUtility(IPersonSet).getByName('albert'),
+                status=[BranchMergeProposalStatus.WORK_IN_PROGRESS]))
+
+    def test_private_branches(self):
+        # The resulting list of merge proposals is filtered by the actual
+        # proposals that the logged in user is able to see.
+        proposal = self._make_merge_proposal('albert', 'november', 'work')
+        # Mark the source branch private.
+        proposal.source_branch.private = True
+        self._make_merge_proposal('albert', 'mike', 'work')
+
+        albert = getUtility(IPersonSet).getByName('albert')
+        # Albert can see his private branch.
+        self.assertEqual(
+            ['~albert/mike/work', '~albert/november/work'],
+            self._get_merge_proposals(albert, visible_by_user=albert))
+        # Anonymous people can't.
+        self.assertEqual(
+            ['~albert/mike/work'],
+            self._get_merge_proposals(albert))
+        # Other people can't.
+        self.assertEqual(
+            ['~albert/mike/work'],
+            self._get_merge_proposals(
+                albert, visible_by_user=self.factory.makePerson()))
+        # A branch subscribers can.
+        subscriber = self.factory.makePerson()
+        proposal.source_branch.subscribe(
+            subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL)
+        self.assertEqual(
+            ['~albert/mike/work', '~albert/november/work'],
+            self._get_merge_proposals(albert, visible_by_user=subscriber))
+
+    def test_team_private_branches(self):
+        # If both charles and albert are a member team xray, and albert
+        # creates a branch in the team namespace, charles will be able to see
+        # it.
+        albert = self.factory.makePerson(name='albert')
+        charles = self.factory.makePerson(name='charles')
+        xray = self.factory.makeTeam(name='xray', owner=albert)
+        xray.addMember(person=charles, reviewer=albert)
+
+        proposal = self._make_merge_proposal(
+            'xray', 'november', 'work', registrant=albert)
+        # Mark the source branch private.
+        proposal.source_branch.private = True
+
+        november = getUtility(IProductSet).getByName('november')
+        # The proposal is visible to charles.
+        self.assertEqual(
+            ['~xray/november/work'],
+            self._get_merge_proposals(november, visible_by_user=charles))
+        # Not visible to anonymous people.
+        self.assertEqual([], self._get_merge_proposals(november))
+        # Not visible to non team members.
+        self.assertEqual(
+            [],
+            self._get_merge_proposals(
+                november, visible_by_user=self.factory.makePerson()))
+
+
+class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
+    """Test that the appropriate vote references get created."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def test_no_initial_votes(self):
+        """A new merge proposal has no votes."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        self.assertEqual([], list(merge_proposal.votes))
+
+    def test_nominate_creates_reference(self):
+        """A new vote reference is created when a reviewer is nominated."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login(merge_proposal.source_branch.owner.preferredemail.email)
+        reviewer = self.factory.makePerson()
+        merge_proposal.nominateReviewer(
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='General')
+        votes = list(merge_proposal.votes)
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(merge_proposal.source_branch.owner,
+                         vote_reference.registrant)
+        self.assertEqual('General', vote_reference.review_type)
+
+    def test_nominate_updates_reference(self):
+        """The existing reference is updated on re-nomination."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login(merge_proposal.source_branch.owner.preferredemail.email)
+        reviewer = self.factory.makePerson()
+        reference = merge_proposal.nominateReviewer(
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='General')
+        self.assertEqual('General', reference.review_type)
+        merge_proposal.nominateReviewer(
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='Specific')
+        # Note we're using the reference from the first call
+        self.assertEqual('Specific', reference.review_type)
+
+    def test_comment_with_vote_creates_reference(self):
+        """A comment with a vote creates a vote reference."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE)
+        votes = list(merge_proposal.votes)
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(reviewer, vote_reference.registrant)
+        self.assertTrue(vote_reference.review_type is None)
+        self.assertEqual(comment, vote_reference.comment)
+
+    def test_comment_without_a_vote_does_not_create_reference(self):
+        """A comment with a vote creates a vote reference."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content')
+        self.assertEqual([], list(merge_proposal.votes))
+
+    def test_second_vote_by_person_just_alters_reference(self):
+        """A second vote changes the comment reference only."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        comment1 = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.DISAPPROVE)
+        comment2 = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE)
+        votes = list(merge_proposal.votes)
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(reviewer, vote_reference.registrant)
+        self.assertTrue(vote_reference.review_type is None)
+        self.assertEqual(comment2, vote_reference.comment)
+
+    def test_vote_by_nominated_reuses_reference(self):
+        """A comment with a vote for a nominated reviewer alters reference."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login(merge_proposal.source_branch.owner.preferredemail.email)
+        reviewer = self.factory.makePerson()
+        merge_proposal.nominateReviewer(
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='General')
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE)
+
+        votes = list(merge_proposal.votes)
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(merge_proposal.source_branch.owner,
+                         vote_reference.registrant)
+        self.assertEqual('General', vote_reference.review_type)
+        self.assertEqual(comment, vote_reference.comment)
 
 
 def test_suite():

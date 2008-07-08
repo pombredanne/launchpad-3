@@ -62,6 +62,45 @@ ISOLATION_LEVEL_DEFAULT = ISOLATION_LEVEL_READ_COMMITTED
 postgres_compile.remove_reserved_words(['language', 'section'])
 
 
+class StupidCache:
+    """A Storm cache that never evicts objects except on clear().
+
+    This class is basically equivalent to Storm's standard Cache class
+    with a very large size but without the overhead of maintaining the
+    LRU list.
+
+    This provides caching behaviour equivalent to what we were using
+    under SQLObject.
+    """
+
+    def __init__(self, size):
+        self._cache = {}
+
+    def clear(self):
+        self._cache.clear()
+
+    def add(self, obj_info):
+        if obj_info not in self._cache:
+            self._cache[obj_info] = obj_info.get_obj()
+
+    def remove(self, obj_info):
+        if obj_info in self._cache:
+            del self._cache[obj_info]
+            return True
+        return False
+
+    def set_size(self, size):
+        pass
+
+    def get_cached(self):
+        return self._cache.keys()
+
+
+# Monkey patch the cache into storm.store to override the standard
+# cache implementation for all stores.
+storm.store.Cache = StupidCache
+
+
 class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
     """A SQLObject style for launchpad.
 
@@ -125,17 +164,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # This matches the repr() output for the sqlos.SQLOS class.
         # A number of the doctests rely on this formatting.
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
-
-    def reset(self):
-        raise AssertionError("SQLBase.reset() not handled.")
-        if not self._SO_createValues:
-            return
-        self._SO_writeLock.acquire()
-        try:
-            self.dirty = False
-            self._SO_createValues = {}
-        finally:
-            self._SO_writeLock.release()
 
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
@@ -242,7 +270,9 @@ class ZopelessTransactionManager(object):
         store = getUtility(IZStorm).get("main")
         # Use of the raw connection will not be coherent with Storm's
         # cache.
-        return store._connection._raw_connection
+        connection = store._connection
+        connection._ensure_connected()
+        return connection._raw_connection
 
     @staticmethod
     def begin():
@@ -524,12 +554,36 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     return con
 
 
-def cursor():
-    '''Return a cursor from the current database connection.
+class cursor:
+    """A DB-API cursor-like object for the Storm connection.
 
-    This is useful for code that needs to issue database queries
-    directly rather than using the SQLObject interface
-    '''
-    connection = getUtility(IZStorm).get('main')._connection
-    connection._ensure_connected()
-    return connection.build_raw_cursor()
+    Use of this class is deprecated in favour of using Store.execute().
+    """
+    def __init__(self):
+        self._connection = getUtility(IZStorm).get('main')._connection
+        self._result = None
+
+    def execute(self, query, params=None):
+        self.close()
+        if isinstance(params, dict):
+            query = query % sqlvalues(**params)
+        elif params is not None:
+            query = query % sqlvalues(*params)
+        self._result = self._connection.execute(query)
+
+    @property
+    def rowcount(self):
+        return self._result._raw_cursor.rowcount
+
+    def fetchone(self):
+        assert self._result is not None, "No results to fetch"
+        return self._result.get_one()
+
+    def fetchall(self):
+        assert self._result is not None, "No results to fetch"
+        return self._result.get_all()
+
+    def close(self):
+        if self._result is not None:
+            self._result.close()
+            self._result = None

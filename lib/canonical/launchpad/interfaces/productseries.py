@@ -37,6 +37,8 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 
 class ImportStatus(DBEnumeratedType):
@@ -183,21 +185,27 @@ def validate_release_glob(value):
 class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                      ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
+    export_as_webservice_entry()
+
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
     # instead of using object.id.
     id = Int(title=_('ID'))
-    # field names
-    product = Choice(title=_('Project'), required=True, vocabulary='Product')
+    product = exported(
+        Choice(title=_('Project'), required=True, vocabulary='Product'),
+        exported_as='project')
     status = Choice(
         title=_('Status'), required=True, vocabulary=DistroSeriesStatus,
         default=DistroSeriesStatus.DEVELOPMENT)
     parent = Attribute('The structural parent of this series - the product')
-    name = ProductSeriesNameField(title=_('Name'), required=True,
-        description=_("The name of the series is a short, unique name "
-        "that identifies it, being used in URLs. It must be all "
-        "lowercase, with no special characters. For example, '2.0' "
-        "or 'trunk'."), constraint=name_validator)
+    name = exported(
+        ProductSeriesNameField(
+            title=_('Name'),
+            description=_(
+                "The name of the series is a short, unique name "
+                "that identifies it, being used in URLs. It must be all "
+                "lowercase, with no special characters. For example, '2.0' "
+                "or 'trunk'."), constraint=name_validator))
     datecreated = Datetime(title=_('Date Registered'), required=True,
         readonly=True)
     owner = PublicPersonChoice(
@@ -382,14 +390,8 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     new_style_import = Attribute(_("The new-style import that was created "
         "from this import, if any."))
 
-    def syncCertified():
-        """is the series source sync enabled?"""
-
-    def autoSyncEnabled():
-        """is the series source enabled for automatic syncronisation?"""
-
-    def autoTestFailed():
-        """has the series source failed automatic testing by roomba?"""
+    is_development_focus = Attribute(
+        _("Is this series the development focus for the product?"))
 
 
 class IProductSeriesSourceAdmin(Interface):
@@ -398,20 +400,9 @@ class IProductSeriesSourceAdmin(Interface):
 
     def certifyForSync():
         """enable this to sync"""
-
-    def markTestFailed():
-        """Mark this import as TESTFAILED.
-
-        See `ImportStatus` for what this means.  This method also clears
-        timestamps and other ancillary data.
-        """
-
-    def markDontSync():
-        """Mark this import as DONTSYNC.
-
-        See `ImportStatus` for what this means.  This method also clears
-        timestamps and other ancillary data.
-        """
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
 
     def markStopped():
         """Mark this import as STOPPED.
@@ -419,6 +410,9 @@ class IProductSeriesSourceAdmin(Interface):
         See `ImportStatus` for what this means.  This method also clears
         timestamps and other ancillary data.
         """
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
 
     def deleteImport():
         """Do our best to forget that this series ever had an import
@@ -426,9 +420,9 @@ class IProductSeriesSourceAdmin(Interface):
 
         Use with care!
         """
-
-    def enableAutoSync():
-        """Enable this series RCS for automatic synchronisation."""
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
 
 
 class IProductSeriesSet(Interface):

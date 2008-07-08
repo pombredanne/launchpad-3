@@ -153,7 +153,8 @@ class BuilderGroup:
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
         return queueItem.builder.transferSlaveFileToLibrarian(
-            'buildlog', queueItem.getLogFileName())
+            'buildlog', queueItem.getLogFileName(),
+            queueItem.build.archive.private)
 
     def updateBuild(self, queueItem):
         """Verify the current build job status.
@@ -406,7 +407,7 @@ class BuilderGroup:
         # binary upload when it was the case.
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
         if (build.buildstate != BuildStatus.FULLYBUILT or
-            len(build.binarypackages) == 0):
+            build.binarypackages.count() == 0):
             self.logger.debug("Build %s upload failed." % build.id)
             # update builder
             queueItem.build.buildstate = BuildStatus.FAILEDTOUPLOAD

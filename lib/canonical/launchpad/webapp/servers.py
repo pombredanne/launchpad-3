@@ -47,6 +47,7 @@ from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication, IPerson,
     IPersonSet, IShipItApplication, IWebServiceApplication,
     IOAuthConsumerSet, NonceAlreadyUsed)
+import canonical.launchpad.versioninfo
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -429,10 +430,6 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     implements(ILaunchpadBrowserApplicationRequest)
 
     retry_max_count = 5    # How many times we're willing to retry
-
-    def __init__(self, body_instream, environ, response=None):
-        super(LaunchpadBrowserRequest, self).__init__(
-            body_instream, environ, response)
 
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
@@ -857,11 +854,34 @@ class ShipItPublication(LaunchpadBrowserPublication):
 class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.ShipItUbuntuLayer)
 
+    @property
+    def icing_url(self):
+        """The URL to the directory containing resources for this request."""
+        return "%s+icing-ubuntu/rev%d" % (
+            allvhosts.configs['shipitubuntu'].rooturl,
+            canonical.launchpad.versioninfo.revno)
+
+
 class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
 
+    @property
+    def icing_url(self):
+        """The URL to the directory containing resources for this request."""
+        return "%s+icing-kubuntu/rev%d" % (
+            allvhosts.configs['shipitkubuntu'].rooturl,
+            canonical.launchpad.versioninfo.revno)
+
+
 class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
+
+    @property
+    def icing_url(self):
+        """The URL to the directory containing resources for this request."""
+        return "%s+icing-edubuntu/rev%d" % (
+            allvhosts.configs['shipitedubuntu'].rooturl,
+            canonical.launchpad.versioninfo.revno)
 
 # ---- feeds
 
@@ -1106,7 +1126,7 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
 
     def __init__(self, body_instream=None, environ=None, **kw):
         test_environ = {
-            'SERVERL_URL': 'http://api.launchpad.dev',
+            'SERVER_URL': 'http://api.launchpad.dev',
             'HTTP_HOST': 'api.launchpad.dev',
             }
         if environ is not None:

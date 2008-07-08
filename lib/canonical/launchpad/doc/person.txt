@@ -1,16 +1,14 @@
 = Person =
 
 The Person class is what we use to represent Launchpad users, teams and
-some people which have done work on the free software community but are not
-Launchpad users.
+some people which have done work on the free software community but are
+not Launchpad users.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IEmailAddressSet, IHasStanding,
     ...     IHasTranslationImports)
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
-    >>> login(ANONYMOUS)
 
 Any Person object (either a person or a team) implements IPerson...
 
@@ -55,13 +53,14 @@ You can create a new person using the createPersonAndEmail method of
 IPersonSet. All you need for that is a valid email address. You can also
 hide the user email addresses.
 
-Some of our scripts may create Person entries, and in these cases they must
-provide a rationale and a comment (optional) for the creation of that Person
-entry. These are displayed on the home pages of unvalidated Launchpad
-profiles, to make it clear that those profiles were not created by the
-people they represent and why they had to be created. Because the comment
-will be displayed verbatim in a web page, it must start with the word "when"
-followed by a description of the action that caused the entry to be created.
+Some of our scripts may create Person entries, and in these cases they
+must provide a rationale and a comment (optional) for the creation of
+that Person entry. These are displayed on the home pages of unvalidated
+Launchpad profiles, to make it clear that those profiles were not
+created by the people they represent and why they had to be created.
+Because the comment will be displayed verbatim in a web page, it must
+start with the word "when" followed by a description of the action that
+caused the entry to be created.
 
     >>> from canonical.launchpad.interfaces import (
     ...     EmailAddressStatus, PersonCreationRationale)
@@ -78,11 +77,11 @@ followed by a description of the action that caused the entry to be created.
     >>> p.hide_email_addresses
     True
 
-Since this person has chosen to hide his email addresses they won't be visible
-to other users which are not admins.
+Since this person has chosen to hide his email addresses they won't be
+visible to other users which are not admins.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
-    >>> login(email.email)
+    >>> login('randomuser@randomhost.com')
     >>> check_permission('launchpad.View', email)
     True
 
@@ -95,18 +94,60 @@ to other users which are not admins.
     True
     >>> login(ANONYMOUS)
 
-By default, newly created Person entries will have AccountStatus.NOACCOUNT as
-their account_status.  This is only changed if/when we turn that entry into an
-actual user account. (Currently, we assume that a Person entry is turned into
-a user account when its first email address is confirmed)
+By default, newly created Person entries will have
+AccountStatus.NOACCOUNT as their account_status. This is only changed
+if/when we turn that entry into an actual user account. (Currently, we
+assume that a Person entry is turned into a user account when its first
+email address is confirmed) Note that both the Person and the
+EmailAddress have accounts when they are created using the
+createPersonAndEmail() method.
 
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
+    >>> email.account == p.account
+    True
+
     >>> p.setPreferredEmail(email)
     >>> email.status
     <DBItem EmailAddressStatus.PREFERRED...
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
+
+The user can add additional email addresses. The
+validateAndEnsurePreferredEmail() method verifies that the email belongs
+to the person, and it updates the email address's status and account.
+
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> validated_email = emailset.new('validated@canonical.com', p)
+    >>> validated_email.status
+    <DBItem EmailAddressStatus.NEW...
+    >>> print validated_email.account
+    None
+
+    >>> login('randomuser@randomhost.com')
+    >>> p.validateAndEnsurePreferredEmail(validated_email)
+    >>> validated_email.status
+    <DBItem EmailAddressStatus.VALIDATED...
+    >>> validated_email.account == p.account
+    True
+
+The user can add a new address and set it as the preferred address.
+The setPreferredEmail() method updated the address's status and
+account.
+
+    >>> preferred_email = emailset.new('preferred@canonical.com', p)
+    >>> preferred_email.status
+    <DBItem EmailAddressStatus.NEW...
+    >>> print preferred_email.account
+    None
+
+    >>> p.setPreferredEmail(preferred_email)
+    >>> preferred_email.status
+    <DBItem EmailAddressStatus.PREFERRED...
+    >>> preferred_email.account == p.account
+    True
+
+    >>> login(ANONYMOUS)
 
 In the case of teams, though, the account_status is not changed as their
 account_status must always be set to NOACCOUNT. (Notice how we use
@@ -117,7 +158,6 @@ can be used only for people and the former only for teams)
     >>> shipit_admins.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> emailset = getUtility(IEmailAddressSet)
     >>> email = emailset.new('foo@baz.com', shipit_admins)
     >>> shipit_admins.setContactAddress(email)
     >>> email.status
@@ -161,6 +201,16 @@ it issuing a DB query.
     >>> valid_persons = personset.getValidPersons([non_valid_person, foobar])
     >>> [person.name for person in valid_persons]
     [u'name16']
+
+
+=== Accounts ===
+
+A Person may be linked to an Account.
+
+    >>> login('no-priv@canonical.com')
+    >>> person = personset.getByEmail('no-priv@canonical.com')
+    >>> person.account.openid_identifier
+    u'no-priv_oid'
 
 
 === Personal standing ===
@@ -246,25 +296,16 @@ If we look up a string not associated with any user, None is returned:
     >>> print personset.getByOpenIdIdentifier('no-such-identifier')
     None
 
-While an identifier may be assigned to a team, it will not be
-returned:
-
-    >>> team = personset.getByName('simple-team')
-    >>> team.isTeam()
-    True
-    >>> team.openid_identifier
-    u'simple-team_oid'
-    >>> print personset.getByOpenIdIdentifier('simple-team_oid')
-    None
-
 Accounts that have not been validated are not returned either:
 
-    >>> person = personset.getByName('matsubara')
+    >>> person, email = personset.createPersonAndEmail(
+    ...     email='whatever@example.com', name='whatever',
+    ...     rationale=PersonCreationRationale.SOURCEPACKAGEIMPORT)
     >>> person.is_valid_person
     False
-    >>> person.openid_identifier
-    u'matsubara_oid'
-    >>> print personset.getByOpenIdIdentifier('matsubara_oid')
+    >>> person.openid_identifier is not None
+    True
+    >>> print personset.getByOpenIdIdentifier(person.openid_identifier)
     None
 
 
@@ -320,9 +361,9 @@ raised.
 === Turning people into teams ===
 
 Launchpad may create Person entries automatically and it always assumes
-these are actual people.  Sometimes, though, these should actually be teams,
-so we provide an easy way to turn one of these auto created entries into
-teams.
+these are actual people.  Sometimes, though, these should actually be
+teams, so we provide an easy way to turn one of these auto created
+entries into teams.
 
     >>> not_a_person, dummy = personset.createPersonAndEmail(
     ...     'foo@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
@@ -339,6 +380,8 @@ teams.
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
+    >>> from zope.security.proxy import removeSecurityProxy
+
     >>> not_a_person.convertToTeam(team_owner=ddaa)
     >>> not_a_person.isTeam()
     True
@@ -346,7 +389,7 @@ teams.
     True
     >>> verifyObject(ITeam, not_a_person)
     True
-    >>> print not_a_person.password
+    >>> print removeSecurityProxy(not_a_person).password
     None
 
 The team owner is also added as an administrator of its team.
@@ -476,7 +519,6 @@ entries for themselves.
 The inTeam method is cached to avoid unnecessary database lookups - this
 was a cause of a number of timeouts
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_lifeless = removeSecurityProxy(lifeless)
     >>> naked_lifeless._inTeam_cache[vcs_imports.id]
     True
@@ -755,6 +797,12 @@ trying to match the text only against the beginning of an email address:
     >>> print_people(personset.find('steve.alexander'))
     Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']
 
+Searching for people and teams without specifying some text to filter
+the results will cause no people/teams to be returned.
+
+    >>> list(personset.find(''))
+    []
+
 Searching only for People based on their names or email addresses:
 
     >>> print_people(personset.findPerson('james.blackwell'))
@@ -791,6 +839,24 @@ Searching only for Teams based on their names or email addresses:
 
     >>> print_people(personset.findTeam('translators'))
     Ubuntu Translators (ubuntu-translators): []
+
+You can get the complete list of people and teams by using the
+getAllValidPersonsAndTeams() method.
+
+    >>> people_and_teams = personset.getAllValidPersonsAndTeams()
+    >>> personset.getByName('salgado') in people_and_teams
+    True
+    >>> personset.getByName('guadamen') in people_and_teams
+    True
+    >>> [person.name
+    ...  for person in people_and_teams if not person.is_valid_person_or_team]
+    []
+    >>> from canonical.launchpad.database.person import Person
+    >>> valid_people = Person.select("person.id = ValidPersonCache.id",
+    ...                              clauseTables=['ValidPersonCache'])
+    >>> teams = Person.select("teamowner IS NOT NULL")
+    >>> set(people_and_teams).difference(list(valid_people) + list(teams))
+    set([])
 
 
 == Packages related to a person ==
@@ -1244,3 +1310,78 @@ But not in other contexts.
     >>> cprov.isBugContributorInTarget(user=foobar,
     ...     target=getUtility(IProductSet).getByName('jokosher'))
     False
+
+
+== Creating a Person without an email address ==
+
+Although createPersonAndEmail() is the usual method to use when creating
+a new Person, there is also a method that can be used when a Person
+needs to be created without an email address, for example when the
+Person is being created as the result of an import from an external
+bugtracker.
+
+The method createPersonWithoutEmail() is used in these situations. This
+takes some parameters similar to those taken by createPersonAndEmail()
+but, since an emailless Person cannot be considered to be valid, it
+takes no parameters regarding to emails or passwords.
+
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> person_set = getUtility(IPersonSet)
+    >>> new_person = person_set.createPersonWithoutEmail(
+    ...     'ix', PersonCreationRationale.BUGIMPORT,
+    ...     comment="when importing bugs", displayname="Ford Prefect",
+    ...     registrant=foo_bar)
+
+    >>> print new_person.name
+    ix
+
+    >>> print new_person.displayname
+    Ford Prefect
+
+    >>> print new_person.preferredemail
+    None
+
+    >>> print new_person.creation_rationale.name
+    BUGIMPORT
+
+    >>> print new_person.registrant.name
+    name16
+
+
+== The _newPerson() method ==
+
+The PersonSet database class has a method _newPerson(), which is used to
+create new Person objects. This isn't exposed in the interface, so to
+test it we need to instantiate PersonSet directly.
+
+    >>> from canonical.launchpad.database.person import PersonSet
+    >>> person_set = PersonSet()
+
+_newPerson() accepts parameters for name displayname and rationale. It
+also takes the parameters hide_email_addresses, comment and registrant.
+
+    >>> person_set._newPerson(
+    ...     'new-name', 'New Person', True,
+    ...     PersonCreationRationale.BUGIMPORT, "testing _newPerson().",
+    ...     foo_bar)
+    <Person at ...>
+
+If the name passed to _newPerson() is already taken, a NameAlreadyTaken
+error will be raised.
+
+    >>> person_set._newPerson(
+    ...     'new-name', 'New Person', True,
+    ...     PersonCreationRationale.BUGIMPORT)
+    Traceback (most recent call last):
+      ...
+    NameAlreadyTaken: The name 'new-name' is already taken.
+
+If the name passed to _newPerson() isn't valid an InvalidName error will
+be raised.
+
+    >>> person_set._newPerson(
+    ...     "ThisIsn'tValid", 'New Person', True,
+    ...     PersonCreationRationale.BUGIMPORT)
+    Traceback (most recent call last):
+      ...
+    InvalidName: ThisIsn'tValid is not a valid name for a person.

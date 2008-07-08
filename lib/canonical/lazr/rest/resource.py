@@ -4,26 +4,31 @@
 
 __metaclass__ = type
 __all__ = [
+    'BatchingResourceMixin',
     'Collection',
     'CollectionResource',
     'Entry',
+    'EntryAdapterUtility',
     'EntryResource',
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'ResourceJSONEncoder',
+    'RESTUtilityBase',
     'ScopedCollection',
     'ServiceRootResource',
+    'WADL_SCHEMA_FILE',
     ]
 
 import copy
 from datetime import datetime
+import os
 import simplejson
-from types import NoneType
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import (
-    adapts, getAdapters, getMultiAdapter, getUtility)
+    adapts, getAdapters, getMultiAdapter, getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 from zope.interface.interfaces import IInterface
@@ -50,6 +55,11 @@ from canonical.lazr.interfaces import (
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
+
+
+# The path to the WADL XML Schema definition.
+WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
+                                'wadl20061109.xsd')
 
 
 class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
@@ -83,6 +93,9 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
                 return tuple(obj)
             if isinstance(underlying_object, dict):
                 return dict(obj)
+        if queryAdapter(obj, IEntry):
+            obj = EntryResource(obj, get_current_browser_request())
+
         return IJSONPublishable(obj).toDataForJSON()
 
 
@@ -235,7 +248,7 @@ class WebServiceBatchNavigator(BatchNavigator):
     This batch navigator differs from others in the names of the query
     variables it expects. This class expects the starting point to be
     contained in the query variable "ws.start" and the size of the
-    batch to be contained in the query variable ""ws.size". When this
+    batch to be contained in the query variable "ws.size". When this
     navigator serves links, it includes query variables by those
     names.
     """
@@ -269,6 +282,8 @@ class BatchingResourceMixin:
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }
+        if navigator.batch.start < 0:
+            batch['start'] = None
         next_url = navigator.nextBatchURL()
         if next_url != "":
             batch['next_collection_link'] = next_url
@@ -278,7 +293,7 @@ class BatchingResourceMixin:
         return batch
 
 
-class CustomOperationResourceMixin(BatchingResourceMixin):
+class CustomOperationResourceMixin:
 
     """A mixin for resources that implement a collection-entry pattern."""
 
@@ -294,7 +309,7 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
         operation = getMultiAdapter((self.context, self.request),
                                     IResourceGETOperation,
                                     name=operation_name)
-        return self._processCustomOperationResult(operation())
+        return operation()
 
     def handleCustomPOST(self, operation_name):
         """Execute a custom write-type operation triggered through POST.
@@ -312,7 +327,7 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
         except ComponentLookupError:
             self.request.response.setStatus(400)
             return "No such operation: " + operation_name
-        return self._processCustomOperationResult(operation())
+        return operation()
 
     def do_POST(self):
         """Invoke a custom operation.
@@ -329,24 +344,6 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
             return "No operation name given."
         del self.request.form['ws.op']
         return self.handleCustomPOST(operation_name)
-
-    def _processCustomOperationResult(self, result):
-        """Process the result of a custom operation."""
-        if isinstance(result, (basestring, NoneType)):
-            # The operation took care of everything and just needs
-            # this string served to the client.
-            return result
-
-        # The operation returned a collection or entry. It will be
-        # serialized to JSON.
-        try:
-            iterator = iter(result)
-        except TypeError:
-            # Result is a single entry
-            return EntryResource(result, self.request)
-
-        # Serve a single batch from the collection.
-        return self.batch(result, self.request)
 
 
 class ReadOnlyResource(HTTPResource):
@@ -409,6 +406,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         """
         data = {}
         data['self_link'] = canonical_url(self.context)
+        data['resource_type_link'] = self.type_url
         for name, field in getFields(self.entry.schema).items():
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
@@ -525,6 +523,14 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             return error
         return self._applyChanges(changeset)
 
+    @property
+    def type_url(self):
+        "The URL to the resource type for this resource."
+        return "%s#%s" % (
+            canonical_url(self.request.publication.getApplication(
+                    self.request)),
+            self.entry.__class__.__name__)
+
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
 
@@ -537,13 +543,20 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         validated_changeset = {}
         errors = []
 
-        # The self link isn't part of the schema, so it's
-        # handled separately.
+        # The self link and resource type link aren't part of the
+        # schema, so they're handled separately.
+        modified_read_only_attribute = ("%s: You tried to modify a "
+                                        "read-only attribute.")
         if 'self_link' in changeset:
             if changeset['self_link'] != canonical_url(self.context):
-                errors.append("self_link: You tried to modify "
-                              "a read-only attribute.")
-            del(changeset['self_link'])
+                errors.append(modified_read_only_attribute % 'self_link')
+            del changeset['self_link']
+
+        if 'resource_type_link' in changeset:
+            if changeset['resource_type_link'] != self.type_url:
+                errors.append(modified_read_only_attribute %
+                              'resource_type_link')
+            del changeset['resource_type_link']
 
         # For every field in the schema, see if there's a corresponding
         # field in the changeset.
@@ -606,8 +619,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # change them.
                 if value != current_value:
                     if field.readonly:
-                        errors.append("%s: You tried to modify a read-only "
-                                      "attribute." % repr_name)
+                        errors.append(modified_read_only_attribute
+                                      % repr_name)
                     else:
                         errors.append(
                             "%s: To modify this field you need to send a PUT "
@@ -640,8 +653,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             if field.readonly:
                 change_this_field = False
                 if value != current_value:
-                    errors.append("%s: You tried to modify a read-only "
-                                  "attribute." % repr_name)
+                    errors.append(modified_read_only_attribute
+                                  % repr_name)
                     continue
 
             if change_this_field is True and value != current_value:
@@ -704,7 +717,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         return ''
 
 
-class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
+class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
+                         CustomOperationResourceMixin):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
@@ -736,10 +750,39 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
                 self.request.response.setHeader(
                     'Content-Type', self.WADL_TYPE)
                 return result
-            result = self.batch(entries, self.request)
+
+            result = self.batch(entries)
 
         self.request.response.setHeader('Content-type', self.JSON_TYPE)
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
+
+    def batch(self, entries=None):
+        """Return a JSON representation of a batch of entries.
+
+        :param entries: (Optional) A precomputed list of entries to batch.
+        """
+        if entries is None:
+            entries = self.collection.find()
+        result = super(CollectionResource, self).batch(entries, self.request)
+        result['resource_type_link'] = self.type_url
+        return result
+
+    @property
+    def type_url(self):
+        "The URL to the resource type for the object."
+        if IScopedCollection.providedBy(self.collection):
+            # Scoped collection. The type URL depends on what type of
+            # entry the collection holds.
+            adapter = EntryAdapterUtility.forSchemaInterface(
+                self.context.relationship.value_type.schema)
+            return adapter.entry_page_type_link
+        else:
+            # Top-level collection.
+            base_url = canonical_url(
+                self.request.publication.getApplication(self.request))
+            class_name = self.collection.__class__.__name__
+            return "%s#%s" % (base_url, class_name)
+
 
 
 class ServiceRootResource(HTTPResource):
@@ -905,3 +948,75 @@ class ScopedCollection:
     def find(self):
         """See `ICollection`."""
         return self.collection
+
+
+class RESTUtilityBase:
+
+    def _service_root_url(self):
+        """Return the URL to the service root."""
+        request = get_current_browser_request()
+        return canonical_url(request.publication.getApplication(request))
+
+
+class EntryAdapterUtility(RESTUtilityBase):
+    """Useful information about an entry's presence in the web service.
+
+    This includes the links to entry's WADL resource type, and the
+    resource type for a page of these entries.
+    """
+
+    @classmethod
+    def forSchemaInterface(cls, model_schema):
+        """Retrieve an entry adapter for a model interface.
+
+        This method locates the IEntry subclass corresponding to the
+        model interface, and creates an EntryAdapterUtility for it.
+        """
+        entry_class = zapi.getGlobalSiteManager().adapters.lookup(
+            (model_schema,), IEntry)
+        return EntryAdapterUtility(entry_class)
+
+    def __init__(self, entry_class):
+        """Initialize with a class that implements IEntry."""
+        self.entry_class = entry_class
+
+    @property
+    def singular_type(self):
+        """Return the singular name for this object type."""
+        return self.entry_class.__name__
+
+    @property
+    def type_link(self):
+        """The URL to the type definition for this kind of entry."""
+        return "%s#%s" % (
+            self._service_root_url(), self.singular_type)
+
+    @property
+    def entry_page_type(self):
+        """The definition of a collection of this kind of object."""
+        return "%s-page-resource" % self.singular_type
+
+    @property
+    def entry_page_type_link(self):
+        "The URL to the definition of a collection of this kind of object."
+        return "%s#%s" % (
+            self._service_root_url(), self.entry_page_type)
+
+    @property
+    def entry_page_representation_id(self):
+        "The name of the description of a colleciton of this kind of object."
+        return "%s-page" % self.singular_type
+
+    @property
+    def entry_page_representation_link(self):
+        "The URL to the description of a collection of this kind of object."
+        return "%s#%s" % (
+            self._service_root_url(),
+            self.entry_page_representation_id)
+
+    @property
+    def full_representation_link(self):
+        """The URL to the description of the object's full representation."""
+        return "%s#%s-full" % (
+            self._service_root_url(), self.singular_type)
+
