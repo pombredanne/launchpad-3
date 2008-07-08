@@ -1,4 +1,3 @@
-import pdb
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
