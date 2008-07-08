@@ -189,7 +189,9 @@ class IBugTracker(Interface):
                 allowed_schemes=LOCATION_SCHEMES_ALLOWED),
             required=False),
         exported_as='base_url_aliases')
-    owner = Object(title=_('Owner'), schema=IPerson)
+    owner = exported(
+        Object(title=_('Owner'), schema=IPerson),
+        exported_as='registrant')
     contactdetails = exported(
         Text(
             title=_('Contact details'),
