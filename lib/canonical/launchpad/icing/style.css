@@ -660,9 +660,45 @@ ul#menuroot li.selected a.breadcrumb {
   padding: 0;
   background: url(navigation-tabs-se) bottom left no-repeat;
 }
-#lp-apps span .disabled {
-    color: #a7a7a7;
-    font-weight: normal;
+#lp-apps span .disabled-tab {
+  color: #a7a7a7;
+  font-weight: normal;
+}
+#lp-apps .overview {
+
+}
+#lp-apps .overview a:hover {
+  color: #8fb635;
+}
+#lp-apps .branches {
+
+}
+#lp-apps .branches a:hover {
+  color: #d18c3b;
+}
+#lp-apps .bugs {
+
+}
+#lp-apps .bugs a:hover {
+  color: #a02c35;
+}
+#lp-apps .translations {
+
+}
+#lp-apps .translations a:hover {
+  color: #bb3a84;
+}
+#lp-apps .specifications {
+
+}
+#lp-apps .specifications a:hover {
+  color: #3895bd;
+}
+#lp-apps .answers {
+
+}
+#lp-apps .answers a:hover {
+  color: #3941bf;
 }
 
 .navigation.menu > :first-child {

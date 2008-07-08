@@ -148,7 +148,7 @@
           tal:attributes="title link/summary; class link/name"
           ><strong
             tal:condition="not:link/enabled"
-            tal:attributes="class string:disabled"
+            tal:attributes="class string:disabled-tab"
             tal:content="structure link/escapedtext"
           /><a
             tal:condition="link/enabled"
