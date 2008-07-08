@@ -726,7 +726,7 @@ INSERT INTO account (id, date_created, creation_rationale, status, date_status_s
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (66, '2006-12-13 21:19:06.369142', 4, 10, '2006-12-13 21:19:06.369142', 'Diogo Matsubara', 'matsubara_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (67, '2006-10-04 16:20:51.19954', 1, 10, '2006-10-04 16:20:51.19954', 'Team Membership Janitor', 'team-membership-janitor_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (68, '2007-01-31 06:56:25.096519', 8, 20, '2007-01-31 06:56:25.096519', 'Launchpad Beta Testers Owner', 'launchpad-beta-owner_oid', NULL, NULL);
-INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (70, '2006-12-13 21:19:06.369142', 2, 40, '2008-02-01 13:01:01.000001', 'Former User', 'former-user_oid', 'an ex-user', NULL);
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (70, '2006-12-13 21:19:06.369142', 2, 30, '2008-02-01 13:01:01.000001', 'Former User', 'former-user_oid', 'an ex-user', NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243602, '2007-02-19 11:17:57.755666', 8, 20, '2007-02-19 11:17:57.755666', 'No Team Memberships', 'no-team-memberships_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243603, '2007-02-21 10:53:59.700105', 8, 20, '2007-02-21 10:53:59.700105', 'One Membership', 'one-membership_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243606, '2007-08-09 21:25:37.832976', 7, 10, '2007-08-09 21:25:37.832976', 'Julian Edwards', 'neMCQNd', NULL, NULL);
@@ -786,7 +786,6 @@ INSERT INTO accountpassword (id, account, password) VALUES (56, 56, 'K7Qmeansl6R
 INSERT INTO accountpassword (id, account, password) VALUES (58, 58, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 INSERT INTO accountpassword (id, account, password) VALUES (63, 63, 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==');
 INSERT INTO accountpassword (id, account, password) VALUES (68, 68, 'q/esKTLj2ba0Bzu2Xdi1JA4zgC683EE3I1Vjm+hp4mY+xgikQ7YD1g==');
-INSERT INTO accountpassword (id, account, password) VALUES (69, 69, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 INSERT INTO accountpassword (id, account, password) VALUES (243602, 243602, 'PlPmrpS1styVUEK/lGn72zqxYYeZcLqKD3b5oD4/C6AyntMMFvSacw==');
 INSERT INTO accountpassword (id, account, password) VALUES (243603, 243603, '52kdKnxgzc0LWK2ltsED9SeqQcjZgDAj+wWlaRotx3BvsXJCH0AUdQ==');
 INSERT INTO accountpassword (id, account, password) VALUES (243610, 243610, '9I7bMpJUcBH+edfXjswjdo7nC6iuoTU6YAqolznT59Q1h9v+z9pdVQ==');
@@ -4416,12 +4415,12 @@ ALTER TABLE personlanguage ENABLE TRIGGER ALL;
 
 ALTER TABLE personlocation DISABLE TRIGGER ALL;
 
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (1, '2007-06-05 18:34:52.127945', 12, NULL, NULL, 'Australia/Perth', 12, '2007-06-05 18:34:52.127945');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (2, '2007-06-05 18:34:52.127945', 16, NULL, NULL, 'Africa/Johannesburg', 55, '2007-06-05 18:34:52.127945');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (3, '2007-06-05 18:34:52.127945', 55, NULL, NULL, 'Africa/Maseru', 16, '2007-06-05 18:34:52.127945');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (4, '2007-07-05 18:34:52.127945', 23, NULL, NULL, 'UTC', 55, '2007-08-09 18:24:00.50');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (5, '2007-07-08 18:34:52', 52, NULL, NULL, 'Europe/Paris', 55, '2007-09-02 11:54:10');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (6, '2007-09-08 13:44:51', 4, 52.200000000000003, 0.29999999999999999, 'Europe/London', 4, '2007-12-22 10:24:15');
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (1, '2007-06-05 18:34:52.127945', 12, NULL, NULL, 'Australia/Perth', 12, '2007-06-05 18:34:52.127945', true, false);
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (2, '2007-06-05 18:34:52.127945', 16, NULL, NULL, 'Africa/Johannesburg', 55, '2007-06-05 18:34:52.127945', true, false);
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (3, '2007-06-05 18:34:52.127945', 55, NULL, NULL, 'Africa/Maseru', 16, '2007-06-05 18:34:52.127945', true, false);
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (4, '2007-07-05 18:34:52.127945', 23, NULL, NULL, 'UTC', 55, '2007-08-09 18:24:00.50', true, false);
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (5, '2007-07-08 18:34:52', 52, NULL, NULL, 'Europe/Paris', 55, '2007-09-02 11:54:10', true, false);
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (6, '2007-09-08 13:44:51', 4, 52.200000000000003, 0.29999999999999999, 'Europe/London', 4, '2007-12-22 10:24:15', true, false);
 
 
 ALTER TABLE personlocation ENABLE TRIGGER ALL;
