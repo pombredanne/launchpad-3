@@ -188,7 +188,7 @@ root, a new OpenIDRPSummary is created.
 Launchpad does not record itself. The OpenIDSummarySet is needed to
 record what relying parties know about Launchpad users. This information
 is permanent, meaning that the relying parties cannot change the data.
-Launchpad, because it can change its data, is is not permanent, thus
+Launchpad, because it can change its data, it is not permanent, thus
 should not be recorded.
 
     >>> print rp_summary_set.record(sample_person, 'http://launchpad.dev')
@@ -204,7 +204,7 @@ This rules also applies to Launchpad vhosts.
     ...     sample_person, 'http://bugs.edge.launchpad.dev')
     None
 
-A OpenIDRPSummary object cannot be created or updated id the account
+A OpenIDRPSummary object cannot be created or updated if the account
 is not ACTIVE, even if the account already has a summary for the
 trust_root.
 
