@@ -313,7 +313,7 @@ class ProductNavigationMenu(NavigationMenu):
 
     def details(self):
         text = 'Details'
-        return Link('+index', text)
+        return Link('', text)
 
     def announcements(self):
         text = 'Announcements'
