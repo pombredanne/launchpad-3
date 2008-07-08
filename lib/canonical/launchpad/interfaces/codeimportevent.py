@@ -241,6 +241,13 @@ class CodeImportEventDataType(DBEnumeratedType):
     Reason why a code import machine went offline.
     """)
 
+    # Data related to reclaim events
+
+    RECLAIMED_JOB_ID = DBItem(510, """Reclaimed Job Id
+
+    The database id of the reclaimed code import job.
+    """)
+
 
 class ICodeImportEvent(Interface):
     """One event in the code-import audit trail."""
@@ -378,6 +385,23 @@ class ICodeImportEventSet(Interface):
         :param machine: `CodeImportMachine` which is no longer working on this
                         import.
         :return: `CodeImportEvent` of FINISH type.
+        """
+
+    def newKill(code_import, machine):
+        """Record that a code import job was killed.
+
+        :param code_import: The `CodeImport` killed job was working on.
+        :param machine: `CodeImportMachine` on which the job was running.
+        :return: `CodeImportEvent` of KILL type.
+        """
+
+    def newReclaim(code_import, machine, job_id):
+        """Record that a code import job was reclaimed by the watchdog.
+
+        :param code_import: The `CodeImport` killed job was working on.
+        :param machine: `CodeImportMachine` on which the job was running.
+        :param job_id: The database id of the reclaimed job.
+        :return: `CodeImportEvent` of RECLAIM type.
         """
 
 
