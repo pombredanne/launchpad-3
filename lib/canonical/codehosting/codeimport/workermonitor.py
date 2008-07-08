@@ -36,14 +36,12 @@ from canonical.twistedsupport.processmonitor import (
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
     """The protocol by which the child process talks to the monitor.
 
-    In terms of bytes, the protocol is extremely simple: any output is
-    stored in the log file and seen as timeout-resetting activity.
-    Every UPDATE_HEARTBEAT_INTERVAL seconds we ask the monitor to
-    update the heartbeat of the job we are working on and pass the
+    In terms of bytes, the protocol is extremely simple: any output is stored
+    in the log file and seen as timeout-resetting activity.  Every
+    config.codeimportworker.heartbeat_update_interval seconds we ask the
+    monitor to update the heartbeat of the job we are working on and pass the
     tail of the log output.
     """
-
-    UPDATE_HEARTBEAT_INTERVAL = 30
 
     def __init__(self, deferred, worker_monitor, log_file, clock=None):
         """Construct an instance.
@@ -69,12 +67,13 @@ class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
     def connectionMade(self):
         """See `BaseProtocol.connectionMade`.
 
-        We call updateHeartbeat for the first time when we are
-        connected to the process and every UPDATE_HEARTBEAT_INTERVAL
-        seconds thereafter.
+        We call updateHeartbeat for the first time when we are connected to
+        the process and every
+        config.codeimportworker.heartbeat_update_interval seconds thereafter.
         """
         ProcessMonitorProtocolWithTimeout.connectionMade(self)
-        self._looping_call.start(self.UPDATE_HEARTBEAT_INTERVAL)
+        self._looping_call.start(
+            config.codeimportworker.heartbeat_update_interval)
 
     def _updateHeartbeat(self):
         """Ask the monitor to update the heartbeat.
@@ -105,6 +104,7 @@ class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
         """
         ProcessMonitorProtocolWithTimeout.processEnded(self, reason)
         self._looping_call.stop()
+
 
 def read_only_transaction(function):
     """Wrap 'function' in a transaction and Zope session.
