@@ -75,13 +75,13 @@ menu:
     >>> admin_browser.getLink('Change details').click()
     >>> print_navigation_links(admin_browser.contents)
     Profile
-    Related Software: http://launchpad.dev/~salgado/+projects
-    Karma: http://launchpad.dev/~salgado/+karma
-    Personal Package Archive: http://launchpad.dev/~salgado/+activate-ppa
+    Related Software: .../~salgado/+projects
+    Karma: .../~salgado/+karma
+    Personal Package Archive: .../~salgado/+activate-ppa
     Personal
-    E-mail Settings: http://launchpad.dev/~salgado/+editemails
-    GPG Keys: http://launchpad.dev/~salgado/+editpgpkeys
-    Passwords: http://launchpad.dev/~salgado/+changepassword
+    E-mail Settings: .../~salgado/+editemails
+    GPG Keys: .../~salgado/+editpgpkeys
+    Passwords: .../~salgado/+changepassword
 
 Salgado will now remove one of his ssh keys from Launchpad.
 
