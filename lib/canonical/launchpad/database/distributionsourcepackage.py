@@ -17,7 +17,7 @@ from storm.expr import Desc, In
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.launchpad.components.launchpadcontext import (
+from canonical.launchpad.components.launchpadcontainer import (
     LaunchpadContainerMixin)
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IQuestionTarget,

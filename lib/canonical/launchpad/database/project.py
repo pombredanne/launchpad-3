@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import (
     SpecificationImplementationStatus, SpecificationSort,
     SprintSpecificationStatus, TranslationPermission)
 
-from canonical.launchpad.components.launchpadcontext import (
+from canonical.launchpad.components.launchpadcontainer import (
     LaunchpadContainerMixin)
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
