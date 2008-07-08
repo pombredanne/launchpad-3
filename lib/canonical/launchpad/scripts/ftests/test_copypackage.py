@@ -20,8 +20,8 @@ from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
-    ISourcePackagePublishingHistory, PackagePublishingPocket,
-    PackagePublishingStatus)
+    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
+    PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.ftpmasterbase import SoyuzScriptError
 from canonical.launchpad.scripts.packagecopier import (
@@ -553,16 +553,35 @@ class TestCopyPackage(unittest.TestCase):
             archive=cprov.archive, version='1.1',
             distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
+        other_source = test_publisher.getPubSource(
+            archive=cprov.archive, version='1.1',
+            sourcename="sourcefordiff", distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
+        test_publisher.addFakeChroots(warty)
         ppa_binaries = test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
 
-        # Also create a PackageUpload item with a fake changesfile.
+        # Give the new source a private package diff.
+        sourcepackagerelease = ppa_source.sourcepackagerelease
+        diff_file = test_publisher.addMockFile("diff_file", restricted=True)
+        package_diff = sourcepackagerelease.requestDiffTo(
+            cprov, other_source.sourcepackagerelease)
+        package_diff.diff_content = diff_file
+
+        # Also create a PackageUpload item with a fake changesfile,
+        # one for the source and one for the builds.
         ppa_queue_item = warty.createQueueEntry(
             pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
             changesfilename='foo_source.changes', changesfilecontent='x')
         ppa_queue_item.addSource(ppa_source.sourcepackagerelease)
         ppa_queue_item.setDone()
+        binary_queue_item = warty.createQueueEntry(
+            pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
+            changesfilename="foo_binary.changes", changesfilecontent='x')
+        for build in ppa_source.getBuilds():
+            binary_queue_item.addBuild(build)
+        binary_queue_item.setDone()
 
         # Create ancestry environment in the primary archive, so we can
         # test unembargoed overrides.
@@ -623,6 +642,15 @@ class TestCopyPackage(unittest.TestCase):
                 queue = published.sourcepackagerelease.getQueueRecord(
                     distroseries=published.distroseries)
                 self.assertFalse(queue.changesfile.restricted)
+                # Check the source's package diff.
+                diffs = published.sourcepackagerelease.package_diffs
+                for diff in diffs:
+                    self.assertFalse(diffs[0].diff_content.restricted)
+            # Check the binary changesfile.
+            if IBinaryPackagePublishingHistory.providedBy(published):
+                package = published.binarypackagerelease
+                changesfile = package.build.changesfile
+                self.assertFalse(changesfile.restricted)
 
 
 def test_suite():
