@@ -8,7 +8,6 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces import (
     IDistroSeriesBinaryPackage)
