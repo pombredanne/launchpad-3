@@ -1081,7 +1081,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         enabled = bool(self.context.mentoring_offers)
         return Link(target, text, enabled=enabled, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
         target = '+editsshkeys'
         text = 'Update SSH keys'
@@ -1192,6 +1192,7 @@ class PersonEditNavigationMenu(NavigationMenu):
         text = 'E-mail Settings'
         return Link(target, text)
 
+    @enabled_with_permission('launchpad.Special')
     def sshkeys(self):
         target = '+editsshkeys'
         text = 'SSH Keys'

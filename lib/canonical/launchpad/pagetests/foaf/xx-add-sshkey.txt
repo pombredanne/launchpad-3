@@ -68,6 +68,20 @@ Launchpad administrators are not allowed to poke at other user's ssh keys.
     ...
     Unauthorized: ...
 
+Nor is the option to edit the user's SSH keys displayed in the navigation
+menu:
+
+    >>> admin_browser.open('http://launchpad.dev/~salgado')
+    >>> admin_browser.getLink('Change details').click()
+    >>> print_navigation_links(admin_browser.contents)
+    Profile
+    Related Software: http://launchpad.dev/~salgado/+projects
+    Karma: http://launchpad.dev/~salgado/+karma
+    Personal Package Archive: http://launchpad.dev/~salgado/+activate-ppa
+    Personal
+    E-mail Settings: http://launchpad.dev/~salgado/+editemails
+    GPG Keys: http://launchpad.dev/~salgado/+editpgpkeys
+    Passwords: http://launchpad.dev/~salgado/+changepassword
 
 Salgado will now remove one of his ssh keys from Launchpad.
 
