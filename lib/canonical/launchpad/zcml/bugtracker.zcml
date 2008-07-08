@@ -18,9 +18,19 @@
 
     <!-- BugTracker -->
     <content class="canonical.launchpad.database.BugTracker">
-        <allow interface="canonical.launchpad.interfaces.IBugTracker" />
-        <require permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IBugTracker" />
+      <implements interface="canonical.launchpad.interfaces.IBugTracker" />
+      <require
+          permission="zope.Public"
+          attributes="aliases baseurl bugtrackertype contactdetails
+                      getBugsWatching getBugWatchesNeedingUpdate
+                      getLinkedPersonByName id imported_bug_messages
+                      latestwatches name owner products projects
+                      summary title watches" />
+      <require
+          permission="launchpad.Edit"
+          attributes="destroySelf ensurePersonForSelf linkPersonToSelf"
+          set_attributes="aliases baseurl bugtrackertype contactdetails
+                          name owner summary title" />
     </content>
 
     <browser:defaultView
