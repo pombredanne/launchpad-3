@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'LaunchpadContextMixin',
+    'LaunchpadContainerMixin',
     ]
 
 from canonical.launchpad.interfaces.product import IProduct
@@ -10,9 +10,9 @@ from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 
 
-class LaunchpadContextMixin:
-    """Mixin for classes which implement `ILaunchpadContext`."""
+class LaunchpadContainerMixin:
+    """Mixin for classes which implement `ILaunchpadContainer`."""
 
     def isWithin(self, context):
-        """See `ILaunchpadContext`."""
+        """See `ILaunchpadContainer`."""
         return context == self

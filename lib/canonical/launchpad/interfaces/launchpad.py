@@ -50,7 +50,7 @@ __all__ = [
     'IHasSecurityContact',
     'ILaunchBag',
     'ILaunchpadCelebrities',
-    'ILaunchpadContext',
+    'ILaunchpadContainer',
     'ILaunchpadRoot',
     'ILaunchpadSearch',
     'ILaunchpadUsage',
@@ -538,7 +538,7 @@ class ILaunchpadUsage(Interface):
         required=True)
 
 
-class ILaunchpadContext(Interface):
+class ILaunchpadContainer(Interface):
     """Marker interface for objects used as the context of something."""
 
     def isWithin(context):

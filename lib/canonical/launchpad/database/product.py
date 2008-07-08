@@ -28,7 +28,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.components.launchpadcontext import (
-    LaunchpadContextMixin)
+    LaunchpadContainerMixin)
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -90,7 +90,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin, QuestionTargetMixin,
               HasTranslationImportsMixin, StructuralSubscriptionTargetMixin,
-              LaunchpadContextMixin):
+              LaunchpadContainerMixin):
 
     """A Product."""
 
@@ -847,7 +847,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             subscription = self.addBugSubscription(bug_supervisor, user)
 
     def isWithin(self, context):
-        """See `ILaunchpadContext`."""
+        """See `ILaunchpadContainer`."""
         return context == self or context == self.project
 
     def getCustomLanguageCode(self, language_code):

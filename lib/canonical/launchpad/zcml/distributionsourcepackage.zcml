@@ -7,7 +7,7 @@
   <!-- DistributionSourcePackage -->
   <content class="canonical.launchpad.database.DistributionSourcePackage">
     <allow
-      interface="canonical.launchpad.interfaces.launchpad.ILaunchpadContext" />
+      interface="canonical.launchpad.interfaces.launchpad.ILaunchpadContainer" />
     <allow
       attributes="distribution sourcepackagename name displayname title
                   distro get_distroseries_packages subscribers currentrelease

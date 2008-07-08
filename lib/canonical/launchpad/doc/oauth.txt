@@ -122,7 +122,7 @@ DistroSourcePackage).
     ...     salgado, OAuthPermission.WRITE_PRIVATE, distribution=ubuntu,
     ...     sourcepackagename=evolution)
     >>> request_token2.context.title
-    u'Source Package "evolution" in Ubuntu Linux'
+    u'\u201cevolution\u201d source package in Ubuntu'
 
 
 === Retrieving request tokens ===

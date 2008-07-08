@@ -23,7 +23,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.components.launchpadcontext import (
-    LaunchpadContextMixin)
+    LaunchpadContainerMixin)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
@@ -91,7 +91,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
                    QuestionTargetMixin, StructuralSubscriptionTargetMixin,
-                   LaunchpadContextMixin):
+                   LaunchpadContainerMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
