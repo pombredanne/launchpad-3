@@ -534,11 +534,10 @@ class UnembargoSecurityPackage(PackageCopier):
                 queue_record.changesfile = new_lfa
             # Re-upload the package diff files if necessary.
             diffs = sourcepackagerelease.package_diffs
-            if diffs.count() != 0:
-                for diff in diffs:
-                    if diff.diff_content.restricted:
-                        new_lfa = self.reUploadFile(diff.diff_content, False)
-                        diff.diff_content = new_lfa
+            for diff in diffs:
+                if diff.diff_content.restricted:
+                    new_lfa = self.reUploadFile(diff.diff_content, False)
+                    diff.diff_content = new_lfa
         elif IBinaryPackagePublishingHistory.providedBy(pub_record):
             files = pub_record.binarypackagerelease.files
             # Re-upload the binary changes file as necessary.
