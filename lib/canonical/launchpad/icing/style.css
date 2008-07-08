@@ -646,21 +646,50 @@ ul#menuroot li.selected a.breadcrumb {
   top: -1px;
 }
 /* Each tab is light grey, with bevelled and rounded borders: */
-#lp-apps * span, #lp-apps * a {
+#lp-apps strong a, #lp-apps strong span, #lp-apps span a, #lp-apps span span {
   background:
     #eee url(navigation-tab-bottom-untinted-normal.png) bottom repeat-x;
   border-style: solid;
   -moz-border-right-colors: #ccc #ccc #ddd;
   -moz-border-left-colors: #ccc #fff #eee;
-  border-width: 0 3px 0;
+  border-width: 0 3px 0 0;
   -moz-border-radius: 0 0 6px 7px;
   color: #333;
   display: block;
   line-height: 1.5em;
   margin: 0 1px;
   overflow: hidden;
-  padding: 0 0 4px;
+  padding: 0 0 4px auto;
+  position: relative;
 }
+#lp-apps * span::before, #lp-apps * a::before {
+  background: url(navigation-nw-w-normal.png) bottom left no-repeat;
+  content: url(navigation-sw-normal.png);
+  height: 1em;
+  overflow: hidden;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  vertical-align: top;
+}
+
+.navigation.menu > :first-child {
+  background: url(navigation-nw-w-normal.png) top left no-repeat;
+}
+.navigation.menu > strong:first-child {
+  background-image: url(navigation-nw-w-selected.png);
+}
+/* The bottom right corner is placed over top of the bottom border: */
+.navigation.menu > :first-child::before {
+  content: '';
+  background: url(navigation-sw-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+  vertical-align: -1px;
+}
+
+
+
+
 /* Each tab will soon also have a tinted bottom matching the app theme: */
 #lp-apps *.overview       * {-tinted-border-bottom-color: #83ad23;}
 #lp-apps *.branches       * {-tinted-border-bottom-color: #d18b39;}
