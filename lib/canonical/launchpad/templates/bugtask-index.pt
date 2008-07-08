@@ -138,7 +138,7 @@
 
       <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
-      <div id="maincontent">
+      <div id="maincontentsub">
         <div id="nonportlets">
 
       <div class="report">
@@ -301,7 +301,7 @@
       </div>
 
         </div><!-- id="nonportlets"-->
-      </div><!--- id="maincontent"-->
+      </div><!--- id="maincontentsub"-->
       <div id="portlets">
         <div
           tal:replace="structure context/target/@@+portlet-details | nothing"

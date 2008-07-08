@@ -872,7 +872,8 @@ top left (y), and top right (z) of the rounded border. */
   To let the main content width = 100% - 220px for the portlets,
   we apply a negative right margin so the portlets can float on the right:
 */
-#maincontent {float: left; margin-right: -220px; width: 100%;}
+#maincontent, #maincontentsub {float: left; margin-right: -220px; width: 100%;}
+/* (maincontentsub is used for a two-column section in bugtask-index.pt.) */
 /* To avoid overlap, we need an extra container with positive right margin: */
 #nonportlets {margin-right: 220px;}
 #portlets .portlet {width: 200px;}
