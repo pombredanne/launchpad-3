@@ -1,5 +1,5 @@
 #!/usr/bin/env python2.4
-# Copyright (C) 2005, 2006  Canonical Software Ltd.
+# Copyright (C) 2005-2008  Canonical Software Ltd.
 
 """Origins dictionary containing all mirrors used for sync-source.py."""
 

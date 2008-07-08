@@ -36,6 +36,9 @@ pocket_suffixes=`$LPPATH/scripts/ftpmaster-tools/lp-query-distro.py pocket_suffi
 
 # target suites ()
 suites=`$LPPATH/scripts/ftpmaster-tools/lp-query-distro.py supported`
+
+# Combine all supported series with all pocket suffixes to build the list
+# of suites for which we will generate/update Contents.gz.
 new_suites=
 for suite in $suites; do
   new_suites="${new_suites:+$new_suites }$suite"

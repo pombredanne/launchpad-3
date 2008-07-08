@@ -1214,7 +1214,7 @@ class LpQueryDistro(LaunchpadScript):
         self._buildLocation()
 
         try:
-            action_result = getattr(self, 'get_' + self.action_name)
+            action_result = getattr(self, self.action_name)
         except AttributeError:
             raise AssertionError(
                 "No handler found for action '%s'" % self.action_name)
@@ -1250,7 +1250,7 @@ class LpQueryDistro(LaunchpadScript):
                 % (status.name, self.location.distribution.name))
 
     @property
-    def get_current(self):
+    def current(self):
         """Return the name of the CURRENT distroseries.
 
         It is restricted for the context distribution.
@@ -1267,7 +1267,7 @@ class LpQueryDistro(LaunchpadScript):
         return series.name
 
     @property
-    def get_development(self):
+    def development(self):
         """Return the name of the DEVELOPMENT distroseries.
 
         It is restricted for the context distribution.
@@ -1299,7 +1299,7 @@ class LpQueryDistro(LaunchpadScript):
         return series.name
 
     @property
-    def get_supported(self):
+    def supported(self):
         """Return the names of the distroseries currently supported.
 
         'supported' means not EXPERIMENTAL or OBSOLETE.
@@ -1328,7 +1328,7 @@ class LpQueryDistro(LaunchpadScript):
         return " ".join(supported_series)
 
     @property
-    def get_pending_suites(self):
+    def pending_suites(self):
         """Return the suite names containing PENDING publication.
 
         It check for sources and/or binary publications.
@@ -1350,7 +1350,7 @@ class LpQueryDistro(LaunchpadScript):
                          for distroseries, pocket in pending_suites])
 
     @property
-    def get_archs(self):
+    def archs(self):
         """Return a space-separated list of architecture tags.
 
         It is restricted for the context distribution and suite.
@@ -1359,7 +1359,7 @@ class LpQueryDistro(LaunchpadScript):
         return " ".join(arch.architecturetag for arch in architectures)
 
     @property
-    def get_official_archs(self):
+    def official_archs(self):
         """Return a space-separated list of official architecture tags.
 
         It is restricted to the context distribution and suite.
@@ -1370,7 +1370,7 @@ class LpQueryDistro(LaunchpadScript):
                         if arch.official)
 
     @property
-    def get_nominated_arch_indep(self):
+    def nominated_arch_indep(self):
         """Return the nominated arch indep architecture tag.
 
         It is restricted to the context distribution and suite.
@@ -1379,14 +1379,16 @@ class LpQueryDistro(LaunchpadScript):
         return series.nominatedarchindep.architecturetag
 
     @property
-    def get_pocket_suffixes(self):
-        """Return a space-separated list of pocket suffixes.
+    def pocket_suffixes(self):
+        """Return a space-separated list of non-empty pocket suffixes.
 
         The RELEASE pocket (whose suffix is the empty string) is omitted.
+
+        The returned space-separated string is ordered alphabetically.
         """
-        return " ".join([suffix
-                         for pocket, suffix in pocketsuffix.iteritems()
-                         if suffix])
+        sorted_non_empty_suffixes = sorted(
+            suffix for suffix in pocketsuffix.values() if suffix != '')
+        return " ".join(sorted_non_empty_suffixes)
 
 
 class PackageRemover(SoyuzScript):

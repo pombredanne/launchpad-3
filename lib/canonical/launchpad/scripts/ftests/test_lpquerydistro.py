@@ -147,7 +147,7 @@ class TestLpQueryDistro(unittest.TestCase):
         self.assertEqual(self.test_output, u'warty')
 
     def testDevelopmentAndFrozenDistroSeries(self):
-        """'developement' action copes with FROZEN distroseries."""
+        """The 'development' action should cope with FROZEN distroseries."""
         helper = self.getLpQueryDistro(test_args=['development'])
         helper.runAction(presenter=self.presenter)
         hoary = self.ubuntu['hoary']
@@ -218,42 +218,44 @@ class TestLpQueryDistro(unittest.TestCase):
         helper = self.getLpQueryDistro(test_args=[])
         helper._buildLocation()
 
-        self.assertEqual(helper.get_current, 'warty')
-        self.assertEqual(helper.get_development, 'hoary')
-        self.assertEqual(helper.get_supported, 'hoary warty')
-        self.assertEqual(helper.get_pending_suites, 'warty')
-        self.assertEqual(helper.get_archs, 'hppa i386')
-        self.assertEqual(helper.get_official_archs, 'i386')
-        self.assertEqual(helper.get_nominated_arch_indep, 'i386')
-        self.assertEqual(helper.get_pocket_suffixes,
-                         '-backports -security -updates -proposed')
+        self.assertEqual(helper.current, 'warty')
+        self.assertEqual(helper.development, 'hoary')
+        self.assertEqual(helper.supported, 'hoary warty')
+        self.assertEqual(helper.pending_suites, 'warty')
+        self.assertEqual(helper.archs, 'hppa i386')
+        self.assertEqual(helper.official_archs, 'i386')
+        self.assertEqual(helper.nominated_arch_indep, 'i386')
+        self.assertEqual(helper.pocket_suffixes,
+                         '-backports -proposed -security -updates')
 
     def testActionsWithDefinedSuite(self):
         """Opposite of  testActionsWithUndefinedSuite.
 
-        Only some actions ('archs', 'official_arch', 'nominated_arch_indep')
-        work with defined suite, the other actions ('current', 'development'
-        and 'supported') will raise LaunchpadScriptError if the suite is
-        defined.
+        Only some actions ('archs', 'official_arch', 'nominated_arch_indep',
+        and pocket_suffixes) work with defined suite, the other actions
+        ('current', 'development' and 'supported') will raise
+        LaunchpadScriptError if the suite is defined.
         """
         helper = self.getLpQueryDistro(test_args=['-s', 'warty'])
         helper._buildLocation()
 
         self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('get_current'),
+            LaunchpadScriptFailure, operator.attrgetter('current'),
             helper)
         self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('get_development'),
+            LaunchpadScriptFailure, operator.attrgetter('development'),
             helper)
         self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('get_supported'),
+            LaunchpadScriptFailure, operator.attrgetter('supported'),
             helper)
         self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('get_pending_suites'),
+            LaunchpadScriptFailure, operator.attrgetter('pending_suites'),
             helper)
-        self.assertEqual(helper.get_archs, 'hppa i386')
-        self.assertEqual(helper.get_official_archs, 'i386')
-        self.assertEqual(helper.get_nominated_arch_indep, 'i386')
+        self.assertEqual(helper.archs, 'hppa i386')
+        self.assertEqual(helper.official_archs, 'i386')
+        self.assertEqual(helper.nominated_arch_indep, 'i386')
+        self.assertEqual(helper.pocket_suffixes,
+                         '-backports -proposed -security -updates')
 
 
 def test_suite():
