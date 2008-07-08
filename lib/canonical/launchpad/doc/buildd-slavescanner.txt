@@ -1100,6 +1100,7 @@ the restricted librarian.
 
     >>> candidate = a_build.createBuildQueueEntry()
     >>> setupBuildQueue(candidate, a_builder)
+    >>> candidate.build.upload_log = None
     >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
     >>> buildergroup.updateBuild(candidate)
 
