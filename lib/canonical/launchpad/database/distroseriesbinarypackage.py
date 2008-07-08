@@ -29,9 +29,10 @@ class DistroSeriesBinaryPackage:
 
     implements(IDistroSeriesBinaryPackage)
 
-    def __init__(self, distroseries, binarypackagename):
+    def __init__(self, distroseries, binarypackagename, cache=None):
         self.distroseries = distroseries
         self.binarypackagename = binarypackagename
+        self._cache = cache
 
     @property
     def name(self):
@@ -49,10 +50,13 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         return self.distroseries.distribution
 
-    @cachedproperty
+    @property
     def cache(self):
         """See IDistroSeriesBinaryPackage."""
-        return DistroSeriesPackageCache.selectOne("""
+        if self._cache is not None:
+            return self._cache
+
+        self._cache = DistroSeriesPackageCache.selectOne("""
             distroseries = %s AND
             archive IN %s AND
             binarypackagename = %s
@@ -60,6 +64,7 @@ class DistroSeriesBinaryPackage:
                 self.distroseries,
                 self.distroseries.distribution.all_distro_archive_ids,
                 self.binarypackagename))
+        return self._cache
 
     @property
     def summary(self):
