@@ -15,10 +15,12 @@ __all__ = [
     'BranchUniqueNameConflict',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
-    'InvalidBranchUrl',
     'InvalidBranchIdentifier',
-    'NoSuchBranch',
+    'InvalidProductIdentifier',
+    'InvalidBranchUrl',
     'NoBranchForSeries',
+    'NoDefaultBranchForPillar',
+    'NoSuchBranch',
     'NoSuchBug',
     'NoSuchDistribution',
     'NoSuchPackage',
@@ -64,7 +66,7 @@ class NoSuchProduct(LaunchpadFault):
     """There's no such product registered in Launchpad."""
 
     error_code = 10
-    msg_template = "No such product: %(product_name)s"
+    msg_template = "No such project: %(product_name)s"
 
     def __init__(self, product_name):
         LaunchpadFault.__init__(self, product_name=product_name)
@@ -194,6 +196,7 @@ class BranchUniqueNameConflict(LaunchpadFault):
     def __init__(self, unique_name):
         LaunchpadFault.__init__(self, unique_name=unique_name)
 
+
 class NoSuchTeamMailingList(LaunchpadFault):
     """There is no such team mailing list with the given name."""
 
@@ -283,3 +286,26 @@ class BranchNameInUse(LaunchpadFault):
 
     def __init__(self, error):
         LaunchpadFault.__init__(self, error=error)
+
+
+class NoDefaultBranchForPillar(LaunchpadFault):
+    """ """
+
+    error_code = 230
+    msg_template = (
+        "%(pillar_name)s is a %(pillar_type)s, and a %(pillar_type)s doesn't "
+        "have a default branch.")
+
+    def __init__(self, pillar_name, pillar_type):
+        LaunchpadFault.__init__(
+            self, pillar_name=pillar_name, pillar_type=pillar_type)
+
+
+class InvalidProductIdentifier(LaunchpadFault):
+    """ """
+
+    error_code = 240
+    msg_template = "%(name)s cannot be the name for a project."
+
+    def __init__(self, name):
+        LaunchpadFault.__init__(self, name=name)

@@ -20,7 +20,10 @@ from zope.interface.verify import verifyObject
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
+from bzrlib.tests import TestCase
+
 from canonical.codehosting.tests.helpers import BranchTestCase
+from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
@@ -133,7 +136,7 @@ class TestRunAsRequester(TestCaseWithFactory):
         self.assertEqual(None, login_id)
 
 
-class DatabaseTest(unittest.TestCase):
+class DatabaseTest(TestCase):
     """Base class for authserver database tests.
 
     Runs the tests in using the web database adapter and the stricter Launchpad
@@ -596,7 +599,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         login(ANONYMOUS)
         try:
             person = getUtility(IPersonSet).get(12)
-            login_email = person.preferredemail.email
+            login_email = removeSecurityProxy(person.preferredemail).email
         finally:
             logout()
 
@@ -756,6 +759,17 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         """
         login(ANONYMOUS)
         product = self.factory.makeProduct()
+        # Only products that are explicitly specified in
+        # allow_default_stacking will have values for default stacked-on. Here
+        # we add the just-created product to allow_default_stacking so we can
+        # test stacking with private branches.
+        section = (
+            "[codehosting]\n"
+            "allow_default_stacking: %s,%s"
+            % (config.codehosting.allow_default_stacking, product.name))
+        handle = self.factory.getUniqueString()
+        config.push(handle, section)
+        self.addCleanup(lambda: config.pop(handle))
         branch = self.factory.makeBranch(product=product)
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = branch

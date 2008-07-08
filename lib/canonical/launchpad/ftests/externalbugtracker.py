@@ -16,7 +16,7 @@ from StringIO import StringIO
 from cgi import escape
 from datetime import datetime, timedelta
 from httplib import HTTPMessage
-from urllib2 import BaseHandler, Request
+from urllib2 import BaseHandler, HTTPError, Request
 
 from zope.component import getUtility
 
@@ -135,7 +135,7 @@ def convert_python_status(status, resolution):
 
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
-    login('test@canonical.com')
+    login('foo.bar@canonical.com')
     bug_watch.remotestatus = None
     bug_watch.last_error_type = error_type
     bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
@@ -451,7 +451,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get('example.com', {}).get(None, {}).get('Bugzilla_logincookie')
+        return cookies.get('example.com', {}).get('', {}).get('Bugzilla_logincookie')
 
     @property
     def has_valid_auth_cookie(self):
@@ -818,7 +818,7 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get('example.com', {}).get(None, {}).get('trac_auth')
+        return cookies.get('example.com', {}).get('', {}).get('trac_auth')
 
     @property
     def has_valid_auth_cookie(self):
@@ -1187,6 +1187,11 @@ class Urlib2TransportTestHandler(BaseHandler):
         assert (
             isinstance(req, Request),
             'Expected a urllib2.Request, got %s' % req)
+
+        if 'testError' in req.data:
+            raise HTTPError(
+                req.get_full_url(), 500, 'Internal Error', {}, None)
+
         response = StringIO("""<?xml version="1.0"?>
         <methodResponse>
           <params>

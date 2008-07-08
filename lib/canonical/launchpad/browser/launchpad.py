@@ -96,7 +96,6 @@ from canonical.launchpad.webapp.interfaces import (
     POSTToNonCanonicalURL, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -196,20 +195,17 @@ class NavigationMenuTabs(LaunchpadView):
     """
 
     def initialize(self):
-        requested_view = get_current_view(self.request)
-        facet = get_facet(requested_view)
-        menu = queryAdapter(self.context, INavigationMenu, name=facet)
-        if menu is None:
-            # There are no menu entries.
-            self.links = []
-            return
-        self.title = menu.title
-        # We are only interested on enabled links in non development mode.
-        menu.request = self.request
+        menuapi = MenuAPI(self.context)
         self.links = sorted([
-            link for link in menu.iterlinks() if (link.enabled or
-                                                  config.devmode)],
+            link for link in menuapi.navigation.values()
+            if (link.enabled or config.devmode)],
             key=operator.attrgetter('sort_key'))
+        self.title = None
+        if len(self.links) > 0:
+            facet = menuapi.selectedfacetname()
+            menu = queryAdapter(self.context, INavigationMenu, name=facet)
+            if menu is not None:
+                self.title = menu.title
 
     def render(self):
         if not self.links:

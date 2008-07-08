@@ -15,9 +15,9 @@
    sodipodi:version="0.32"
    inkscape:version="0.46"
    version="1.0"
-   sodipodi:docname="navigation-ne-e.svg"
+   sodipodi:docname="navigation-ne-e-selected.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-05-translation/lib/canonical/launchpad/images/navigation-ne-e-normal.png"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-2.0-5-nav-menu/lib/canonical/launchpad/icing/navigation-ne-e-selected.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <defs
@@ -27,7 +27,7 @@
       <stop
          id="stop6190"
          offset="0"
-         style="stop-color:#eeeeee;stop-opacity:1;" />
+         style="stop-color:#dddddd;stop-opacity:1;" />
       <stop
          id="stop6192"
          offset="1"
@@ -106,15 +106,15 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="63.75"
-     inkscape:cx="3.4585707"
-     inkscape:cy="296.10879"
+     inkscape:cx="0.77621776"
+     inkscape:cy="297.01703"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:window-width="1024"
      inkscape:window-height="693"
      inkscape:window-x="0"
-     inkscape:window-y="25"
+     inkscape:window-y="49"
      inkscape:snap-bbox="true">
     <inkscape:grid
        type="xygrid"
@@ -140,7 +140,7 @@
      id="layer1">
     <path
        sodipodi:type="arc"
-       style="fill:#2064ef;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#dddddd;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path6178"
        sodipodi:cx="3.5"
        sodipodi:cy="0"
@@ -152,7 +152,7 @@
        sodipodi:end="1.5728" />
     <path
        sodipodi:type="arc"
-       style="fill:#2064ef;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078000000000"
+       style="fill:#cccccc;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078"
        id="path3203"
        sodipodi:cx="4"
        sodipodi:cy="4"
@@ -162,8 +162,20 @@
        sodipodi:start="0"
        sodipodi:end="1.5707963"
        transform="matrix(1,0,0,-1,-4,8)" />
+    <path
+       sodipodi:type="arc"
+       style="fill:url(#radialGradient6182);fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078"
+       id="path3714"
+       sodipodi:cx="4"
+       sodipodi:cy="4"
+       sodipodi:rx="3"
+       sodipodi:ry="3"
+       d="M 6.1213204,6.1213203 A 3,3 0 0 1 4,7 L 4,4 z"
+       sodipodi:start="0.78539816"
+       sodipodi:end="1.5707963"
+       transform="matrix(1,0,0,-1,-4,8)" />
     <rect
-       style="fill:#2064ef;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078000000000"
+       style="fill:url(#linearGradient3740);fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078"
        id="rect3732"
        width="3"
        height="296"
@@ -171,7 +183,7 @@
        y="4"
        transform="scale(-1,1)" />
     <rect
-       style="fill:#2064ef;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078000000000"
+       style="fill:#cccccc;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078"
        id="rect3730"
        width="1"
        height="296"
@@ -180,5 +192,17 @@
        inkscape:export-xdpi="90"
        inkscape:export-ydpi="90"
        transform="scale(-1,1)" />
+    <path
+       transform="matrix(0,-1,1,0,-4,8)"
+       sodipodi:end="1.5707963"
+       sodipodi:start="0.78539816"
+       d="M 6.1213204,6.1213203 A 3,3 0 0 1 4.0000001,7 L 4,4 z"
+       sodipodi:ry="3"
+       sodipodi:rx="3"
+       sodipodi:cy="4"
+       sodipodi:cx="4"
+       id="path6184"
+       style="fill:url(#radialGradient6186);fill-opacity:1.0;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078000000000"
+       sodipodi:type="arc" />
   </g>
 </svg>
