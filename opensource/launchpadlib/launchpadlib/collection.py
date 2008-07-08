@@ -40,6 +40,13 @@ class Resource:
         self.__dict__['root'] = root
         self.__dict__['wadl_resource'] = wadl_resource
 
+    def has_param(self, param_name):
+        """Does this resource have a paramater with the given name?"""
+        for suffix in ['_link', '_collection_link', '']:
+            if self.wadl_resource.get_param(param_name + suffix):
+                return True
+        return False
+
     def param(self, param_name):
         """Get the value of one of the resource's parameters.
 
@@ -52,19 +59,19 @@ class Resource:
             if param is not None:
                 return self._wrap_resource(param.linked_resource, param.name)
         param = self.wadl_resource.get_param(param_name)
-        if param is not None:
-            return param.get_value()
-        return None
+        if param is None:
+            raise KeyError("No such parameter: %s" % param_name)
+        return param.get_value()
 
     def _wrap_resource(self, resource, param_name=None):
         # Get a representation of the linked resource.
         representation = self.root._browser.get(resource)
 
-        # We know that all Launchpad resource types are
-        # defined in a single document. Turn the resource's
-        # type_url into an anchor into that document: this is
-        # its resource type. Then look up a client-side class
-        # that corresponds to the resource type.
+        # We happen to know that all Launchpad resource types are
+        # defined in a single document. Turn the resource's type_url
+        # into an anchor into that document: this is its resource
+        # type. Then look up a client-side class that corresponds to
+        # the resource type.
         type_url = resource.type_url
         resource_type = urlparse(type_url)[-1]
         default = Entry
@@ -84,13 +91,11 @@ class Resource:
 
     def __getattr__(self, attr):
         """Try to retrive a parameter of the given name."""
-        if attr == 'self_link':
-            import pdb; pdb.set_trace()
-        result = self.param(attr)
-        if result is None:
+        try:
+            return self.param(attr)
+        except KeyError:
             raise AttributeError("'%s' object has no attribute '%s'"
                                  % (self.__class__.__name__, attr))
-        return result
 
     def get(self, key, default=None):
         """Look up a subordinate resource by unique ID."""
@@ -145,13 +150,10 @@ class Entry(Resource):
         return super(Entry, self).__getattr__(name)
 
     def __setattr__(self, name, value):
-        param = self.param(name)
-        if param is None:
-            super(Entry, self).__setattr__(name, value)
-        else:
-            # The caller was trying to set a value for a web service parameter.
-            # Track it separately for any future save().
-            self._dirty_attributes[name] = value
+        if not self.has_param(name):
+            raise AttributeError("'%s' object has no attribute '%s'" %
+                                 (self.__class__.__name__, name))
+        self._dirty_attributes[name] = value
 
     def refresh(self, new_url=None):
         super(Entry, self).refresh(new_url)

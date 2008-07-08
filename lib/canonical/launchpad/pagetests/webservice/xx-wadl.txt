@@ -227,7 +227,6 @@ resources. It's a big document.
 
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
-    >>> open("/home/leonardr/launchpad-wadl.xml","w").write(wadl)
     >>> wadl_schema.validate(wadl)
     True
     >>> wadl_schema.error_log

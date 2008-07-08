@@ -415,7 +415,8 @@
 
     <wadl:representation mediaType="application/json"
                          id="person-full">
-      <wadl:param style="plain" name="self_link" path="$['self_link']">
+      <wadl:param style="plain" required="true" name="self_link"
+                  path="$['self_link']">
         <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
