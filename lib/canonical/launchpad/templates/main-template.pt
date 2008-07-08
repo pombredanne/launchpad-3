@@ -128,26 +128,27 @@
       tal:define="facetmenu CONTEXTS/menu:facet"
       id="lp-apps"
     >
-      <hr />
+      <div class="apps-separator"><!-- --></div>
       <tal:XXX replace="nothing">
         # XXX mpt 20080702: The HTML comment works around bug 229931.
       </tal:XXX>
-      <!-- :-) --><tal:facet repeat="link facetmenu"
-        ><strong
+      <!-- :-) --><tal:facet repeat="link facetmenu">
+        <span
           tal:condition="link/selected"
           tal:attributes="title link/summary; class link/name"
-          ><span
+          ><strong
             tal:condition="not:link/linked"
             tal:content="structure link/escapedtext"
           /><a
             tal:condition="link/linked"
             tal:attributes="href link/url"
             tal:content="structure link/escapedtext"
-        /></strong><span
+        /></span><span
           tal:condition="not:link/selected"
           tal:attributes="title link/summary; class link/name"
-          ><span
+          ><strong
             tal:condition="not:link/enabled"
+            tal:attributes="class string:disabled"
             tal:content="structure link/escapedtext"
           /><a
             tal:condition="link/enabled"
