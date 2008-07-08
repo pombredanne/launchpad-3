@@ -989,8 +989,8 @@ aside {margin-left: 20px;}
 * html #portlets {left: 20px;}
 /* IE7 gets the padding right but overcalculates the left margin, so we use
 a conditional comment in main-template.pt to work around the above rule. */
-/* Portlets look the same whether in the portlet column or an <aside>: */
-#portlets .portlet, aside .portlet {
+/* Portlets look the same whether as <div class="portlet"> or <aside>: */
+#portlets .portlet, aside {
   background-color: #ebebeb;
   border: 1px solid;
   border-color: #fff #ccc #ccc #fff;
@@ -1005,10 +1005,10 @@ highlighting menu items, so padding is handled by the contents instead: */
 #portlets #actions {
   padding: 4px 0; width: 198px; /* 200px column - 2*1px vertical border */
 }
-#portlets .portlet, aside .portlet, #portlets .portlet h2, aside .portlet h2 {
+#portlets .portlet, aside, #portlets .portlet h2, aside h2 {
   font-size: 12px;
 }
-#portlets .portlet h2, aside .portlet h2 {
+#portlets .portlet h2, aside h2 {
   border-bottom: 1px solid #ccc;
   color: inherit !important; /* !important prevents <aside> colored headings */
   font-weight: bold;

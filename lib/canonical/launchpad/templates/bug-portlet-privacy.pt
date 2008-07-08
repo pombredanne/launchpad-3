@@ -1,12 +1,33 @@
-<div
+<aside
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="privacy"
-  class="portlet" id="privacy"
+  tal:attributes="
+    class python: path('context/private') and 'portlet private' or 'portlet public'
+  "
+  tal:define="link context/menu:context/visibility"
 >
-  <tal:public condition="not:context/private"
-  >This report is <a href="+secrecy">public</a></tal:public>
-  <tal:private condition="context/private"
-  >This report is <a href="+secrecy">private</a></tal:private>
-</div>
+  <tal:public condition="not:context/private">
+    This report is
+    <a
+      tal:condition="link/enabled"
+      tal:attributes="href link/url; title link/text"
+      style="
+        padding-left: 18px; background: url(/@@/edit) center left no-repeat;
+      "
+    >public</a>
+    <tal:unchangeable condition="not:link/enabled">public</tal:unchangeable>
+  </tal:public>
+  <tal:private condition="context/private">
+    This report is
+    <a
+      tal:condition="link/enabled"
+      tal:attributes="href link/url; title link/text"
+      style="
+        padding-left: 18px; background: url(/@@/edit) center left no-repeat;
+      "
+    ><strong>private</strong></a>
+    <tal:unchangeable condition="not:link/enabled">private</tal:unchangeable>
+  </tal:private>
+</aside>

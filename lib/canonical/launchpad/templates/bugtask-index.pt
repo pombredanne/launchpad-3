@@ -30,7 +30,7 @@
           (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>:
         </span>
       </p>
-      <aside tal:content="structure context/bug/@@+portlet-privacy" />
+      <tal:privacy replace="structure context/bug/@@+portlet-privacy" />
       <h1>
         <tal:summary replace="context/bug/title" />
         <a href="+edit">
@@ -116,21 +116,14 @@
 
       <table style="width: 100%; margin-bottom: 0.33em;">
         <tr>
-          <td style="text-align: left; width: 33%;">
+          <td style="text-align: left; width: 50%;">
             <tal:markduplicate
                 define="link context_menu/markduplicate"
                 condition="link/enabled"
                 replace="structure link/render" />
           </td>
 
-          <td style="text-align: center; width: 34%;">
-            <tal:visibility
-                define="link context_menu/visibility"
-                condition="link/enabled"
-                replace="structure link/render" />
-          </td>
-
-          <td style="text-align: right; width: 33%;">
+          <td style="text-align: right; width: 50%;">
             <tal:createquestion
                 define="link context_menu/createquestion"
                 condition="link/enabled"
