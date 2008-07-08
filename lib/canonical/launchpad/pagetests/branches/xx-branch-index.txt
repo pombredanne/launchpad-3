@@ -165,7 +165,7 @@ for the branch's canonical location.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(get_branch_details_table())
-    Project: GNOME Terminal
+    Project: GNOME Terminal (Unreviewed)
     Upload URL: Only Sample Person can upload to this branch.
       If you are Sample Person please log in for upload directions.
     Branch format: Not recorded
@@ -204,7 +204,7 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> print extract_text(get_branch_details_table())
-    Project: GNOME Terminal
+    Project: GNOME Terminal (Unreviewed)
     Location: http://example.com/gnome-terminal/main
     Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
@@ -234,19 +234,6 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
     Next mirror: Disabled
     Branch format: Not recorded
     Repository format: Not recorded
-
-
-== Structural object presentation ==
-
-The structural object presentation of a branch is the heading that appears
-in the top left hand corner of the browser, and should refer to the
-context object that all the tabs apply to.
-
-    >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, "structuralobjectheading"))
-    Sample Person
 
 
 == Codebrowse link ==
@@ -319,7 +306,7 @@ So we need to fake that here.
     ...     'http://code.launchpad.dev/~landscape-developers/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
-    Project: The Landscape Project
+    Project: The Landscape Project (Unreviewed)
     Get this branch:
       bzr branch lp://dev/~landscape-developers/landscape/trunk
     ...
@@ -330,7 +317,7 @@ Public branches use the lp spec bzr lookup name.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
-    Project: GNOME Terminal
+    Project: GNOME Terminal (Unreviewed)
     Get this branch: bzr branch lp://dev/~name12/gnome-terminal/scanned
     ...
 

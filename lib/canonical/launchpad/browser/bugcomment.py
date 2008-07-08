@@ -8,22 +8,47 @@ __all__ = ['BugCommentView', 'BugComment', 'build_comments_from_chunks']
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (IBugComment,
-    IBugMessageSet, ILaunchBag, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.bugmessage import (
+    IBugComment, IBugMessageSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.config import config
 
 
+def _should_display_remote_comments(user):
+    """Return whether remote comments should be displayed for the user."""
+    # comment_syncing_team can be either None or '' to indicate unset.
+    if config.malone.comment_syncing_team:
+        comment_syncing_team = getUtility(IPersonSet).getByName(
+            config.malone.comment_syncing_team)
+        assert comment_syncing_team is not None, (
+            "comment_syncing_team was set to %s, which doesn't exist." % (
+                config.malone.comment_syncing_team))
+    else:
+        comment_syncing_team = None
+
+    if comment_syncing_team is None:
+        return True
+    else:
+        return user is not None and user.inTeam(comment_syncing_team)
+
+
 def build_comments_from_chunks(chunks, bugtask, truncate=False):
     """Build BugComments from MessageChunks."""
+    display_if_from_bugwatch = _should_display_remote_comments(
+        getUtility(ILaunchBag).user)
+
     comments = {}
     index = 0
     for chunk in chunks:
         message_id = chunk.message.id
         bug_comment = comments.get(message_id)
         if bug_comment is None:
-            bug_comment = BugComment(index, chunk.message, bugtask)
+            bug_comment = BugComment(
+                index, chunk.message, bugtask, display_if_from_bugwatch)
             comments[message_id] = bug_comment
             index += 1
         bug_comment.chunks.append(chunk)
@@ -58,7 +83,7 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask):
+    def __init__(self, index, message, bugtask, display_if_from_bugwatch):
         self.index = index
         self.bugtask = bugtask
         self.bugwatch = None
@@ -68,11 +93,11 @@ class BugComment:
         self.datecreated = message.datecreated
         self.owner = message.owner
         self.rfc822msgid = message.rfc822msgid
+        self.display_if_from_bugwatch = display_if_from_bugwatch
 
         self.chunks = []
         self.bugattachments = []
 
-        self.display_if_from_bugwatch = config.malone.show_imported_comments
         self.synchronized = False
 
     @property

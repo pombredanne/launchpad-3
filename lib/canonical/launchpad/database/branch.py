@@ -10,7 +10,6 @@ __all__ = [
 
 from datetime import datetime
 import re
-import os
 
 import pytz
 
@@ -26,7 +25,6 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
-from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -299,8 +297,7 @@ class Branch(SQLBase):
     @property
     def warehouse_url(self):
         """See `IBranch`."""
-        root = config.supermirror.warehouse_root_url
-        return "%s%08x" % (root, self.id)
+        return 'lp-internal:///%s' % self.unique_name
 
     @property
     def product_name(self):
@@ -392,7 +389,7 @@ class Branch(SQLBase):
             deletion_operations.append(
                 DeletionCallable(merge_proposal,
                     _('This branch is the source branch of this merge'
-                    ' proposal.'), merge_proposal.destroySelf))
+                    ' proposal.'), merge_proposal.deleteProposal))
         # Cannot use self.landing_candidates, because it ignores merged
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
@@ -400,7 +397,7 @@ class Branch(SQLBase):
             deletion_operations.append(
                 DeletionCallable(merge_proposal,
                     _('This branch is the target branch of this merge'
-                    ' proposal.'), merge_proposal.destroySelf))
+                    ' proposal.'), merge_proposal.deleteProposal))
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
             alteration_operations.append(ClearDependentBranch(merge_proposal))
@@ -586,8 +583,7 @@ class Branch(SQLBase):
         elif self.branch_type == BranchType.HOSTED:
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
-            prefix = config.codehosting.branches_root
-            return os.path.join(prefix, branch_id_to_path(self.id))
+            return 'lp-internal:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 

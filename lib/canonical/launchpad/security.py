@@ -8,28 +8,87 @@ __all__ = []
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, IAnnouncement, IArchive, IArchivePermissionSet,
-    IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
-    IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
-    IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
-    ICodeImportJobWorkflow, ICodeImportMachine,
-    ICodeReviewComment, IDistribution, IDistributionMirror, IDistroSeries,
-    IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
-    IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
-    ILaunchpadCelebrities, IMailingListSet, IMilestone, IOAuthAccessToken,
-    IPOFile, IPOTemplate, IPOTemplateSubset, IPackageUpload,
-    IPackageUploadQueue, IPackaging, IPerson, IPillar, IPoll, IPollOption,
-    IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
-    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
-    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISourcePackage, ISourcePackageRelease, ISpecification,
-    ISpecificationBranch, ISpecificationSubscription, ISprint,
-    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
-    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
-    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PersonVisibility, IAccount)
+from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.announcement import IAnnouncement
+from canonical.launchpad.interfaces.archive import IArchive
+from canonical.launchpad.interfaces.archivepermission import (
+    IArchivePermissionSet)
+from canonical.launchpad.interfaces.archiverebuild import IArchiveRebuild
+from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    IBranchMergeProposal)
+from canonical.launchpad.interfaces.branchsubscription import (
+    IBranchSubscription)
+from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.bugattachment import IBugAttachment
+from canonical.launchpad.interfaces.bugbranch import IBugBranch
+from canonical.launchpad.interfaces.bugnomination import IBugNomination
+from canonical.launchpad.interfaces.bugtracker import IBugTracker
+from canonical.launchpad.interfaces.build import IBuild
+from canonical.launchpad.interfaces.builder import IBuilder, IBuilderSet
+from canonical.launchpad.interfaces.codeimport import ICodeImport
+from canonical.launchpad.interfaces.codeimportjob import (
+    ICodeImportJobSet, ICodeImportJobWorkflow)
+from canonical.launchpad.interfaces.codeimportmachine import (
+    ICodeImportMachine)
+from canonical.launchpad.interfaces.codereviewcomment import (
+    ICodeReviewComment, ICodeReviewCommentDeletion)
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionmirror import (
+    IDistributionMirror)
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.distroserieslanguage import (
+    IDistroSeriesLanguage)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from canonical.launchpad.interfaces.entitlement import IEntitlement
+from canonical.launchpad.interfaces.faq import IFAQ
+from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.hwdb import IHWSubmission
+from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
+from canonical.launchpad.interfaces.languagepack import ILanguagePack
+from canonical.launchpad.interfaces.launchpad import (
+    IBazaarApplication, IHasBug, IHasDrivers, IHasOwner, IShipItApplication,
+    ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.mailinglist import IMailingListSet
+from canonical.launchpad.interfaces.milestone import IMilestone
+from canonical.launchpad.interfaces.oauth import IOAuthAccessToken
+from canonical.launchpad.interfaces.pofile import IPOFile
+from canonical.launchpad.interfaces.potemplate import (
+    IPOTemplate, IPOTemplateSubset)
+from canonical.launchpad.interfaces.queue import (
+    IPackageUpload, IPackageUploadQueue)
+from canonical.launchpad.interfaces.packaging import IPackaging
+from canonical.launchpad.interfaces.person import (
+    IPerson, ITeam, PersonVisibility)
+from canonical.launchpad.interfaces.pillar import IPillar
+from canonical.launchpad.interfaces.poll import (
+    IPoll, IPollOption, IPollSubset)
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productrelease import (
+    IProductRelease, IProductReleaseFile)
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.question import IQuestion
+from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.interfaces.shipit import (
+    IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
+    IStandardShipItRequest, IStandardShipItRequestSet)
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ISourcePackageRelease)
+from canonical.launchpad.interfaces.specification import ISpecification
+from canonical.launchpad.interfaces.specificationbranch import (
+    ISpecificationBranch)
+from canonical.launchpad.interfaces.specificationsubscription import (
+    ISpecificationSubscription)
+from canonical.launchpad.interfaces.sprint import ISprint
+from canonical.launchpad.interfaces.sprintspecification import (
+    ISprintSpecification)
+from canonical.launchpad.interfaces.teammembership import ITeamMembership
+from canonical.launchpad.interfaces.translationgroup import (
+    ITranslationGroup, ITranslationGroupSet)
+from canonical.launchpad.interfaces.translationimportqueue import (
+    ITranslationImportQueue, ITranslationImportQueueEntry)
+from canonical.launchpad.interfaces.translator import ITranslator
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -439,19 +498,6 @@ class AdminShippingRequestSetByShipItAdmins(
     usedfor = IShippingRequestSet
 
 
-class EditSeriesSourceByVCSImports(AuthorizationBase):
-    permission = 'launchpad.EditSource'
-    usedfor = IProductSeries
-
-    def checkAuthenticated(self, user):
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        if user.inTeam(vcs_imports):
-            return True
-        elif not self.obj.syncCertified():
-            return True
-        return False
-
-
 class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IMilestone
@@ -520,6 +566,30 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return self.obj.id == user.id or user.inTeam(admins)
+
+
+class EditPersonLocation(AuthorizationBase):
+    permission = 'launchpad.EditLocation'
+    usedfor = IPerson
+
+    def checkAuthenticated(self, user):
+        """Anybody can edit a person's location until that person sets it.
+
+        Once a person sets his own location that information can only be
+        changed by the person himself or admins.
+        """
+        location = self.obj.location
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user == self.obj or user.inTeam(admins):
+            # The person himself and LP admins can always change that person's
+            # location.
+            return True
+        elif location is None or location.last_modified_by != self.obj:
+            # No location has been specified yet or it has been specified by a
+            # non-authoritative source (not the person himself).
+            return True
+        else:
+            return False
 
 
 class EditPersonBySelf(AuthorizationBase):
@@ -723,6 +793,12 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     usedfor = IHasBug
 
     def checkAuthenticated(self, user):
+        # Check whether the bug is public first, since that's the common
+        # case, and it's cheap to check.
+        if not self.obj.bug.private:
+            # This is a public bug.
+            return True
+
         admins = getUtility(ILaunchpadCelebrities).admin
 
         if user.inTeam(admins):
@@ -730,16 +806,12 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
             # private.
             return True
 
-        if not self.obj.bug.private:
-            # This is a public bug.
-            return True
-        else:
-            # This is a private bug.
-            for subscription in self.obj.bug.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
+        # This is a private bug.
+        for subscription in self.obj.bug.subscriptions:
+            if user.inTeam(subscription.person):
+                return True
 
-            return False
+        return False
 
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
@@ -1064,9 +1136,13 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
              user.inTeam(translation_group.owner)))
 
 
-class EditBugTracker(EditByRegistryExpertsOrOwnersOrAdmins):
+class EditBugTracker(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
+
+    def checkAuthenticated(self, user):
+        """Any logged-in user can edit a bug tracker."""
+        return True
 
 
 class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
@@ -1086,7 +1162,7 @@ class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        """Allow who added the entry, experts and admis.
+        """Allow who added the entry, experts and admins.
         """
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
@@ -1177,28 +1253,22 @@ class EditBuildRecord(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
     usedfor = IBuild
 
-    def _ppaCheckAuthenticated(self, user):
-        """Allow only BuilddAdmins and PPA owner."""
-        if AdminByBuilddAdmin.checkAuthenticated(self, user):
-            return True
-
-        if self.obj.archive.owner and user.inTeam(self.obj.archive.owner):
-            return True
-
-        return False
-
     def checkAuthenticated(self, user):
         """Check write access for user and different kinds of archives.
 
         Allow
-        
-            * BuilddAdmins and PPA owner for PPAs
+            * BuilddAdmins, for any archive.
+            * The PPA owner for PPAs
             * users with upload permissions (for the respective distribution)
               otherwise.
         """
-        # Is this a PPA? Call the respective method if so.
-        if self.obj.archive.purpose == ArchivePurpose.PPA:
-            return self._ppaCheckAuthenticated(user)
+        if AdminByBuilddAdmin.checkAuthenticated(self, user):
+            return True
+
+        # If it's a PPA only allow its owner.
+        if self.obj.archive.is_ppa:
+            return (self.obj.archive.owner and
+                    user.inTeam(self.obj.archive.owner))
 
         # Primary or partner section here: is the user in question allowed
         # to upload to the respective component? Allow user to retry build
@@ -1447,6 +1517,29 @@ class CodeReviewCommentView(AuthorizationBase):
         return bmp_checker.checkUnauthenticated()
 
 
+class CodeReviewCommentDelete(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ICodeReviewCommentDeletion
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the code review message?
+
+        The user can see a code review message if they can see the branch
+        merge proposal.
+        """
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
+        return bmp_checker.checkAuthenticated(user)
+
+    def checkUnauthenticated(self):
+        """Are not-logged-in people able to view the code review message?
+
+        They can see a code review message if they can see the branch merge
+        proposal.
+        """
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
+        return bmp_checker.checkUnauthenticated()
+
+
 class BranchMergeProposalEdit(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBranchMergeProposal
@@ -1591,6 +1684,31 @@ class ViewArchive(AuthorizationBase):
         return not self.obj.private
 
 
+class EditArchiveRebuild(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IArchiveRebuild
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can edit the archive rebuild.
+
+        Only people in one of the conditions below can edit an
+        ArchiveRebuild record:
+
+         * 'registrant' team member;
+         * The distribution admins;
+         * a Launchpad administrator.
+        """
+        if user.inTeam(self.obj.registrant):
+            return True
+
+        distribution = self.obj.distroseries.distribution
+        if user.inTeam(distribution.owner):
+            return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
 class ViewSourcePackageRelease(AuthorizationBase):
     """Restrict viewing of source packages.
 
@@ -1636,6 +1754,10 @@ class ViewEmailAddress(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IEmailAddress
 
+    def checkUnauthenticated(self):
+        """See `AuthorizationBase`."""
+        return not self.obj.person.hide_email_addresses
+
     def checkAuthenticated(self, user):
         """Can the user see the details of this email address?
 
@@ -1645,5 +1767,7 @@ class ViewEmailAddress(AuthorizationBase):
         """
         if not self.obj.person.hide_email_addresses:
             return True
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user == self.obj.person or user.inTeam(admins)
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.person)
+                or user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.admin))

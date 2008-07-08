@@ -12,13 +12,14 @@
   <body>
     <div metal:fill-slot="main">
 
+      <div>
+        <a tal:attributes="href context/potemplate/fmt:url"
+           tal:content="context/potemplate/title">
+          evolution 2.10 template
+        </a>
+      </div>
+
       <tal:form-not-writeable condition="not:view/form_is_writeable">
-        <div>
-          <a tal:attributes="href context/potemplate/fmt:url"
-             tal:content="context/potemplate/title">
-            evolution 2.10 template
-          </a>
-        </div>
         <h1>
           Browsing
           <tal:language replace="context/language/englishname">
@@ -28,12 +29,6 @@
         </h1>
       </tal:form-not-writeable>
       <tal:form-writeable condition="view/form_is_writeable">
-        <div>
-          <a tal:attributes="href context/potemplate/fmt:url"
-             tal:content="context/potemplate/title">
-            evolution 2.10 template
-          </a>
-        </div>
         <h1>
           Translating into
           <tal:language replace="context/language/englishname">
@@ -67,8 +62,6 @@
           <input type="hidden" name="batch" value=""
                  tal:attributes="value view/size" />
 
-          <label for="show_selector">Show:</label>
-
           <tal:comment tal:replace="nothing">
             The 'selected' attribute value in next select means basically
             the following:
@@ -82,54 +75,65 @@
             'translated'.
           </tal:comment>
 
-          <select id="show_selector" name="show"
-                  title="Choose which items to show">
-            <option value="all"
-              tal:attributes="selected
-              request/htmlform:show/selected/all"
-              >
-              all
-            </option>
-            <option value="untranslated"
-              tal:attributes="selected
-              request/htmlform:show/selected/untranslated"
-              >
-              untranslated
-            </option>
-            <option value="need_review"
-              tal:attributes="selected
-              request/htmlform:show/selected/need_review"
-              >
-              need review
-            </option>
-            <option value="translated"
-              tal:attributes="selected
-              request/htmlform:show/selected/translated"
-              >
-              translated
-            </option>
-            <option value="new_suggestions"
-              tal:attributes="selected
-              request/htmlform:show/selected/new_suggestions"
-              >
-              with new suggestions
-            </option>
-            <option value="changed_in_launchpad"
-              tal:attributes="selected
-              request/htmlform:show/selected/changed_in_launchpad"
-              >
-              changed in Launchpad
-            </option>
-          </select>
-          <tal:comment replace="nothing">
-            Suggestions from this alternative language will be displayed as
-            well as suggestions from the translation language. In the case
-            where two languages are very similar it will often be useful to
-            show the second language as a source of suggestions when
-            translating into the first.
-          </tal:comment>
-          <label>Make suggestions from:</label>
-          <tal:language-widget content="structure view/alternative_language_widget" />
+          <p>
+            <label>
+              Translating
+              <tal:comment tal:replace="nothing">
+                XXX: JeroenVermeulen 2008-06-18 bug=240897: Try doing this the
+                Zope way, with an interface.
+              </tal:comment>
+              <select id="show_selector" name="show"
+                      title="Choose which items to show">
+                <option value="all"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/all"
+                  >
+                  all items
+                </option>
+                <option value="untranslated"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/untranslated"
+                  >
+                  untranslated items
+                </option>
+                <option value="need_review"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/need_review"
+                  >
+                  items that need review
+                </option>
+                <option value="translated"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/translated"
+                  >
+                  translated items
+                </option>
+                <option value="new_suggestions"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/new_suggestions"
+                  >
+                  items with new suggestions
+                </option>
+                <option value="changed_in_launchpad"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/changed_in_launchpad"
+                  >
+                  items changed in Launchpad
+                </option>
+              </select>
+            </label>
+            <label> using
+              <tal:comment replace="nothing">
+                Suggestions from this alternative language will be displayed
+                as well as suggestions from the translation language. In the
+                case where two languages are very similar it will often be
+                useful to show the second language as a source of suggestions
+                when translating into the first.
+              </tal:comment>
+              <tal:language-widget
+                content="structure view/alternative_language_widget" />
+            as a guide</label>
+          </p>
           <input type="hidden" name="old_show" value=""
             tal:attributes="value view/show" />
           <input type="submit" value="Change" />
@@ -182,15 +186,12 @@
               </tbody>
             </table>
           </form>
+
           <!-- Paging doodads. -->
-          <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
-          <p tal:condition="not: view/user_is_official_translator">
-            Your translations will be held for review by
-            the official translators for this file.
-          </p>
+          <tal:navigation
+            replace="structure view/batchnav/@@+navigation-links-lower" />
         </tal:block>
         <tal:status replace="structure context/@@+access" />
-        <tal:status replace="structure context/@@+portlet-details" />
         <tal:contributors replace="structure context/@@+contributors" />
       </tal:havepluralforms>
     </div>

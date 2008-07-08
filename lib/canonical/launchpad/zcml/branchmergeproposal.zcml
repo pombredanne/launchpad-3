@@ -12,7 +12,7 @@
                        queuer queue_position queued_revision_id
                        commit_message date_queued
                        merged_revno date_merged merge_reporter
-                       supersedes superseded_by
+                       supersedes superseded_by title
                        date_created date_review_requested date_reviewed
                        votes root_comment all_comments
                        isPersonValidReviewer isMergable getComment
@@ -30,6 +30,9 @@
         permission="launchpad.AnyPerson"
         attributes="createComment createCommentFromMessage"
     />
+  </content>
+  <content class="canonical.launchpad.mailout.branchmergeproposal.RecipientReason">
+      <allow attributes="getReason branch mail_header" />
   </content>
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
@@ -76,6 +79,14 @@
       name="+votes"
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       class="canonical.launchpad.browser.BranchMergeProposalVoteView"
+      facet="branches"
+      permission="launchpad.View"
+      template="../templates/branchmergeproposal-votes.pt" />
+
+  <browser:page
+      name="+votes-with-links"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalVoteLinkView"
       facet="branches"
       permission="launchpad.View"
       template="../templates/branchmergeproposal-votes.pt" />
@@ -176,6 +187,12 @@
       path_expression="string:+merge/${id}"
       attribute_to_parent="source_branch"
       rootsite="code" />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.IBranchMergeProposalListingBatchNavigator"
+      name="+listing"
+      template="../templates/branchmergeproposal-listing.pt"
+      permission="zope.Public" />
 
   <securedutility
       class="canonical.launchpad.database.BranchMergeProposalGetter"

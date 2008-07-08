@@ -19,11 +19,10 @@ from storm.references import Reference
 
 from canonical.config import config
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import cursor
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -69,6 +68,7 @@ class Build(SQLBase):
 
     buildqueue_record = Reference("<primary key>", BuildQueue.buildID,
                                   on_remote=True)
+    date_first_dispatched = UtcDateTimeCol(dbName='date_first_dispatched')
 
     @property
     def current_component(self):
@@ -865,9 +865,10 @@ class BuildSet:
             DistroArchSeries.distroseries = DistroSeries.id AND
             DistroSeries.distribution = Distribution.id AND
             Distribution.id = Archive.distribution AND
-            Archive.purpose != %s AND
+            Archive.purpose IN (%s) AND
             Archive.id = Build.archive
-            """ % quote(ArchivePurpose.PPA))
+            """ % ','.join(
+                sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,
@@ -902,3 +903,23 @@ class BuildSet:
             logger.info("Retrying %s" % build.title)
             build.retry()
             build.buildqueue_record.score()
+
+    def getBuildsBySourcePackageRelease(self, sourcepackagerelease_ids,
+                                        buildstate=None):
+        """See `IBuildSet`."""
+        if (sourcepackagerelease_ids is None or
+            len(sourcepackagerelease_ids) == 0):
+            return []
+
+        query = """
+            sourcepackagerelease IN %s AND
+            archive.id = build.archive AND
+            archive.purpose != %s
+            """ % sqlvalues(sourcepackagerelease_ids, ArchivePurpose.PPA)
+
+        if buildstate is not None:
+            query += "AND buildstate = %s" % sqlvalues(buildstate)
+
+        return Build.select(
+            query, orderBy=["-datecreated", "id"],
+            clauseTables=["Archive"])

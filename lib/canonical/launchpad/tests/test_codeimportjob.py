@@ -883,8 +883,8 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         """Return a Browser object for a logged in user opened at `url`."""
         user = logged_in_as(ANONYMOUS)(self.factory.makePerson)(
             password='test')
-        user_browser = setupBrowser(
-            auth="Basic %s:test" % str(user.preferredemail.email))
+        email = removeSecurityProxy(user.preferredemail).email
+        user_browser = setupBrowser(auth="Basic %s:test" % str(email))
         user_browser.open(url)
         return user_browser
 

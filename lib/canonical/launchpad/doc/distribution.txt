@@ -778,20 +778,35 @@ A binary deletion will also make Celso's PPA pending publication.
 `IDistribution.all_distro_archives` returns all archives associated with
 the distribution.  This list does not, therefore, include PPAs.
 
-  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-  >>> for archive in ubuntutest.all_distro_archives:
-  ...     print archive.purpose.title
-  Primary Archive
-  Partner Archive
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    >>> for archive in ubuntutest.all_distro_archives:
+    ...     print archive.purpose.title
+    Primary Archive
+    Partner Archive
 
 `IDistribution.getArchiveByComponent` retrieves an IArchive given a component
 name.  If the component is unknown, None is returned.
 
-  >>> partner_archive = ubuntutest.getArchiveByComponent('partner')
-  >>> partner_archive.description
-  u'Partner archive'
+    >>> partner_archive = ubuntutest.getArchiveByComponent('partner')
+    >>> print partner_archive.title
+    Partner Archive for Ubuntu Test
 
-  >>> other_archive = ubuntutest.getArchiveByComponent('dodgycomponent')
-  >>> print other_archive
-  None
+    >>> other_archive = ubuntutest.getArchiveByComponent('dodgycomponent')
+    >>> print other_archive
+    None
 
+Multiple components, specially the debian-compatibility ones points to
+the PRIMARY archive. This relationship is established so we can import
+their packages in the correct archive.
+
+    >>> main_archive = ubuntutest.getArchiveByComponent('main')
+    >>> print main_archive.title
+    Primary Archive for Ubuntu Test
+
+    >>> non_free_archive = ubuntutest.getArchiveByComponent('non-free')
+    >>> print non_free_archive.title
+    Primary Archive for Ubuntu Test
+
+    >>> contrib_archive = ubuntutest.getArchiveByComponent('contrib')
+    >>> print contrib_archive.title
+    Primary Archive for Ubuntu Test

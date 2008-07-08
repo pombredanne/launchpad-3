@@ -6,7 +6,6 @@ __metaclass__ = type
 
 
 from datetime import datetime, timedelta
-from logging import getLogger
 import socket
 import sys
 
@@ -28,6 +27,7 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.scripts.logger import log as default_log
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -145,13 +145,9 @@ class BugWatchUpdater(object):
 
     ACCEPTABLE_TIME_SKEW = timedelta(minutes=10)
 
-    def __init__(self, txn, log=None):
-        if log is None:
-            self.log = getLogger()
-        else:
-            self.log = log
-
+    def __init__(self, txn, log=default_log):
         self.txn = txn
+        self.log = log
 
     def _login(self):
         """Set up an interaction as the Bug Watch Updater"""
@@ -623,9 +619,20 @@ class BugWatchUpdater(object):
             displayname, email = external_bugtracker.getPosterForComment(
                 bug_watch, comment_id)
 
-            poster = getUtility(IPersonSet).ensurePerson(
-                email, displayname, PersonCreationRationale.BUGIMPORT,
-                comment='when importing comments for %s.' % bug_watch.title)
+            if displayname is None and email is None:
+                # If we don't have a displayname or an email address
+                # then we can't create a Launchpad Person as the author
+                # of this comment. We raise an OOPS and continue.
+                self.warning(
+                    "Unable to import remote comment author. No email "
+                    "address or display name found.",
+                    self._getOOPSProperties(external_bugtracker),
+                    sys.exc_info())
+                continue
+
+            poster = bug_watch.bugtracker.ensurePersonForSelf(
+                displayname, email, PersonCreationRationale.BUGIMPORT,
+                "when importing comments for %s." % bug_watch.title)
 
             comment_message = external_bugtracker.getMessageForComment(
                 bug_watch, comment_id, poster)

@@ -13,4 +13,11 @@
         />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IBugSubscription"
+        path_expression="string:+subscription/${person/name}"
+        attribute_to_parent="bug"
+        rootsite="bugs"
+        />
+
 </configure>

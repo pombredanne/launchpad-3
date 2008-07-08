@@ -26,7 +26,6 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, PackagePublishingPocket, PackagePublishingPriority,
     PackagePublishingStatus, SourcePackageUrgency)
 from canonical.launchpad.scripts import FakeLogger
-from canonical.librarian.client import LibrarianClient
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -58,16 +57,15 @@ class SoyuzTestPublisher:
         self.breezy_autotest_i386 = self.breezy_autotest['i386']
         self.breezy_autotest_hppa = self.breezy_autotest['hppa']
 
-    def addMockFile(self, filename, filecontent='nothing'):
+    def addMockFile(self, filename, filecontent='nothing', restricted=False):
         """Add a mock file in Librarian.
 
         Returns a ILibraryFileAlias corresponding to the file uploaded.
         """
-        library = LibrarianClient()
-        alias_id = library.addFile(
+        library_file = getUtility(ILibraryFileAliasSet).create(
             filename, len(filecontent), StringIO(filecontent),
-            'application/text')
-        return getUtility(ILibraryFileAliasSet)[alias_id]
+            'application/text', restricted=restricted)
+        return library_file
 
     def getPubSource(self, sourcename='foo', version='666', component='main',
                      filename=None, section='base',
@@ -81,7 +79,8 @@ class SoyuzTestPublisher:
                      dsc_standards_version='3.6.2', dsc_format='1.0',
                      dsc_binaries='foo-bin', build_conflicts=None,
                      build_conflicts_indep=None,
-                     dsc_maintainer_rfc822='Foo Bar <foo@bar.com>'):
+                     dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
+                     maintainer=None):
         """Return a mock source publishing record."""
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
 
@@ -92,10 +91,12 @@ class SoyuzTestPublisher:
             distroseries = self.breezy_autotest
         if archive is None:
             archive = distroseries.main_archive
+        if maintainer is None:
+            maintainer = self.person
 
         spr = distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
-            maintainer=self.person,
+            maintainer=maintainer,
             creator=self.person,
             component=component,
             section=section,
@@ -118,7 +119,8 @@ class SoyuzTestPublisher:
 
         if filename is None:
             filename = "%s.dsc" % sourcename
-        alias = self.addMockFile(filename, filecontent)
+        alias = self.addMockFile(
+            filename, filecontent, restricted=archive.private)
         spr.addFile(alias)
 
         sspph = SecureSourcePackagePublishingHistory(
@@ -153,48 +155,53 @@ class SoyuzTestPublisher:
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.breezy_autotest
-        sourcename = "%s" % binaryname.split('-')[0]
+
+        if archive is None:
+            archive = distroseries.main_archive
+
         if pub_source is None:
+            sourcename = "%s" % binaryname.split('-')[0]
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
                 archive=archive, distroseries=distroseries)
+        else:
+            archive = pub_source.archive
 
         builds = pub_source.createMissingBuilds()
         published_binaries = []
         for build in builds:
-            pub_binaries = self.buildAndPublishBinaryForSource(
-                build, archive, status, pocket, scheduleddeletiondate,
-                dateremoved, filecontent, binaryname, summary, description,
+            binarypackagerelease = self.uploadBinaryForBuild(
+                build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
                 provides, pre_depends, enhances, breaks)
+            pub_binaries = self.publishBinaryInArchive(
+                binarypackagerelease, archive, status, pocket,
+                scheduleddeletiondate, dateremoved)
             published_binaries.extend(pub_binaries)
 
         return sorted(
             published_binaries, key=operator.attrgetter('id'), reverse=True)
 
-    def buildAndPublishBinaryForSource(
-        self, build, archive=None, status=PackagePublishingStatus.PENDING,
-        pocket=PackagePublishingPocket.RELEASE, scheduleddeletiondate=None,
-        dateremoved=None, filecontent="anything", binaryname="foo-bin",
+    def uploadBinaryForBuild(
+        self, build, binaryname, filecontent="anything",
         summary="summary", description="description", shlibdep=None,
         depends=None, recommends=None, suggests=None, conflicts=None,
         replaces=None, provides=None, pre_depends=None, enhances=None,
         breaks=None):
-        """Return the corresponding BinaryPackagePublishingHistory."""
+        """Return the corresponding `BinaryPackageRelease`."""
         sourcepackagerelease = build.sourcepackagerelease
         distroarchseries = build.distroarchseries
-        if archive is None:
-            archive = build.archive
-
-        # Create a BinaryPackageRelease
-        bpn = getUtility(IBinaryPackageNameSet).getOrCreateByName(binaryname)
         architecturespecific = (
             not sourcepackagerelease.architecturehintlist == 'all')
-        bpr = build.createBinaryPackageRelease(
+
+        binarypackagename = getUtility(
+            IBinaryPackageNameSet).getOrCreateByName(binaryname)
+
+        binarypackagerelease = build.createBinaryPackageRelease(
             version=sourcepackagerelease.version,
-            component=sourcepackagerelease.component.id,
-            section=sourcepackagerelease.section.id,
-            binarypackagename=bpn.id,
+            component=sourcepackagerelease.component,
+            section=sourcepackagerelease.section,
+            binarypackagename=binarypackagename,
             summary=summary,
             description=description,
             shlibdeps=shlibdep,
@@ -213,18 +220,31 @@ class SoyuzTestPublisher:
             binpackageformat=BinaryPackageFormat.DEB,
             priority=PackagePublishingPriority.STANDARD)
 
-        build.buildstate = BuildStatus.FULLYBUILT
         # Create the corresponding DEB file.
         if architecturespecific:
             filearchtag = distroarchseries.architecturetag
         else:
             filearchtag = 'all'
         filename = '%s_%s.deb' % (binaryname, filearchtag)
-        alias = self.addMockFile(filename, filecontent=filecontent)
-        bpr.addFile(alias)
+        alias = self.addMockFile(
+            filename, filecontent=filecontent,
+            restricted=build.archive.private)
+        binarypackagerelease.addFile(alias)
+
+        build.buildstate = BuildStatus.FULLYBUILT
+
+        return binarypackagerelease
+
+    def publishBinaryInArchive(
+        self, binarypackagerelease, archive,
+        status=PackagePublishingStatus.PENDING,
+        pocket=PackagePublishingPocket.RELEASE,
+        scheduleddeletiondate=None, dateremoved=None):
+        """Return the corresponding BinaryPackagePublishingHistory."""
+        distroarchseries = binarypackagerelease.build.distroarchseries
 
         # Publish the binary.
-        if architecturespecific:
+        if binarypackagerelease.architecturespecific:
             archs = [distroarchseries]
         else:
             archs = distroarchseries.distroseries.architectures
@@ -233,10 +253,10 @@ class SoyuzTestPublisher:
         for arch in archs:
             pub = SecureBinaryPackagePublishingHistory(
                 distroarchseries=arch,
-                binarypackagerelease=bpr,
-                component=bpr.component,
-                section=bpr.section,
-                priority=bpr.priority,
+                binarypackagerelease=binarypackagerelease,
+                component=binarypackagerelease.component,
+                section=binarypackagerelease.section,
+                priority=binarypackagerelease.priority,
                 status=status,
                 scheduleddeletiondate=scheduleddeletiondate,
                 dateremoved=dateremoved,

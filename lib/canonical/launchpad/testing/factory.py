@@ -34,12 +34,14 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus,
     IBranchSet,
     IBugSet,
+    IBugWatchSet,
     ICodeImportJobWorkflow,
     ICodeImportMachineSet,
     ICodeImportEventSet,
     ICodeImportResultSet,
     ICodeImportSet,
     ICountrySet,
+    IDistributionSet,
     IEmailAddressSet,
     ILibraryFileAliasSet,
     IPersonSet,
@@ -215,7 +217,10 @@ class LaunchpadObjectFactory:
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
-            displayname = self.getUniqueString('displayname')
+            if name is None:
+                displayname = self.getUniqueString('displayname')
+            else:
+                displayname = name.capitalize()
         if licenses is None:
             licenses = [License.GNU_GPL_V2]
         return getUtility(IProductSet).createProduct(
@@ -372,7 +377,7 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self, product=None):
+    def makeBug(self, product=None, owner=None, bug_watch_url=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -380,15 +385,23 @@ class LaunchpadObjectFactory:
 
         :param product: If the product is not set, one is created
             and this is used as the primary bug target.
+        :param owner: The reporter of the bug. If not set, one is created.
+        :param bug_watch_url: If specified, create a bug watch pointing
+            to this URL.
         """
         if product is None:
             product = self.makeProduct()
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString())
         create_bug_params.setBugTarget(product=product)
-        return getUtility(IBugSet).createBug(create_bug_params)
+        bug = getUtility(IBugSet).createBug(create_bug_params)
+        if bug_watch_url is not None:
+            # fromText() creates a bug watch associated with the bug.
+            getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+        return bug
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None):
         mail = SignedMessage()
@@ -588,7 +601,8 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString()
         series = product.newSeries(
             product.owner, name, self.getUniqueString(), user_branch)
-        series.import_branch = import_branch
+        if import_branch is not None:
+            series.import_branch = import_branch
         syncUpdate(series)
         return series
 
@@ -622,3 +636,17 @@ class LaunchpadObjectFactory:
         log_alias_id = getUtility(ILibrarianClient).addFile(
             filename, len(log_data), StringIO(log_data), 'text/plain')
         return getUtility(ILibraryFileAliasSet)[log_alias_id]
+
+    def makeDistribution(self):
+        """Make a new distribution."""
+        name = self.getUniqueString()
+        displayname = self.getUniqueString()
+        title = self.getUniqueString()
+        description = self.getUniqueString()
+        summary = self.getUniqueString()
+        domainname = self.getUniqueString()
+        owner = self.makePerson()
+        members = self.makeTeam(owner)
+        return getUtility(IDistributionSet).new(
+            name, displayname, title, description, summary, domainname,
+            members, owner)

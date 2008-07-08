@@ -161,7 +161,10 @@ class SourcePackageRelease(SQLBase):
     def sourcepackage(self):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
-        # we avoid doing an extra query doing getSourcepackage
+        # we avoid doing an extra query doing getSourcepackage.
+        # XXX 20080616 mpt: cprov says this property "won't be as useful as it
+        # looks once we start supporting derivation ... [It] is dangerous and
+        # should be renamed (or removed)". <http://launchpad.net/bugs/241298>
         series = self.upload_distroseries
         return series.getSourcePackage(self.sourcepackagename)
 
@@ -452,7 +455,8 @@ class SourcePackageRelease(SQLBase):
         # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
         # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
         # and so on
-        if archive.purpose != ArchivePurpose.PPA:
+        if archive.purpose in (ArchivePurpose.PARTNER,
+                               ArchivePurpose.PRIMARY):
             parent_archives = set()
             archive_set = getUtility(IArchiveSet)
             for series in parent_series:
