@@ -409,7 +409,6 @@ states.
     >>> from canonical.launchpad.interfaces import (
     ...     PackagePublishingStatus)
     >>> login('foo.bar@canonical.com')
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(name='iceweasel')[0]
     >>> iceweasel_pub.secure_record.status = PackagePublishingStatus.SUPERSEDED
     >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount')[0]
