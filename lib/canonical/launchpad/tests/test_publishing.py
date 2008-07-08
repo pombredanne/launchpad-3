@@ -46,9 +46,13 @@ class SoyuzTestPublisher:
         self.breezy_autotest_hppa = self.breezy_autotest.newArch(
             'hppa', ProcessorFamily.get(4), False, self.person)
         self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
+        self.addFakeChroots(self.breezy_autotest)
+
+    def addFakeChroots(self, distroseries):
+        """Add fake chroots for all the architectures in distroseries."""
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
-        self.breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
-        self.breezy_autotest_hppa.addOrUpdateChroot(fake_chroot)
+        for arch in distroseries.architectures:
+            arch.addOrUpdateChroot(fake_chroot)
 
     def regetBreezyAutotest(self): 
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
