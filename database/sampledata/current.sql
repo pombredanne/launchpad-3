@@ -4418,12 +4418,12 @@ ALTER TABLE personlanguage ENABLE TRIGGER ALL;
 
 ALTER TABLE personlocation DISABLE TRIGGER ALL;
 
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (1, '2007-06-05 18:34:52.127945', 12, NULL, NULL, 'Australia/Perth', 12, '2007-06-05 18:34:52.127945');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (2, '2007-06-05 18:34:52.127945', 16, NULL, NULL, 'Africa/Johannesburg', 55, '2007-06-05 18:34:52.127945');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (3, '2007-06-05 18:34:52.127945', 55, NULL, NULL, 'Africa/Maseru', 16, '2007-06-05 18:34:52.127945');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (4, '2007-07-05 18:34:52.127945', 23, NULL, NULL, 'UTC', 55, '2007-08-09 18:24:00.50');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (5, '2007-07-08 18:34:52', 52, NULL, NULL, 'Europe/Paris', 55, '2007-09-02 11:54:10');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (6, '2007-09-08 13:44:51', 4, 52.200000000000003, 0.29999999999999999, 'Europe/London', 4, '2007-12-22 10:24:15');
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (1, '2007-06-05 18:34:52.127945', 12, NULL, NULL, 'Australia/Perth', 12, '2007-06-05 18:34:52.127945', true, false);
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (2, '2007-06-05 18:34:52.127945', 16, NULL, NULL, 'Africa/Johannesburg', 55, '2007-06-05 18:34:52.127945', true, false);
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (3, '2007-06-05 18:34:52.127945', 55, NULL, NULL, 'Africa/Maseru', 16, '2007-06-05 18:34:52.127945', true, false);
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (4, '2007-07-05 18:34:52.127945', 23, NULL, NULL, 'UTC', 55, '2007-08-09 18:24:00.50', true, false);
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (5, '2007-07-08 18:34:52', 52, NULL, NULL, 'Europe/Paris', 55, '2007-09-02 11:54:10', true, false);
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (6, '2007-09-08 13:44:51', 4, 52.200000000000003, 0.29999999999999999, 'Europe/London', 4, '2007-12-22 10:24:15', true, false);
 
 
 ALTER TABLE personlocation ENABLE TRIGGER ALL;

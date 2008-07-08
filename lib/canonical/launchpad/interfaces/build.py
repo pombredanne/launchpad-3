@@ -122,7 +122,7 @@ class IBuild(Interface):
 
     datecreated = Datetime(
         title=_('Date created'), required=True, readonly=True,
-        description=_("The time when the built request was created."))
+        description=_("The time when the build request was created."))
 
     processor = Object(
         title=_("Processor"), schema=IProcessor,
@@ -189,7 +189,7 @@ class IBuild(Interface):
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the upload log for "
                 "build resulting in binaries that could not be processed "
-                "succesfully. Otherwise it will be None."))
+                "successfully. Otherwise it will be None."))
 
     # Properties
     current_component = Attribute(

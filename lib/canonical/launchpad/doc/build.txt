@@ -199,7 +199,7 @@ target archive.
     False
 
 Transforming ubuntu primary archive in a private archive makes
-storeUploadLog() to upload the given content as a restricted file.
+storeUploadLog() upload the given content as a restricted file.
 
     >>> login('foo.bar@canonical.com')
     >>> active_build.archive.buildd_secret = "secret"
@@ -207,15 +207,15 @@ storeUploadLog() to upload the given content as a restricted file.
     >>> login(ANONYMOUS)
 
 Simply changing the archive privacy after the 'upload_log' is stored
-doesn't change make it restricted. The archive privacy will be
-respected in the next upload attempt only.
+doesn't make it restricted. The archive privacy will be respected in
+the next upload attempt only.
 
     >>> print active_build.upload_log.restricted
     False
 
-In order to run storeUploadLog again for the same build we have to
-remove the previously stored 'upload_log' see the more information
-about the check below in 'AssertionErrors in IBuild' section.
+In order to call storeUploadLog() again for the same build, we have to
+remove the previously stored 'upload_log'. See the check below in
+'AssertionErrors in IBuild' for more detail.
 
     >>> login('foo.bar@canonical.com')
     >>> active_build.upload_log = None
