@@ -310,6 +310,18 @@ class CodeImportNewView(CodeImportBaseView):
                     branch_name=existing_branch.name))
 
 
+from canonical.lazr.interface import copy_field, use_template
+from canonical.launchpad.interfaces import IBranch
+from zope.interface import Interface
+
+
+class EditCodeImportInterface(Interface):
+
+    use_template(ICodeImport,
+                 ['svn_branch_url', 'cvs_root', 'cvs_module'])
+    whiteboard = copy_field(IBranch['whiteboard'])
+
+
 class CodeImportEditView(CodeImportBaseView):
     """View for editing code imports.
 
@@ -322,8 +334,13 @@ class CodeImportEditView(CodeImportBaseView):
 
     # Need this to render the context to prepopulate the form fields.
     # Added here as the base class isn't LaunchpadEditFormView.
+    schema = EditCodeImportInterface
     render_context = True
-    field_names = ['svn_branch_url', 'cvs_root', 'cvs_module']
+    field_names = ['svn_branch_url', 'cvs_root', 'cvs_module', 'whiteboard']
+
+    @property
+    def initial_values(self):
+        return {'whiteboard':self.context.whiteboard}
 
     def initialize(self):
         """Show a 404 if the branch has no code import."""
@@ -337,7 +354,7 @@ class CodeImportEditView(CodeImportBaseView):
     @property
     def adapters(self):
         """See `LaunchpadFormView`."""
-        return {ICodeImport: self.code_import}
+        return {EditCodeImportInterface: self.code_import}
 
     def setUpFields(self):
         CodeImportBaseView.setUpFields(self)
