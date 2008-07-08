@@ -124,6 +124,7 @@ class IBuild(Interface):
     estimated_build_duration = Timedelta(
         title=_("Estimated Build Duration"), required=False,
         description=_("Estimated build duration interval"))
+    date_first_dispatched = Attribute("The actual build start time.")
 
     # Properties
     current_component = Attribute(
