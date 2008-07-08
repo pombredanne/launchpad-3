@@ -325,10 +325,29 @@ the PPA owner.
     commercialpackage - 1.0-1             Pending    Warty    Devel
     ...
 
-It's only presented when the cprov's PPA page is accessed by a
-LP-admins user.
+It is presented when cprov's PPA page is accessed either by an LP-admins
+user ..
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> print_ppa_package_rows(admin_browser.contents)
+    Source                         Published   Status  Series Section  Built
+    ...
+    comm... - 1.0-1  (changesfile)             Pending Warty  Devel
+    ...
+
+.. or by the source package uploader.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces import IPersonSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> spr = removeSecurityProxy(cprov.archive.getPublishedSources(
+    ...     name='commercialpackage')[0].sourcepackagerelease)
+    >>> spr.creator = cprov
+    >>> logout()
+    >>> transaction.commit()
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> print_ppa_package_rows(admin_browser.contents)
     Source                         Published   Status  Series Section  Built
     ...
@@ -388,8 +407,7 @@ modify some publication in Celso's PPA to SUPERSEDED and DELETED
 states.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, PackagePublishingStatus)
-    >>> from zope.component import getUtility
+    ...     PackagePublishingStatus)
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(name='iceweasel')[0]
