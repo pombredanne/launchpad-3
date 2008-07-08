@@ -38,12 +38,23 @@
       <i tal:condition="not: context/time_zone">None given</i><br />
 
       <tal:ubuntero condition="context/is_ubuntero"><b>Ubuntero:</b>
-        Yes<br /></tal:ubuntero>
+        <a
+          id="ubuntero"
+          tal:condition="context/required:launchpad.Edit"
+          tal:define="link context/menu:overview/codesofconduct"
+          tal:attributes="href link/url"
+          >Yes</a>
+         <span
+           id="ubuntero"
+           tal:condition="not: context/required:launchpad.Edit">Yes</span>
+         <br />
+       </tal:ubuntero>
 
       <tal:not-ubuntero condition="not: context/is_ubuntero">
         <tal:is_request_person condition="view/viewingOwnPage">
-          <b>Ubuntero:</b> No
-          <small>(<a href="/codeofconduct">apply now</a>)</small>
+          <b>Ubuntero:</b> <span id="ubuntero">No</span>
+          <a href="/codeofconduct"
+            ><img src="/@@/edit" alt="Apply to become an Ubuntero" /></a>
           <br />
         </tal:is_request_person>
       </tal:not-ubuntero>
