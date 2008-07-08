@@ -1,0 +1,22 @@
+# Every slonik script must start with a clustername, which cannot be changed
+# once the cluster is initialized.
+cluster name = dev;
+
+# Define some constants to make changes easier.
+
+# Each node in the cluster needs a unique id
+define master_id 1;
+define slave1_id 2;
+
+# Connection info for our nodes
+define master_conninfo 'host=localhost user=slony dbname=launchpad_dev';
+define slave1_conninfo 'host=localhost user=slony dbname=launchpad_dev_slave1';
+
+# Symbolic ids for our replication sets.
+define lpmain_set_id 1;
+define authdb_set_id 2;
+
+# Define the connection info for all nodes
+node @master_id admin conninfo = @master_conninfo;
+node @slave1_id admin conninfo = @slave1_conninfo;
+
