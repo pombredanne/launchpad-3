@@ -22,13 +22,14 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, StrippedTextLine, URIField)
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import CollectionField
+from canonical.lazr.fields import CollectionField, Reference
 
 
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
@@ -188,7 +189,7 @@ class IBugTracker(Interface):
                 allowed_schemes=LOCATION_SCHEMES_ALLOWED),
             required=False),
         exported_as='base_url_aliases')
-    owner = Int(title=_('Owner'))
+    owner = Object(title=_('Owner'), schema=IPerson)
     contactdetails = exported(
         Text(
             title=_('Contact details'),
@@ -201,7 +202,7 @@ class IBugTracker(Interface):
     watches = exported(
         CollectionField(
             title=_('The remote watches on this bug tracker.'),
-            value_type=Object(schema=IBugWatch)))
+            value_type=Reference(schema=IBugWatch)))
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
     latestwatches = Attribute('The last 10 watches created.')
