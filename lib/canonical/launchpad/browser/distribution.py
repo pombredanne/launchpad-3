@@ -67,6 +67,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, stepthrough, stepto)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError)
+from canonical.launchpad.helpers import english_list
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
@@ -607,13 +608,24 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
             if self.context.official_rosetta:
                 uses.append("<strong>Translations</strong>")
 
-            if len(uses) > 1:
-                apps = ", ".join(uses[:-1])
-                apps += " and " + uses[-1]
-            else:
-                apps = uses[0]
+            apps = english_list(uses)
 
             return "%s uses Launchpad for %s." % (self.context.title, apps)
+
+    def linkedMilestonesForSeries(self, series):
+        """Return a string of linkified milestones in the series."""
+        # Listify to remove repeated queries.
+        milestones = list(series.milestones)
+        if len(milestones) == 0:
+            return ""
+
+        linked_milestones = []
+        for milestone in milestones:
+            linked_milestones.append(
+                "<a href=%s>%s</a>" % (
+                    canonical_url(milestone), milestone.name))
+
+        return english_list(linked_milestones)
 
 
 class DistributionPPASearchView(LaunchpadView):

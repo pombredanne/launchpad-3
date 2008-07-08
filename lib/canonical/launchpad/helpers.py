@@ -609,6 +609,8 @@ def english_list(items, conjunction='and'):
 
     "In a series of three or more terms with a single conjunction, use
      a comma after each term except the last."
+
+    Beware that this is US English and is wrong for non-US.
     """
     items = list(items)
     if len(items) <= 2:
