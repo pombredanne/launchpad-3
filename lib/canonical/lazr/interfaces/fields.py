@@ -6,9 +6,12 @@ __metaclass__ = type
 __all__ = [
     'ICollectionField',
     'IReference',
+    'IReferenceChoice',
     ]
 
-from zope.schema.interfaces import IObject, ISequence
+
+from zope.interface import Attribute
+from zope.schema.interfaces import IChoice, IObject, ISequence
 
 
 class ICollectionField(ISequence):
@@ -23,3 +26,11 @@ class IReference(IObject):
     Validation only enforce that the object provides the interface, not
     that all its attributes matches the schema constraints.
     """
+
+
+class IReferenceChoice(IChoice):
+    """Interface for a choice among objects."""
+
+    schema = Attribute(
+        "The interface provided by all elements of the choice vocabulary.")
+

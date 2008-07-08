@@ -208,7 +208,8 @@ see it:
     >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
     Bragging rights
     ...
-    Ubuntero: No (apply now)
+    Ubuntero: No
+    ...
 
 You can grab certain bits of information programatically:
 
