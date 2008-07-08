@@ -18,8 +18,6 @@ from zope.schema import Choice, Datetime, Int, TextLine, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine
-from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.person import IPerson
 
@@ -99,15 +97,20 @@ class IBugWatch(IHasBug):
 
     id = Int(title=_('ID'), required=True, readonly=True)
     bug = exported(
-        Reference(title=_('Bug'), schema=IBug, required=True, readonly=True))
-    bugtracker = Choice(title=_('Bug System'), required=True,
-        vocabulary='BugTracker', description=_("You can register "
-        "new bug trackers from the Launchpad Bugs home page."))
+        Reference(title=_('Bug'), schema=Interface, # Redefined in bug.py
+                  required=True, readonly=True))
+    bugtracker = exported(
+        Choice(
+            title=_('Bug System'), required=True,
+            vocabulary='BugTracker', description=_(
+                "You can register new bug trackers from the Launchpad "
+                "Bugs home page.")),
+        exported_as='bug_tracker')
     remotebug = exported(
         StrippedTextLine(
             title=_('Remote Bug'), required=True,
-            readonly=False, description=_("The bug number of this bug in the "
-                                          "remote bug tracker.")),
+            readonly=False, description=_(
+                "The bug number of this bug in the remote bug tracker.")),
         exported_as='remote_bug')
     remotestatus = exported(
         TextLine(title=_('Remote Status')),
@@ -138,7 +141,7 @@ class IBugWatch(IHasBug):
                 'tasks, and if it is linked and we notice a status change '
                 'in the watched bug then we will try to update the '
                 'Launchpad bug task accordingly.'),
-            value_type=Reference(schema=IBugTask)))
+            value_type=Reference(schema=Interface))) # Redefined in bugtask.py
 
     # Properties.
     needscheck = Attribute("A True or False indicator of whether or not "
@@ -188,11 +191,6 @@ class IBugWatch(IHasBug):
 
         :param message: The imported comment as a Launchpad Message object.
         """
-
-
-# Set the schema for watches in IBug. It's not possible to do this
-# earlier because of circular imports.
-IBug['watches'].value_type.schema = IBugWatch
 
 
 class IBugWatchSet(Interface):

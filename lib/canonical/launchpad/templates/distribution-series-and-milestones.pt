@@ -9,20 +9,19 @@
     <ul class="distroseries" tal:condition="context/serieses">
       <tal:per_series repeat="series context/serieses">
         <li tal:condition="series/active">
+          <strong>
           <a tal:attributes="href series/fmt:url">
             <tal:version replace="series/version">3.0</tal:version>
             &#8220;<tal:codename replace="series/displayname" />&#8221; series
           </a>
+          </strong>
           - <tal:status replace="series/status/name/fmt:lower" />
+        <br/>
         <tal:milestones
-             define="milestones series/milestones"
+             define="milestones python: view.linkedMilestonesForSeries(series)"
              tal:condition="milestones">
           Milestones:
-            <a tal:repeat="milestone milestones"
-               tal:content="milestone/name"
-               tal:attributes="href milestone/fmt:url" >
-               milestone name
-            </a>
+          <tal:list replace="structure milestones"/>
         </tal:milestones>
         </li>
       </tal:per_series>

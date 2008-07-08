@@ -153,7 +153,8 @@ class BuilderGroup:
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
         return queueItem.builder.transferSlaveFileToLibrarian(
-            'buildlog', queueItem.getLogFileName())
+            'buildlog', queueItem.getLogFileName(),
+            queueItem.build.archive.private)
 
     def updateBuild(self, queueItem):
         """Verify the current build job status.
