@@ -325,11 +325,23 @@ the PPA owner.
     commercialpackage - 1.0-1             Pending    Warty    Devel
     ...
 
-It's only presented when the cprov's PPA page is accessed by a
-LP-admins user.
+It is presented when cprov's PPA page is accessed either by an LP-admins
+user or by the source package uploader.
+
+Here's the LP-admins user variant.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> print_ppa_package_rows(admin_browser.contents)
+    Source                         Published   Status  Series Section  Built
+    ...
+    comm... - 1.0-1  (changesfile)             Pending Warty  Devel
+    ...
+
+And this will work for the source package uploader.
+
+    >>> sabdfl_browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> sabdfl_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> print_ppa_package_rows(sabdfl_browser.contents)
     Source                         Published   Status  Series Section  Built
     ...
     comm... - 1.0-1  (changesfile)             Pending Warty  Devel
