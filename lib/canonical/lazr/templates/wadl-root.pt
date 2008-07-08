@@ -192,6 +192,9 @@
 
     <representation mediaType="application/json"
        tal:attributes="id string:${context/wadl_entry:singular_type}-full">
+      <param style="plain" name="self_link" path="$['self_link']">
+        <link tal:attributes="resource_type context/wadl_entry:type_link" />
+      </param>
       <param style="plain"
              tal:repeat="field context/wadl_entry:all_fields" required="true"
              tal:attributes="name field/wadl:name;

@@ -227,6 +227,7 @@ resources. It's a big document.
 
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
+    >>> open("/home/leonardr/launchpad-wadl.xml","w").write(wadl)
     >>> wadl_schema.validate(wadl)
     True
     >>> wadl_schema.error_log
@@ -663,7 +664,7 @@ look up the element called "bug_link".
 A parameter may also have human-readable documentation: an optional
 name for the parameter and an optional short description.
 
-    >>> doc = full_params[0][0]
+    >>> doc = full_params[1][0]
     >>> doc.tag
     '...doc'
     >>> print doc.text
@@ -713,6 +714,10 @@ define a second representation for use with PATCH requests.
     >>> diff_rep_names = sorted([param.attrib['name']
     ...                          for param in diff_params])
 
+    >>> 'self_link' in full_rep_names
+    True
+    >>> 'self_link' in diff_rep_names
+    False
     >>> 'related_tasks_collection_link' in full_rep_names
     True
     >>> 'related_tasks_collection_link' in diff_rep_names

@@ -70,10 +70,13 @@ class Browser:
             raise HTTPError(response, content)
         return response, content
 
-    def get(self, resource):
-        """GET a representation of the given resource."""
-        method = resource.get_method('get')
-        url = method.build_request_url()
+    def get(self, resource_or_uri):
+        """GET a representation of the given resource or URI."""
+        if isinstance(resource_or_uri, (basestring, uri.URI)):
+            url = resource_or_uri
+        else:
+            method = resource_or_uri.get_method('get')
+            url = method.build_request_url()
         response, content = self._request(url)
         return content
 

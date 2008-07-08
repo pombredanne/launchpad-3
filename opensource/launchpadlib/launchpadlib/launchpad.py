@@ -22,13 +22,11 @@ __all__ = [
     'Launchpad',
     ]
 
-from urlparse import urlparse
 from launchpadlib._browser import Browser
 from launchpadlib._utils.uri import URI
-from launchpadlib.collection import Collection, Entry
+from launchpadlib.collection import Resource, Collection, Entry
 from launchpadlib.credentials import AccessToken, Consumer, Credentials
 from launchpadlib.person import People
-from wadllib.application import Resource
 
 # XXX BarryWarsaw 05-Jun-2008 this is a placeholder to satisfy the interface
 # required by the Launchpad.bugs property below.  It is temporary and will go
@@ -36,85 +34,6 @@ from wadllib.application import Resource
 class _FakeBugCollection(Collection):
     def _entry(self, entry_dict):
         return Entry(entry_dict)
-
-
-class Resource:
-
-    def __init__(self, root, resource):
-        self.root = root
-        self.resource = resource
-
-    def param(self, param_name):
-        """Get the value of one of the resource's parameters.
-
-        :return: A scalar value if the parameter is not a link. A new
-                 CorrespondsToResource object, whose resource is bound
-                 to a representation, if the parameter is a link.
-        """
-        for suffix in ['_link', '_collection_link']:
-            param = self.resource.get_param(param_name + suffix)
-            if param is not None:
-                return self._wrap_resource(param.linked_resource, param.name)
-        param = self.resource.get_param(param_name)
-        if param is not None:
-            return param.get_value()
-        return None
-
-    def _wrap_resource(self, resource, param_name=None):
-        # Get a representation of the linked resource.
-        representation = self.root._browser.get(resource)
-
-        # We know that all Launchpad resource types are
-        # defined in a single document. Turn the resource's
-        # type_url into an anchor into that document: this is
-        # its resource type. Then look up a client-side class
-        # that corresponds to the resource type.
-        type_url = resource.type_url
-        resource_type = urlparse(type_url)[-1]
-        default = Resource
-        if param_name is not None:
-            if param_name.endswith('_collection_link'):
-                default = Collection
-            elif param_name.endswith('_link'):
-                default = Entry
-        r_class = RESOURCE_TYPE_CLASSES.get(resource_type, default)
-        return r_class(self.root, resource.bind(
-                representation, 'application/json'))
-
-    def __getattr__(self, attr):
-        """Try to retrive a parameter of the given name."""
-        result = self.param(attr)
-        if result is None:
-            raise AttributeError("'%s' object has no attribute '%s'"
-                                 % (self.__class__.__name__, attr))
-        return result
-
-    def __getitem__(self, key):
-        """Look up a subordinate resource by unique ID."""
-        try:
-            url = self.uniqueIdToUrlPath(key)
-        except NotImplementedError:
-            raise TypeError("unsubscriptable object")
-        import pdb; pdb.set_trace()
-        resource = Resource(self.root.wadl, url,
-                            self.subordinate_resource_type)
-        return self._wrap_resource(resource)
-
-    def uniqueIdToUrlPath(self, key):
-        raise NotImplementedError()
-
-    @property
-    def subordinate_resource_type(self):
-        raise NotImplementedError()
-
-class Entry(Resource):
-    pass
-
-
-class Collection(Resource):
-
-    def __iter__(self):
-        import pdb; pdb.set_trace()
 
 
 class Launchpad(Resource):
@@ -142,7 +61,7 @@ class Launchpad(Resource):
         resource = self.wadl.get_resource_by_path('')
         bound_resource = resource.bind(
             self._browser.get(resource), 'application/json')
-        super(Launchpad, self).__init__(self, bound_resource)
+        super(Launchpad, self).__init__(None, bound_resource)
 
     @classmethod
     def login(cls, consumer_name, token_string, access_secret):
@@ -168,19 +87,3 @@ class Launchpad(Resource):
         access_token = AccessToken(token_string, access_secret)
         credentials = Credentials(consumer, access_token)
         return cls(credentials)
-
-
-class PersonSet(Collection):
-    """A custom subclass capable of person lookup by username."""
-
-    def uniqueIdToUrlPath(self, key):
-        return self.root.SERVICE_ROOT + '~' + strkey
-
-    @property
-    def subordinate_resource_type(self):
-        return '#person'
-
-
-# A mapping of resource type IDs to the client-side classes that handle
-# those resource types.
-RESOURCE_TYPE_CLASSES = { 'people' : PersonSet }

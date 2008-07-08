@@ -24,120 +24,161 @@ __all__ = [
     ]
 
 
+import simplejson
+from urlparse import urlparse
+
 from launchpadlib._utils.uri import URI
 from launchpadlib.errors import HTTPError
+from wadllib.application import Resource as WadlResource
+
+class Resource:
+
+    def __init__(self, root, wadl_resource):
+        if root is None:
+            # This _is_ the root.
+            root = self
+        self.__dict__['root'] = root
+        self.__dict__['wadl_resource'] = wadl_resource
+
+    def param(self, param_name):
+        """Get the value of one of the resource's parameters.
+
+        :return: A scalar value if the parameter is not a link. A new
+                 Resource object, whose resource is bound to a
+                 representation, if the parameter is a link.
+        """
+        for suffix in ['_link', '_collection_link']:
+            param = self.wadl_resource.get_param(param_name + suffix)
+            if param is not None:
+                return self._wrap_resource(param.linked_resource, param.name)
+        param = self.wadl_resource.get_param(param_name)
+        if param is not None:
+            return param.get_value()
+        return None
+
+    def _wrap_resource(self, resource, param_name=None):
+        # Get a representation of the linked resource.
+        representation = self.root._browser.get(resource)
+
+        # We know that all Launchpad resource types are
+        # defined in a single document. Turn the resource's
+        # type_url into an anchor into that document: this is
+        # its resource type. Then look up a client-side class
+        # that corresponds to the resource type.
+        type_url = resource.type_url
+        resource_type = urlparse(type_url)[-1]
+        default = Entry
+        if param_name is not None:
+            if param_name.endswith('_collection_link'):
+                default = Collection
+        r_class = RESOURCE_TYPE_CLASSES.get(resource_type, default)
+        return r_class(self.root, resource.bind(
+                representation, 'application/json'))
+
+    def refresh(self, new_url=None):
+        if new_url is not None:
+            self.wadl_resource._url = new_url
+        representation = self.root._browser.get(self.wadl_resource)
+        self.wadl_resource = self.wadl_resource.bind(
+            representation, 'application/json')
+
+    def __getattr__(self, attr):
+        """Try to retrive a parameter of the given name."""
+        if attr == 'self_link':
+            import pdb; pdb.set_trace()
+        result = self.param(attr)
+        if result is None:
+            raise AttributeError("'%s' object has no attribute '%s'"
+                                 % (self.__class__.__name__, attr))
+        return result
+
+    def get(self, key, default=None):
+        """Look up a subordinate resource by unique ID."""
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def __getitem__(self, key):
+        """Look up a subordinate resource by unique ID."""
+        try:
+            url = self.uniqueIdToUrlPath(key)
+        except NotImplementedError:
+            raise TypeError("unsubscriptable object")
+        if url is None:
+            raise KeyError(key)
+        resource = WadlResource(self.root.wadl, url,
+                                self.subordinate_resource_type)
+        return self._wrap_resource(resource)
+
+    def uniqueIdToUrlPath(self, key):
+        raise NotImplementedError()
+
+    @property
+    def subordinate_resource_type(self):
+        raise NotImplementedError()
 
 
-class Entry:
+class Entry(Resource):
     """Simple bag-like class for collection entry attributes."""
 
-    def __init__(self, entry_dict, browser):
-        """Create an `Entry` instance.
-
-        :param entry_dict: a dictionary containing all the entry's attributes
-            as received from the web service as a JSON dictonary.
-        :type entry_dict: dict
-        :param browser: the browser instance for talking to Launchpad
-        :type browser: `Browser`
-        """
+    def __init__(self, root, wadl_resource):
+        super(Entry, self).__init__(root, wadl_resource)
         # Initialize this here in a semi-magical way so as to stop a
-        # particular infinite loop that would follow.  Setting self._browser
-        # calls __setattr__() but that turns around immediately and gets
-        # self._attributes.  If this latter was not in the instance
-        # dictionary, that would end up calling __getattr__(), which would
-        # again reference self._attributes.  This is where the infloop would
-        # occur.  Poking this directly into self.__dict__ means that the check
-        # for self._attributes won't call __getattr__(), breaking the cycle.
-        self.__dict__['_attributes'] = {}
-        self._browser = browser
-        self._initialize(entry_dict)
-
-    def _initialize(self, entry_dict):
-        """Initialize this entry from a JSON dictionary.
-
-        :param entry_dict: a dictionary containing all the entry's attributes
-            as received from the web service as a JSON dictonary.
-        :type entry_dict: dict
-        """
-        # The entry_dict contains lots of information mixed up in the same
-        # namespace.  Everything that's a link to other information is
-        # contained in a key ending with '_link'.  We'll treat everything else
-        # as an attribute of this object.  Settable attributes (unless they're
-        # read-only but we don't yet know that) are the names of all the
-        # non-link keys.
-        self._links = {}
-        self._attributes = {}
-        self._dirty_attributes = set()
-        for key, value in entry_dict.items():
-            if key.endswith('_link'):
-                self._links[key[:-5]] = value
-            else:
-                self._attributes[key] = value
-
-    def __setattr__(self, name, value):
-        if name in self._attributes:
-            # This is a special web service attribute, so track it separately
-            # and mark it as dirty for any future save().
-            self._attributes[name] = value
-            self._dirty_attributes.add(name)
-        else:
-            super(Entry, self).__setattr__(name, value)
+        # particular infinite loop that would follow.  Setting
+        # self._dirty_attributes would call __setattr__(), which would
+        # turn around immediately and get self._dirty_attributes.  If
+        # this latter was not in the instance dictionary, that would
+        # end up calling __getattr__(), which would again reference
+        # self._dirty_attributes.  This is where the infloop would
+        # occur.  Poking this directly into self.__dict__ means that
+        # the check for self._dirty_attributes won't call __getattr__(),
+        # breaking the cycle.
+        self.__dict__['_dirty_attributes'] = {}
+        super(Entry, self).__init__(root, wadl_resource)
 
     def __getattr__(self, name):
-        # All normal attribute access bypasses __getattr__(), so the only
-        # attributes that need special treatment are the web service ones.
-        # We just need to turn missing attributes into AttributeErrors instead
-        # of KeyErrors.
-        try:
-            return self._attributes[name]
-        except KeyError:
-            raise AttributeError(name)
+        """Try to retrive a parameter of the given name."""
+        if name != '_dirty_attributes':
+            if name in self._dirty_attributes:
+                return self._dirty_attributes[name]
+        return super(Entry, self).__getattr__(name)
 
-    def _refresh(self, url):
-        entry_dict = self._browser.get(URI(url))
-        self._initialize(entry_dict)
+    def __setattr__(self, name, value):
+        param = self.param(name)
+        if param is None:
+            super(Entry, self).__setattr__(name, value)
+        else:
+            # The caller was trying to set a value for a web service parameter.
+            # Track it separately for any future save().
+            self._dirty_attributes[name] = value
+
+    def refresh(self, new_url=None):
+        super(Entry, self).refresh(new_url)
+        self._dirty_attributes.clear()
 
     def save(self):
         """Save changes to the entry."""
-        representation = {}
-        # Find all the dirty attributes and build up a representation of them
-        # to be set on the web service.
-        for name in self._dirty_attributes:
-            representation[name] = self._attributes[name]
+        representation = self._dirty_attributes
         # PATCH the new representation to the 'self' link.  It's possible that
         # this will cause the object to be permanently moved.  Catch that
         # exception and refresh our representation.
         try:
-            self._browser.patch(URI(self._links['self']), representation)
+            self.root._browser.patch(URI(self.self_link), representation)
         except HTTPError, error:
             if error.response.status == 301:
-                self._refresh(error.response['location'])
+                self.refresh(error.response['location'])
             else:
                 raise
         self._dirty_attributes.clear()
 
 
-class Collection:
+class Collection(Resource):
     """Base class for web service collections."""
 
-    def __init__(self, browser, base_url):
-        """Create a collection object.
-
-        :param browser: The credentialed web service browser
-        :type browser: `Browser`
-        :param base_url: The base URL of the collection
-        :type base_url: string
-        """
-        self._browser = browser
-        self._base_url = base_url
-        self._cached_info = None
-
-    @property
-    def _info(self):
-        """Retrieve and cache the JSON information for the collection."""
-        if self._cached_info is None:
-            self._cached_info = self._browser.get(self._base_url)
-        return self._cached_info
+    def __init__(self, root, wadl_resource):
+        """Create a collection object."""
+        super(Collection, self).__init__(root, wadl_resource)
 
     def __len__(self):
         """The number of items in the collection.
@@ -146,8 +187,8 @@ class Collection:
         :rtype: int
         """
         try:
-            return self._info['total_size']
-        except KeyError:
+            return int(self.total_size)
+        except AttributeError:
             raise TypeError('collection size is not available')
 
     def __iter__(self):
@@ -156,37 +197,39 @@ class Collection:
         :return: iterator
         :rtype: sequence of `Person`
         """
-        current_page = self._info
+        current_page = self.wadl_resource.representation
         while True:
             for entry_dict in current_page.get('entries', {}):
-                yield Entry(entry_dict, self._browser)
+                resource_url = entry_dict['self_link']
+                resource_type_link = entry_dict['resource_type_link']
+                wadl_application = self.wadl_resource.application
+                resource_type = wadl_application.get_resource_type(
+                    resource_type_link)
+                resource_type_name = urlparse(resource_type_link)[-1]
+                entry_class = RESOURCE_TYPE_CLASSES.get(
+                    resource_type_name, Entry)
+                resource = WadlResource(
+                    self.wadl_resource.application, resource_url,
+                    resource_type.tag, entry_dict, 'application/json')
+                yield entry_class(self.root, resource)
             next_link = current_page.get('next_collection_link')
             if next_link is None:
                 break
-            current_page = self._browser.get(URI(next_link))
+            current_page = simplejson.loads(
+                self.root._browser.get(URI(next_link)))
 
-    def __getitem__(self, name):
-        """Return the named entry.
 
-        :param name: The collection entry's name
-        :type name: string
-        :return: the named Entry
-        :rtype: `Entry`
-        :raise KeyError: when there is no named entry in the collection.
-        """
-        missing = object()
-        result = self.get(name, missing)
-        if result is missing:
-            raise KeyError(name)
-        return result
+class PersonSet(Collection):
+    """A custom subclass capable of person lookup by username."""
 
-    def get(self, name, default=None):
-        """Return the named entry.
+    def uniqueIdToUrlPath(self, key):
+        return self.root.SERVICE_ROOT + '~' + str(key)
 
-        :param name: The collection entry's name
-        :type name: string
-        :return: the entry with the given name or None if there is no such
-            entry
-        :rtype: `Entry` or None
-        """
-        raise NotImplementedError
+    @property
+    def subordinate_resource_type(self):
+        return '#person'
+
+
+# A mapping of resource type IDs to the client-side classes that handle
+# those resource types.
+RESOURCE_TYPE_CLASSES = { 'people' : PersonSet }

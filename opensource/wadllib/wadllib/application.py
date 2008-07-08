@@ -166,7 +166,12 @@ class Resource(WADLResolvableDefinition):
         self.representation = None
         if representation is not None:
             if media_type == 'application/json':
-                self.representation = simplejson.loads(representation)
+                try:
+                    self.representation = simplejson.loads(representation)
+                except TypeError:
+                    # The representation has already been transformed
+                    # from a string to a Python data structure. Do nothing.
+                    pass
             else:
                 raise UnsupportedMediaTypeError(
                     "This resource doesn't define a representation for "
