@@ -20,13 +20,14 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, List, Text, TextLine)
+    Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
@@ -37,7 +38,8 @@ from canonical.launchpad.validators.bugattachment import (
 
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_write_operation, exported, operation_parameters)
+    export_factory_operation, export_write_operation, exported,
+    operation_parameters, rename_parameters_as)
 from canonical.lazr.fields import CollectionField, Reference
 
 
@@ -196,7 +198,12 @@ class IBug(IMessageTarget, ICanBeMentored):
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
-    watches = Attribute('SQLObject.Multijoin of IBugWatch')
+    watches = exported(
+        CollectionField(
+            title=_("All bug watches associated with this bug."),
+            value_type=Object(schema=IBugWatch),
+            readonly=True),
+        exported_as='bug_watches')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = exported(CollectionField(
@@ -342,6 +349,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         bug mail being generated during bulk imports or changes.
         """
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(
+        bugtracker='bug_tracker', remotebug='remote_bug')
+    @export_factory_operation(
+        IBugWatch, ['bugtracker', 'remotebug'])
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
@@ -514,6 +526,10 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         Return None if no such bugtask is found.
         """
+
+
+# We are forced to define this now to avoid circular import problems.
+IBugWatch['bug'].schema = IBug
 
 # In order to avoid circular dependencies, we only import
 # IBugSubscription (which itself imports IBug) here, and assign it as

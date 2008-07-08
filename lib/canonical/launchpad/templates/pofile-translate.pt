@@ -12,13 +12,14 @@
   <body>
     <div metal:fill-slot="main">
 
+      <div>
+        <a tal:attributes="href context/potemplate/fmt:url"
+           tal:content="context/potemplate/title">
+          evolution 2.10 template
+        </a>
+      </div>
+
       <tal:form-not-writeable condition="not:view/form_is_writeable">
-        <div>
-          <a tal:attributes="href context/potemplate/fmt:url"
-             tal:content="context/potemplate/title">
-            evolution 2.10 template
-          </a>
-        </div>
         <h1>
           Browsing
           <tal:language replace="context/language/englishname">
@@ -28,12 +29,6 @@
         </h1>
       </tal:form-not-writeable>
       <tal:form-writeable condition="view/form_is_writeable">
-        <div>
-          <a tal:attributes="href context/potemplate/fmt:url"
-             tal:content="context/potemplate/title">
-            evolution 2.10 template
-          </a>
-        </div>
         <h1>
           Translating into
           <tal:language replace="context/language/englishname">
@@ -135,7 +130,8 @@
                 useful to show the second language as a source of suggestions
                 when translating into the first.
               </tal:comment>
-              <tal:language-widget content="structure view/alternative_language_widget" />
+              <tal:language-widget
+                content="structure view/alternative_language_widget" />
             as a guide</label>
           </p>
           <input type="hidden" name="old_show" value=""
@@ -190,12 +186,10 @@
               </tbody>
             </table>
           </form>
+
           <!-- Paging doodads. -->
-          <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
-          <p tal:condition="not: view/user_is_official_translator">
-            Your translations will be held for review by
-            the official translators for this file.
-          </p>
+          <tal:navigation
+            replace="structure view/batchnav/@@+navigation-links-lower" />
         </tal:block>
         <tal:status replace="structure context/@@+access" />
         <tal:contributors replace="structure context/@@+contributors" />
