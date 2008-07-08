@@ -589,7 +589,7 @@ class HWSubmissionDeviceSet:
                                   submission=submission, parent=parent,
                                   hal_device_id=hal_device_id)
 
-    def getDevicesOfSubmission(self, submission):
+    def getDevices(self, submission):
         """See `IHWSubmissionDeviceSet`."""
         return HWSubmissionDevice.selectBy(
             submission=submission,

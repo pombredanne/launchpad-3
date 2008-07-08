@@ -1310,9 +1310,9 @@ Finally, a scanner may be connected to the USB hub.
     ...      hal_device_id=6)
 
 IHWSubmissionDevice records belonging to a submission are retrieved by
-IHWSubmissionDeviceSet.getDevicesOfSubmission()
+IHWSubmissionDeviceSet.getDevices()
 
-    >>> submitted_devices = submission_device_set.getDevicesOfSubmission(
+    >>> submitted_devices = submission_device_set.getDevices(
     ...     submission=sample_submission)
     >>> for submission_device in submitted_devices:
     ...     device = submission_device.device_driver_link.device
