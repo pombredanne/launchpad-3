@@ -13,7 +13,7 @@
       <p class="clearfix">
         <span class="object timestamp">
           Reported by
-          <tal:reporter replace="structure context/bug/owner/fmt:link" />,
+          <tal:reporter replace="structure context/bug/owner/fmt:link" />
           <span
             tal:attributes="title context/bug/datecreated/fmt:datetime"
             tal:content="context/bug/datecreated/fmt:displaydate"
@@ -169,7 +169,7 @@
                tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
           </div>
 
-          <div style="width: 45%: text-align: right; float: left;">
+          <div style="width: 45%: text-align: right; float: left;" class="clearfix">
             <tal:editdescription
                 define="link context_menu/editdescription"
                 condition="link/enabled"
@@ -177,6 +177,8 @@
             <span tal:condition="view/wasDescriptionModified" class="discreet"
             >(see <a href="comments/0">original description</a>)</span>
           </div>
+
+        <div class="clearfix"></div>
       </div>
 
       <tal:branches define="bug_branches view/bug_branches"
@@ -309,6 +311,9 @@
         </div><!-- id="nonportlets"-->
       </div><!--- id="maincontent"-->
       <div id="portlets">
+        <div
+          tal:replace="structure context/target/@@+portlet-details | nothing"
+        />
         <div tal:replace="structure context/bug/@@+portlet-duplicates" />
         <div tal:replace="structure context/bug/@@+portlet-subscribers" />
         <div tal:replace="structure context/bug/@@+portlet-questions" />
@@ -316,9 +321,6 @@
         <div tal:replace="structure context/bug/@@+portlet-attachments" />
         <div tal:replace="structure context/bug/@@+portlet-watch" />
         <div tal:replace="structure context/@@+portlet-search" />
-        <div
-            tal:replace="structure context/target/@@+portlet-details | nothing"
-            />
       </div>
     </div>
   </body>
