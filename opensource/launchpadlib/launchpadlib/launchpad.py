@@ -24,9 +24,8 @@ __all__ = [
 
 from launchpadlib._browser import Browser
 from launchpadlib._utils.uri import URI
-from launchpadlib.collection import Resource, Collection, Entry
+from launchpadlib.resource import Resource, Collection, Entry
 from launchpadlib.credentials import AccessToken, Consumer, Credentials
-from launchpadlib.person import People
 
 # XXX BarryWarsaw 05-Jun-2008 this is a placeholder to satisfy the interface
 # required by the Launchpad.bugs property below.  It is temporary and will go

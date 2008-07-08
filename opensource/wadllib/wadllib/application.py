@@ -170,8 +170,8 @@ class Resource(WADLResolvableDefinition):
                     self.representation = simplejson.loads(representation)
                 except TypeError:
                     # The representation has already been transformed
-                    # from a string to a Python data structure. Do nothing.
-                    pass
+                    # from a string to a Python data structure.
+                    self.representation = representation
             else:
                 raise UnsupportedMediaTypeError(
                     "This resource doesn't define a representation for "
@@ -189,6 +189,8 @@ class Resource(WADLResolvableDefinition):
     @property
     def type_url(self):
         """Return the URL to the type definition for this resource, if any."""
+        if self.tag is None:
+            return None
         url = self.tag.attrib.get('type')
         if url is not None:
             # This resource is defined in the WADL file.
