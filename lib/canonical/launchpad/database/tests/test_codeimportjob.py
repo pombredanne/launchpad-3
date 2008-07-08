@@ -216,17 +216,17 @@ class ReclaimableJobTestMixin:
             % (-seconds_in_past,))
         return code_import.import_job
 
-
-class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTestMixin):
-    """Tests for the CodeImportJobSet.getReclaimableJobs method."""
-
-    layer = LaunchpadFunctionalLayer
-
     def assertReclaimableJobs(self, jobs):
         """Assert that the set of reclaimable jobs equals `jobs`."""
         self.assertEqual(
             set(jobs),
             set(getUtility(ICodeImportJobSet).getReclaimableJobs()))
+
+
+class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTestMixin):
+    """Tests for the CodeImportJobSet.getReclaimableJobs method."""
+
+    layer = LaunchpadFunctionalLayer
 
     def test_upToDateJob(self):
         # A job that was updated recently is not considered reclaimable.
@@ -264,11 +264,13 @@ class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTestMixin):
     def test_getJobForMachineGardens(self):
         # getJobForMachine reclaims all reclaimable jobs each time it is
         # called.
-        stale_job_id = self.makeJobWithHeartbeatInPast(self.LIMIT*2).id
+        stale_job = self.makeJobWithHeartbeatInPast(self.LIMIT*2)
+        # We assume that this is the only reclaimable job.
+        self.assertReclaimableJobs([stale_job])
         job = getUtility(ICodeImportJobSet).getJobForMachine(
             self.machine.hostname)
-        stale_job = getUtility(ICodeImportJobSet).get(stale_job_id)
-        self.assertTrue(stale_job is None)
+        # Now there are no reclaimable jobs.
+        self.assertReclaimableJobs([])
 
 
 class AssertFailureMixin:
