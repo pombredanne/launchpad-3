@@ -231,7 +231,8 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         else:
             return content_template('Built successfully', '/@@/yes')
 
-    def changesfile_visible(self):
+    @property
+    def is_changesfile_visible(self):
         """Check whether a link to the changesfile should be exposed.
 
         The link to the changesfile should only be exposed if the
