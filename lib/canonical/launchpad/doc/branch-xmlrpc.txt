@@ -222,6 +222,7 @@ We get the same error if we try to register the branch with a slash appended:
     ...
     Fault: <Fault 50: 'http://foo.com/other_branch is already registered.'>
 
+
 Attempting to register a branch for a product where the branch visibility
 policy is forbidden will cause a fault result.
 
@@ -261,7 +262,16 @@ member of. Doing otherwise raises a Fault:
     ...     'landscape-developers')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 250: 'name16 is not a member of landscape-developers'>
+    Fault: <Fault 250: 'name16 is not a member of landscape-developers.'>
+
+Trying to register a branch with an invalid name will fail with a fault that
+explains the problem:
+    >>> branchset_api.register_branch(
+    ...     'http://example.com/invalid-branch-name', '.bzr', 'title', 'desc',
+    ...     'test@canonical.com', 'evolution')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 260: 'Invalid branch name: .bzr. Branch names must ...
 
 
 == link_branch_to_bug(branch_url, bug_id, whiteboard) ==

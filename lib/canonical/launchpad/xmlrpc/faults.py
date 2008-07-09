@@ -16,6 +16,7 @@ __all__ = [
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
     'InvalidBranchIdentifier',
+    'InvalidBranchName',
     'InvalidProductIdentifier',
     'InvalidBranchUrl',
     'NoBranchForSeries',
@@ -328,10 +329,26 @@ class NotInTeam(LaunchpadFault):
     """
 
     error_code = 250
-    msg_template = '%(person_name)s is not a member of %(team_name)s'
+    msg_template = '%(person_name)s is not a member of %(team_name)s.'
 
     def __init__(self, person_name, team_name):
         LaunchpadFault.__init__(
             self, person_name=person_name, team_name=team_name)
 
 
+class InvalidBranchName(LaunchpadFault):
+    """The branch name is not allowed by Launchpad.
+
+    Raised when the user tries to register a branch with forbidden characters
+    in it.
+    """
+
+    error_code = 260
+    msg_template = (
+        'Invalid branch name: %(branch_name)s. '
+        'Branch names must start with a number or letter. '
+        'The characters +, -, _, . and @ are also allowed after the '
+        'first character.')
+
+    def __init__(self, branch_name):
+        LaunchpadFault.__init__(self, branch_name=branch_name)

@@ -147,4 +147,8 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchName">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
 </configure>

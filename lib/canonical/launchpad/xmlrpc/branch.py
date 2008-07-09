@@ -100,7 +100,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             branch_title = None
 
         if not branch_name:
-            branch_name = branch_url.split('/')[-1]
+            branch_name = unicode_branch_url.split('/')[-1]
 
         if author_email:
             author = person_set.getByEmail(author_email)
@@ -126,6 +126,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             return faults.BranchCreationForbidden(product.displayname)
         except BranchCreationException, err:
             return faults.BranchNameInUse(err)
+        except LaunchpadValidationError:
+            return faults.InvalidBranchName(branch_name)
 
         return canonical_url(branch)
 
