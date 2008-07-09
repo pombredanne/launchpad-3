@@ -290,10 +290,10 @@ class BranchNameInUse(LaunchpadFault):
 
 
 class NoDefaultBranchForPillar(LaunchpadFault):
-    """Raised when the user asks for a default branch, but none exists.
+    """Raised we try to get a default branch for a pillar that can't have any.
 
-    An example of this is trying to get lp:foo, but 'foo' has no branch
-    registered as its development focus.
+    An example of this is trying to get lp:bazaar, where 'bazaar' is a project
+    group, or lp:ubuntu, where 'ubuntu' is a distro.
     """
 
     error_code = 230
