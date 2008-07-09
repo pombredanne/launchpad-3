@@ -1241,10 +1241,10 @@ class BugTaskEditView(LaunchpadEditFormView):
             bugtask.transitionToAssignee(new_assignee)
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
+            bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
             if bugtask.bugwatch is None:
                 # Reset the status and importance to the default values,
                 # since Unknown isn't selectable in the UI.
-                bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
                 bugtask.transitionToStatus(
                     IBugTask['status'].default, bug_importer)
                 bugtask.transitionToImportance(
@@ -1256,9 +1256,9 @@ class BugTaskEditView(LaunchpadEditFormView):
                 #     Launchpad status, but it's not trivial to do at the
                 #     moment. I will fix this later.
                 bugtask.transitionToStatus(
-                    BugTaskStatus.UNKNOWN, self.user)
+                    BugTaskStatus.UNKNOWN, bug_importer)
                 bugtask.transitionToImportance(
-                    BugTaskImportance.UNKNOWN, self.user)
+                    BugTaskImportance.UNKNOWN,  bug_importer)
                 bugtask.transitionToAssignee(None)
 
         if changed:
