@@ -7,7 +7,30 @@ From Launchpad's front page, you can access a "marketing microsite"
     >>> print browser.title
     Launchpad tour
     >>> browser.url
-    'http://launchpad.dev/+tour'
+    'http://launchpad.dev/+tour/index.html'
+
+The tour is circular. Clicking the Next button repeatedly will bring you
+back to the tour start.
+
+    >>> def take_the_tour(steps_taken=0):
+    ...     browser.getLink('Next').click()
+    ...     print browser.url
+    ...     if browser.url != 'http://launchpad.dev/+tour/index.html':
+    ...         if steps_taken >= 20:
+    ...             raise RuntimeError('Never ending tour!')
+    ...         take_the_tour(steps_taken=steps_taken+1)
+    >>> take_the_tour()
+    http://launchpad.dev/+tour/bugs.html
+    http://launchpad.dev/+tour/branch-hosting-tracking.html
+    http://launchpad.dev/+tour/code-review.html
+    http://launchpad.dev/+tour/translation.html
+    http://launchpad.dev/+tour/community.html
+    http://launchpad.dev/+tour/ppa.html
+    http://launchpad.dev/+tour/community-support.html
+    http://launchpad.dev/+tour/feature-tracking.html
+    http://launchpad.dev/+tour/release-management.html
+    http://launchpad.dev/+tour/api.html
+    http://launchpad.dev/+tour/index.html
 
 The images from the tour are retrieved relative to +tour.
 

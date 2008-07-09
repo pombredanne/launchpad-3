@@ -797,9 +797,11 @@ class LaunchpadTourFolder(ExportedFolder):
         return super(LaunchpadTourFolder, self).publishTraverse(request, name)
 
     def browserDefault(self, request):
-        """Uses index.html if the directory itself is requested."""
+        """Redirect to index.html if the directory itself is requested."""
         if len(self.names) == 0:
-            return self, ('index.html', )
+            return RedirectionView(
+                "%s+tour/index.html" % canonical_url(self.context),
+                self.request, status=302), ()
         else:
             return self, ()
 
