@@ -12,7 +12,6 @@ __all__ = [
     'EntryResource',
     'HTTPResource',
     'JSONItem',
-    'LAZR_WEBSERVICE_NS',
     'ReadOnlyResource',
     'ResourceJSONEncoder',
     'RESTUtilityBase',
@@ -53,12 +52,10 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
-    IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
+    IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
+    LAZR_WEBSERVICE_NAME)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
-
-# The namespace for LAZR web service-related tags.
-LAZR_WEBSERVICE_NS = 'lazr.webservice'
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -785,7 +782,7 @@ class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
         else:
             # Top-level collection.
             schema = self.collection.entry_schema
-            adapter = EntryAdapterUtility.forEntryAdapterInterface(schema)
+            adapter = EntryAdapterUtility.forEntryInterface(schema)
             return adapter.collection_type_link
 
 
@@ -901,7 +898,7 @@ class ServiceRootResource(HTTPResource):
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
-                    adapter = EntryAdapterUtility.forEntryAdapterInterface(
+                    adapter = EntryAdapterUtility.forEntryInterface(
                         registration.value.entry_schema)
                     link_name = ("%s_collection_link" % adapter.plural_type)
                     top_level_resources[link_name] = utility
@@ -982,17 +979,17 @@ class EntryAdapterUtility(RESTUtilityBase):
         return EntryAdapterUtility(entry_class)
 
     @classmethod
-    def forEntryAdapterInterface(cls, entry_adapter_interface):
+    def forEntryInterface(cls, entry_interface):
         """Create an entry adapter utility, given a subclass of IEntry."""
         registrations = zapi.getGlobalSiteManager().registrations()
         entry_classes = [
-            r.value for r in registrations
-            if (IInterface.providedBy(r.provided)
-                and r.provided.isOrExtends(IEntry)
-                and entry_adapter_interface.implementedBy(r.value))]
+            registration.value for registration in registrations
+            if (IInterface.providedBy(registration.provided)
+                and registration.provided.isOrExtends(IEntry)
+                and entry_interface.implementedBy(registration.value))]
         assert len(entry_classes) == 1, (
             "There must be one and only one implementation of %s." %
-            entry_adapter_interface.__name__)
+            entry_interface.__name__)
         return EntryAdapterUtility(entry_classes[0])
 
     def __init__(self, entry_class):
@@ -1000,7 +997,8 @@ class EntryAdapterUtility(RESTUtilityBase):
         self.entry_class = entry_class
 
     @property
-    def entry_adapter_interface(self):
+    def entry_interface(self):
+        """The IEntry subclass implemented by this entry type."""
         interfaces = implementedBy(self.entry_class)
         entry_ifaces = [interface for interface in interfaces
                         if interface.extends(IEntry)]
@@ -1014,14 +1012,14 @@ class EntryAdapterUtility(RESTUtilityBase):
     @property
     def singular_type(self):
         """Return the singular name for this object type."""
-        interface = self.entry_adapter_interface
-        return interface.queryTaggedValue(LAZR_WEBSERVICE_NS)['singular']
+        interface = self.entry_interface
+        return interface.queryTaggedValue(LAZR_WEBSERVICE_NAME)['singular']
 
     @property
     def plural_type(self):
         """Return the plural name for this object type."""
-        interface = self.entry_adapter_interface
-        return interface.queryTaggedValue(LAZR_WEBSERVICE_NS)['plural']
+        interface = self.entry_interface
+        return interface.queryTaggedValue(LAZR_WEBSERVICE_NAME)['plural']
 
     @property
     def type_link(self):

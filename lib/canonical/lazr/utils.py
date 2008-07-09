@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'camelcase_to_underscore_separated',
     'safe_hasattr',
     'smartquote',
     ]
@@ -11,7 +12,15 @@ __all__ = [
 
 import re
 
+
 missing = object()
+
+
+def camelcase_to_underscore_separated(str):
+    """Convert 'ACamelCaseString' to 'a_camel_case_string'"""
+    def prepend_underscore(match):
+        return '_' + match.group(1)
+    return re.compile('\B([A-Z])').sub(prepend_underscore, str).lower()
 
 
 def safe_hasattr(ob, name):

@@ -52,11 +52,13 @@ from canonical.lazr.decorates import Passthrough
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import (
-    ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
+    ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation,
+    LAZR_WEBSERVICE_NAME, LAZR_WEBSERVICE_NS)
 from canonical.lazr.rest.resource import (
-    Collection, Entry, EntryAdapterUtility, LAZR_WEBSERVICE_NS)
+    Collection, Entry, EntryAdapterUtility)
 from canonical.lazr.rest.operation import ResourceOperation, ObjectLink
 from canonical.lazr.security import protect_schema
+from canonical.lazr.utils import camelcase_to_underscore_separated
 
 LAZR_WEBSERVICE_EXPORTED = '%s.exported' % LAZR_WEBSERVICE_NS
 COLLECTION_TYPE = 'collection'
@@ -105,8 +107,11 @@ def export_as_webservice_entry(singular_name=None, plural_name=None):
         """Class advisor that tags the interface once it is created."""
         _check_interface('export_as_webservice_entry()', interface)
         if singular_name is None:
-            # Default to the lowercased class name.
-            my_singular_name = interface.__name__
+            # By convention, interfaces are called IWord1[Word2...]. The
+            # default behavior assumes this convention and yields a
+            # singular name of "word1_word2".
+            my_singular_name = camelcase_to_underscore_separated(
+                interface.__name__[1:])
         else:
             my_singular_name = singular_name
         if plural_name is None:
@@ -552,7 +557,7 @@ def generate_entry_interface(interface):
         __doc__=interface.__doc__, __module__=interface.__module__)
 
     tag = interface.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
-    entry_interface.setTaggedValue(LAZR_WEBSERVICE_NS, dict(
+    entry_interface.setTaggedValue(LAZR_WEBSERVICE_NAME, dict(
             singular=tag['singular_name'],
             plural=tag['plural_name']))
     return entry_interface
@@ -601,7 +606,7 @@ class CollectionEntrySchema:
             self.model_schema, IEntry)
         if entry_class is None:
             return None
-        return EntryAdapterUtility(entry_class).entry_adapter_interface
+        return EntryAdapterUtility(entry_class).entry_interface
 
 
 class BaseCollectionAdapter(Collection):

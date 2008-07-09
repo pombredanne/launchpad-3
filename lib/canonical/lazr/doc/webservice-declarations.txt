@@ -68,8 +68,8 @@ elements.
     ...             "%s: %s" %(key, format_value(value))
     ...             for key, value in sorted(tag.items()))
     >>> print_export_tag(IBook)
-    plural_name: 'IBooks'
-    singular_name: 'IBook'
+    plural_name: 'books'
+    singular_name: 'book'
     type: 'entry'
     >>> print_export_tag(IBook['title'])
     as: 'title'
@@ -745,6 +745,13 @@ The field __name__ attribute contains the exported name:
 
     >>> print entry_interface['price'].__name__
     price
+
+Associated with the interface through tags are automatically-generated
+'singular' and 'plural' names for the interface.
+
+    >>> from canonical.lazr.interfaces import LAZR_WEBSERVICE_NAME
+    >>> sorted(entry_interface.queryTaggedValue(LAZR_WEBSERVICE_NAME).items())
+    [('plural', 'books'), ('singular', 'book')]
 
 It's an error to use generate_entry_interface() on an interface that
 wasn't marked for export:

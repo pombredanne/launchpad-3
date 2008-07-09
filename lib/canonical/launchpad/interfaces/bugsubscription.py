@@ -22,7 +22,7 @@ from canonical.lazr.fields import Reference
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""
 
-    export_as_webservice_entry('bug_subscription')
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = exported(PublicPersonChoice(

@@ -134,7 +134,7 @@ class CreatedBugWithNoBugTasksError(Exception):
 
 class IBug(IMessageTarget, ICanBeMentored):
     """The core bug entry."""
-    export_as_webservice_entry('bug')
+    export_as_webservice_entry()
 
     id = exported(
         Int(title=_('Bug ID'), required=True, readonly=True))

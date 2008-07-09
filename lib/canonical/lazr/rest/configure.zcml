@@ -55,7 +55,7 @@
         />
 
     <adapter
-        for="*"
+        for="zope.interface.interfaces.IInterface"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlEntryInterfaceAdapterAPI"
         name="wadl_entry_interface"
