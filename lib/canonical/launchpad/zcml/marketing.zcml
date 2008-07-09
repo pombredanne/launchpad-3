@@ -4,25 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- Marketing template master macro. -->
-    <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        name="marketing_template"
-        permission="zope.Public"
-        template="../templates/marketing-main-template.pt"
-        />
-    <browser:view
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        name="marketing_breadcrumb_name"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.MarketingBreadcrumbNameView"
-        />
-    <browser:view
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        class="canonical.launchpad.browser.MarketingSubnavigationView"
-        name="marketing_subnavigation"
-        permission="zope.Public"
-        />
+    <!-- Marketing Microsite Home Page -->
     <browser:page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
@@ -30,8 +12,6 @@
         attribute="__call__"
         permission="zope.Public"
         />
-
-    <!-- Marketing Microsite Home Page -->
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         name="+about"
