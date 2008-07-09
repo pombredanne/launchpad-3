@@ -290,7 +290,11 @@ class BranchNameInUse(LaunchpadFault):
 
 
 class NoDefaultBranchForPillar(LaunchpadFault):
-    """ """
+    """Raised when the user asks for a default branch, but none exists.
+
+    An example of this is trying to get lp:foo, but 'foo' has no branch
+    registered as its development focus.
+    """
 
     error_code = 230
     msg_template = (
@@ -303,7 +307,11 @@ class NoDefaultBranchForPillar(LaunchpadFault):
 
 
 class InvalidProductIdentifier(LaunchpadFault):
-    """ """
+    """Raised when we are passed an invalid name for a product.
+
+    This is for when users try to specify a product using a silly name
+    like 'flop$y,mop$y&cott0ntail'.
+    """
 
     error_code = 240
     msg_template = "%(name)s cannot be the name for a project."

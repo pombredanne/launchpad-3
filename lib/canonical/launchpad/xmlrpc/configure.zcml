@@ -135,6 +135,14 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.NoDefaultBranchForPillar">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidProductIdentifier">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
   <class class="canonical.launchpad.xmlrpc.faults.NotInTeam">
     <require like_class="xmlrpclib.Fault" />
   </class>
