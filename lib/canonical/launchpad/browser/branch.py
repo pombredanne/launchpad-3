@@ -58,6 +58,7 @@ from canonical.launchpad.interfaces import (
     IBugBranch,
     IBugSet,
     ICodeImportJobWorkflow,
+    ICodeReviewComment,
     ILaunchpadCelebrities,
     InvalidBranchMergeProposal,
     IPersonSet,
@@ -175,6 +176,11 @@ class BranchNavigationMenu(NavigationMenu):
             self.branch = context.source_branch
         elif IBranchSubscription.providedBy(context):
             self.branch = context.branch
+        elif ICodeReviewComment.providedBy(context):
+            self.branch = context.proposal.source_branch
+        else:
+            raise AssertionError(
+                'Bad context type for branch navigation menu.')
 
     def details(self):
         url = canonical_url(self.branch)
