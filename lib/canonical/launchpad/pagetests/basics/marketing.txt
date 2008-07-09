@@ -144,34 +144,44 @@ tour' button that brings the user to the appropriate tour page.
 === Code ===
 
     >>> browser.open('http://code.launchpad.dev')
-    >>> print browser.getLink('Take a tour').url
+    >>> tour_link = browser.getLink('Take a tour')
+    >>> print tour_link.url
     http://launchpad.dev/+tour/branch-hosting-tracking.html
+    >>> tour_link.click()
 
 
 === Bugs ===
 
     >>> browser.open('http://bugs.launchpad.dev')
-    >>> print browser.getLink('Take a tour').url
+    >>> tour_link = browser.getLink('Take a tour')
+    >>> print tour_link.url
     http://launchpad.dev/+tour/bugs.html
+    >>> tour_link.click()
 
 
 === Blueprints ===
 
     >>> browser.open('http://blueprints.launchpad.dev')
-    >>> print browser.getLink('Take a tour').url
+    >>> tour_link = browser.getLink('Take a tour')
+    >>> print tour_link.url
     http://launchpad.dev/+tour/feature-tracking.html
+    >>> tour_link.click()
 
 
 === Translations ===
 
     >>> browser.open('http://translations.launchpad.dev')
-    >>> print browser.getLink('Take a tour').url
+    >>> tour_link = browser.getLink('Take a tour')
+    >>> print tour_link.url
     http://launchpad.dev/+tour/translation.html
+    >>> tour_link.click()
 
 
 === Answers ===
 
     >>> browser.open('http://answers.launchpad.dev')
-    >>> print browser.getLink('Take a tour').url
+    >>> tour_link = browser.getLink('Take a tour')
+    >>> print tour_link.url
     http://launchpad.dev/+tour/community-support.html
+    >>> tour_link.click()
 
