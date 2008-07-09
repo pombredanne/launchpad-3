@@ -6,7 +6,7 @@ distribution officially uses Launchpad.
     >>> anon_browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'uses'))
     Ubuntu Linux uses Launchpad for
-        Answers, Bug Tracking, Blueprints and Translations.
+        Answers, Bug Tracking, Blueprints, and Translations.
 
 Unprivileged Launchpad users cannot access the page for changing these
 details.

@@ -92,13 +92,16 @@ from the remote server.
     ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
     True
 
-If getExternalBugTrackerToUse() doesn't encounter an error when checking
-for the Bugzilla LP Plugin it assumes that the plugin is installed and
-returns an instance of BugzillaLPPlugin.
+Some Bugzillas respond to an invalid XML-RPC method call by returning a
+500 error. getExternalBugTrackerToUse() handles those, too.
 
-    >>> test_transport.error = None
+    >>> test_transport.error = xmlrpclib.ProtocolError(
+    ...     'http://example.com/xmlrpc.cgi', 500, 'Server Error', None)
+
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
-    >>> isinstance(bugzilla_to_use, BugzillaLPPlugin)
+
+    >>> (isinstance(bugzilla_to_use, Bugzilla) and
+    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
     True
 
 

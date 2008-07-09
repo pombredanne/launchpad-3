@@ -2525,8 +2525,17 @@ class PersonSet:
         query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def find(self, text="", orderBy=None):
+    def getAllValidPersonsAndTeams(self):
         """See `IPersonSet`."""
+        return self.getAllTeams().union(
+            self.getAllValidPersons(),
+            orderBy=Person._sortingColumnsForSetOperations)
+
+    def find(self, text, orderBy=None):
+        """See `IPersonSet`."""
+        if not text:
+            # Return an empty result set.
+            return Person.select("1 = 2")
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()

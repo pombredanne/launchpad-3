@@ -1106,6 +1106,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             'universe' : ArchivePurpose.PRIMARY,
             'multiverse' : ArchivePurpose.PRIMARY,
             'partner' : ArchivePurpose.PARTNER,
+            'contrib': ArchivePurpose.PRIMARY,
+            'non-free': ArchivePurpose.PRIMARY,
             }
 
         try:

@@ -431,7 +431,6 @@ The build record in question can end up in the following states:
 
 === Failed to Upload (FAILEDTOUPLOAD) ===
 
-
     >>> bqItem10 = a_build.createBuildQueueEntry()
     >>> setupBuildQueue(bqItem10, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
@@ -492,6 +491,13 @@ upload log information:
     DEBUG   Removing lock file: /var/lock/process-upload-buildd.lock
     ...
 
+When a failure in processing the generated binaries occurs, the log
+output is both emailed in an immediate notification, and stored in the
+librarian for future reference.
+
+    >>> bqItem10.build.upload_log is not None
+    True
+
 What we can clearly notice is that the buildlog is still containing
 the old build state (BUILDING) in its name. This is a minor problem
 that can be sorted by modifying the execution order of procedures
@@ -550,6 +556,12 @@ notification and updating the build information:
     'Successfully built'
     >>> check_mail_sent(last_stub_mail_count)
     False
+
+We do not store any build log information when the binary upload
+processing succeeded.
+
+    >>> bqItem10.build.upload_log is None
+    True
 
 Cleanup in preparation for the next test:
 
@@ -616,7 +628,6 @@ Before collecting and processing the buildlog we will store the files
 already created in /tmp so we can verify later that this mechanism is
 not leaving any temporary file behind. See bug #172798.
 
-    >>> import os
     >>> old_tmps = os.listdir('/tmp')
 
 Collect and process the buildlog.
@@ -1083,6 +1094,44 @@ credentials, unlike the archive itself.
     Archive Private: True
 
     >>> candidate.destroySelf()
+
+Since this is a build in a private archive, the buildlog was uploaded to
+the restricted librarian.
+
+    >>> candidate = a_build.createBuildQueueEntry()
+    >>> setupBuildQueue(candidate, a_builder)
+    >>> candidate.build.upload_log = None
+    >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+    >>> buildergroup.updateBuild(candidate)
+
+    >>> candidate.build.archive.private
+    True
+
+    >>> lfa = candidate.build.buildlog
+    >>> lfa.restricted
+    True
+    >>> print lfa.filename
+    buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
+
+The attempt to fetch the buildlog from the common librarian will fail
+since this is a build in a private archive and the buildlog was thus
+uploaded to the restricted librarian.
+
+    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> getUtility(ILibrarianClient).getFileByAlias(lfa.id)
+    Traceback (most recent call last):
+      ...
+    DownloadFailed: Alias ... cannot be downloaded from this client.
+
+Accessing the buildlog via the restricted librarian will work as expected.
+
+    >>> import urlparse
+    >>> from canonical.librarian.interfaces import IRestrictedLibrarianClient
+    >>> lfa2 = removeSecurityProxy(
+    ...     getUtility(IRestrictedLibrarianClient).getFileByAlias(lfa.id))
+    >>> url_parts = urlparse.urlsplit(lfa2.file.geturl())
+    >>> print os.path.basename(url_parts[2])
+    buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
 
 A PPA can depend on another PPA. We can make Celso's PPA depend on
 Mark's PPA:
