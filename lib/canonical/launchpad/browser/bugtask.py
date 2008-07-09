@@ -94,6 +94,7 @@ from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
@@ -1243,10 +1244,11 @@ class BugTaskEditView(LaunchpadEditFormView):
             if bugtask.bugwatch is None:
                 # Reset the status and importance to the default values,
                 # since Unknown isn't selectable in the UI.
+                bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
                 bugtask.transitionToStatus(
-                    IBugTask['status'].default, self.user)
+                    IBugTask['status'].default, bug_importer)
                 bugtask.transitionToImportance(
-                    IBugTask['importance'].default, self.user)
+                    IBugTask['importance'].default, bug_importer)
             else:
                 #XXX: Bjorn Tillenius 2006-03-01:
                 #     Reset the bug task's status information. The right
