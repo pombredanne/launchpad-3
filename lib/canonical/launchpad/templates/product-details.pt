@@ -10,7 +10,6 @@
     <tr>
       <td id="details-data">
         <ul>
-          <li tal:condition="context/license_reviewed">License reviewed</li>
           <li tal:condition="context/active">Active</li>
           <li tal:condition="not: context/active">Disabled</li>
           <li tal:condition="context/official_codehosting">Uses Code</li>

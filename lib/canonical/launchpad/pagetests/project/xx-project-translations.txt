@@ -39,9 +39,9 @@ Netapplet is in fact a product belonging to GNOME project.
 
 It's not using Launchpad Translations officially
 
-  >>> for tag in find_tags_by_class(anon_browser.contents, 'summary'):
-  ...     print extract_text(tag)
-  Status: Active
+  >>> print extract_text(
+  ...   find_tag_by_id(anon_browser.contents, 'table-details'))
+  Active
   ...Doesn&rsquo;t use Translations...
 
 Anonymous users don't see the translations
@@ -94,11 +94,8 @@ It's using Launchpad Translations officially.
   >>> browser.open('http://launchpad.dev/alsa-utils')
   >>> print browser.url
   http://launchpad.dev/alsa-utils
-  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
-  ...     print tag
-  <...
-  ...Status:...
-  ...Active...
+  >>> print extract_text(find_tag_by_id(browser.contents, 'table-details'))
+  Active
   ...Uses Translations...
 
 And it has translations.
