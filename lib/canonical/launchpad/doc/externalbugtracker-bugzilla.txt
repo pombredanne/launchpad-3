@@ -300,7 +300,9 @@ We don't yet support updating the importance for Bugzilla bugs, so let's set it
 to some bogus value, to see that it gets set to UNKNOWN.
 
     >>> from canonical.launchpad.interfaces import BugTaskImportance
-    >>> thunderbird_task.importance = BugTaskImportance.HIGH
+    >>> thunderbird_task.transitionToImportance(
+    ...     BugTaskImportance.HIGH,
+    ...     thunderbird_task.pillar.owner)
 
 We need to create a new ExternalBugtracker for the Mozilla tracker:
 
