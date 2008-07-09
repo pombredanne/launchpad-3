@@ -603,6 +603,20 @@ ul#menuroot li.selected a.breadcrumb {
 }
 
 /* Hierarchy horizonal bar */
+#lp-hierarchy-home {
+  background: #ddd;
+  min-height: 25px;
+  float: left;
+}
+#lp-hierarchy-home:before {
+  vertical-align: top;
+  float: left;
+  content: url(navigation-hierarchy-nw-home);
+}
+#lp-hierarchy-home a {
+  padding: 4px 22px 0 8px;
+  display: inline-block;
+}
 #lp-hierarchy {
   background: #eee url(navigation-hierarchy-bg) repeat-x;
   min-height: 25px;

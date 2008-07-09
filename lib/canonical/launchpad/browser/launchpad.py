@@ -243,20 +243,30 @@ class Hierarchy(LaunchpadView):
         The hierarchy elements are taken from the request.breadcrumbs list.
         For each element, element.text is cgi escaped.
         """
-        prefix = '<div id="lp-hierarchy">'
-        suffix = '</div><span class="last-rounded">&nbsp;</span>'
         elements = list(self.request.breadcrumbs)
+        
+        # We're not on the home page
+        if len(elements) > 0:
+            prefix = '<div id="lp-hierarchy">'
+            suffix = '</div><span class="last-rounded">&nbsp;</span>'
 
-        L = []
-        L.append(
-            '<span class="first item">'
-            '<a href="/" class="breadcrumb container" id="homebreadcrumb">'
-            '<img alt="" src="/@@/launchpad-logo-and-name-hierarchy.png"/></a>'
-            '&nbsp;</span>')
+            if len(elements) == 1:
+                first_class = 'before-last'
+            else:
+                first_class = 'first'
 
-        if elements:
+            L = []
+            L.append(
+                '<span class="%s item">'
+                '<a href="/" class="breadcrumb container" id="homebreadcrumb">'
+                '<img alt="" src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
+                '</a>&nbsp;</span>' % first_class)
+
             last_element = elements[-1]
-            before_last_element = elements[-2]
+            if len(elements) > 2:
+                before_last_element = elements[-2]
+            else:
+                before_last_element = None
             for element in elements:
                 cssclass = 'item'
                 if element.has_menu:
@@ -273,8 +283,16 @@ class Hierarchy(LaunchpadView):
                          '</span>'
                          % (cssclass, menudata, element.url,
                             cgi.escape(element.text)))
+            hierarchy = prefix + '<small> &gt; </small>'.join(L) + suffix
+        # We're on the home page!
+        else:
+            hierarchy = '<div id="lp-hierarchy-home">' \
+                        '<a href="/" class="breadcrumb">' \
+                        '<img alt="" src="/@@/launchpad-logo-and-name-hierarchy.png"/>' \
+                        '</a></div>' \
+                        '<span class="last-rounded">&nbsp;</span>'
 
-        return prefix + '<small> &gt; </small>'.join(L) + suffix
+        return hierarchy
 
 class Breadcrumbs(LaunchpadView):
     """Page fragment to display the breadcrumbs text."""
