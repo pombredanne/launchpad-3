@@ -2,14 +2,34 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-subscribers">
+  class="portlet"
+  id="portlet-subscribers"
+  tal:define="
+    direct_subscriptions context/getDirectSubscriptions;
+		from_dupes_subscriptions context/getSubscriptionsFromDuplicates;
+    also_notified_subscribers context/getAlsoNotifiedSubscribers
+  "
+>
+  <h2>Subscribe/Unsubscribe</h2>
+  <ul tal:define="context_menu context/menu:context">
+    <li
+      tal:define="link context_menu/subscription"
+      tal:condition="link/enabled"
+      tal:attributes="
+        style python: 'list-style-image: url(/@@/' + link.icon + ')'
+      "
+    ><a tal:attributes="href link/url" tal:content="link/text" /></li>
+    <li
+      tal:define="link context_menu/addsubscriber"
+      tal:condition="link/enabled"
+      tal:attributes="
+        style python: 'list-style-image: url(/@@/' + link.icon + ')'
+      "
+    ><a tal:attributes="href link/url" tal:content="link/text" /></li>
+  </ul>
   <h2>Subscribers</h2>
-  <div class="portletBody"
-       tal:define="direct_subscriptions context/getDirectSubscriptions;
-		   from_dupes_subscriptions context/getSubscriptionsFromDuplicates;
-                   also_notified_subscribers context/getAlsoNotifiedSubscribers">
+  <ul class="person" tal:condition="direct_subscriptions">
 
-    <ul class="person">
       <li tal:repeat="subscription direct_subscriptions">
         <a href="#"
            tal:content="subscription/person/browsername"
@@ -52,27 +72,4 @@
 
     </div>
 
-    <div>
-
-      <br />
-      <b>Subscribe:</b><br />
-      <ul tal:define="context_menu context/menu:context">
-        <li tal:define="link context_menu/subscription"
-            tal:condition="link/enabled"
-            tal:attributes="style python: 'list-style-image: url(/@@/' + link.icon + ')'">
-          <a tal:attributes="href link/url; title link/text">
-            Yourself
-          </a>
-        </li>
-        <li tal:define="link context_menu/addsubscriber"
-            tal:condition="link/enabled"
-            tal:attributes="style python: 'list-style-image: url(/@@/' + link.icon + ')'">
-          <a tal:attributes="href link/url; title link/text">
-            Someone else
-          </a>
-        </li>
-      </ul>
-
-    </div>
-  </div>
 </div>
