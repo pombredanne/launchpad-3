@@ -59,10 +59,6 @@ Now update Tomcat to actually have this data:
 Let's check it out:
 
     >>> browser.open('http://launchpad.dev/tomcat')
-    >>> tag = find_tag_by_id(browser.contents, 'external-links-heading')
-    >>> print extract_text(tag)
-    External Resources
-
     >>> get_urls(browser.contents)
     Home page http://home.page/
     Sourceforge project http://sourceforge.net/projects/sf-tomcat
@@ -73,7 +69,7 @@ Let's check it out:
 
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'product-languages'))
-    C++,Xenon and Purple
+    Languages: C++,Xenon and Purple
 
 When the freshmeat or sourceforge URLs are identical to the homepage, we omit
 the homepage:

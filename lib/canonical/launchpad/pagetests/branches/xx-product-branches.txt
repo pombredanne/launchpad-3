@@ -186,7 +186,7 @@ the 'Import your project' button is not shown.
     >>> sample_browser.getControl(
     ...     'Code for this project is published in Bazaar branches '
     ...     'on Launchpad').click()
-    >>> sample_browser.getControl('Change').click()
+    >>> sample_browser.getControl('Save changes').click()
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> print_buttons(browser)

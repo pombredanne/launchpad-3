@@ -8,18 +8,13 @@ Translations officially) are found on the +edit page.
     Mozilla Firefox in Launchpad
 
     >>> content = find_main_content(anon_browser.contents)
-    >>> status = content.find('td', id='details-data')
-    >>> print extract_text(status)
-    Active
-    Doesn&rsquo;t use Code
-    Uses Bugs
-    Doesn&rsquo;t use Blueprints
-    Doesn&rsquo;t use Translations
-    Uses Answers
+    >>> uses = content.find('p', id='uses')
+    >>> print extract_text(uses)
+    Mozilla Firefox uses Launchpad for Answers and Bug Tracking.
 
-    >>> label_cell = content.find('th', text='Bug tracker:')
-    >>> print extract_text(label_cell.findNext())
-    Launchpad
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'bugtracker'))
+    Bug tracker: Launchpad
 
 Only the product registrant and the admins have access to this page. 
 
@@ -70,18 +65,14 @@ On the product page, we can see that the product doesn't use any bug
 tracker, not even Launchpad.
 
     >>> content = find_main_content(registrant_browser.contents)
-    >>> status = content.find('td', id='details-data')
-    >>> print extract_text(status)
-    Active
-    Uses Code
-    Doesn&rsquo;t use Bugs
-    Doesn&rsquo;t use Blueprints
-    Doesn&rsquo;t use Translations
-    Uses Answers
+    >>> uses = content.find('p', id='uses')
+    >>> print extract_text(uses)
+    Mozilla Firefox uses Launchpad for Answers.
 
-    >>> label_cell = content.find('th', text='Bug tracker:')
-    >>> print extract_text(label_cell.findNext())
-    None specified
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'bugtracker'))
+    Bug tracker: None specified
 
 Now let's go back and choose to use a specific bug tracker.
 
@@ -95,18 +86,14 @@ Now let's go back and choose to use a specific bug tracker.
     ...         'GnomeGBug GTracker']
     >>> registrant_browser.getControl('Save changes').click()
     >>> content = find_main_content(registrant_browser.contents)
-    >>> status = content.find('td', id='details-data')
-    >>> print extract_text(status)
-    Active
-    Uses Code
-    Doesn&rsquo;t use Bugs
-    Doesn&rsquo;t use Blueprints
-    Doesn&rsquo;t use Translations
-    Uses Answers
+    >>> uses = content.find('p', id='uses')
+    >>> print extract_text(uses)
+    Mozilla Firefox uses Launchpad for Answers.
 
-    >>> label_cell = content.find('th', text='Bug tracker:')
-    >>> print extract_text(label_cell.findNext())
-    GnomeGBug GTracker
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'bugtracker'))
+    Bug tracker: GnomeGBug GTracker
 
 Let's reset it to the way it was before.
 
@@ -122,14 +109,9 @@ Let's reset it to the way it was before.
     ...     'become inactive').selected = False
     >>> registrant_browser.getControl('Save changes').click()
     >>> content = find_main_content(registrant_browser.contents)
-    >>> status = content.find('td', id='details-data')
-    >>> print extract_text(status)
-    Active
-    Uses Code
-    Uses Bugs
-    Doesn&rsquo;t use Blueprints
-    Doesn&rsquo;t use Translations
-    Uses Answers
+    >>> uses = content.find('p', id='uses')
+    >>> print extract_text(uses)
+    Mozilla Firefox uses Launchpad for Answers and Bug Tracking.
 
 
 == Tracking bugs by email ==
@@ -204,14 +186,9 @@ support JavaScript so this behaviour is easy to simulate.)
 The Status of Launchpad uses shows the bug tracker was changed.
 
     >>> content = find_main_content(registrant_browser.contents)
-    >>> status = content.find('td', id='details-data')
-    >>> print extract_text(status)
-    Active
-    Doesn&rsquo;t use Code
-    Doesn&rsquo;t use Bugs
-    Doesn&rsquo;t use Blueprints
-    Doesn&rsquo;t use Translations
-    Doesn&rsquo;t use Answers
+    >>> uses = content.find('p', id='uses')
+    >>> print extract_text(uses)
+    Jokosher Audio Editor does not use Launchpad.
 
 Reviewing the edit page again, Dafydd, can see that bug expiration was
 also disabled by the switch from Launchpad Bugs.

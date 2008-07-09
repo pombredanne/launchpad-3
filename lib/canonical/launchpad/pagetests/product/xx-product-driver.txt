@@ -26,6 +26,6 @@ message inform him of the driver change.
 
 Sample Person is listed as the driver of the product.
 
-  >>> table = find_tag_by_id(browser.contents, 'table-details')
-  >>> table.find(text='Driver:').findNext('a').string
-  u'Sample Person'
+  >>> main = find_main_content(browser.contents)
+  >>> extract_text(main.find(id='driver'))
+  u'Driver: Sample Person'

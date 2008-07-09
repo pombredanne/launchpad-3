@@ -29,6 +29,7 @@ __all__ = [
     'DistributionSetNavigation',
     'DistributionSetContextMenu',
     'DistributionSetSOP',
+    'UsesLaunchpadMixin',
     ]
 
 import datetime
@@ -58,6 +59,7 @@ from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from canonical.launchpad.webapp import (
@@ -74,6 +76,35 @@ from canonical.launchpad.webapp import NavigationMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets.image import ImageChangeWidget
+
+
+class UsesLaunchpadMixin:
+    """This code is used for the overview page of products and distros."""
+
+    def usesLaunchpadFor(self):
+        """Return a string of LP apps (comma-separated) this distro uses."""
+        uses = []
+        if self.context.official_answers:
+            uses.append("<strong>Answers</strong>")
+        if self.context.official_malone:
+            uses.append("<strong>Bug Tracking</strong>")
+        if self.context.official_blueprints:
+            uses.append("<strong>Blueprints</strong>")
+        if IProduct.providedBy(self.context):
+            if self.context.official_rosetta:
+                uses.append("<strong>Code</strong>")
+        if self.context.official_rosetta:
+            uses.append("<strong>Translations</strong>")
+
+        if len(uses) == 0:
+            return "%s does not use Launchpad." % self.context.title
+        elif len(uses) > 1:
+            apps = ", ".join(uses[:-1])
+            apps += " and " + uses[-1]
+        else:
+            apps = uses[0]
+
+        return "%s uses Launchpad for %s." % (self.context.title, apps)
 
 
 class DistributionNavigation(
@@ -527,7 +558,8 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
+class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
+                       UsesLaunchpadMixin):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -589,31 +621,6 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
 
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
-
-    def usesLaunchpadFor(self):
-        """Return a string of LP apps (comma-separated) this distro uses."""
-        if (not self.context.full_functionality or
-            not self.context.official_anything):
-            return "%s does not use Launchpad." % self.context.title
-        else:
-            # There will be at least one app used if we get here.
-            uses = []
-            if self.context.official_answers:
-                uses.append("<strong>Answers</strong>")
-            if self.context.official_malone:
-                uses.append("<strong>Bug Tracking</strong>")
-            if self.context.official_blueprints:
-                uses.append("<strong>Blueprints</strong>")
-            if self.context.official_rosetta:
-                uses.append("<strong>Translations</strong>")
-
-            if len(uses) > 1:
-                apps = ", ".join(uses[:-1])
-                apps += " and " + uses[-1]
-            else:
-                apps = uses[0]
-
-            return "%s uses Launchpad for %s." % (self.context.title, apps)
 
 
 class DistributionPPASearchView(LaunchpadView):

@@ -107,13 +107,9 @@ Finally, if a product states that is not officially using Launchpad
 Translations...
 
     >>> anon_browser.open('http://launchpad.dev/netapplet')
-    >>> content = find_tag_by_id(
-    ...     anon_browser.contents, 'table-details')
+    >>> content = find_tag_by_id(anon_browser.contents, 'uses')
     >>> print extract_text(content)
-    Status:
-    ...
-    Doesn&rsquo;t use Translations
-    ...
+    Network Applet does not use Launchpad.
 
 ... it doesn't show any translation template:
 
@@ -159,7 +155,7 @@ If the netapplet project is updated to use Launchpad for translations...
     >>> admin_browser.getControl(
     ...     'Translations for this project are done in Launchpad'
     ...     ).selected = True
-    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.getControl('Save changes').click()
 
 ...there are no longer any obsolete entires.
 

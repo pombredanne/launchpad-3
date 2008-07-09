@@ -83,6 +83,7 @@ from canonical.launchpad.browser.branchmergeproposallisting import (
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
+from canonical.launchpad.browser.distribution import UsesLaunchpadMixin
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import (
     FeedsMixin, ProductBranchesFeedLink)
@@ -884,8 +885,8 @@ class ProductDownloadFileMixin:
         return None
 
 
-class ProductView(HasAnnouncementsView, SortSeriesMixin,
-                  FeedsMixin, ProductDownloadFileMixin):
+class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
+                  ProductDownloadFileMixin, UsesLaunchpadMixin):
 
     __used_for__ = IProduct
 

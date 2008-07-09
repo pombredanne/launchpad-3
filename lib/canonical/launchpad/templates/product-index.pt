@@ -45,6 +45,7 @@
     <span tal:define="link context/menu:overview/edit"
           tal:condition="link/enabled"
           tal:content="structure link/render" />
+    <br/>
     (Deprecated:
     <span tal:define="link context/menu:overview/driver"
           tal:condition="link/enabled"
@@ -83,6 +84,67 @@
     detailed information about the open source project in question.
   </div>
 
+  <tal:has-external-links condition="view/has_external_links">
+    <ul>
+      <li class="external link" tal:condition="view/should_display_homepage">
+        <a id="homepageurl-link" tal:attributes="href context/homepageurl">
+          <strong>Home page</strong>
+        </a>
+      </li>
+      <li class="external link" tal:condition="view/sourceforge_url">
+        <a id="sourceforge-link" tal:attributes="href view/sourceforge_url">
+          <strong>Sourceforge project</strong>
+        </a>
+      </li>
+      <li class="external link" tal:condition="view/freshmeat_url">
+        <a id="freshmeat-link" tal:attributes="href view/freshmeat_url">
+          <strong>Freshmeat record</strong>
+        </a>
+      </li>
+      <li class="external link" tal:condition="context/wikiurl">
+        <a id="wikiurl-link" tal:attributes="href context/wikiurl">
+          <strong>Wiki</strong>
+        </a>
+      </li>
+      <li class="external link" tal:condition="context/screenshotsurl">
+        <a id="screenshotsurl-link" tal:attributes="href context/screenshotsurl">
+          <strong>Screenshots</strong>
+        </a>
+      </li>
+      <li class="external link" tal:condition="context/downloadurl">
+        <a id="downloadurl-link" tal:attributes="href context/downloadurl">
+          <strong>External downloads</strong>
+        </a>
+      </li>
+    </ul>
+  </tal:has-external-links>
+
+  <p id="partof" tal:condition="context/project">
+    <strong>Part of:</strong> <tal:link replace="structure context/project/fmt:link" />
+  </p>
+
+  <p id="uses">
+    <tal:uses content="structure view/usesLaunchpadFor" />
+  </p>
+
+  <p id="product-languages" tal:condition="context/programminglang">
+    <strong>Languages:</strong> <span tal:content="context/programminglang">Python</span>
+  </p>
+
+  <p id="driver" tal:condition="context/driver">
+    <strong>Driver:</strong> <tal:link replace="structure context/driver/fmt:link" />
+  </p>
+
+  <div>
+    <strong>Licenses:</strong>
+    <ul tal:repeat="license context/licenses">
+      <li tal:content="license/title">GPL</li>
+    </ul>
+    <tal:none condition="not:context/licenses">None specified</tal:none>
+    <div class="description"
+         tal:content="structure context/license_info/fmt:text-to-html" />
+  </div>
+
   <div class="actions">
     <tal:reportbug define="link context/menu:bugs/filebug"
                     condition="context/official_malone"
@@ -97,48 +159,6 @@
                     define="link context/menu:overview/mentorship"
                     replace="structure link/render"/>
   </div>
-      <tal:has-external-links condition="view/has_external_links">
-        <h2 id="external-links-heading">External Resources</h2>
-        <ul>
-          <li class="external link" tal:condition="view/should_display_homepage">
-            <a id="homepageurl-link" tal:attributes="href context/homepageurl">
-              <strong>Home page</strong>
-            </a>
-          </li>
-          <li class="external link" tal:condition="view/sourceforge_url">
-            <a id="sourceforge-link" tal:attributes="href view/sourceforge_url">
-              <strong>Sourceforge project</strong>
-            </a>
-          </li>
-          <li class="external link" tal:condition="view/freshmeat_url">
-            <a id="freshmeat-link" tal:attributes="href view/freshmeat_url">
-              <strong>Freshmeat record</strong>
-            </a>
-          </li>
-          <li class="external link" tal:condition="context/wikiurl">
-            <a id="wikiurl-link" tal:attributes="href context/wikiurl">
-              <strong>Wiki</strong>
-            </a>
-          </li>
-          <li class="external link" tal:condition="context/screenshotsurl">
-            <a id="screenshotsurl-link" tal:attributes="href context/screenshotsurl">
-              <strong>Screenshots</strong>
-            </a>
-          </li>
-          <li class="external link" tal:condition="context/downloadurl">
-            <a id="downloadurl-link" tal:attributes="href context/downloadurl">
-              <strong>External downloads</strong>
-            </a>
-          </li>
-        </ul>
-      </tal:has-external-links>
-
-      <div class="section" tal:content="structure context/@@+details" />
-
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-productfiles"
-        />
 
       <tal:activate-feature
         tal:define="config modules/canonical.config/config"
@@ -172,9 +192,9 @@
         class="section"
         tal:content="structure context/@@+portlet-latestannouncements"
       />
+
       <div class="portlet">
         <h2>Series and milestones</h2>
-
         <div class="project series"
               tal:repeat="series view/sorted_series_list">
 
@@ -183,15 +203,15 @@
                   class python:is_focus and 'highlighted' or 'unhighlighted'">
             <metal:series use-macro="series/@@+macros/detailed_display" />
           </div>
-          <div
-            class="actions"
-            tal:define="link context/menu:overview/series_add"
-            tal:condition="link/enabled"
-            tal:content="structure link/render"
-          />
         </div>
-
+        <div
+          class="actions"
+          tal:define="link context/menu:overview/series_add"
+          tal:condition="link/enabled"
+          tal:content="structure link/render"
+        />
       </div>
+
       <div
         class="section"
         tal:content="structure context/@@+portlet-top-contributors"

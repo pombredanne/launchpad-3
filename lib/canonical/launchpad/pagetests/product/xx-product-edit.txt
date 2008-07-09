@@ -34,8 +34,8 @@ Now we try to edit with a project that exists.
 
 Now we test if we edited it successfully.
 
-    >>> 'The GNOME Project' in browser.contents
-    True
+    >>> extract_text(find_tag_by_id(browser.contents, 'partof'))
+    u'Part of: GNOME'
 
 
 == Setting Development Focus ==
