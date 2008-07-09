@@ -618,9 +618,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def getSourceAndBinaryLibraryFiles(self):
         """See `IPublishing`."""
         publishing_set = getUtility(IPublishingSet)
-        sourcepackagerelease_ids = [self.sourcepackagerelease.id]
+        source_publication_ids = [self.id]
         source_and_files = publishing_set.getFilesForSources(
-            sourcepackagerelease_ids, self.archive)
+            source_publication_ids)
         libraryfiles = [file for source, file in source_and_files]
 
         return sorted(libraryfiles, key=operator.attrgetter('filename'))
@@ -1037,8 +1037,6 @@ class PublishingSet:
         from canonical.launchpad.database.build import Build
         from canonical.launchpad.database.distroarchseries import (
             DistroArchSeries)
-        from canonical.launchpad.database.sourcepackagerelease import (
-            SourcePackageRelease)
 
         store = getUtility(IZStorm).get('main')
         result = store.find(
@@ -1054,7 +1052,7 @@ class PublishingSet:
                 BinaryPackageName.id,
             In(BinaryPackagePublishingHistory.status,
                [enum.value for enum in active_publishing_status]),
-            In(SourcePackageRelease.id, source_publication_ids))
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
 
         results = [
             (source, binary)
