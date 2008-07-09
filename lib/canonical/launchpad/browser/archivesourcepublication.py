@@ -1,8 +1,10 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Decorated `SourcePackagePublishingHistory`.
+"""Decorated `SourcePackagePublishingHistory` setup infrastructure.
 
-XXX
+`ArchiveSourcePublications` allows any callsite dealing with a set of
+`SourcePackagePublishingHistory` to quickly fetch all the external
+references needed to present them properly in the PPA pages.
 """
 
 __metaclass__ = type
@@ -24,7 +26,8 @@ from canonical.lazr import decorates
 class ArchiveSourcePublication:
     """Decorates `ISourcePackagePublishingHistory`.
 
-    XXX
+    It receives the expensive external references when it is created
+    and provide them as through the decorated interface transparently.
     """
     decorates(ISourcePackagePublishingHistory)
 
@@ -46,10 +49,10 @@ class ArchiveSourcePublication:
 
 
 class ArchiveSourcePublications:
-    """XXX
+    """`ArchiveSourcePublication` generator."""
 
-    """
     def __init__(self, source_publications):
+        """Receives the list of target `SourcePackagePublishingHistory`."""
         self._source_publications = source_publications
         self._source_publications_ids = [
             pub.id for pub in self._source_publications]
@@ -87,7 +90,7 @@ class ArchiveSourcePublications:
         return result
 
     def __iter__(self):
-        """XXX """
+        """`ArchiveSourcePublication` generator."""
         builds_by_source = self.getBuildsBySource()
         files_by_source = self.getFilesBySource()
         binaries_by_source = self.getBinariesBySource()
