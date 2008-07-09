@@ -123,12 +123,12 @@
         </tr>
       </table>
     </div>
+    <div class="apps-separator"><!-- --></div>
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
       tal:define="facetmenu CONTEXTS/menu:facet"
       id="lp-apps"
     >
-      <div class="apps-separator"><!-- --></div>
       <tal:XXX replace="nothing">
         # XXX mpt 20080702: The HTML comment works around bug 229931.
       </tal:XXX>
