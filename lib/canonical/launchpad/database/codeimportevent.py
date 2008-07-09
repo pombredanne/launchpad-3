@@ -185,6 +185,28 @@ class CodeImportEventSet:
             event_type=CodeImportEventType.FINISH,
             code_import=code_import, machine=machine)
 
+    def newKill(self, code_import, machine):
+        """See `ICodeImportEventSet`."""
+        assert code_import is not None, "code_import must not be None"
+        assert machine is not None, "machine must not be None"
+        return CodeImportEvent(
+            event_type=CodeImportEventType.KILL,
+            code_import=code_import, machine=machine)
+
+    def newReclaim(self, code_import, machine, job_id):
+        """See `ICodeImportEventSet`."""
+        assert code_import is not None, "code_import must not be None"
+        assert machine is not None, "machine must not be None"
+        assert isinstance(job_id, int), (
+            "job_id must be an int, was: %r" % job_id)
+        event = CodeImportEvent(
+            event_type=CodeImportEventType.RECLAIM,
+            code_import=code_import, machine=machine)
+        _CodeImportEventData(
+            event=event, data_type=CodeImportEventDataType.RECLAIMED_JOB_ID,
+            data_value=str(job_id))
+        return event
+
     def _recordSnapshot(self, event, code_import):
         """Record a snapshot of the code import in the event data."""
         self._recordItems(event, self._iterItemsForSnapshot(code_import))

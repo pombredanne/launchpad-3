@@ -532,8 +532,25 @@ class UnembargoSecurityPackage(PackageCopier):
             if changesfile is not None and changesfile.restricted:
                 new_lfa = self.reUploadFile(changesfile, False)
                 queue_record.changesfile = new_lfa
+            # Re-upload the package diff files if necessary.
+            diffs = sourcepackagerelease.package_diffs
+            for diff in diffs:
+                if diff.diff_content.restricted:
+                    new_lfa = self.reUploadFile(diff.diff_content, False)
+                    diff.diff_content = new_lfa
         elif IBinaryPackagePublishingHistory.providedBy(pub_record):
             files = pub_record.binarypackagerelease.files
+            # Re-upload the binary changes file as necessary.
+            upload = pub_record.binarypackagerelease.build.package_upload
+            changesfile = upload.changesfile
+            if changesfile is not None and changesfile.restricted:
+                new_lfa = self.reUploadFile(changesfile, False)
+                upload.changesfile = new_lfa
+            # Re-upload the buildlog file as necessary.
+            buildlog = pub_record.binarypackagerelease.build.buildlog
+            if buildlog is not None and buildlog.restricted:
+                new_lfa = self.reUploadFile(buildlog, False)
+                pub_record.binarypackagerelease.build.buildlog = new_lfa
         else:
             raise AssertionError(
                 "pub_record is not one of SourcePackagePublishingHistory "

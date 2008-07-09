@@ -25,10 +25,10 @@ from canonical.lazr.interfaces import (
     IResourcePOSTOperation, IScopedCollection)
 from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
-from canonical.lazr.interfaces.rest import WebServiceLayer
+from canonical.lazr.interfaces.rest import (
+    LAZR_WEBSERVICE_NAME, WebServiceLayer)
 from canonical.lazr.rest import (
-    CollectionResource, EntryAdapterUtility, IObjectLink, LAZR_WEBSERVICE_NS,
-    RESTUtilityBase)
+    CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
 
 
 class WadlAPI(RESTUtilityBase):
@@ -202,9 +202,10 @@ class WadlEntryInterfaceAdapterAPI(WadlResourceAdapterAPI):
 
     That is, IEntry subclasses.
     """
-    def __init__(self, adapter):
-        super(WadlEntryInterfaceAdapterAPI, self).__init__(adapter, IEntry)
-        self.utility = EntryAdapterUtility.forEntryAdapterInterface(adapter)
+    def __init__(self, entry_interface):
+        super(WadlEntryInterfaceAdapterAPI, self).__init__(
+            entry_interface, IEntry)
+        self.utility = EntryAdapterUtility.forEntryInterface(entry_interface)
 
     @property
     def entry_page_representation_link(self):
@@ -283,7 +284,7 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
     @property
     def collection_type(self):
         """The name of this kind of resource."""
-        tag = self.entry_schema.queryTaggedValue(LAZR_WEBSERVICE_NS)
+        tag = self.entry_schema.queryTaggedValue(LAZR_WEBSERVICE_NAME)
         return tag['plural']
 
     @property

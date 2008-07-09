@@ -38,7 +38,7 @@
            tal:condition="view/has_sources">
 
         <metal:selectable-sources
-          use-macro="context/@@+form-macros/selectable-sources" />
+          use-macro="context/@@+macros/selectable-sources" />
 
         <table style="margin-top: 1em;"
           tal:condition="view/available_sources_size">

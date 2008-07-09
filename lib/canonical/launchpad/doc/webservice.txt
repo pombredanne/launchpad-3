@@ -477,10 +477,14 @@ simple, we can define IAuthorEntry and ICommentEntry this way:
 The only extra step we have to take is to annotate the interfaces with
 human-readable names for the objects we're exposing.
 
-    >>> from canonical.lazr.rest.resource import LAZR_WEBSERVICE_NS
+    >>> from canonical.lazr.rest.resource import LAZR_WEBSERVICE_NAME
+    >>> # XXX leonardr 2008-07-09 bug=145746
+    >>> # Once we're using Zope 3.4 we can call
+    >>> # zope.interface.taggedValue(LAZR_WEBSERVICE_NAME, dict(...))
+    >>> # from within the interface declaration.
     >>> def tag_with_names(interface, singular, plural):
     ...     interface.setTaggedValue(
-    ...         LAZR_WEBSERVICE_NS, dict(singular=singular, plural=plural))
+    ...         LAZR_WEBSERVICE_NAME, dict(singular=singular, plural=plural))
     >>> tag_with_names(IAuthorEntry, 'author', 'authors')
     >>> tag_with_names(ICommentEntry, 'comment', 'comments')
 
