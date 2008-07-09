@@ -6,7 +6,6 @@ __metaclass__ = type
 
 all = ['entry_adapter_for_schema']
 
-import re
 import textwrap
 import urllib
 
