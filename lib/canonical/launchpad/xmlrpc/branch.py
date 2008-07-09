@@ -126,8 +126,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             return faults.BranchCreationForbidden(product.displayname)
         except BranchCreationException, err:
             return faults.BranchNameInUse(err)
-        except LaunchpadValidationError:
-            return faults.InvalidBranchName(branch_name)
+        except LaunchpadValidationError, err:
+            return faults.InvalidBranchName(err)
 
         return canonical_url(branch)
 

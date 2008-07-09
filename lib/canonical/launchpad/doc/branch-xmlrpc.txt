@@ -266,12 +266,24 @@ member of. Doing otherwise raises a Fault:
 
 Trying to register a branch with an invalid name will fail with a fault that
 explains the problem:
+
     >>> branchset_api.register_branch(
     ...     'http://example.com/invalid-branch-name', '.bzr', 'title', 'desc',
     ...     'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 260: 'Invalid branch name: .bzr. Branch names must ...
+    Fault: <Fault 260: "Invalid branch name '.bzr'. Branch names must ...
+
+
+Crazy unicode characters are also invalid:
+
+    >>> branchset_api.register_branch(
+    ...     'http://example.com/invalid-branch-name',
+    ...      u'\N{latin small letter e with acute}', 'title', 'desc',
+    ...     'test@canonical.com', 'evolution')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 260: u"Invalid branch name '\xe9'. Branch names must ...
 
 
 == link_branch_to_bug(branch_url, bug_id, whiteboard) ==

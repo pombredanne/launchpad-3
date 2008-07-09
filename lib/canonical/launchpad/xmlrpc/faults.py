@@ -344,11 +344,9 @@ class InvalidBranchName(LaunchpadFault):
     """
 
     error_code = 260
-    msg_template = (
-        'Invalid branch name: %(branch_name)s. '
-        'Branch names must start with a number or letter. '
-        'The characters +, -, _, . and @ are also allowed after the '
-        'first character.')
+    # The actual exception is rather friendly, so we just wrap it in a Fault.
+    msg_template = '%(error)s'
 
-    def __init__(self, branch_name):
-        LaunchpadFault.__init__(self, branch_name=branch_name)
+    def __init__(self, error):
+        error_message = error.args[0].encode('utf-8', 'replace')
+        LaunchpadFault.__init__(self, error=error_message)
