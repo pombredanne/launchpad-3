@@ -106,6 +106,9 @@
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
+    <tal:login replace="structure context/@@login_status" />
+    <tal:hierarchy replace="structure context/@@+hierarchy" />
+    
     <div id="globalheader"  xml:lang="en" lang="en" dir="ltr"
       tal:condition="site_message">
       <div class="sitemessage" tal:content="structure site_message"/>
@@ -117,11 +120,6 @@
       <ul id="menuroot">
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
       </ul>
-      <table id="logincontrol">
-        <tr>
-          <td tal:content="structure context/@@login_status" />
-        </tr>
-      </table>
     </div>
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
@@ -277,6 +275,7 @@
         tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch"
         action=""
+        xml:lang="en" lang="en" dir="ltr"
         method="get"
         accept-charset="UTF-8"
         tal:attributes="action string:${rooturl}+search"
@@ -308,7 +307,7 @@
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           <tal:block>
               | <a href="https://help.launchpad.net/LaunchpadReleases">
-              Version 1.2.6</a> | build
+              Version 1.99</a> | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>

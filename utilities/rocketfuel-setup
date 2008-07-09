@@ -1,10 +1,11 @@
 #! /bin/bash
 
-#
 # This script will setup a brand new Ubuntu machine as a LP developer
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
-#
+
+utilities_dir="$(cd $(dirname $0) && pwd)"
+source "$utilities_dir/rocketfuel-env.sh"
 
 # load up Ubuntu release details so we know which repos to enable
 source /etc/lsb-release
@@ -209,34 +210,36 @@ ssh devpad.canonical.com /code/rocketfuel-built/launchpad/utilities/devpad-setup
 
 
 # Create the local branch structure we will use for managing Launchpad code
-mkdir -p ~/canonical
-cd ~/canonical
-if [ ! -d lp-branches ]; then
-  bzr init-repo --trees lp-branches
+mkdir -p $LP_PROJECT_ROOT
+cd $LP_PROJECT_ROOT
+if [ ! -d $LP_SHARED_REPO ]; then
+  bzr init-repo --trees $LP_SHARED_REPO
   if [ $? -ne 0 ]; then
     echo "ERROR: Unable to setup local LP repository"
     exit 1
   fi
 fi
-if [ ! -d lp-branches/.bzr -a -d lp-branches/.bzr/repository ]; then
-  echo "ERROR: LP repository not found in ~/canonical/lp-branches/"
+if [ ! -d $LP_SHARED_REPO/.bzr -a -d $LP_SHARED_REPO/.bzr/repository ]; then
+  echo "ERROR: LP repository not found in $LP_PROJECT_PATH"
   exit 1
 fi
 
-cd lp-branches
-if [ ! -d trunk ]; then
-  echo "Making local branch of Launchpad trunk, this will take a while..."
-  bzr branch bzr+ssh://devpad.canonical.com/code/rocketfuel/launchpad/devel trunk
+cd $LP_SHARED_REPO
+if [ ! -d $LP_TRUNK_NAME ]; then
+  echo "Making local branch of Launchpad trunk, this may take a while..."
+  # bzr up to 1.6b2 has a bug that causes this to oom.
+  #bzr branch bzr+ssh://devpad.canonical.com/code/rocketfuel/launchpad/devel $LP_TRUNK_NAME
+  bzr branch sftp://devpad.canonical.com/code/rocketfuel/launchpad/devel $LP_TRUNK_NAME
   if [ $? -ne 0 ]; then
     echo "ERROR: Unable to create local copy of Rocketfuel trunk"
     exit 1
   fi
 fi
 
-cd trunk
+cd $LP_TRUNK_NAME
 if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
   "//devpad.canonical.com/code/rocketfuel/launchpad/devel/" ]; then
-  echo "ERROR: Your trunk branch in ~/canonical/lp-branches/trunk has an
+  echo "ERROR: Your trunk branch in $LP_TRUNK_PATH has an
        incorrect pull location, correcting now..."
   bzr pull --remember bzr+ssh://devpad.canonical.com/code/rocketfuel/launchpad/devel
   if [ $? -ne 0 ]; then
@@ -265,9 +268,10 @@ fi
 if [ ! -e ~/.bazaar/locations.conf ]; then
   touch ~/.bazaar/locations.conf
 fi
-grep -q "canonical\/lp-branches" ~/.bazaar/locations.conf
+bn=$(basename $LP_PROJECT_ROOT)
+grep -q "$bn\/$LP_SHARED_REPO" ~/.bazaar/locations.conf
 if [ $? -ne 0 ]; then
-  branchloc=$(eval echo "~/canonical/lp-branches")
+  branchloc=$(eval echo "$LP_PROJECT_PATH")
   echo "
 [${branchloc}]
 pqm_email = Launchpad PQM <launchpad@pqm.canonical.com>
@@ -284,7 +288,7 @@ fi
 
 # Setup access to the local supermirror
 if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
-  cp ~/canonical/lp-branches/trunk/lib/canonical/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
+  cp $LP_TRUNK_PATH/lib/canonical/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
   chmod 600 ~/.ssh/launchpad_id_dsa
   echo "Setup ssh key for local supermirror ssh access."
 fi
@@ -292,49 +296,49 @@ fi
 # Setup scripts in /usr/local/bin
 cd /usr/local/bin
 if [ ! -e rocketfuel-get ]; then
-  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-get
+  sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-get
 fi
-ls -l rocketfuel-get | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+ls -l rocketfuel-get | cut -d">" -f2 | grep -q "$LP_TRUNK_NAME\/utilities\/rocketfuel"
 if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-get should be deleted so I can
          recreate it."
 fi
 if [ ! -e rocketfuel-flakes ]; then
-  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-flakes
+  sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-flakes
 fi
-ls -l rocketfuel-flakes | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+ls -l rocketfuel-flakes | cut -d">" -f2 | grep -q "$LP_TRUNK_NAME\/utilities\/rocketfuel"
 if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-flakes should be deleted so I can
          recreate it."
 fi
 if [ ! -e rocketfuel-branch ]; then
-  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-branch
+  sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-branch
 fi
-ls -l rocketfuel-branch | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+ls -l rocketfuel-branch | cut -d">" -f2 | grep -q "$LP_TRUNK_NAME\/utilities\/rocketfuel"
 if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-branch should be deleted so I can
          recreate it."
 fi
 if [ ! -e rocketfuel-setup ]; then
-  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-setup
+  sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-setup
 fi
-ls -l rocketfuel-setup | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+ls -l rocketfuel-setup | cut -d">" -f2 | grep -q "$LP_TRUNK_NAME\/utilities\/rocketfuel"
 if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-setup should be deleted so I can
          recreate it."
 fi
 if [ ! -e rocketfuel-status ]; then
-  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-status
+  sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-status
 fi
-ls -l rocketfuel-status | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+ls -l rocketfuel-status | cut -d">" -f2 | grep -q "$LP_TRUNK_NAME\/utilities\/rocketfuel"
 if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-status should be deleted so I can
          recreate it."
 fi
 if [ ! -e rocketfuel-push ]; then
-  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-push
+  sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-push
 fi
-ls -l rocketfuel-push | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+ls -l rocketfuel-push | cut -d">" -f2 | grep -q "$LP_TRUNK_NAME\/utilities\/rocketfuel"
 if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-push should be deleted so I can
          recreate it."
@@ -350,19 +354,19 @@ committing changes to LP in utilities/rocketfuel-setup.
 
 You should use the following commands to manage your Rocketfuel:
 
- rocketfuel-branch foo
-    Create a new branch of LP called "foo" in ~/canonical/lp-branches/foo,
-    with all the source dependencies properly linked in.
-
  rocketfuel-get
     Update your copy of trunk and the necessary source dependencies, and
     make sure all source dependencies are properly linked in to all the
     branches you are working on.
 
+ rocketfuel-branch foo
+    Create a new branch of LP called "foo" in $LP_PROJECT_PATH/foo,
+    with all the source dependencies properly linked in.
+
  rocketfuel-status
-    Check each of the branches in ~/canonical/lp-branches/ and show which of
-    them have uncommitted changes, also check which ones have revisions that
-    have not yet landed on trunk.
+    Check each of the branches in $LP_PROJECT_PATH and show which of them have
+    uncommitted changes, also check which ones have revisions that have not
+    yet landed on trunk.
 
  rocketfuel-push
     Push all of your branches to devpad, so that you have a server-side
@@ -370,4 +374,3 @@ You should use the following commands to manage your Rocketfuel:
 
 Happy hacking!
 "
-

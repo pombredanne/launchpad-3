@@ -361,6 +361,26 @@ hr {
   margin: 0;
   background-color: #6D6D6D;
 }
+/* === Hierarchy === */
+/* The location bar begins with hierarchy segments showing your context: */
+#lp-hierarchy {
+  background: #eee url(navigation-n.png) top repeat-x;
+  float: left;
+}
+/* Each hierarchy element is a <span>:
+#lp-hierarchy span {
+  padding: 2px 0;
+}
+#xlp-hierarchy .first {
+  background: url(navigation-nw-w-normal.png) top left no-repeat;
+}
+#xlp-hierarchy .first::before {
+  content: '';
+  background: url(navigation-sw-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+  vertical-align: -1px;
+}
+*/
 /* Next is a location bar. */
 
 #locationbar {
@@ -581,6 +601,62 @@ ul#menuroot li.selected a.breadcrumb {
   margin: 0px 0px 0px 0px;
   white-space: pre;
 }
+
+/* Hierarchy horizonal bar */
+#lp-hierarchy-home {
+  background: #ddd;
+  min-height: 25px;
+  float: left;
+}
+#lp-hierarchy-home:before {
+  vertical-align: top;
+  float: left;
+  content: url(navigation-hierarchy-nw-home);
+}
+#lp-hierarchy-home a {
+  padding: 4px 22px 0 8px;
+  display: inline-block;
+}
+#lp-hierarchy {
+  background: #eee url(navigation-hierarchy-bg) repeat-x;
+  min-height: 25px;
+  float: left;
+}
+#lp-hierarchy:before {
+  vertical-align: top;
+  float: left;
+  content: url(navigation-hierarchy-nw);
+}
+#lp-hierarchy .item {
+  background: url(navigation-hierarchy-chevron-normal) no-repeat right;
+  display: inline-block;
+  min-height: 25px;
+  vertical-align: middle;
+}
+#lp-hierarchy a {
+  color: #000;
+  display: inline-block;
+  padding: 4px 22px 0 8px;
+}
+#lp-hierarchy .before-last {
+  background-image: url(navigation-hierarchy-chevron-selected);
+}
+#lp-hierarchy .last {
+  background: #ddd;
+}
+#lp-hierarchy .last a {
+  font-weight: bold;
+  padding-right: 4px;
+}
+.last-rounded {
+  background: #ddd url(navigation-hierarchy-ne) no-repeat top right;
+  min-height: 25px;
+  display: inline-block;
+}
+#lp-hierarchy small {
+  display: none;
+}
+
 /* Login control goes on the right, taking up the full height of the
  * locationbar.
  */
@@ -600,23 +676,15 @@ ul#menuroot li.selected a.breadcrumb {
   color: #FFFFFF;
   font-size: 11px;
   font-weight: bold;
+
+/* === Login control === */
+/* The login control goes at the top right of almost every page: */
+#logincontrol {float: right;}
+/* The "Log Out" button doesn't make the line too tall: */
+#logincontrol input {
+  font-size: smaller;
+  display: inline-block; 
   vertical-align: middle;
-  /* Reset vertical padding specified by the "td" style. It causes the
-     "#logincontrol" background area to exceed the "#locationbar" height for
-     even modest increases in font size. */
-  padding-top: 0;
-  padding-bottom: 0;
-  /* Set horizontal padding to 10px, which is also the left padding of the
-     "#yourlocation" box (hence the visible space left of the location bar). */
-  padding-left: 10px;
-  padding-right: 10px;
-}
-/* Reset standard margin from "input[type='submit']" to avoid unwanted spacing
-   when logged in. */
-#logincontrol input[type='submit'] { margin-right: 0; }
-/* Link text is black. */
-#logincontrol a {
-    color: #000000;
 }
 
 /* === Application tabs === */
@@ -803,30 +871,6 @@ ul#menuroot li.selected a.breadcrumb {
 }
 
 
-
-
-/* Each tab will soon also have a tinted bottom matching the app theme: */
-#lp-apps *.overview       * {-tinted-border-bottom-color: #83ad23;}
-#lp-apps *.branches       * {-tinted-border-bottom-color: #d18b39;}
-#lp-apps *.bugs           * {-tinted-border-bottom-color: #9f2b33;}
-#lp-apps *.specifications * {-tinted-border-bottom-color: #3594bb;}
-#lp-apps *.translations   * {-tinted-border-bottom-color: #bb3a84;}
-#lp-apps *.answers        * {-tinted-border-bottom-color: #3840be;}
-/* The active tab is darker: */
-#lp-apps strong span, #lp-apps strong a {
-  background-color: #ddd;
-  background-image: url(navigation-tab-bottom-untinted-selected.png);
-}
-/* It's also contiguous with the hierarchy above: */
-#lp-apps strong {border-top: 1px solid #ddd;}
-/* Disabled tabs don't look clickable: */
-#lp-apps span span {
-  background-image: none;
-  border-color: #ccc;
-  border-width: 0 1px 1px;
-  color: #ccc;
-}
-
 /*
 Inline help is contained in a <div> and dynamically positioned by JavaScript.
 */
@@ -935,11 +979,11 @@ span.help {font-weight: normal;}
   background-image: url(/+icing/navigation-se-selected.png);
 }
 
-/* Immediately above the global footer is a global search field: */
+/* Immediately above the global footer, on most pages, is a search field: */
 #globalsearch {font-size: smaller; margin: 4em 0 2em; text-align: center;}
 #globalsearch input {display: block; margin: 0 auto;}
 /* The last element on every page is a standard footer. */
-#globalfooter {clear: both; margin: 0.5em 20px;}
+#globalfooter {clear: both; margin: 0.5em 0;}
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
@@ -1064,7 +1108,7 @@ top left (y), and top right (z) of the rounded border. */
   float: left;
   margin-left: -212px;
   text-align: right;
-  width: 200px;
+  width: 192px;
 }
 /* There is a margin between each section and the previous one: */
 .pillar div.portlet, .pillar div.section {clear: left; padding-top: 2em;}
@@ -1795,4 +1839,11 @@ div.popupTitle {
 
 #no-results span.search_text {
   font-weight: bold;
+}
+
+/* From nice_pre in tales.py */
+pre.wrap {
+  white-space: -moz-pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
 }
