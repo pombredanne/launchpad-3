@@ -8,8 +8,8 @@ Translations officially) are found on the +edit page.
     Mozilla Firefox in Launchpad
 
     >>> content = find_main_content(anon_browser.contents)
-    >>> status = content.find('td', id='details-data')
-    >>> print extract_text(status)
+    >>> status_label = content.find('th', text='Status:')
+    >>> print extract_text(status_label.findNext())
     Active
     Doesn&rsquo;t use Code
     Uses Bugs
@@ -70,8 +70,8 @@ On the product page, we can see that the product doesn't use any bug
 tracker, not even Launchpad.
 
     >>> content = find_main_content(registrant_browser.contents)
-    >>> status = content.find('td', id='details-data')
-    >>> print extract_text(status)
+    >>> status_label = content.find('th', text='Status:')
+    >>> print extract_text(status_label.findNext())
     Active
     Uses Code
     Doesn&rsquo;t use Bugs
@@ -95,8 +95,8 @@ Now let's go back and choose to use a specific bug tracker.
     ...         'GnomeGBug GTracker']
     >>> registrant_browser.getControl('Change').click()
     >>> content = find_main_content(registrant_browser.contents)
-    >>> status = content.find('td', id='details-data')
-    >>> print extract_text(status)
+    >>> status_label = content.find('th', text='Status:')
+    >>> print extract_text(status_label.findNext())
     Active
     Uses Code
     Doesn&rsquo;t use Bugs
@@ -122,8 +122,8 @@ Let's reset it to the way it was before.
     ...     'become inactive').selected = False
     >>> registrant_browser.getControl('Change').click()
     >>> content = find_main_content(registrant_browser.contents)
-    >>> status = content.find('td', id='details-data')
-    >>> print extract_text(status)
+    >>> status_label = content.find('th', text='Status:')
+    >>> print extract_text(status_label.findNext())
     Active
     Uses Code
     Uses Bugs
@@ -204,8 +204,8 @@ support JavaScript so this behaviour is easy to simulate.)
 The Status of Launchpad uses shows the bug tracker was changed.
 
     >>> content = find_main_content(registrant_browser.contents)
-    >>> status = content.find('td', id='details-data')
-    >>> print extract_text(status)
+    >>> status_label = content.find('th', text='Status:')
+    >>> print extract_text(status_label.findNext())
     Active
     Doesn&rsquo;t use Code
     Doesn&rsquo;t use Bugs
