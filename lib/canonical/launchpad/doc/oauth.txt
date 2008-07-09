@@ -194,7 +194,7 @@ An access token can only be changed by the person associated with it.
     Traceback (most recent call last):
     ...
     Unauthorized:...
-    >>> login(access_token.person.preferredemail.email)
+    >>> login_person(access_token.person)
     >>> access_token.permission = AccessLevel.WRITE_PUBLIC
 
 From any given person it's possible to retrieve his non-expired access

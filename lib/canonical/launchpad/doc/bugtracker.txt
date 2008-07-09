@@ -13,6 +13,10 @@ and an external bug, see bugwatch.txt.
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
     >>> now = datetime.now(pytz.timezone('UTC'))
 
+We must be an admin to modify bug watches later on.
+
+    >>> login('foo.bar@canonical.com')
+
 We can get a list of all the bug tracker's bug watches needing to be
 updated.  The current criteria for needing a update is that it hasn't
 been updated in the last 23 hours.
