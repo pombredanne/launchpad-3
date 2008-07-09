@@ -15,7 +15,10 @@
   }
 </script>
 
-<table tal:attributes="class python: context.duplicateof and 'duplicate listing' or 'listing'">
+<table
+  id="affected-software"
+  tal:attributes="class python: context.duplicateof and 'duplicate listing' or 'listing'"
+>
   <thead>
     <tr>
       <th colspan="2">Affects</th>

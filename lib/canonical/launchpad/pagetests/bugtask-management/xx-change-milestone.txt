@@ -9,7 +9,14 @@ when bugs should be fixed by setting up some milestones.
     >>> owner_browser = setupBrowser('Basic test@canonical.com:test')
     >>> owner_browser.open('http://launchpad.dev/firefox/+bug/1')
 
-Bug 1 has a bugtask for Firefox; this product has the milestone 1.0.
+Bug 1 affects the Firefox project. The 1.0 milestone is available for
+use, but the bug is not yet targeted to that milestone.
+
+    >>> table = find_tag_by_id(owner_browser.contents, 'affected-software')
+    >>> print extract_text(table)
+    Affects          Status  Importance  Assigned to        Milestone
+    Mozilla Firefox  New     Low         Mark Shuttleworth 
+    ...
 
     >>> milestone_control = owner_browser.getControl(
     ...     name='firefox.milestone', index=0)
@@ -18,10 +25,16 @@ Bug 1 has a bugtask for Firefox; this product has the milestone 1.0.
     >>> milestone_control.displayOptions
     ['(no value)', 'Mozilla Firefox: 1.0']
 
-Sample Person assigns the firefox bugtask to milestone 1.0.
+Sample Person targets the bug to 1.0 for Firefox. This shows up in the
+Affects table, and in the selected value of the Milestone menu.
 
     >>> milestone_control.displayValue = ['Mozilla Firefox: 1.0']
     >>> owner_browser.getControl('Save Changes', index=0).click()
+    >>> table = find_tag_by_id(owner_browser.contents, 'affected-software')
+    >>> print extract_text(table)
+    Affects          Status  Importance  Assigned to        Milestone
+    Mozilla Firefox  New     Low         Mark Shuttleworth  1.0
+    ...
     >>> milestone_control = owner_browser.getControl(
     ...     name='firefox.milestone', index=0)
     >>> milestone_control.displayValue
@@ -68,6 +81,13 @@ First he registers a new milestone.
 He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+bug/1')
+    >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
+    >>> print extract_text(table)
+    Affects                   Status  Importance  Assigned to        Milestone
+    Mozilla Firefox           New     Low         Mark Shuttleworth  1.0
+    ...
+    mozilla-firefox (Ubuntu)  New     Medium
+    ...
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_mozilla-firefox.milestone')
     >>> milestone_control.displayValue
@@ -76,6 +96,13 @@ He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
     ['(no value)', 'Ubuntu: 5.04.rc1']
     >>> milestone_control.displayValue = ['Ubuntu: 5.04.rc1']
     >>> admin_browser.getControl('Save Changes', index=3).click()
+    >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
+    >>> print extract_text(table)
+    Affects                   Status  Importance  Assigned to        Milestone
+    Mozilla Firefox           New     Low         Mark Shuttleworth  1.0
+    ...
+    mozilla-firefox (Ubuntu)  New     Medium                         5.04.rc1
+    ...
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_mozilla-firefox.milestone')
     >>> milestone_control.displayValue
