@@ -79,7 +79,7 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
-  <class class="canonical.launchpad.xmlrpc.faults.NoSuchPersonWithUsername">
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchPersonWithName">
     <require like_class="xmlrpclib.Fault" />
   </class>
 
@@ -132,6 +132,10 @@
   </class>
 
   <class class="canonical.launchpad.xmlrpc.faults.BranchNameInUse">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NotInTeam">
     <require like_class="xmlrpclib.Fault" />
   </class>
 

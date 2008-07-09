@@ -25,10 +25,11 @@ __all__ = [
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
-    'NoSuchPersonWithUsername',
+    'NoSuchPersonWithName',
     'NoSuchProduct',
     'NoSuchSeries',
     'NoSuchTeamMailingList',
+    'NotInTeam',
     'RequiredParameterMissing',
     'UnexpectedStatusReport',
     ]
@@ -268,14 +269,14 @@ class InvalidBranchIdentifier(LaunchpadFault):
         LaunchpadFault.__init__(self, branch_path=branch_path)
 
 
-class NoSuchPersonWithUsername(LaunchpadFault):
-    """There's no Person with the specified login registered in Launchpad."""
+class NoSuchPersonWithName(LaunchpadFault):
+    """There's no Person with the specified name registered in Launchpad."""
 
     error_code = 200
-    msg_template = 'No such person: %(username)s'
+    msg_template = 'No such person or team: %(person_name)s'
 
-    def __init__(self, username):
-        LaunchpadFault.__init__(self, username=username)
+    def __init__(self, person_name):
+        LaunchpadFault.__init__(self, person_name=person_name)
 
 
 class BranchNameInUse(LaunchpadFault):
@@ -309,3 +310,20 @@ class InvalidProductIdentifier(LaunchpadFault):
 
     def __init__(self, name):
         LaunchpadFault.__init__(self, name=name)
+
+
+class NotInTeam(LaunchpadFault):
+    """Raised when a person needs to be a member of a team, but is not.
+
+    In particular, this is used when a user tries to register a branch as
+    being owned by a team that they themselves are not a member of.
+    """
+
+    error_code = 250
+    msg_template = '%(person_name)s is not a member of %(team_name)s'
+
+    def __init__(self, person_name, team_name):
+        LaunchpadFault.__init__(
+            self, person_name=person_name, team_name=team_name)
+
+

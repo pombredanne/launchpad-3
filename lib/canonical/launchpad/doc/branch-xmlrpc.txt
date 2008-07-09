@@ -13,7 +13,8 @@
 == register_branch ==
 
 register_branch(branch_url, branch_name, branch_title,
-                branch_description, author_email, product_name)
+                branch_description, author_email, product_name,
+                owner_name='')
 
 Let's register a branch using register_branch(). First we make sure that
 there is no branch with the URL we are going to register.
@@ -232,6 +233,36 @@ policy is forbidden will cause a fault result.
     Fault: <Fault 110: 'You are not allowed to create a branch for project:
     The Landscape Project'>
 
+We can register a branch as being owned by a team, rather than just an
+individual:
+
+    >>> branchset_api.register_branch(
+    ...     'http://example.com/unregistered-as-yet', 'team-branch',
+    ...     'new-title', 'new-description', 'test@canonical.com',
+    ...     'evolution', 'name18')
+    'http://code.launchpad.dev/~name18/evolution/team-branch'
+
+If the team doesn't exist, we raise a Fault that says so:
+
+    >>> branchset_api.register_branch(
+    ...     'http://example.com/team-dont-exist', 'team-dont-exist',
+    ...     'title', 'description', 'test@canonical.com', 'evolution',
+    ...     'no-existy-teamo')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 200: 'No such person or team: no-existy-teamo'>
+
+We can only register branches as belonging to a team that we are a
+member of. Doing otherwise raises a Fault:
+
+    >>> branchset_api.register_branch(
+    ...     'http://example.com/invalid-team', 'invalid-team', 'title',
+    ...     'description', 'test@canonical.com', 'evolution',
+    ...     'landscape-developers')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 250: 'name16 is not a member of landscape-developers'>
+
 
 == link_branch_to_bug(branch_url, bug_id, whiteboard) ==
 
@@ -399,7 +430,7 @@ But if the project or the user doesn't exist, Launchpad will return a fault:
     >>> branchset_api.resolve_lp_path('~doesntexist/+junk/trunk')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 200: 'No such person: doesntexist'>
+    Fault: <Fault 200: 'No such person or team: doesntexist'>
 
     >>> branchset_api.resolve_lp_path('~sabdfl/doesntexist/trunk')
     Traceback (most recent call last):
