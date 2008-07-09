@@ -28,7 +28,11 @@
     ><a tal:attributes="href link/url" tal:content="link/text" /></li>
   </ul>
   <h2>Subscribers</h2>
-  <ul class="person" tal:condition="direct_subscriptions">
+  <ul
+    id="subscribers-direct"
+    class="person"
+    tal:condition="direct_subscriptions"
+  >
 
       <li tal:repeat="subscription direct_subscriptions">
         <a href="#"
@@ -39,15 +43,14 @@
 	  Dafydd Harries
 	</a>
       </li>
-      <li class="info" tal:condition="not: direct_subscriptions">
-        <i>No subscribers</i>
-      </li>
     </ul>
 
+  <div tal:condition="not:direct_subscriptions">None</div>
+
     <div tal:condition="from_dupes_subscriptions">
-      <br />
-      <b>From duplicates:</b><br />
-      <ul class="person">
+
+      <h2>From duplicates</h2>
+      <ul id="subscribers-from-duplicates" class="person">
         <li tal:repeat="subscription from_dupes_subscriptions">
           <a href="#"
              tal:content="subscription/person/browsername"
@@ -60,9 +63,9 @@
 
     <div tal:condition="also_notified_subscribers">
 
-      <br />
-      <b>Also notified:</b><br />
-      <ul class="person">
+    <h2>Also notified</h2>
+
+      <ul id="subscribers-also-notified" class="person">
         <li tal:repeat="subscriber also_notified_subscribers">
           <a href="#"
              tal:content="subscriber/browsername"

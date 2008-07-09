@@ -623,9 +623,9 @@ Now let's do the same with a bug.
 First we show that 'One Membership' is not initially a subscriber to the
 bug:
 
-  >>> subs = find_portlet(browser.contents, 'Subscribers')
-  >>> 'One Membership' in subs.renderContents()
-  False
+    >>> subs = find_tag_by_id(browser.contents, 'portlet-subscribers')
+    >>> 'One Membership' in subs.renderContents()
+    False
 
 Now we offer mentoring, and along the way we request to be subscribed:
 
@@ -637,8 +637,8 @@ Now we offer mentoring, and along the way we request to be subscribed:
 
 And now 'One Membership' is a subscriber:
 
-  >>> subs = find_portlet(browser.contents, 'Subscribers')
-  >>> 'One Membership' in subs.renderContents()
-  True
+    >>> subs = find_tag_by_id(browser.contents, 'portlet-subscribers')
+    >>> 'One Membership' in subs.renderContents()
+    True
 
 
