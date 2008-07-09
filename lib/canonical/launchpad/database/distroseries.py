@@ -397,16 +397,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             updates=self.language_pack_base, orderBy='-date_exported')
 
     def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         search_params.setDistroSeries(self)
         return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
-        """See IBugTarget."""
+        """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
     def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
+        """See `IHasBugs`."""
         return get_bug_tags_open_count(
             "BugTask.distroseries = %s" % sqlvalues(self), user)
 
@@ -1280,20 +1280,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=custom_orderBy)
 
         return source_results.union(build_results.union(custom_results))
-
-    def createBug(self, bug_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
-        # We don't currently support opening a new bug on an IDistroSeries,
-        # because internally bugs are reported against IDistroSeries only when
-        # targetted to be fixed in that series, which is rarely the case for a
-        # brand new bug report.
-        raise NotImplementedError(
-            "A new bug cannot be filed directly on a distribution series, "
-            "because series are meant for \"targeting\" a fix to a specific "
-            "version. It's possible that we may change this behaviour to "
-            "allow filing a bug on a distribution series in the "
-            "not-too-distant future. For now, you probably meant to file "
-            "the bug on the distribution instead.")
 
     def _getBugTaskContextClause(self):
         """See BugTargetBase."""

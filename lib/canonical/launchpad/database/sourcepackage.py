@@ -402,7 +402,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return self.distribution.bug_reporting_guidelines
 
     def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 

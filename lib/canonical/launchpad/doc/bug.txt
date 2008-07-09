@@ -141,8 +141,6 @@ We must use setPrivate:
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import (
     ...     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet)
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> old_state = Snapshot(firefox_crashes, providing=IBug)
@@ -379,26 +377,6 @@ sourcepackage. E.g.
     >>> private_bug.getIndirectSubscribers()
     []
 
-There are some IBugTargets that don't allow bugs to be directly filed on
-them, e.g. IDistroSeries and ISourcePackage.
-
-    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
-
-    >>> ubuntu_warty = getUtility(IDistroSeriesSet).get(1)
-    >>> ubuntu_warty_firefox = ubuntu_warty.getSourcePackage("mozilla-firefox")
-    >>> params = CreateBugParams(
-    ...     owner=current_user(), title="test", comment="test")
-    >>> ubuntu_warty.createBug(params)
-    Traceback (most recent call last):
-      ...
-    NotImplementedError: A new bug cannot be filed directly...
-    >>> params = CreateBugParams(
-    ...     owner=current_user(), title="test", comment="test")
-    >>> ubuntu_warty_firefox.createBug(params)
-    Traceback (most recent call last):
-      ...
-    NotImplementedError: A new bug cannot be filed directly...
-
 
 == Prevent reporter from being subscribed to filed bugs ==
 
@@ -592,8 +570,7 @@ Adding an attachment.
 
     >>> from StringIO import StringIO
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugAttachmentSet, IMessageSet, IBugMessageSet,
-    ...     ILibraryFileAliasSet)
+    ...     IBugAttachmentSet, ILibraryFileAliasSet, IMessageSet)
 
     >>> firefox_bug.attachments.count()
     0
@@ -784,7 +761,6 @@ has been marked invalid or a fix has been released.
 
 Let's add a new task to b8 to see if that affects the completeness.
 
-    >>> from canonical.launchpad.interfaces import IBugTask
     >>> newtask = getUtility(IBugTaskSet).createTask(
     ...     bug=b8, product=firefox, owner=b8.owner)
     >>> newtask.status.name

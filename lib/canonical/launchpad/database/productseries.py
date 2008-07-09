@@ -356,7 +356,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return results
 
     def searchTasks(self, search_params):
-        """See IBugTarget."""
+        """See `IHasBugs`."""
         search_params.setProductSeries(self)
         return BugTaskSet().search(search_params)
 

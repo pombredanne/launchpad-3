@@ -96,7 +96,7 @@ class DistroSeriesStatus(DBEnumeratedType):
 
 
 class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                     ISpecificationGoal):
+                    ISpecificationGoal):
     """A series of an operating system distribution."""
     id = Attribute("The distroseries's unique number.")
     name = TextLine(

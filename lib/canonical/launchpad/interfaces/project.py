@@ -49,10 +49,9 @@ class ProjectNameField(PillarNameField):
 
 class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
                IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IHasOwner, IHasSpecifications, IHasSprints,
-               IHasTranslationGroup, IMakesAnnouncements,
-               IKarmaContext, IPillar):
+               IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
+               IHasSpecifications, IHasSprints, IHasTranslationGroup,
+               IMakesAnnouncements, IKarmaContext, IPillar):
     """A Project."""
     export_as_webservice_entry()
 

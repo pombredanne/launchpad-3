@@ -343,7 +343,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return "BugTask.distribution = %d" % self.id
 
     def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         search_params.setDistribution(self)
         return BugTaskSet().search(search_params)
 

@@ -51,12 +51,15 @@ from canonical.lazr.rest.declarations import (
 class LicenseStatus(DBEnumeratedType):
     """The status of a project's license review."""
 
-    OPEN_SOURCE = DBItem(10, "Open Source",
-                        u"This project&lsquo;s license is open source.")
-    PROPRIETARY = DBItem(20, "Proprietary",
-                         u"This project&lsquo;s license is proprietary.")
-    UNREVIEWED = DBItem(30, "Unreviewed",
-                        u"This project&lsquo;s license has not been reviewed.")
+    OPEN_SOURCE = DBItem(
+        10, "Open Source",
+        u"This project&lsquo;s license is open source.")
+    PROPRIETARY = DBItem(
+        20, "Proprietary",
+        u"This project&lsquo;s license is proprietary.")
+    UNREVIEWED = DBItem(
+        30, "Unreviewed",
+        u"This project&lsquo;s license has not been reviewed.")
 
 
 class License(DBEnumeratedType):
@@ -102,10 +105,10 @@ class License(DBEnumeratedType):
 
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
-               IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
-               IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
-               IPillar):
+               IHasMilestones, IHasMugshot, IHasOwner, IHasSecurityContact,
+               IHasSprints, IHasTranslationGroup, IKarmaContext,
+               ILaunchpadUsage, IMakesAnnouncements, IPillar,
+               ISpecificationTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and

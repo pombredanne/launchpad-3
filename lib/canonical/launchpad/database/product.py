@@ -409,7 +409,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return None
 
     def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See `IHasBugs`."""
         search_params.setProduct(self)
         return BugTaskSet().search(search_params)
 
