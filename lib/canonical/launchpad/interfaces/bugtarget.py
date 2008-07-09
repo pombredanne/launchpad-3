@@ -31,11 +31,10 @@ class IHasBugs(Interface):
     all_bugtasks = Attribute(
         "A list of all BugTasks ever reported for this target.")
 
-    def searchTasks(search_params, *args):
+    def searchTasks(search_params):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
-        :args: additional BugTaskSearchParams objects
 
         Return an iterable of matching results.
 

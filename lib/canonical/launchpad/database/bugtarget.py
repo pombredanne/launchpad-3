@@ -26,7 +26,7 @@ class HasBugsBase:
     All IHasBugs implementations should inherit from this class
     or from `BugTargetBase`.
     """
-    def searchTasks(self, search_params, *args):
+    def searchTasks(self, search_params):
         """See `IHasBugs`."""
         raise NotImplementedError
 

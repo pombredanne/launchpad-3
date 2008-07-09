@@ -256,10 +256,10 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 
-    def searchTasks(self, search_params, *args):
+    def searchTasks(self, search_params):
         """See `IHasBugs`."""
         search_params.setProject(self)
-        return BugTaskSet().search(search_params, *args)
+        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See `IHasBugs`."""

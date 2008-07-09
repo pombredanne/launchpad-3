@@ -396,10 +396,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distroseries=self, type=LanguagePackType.DELTA,
             updates=self.language_pack_base, orderBy='-date_exported')
 
-    def searchTasks(self, search_params, *args):
+    def searchTasks(self, search_params):
         """See `IHasBugs`."""
         search_params.setDistroSeries(self)
-        return BugTaskSet().search(search_params, *args)
+        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See `IHasBugs`."""
