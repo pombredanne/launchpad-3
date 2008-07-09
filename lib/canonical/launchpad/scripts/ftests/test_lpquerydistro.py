@@ -228,6 +228,14 @@ class TestLpQueryDistro(unittest.TestCase):
         self.assertEqual(helper.pocket_suffixes,
                          '-backports -proposed -security -updates')
 
+    def assertAttributeRaisesScriptFailure(self, obj, attr_name):
+        """Asserts if accessing the given attribute name fails.
+
+        Check if `LaunchpadScriptFailure` is raised.
+        """
+        self.assertRaises(
+            LaunchpadScriptFailure, operator.attrgetter(attr_name), obj)
+
     def testActionsWithDefinedSuite(self):
         """Opposite of  testActionsWithUndefinedSuite.
 
@@ -239,18 +247,10 @@ class TestLpQueryDistro(unittest.TestCase):
         helper = self.getLpQueryDistro(test_args=['-s', 'warty'])
         helper._buildLocation()
 
-        self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('current'),
-            helper)
-        self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('development'),
-            helper)
-        self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('supported'),
-            helper)
-        self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('pending_suites'),
-            helper)
+        self.assertAttributeRaisesScriptFailure(helper, 'current')
+        self.assertAttributeRaisesScriptFailure(helper, 'development')
+        self.assertAttributeRaisesScriptFailure(helper, 'supported')
+        self.assertAttributeRaisesScriptFailure(helper, 'pending_suites')
         self.assertEqual(helper.archs, 'hppa i386')
         self.assertEqual(helper.official_archs, 'i386')
         self.assertEqual(helper.nominated_arch_indep, 'i386')
