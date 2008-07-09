@@ -37,22 +37,22 @@
                  >Edit your IRC contact names</span>
             </p>
 
-            <p><span
-                 tal:replace="
-                 structure context/menu:overview/editjabberids/render"
-                 >Edit your Jabber contact names</span>
+            <p
+              tal:content="
+              structure context/menu:overview/editjabberids/render">
+              Edit your Jabber contact names
             </p>
 
-            <p><span
-                 tal:replace="
-                 structure context/menu:overview/editsshkeys/render"
-                 >Change your SSH keys</span>
+            <p
+              tal:content="
+              structure context/menu:overview/editsshkeys/render">
+              Change your SSH keys
             </p>
 
-            <p><span
-                 tal:replace="
-                 structure context/menu:overview/editpgpkeys/render"
-                 >Change your OpenPGP keys</span>
+            <p
+              tal:content="
+              structure context/menu:overview/editpgpkeys/render">
+              Change your OpenPGP keys
             </p>
           </tbody>
         </table>
