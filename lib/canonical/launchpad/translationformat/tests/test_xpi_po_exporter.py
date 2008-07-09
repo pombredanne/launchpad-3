@@ -189,6 +189,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
             msgid "http://foozillingy.happy.net/"
             msgstr ""
 
+            #. (Except this one)
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:4(foozilla.nocomment)
             msgctxt "main/test1.properties"
             msgid "No Comment"
