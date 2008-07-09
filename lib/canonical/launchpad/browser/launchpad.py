@@ -248,7 +248,8 @@ class Hierarchy(LaunchpadView):
         # We're not on the home page
         if len(elements) > 0:
             prefix = '<div id="lp-hierarchy">'
-            suffix = '</div><span class="last-rounded">&nbsp;</span>'
+            suffix = '</div><span class="last-rounded">&nbsp;</span>' \
+                     '<div class="apps-separator"><!-- --></div>'
 
             if len(elements) == 1:
                 first_class = 'before-last'
@@ -290,7 +291,8 @@ class Hierarchy(LaunchpadView):
                         '<a href="/" class="breadcrumb">' \
                         '<img alt="" src="/@@/launchpad-logo-and-name-hierarchy.png"/>' \
                         '</a></div>' \
-                        '<span class="last-rounded">&nbsp;</span>'
+                        '<span class="last-rounded">&nbsp;</span>' \
+                        '<div class="apps-separator"><!-- --></div>'
 
         return hierarchy
 
