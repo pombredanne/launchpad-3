@@ -21,7 +21,9 @@ At the top level we provide a collection of bugs.
   15
   >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
   >>> show(bug_entries[0])
-  [(u'bug_tasks_collection_link',
+  [(u'bug_attachments_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/11/bug_attachments'),
+   (u'bug_tasks_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/bug_tasks'),
    (u'bug_watches_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/bug_watches'),
@@ -84,7 +86,9 @@ Each bug has a collection of messages.
 
   >>> messages = webservice.get("/beta/bugs/5/messages").jsonBody()['entries']
   >>> show(messages[0])
-  [(u'content',
+  [(u'bug_attachments_collection_link',
+    u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/0/bug_attachments'),
+   (u'content',
     u'All ways of downloading firefox should provide...'),
    (u'datecreated', u'2005-01-14T17:27:03.702622+00:00'),
    (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
@@ -439,3 +443,32 @@ renamed bug tracker.
    (u'title', u"Bob's Tracker"),
    (u'watches_collection_link',
     u'http://api.launchpad.dev/beta/bugs/bugtrackers/bob/watches')]
+
+
+== Bug attachments ==
+
+Bug 1 has no attachments:
+
+  >>> attachments = webservice.get(
+  ...     bug_one['bug_attachments_collection_link']).jsonBody()
+  >>> show(attachments)
+  Blah
+
+An attachment can be added to the bug:
+
+  >>> response = webservice.named_post(
+  ...     bug_one['self_link'], 'addAttachment',
+  ...     data="12345", description="Some numbers", comment="Foobar")
+  >>> print response.getOutput()
+  HTTP/1.1 201 Created
+  Content-Length: 0
+  Content-Type: text/plain;charset=utf-8
+  Location: http://api.launchpad.dev/beta/bugs/1/blah
+
+Now, bug 1 has one attachment:
+
+  >>> attachments = webservice.get(
+  ...     bug_one['bug_attachments_collection_link']).jsonBody()
+  >>> show(attachments)
+  Blah
+
