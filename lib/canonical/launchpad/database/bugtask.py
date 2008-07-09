@@ -1019,8 +1019,10 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def userCanEditImportance(self, user):
         """See `IBugTask`."""
+        celebs = getUtility(ILaunchpadCelebrities)
         return (self._userIsPillarEditor(user) or
-                user == getUtility(ILaunchpadCelebrities).bug_watch_updater)
+                user == celebs.bug_watch_updater or
+                user == celebs.bug_importer)
 
 
 def search_value_to_where_condition(search_value):
