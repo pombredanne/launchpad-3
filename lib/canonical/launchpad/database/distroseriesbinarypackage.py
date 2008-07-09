@@ -32,7 +32,8 @@ class DistroSeriesBinaryPackage:
     def __init__(self, distroseries, binarypackagename, cache=None):
         self.distroseries = distroseries
         self.binarypackagename = binarypackagename
-        self._cache = cache
+        if cache is not None:
+            self._cache = cache
 
     @property
     def name(self):
