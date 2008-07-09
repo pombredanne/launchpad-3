@@ -12,10 +12,7 @@
   <body>
 
   <div metal:fill-slot="main">
-    <h1 tal:condition="not: view/label">Change account details</h1>
-
     <div metal:use-macro="context/@@launchpad_form/form">
-
       <div metal:fill-slot="extra_bottom">
         <table>
           <tbody>
@@ -42,18 +39,6 @@
                  structure context/menu:overview/editjabberids/render"
                  >Edit your Jabber contact names</span>
             </p>
-
-            <p><span
-                 tal:replace="
-                 structure context/menu:overview/editsshkeys/render"
-                 >Change your SSH keys</span>
-            </p>
-
-            <p><span
-                 tal:replace="
-                 structure context/menu:overview/editpgpkeys/render"
-                 >Change your OpenPGP keys</span>
-            </p>
           </tbody>
         </table>
       </div>
@@ -64,7 +49,6 @@
           >Deactivate your account</a>.
       </p>
     </div>
-
   </div>
 
   </body>

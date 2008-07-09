@@ -49,17 +49,16 @@
       tal:content="structure context/homepage_content/fmt:text-to-html"
     />
 
-    <div
-      style="float:right; clear:both;"
-      tal:define="link context/menu:overview/edit"
-      tal:condition="link/enabled"
-      tal:content="structure link/render" />
-
-    <div
-      style="float:right; clear:both;"
-      tal:define="link context/menu:overview/administer"
-      tal:condition="link/enabled"
-      tal:content="structure link/render" />
+    <div class="actions" style="float:right;">
+      <tal:administer
+        define="link context/menu:overview/administer"
+        condition="link/enabled"
+        replace="structure link/render" />
+      <tal:edit
+        define="link context/menu:overview/edit"
+        condition="link/enabled"
+        replace="structure link/render" />
+    </div>
 
     <div tal:replace="structure context/@@+portlet-contact-details"/>
     <div tal:replace="structure context/@@+portlet-contributions"/>

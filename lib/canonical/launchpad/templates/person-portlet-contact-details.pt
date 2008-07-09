@@ -116,20 +116,38 @@
             </tal:block>
           </td>
         </tr>
+
+        <tal:keys repeat="sshkey context/sshkeys">
+          <tr>
+            <th tal:condition="repeat/sshkey/start">
+              SSH Keys:</th>
+            <th tal:condition="not: repeat/sshkey/start">
+            </th>
+            <td tal:content="sshkey/comment" />
+          </tr>
+          <tr tal:condition="repeat/sshkey/end">
+            <td>&nbsp;</td>
+            <td><small><a href="+sshkeys">(view key text)</a></small></td>
+          </tr>
+        </tal:keys>
+
         <tal:can-view-openid-login
-	   condition="context/required:launchpad.Edit">
-	  <tr tal:condition="context/is_openid_enabled">
-	    <th>OpenID login:<br/>
-	      <span class="help">
-		(<a href="https://help.launchpad.net/OpenID"
-		    >What&rsquo;s&nbsp;this?</a>)</span>
-	    </th>
+          condition="context/required:launchpad.Edit">
+          <tr tal:condition="context/is_openid_enabled">
+            <th>OpenID login:</th>
             <td title="This URL is not disclosed to others.">
               <img src="/@@/private" alt="" />
               <tal:openid-login content="view/openid_identity_url" />
             </td>
-	  </tr>
-	</tal:can-view-openid-login>
+          </tr>
+          <tr>
+            <td>&nbsp;</td>
+            <td><span class="help"
+                  ><a href="https://help.launchpad.net/OpenID"
+                     >(What&rsquo;s&nbsp;this?)</a></span>
+            </td>
+          </tr>
+        </tal:can-view-openid-login>
       </tbody>
     </table>
 

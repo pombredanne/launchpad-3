@@ -1081,7 +1081,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         enabled = bool(self.context.mentoring_offers)
         return Link(target, text, enabled=enabled, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
         target = '+editsshkeys'
         text = 'Update SSH keys'
@@ -1179,17 +1179,12 @@ class PersonEditNavigationMenu(NavigationMenu):
     usedfor = IPersonEditMenu
     facet = 'overview'
     title = 'Edit your profile'
-    links = ('personal', 'contact_details', 'email_settings',
+    links = ('personal', 'email_settings',
              'sshkeys', 'gpgkeys', 'passwords')
 
     def personal(self):
-        target = '+edit2.0'
+        target = '+edit'
         text = 'Personal'
-        return Link(target, text)
-
-    def contact_details(self):
-        target = '+editcontactdetails'
-        text = 'Contact Details'
         return Link(target, text)
 
     def email_settings(self):
@@ -1197,6 +1192,7 @@ class PersonEditNavigationMenu(NavigationMenu):
         text = 'E-mail Settings'
         return Link(target, text)
 
+    @enabled_with_permission('launchpad.Special')
     def sshkeys(self):
         target = '+editsshkeys'
         text = 'SSH Keys'
@@ -4371,6 +4367,8 @@ class SourcePackageReleaseWithStats:
 
 class PersonPackagesView(LaunchpadView):
     """View for +packages."""
+
+    implements(IPersonRelatedSoftwareMenu)
 
     PACKAGE_LIMIT = 50
 
