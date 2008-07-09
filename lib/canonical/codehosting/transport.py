@@ -46,6 +46,9 @@ branch if appropriate.
 __metaclass__ = type
 __all__ = [
     'AsyncLaunchpadTransport',
+    'BlockingProxy',
+    'get_chrooted_transport',
+    'LaunchpadInternalServer',
     'LaunchpadServer',
     'LaunchpadTransport',
     'set_up_logging',
@@ -61,12 +64,8 @@ from bzrlib.errors import (
     TransportNotPossible)
 from bzrlib import trace, urlutils
 from bzrlib.transport import (
-    get_transport,
-    register_transport,
-    Server,
-    Transport,
-    unregister_transport,
-    )
+    chroot, get_transport, register_transport, Server, Transport,
+    unregister_transport)
 from bzrlib.transport.memory import MemoryServer
 
 from twisted.internet import defer
@@ -74,7 +73,8 @@ from twisted.python import failure
 from twisted.web.xmlrpc import Fault
 
 from canonical.authserver.interfaces import (
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
+    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
+    READ_ONLY)
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
@@ -92,7 +92,14 @@ FORBIDDEN_DIRECTORY_ERROR = (
 
 def is_lock_directory(absolute_path):
     """Is 'absolute_path' a Bazaar branch lock directory?"""
-    return os.path.basename(absolute_path) == 'held'
+    return absolute_path.endswith('/.bzr/branch/lock/held')
+
+
+def get_chrooted_transport(url):
+    """Return a chrooted transport serving `url`."""
+    chroot_server = chroot.ChrootServer(get_transport(url))
+    chroot_server.setUp()
+    return get_transport(chroot_server.get_url())
 
 
 def get_path_segments(path, maximum_segments=-1):
@@ -304,7 +311,8 @@ class CachingAuthserverClient:
             return defer.succeed(branch_name)
 
         deferred = defer.maybeDeferred(
-            self._authserver.callRemote, 'getDefaultStackedOnBranch', product)
+            self._authserver.callRemote, 'getDefaultStackedOnBranch',
+            self._user_id, product)
         def add_to_cache(branch_name):
             self._stacked_branch_cache[product] = branch_name
             return branch_name
@@ -539,26 +547,16 @@ class LaunchpadServer(Server):
             'readonly+' + mirror_transport.base)
         self._is_set_up = False
 
-    def _getStackOnURL(self, unique_name):
-        stack_on_url = urlutils.join(
-            config.codehosting.supermirror_root, unique_name)
-        # XXX: JonathanLange 2008-05-20: We can't serve stacked branches over
-        # HTTP until the puller understands stacked branches. Until then,
-        # we'll stack on the SFTP branch, which the user is definitely able to
-        # access.
-        return stack_on_url.replace('http', 'sftp')
-
-    def _buildControlDirectory(self, unique_name):
+    def _buildControlDirectory(self, stack_on_url):
         """Return a MemoryTransport that has '.bzr/control.conf' in it."""
         memory_server = MemoryServer()
         memory_server.setUp()
         transport = get_transport(memory_server.get_url())
-        if unique_name == '':
+        if stack_on_url == '':
             return transport
 
         format = BzrDirFormat.get_default_format()
         format.initialize_on_transport(transport)
-        stack_on_url = self._getStackOnURL(unique_name)
         # XXX: JonathanLange 2008-05-20 bug=232242: We should use the
         # higher-level bzrlib APIs to do this:
         # bzrdir.get_config().set_default_stack_on(). But those APIs aren't in
@@ -628,7 +626,7 @@ class LaunchpadServer(Server):
             least a valid path to a branch.
         """
         branch, ignored = self._getBranch(virtual_url_fragment)
-        branch.requestMirror()
+        return branch.requestMirror()
 
     def translateVirtualPath(self, virtual_url_fragment):
         """Translate 'virtual_url_fragment' into a transport and sub-fragment.
@@ -687,7 +685,7 @@ class LaunchpadServer(Server):
 
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
-        assert url.startswith(self.scheme)
+        assert url.startswith(self.get_url())
         return LaunchpadTransport(self, url)
 
     def get_url(self):
@@ -700,12 +698,11 @@ class LaunchpadServer(Server):
 
         See Server.get_url.
         """
-        return self.scheme
+        return 'lp-%d:///' % id(self)
 
     def setUp(self):
         """See Server.setUp."""
-        self.scheme = 'lp-%d:///' % id(self)
-        register_transport(self.scheme, self._factory)
+        register_transport(self.get_url(), self._factory)
         self._is_set_up = True
 
     def tearDown(self):
@@ -713,7 +710,19 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
-        unregister_transport(self.scheme, self._factory)
+        unregister_transport(self.get_url(), self._factory)
+
+
+class LaunchpadInternalServer(LaunchpadServer):
+
+    def __init__(self, authserver, branch_transport):
+        super(LaunchpadInternalServer, self).__init__(
+            authserver, LAUNCHPAD_SERVICES, branch_transport,
+            branch_transport)
+        self._backing_transport = self._mirror_transport
+
+    def get_url(self):
+        return 'lp-internal:///'
 
 
 class VirtualTransport(Transport):
@@ -742,7 +751,7 @@ class VirtualTransport(Transport):
         """Return the absolute, escaped path to `relpath` without the schema.
         """
         return urlutils.joinpath(
-            self.base[len(self.server.scheme)-1:], relpath)
+            self.base[len(self.server.get_url())-1:], relpath)
 
     def _getUnderylingTransportAndPath(self, relpath):
         """Return the underlying transport and path for `relpath`."""
@@ -819,6 +828,9 @@ class VirtualTransport(Transport):
 
     def mkdir(self, relpath, mode=None):
         return self._call('mkdir', relpath, mode)
+
+    def open_write_stream(self, relpath, mode=None):
+        return self._call('open_write_stream', relpath, mode)
 
     def put_file(self, relpath, f, mode=None):
         return self._call('put_file', relpath, f, mode)
@@ -926,8 +938,12 @@ class AsyncLaunchpadTransport(VirtualTransport):
         # can request a mirror once a branch is unlocked.
         abs_from = self._abspath(rel_from)
         if is_lock_directory(abs_from):
-            self.server.requestMirror(abs_from)
-        return VirtualTransport.rename(self, rel_from, rel_to)
+            deferred = self.server.requestMirror(abs_from)
+        else:
+            deferred = defer.succeed(None)
+        deferred = deferred.addCallback(
+            lambda ignored: VirtualTransport.rename(self, rel_from, rel_to))
+        return self._extractResult(deferred)
 
     def rmdir(self, relpath):
         # We hook into rmdir in order to prevent users from deleting branches,

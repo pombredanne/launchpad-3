@@ -202,6 +202,7 @@ the user is a member of, or to themselves.
     ...     print option
     Sample Person
     Landscape Developers
+    Ubuntu Gnome Team
     Warty Security Team
 
 

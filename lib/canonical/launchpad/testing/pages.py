@@ -16,6 +16,7 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
+from urllib import urlencode
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
@@ -154,8 +155,7 @@ class WebServiceCaller:
 
     def named_post(self, path, operation_name, headers=None, **kwargs):
         kwargs['ws.op'] = operation_name
-        data = '&'.join(['%s=%s' % (key, value)
-                         for key, value in kwargs.items()])
+        data = urlencode(kwargs)
         return self.post(path, 'application/x-www-form-urlencoded', data,
                          headers)
 
@@ -421,7 +421,7 @@ def print_tab_links(content):
 
 def print_action_links(content):
     """Print action menu urls."""
-    actions = find_portlet(content, 'Actions')
+    actions = find_tag_by_id(content, 'actions')
     if actions is None:
         print "No actions portlet"
         return
@@ -532,8 +532,6 @@ def print_navigation(contents):
     print "Location: %s" % " > ".join(
         extract_text(tag).encode('us-ascii', 'replace') for tag in breadcrumbs
         if tag.get('id') != 'homebreadcrumb')
-    print "Structural title: %s" % extract_text(
-        doc.find(id='structuralobject')).encode('us-ascii', 'replace')
     print 'Tabs:'
     for tab in doc.find(id='applicationchooser').findAll('li'):
         if tab.a:

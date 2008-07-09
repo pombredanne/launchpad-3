@@ -37,7 +37,7 @@ results in an error notification.  (This is probably the result of
 mangled form data.)
 
     >>> sample_person = personset.getByName('name12')
-    >>> login(sample_person.preferredemail.email)
+    >>> login_person(sample_person)
     >>> no_list_team = make_team(
     ...     'open-team-no-list', TeamSubscriptionPolicy.OPEN)
 

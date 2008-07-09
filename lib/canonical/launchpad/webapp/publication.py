@@ -17,6 +17,7 @@ import tickcount
 
 from psycopg2.extensions import TransactionRollbackError
 from storm.exceptions import DisconnectionError, IntegrityError
+from storm.zope.interfaces import IZStorm
 import transaction
 
 from zope.app import zapi  # used to get at the adapters service
@@ -36,7 +37,8 @@ from zope.security.management import newInteraction
 
 from canonical.config import config
 from canonical.mem import (
-    countsByType, deltaCounts, mostRefs, printCounts, readCounts, resident)
+    countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
+    resident)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
@@ -480,34 +482,64 @@ class LaunchpadBrowserPublication(
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
 
+        # Reset all Storm stores when not running the test suite. We could
+        # reset them when running the test suite but that'd make writing tests
+        # a much more painful task.
+        if threading.currentThread().getName() != 'MainThread':
+            for name, store in getUtility(IZStorm).iterstores():
+                store.reset()
 
     def startProfilingHook(self):
-        """If profiling is turned on, start a profiler for this request."""
-        if not config.profiling.profile_requests:
-            return
-        self.thread_locals.profiler = Profile()
-        self.thread_locals.profiler.enable()
+        """Handle profiling.
+
+        If requests profiling start a profiler. If memory profiling is
+        requested, save the VSS and RSS.
+        """
+        if config.profiling.profile_requests:
+            self.thread_locals.profiler = Profile()
+            self.thread_locals.profiler.enable()
+
+        if config.profiling.memory_profile_log:
+            self.thread_locals.memory_profile_start = (memory(), resident())
 
     def endProfilingHook(self, request):
         """If profiling is turned on, save profile data for the request."""
-        if not config.profiling.profile_requests:
-            return
-        profiler = self.thread_locals.profiler
-        profiler.disable()
-
         # Create a timestamp including milliseconds.
         now = datetime.fromtimestamp(da.get_request_start_time())
-        timestamp = now.strftime('%Y-%m-%d_%H:%M:%S')
-        filename = '%s.%d-%s-%s.prof' % (
-            timestamp, int(now.microsecond/1000.0),
-            request._orig_env.get('launchpad.pageid', 'Unknown'),
-            threading.currentThread().getName())
+        timestamp = "%s.%d" % (
+            now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
+        pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
+        oopsid= getattr(request, 'oopsid', None)
 
-        profiler.dump_stats(
-            os.path.join(config.profiling.profile_dir, filename))
+        if config.profiling.profile_requests:
+            profiler = self.thread_locals.profiler
+            profiler.disable()
 
-        # Free some memory.
-        self.thread_locals.profiler = None
+            if oopsid:
+                oopsid_part = '-%s' % oopsid
+            else:
+                oopsid_part = ''
+            filename = '%s-%s%s-%s.prof' % (
+                timestamp, pageid, oopsid_part,
+                threading.currentThread().getName())
+
+            profiler.dump_stats(
+                os.path.join(config.profiling.profile_dir, filename))
+
+            # Free some memory.
+            self.thread_locals.profiler = None
+
+        # Dump memory profiling info.
+        if config.profiling.memory_profile_log:
+            log = file(config.profiling.memory_profile_log, 'a')
+            vss_start, rss_start = self.thread_locals.memory_profile_start
+            vss_end, rss_end = memory(), resident()
+            if oopsid is None:
+                oopsid = '-'
+            log.write('%s %s %s %f %d %d %d %d\n' % (
+                timestamp, pageid, oopsid, da.get_request_duration(),
+                vss_start, rss_start, vss_end, rss_end))
+            log.close()
 
     def debugReferencesLeak(self, request):
         """See what kind of references are increasing.

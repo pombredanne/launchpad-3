@@ -11,11 +11,10 @@ import random
 import time
 import unittest
 
-from bzrlib.osutils import relpath
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
-from bzrlib.urlutils import local_path_from_url, local_path_to_url
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.transport import register_transport, unregister_transport
 import pytz
 from zope.component import getUtility
 
@@ -30,6 +29,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, RevisionModifiedError, get_diff, get_revision_message)
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.codeimport.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.testing import LaunchpadZopelessLayer
@@ -45,9 +45,11 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        self.test_warehouse_root_url = local_path_to_url(os.getcwd()) + '/'
-        self._warehouse_root_url = config.supermirror.warehouse_root_url
-        config.supermirror.warehouse_root_url = self.test_warehouse_root_url
+        url_prefix = 'lp-internal:///'
+        def fake_transport_factory(url):
+            self.assertTrue(url.startswith(url_prefix))
+            return self.get_transport(url[len(url_prefix):])
+        register_transport(url_prefix, fake_transport_factory)
         self.factory = LaunchpadObjectFactory()
         self.makeFixtures()
         self.lp_db_user = config.launchpad.dbuser
@@ -57,11 +59,10 @@ class BzrSyncTestCase(TestCaseWithTransport):
     def switchDbUser(self, user):
         """We need to reset the config warehouse root after a switch."""
         LaunchpadZopelessLayer.switchDbUser(user)
-        config.supermirror.warehouse_root_url = self.test_warehouse_root_url
         self.txn = LaunchpadZopelessLayer.txn
 
     def tearDown(self):
-        config.supermirror.warehouse_root_url = self._warehouse_root_url
+        unregister_transport('lp-internal:///', self.get_transport)
         TestCaseWithTransport.tearDown(self)
 
     def makeFixtures(self):
@@ -77,9 +78,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def makeBzrBranchAndTree(self, db_branch, format=None):
         """Make a Bazaar branch at the warehouse location of `db_branch`."""
-        path = relpath(os.getcwd(),
-                       local_path_from_url(db_branch.warehouse_url))
-        return self.make_branch_and_tree(path, format=format)
+        ensure_base(self.get_transport(db_branch.unique_name))
+        return self.make_branch_and_tree(db_branch.unique_name, format=format)
 
     def makeDatabaseBranch(self):
         """Make an arbitrary branch in the database."""

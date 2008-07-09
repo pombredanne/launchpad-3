@@ -15,7 +15,9 @@ from storm.exceptions import DisconnectionError, IntegrityError
 import transaction
 from twisted.python.util import mergeFunctionMetadata
 
-from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
+from canonical.database.sqlbase import reset_store
+from canonical.launchpad.database.librarian import (
+    LibraryFileContent, LibraryFileAlias)
 
 
 RETRY_ATTEMPTS = 3
@@ -46,6 +48,7 @@ def read_transaction(func):
     The transaction will be aborted on successful completion of the
     function.  The transaction will be retried if appropriate.
     """
+    @reset_store
     def wrapper(*args, **kwargs):
         transaction.begin()
         try:
@@ -62,6 +65,7 @@ def write_transaction(func):
     function, and aborted on failure.  The transaction will be retried
     if appropriate.
     """
+    @reset_store
     def wrapper(*args, **kwargs):
         transaction.begin()
         try:

@@ -1357,7 +1357,7 @@ Bug supervisors can set some restricted statuses:
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> sync(bug_four)
-    >>> login(email_user.preferredemail.email)
+    >>> login_person(email_user)
 
     >>> submit_commands(bug_four, 'status wontfix')
     >>> sync(upstream_task)
@@ -1393,7 +1393,7 @@ Everyone else gets an explanatory error message:
 Let's take a look at all the other error messages that the sub
 commands can produce.
 
-    >>> login(email_user.preferredemail.email)
+    >>> login_person(email_user)
 
 Invalid status:
 
@@ -1482,6 +1482,61 @@ Invalid assignee:
 
 
     >>> stub.test_emails = []
+
+== Multiple Commands ==
+
+An email can contain multiple commands, even for different bugs.
+
+    >>> def print_bugtask_modified_event(bugtask, event):
+    ...     old_bugtask = event.object_before_modification
+    ...     print "event: bug %i %s => %s" % (bugtask.bug.id,
+    ...         old_bugtask.status.title, bugtask.status.title)
+    ...     print "event: bug %i %s => %s" % (bugtask.bug.id,
+    ...         old_bugtask.importance.title, bugtask.importance.title)
+    >>> def print_bugtask_created_event(bugtask, event):
+    ...     print "event: new bugtask, bug %i %s" % (bugtask.bug.id,
+    ...         bugtask.status.title)
+    ...     print "event: new bugtask, bug %i %s" % (bugtask.bug.id,
+    ...         bugtask.importance.title)
+    >>> from canonical.launchpad.event.interfaces import (
+    ...     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.launchpad.interfaces.bugtask import IBugTask
+    >>> bugtask_modified_listener = TestEventListener(
+    ...     IBugTask, ISQLObjectModifiedEvent, print_bugtask_modified_event)
+    >>> bugtask_created_listener = TestEventListener(
+    ...     IBugTask, ISQLObjectCreatedEvent, print_bugtask_created_event)
+    >>> bug_four_upstream_task = bug_four.bugtasks[0]
+    >>> print bug_four_upstream_task.status.name
+    NEW
+    >>> print bug_four_upstream_task.importance.name
+    CRITICAL
+    >>> bug_five_upstream_task = bug_five.bugtasks[0]
+    >>> print bug_five_upstream_task.status.name
+    NEW
+    >>> print bug_five_upstream_task.importance.name
+    CRITICAL
+    >>> submit_commands(bug_four,
+    ...     'bug 4', 'status confirmed', 'importance medium',
+    ...     'bug new', 'affects firefox', 'summary blah', 'status new',
+    ...     'importance high',
+    ...     'bug 5', 'status fixreleased', 'importance high')
+    event: bug 4 New => Confirmed
+    event: bug 4 Critical => Medium
+    event: bug 5 New => Fix Released
+    event: bug 5 Critical => High
+    >>> print bug_four_upstream_task.status.name
+    CONFIRMED
+    >>> print bug_four_upstream_task.importance.name
+    MEDIUM
+    >>> print bug_five_upstream_task.status.name
+    FIXRELEASED
+    >>> print bug_five_upstream_task.importance.name
+    HIGH
+
+    >>> bugtask_modified_listener.unregister()
+    >>> bugtask_created_listener.unregister()
+
 
 == Default 'affects' target ==
 
