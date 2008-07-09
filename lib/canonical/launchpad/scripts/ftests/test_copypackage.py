@@ -579,7 +579,13 @@ class TestCopyPackage(unittest.TestCase):
         binary_queue_item = warty.createQueueEntry(
             pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
             changesfilename="foo_binary.changes", changesfilecontent='x')
+
+        # Prepare a *restricted* buildlog file for the Build instances.
+        fake_buildlog = test_publisher.addMockFile(
+            'foo_source.buildlog', restricted=True)
+
         for build in ppa_source.getBuilds():
+            build.buildlog = fake_buildlog
             binary_queue_item.addBuild(build)
         binary_queue_item.setDone()
 
@@ -646,11 +652,13 @@ class TestCopyPackage(unittest.TestCase):
                 diffs = published.sourcepackagerelease.package_diffs
                 for diff in diffs:
                     self.assertFalse(diffs[0].diff_content.restricted)
-            # Check the binary changesfile.
+            # Check the binary changesfile and the buildlog.
             if IBinaryPackagePublishingHistory.providedBy(published):
                 package = published.binarypackagerelease
                 changesfile = package.build.changesfile
                 self.assertFalse(changesfile.restricted)
+                buildlog = package.build.buildlog
+                self.assertFalse(buildlog.restricted)
 
 
 def test_suite():
