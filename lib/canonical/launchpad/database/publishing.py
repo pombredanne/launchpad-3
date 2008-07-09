@@ -8,6 +8,7 @@ __all__ = [
     'BinaryPackageFilePublishing',
     'BinaryPackagePublishingHistory',
     'IndexStanzaFields',
+    'PublishingSet',
     'SecureBinaryPackagePublishingHistory',
     'SecureSourcePackagePublishingHistory',
     'SourcePackageFilePublishing',
@@ -16,13 +17,17 @@ __all__ = [
 
 
 from datetime import datetime
+import operator
 import os
 import pytz
 from warnings import warn
 
+from zope.component import getUtility
 from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
+from storm.expr import In
 from storm.store import Store
+from storm.zope.interfaces import IZStorm
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -37,6 +42,8 @@ from canonical.launchpad.interfaces import (
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
+from canonical.launchpad.interfaces.publishing import (
+    IPublishingSet, active_publishing_status)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
@@ -610,41 +617,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def getSourceAndBinaryLibraryFiles(self):
         """See `IPublishing`."""
-        sourcesClause = """
-            LibraryFileAlias.id = SourcePackageReleaseFile.libraryfile AND
-            SourcePackageReleaseFile.sourcepackagerelease = %s
-            """ % sqlvalues(self.sourcepackagerelease)
-        sourcesClauseTables = ['SourcePackageReleaseFile']
+        publishing_set = getUtility(IPublishingSet)
+        sourcepackagerelease_ids = [self.sourcepackagerelease.id]
+        source_and_files = publishing_set.getFilesForSources(
+            sourcepackagerelease_ids, self.archive)
+        libraryfiles = [file for source, file in source_and_files]
 
-        binariesClause = """
-            LibraryFileAlias.id = BinaryPackageFile.libraryfile AND
-            BinaryPackageFile.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.build=Build.id AND
-            BinaryPackagePublishingHistory.binarypackagerelease=
-                BinaryPackageRelease.id AND
-            Build.sourcepackagerelease=%s AND
-            BinaryPackagePublishingHistory.archive=%s
-            """ % sqlvalues(self.sourcepackagerelease, self.archive)
-
-        binariesClauseTables = [
-            'BinaryPackageFile', 'BinaryPackagePublishingHistory',
-            'BinaryPackageRelease', 'Build']
-
-        preJoins = ['content']
-
-        sourcesQuery = LibraryFileAlias.select(
-            sourcesClause, clauseTables=sourcesClauseTables,
-            prejoins=preJoins)
-        binariesQuery = LibraryFileAlias.select(
-            binariesClause, clauseTables=binariesClauseTables,
-            prejoins=preJoins, distinct=True)
-
-        # I would like to use UNION here to merge the two result sets, but
-        # that silently drops the preJoins.
-        results = list(sourcesQuery)
-        results.extend(list(binariesQuery))
-        return results
+        return sorted(libraryfiles, key=operator.attrgetter('filename'))
 
     @property
     def meta_sourcepackage(self):
@@ -967,3 +946,117 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             pocket=pocket,
             embargo=False)
         return BinaryPackagePublishingHistory.get(secure_copy.id)
+
+
+class PublishingSet:
+    """Utilities for manipulating publications in batches."""
+
+    implements(IPublishingSet)
+
+    def getBuildsForSources(self, source_publication_ids):
+        """See `PublishingSet`."""
+        if len(source_publication_ids) == 0:
+            return []
+
+        from canonical.launchpad.database.build import Build
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+
+        store = getUtility(IZStorm).get('main')
+        result_set = store.find(
+            (SourcePackagePublishingHistory, Build, DistroArchSeries),
+            Build.distroarchseriesID == DistroArchSeries.id,
+            SourcePackagePublishingHistory.archiveID == Build.archiveID,
+            SourcePackagePublishingHistory.distroseriesID ==
+                DistroArchSeries.distroseriesID,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        results = [
+            (source, build) for source, build, arch in result_set]
+
+        return results
+
+    def getFilesForSources(self, source_publication_ids):
+        """See `IPublishingSet`."""
+        if len(source_publication_ids) == 0:
+            return []
+
+        from canonical.launchpad.database.binarypackagerelease import (
+            BinaryPackageRelease)
+        from canonical.launchpad.database.build import Build
+        from canonical.launchpad.database.files import (
+            BinaryPackageFile, SourcePackageReleaseFile)
+        from canonical.launchpad.database.librarian import (
+            LibraryFileContent)
+
+        store = getUtility(IZStorm).get('main')
+        source_result = store.find(
+            (SourcePackagePublishingHistory, LibraryFileAlias,
+             LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
+            SourcePackageReleaseFile.sourcepackagerelease ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        binary_result = store.find(
+            (SourcePackagePublishingHistory, LibraryFileAlias,
+             LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            BinaryPackageFile.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.buildID == Build.id,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID ==
+                SourcePackagePublishingHistory.archiveID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        results = [
+            (source, file) for source, file, content in source_result]
+        results.extend(
+            (source, file)
+            for source, file, content in binary_result.config(distinct=True))
+
+        return results
+
+    def getBinaryPublicationsForSources(self, source_publication_ids):
+        """See `IPublishingSet`."""
+        if len(source_publication_ids) == 0:
+            return []
+
+        from canonical.launchpad.database.binarypackagename import (
+            BinaryPackageName)
+        from canonical.launchpad.database.binarypackagerelease import (
+            BinaryPackageRelease)
+        from canonical.launchpad.database.build import Build
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+        from canonical.launchpad.database.sourcepackagerelease import (
+            SourcePackageRelease)
+
+        store = getUtility(IZStorm).get('main')
+        result = store.find(
+            (SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
+             BinaryPackageRelease, BinaryPackageName, DistroArchSeries),
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            BinaryPackageRelease.build == Build.id,
+            DistroArchSeries.id == Build.distroarchseriesID,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.binarypackagenameID ==
+                BinaryPackageName.id,
+            In(BinaryPackagePublishingHistory.status,
+               [enum.value for enum in active_publishing_status]),
+            In(SourcePackageRelease.id, source_publication_ids))
+
+        results = [
+            (source, binary)
+            for source, binary, binary_release, name, arch in result]
+        return results

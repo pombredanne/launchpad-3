@@ -86,7 +86,8 @@
         </form>
       </div>
 
-      <div style="padding-top: 1em;" tal:define="batch view/search_results">
+      <div style="padding-top: 1em;"
+           tal:define="batch view/decorated_search_results">
 
       <tal:navigation_top
            replace="structure view/batchnav/@@+navigation-links-upper" />

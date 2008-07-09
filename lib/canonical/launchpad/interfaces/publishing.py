@@ -15,6 +15,7 @@ __all__ = [
     'ICanPublishPackages',
     'IFilePublishing',
     'IArchiveSafePublisher',
+    'IPublishingSet',
     'NotInPool',
     'PackagePublishingPocket',
     'PackagePublishingPriority',
@@ -510,6 +511,25 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
         Return the overridden publishing record, either a
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        """
+
+
+class IPublishingSet(Interface):
+    """Auxiliary methods for dealing with sets of publications."""
+
+    def getBuildsForSources(source_publication_ids):
+        """XXX
+
+        """
+
+    def getFilesForSources(source_publication_ids):
+        """XXX
+
+        """
+
+    def getBinaryPublicationsForSources(source_publication_ids):
+        """XXX
+
         """
 
 
