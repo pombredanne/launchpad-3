@@ -110,7 +110,7 @@ class POFileMenuMixin:
     # highlighting/disabling breaks.  See bug 242860.
     def description(self):
         text = 'Description'
-        return Link('+index', text)
+        return Link('', text)
 
     def translate(self):
         text = 'Translate'

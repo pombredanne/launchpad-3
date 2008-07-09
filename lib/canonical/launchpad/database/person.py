@@ -2033,6 +2033,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
+            # Automated processes need access to set the account().
+            removeSecurityProxy(email).account = email.person.account
             getUtility(IHWSubmissionSet).setOwnership(email)
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
@@ -2063,6 +2065,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.account.status = AccountStatus.ACTIVE
             self.account.status_comment = None
             self.account.sync() # sync so validpersoncache updates.
+        # Anonymous users may claim their profile; remove the proxy
+        # to set the account.
+        removeSecurityProxy(email).account = self.account
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2089,7 +2094,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.
-        email = EmailAddress.get(email.id)
+        email = removeSecurityProxy(email)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
         getUtility(IHWSubmissionSet).setOwnership(email)
@@ -2518,8 +2523,17 @@ class PersonSet:
         query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def find(self, text="", orderBy=None):
+    def getAllValidPersonsAndTeams(self):
         """See `IPersonSet`."""
+        return self.getAllTeams().union(
+            self.getAllValidPersons(),
+            orderBy=Person._sortingColumnsForSetOperations)
+
+    def find(self, text, orderBy=None):
+        """See `IPersonSet`."""
+        if not text:
+            # Return an empty result set.
+            return Person.select("1 = 2")
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()

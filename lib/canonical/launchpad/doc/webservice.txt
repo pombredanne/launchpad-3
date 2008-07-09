@@ -546,6 +546,19 @@ define an adapter to IFieldMarshaller.
     ...     [IChoice, WebServiceLayer,
     ...      AuthorVocabulary], IFieldMarshaller)
 
+The 'author' field is a choice between Author objects. To make sure
+that the Author objects are properly marshalled to JSON, we need to
+define an adapter to IFieldMarshaller.
+
+    >>> from zope.schema.interfaces import IChoice
+    >>> from canonical.lazr.rest.marshallers import (
+    ...     ObjectLookupFieldMarshaller)
+    >>> from canonical.lazr.interfaces import (
+    ...     IFieldMarshaller, WebServiceLayer)
+    >>> provideAdapter(ObjectLookupFieldMarshaller,
+    ...     [IChoice, WebServiceLayer,
+    ...      AuthorVocabulary], IFieldMarshaller)
+
 
 == Implementing the resources ==
 

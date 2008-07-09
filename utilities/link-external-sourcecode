@@ -10,6 +10,9 @@ from urllib import unquote
 from urlparse import urlparse
 
 from bzrlib.branch import Branch
+from bzrlib.plugin import load_plugins
+
+load_plugins()
 
 
 def url2path(url):

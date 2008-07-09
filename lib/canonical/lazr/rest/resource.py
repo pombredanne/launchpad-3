@@ -1002,8 +1002,6 @@ class EntryAdapterUtility(RESTUtilityBase):
         interfaces = implementedBy(self.entry_class)
         entry_ifaces = [interface for interface in interfaces
                         if interface.extends(IEntry)]
-        # Won't this fail if you subclass IEntry and then subclass the
-        # subclass?
         assert len(entry_ifaces) == 1, ("There must be one and only one "
                                         "IEntry implementation "
                                         "for %s" % self.entry_class)

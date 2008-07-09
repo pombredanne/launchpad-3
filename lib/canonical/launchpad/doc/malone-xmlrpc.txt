@@ -179,7 +179,7 @@ Specifying a non-existent product.
     >>> filebug_api.filebug(params)
     Traceback (most recent call last):
     ...
-    Fault: <Fault 10: 'No such product: nosuchproduct'>
+    Fault: <Fault 10: 'No such project: nosuchproduct'>
 
 Specifying a non-existent distribution.
 
