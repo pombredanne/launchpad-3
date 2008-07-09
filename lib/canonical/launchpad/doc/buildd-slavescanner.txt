@@ -431,7 +431,6 @@ The build record in question can end up in the following states:
 
 === Failed to Upload (FAILEDTOUPLOAD) ===
 
-
     >>> bqItem10 = a_build.createBuildQueueEntry()
     >>> setupBuildQueue(bqItem10, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
@@ -492,6 +491,13 @@ upload log information:
     DEBUG   Removing lock file: /var/lock/process-upload-buildd.lock
     ...
 
+When a failure in processing the generated binaries occurs, the log
+output is both emailed in an immediate notification, and stored in the
+librarian for future reference.
+
+    >>> bqItem10.build.upload_log is not None
+    True
+
 What we can clearly notice is that the buildlog is still containing
 the old build state (BUILDING) in its name. This is a minor problem
 that can be sorted by modifying the execution order of procedures
@@ -550,6 +556,12 @@ notification and updating the build information:
     'Successfully built'
     >>> check_mail_sent(last_stub_mail_count)
     False
+
+We do not store any build log information when the binary upload
+processing succeeded.
+
+    >>> bqItem10.build.upload_log is None
+    True
 
 Cleanup in preparation for the next test:
 
@@ -1088,6 +1100,7 @@ the restricted librarian.
 
     >>> candidate = a_build.createBuildQueueEntry()
     >>> setupBuildQueue(candidate, a_builder)
+    >>> candidate.build.upload_log = None
     >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
     >>> buildergroup.updateBuild(candidate)
 
