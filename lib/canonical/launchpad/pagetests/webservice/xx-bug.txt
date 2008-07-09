@@ -311,6 +311,7 @@ We can modify the remote bug.
   >>> bug_watch['remote_bug']
   u'2000'
 
+  >>> from simplejson import dumps
   >>> patch = {u'remote_bug': u'1234'}
   >>> response = webservice.patch(
   ...     bug_watch_path, 'application/json', dumps(patch))
