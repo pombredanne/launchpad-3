@@ -28,6 +28,8 @@ from canonical.launchpad.validators.productrelease import (
 from canonical.launchpad.fields import ContentNameField
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 
 class UpstreamFileType(DBEnumeratedType):
@@ -101,18 +103,27 @@ class ProductReleaseVersionField(ContentNameField):
 class IProductRelease(Interface):
     """A specific release (i.e. has a version) of a product. For example,
     Mozilla 1.7.2 or Apache 2.0.48."""
+    export_as_webservice_entry()
+
     id = Int(title=_('ID'), required=True, readonly=True)
     datereleased = Datetime(title=_('Date Released'), required=True,
         readonly=False, description=_('The date this release was '
         'published. Before release, this should have an estimated '
         'release date.'))
-    version = ProductReleaseVersionField(title=_('Version'), required=True,
-        readonly=True, constraint=sane_version, description=_(
-        'The specific version number assigned to this release. Letters and '
-        'numbers are acceptable, for releases like "1.2rc3".'))
+    version = exported(
+        ProductReleaseVersionField(
+            title=_('Version'),
+            description=_(
+                'The specific version number assigned to this release. '
+                'Letters and numbers are acceptable, for releases like '
+                '"1.2rc3".'),
+            readonly=True, constraint=sane_version))
     owner = Int(title=_('Owner'), required=True)
-    productseries = Choice(title=_('Release Series'), required=True,
-        vocabulary='FilteredProductSeries')
+    productseries = exported(
+        Choice(
+            title=_('Release Series'), readonly=True,
+            vocabulary='FilteredProductSeries'),
+        exported_as='project_series')
     codename = TextLine(title=_('Code name'), required=False,
         description=_('The release code-name. Famously, one Gnome release '
         'was code-named "that, and a pair of testicles", but you don\'t '

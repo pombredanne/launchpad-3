@@ -967,7 +967,7 @@ ul#applicationchooser li#applicationchooser_selected {
   float: left;
   margin-left: -212px;
   text-align: right;
-  width: 200px;
+  width: 192px;
 }
 /* There is a margin between each section and the previous one: */
 .pillar div.portlet, .pillar div.section {clear: left; padding-top: 2em;}

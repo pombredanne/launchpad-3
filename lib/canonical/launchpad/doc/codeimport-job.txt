@@ -90,7 +90,8 @@ the actual time value.
 The NewEvents class helps testing the creation of CodeImportEvent
 objects.
 
-    >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
+    >>> from canonical.launchpad.database.tests.test_codeimportjob import (
+    ...     NewEvents)
 
 
 == Testing whether a job is overdue ==
@@ -344,7 +345,8 @@ mirroring, so the 'next_mirror_time' field is empty:
     None
 
 We just document the successful case here, when a log is not recorded.
-The details are tested in unit tests in ../tests/test_codeimportjob.py.
+The details are tested in unit tests in
+../database/tests/test_codeimportjob.py.
 
     >>> new_events = NewEvents()
     >>> finished_job_id = running_job.id
@@ -372,7 +374,6 @@ A CodeImportResult object has now been created to record the result of
 this run, containing details such as the import worked on, the dates
 the import started and finished and the final status of the run.
 
-    >>> from canonical.launchpad.interfaces import ICodeImportResultSet
     >>> results = list(code_import.results)
     >>> len(results)
     1
@@ -400,3 +401,54 @@ Finally, the finishJob() method created a FINISH CodeImportEvent.
 
     >>> print new_events.summary()
     FINISH ~vcs-imports/gnome-terminal/import bazaar-importer
+
+
+== Reclaiming a job that appears to be stuck ==
+
+The code import worker is meant to update the heartbeat field of the
+row of CodeImportJob frequently.  The code import watchdog
+periodically checks the heartbeats of the running jobs and if it finds
+that a heartbeat was not updated recently enough, it assumes it has
+become stuck somehow and 'reclaims' the job -- removes the job from
+the database and creates a pending job for the same import that is due
+immediately.  This reclaiming is done by the 'reclaimJob' code import
+job workflow method.
+
+It just takes a running code import job as a parameter.
+
+    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    ...     make_running_import)
+    >>> factory = LaunchpadObjectFactory()
+    >>> running_import = make_running_import(factory=factory)
+    >>> running_import_job = running_import.import_job
+
+'reclaimJob' does four separate things:
+
+    >>> running_import_job_id = running_import_job.id
+    >>> new_events = NewEvents()
+    >>> workflow.reclaimJob(running_import_job)
+
+1) deletes the passed in job,
+
+    >>> print job_set.getById(running_import_job_id)
+    None
+
+2) creates a CodeImportResult with a status of 'RECLAIMED',
+
+    >>> results = list(running_import.results)
+    >>> len(results)
+    1
+    >>> [result] = results
+    >>> result.status.name
+    'RECLAIMED'
+
+3) creates a new, already due, job for the code import, and
+
+    >>> print_date_attribute(running_import.import_job, 'date_due')
+    UTC_NOW
+
+4) logs a 'RECLAIM' CodeImportEvent.
+
+    >>> print new_events.summary()
+    RECLAIM ...
+

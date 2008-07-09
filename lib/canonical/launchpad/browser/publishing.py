@@ -17,6 +17,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, canonical_url)
 from canonical.launchpad.interfaces import (
     BuildStatus, PackagePublishingStatus)
+from canonical.launchpad.webapp.authorization import check_permission
 
 
 class BasePublishingRecordView(LaunchpadView):
@@ -229,6 +230,19 @@ class SourcePublishingRecordView(BasePublishingRecordView):
                 'Build failures', '/@@/no', builds=failures)
         else:
             return content_template('Built successfully', '/@@/yes')
+
+    @property
+    def is_changesfile_visible(self):
+        """Check whether a link to the changesfile should be exposed.
+
+        The link to the changesfile should only be exposed if the
+        user is an administrator or the source uploader.
+        """
+        if (self.context.sourcepackagerelease.creator == self.user or
+            check_permission('launchpad.Admin', self.context)):
+            return True
+        else:
+            return False
 
 
 class SourcePublishingRecordSelectableView(SourcePublishingRecordView):
