@@ -49,6 +49,15 @@ def wadl_xpath(tag_name):
     return './' + wadl_tag(tag_name)
 
 
+def _merge_dicts(*dicts):
+    """Merge any number of dictionaries, some of which may be None."""
+    final = {}
+    for dict in dicts:
+        if dict is not None:
+            final.update(dict)
+    return final
+
+
 class WADLError(Exception):
     """An exception having to do with the state of the WADL application."""
     pass
@@ -76,16 +85,8 @@ class WADLBase:
     """A base class for objects that contain WADL-derived information."""
 
 
-class HasParamsMixin:
-    """A mixin class for objects that have associated Param objects."""
-
-    def _merge_dicts(self, *dicts):
-        """Merge any number of dictionaries, some of which may be None."""
-        final = {}
-        for dict in dicts:
-            if dict is not None:
-                final.update(dict)
-        return final
+class HasParametersMixin:
+    """A mixin class for objects that have associated Parameter objects."""
 
     def params(self, styles, resource=None):
         """Find subsidiary parameters that have the given styles."""
@@ -110,7 +111,7 @@ class HasParamsMixin:
         value or (if enforce_completeness is True) because it lacks a
         required value.
 
-        :param params: A list of Param objects.
+        :param params: A list of Parameter objects.
         :param param_values: A dictionary of parameter values. May include
            paramters whose names are not valid Python identifiers.
         :param enforce_completeness: If True, this method will raise
@@ -119,23 +120,23 @@ class HasParamsMixin:
         :param kw_param_values: A dictionary of parameter values.
         :return: A dictionary of validated parameter values.
         """
-        param_values = self._merge_dicts(param_values, kw_param_values)
+        param_values = _merge_dicts(param_values, kw_param_values)
         validated_values = {}
         for param in params:
             name = param.name
             if param.fixed_value is not None:
-                if (param_values.has_key(name)
+                if (name in param_values
                     and param_values[name] != param.fixed_value):
                     raise ValueError(("Value '%s' for parameter '%s' "
                                       "conflicts with fixed value '%s'")
                                      % (param_values[name], name,
                                         param.fixed_value))
                 param_values[name] = param.fixed_value
-            if (param.is_required and not param_values.has_key(name)
-                and enforce_completeness):
+            if (enforce_completeness and param.is_required
+                and not name in param_values):
                 raise ValueError("No value for required parameter '%s'"
                                  % name)
-            if param_values.has_key(name):
+            if name in param_values:
                 validated_values[name] = param_values[name]
                 del param_values[name]
         if len(param_values) > 0:
@@ -310,7 +311,7 @@ class Resource(WADLResolvableDefinition):
                     return method
         return None
 
-    def get_param(self, param_name):
+    def get_parameter(self, param_name):
         """Find the value of a parameter within the representation."""
         if self.representation is None:
             raise NoBoundRepresentationError(
@@ -435,12 +436,12 @@ class Method(WADLBase):
                     representation.params(self.resource),
                     representation_values, False)
             except ValueError:
-                return False
+                pass
             return True
         return False
 
 
-class RequestDefinition(WADLBase, HasParamsMixin):
+class RequestDefinition(WADLBase, HasParametersMixin):
     """A wrapper around the description of the request invoking a method."""
     def __init__(self, method, request_tag):
         """Initialize with a <request> tag.
@@ -474,8 +475,11 @@ class RequestDefinition(WADLBase, HasParamsMixin):
     def representation(self, media_type=None, param_values=None,
                        **kw_param_values):
         """Build a representation to be sent along with this request."""
-        return self.representation_definition(media_type).bind(
-            param_values, **kw_param_values)
+        definition = self.representation_definition(media_type)
+        if definition is None:
+            raise TypeError("Cannot build representation of media type %s"
+                            % media_type)
+        return definition.bind(param_values, **kw_param_values)
 
     def build_url(self, param_values=None, **kw_param_values):
         """Return the request URL to use to invoke this method."""
@@ -519,7 +523,7 @@ class ResponseDefinition(WADLBase):
                 self.resource.application, self.resource, representation_tag)
 
 
-class RepresentationDefinition(WADLResolvableDefinition, HasParamsMixin):
+class RepresentationDefinition(WADLResolvableDefinition, HasParametersMixin):
     """A definition of the structure of a representation."""
 
     def __init__(self, application, resource, representation_tag):

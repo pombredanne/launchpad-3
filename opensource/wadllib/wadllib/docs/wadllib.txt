@@ -54,13 +54,13 @@ The WADL description of a resource knows which representations are
 available for that resource. In this case, the server root resource
 has a a JSON representation, and it defines parameters like
 'PersonSetCollectionAdapter_collection_link', a link to a list of
-people in Launchpad. We should be able to use the get_param() method
-to get the WADL definition of the
+people in Launchpad. We should be able to use the get_parameter()
+method to get the WADL definition of the
 'PersonSetCollectionAdapter_collection_link' parameter and find out
 more about it--for instance, is it a link to another resource?
 
    >>> link_name = 'PersonSetCollectionAdapter_collection_link'
-   >>> link_param = service_root.get_param(link_name)
+   >>> link_parameter = service_root.get_parameter(link_name)
    Traceback (most recent call last):
    ...
    NoBoundRepresentationError: Resource is not bound to any representation.
@@ -111,10 +111,10 @@ Now the bound resource object has a JSON representation, and now
 follow the 'PersonSetCollectionAdapter_collection_link' to a
 new Resource object.
 
-   >>> link_param = bound_service_root.get_param(link_name)
-   >>> link_param.get_value()
+   >>> link_parameter = bound_service_root.get_parameter(link_name)
+   >>> link_parameter.get_value()
    u'http://api.launchpad.dev/beta/people'
-   >>> personset_resource = link_param.linked_resource
+   >>> personset_resource = link_parameter.linked_resource
    >>> personset_resource.__class__
    <class 'wadllib.application.Resource'>
    >>> personset_resource.url
@@ -196,25 +196,25 @@ and gets back a representation. We can bind that representation to our
 description of the person set resource.
 
    >>> bound_personset = bind_to_testdata(personset_resource, 'personset')
-   >>> bound_personset.get_param("start").get_value()
+   >>> bound_personset.get_parameter("start").get_value()
    0
-   >>> bound_personset.get_param("total_size").get_value()
+   >>> bound_personset.get_parameter("total_size").get_value()
    63
 
 We can keep following links indefinitely, so long as we bind to a
 representation to each resource as we get it, and use the
 representation to find the next link.
 
-   >>> next_page_link = bound_personset.get_param("next_collection_link")
+   >>> next_page_link = bound_personset.get_parameter("next_collection_link")
    >>> next_page_link.get_value()
    u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
    >>> page_two = next_page_link.linked_resource
    >>> bound_page_two = bind_to_testdata(page_two, 'personset-page2')
    >>> bound_page_two.url
    u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
-   >>> bound_page_two.get_param("start").get_value()
+   >>> bound_page_two.get_parameter("start").get_value()
    5
-   >>> bound_page_two.get_param("next_collection_link").get_value()
+   >>> bound_page_two.get_parameter("next_collection_link").get_value()
    u'http://api.launchpad.dev/beta/people?ws.start=10&ws.size=5'
 
 
@@ -229,7 +229,7 @@ by following links.
    ...     "http://api.launchpad.dev/beta/#PersonEntryAdapter")
 
    >>> bound_limi = bind_to_testdata(limi_person, 'person-limi')
-   >>> languages_link = bound_limi.get_param("languages_collection_link")
+   >>> languages_link = bound_limi.get_parameter("languages_collection_link")
    >>> languages_link.get_value()
    u'http://api.launchpad.dev/beta/~limi/languages'
 
