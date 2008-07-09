@@ -20,6 +20,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import Interface
 from zope.schema import Choice, TextLine
 
 from canonical.cachedproperty import cachedproperty
@@ -30,12 +31,14 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, IBranchSet, ICodeImport,
     ICodeImportMachineSet,  ICodeImportSet, ILaunchpadCelebrities,
     RevisionControlSystems)
+from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
     Navigation, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
+from canonical.lazr.interface import copy_field, use_template
 from canonical.widgets import LaunchpadDropdownWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
@@ -310,33 +313,31 @@ class CodeImportNewView(CodeImportBaseView):
                     branch_name=existing_branch.name))
 
 
-from canonical.lazr.interface import copy_field, use_template
-from canonical.launchpad.interfaces import IBranch
-from zope.interface import Interface
 
+class EditCodeImportForm(Interface):
+    """The fields presented on the form for editing a code import."""
 
-class EditCodeImportInterface(Interface):
-
-    use_template(ICodeImport,
-                 ['svn_branch_url', 'cvs_root', 'cvs_module'])
+    use_template(
+        ICodeImport, ['svn_branch_url', 'cvs_root', 'cvs_module'])
     whiteboard = copy_field(IBranch['whiteboard'])
 
 
 class CodeImportEditView(CodeImportBaseView):
     """View for editing code imports.
 
-    This view is registered against the branch, but edits the
-    code import for that branch.  If the branch has no associated
-    code import, then the result is a 404.  If the branch does have
-    a code import, then the adapters property allows the form
-    internals to do the associated mappings.
+    This view is registered against the branch, but mostly edits the code
+    import for that branch -- the exception being that it also allows the
+    editing of the branch whiteboard.  If the branch has no associated code
+    import, then the result is a 404.  If the branch does have a code import,
+    then the adapters property allows the form internals to do the associated
+    mappings.
     """
+
+    schema = EditCodeImportForm
 
     # Need this to render the context to prepopulate the form fields.
     # Added here as the base class isn't LaunchpadEditFormView.
-    schema = EditCodeImportInterface
     render_context = True
-    field_names = ['svn_branch_url', 'cvs_root', 'cvs_module', 'whiteboard']
 
     @property
     def initial_values(self):
@@ -354,7 +355,7 @@ class CodeImportEditView(CodeImportBaseView):
     @property
     def adapters(self):
         """See `LaunchpadFormView`."""
-        return {EditCodeImportInterface: self.code_import}
+        return {EditCodeImportForm: self.code_import}
 
     def setUpFields(self):
         CodeImportBaseView.setUpFields(self)
