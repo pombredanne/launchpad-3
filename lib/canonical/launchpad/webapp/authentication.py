@@ -244,14 +244,15 @@ class LaunchpadLoginSource:
             return None
 
     def _principalForPerson(self, person, access_level, want_password=True):
-        person = removeSecurityProxy(person)
+        naked_person = removeSecurityProxy(person)
         if want_password:
-            password = person.password
+            password = naked_person.password
         else:
             password = None
         principal = LaunchpadPrincipal(
-            person.id, person.browsername, person.displayname,
-            password, access_level=access_level)
+            naked_person.id, naked_person.browsername,
+            naked_person.displayname, person, password,
+            access_level=access_level)
         principal.__parent__ = self
         return principal
 
@@ -266,12 +267,13 @@ class LaunchpadPrincipal:
 
     implements(ILaunchpadPrincipal)
 
-    def __init__(self, id, title, description, pwd=None,
+    def __init__(self, id, title, description, person, pwd=None,
                  access_level=AccessLevel.WRITE_PRIVATE):
         self.id = id
         self.title = title
         self.description = description
         self.access_level = access_level
+        self.person = person
         self.__pwd = pwd
 
     def getLogin(self):

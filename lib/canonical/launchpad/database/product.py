@@ -4,7 +4,11 @@
 """Database classes including and related to Product."""
 
 __metaclass__ = type
-__all__ = ['Product', 'ProductSet']
+__all__ = [
+    'get_allowed_default_stacking_names',
+    'Product',
+    'ProductSet',
+    ]
 
 
 import operator
@@ -18,6 +22,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -190,7 +195,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        return self.development_focus.series_branch
+        if self.name in get_allowed_default_stacking_names():
+            return self.development_focus.series_branch
+        return None
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
@@ -316,13 +323,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         if self.license_approved:
             return LicenseStatus.OPEN_SOURCE
-        elif len(self.licenses) == 0:
+        # Since accesses to the licenses property performs a query on
+        # the ProductLicense table, store the value to avoid doing the
+        # query 3 times.
+        licenses = self.licenses
+        if len(licenses) == 0:
             # We don't know what the license is.
             return LicenseStatus.UNREVIEWED
-        elif License.OTHER_PROPRIETARY in self.licenses:
+        elif License.OTHER_PROPRIETARY in licenses:
             # Notice the difference between the License and LicenseStatus.
             return LicenseStatus.PROPRIETARY
-        elif License.OTHER_OPEN_SOURCE in self.licenses:
+        elif License.OTHER_OPEN_SOURCE in licenses:
             if self.license_reviewed:
                 # The OTHER_OPEN_SOURCE license was not manually approved
                 # by setting license_approved to true.
@@ -838,6 +849,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             product=self, language_code=language_code)
 
 
+def get_allowed_default_stacking_names():
+    """Return a list of names of `Product`s that allow default stacking."""
+    return config.codehosting.allow_default_stacking.split(',')
+
+
 class ProductSet:
     implements(IProductSet)
 
@@ -945,6 +961,7 @@ class ProductSet:
     def forReview(self, search_text=None, active=None,
                   license_reviewed=None, licenses=None,
                   license_info_is_empty=None,
+                  has_zero_licenses=None,
                   created_after=None, created_before=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
@@ -1015,12 +1032,35 @@ class ProductSet:
             raise AssertionError('license_info_is_empty invalid: %r'
                                  % license_info_is_empty)
 
+        has_license_subquery = '''%s (
+            SELECT 1
+            FROM ProductLicense
+            WHERE ProductLicense.product = Product.id
+            LIMIT 1
+            )
+            '''
+        if has_zero_licenses is True:
+            # The subquery finds zero rows.
+            or_conditions.append(has_license_subquery % 'NOT EXISTS')
+        elif has_zero_licenses is False:
+            # The subquery finds at least one row.
+            or_conditions.append(has_license_subquery % 'EXISTS')
+        elif has_zero_licenses is None:
+            # Don't restrict results if has_zero_licenses is None.
+            pass
+        else:
+            raise AssertionError('has_zero_licenses is invalid: %r'
+                                 % has_zero_licenses)
+
         if licenses is not None and len(licenses) > 0:
-            for license in licenses:
-                or_conditions.append('ProductLicense.license = %s'
-                                     % sqlvalues(license))
-            conditions.append('ProductLicense.product = Product.id')
-            clause_tables.append('ProductLicense')
+            or_conditions.append('''EXISTS (
+                SELECT 1
+                FROM ProductLicense
+                WHERE ProductLicense.product = Product.id
+                    AND license IN %s
+                LIMIT 1
+                )
+                ''' % sqlvalues(tuple(licenses)))
 
         if len(or_conditions) != 0:
             conditions.append('(%s)' % '\nOR '.join(or_conditions))

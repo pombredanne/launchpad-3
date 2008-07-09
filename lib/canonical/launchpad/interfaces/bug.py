@@ -20,13 +20,14 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, List, Text, TextLine)
+    Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
@@ -36,7 +37,9 @@ from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)
 
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_factory_operation, export_write_operation, exported,
+    operation_parameters, rename_parameters_as)
 from canonical.lazr.fields import CollectionField, Reference
 
 
@@ -195,10 +198,18 @@ class IBug(IMessageTarget, ICanBeMentored):
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
-    watches = Attribute('SQLObject.Multijoin of IBugWatch')
+    watches = exported(
+        CollectionField(
+            title=_("All bug watches associated with this bug."),
+            value_type=Object(schema=IBugWatch),
+            readonly=True),
+        exported_as='bug_watches')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
-    subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
+    subscriptions = exported(CollectionField(
+        title=_('Subscriptions.'),
+        value_type=Reference(schema=Interface),
+        readonly=True))
     duplicates = exported(
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
@@ -246,6 +257,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         """Return a candidate subject for a followup message."""
 
     # subscription-related methods
+
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
     def subscribe(person, subscribed_by):
         """Subscribe `person` to the bug.
 
@@ -254,6 +270,8 @@ class IBug(IMessageTarget, ICanBeMentored):
         :return: an `IBugSubscription`.
         """
 
+    @call_with(person=REQUEST_USER)
+    @export_write_operation()
     def unsubscribe(person):
         """Remove this person's subscription to this bug."""
 
@@ -331,6 +349,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         bug mail being generated during bulk imports or changes.
         """
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(
+        bugtracker='bug_tracker', remotebug='remote_bug')
+    @export_factory_operation(
+        IBugWatch, ['bugtracker', 'remotebug'])
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
@@ -503,6 +526,16 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         Return None if no such bugtask is found.
         """
+
+
+# We are forced to define this now to avoid circular import problems.
+IBugWatch['bug'].schema = IBug
+
+# In order to avoid circular dependencies, we only import
+# IBugSubscription (which itself imports IBug) here, and assign it as
+# the value type for the `subscriptions` collection.
+from canonical.launchpad.interfaces.bugsubscription import IBugSubscription
+IBug['subscriptions'].value_type.schema = IBugSubscription
 
 
 class IBugDelta(Interface):

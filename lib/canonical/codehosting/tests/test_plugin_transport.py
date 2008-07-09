@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 """Tests for the Launchpad code hosting Bazaar transport."""
 
@@ -18,7 +19,8 @@ from bzrlib.transport import (
     get_transport, _get_protocol_handlers, register_transport, Server,
     unregister_transport)
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.tests import TestCase as BzrTestCase, TestCaseInTempDir
+from bzrlib.tests import (
+    TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport)
 from bzrlib.urlutils import escape, local_path_to_url
 
 from twisted.internet import defer
@@ -32,7 +34,8 @@ from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
     AsyncLaunchpadTransport, BlockingProxy, InvalidControlDirectory,
-    LaunchpadServer, set_up_logging, VirtualTransport)
+    LaunchpadInternalServer, LaunchpadServer, set_up_logging,
+    VirtualTransport)
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
@@ -247,6 +250,37 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
             InvalidControlDirectory,
             self.server._parseProductControlDirectory,
             'user/product/.bzr/foo')
+
+
+class TestLaunchpadInternalServer(TestLaunchpadServer):
+    """Tests for the LaunchpadInternalServer, used by the puller and scanner.
+    """
+
+    def setUp(self):
+        self.authserver = FakeLaunchpad()
+        self.branch_transport = MemoryTransport()
+        self.server = LaunchpadInternalServer(
+            BlockingProxy(self.authserver), self.branch_transport)
+
+    def test_get_url(self):
+        # Rather than the magic per-instance URL of the standard
+        # LaunchpadServer, the LaunchpadInternalServer returns a fixed
+        # 'lp-internal://' URL.
+        self.assertEqual('lp-internal:///', self.server.get_url())
+
+    def test_backing_transport_is_mirror_transport(self):
+        # The internal server provides read-only access to exactly one branch
+        # area. This means that the 'backing transport' (for regular servers,
+        # the hosted area) is the same as the 'mirror transport' (which
+        # normally refers to the mirrored area in regular servers).
+        self.assertIdentical(
+            self.server._backing_transport, self.server._mirror_transport)
+
+    def test_backing_transport_read_only(self):
+        # The backing transport is read only. This acts as a safeguard
+        # preventing the puller and the scanner from accidentally doing
+        # anything.
+        self.assertEqual(True, self.server._backing_transport.is_readonly())
 
 
 class TestVirtualTransport(TrialTestCase, TestCaseInTempDir):
@@ -603,29 +637,6 @@ class LaunchpadTransportTests:
             errors.PermissionDenied, message,
             transport.mkdir, '~testuser/thunderbird/explode!')
 
-    def lockBranch(self, unique_name):
-        """Simulate locking a branch."""
-        transport = get_transport(self.server.get_url() + unique_name)
-        transport = transport.clone('.bzr/branch/lock')
-        transport.mkdir('temporary')
-        # It's this line that actually locks the branch.
-        transport.rename('temporary', 'held')
-
-    def unlockBranch(self, unique_name):
-        """Simulate unlocking a branch."""
-        transport = get_transport(self.server.get_url() + unique_name)
-        transport = transport.clone('.bzr/branch/lock')
-        # Actually unlock the branch.
-        transport.rename('held', 'temporary')
-        transport.rmdir('temporary')
-
-    def test_unlock_requests_mirror(self):
-        # Unlocking a branch requests a mirror.
-        self.lockBranch('~testuser/firefox/baz')
-        self.unlockBranch('~testuser/firefox/baz')
-        self.assertEqual(
-            [(self.user_id, 1)], self.authserver._request_mirror_log)
-
     def test_rmdir(self):
         transport = self.getTransport()
         self.assertFiresFailure(
@@ -670,6 +681,41 @@ class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
     def getTransport(self):
         url = self.server.get_url()
         return AsyncLaunchpadTransport(self.server, url)
+
+
+class TestRequestMirror(TestCaseWithTransport):
+    """Test request mirror behaviour."""
+
+    def setUp(self):
+        self._server = None
+        self.authserver = FakeLaunchpad()
+        self.user_id = 1
+        self.backing_transport = MemoryTransport()
+        self.mirror_transport = MemoryTransport()
+
+    def get_server(self):
+        if self._server is None:
+            self._server = LaunchpadServer(
+                BlockingProxy(self.authserver), self.user_id,
+                self.backing_transport, self.mirror_transport)
+            self._server.setUp()
+            self.addCleanup(self._server.tearDown)
+        return self._server
+
+    def test_creating_branch_requests_mirror(self):
+        # Creating a branch requests a mirror.
+        branch = self.make_branch('~testuser/firefox/baz')
+        self.assertEqual(
+            [(self.user_id, 1)], self.authserver._request_mirror_log)
+
+    def test_branch_unlock_requests_mirror(self):
+        # Unlocking a branch requests a mirror.
+        branch = self.make_branch('~testuser/firefox/baz')
+        self.authserver._request_mirror_log = []
+        branch.lock_write()
+        branch.unlock()
+        self.assertEqual(
+            [(self.user_id, 1)], self.authserver._request_mirror_log)
 
 
 class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):

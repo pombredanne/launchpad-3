@@ -276,11 +276,11 @@ class TeamMembership(SQLBase):
         state_transition = {
             admin: [approved, expired, deactivated],
             approved: [admin, expired, deactivated],
-            deactivated: [proposed, approved, invited],
-            expired: [proposed, approved, invited],
+            deactivated: [proposed, approved, admin, invited],
+            expired: [proposed, approved, admin, invited],
             proposed: [approved, admin, declined],
-            declined: [proposed, approved],
-            invited: [approved, invitation_declined],
+            declined: [proposed, approved, admin],
+            invited: [approved, admin, invitation_declined],
             invitation_declined: [invited, approved, admin]}
         assert self.status in state_transition, (
             "Unknown status: %s" % self.status.name)
