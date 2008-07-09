@@ -660,9 +660,14 @@ ul#menuroot li.selected a.breadcrumb {
   padding: 0;
   background: url(navigation-tabs-se) bottom left no-repeat;
 }
-#lp-apps span .disabled-tab {
-  color: #a7a7a7;
+#lp-apps .disabled-tab {
+  background: url(navigation-tabs-sw-disabled) bottom right no-repeat;
+}
+#lp-apps .disabled-tab strong {
+  background: url(navigation-tabs-se-disabled) bottom left no-repeat;
+  display: block;
   font-weight: normal;
+  color: #a7a7a7;
 }
 #lp-apps .overview {
 
