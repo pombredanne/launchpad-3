@@ -373,35 +373,35 @@ class CodeImportEditView(CodeImportBaseView):
         """If the status is different, and the user is super, show button."""
         return self._super_user and self.code_import.review_status != status
 
-    def _makeStatusButton(button_name, status_method_name, status, text):
+    def _makeStatusChangeAction(label, status_method_name, status, text):
         def condition(self, ignored):
             return self._showButtonForStatus(status)
         def success(self, action, data):
-            """XXX."""
+            """Make the requested status change."""
             getattr(self.code_import, status_method_name)(data, self.user)
             self.request.response.addNotification(
                 'The code import has been ' + text + '.')
         return form.Action(
-            button_name, name=status_method_name, success=success,
+            label, name=status_method_name, success=success,
             condition=condition)
 
-    @action(_('Update'), name='update')
-    def update_action(self, action, data):
+    def update_success(self, action, data):
         """Update the details."""
         self.code_import.updateFromData(data, self.user)
 
     actions = form.Actions(
-        _makeStatusButton(
-            'Approve', 'approve', CodeImportReviewStatus.REVIEWED,
+        form.Action(_('Update'), name='update', success=update_success),
+        _makeStatusChangeAction(
+            _('Approve'), 'approve', CodeImportReviewStatus.REVIEWED,
             'approved'),
-        _makeStatusButton(
-            'Mark Invalid', 'invalidate', CodeImportReviewStatus.INVALID,
+        _makeStatusChangeAction(
+            _('Mark Invalid'), 'invalidate', CodeImportReviewStatus.INVALID,
             'set as invalid'),
-        _makeStatusButton(
-            'Suspend', 'suspend', CodeImportReviewStatus.SUSPENDED,
+        _makeStatusChangeAction(
+            _('Suspend'), 'suspend', CodeImportReviewStatus.SUSPENDED,
             'suspended'),
-        _makeStatusButton(
-            'Mark Failing', 'markFailing', CodeImportReviewStatus.FAILING,
+        _makeStatusChangeAction(
+            _('Mark Failing'), 'markFailing', CodeImportReviewStatus.FAILING,
             'marked as failing'),
         )
 
