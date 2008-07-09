@@ -264,7 +264,7 @@ class Hierarchy(LaunchpadView):
                 '</a>&nbsp;</span>' % first_class)
 
             last_element = elements[-1]
-            if len(elements) > 2:
+            if len(elements) > 1:
                 before_last_element = elements[-2]
             else:
                 before_last_element = None
