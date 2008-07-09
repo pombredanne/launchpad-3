@@ -2,7 +2,6 @@
 
 __metaclass__ = type
 
-import os
 import inspect
 
 import zope.app.form.browser.metaconfigure
@@ -19,7 +18,6 @@ from zope.app.publisher.browser.viewmeta import (
 from zope.app.security.metadirectives import IDefinePermissionDirective
 from zope.app.security.permission import Permission
 from zope.component import getUtility
-from zope.configuration.exceptions import ConfigurationError
 from zope.configuration.fields import (
     GlobalObject, MessageID, Path, PythonIdentifier, Tokens)
 from zope.interface import Interface, implements
@@ -27,7 +25,7 @@ from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.schema import TextLine
-from zope.security.checker import Checker, CheckerPublic, defineChecker
+from zope.security.checker import Checker, CheckerPublic
 from zope.security.interfaces import IPermission
 from zope.security.proxy import ProxyFactory
 
