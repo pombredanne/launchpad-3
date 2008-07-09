@@ -1001,6 +1001,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def _userIsPillarEditor(self, user):
         """Can the user edit this tasks's pillar?"""
+        if user is None:
+            return False
         if IUpstreamBugTask.providedBy(self):
             pillar = self.product
         elif IProductSeriesBugTask.providedBy(self):
