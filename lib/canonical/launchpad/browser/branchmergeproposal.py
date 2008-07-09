@@ -491,7 +491,7 @@ class MergeProposalEditView(LaunchpadEditFormView,
     """A base class for merge proposal edit views."""
 
     def initialize(self):
-        #Record next_url and cancel url now
+        # Record next_url and cancel url now
         self.next_url = canonical_url(self.context)
         self.cancel_url = self.next_url
         super(MergeProposalEditView, self).initialize()
