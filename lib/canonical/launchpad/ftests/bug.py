@@ -15,8 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_portlet, find_tag_by_id,
-    find_tags_by_class)
+    extract_text, find_tag_by_id, find_main_content, find_tags_by_class)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
