@@ -50,14 +50,14 @@
     />
 
     <div class="actions" style="float:right;">
-      <tal:link
-        tal:define="link context/menu:overview/administer"
-        tal:condition="link/enabled"
-        tal:replace="structure link/render" />
-      <tal:link
-        tal:define="link context/menu:overview/edit"
-        tal:condition="link/enabled"
-        tal:replace="structure link/render" />
+      <tal:administer
+        define="link context/menu:overview/administer"
+        condition="link/enabled"
+        replace="structure link/render" />
+      <tal:edit
+        define="link context/menu:overview/edit"
+        condition="link/enabled"
+        replace="structure link/render" />
     </div>
 
     <div tal:replace="structure context/@@+portlet-contact-details"/>
