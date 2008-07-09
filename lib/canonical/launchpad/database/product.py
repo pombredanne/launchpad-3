@@ -850,6 +850,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def userCanEdit(self, user):
         """See `IProduct`."""
+        if user is None:
+            return False
         celebs = getUtility(ILaunchpadCelebrities)
         return (
             user.inTeam(celebs.registry_experts) or

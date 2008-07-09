@@ -1239,6 +1239,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def userCanEdit(self, user):
         """See `IDistribution`."""
+        if user is None:
+            return False
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.owner) or user.inTeam(admins)
 
