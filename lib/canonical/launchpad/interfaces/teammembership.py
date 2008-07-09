@@ -93,7 +93,7 @@ class TeamMembershipStatus(DBEnumeratedType):
 
 class ITeamMembership(Interface):
     """TeamMembership for Users"""
-    export_as_webservice_entry('team_membership')
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
     # Can't use Object(schema=IPerson) here because that would cause circular

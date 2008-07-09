@@ -1389,7 +1389,7 @@ class IPersonAdminWriteRestricted(Interface):
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonAdminWriteRestricted, IHasStanding, ISetLocation):
     """A Person."""
-    export_as_webservice_entry('person', 'people')
+    export_as_webservice_entry(plural_name='people')
 
 
 # Set the PublicPersonChoice schema to the newly defined interface.

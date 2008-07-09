@@ -314,7 +314,7 @@ class UserCannotEditBugTaskStatus(Unauthorized):
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
-    export_as_webservice_entry('bug_task')
+    export_as_webservice_entry()
 
     id = Int(title=_("Bug Task #"))
     bug = exported(
