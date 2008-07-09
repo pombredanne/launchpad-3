@@ -373,54 +373,37 @@ class CodeImportEditView(CodeImportBaseView):
         """If the status is different, and the user is super, show button."""
         return self._super_user and self.code_import.review_status != status
 
-    def _showApprove(self, ignored):
-        """Show the Approve button if the import is not reviewed."""
-        return self._showButtonForStatus(CodeImportReviewStatus.REVIEWED)
-
-    def _showInvalidate(self, ignored):
-        """Show the Approve button if the import is not invalid."""
-        return self._showButtonForStatus(CodeImportReviewStatus.INVALID)
-
-    def _showSuspend(self, ignored):
-        """Show the Suspend button if the import is not suspended."""
-        return self._showButtonForStatus(CodeImportReviewStatus.SUSPENDED)
-
-    def _showMarkFailing(self, ignored):
-        """Show the Mark Failing button if the import is not failing."""
-        return self._showButtonForStatus(CodeImportReviewStatus.FAILING)
+    def _makeStatusButton(button_name, status_method_name, status, text):
+        def condition(self, ignored):
+            return self._showButtonForStatus(status)
+        def success(self, action, data):
+            """XXX."""
+            getattr(self.code_import, status_method_name)(data, self.user)
+            self.request.response.addNotification(
+                'The code import has been ' + text + '.')
+        return form.Action(
+            button_name, name=status_method_name, success=success,
+            condition=condition)
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         """Update the details."""
         self.code_import.updateFromData(data, self.user)
 
-    @action(_('Approve'), name='approve', condition=_showApprove)
-    def approve_action(self, action, data):
-        """Approve the import."""
-        self.code_import.approve(data, self.user)
-        self.request.response.addNotification(
-            'The code import has been approved.')
-
-    @action(_('Mark Invalid'), name='invalidate', condition=_showInvalidate)
-    def invalidate_action(self, action, data):
-        """Invalidate the import."""
-        self.code_import.invalidate(data, self.user)
-        self.request.response.addNotification(
-            'The code import has been set as invalid.')
-
-    @action(_('Suspend'), name='suspend', condition=_showSuspend)
-    def suspend_action(self, action, data):
-        """Suspend the import."""
-        self.code_import.suspend(data, self.user)
-        self.request.response.addNotification(
-            'The code import has been suspended.')
-
-    @action(_('Mark Failing'), name='markFailing', condition=_showMarkFailing)
-    def markFailing_action(self, action, data):
-        """Mark the import as failing."""
-        self.code_import.markFailing(data, self.user)
-        self.request.response.addNotification(
-            'The code import has been marked as failing.')
+    actions = form.Actions(
+        _makeStatusButton(
+            'Approve', 'approve', CodeImportReviewStatus.REVIEWED,
+            'approved'),
+        _makeStatusButton(
+            'Mark Invalid', 'invalidate', CodeImportReviewStatus.INVALID,
+            'set as invalid'),
+        _makeStatusButton(
+            'Suspend', 'suspend', CodeImportReviewStatus.SUSPENDED,
+            'suspended'),
+        _makeStatusButton(
+            'Mark Failing', 'markFailing', CodeImportReviewStatus.FAILING,
+            'marked as failing'),
+        )
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
