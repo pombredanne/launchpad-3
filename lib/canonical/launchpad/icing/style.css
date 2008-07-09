@@ -644,12 +644,12 @@ ul#menuroot li.selected a.breadcrumb {
   position: relative;
   display: inline-block;
   top: -1px;
+  border-top: 1px solid #ddd;
   width: 16%; /* = (100% - 1%) / 6 */
   max-width: 12em;
   margin: 0;
   padding: 0;
   text-align: center;
-  border-top: 1px solid #ccc;
   color: #333;
   line-height: 2.2em;
 }
@@ -671,11 +671,12 @@ ul#menuroot li.selected a.breadcrumb {
 }
 #lp-apps .overview-active {
   background: url(navigation-tabs-sw-overview-active) bottom right no-repeat;
-  border-top: 1px solid #ddd;
 }
 #lp-apps .overview-active strong, #lp-apps .overview-active a {
   background: url(navigation-tabs-se-overview-active) bottom left no-repeat;
   font-weight: bold;
+  border-top: 1px solid #ddd;
+  top: -1px;
 }
 #lp-apps .branches {
   background: url(navigation-tabs-sw-code) bottom right no-repeat;
@@ -689,10 +690,13 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .branches-active {
   background: url(navigation-tabs-sw-code-active) bottom right no-repeat;
   border-top: 1px solid #ddd;
+  top: -1px;
 }
 #lp-apps .branches-active strong, #lp-apps .branches-active a {
   background: url(navigation-tabs-se-code-active) bottom left no-repeat;
   font-weight: bold;
+  border-top: 1px solid #ddd;
+  top: -1px;
 }
 #lp-apps .bugs {
   background: url(navigation-tabs-sw-bugs) bottom right no-repeat;
@@ -706,10 +710,13 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .bugs-active {
   background: url(navigation-tabs-sw-bugs-active) bottom right no-repeat;
   border-top: 1px solid #ddd;
+  top: -1px;
 }
 #lp-apps .bugs-active strong, #lp-apps .bugs-active a {
   background: url(navigation-tabs-se-bugs-active) bottom left no-repeat;
   font-weight: bold;
+  border-top: 1px solid #ddd;
+  top: -1px;
 }
 #lp-apps .specifications {
   background: url(navigation-tabs-sw-blueprints) bottom right no-repeat;
@@ -723,10 +730,13 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .specifications-active {
   background: url(navigation-tabs-sw-blueprints-active) bottom right no-repeat;
   border-top: 1px solid #ddd;
+  top: -1px;
 }
 #lp-apps .specifications-active strong, #lp-apps .specifications-active a {
   background: url(navigation-tabs-se-blueprints-active) bottom left no-repeat;
   font-weight: bold;
+  border-top: 1px solid #ddd;
+  top: -1px;
 }
 #lp-apps .translations {
   background: url(navigation-tabs-sw-translations) bottom right no-repeat;
@@ -740,10 +750,13 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .translations-active {
   background: url(navigation-tabs-sw-translations-active) bottom right no-repeat;
   border-top: 1px solid #ddd;
+  top: -1px;
 }
 #lp-apps .translations-active strong, #lp-apps .translations-active a {
   background: url(navigation-tabs-se-translations-active) bottom left no-repeat;
   font-weight: bold;
+  border-top: 1px solid #ddd;
+  top: -1px;
 }
 #lp-apps .answers {
   background: url(navigation-tabs-sw-answers) bottom right no-repeat;
@@ -757,10 +770,13 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .answers-active {
   background: url(navigation-tabs-sw-answers-active) bottom right no-repeat;
   border-top: 1px solid #ddd;
+  top: -1px;
 }
 #lp-apps .answers-active strong, #lp-apps .answers-active a {
   background: url(navigation-tabs-se-answers-active) bottom left no-repeat;
   font-weight: bold;
+  border-top: 1px solid #ddd;
+  top: -1px;
 }
 /* After all has been said and done, we still want disabled ones to look disabled */
 #lp-apps .disabled-tab {
