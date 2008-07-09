@@ -213,7 +213,7 @@ We can get the the collection of subscriptions to a bug.
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'person_link', u'http://api.launchpad.dev/beta/~stevea'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_subscription'),
    (u'self_link',
     u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea'),
    (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
@@ -225,7 +225,7 @@ Each subscription can be accessed individually.
   >>> show(subscription)
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'person_link', u'http://api.launchpad.dev/beta/~stevea'),
-   (u'resource_type_link', u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#bug_subscription'),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea'),
    (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
 
@@ -278,7 +278,7 @@ report described by the bugwatch.
    (u'remote_importance', None),
    (u'remote_status', u''),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugWatchEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_watch'),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+watch/2'),
    (u'title', u'The Mozilla.org Bug Tracker #2000'),
    (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000')]
@@ -351,7 +351,7 @@ Following the redirect, we can see the new bug watch:
    (u'remote_importance', None),
    (u'remote_status', None),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugWatchEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_watch'),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+watch/13'),
    (u'title', u'The Mozilla.org Bug Tracker #9876'),
    (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876')]
@@ -369,7 +369,7 @@ Following the redirect, we can see the new bug watch:
    (u'contact_details', u'Carrier pigeon only'),
    (u'name', u'mozilla.org'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugTrackerEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_tracker'),
    (u'self_link',
     u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org'),
    (u'summary',
@@ -430,7 +430,7 @@ renamed bug tracker.
    (u'contact_details', u'bob@example.com'),
    (u'name', u'bob'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugTrackerEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_tracker'),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/bugtrackers/bob'),
    (u'summary', u'Where Bob files his bugs.'),
    (u'title', u"Bob's Tracker"),
