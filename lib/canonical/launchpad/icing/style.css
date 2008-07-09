@@ -621,58 +621,173 @@ ul#menuroot li.selected a.breadcrumb {
 
 /* === Application tabs === */
 /* In most pages, the location bar includes six centered application tabs: */
-#lp-apps {text-align: center;}
-/* The tabs are preceded by a bar joined to the hierarchy: */
-#lp-apps hr {
-  background: #ddd;
-  border: 2px solid #ccc;
-  -moz-border-left-colors: #ccc #fff;
-  -moz-border-top-colors: #ccc #fff;
-  -moz-border-right-colors: #ccc #ddd;
-  -moz-border-bottom-colors: #ccc #ddd;
-  display: block;
+#lp-apps {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+/* This separates the app bar from the hierarchy */
+.apps-separator {
   height: 5px;
   margin: 0;
+  padding: 0;
+  background: #ddd;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
 }
 /* The tabs have text separators for the benefit of those without CSS: */
 #lp-apps small {display: none;}
 /* The tabs are equal size, not too wide, and attached to the center bar: */
-#lp-apps > strong, #lp-apps > span {
-  display: inline-block;
-  text-align: center;
-  width: 16.5%; /* = (100% - 1%) / 6 */
-  max-width: 12em;
+#lp-apps span {
   position: relative;
+  display: inline-block;
+  top: -1px;
+  border-top: 1px solid #ddd;
+  width: 16%; /* = (100% - 1%) / 6 */
+  max-width: 12em;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  color: #333;
+  line-height: 2.2em;
+}
+#lp-apps span a, #lp-apps span strong {
+  display: block;
+  color: #333;
+  text-decoration: none;
+  margin: 0;
+  padding: 0;
+}
+#lp-apps .overview {
+  background: url(navigation-tabs-sw-overview) bottom right no-repeat;
+}
+#lp-apps .overview a, #lp-apps .overview strong {
+  background: url(navigation-tabs-se-overview) bottom left no-repeat;
+}
+#lp-apps .overview a:hover {
+  color: #8fb635;
+}
+#lp-apps .overview-active {
+  background: url(navigation-tabs-sw-overview-active) bottom right no-repeat;
+}
+#lp-apps .overview-active strong, #lp-apps .overview-active a {
+  background: url(navigation-tabs-se-overview-active) bottom left no-repeat;
+  font-weight: bold;
+  border-top: 1px solid #ddd;
   top: -1px;
 }
-/* Each tab is light grey, with bevelled and rounded borders: */
-#lp-apps strong a, #lp-apps strong span, #lp-apps span a, #lp-apps span span {
-  background:
-    #eee url(navigation-tab-bottom-untinted-normal.png) bottom repeat-x;
-  border-style: solid;
-  -moz-border-right-colors: #ccc #ccc #ddd;
-  -moz-border-left-colors: #ccc #fff #eee;
-  border-width: 0 3px 0 0;
-  -moz-border-radius: 0 0 6px 7px;
-  color: #333;
+#lp-apps .branches {
+  background: url(navigation-tabs-sw-code) bottom right no-repeat;
+}
+#lp-apps .branches a, #lp-apps .branches strong {
+  background: url(navigation-tabs-se-code) bottom left no-repeat;
+}
+#lp-apps .branches a:hover {
+  color: #d18c3b;
+}
+#lp-apps .branches-active {
+  background: url(navigation-tabs-sw-code-active) bottom right no-repeat;
+  border-top: 1px solid #ddd;
+  top: -1px;
+}
+#lp-apps .branches-active strong, #lp-apps .branches-active a {
+  background: url(navigation-tabs-se-code-active) bottom left no-repeat;
+  font-weight: bold;
+  border-top: 1px solid #ddd;
+  top: -1px;
+}
+#lp-apps .bugs {
+  background: url(navigation-tabs-sw-bugs) bottom right no-repeat;
+}
+#lp-apps .bugs a, #lp-apps .bugs strong {
+  background: url(navigation-tabs-se-bugs) bottom left no-repeat;
+}
+#lp-apps .bugs a:hover {
+  color: #a02c35;
+}
+#lp-apps .bugs-active {
+  background: url(navigation-tabs-sw-bugs-active) bottom right no-repeat;
+  border-top: 1px solid #ddd;
+  top: -1px;
+}
+#lp-apps .bugs-active strong, #lp-apps .bugs-active a {
+  background: url(navigation-tabs-se-bugs-active) bottom left no-repeat;
+  font-weight: bold;
+  border-top: 1px solid #ddd;
+  top: -1px;
+}
+#lp-apps .specifications {
+  background: url(navigation-tabs-sw-blueprints) bottom right no-repeat;
+}
+#lp-apps .specifications a, #lp-apps .specifications strong {
+  background: url(navigation-tabs-se-blueprints) bottom left no-repeat;
+}
+#lp-apps .specifications a:hover {
+  color: #3895bd;
+}
+#lp-apps .specifications-active {
+  background: url(navigation-tabs-sw-blueprints-active) bottom right no-repeat;
+  border-top: 1px solid #ddd;
+  top: -1px;
+}
+#lp-apps .specifications-active strong, #lp-apps .specifications-active a {
+  background: url(navigation-tabs-se-blueprints-active) bottom left no-repeat;
+  font-weight: bold;
+  border-top: 1px solid #ddd;
+  top: -1px;
+}
+#lp-apps .translations {
+  background: url(navigation-tabs-sw-translations) bottom right no-repeat;
+}
+#lp-apps .translations a, #lp-apps .translations strong {
+  background: url(navigation-tabs-se-translations) bottom left no-repeat;
+}
+#lp-apps .translations a:hover {
+  color: #bb3a84;
+}
+#lp-apps .translations-active {
+  background: url(navigation-tabs-sw-translations-active) bottom right no-repeat;
+  border-top: 1px solid #ddd;
+  top: -1px;
+}
+#lp-apps .translations-active strong, #lp-apps .translations-active a {
+  background: url(navigation-tabs-se-translations-active) bottom left no-repeat;
+  font-weight: bold;
+  border-top: 1px solid #ddd;
+  top: -1px;
+}
+#lp-apps .answers {
+  background: url(navigation-tabs-sw-answers) bottom right no-repeat;
+}
+#lp-apps .answers a, #lp-apps .answers strong {
+  background: url(navigation-tabs-se-answers) bottom left no-repeat;
+}
+#lp-apps .answers a:hover {
+  color: #3941bf;
+}
+#lp-apps .answers-active {
+  background: url(navigation-tabs-sw-answers-active) bottom right no-repeat;
+  border-top: 1px solid #ddd;
+  top: -1px;
+}
+#lp-apps .answers-active strong, #lp-apps .answers-active a {
+  background: url(navigation-tabs-se-answers-active) bottom left no-repeat;
+  font-weight: bold;
+  border-top: 1px solid #ddd;
+  top: -1px;
+}
+/* After all has been said and done, we still want disabled ones to look disabled */
+#lp-apps .disabled-tab {
+  background: url(navigation-tabs-sw-disabled) bottom right no-repeat;
+}
+#lp-apps .disabled-tab strong {
+  background: url(navigation-tabs-se-disabled) bottom left no-repeat;
   display: block;
-  line-height: 1.5em;
-  margin: 0 1px;
-  overflow: hidden;
-  padding: 0 0 4px auto;
-  position: relative;
+  font-weight: normal;
+  color: #a7a7a7;
 }
-#lp-apps * span::before, #lp-apps * a::before {
-  background: url(navigation-nw-w-normal.png) bottom left no-repeat;
-  content: url(navigation-sw-normal.png);
-  height: 1em;
-  overflow: hidden;
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  vertical-align: top;
-}
-
 .navigation.menu > :first-child {
   background: url(navigation-nw-w-normal.png) top left no-repeat;
 }
@@ -688,41 +803,6 @@ ul#menuroot li.selected a.breadcrumb {
 }
 
 
-
-
-/* Each tab will soon also have a tinted bottom matching the app theme: */
-#lp-apps *.overview       * {-tinted-border-bottom-color: #83ad23;}
-#lp-apps *.branches       * {-tinted-border-bottom-color: #d18b39;}
-#lp-apps *.bugs           * {-tinted-border-bottom-color: #9f2b33;}
-#lp-apps *.specifications * {-tinted-border-bottom-color: #3594bb;}
-#lp-apps *.translations   * {-tinted-border-bottom-color: #bb3a84;}
-#lp-apps *.answers        * {-tinted-border-bottom-color: #3840be;}
-/* The active tab is darker: */
-#lp-apps strong span, #lp-apps strong a {
-  background-color: #ddd;
-  background-image: url(navigation-tab-bottom-untinted-selected.png);
-}
-/* It's also contiguous with the hierarchy above: */
-#lp-apps strong {border-top: 1px solid #ddd;}
-/* Disabled tabs don't look clickable: */
-#lp-apps span span {
-  background-image: none;
-  border-color: #ccc;
-  border-width: 0 1px 1px;
-  color: #ccc;
-}
-
-/*
-Inline help is contained in a <div> and dynamically positioned by JavaScript.
-*/
-#help-pane {
-  position: absolute;
-  border: 5px solid black;
-  padding: 10px;
-  z-index: 3000;  /* This should appear above all other content. */
-  background-color: #fff;
-  width: 25em;
-}
 /* We want the hidden pane to have dimensions so that we can position the
 frame with them.  This works because the element an absolute position, taking
 it out of the page flow. */
