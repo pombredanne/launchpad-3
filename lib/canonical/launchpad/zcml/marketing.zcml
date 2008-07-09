@@ -23,10 +23,12 @@
         name="marketing_subnavigation"
         permission="zope.Public"
         />
-    <browser:tour
+    <browser:page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        tour="../templates/marketing-launchpad-tour.xml"
+        class="canonical.launchpad.browser.launchpad.LaunchpadTourFolder"
+        attribute="__call__"
+        permission="zope.Public"
         />
 
     <!-- Marketing Microsite Home Page -->

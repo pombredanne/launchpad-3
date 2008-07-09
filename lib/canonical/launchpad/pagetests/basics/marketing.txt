@@ -5,29 +5,23 @@ From Launchpad's front page, you can access a "marketing microsite"
     >>> browser.open('http://launchpad.dev/')
     >>> browser.getLink('Take a tour').click()
     >>> print browser.title
-    About Launchpad
-    >>> browser.url
-    'http://launchpad.dev/+about'
-
-That features three large tabs: "Overview", "Join Launchpad", and
-"Take a tour".
-
-    >>> navigation = find_tag_by_id(browser.contents, 'navigation')
-    >>> home_link = navigation.find('a')
-    >>> print home_link.renderContents()
-    Overview
-    >>> print home_link['href']
-    http://launchpad.dev/+about
-
-    >>> account_link = browser.getLink('Join Launchpad')
-    >>> account_link.url
-    'http://launchpad.dev/+about/+login'
-
-    >>> tour_link = browser.getLink('Take a tour').click()
-    >>> print browser.title
-    Launchpad tour: ...
+    Launchpad tour
     >>> browser.url
     'http://launchpad.dev/+tour'
+
+The images from the tour are retrieved relative to +tour.
+
+    >>> browser.open('http://launchpad.dev/+tour/images/home/main-image.jpg')
+    >>> browser.open('http://launchpad.dev/+tour/images/btn-next.png')
+
+But the source directory isn't available:
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/+tour/source/code-hosting_SVG.svg')
+    Traceback (most recent call last):
+      ...
+    NotFound:...
+
 
 == About each application ==
 
