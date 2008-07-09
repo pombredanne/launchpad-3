@@ -546,6 +546,11 @@ class UnembargoSecurityPackage(PackageCopier):
             if changesfile is not None and changesfile.restricted:
                 new_lfa = self.reUploadFile(changesfile, False)
                 upload.changesfile = new_lfa
+            # Re-upload the buildlog file as necessary.
+            buildlog = pub_record.binarypackagerelease.build.buildlog
+            if buildlog is not None and buildlog.restricted:
+                new_lfa = self.reUploadFile(buildlog, False)
+                pub_record.binarypackagerelease.build.buildlog = new_lfa
         else:
             raise AssertionError(
                 "pub_record is not one of SourcePackagePublishingHistory "
