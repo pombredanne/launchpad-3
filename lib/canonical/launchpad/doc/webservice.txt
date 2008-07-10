@@ -238,6 +238,24 @@ Here's a simple AuthorSet with predefined authors.
     >>> protect_schema(AuthorSet, IAuthorSet)
     >>> provideUtility(AuthorSet(), IAuthorSet)
 
+Here's a vocabulary of authors, for a field that presents a Choice
+among authors.
+
+    >>> from zope.schema.interfaces import IVocabulary
+    >>> class AuthorVocabulary:
+    ...     implements(IVocabulary)
+    ...     def __iter__(self):
+    ...         """Iterate over the authors."""
+    ...         return AuthorSet().getAllAuthors().__iter__()
+    ...
+    ...     def __len__(self):
+    ...         """Return the number of authors."""
+    ...         return len(AuthorSet().getAllAuthors())
+    ...
+    ...     def getTerm(self, name):
+    ...         """Retrieve an author by name."""
+    ...         return AuthorSet().getAuthor(name)
+
 Finally, a simple DishSet with predefined dishes.
 
     >>> class DishSet:
@@ -490,13 +508,27 @@ recipe to its cookbook.
     ...     instructions = Text(title=u"Name", required=True)
     ...     comments = CollectionField(value_type=Object(schema=IComment))
 
+    >>> from canonical.lazr.fields import ReferenceChoice
     >>> class ICookbookEntry(IEntry):
     ...     name = TextLine(title=u"Name", required=True)
     ...     cuisine = TextLine(title=u"Cuisine", required=False, default=None)
-    ...     author = Object(schema=IAuthor)
+    ...     author = ReferenceChoice(schema=IAuthor, vocabulary=AuthorVocabulary())
     ...     recipes = CollectionField(value_type=Object(schema=IRecipe))
     ...     comments = CollectionField(value_type=Object(schema=IComment))
     ...     cover = Bytes(0, 5000, title=u"An image of the cookbook's cover.")
+
+The 'author' field is a choice between Author objects. To make sure
+that the Author objects are properly marshalled to JSON, we need to
+define an adapter to IFieldMarshaller.
+
+    >>> from zope.schema.interfaces import IChoice
+    >>> from canonical.lazr.rest.marshallers import (
+    ...     ObjectLookupFieldMarshaller)
+    >>> from canonical.lazr.interfaces import (
+    ...     IFieldMarshaller, WebServiceLayer)
+    >>> provideAdapter(ObjectLookupFieldMarshaller,
+    ...     [IChoice, WebServiceLayer,
+    ...      AuthorVocabulary], IFieldMarshaller)
 
 
 == Implementing the resources ==
@@ -1056,18 +1088,35 @@ entry's resource), and possibly links to associated resources.
     >>> representation = simplejson.loads(collection())
     >>> entries = sorted(representation['entries'],
     ...                  key=operator.itemgetter('name'))
-    >>> entries[0]['name']
-    u'Beard on Bread'
     >>> entries[0]['self_link']
     u'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread'
 
-Each cookbook, for instance, has a link to its author and a link to a
-cover image.
+Regular data fields are exposed with their given names. The 'name'
+field stays 'name'.
+
+    >>> entries[0]['name']
+    u'Beard on Bread'
+
+Fields that are references to other objects -- Object, Reference, and
+ReferenceChoice -- are exposed as links to those objects. Each
+cookbook has such a link to its author.
 
     >>> entries[0]['author_link']
     u'http://api.launchpad.dev/beta/authors/James%20Beard'
+
+Fields that are references to externally hosted files (Bytes) are also
+exposed as links to those files. Each cookbook has such a link to its
+cover image.
+
     >>> entries[0]['cover_link']
     u'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread/cover'
+
+Fields that are references to collections of objects are exposed as
+links to those collections. Each cookbook has such a link to its
+recipes.
+
+    >>> entries[0]['recipes_collection_link']
+    u'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread/recipes'
 
 Calling the CollectionResource object makes it process the incoming
 request. Since this is a GET request, calling the resource publishes

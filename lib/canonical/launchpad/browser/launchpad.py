@@ -97,7 +97,6 @@ from canonical.launchpad.webapp.interfaces import (
     POSTToNonCanonicalURL, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -197,20 +196,17 @@ class NavigationMenuTabs(LaunchpadView):
     """
 
     def initialize(self):
-        requested_view = get_current_view(self.request)
-        facet = get_facet(requested_view)
-        menu = queryAdapter(self.context, INavigationMenu, name=facet)
-        if menu is None:
-            # There are no menu entries.
-            self.links = []
-            return
-        self.title = menu.title
-        # We are only interested on enabled links in non development mode.
-        menu.request = self.request
+        menuapi = MenuAPI(self.context)
         self.links = sorted([
-            link for link in menu.iterlinks() if (link.enabled or
-                                                  config.devmode)],
+            link for link in menuapi.navigation.values()
+            if (link.enabled or config.devmode)],
             key=operator.attrgetter('sort_key'))
+        self.title = None
+        if len(self.links) > 0:
+            facet = menuapi.selectedfacetname()
+            menu = queryAdapter(self.context, INavigationMenu, name=facet)
+            if menu is not None:
+                self.title = menu.title
 
     def render(self):
         if not self.links:
@@ -247,35 +243,57 @@ class Hierarchy(LaunchpadView):
         The hierarchy elements are taken from the request.breadcrumbs list.
         For each element, element.text is cgi escaped.
         """
-        prefix = '<div id="lp-hierarchy">'
-        suffix = '</div>'
         elements = list(self.request.breadcrumbs)
+        
+        if len(elements) > 0: # We're not on the home page
+            prefix = '<div id="lp-hierarchy">'
+            suffix = '</div><span class="last-rounded">&nbsp;</span>' \
+                     '<div class="apps-separator"><!-- --></div>'
 
-        L = []
-        L.append(
-            '<img alt="" src=/@@/launchpad" />'
-            '<span class="first element">'
-            '<a href="/" class="breadcrumb container" id="homebreadcrumb">'
-            '<img alt="" src=/@@/launchpad-logo-and-name" /></a></span>')
+            if len(elements) == 1:
+                first_class = 'before-last'
+            else:
+                first_class = 'first'
 
-        if elements:
+            L = []
+            L.append(
+                '<span class="%s item">'
+                '<a href="/" class="breadcrumb container" id="homebreadcrumb">'
+                '<img alt="" src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
+                '</a>&nbsp;</span>' % first_class)
+
             last_element = elements[-1]
+            if len(elements) > 1:
+                before_last_element = elements[-2]
+            else:
+                before_last_element = None
             for element in elements:
-                cssclass = 'element'
+                cssclass = 'item'
                 if element.has_menu:
                     menudata = ' lpm:mid="%s/+menudata"' % element.url
                     cssclass = ' '.join([cssclass, 'container'])
                 else:
                     menudata = ''
-                if element is last_element:
+                if element is before_last_element:
+                    cssclass = ' '.join(['before-last', cssclass])
+                elif element is last_element:
                     cssclass = ' '.join(['last', cssclass])
-                L.append('<span class="item"%s>'
-                         '<a href="%s" class="%s">%s</a>'
+                L.append('<span class="%s"%s>'
+                         '<a href="%s">%s</a>'
                          '</span>'
-                         % (menudata, element.url, cssclass,
+                         % (cssclass, menudata, element.url,
                             cgi.escape(element.text)))
+            hierarchy = prefix + '<small> &gt; </small>'.join(L) + suffix
+        else: # We're on the home page
+            hierarchy = '<div id="lp-hierarchy-home">' \
+                        '<a href="/" class="breadcrumb">' \
+                        '<img alt="" src="/@@/launchpad-logo-and-name-hierarchy.png"/>' \
+                        '</a></div>' \
+                        '<span class="last-rounded">&nbsp;</span>' \
+                        '<div class="apps-separator"><!-- --></div>'
 
-        return prefix + '<small> &gt; </small>'.join(L) + suffix
+        return hierarchy
+
 
 class Breadcrumbs(LaunchpadView):
     """Page fragment to display the breadcrumbs text."""

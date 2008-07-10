@@ -39,7 +39,7 @@ A mix of all previous cases.
 The english_list function takes a list of strings and concatenates
 them in a form suitable for inclusion in an English sentence. For
 lists of 3 or more elements it follows the advice given in The
-Elements of Style, chapter II, section 2.
+Elements of Style, chapter I, section 2.
 
     >>> from canonical.launchpad.helpers import english_list
 

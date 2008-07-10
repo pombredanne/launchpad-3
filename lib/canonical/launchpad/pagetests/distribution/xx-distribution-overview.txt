@@ -26,9 +26,24 @@ Some distributions have listings of major versions, for example Debian:
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'sandm'))
     Series &amp; milestones
     3.1 &#8220;Sarge&#8221; series - frozen
-    3.0 &#8220;Woody&#8221; series - current Milestones: 3.1 3.1-rc1
+    3.0 &#8220;Woody&#8221; series - current
+        Milestones: 3.1 and 3.1-rc1
     All series
     All milestones
+
+If we add another milestone the list is well formatted using English grammar
+rules.
+
+    >>> admin_browser.open("http://launchpad.dev/debian/woody/+addmilestone")
+    >>> admin_browser.getControl("Name:").value = "testmilestone"
+    >>> admin_browser.getControl("Register milestone").click()
+
+    >>> anon_browser.open('http://launchpad.dev/debian')
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'sandm'))
+    Series &amp; milestones
+    ...
+        Milestones: testmilestone, 3.1, and 3.1-rc1
+    ...
 
 Each series and milestone are links that take you to that
 series and milestone page.
