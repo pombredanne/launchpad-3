@@ -51,12 +51,15 @@ from canonical.lazr.rest.declarations import (
 class LicenseStatus(DBEnumeratedType):
     """The status of a project's license review."""
 
-    OPEN_SOURCE = DBItem(10, "Open Source",
-                        u"This project&lsquo;s license is open source.")
-    PROPRIETARY = DBItem(20, "Proprietary",
-                         u"This project&lsquo;s license is proprietary.")
-    UNREVIEWED = DBItem(30, "Unreviewed",
-                        u"This project&lsquo;s license has not been reviewed.")
+    OPEN_SOURCE = DBItem(
+        10, "Open Source",
+        u"This project&lsquo;s license is open source.")
+    PROPRIETARY = DBItem(
+        20, "Proprietary",
+        u"This project&lsquo;s license is proprietary.")
+    UNREVIEWED = DBItem(
+        30, "Unreviewed",
+        u"This project&lsquo;s license has not been reviewed.")
 
 
 class License(DBEnumeratedType):
@@ -425,6 +428,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         Products may override language code definitions for translation
         import purposes.
         """
+
+    def userCanEdit(user):
+        """Can the user edit this product?"""
 
 
 class IProductSet(Interface):

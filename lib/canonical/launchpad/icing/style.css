@@ -72,11 +72,7 @@ html {
   color: #333;
   background-color: #fff;
 }
-body {
-  margin: 0; padding: 10px 20px;
-  /* Minimal width to display the application tabs and rounded corners. */
-  min-width: 529px;
-}
+body {margin: 0; padding: 10px 20px;}
 
 :link                         {color: #039;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
@@ -639,7 +635,22 @@ ul#menuroot li.selected a.breadcrumb {
     color: #000000;
 }
 
-/* Hierarchy horizonal bar */
+
+/* === Location hierarchy === */
+/*
+  The location bar begins with a series of interlocking segments, showing
+  your location in the hierarchy of people and projects.
+*/
+#lp-hierarchy {
+  background: #eee url(navigation-hierarchy-bg) repeat-x;
+  min-height: 25px;
+  float: left;
+}
+#lp-hierarchy:before {
+  vertical-align: top;
+  float: left;
+  content: url(navigation-hierarchy-nw);
+}
 #lp-hierarchy-home {
   background: #ddd;
   min-height: 25px;
@@ -653,16 +664,6 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-hierarchy-home a {
   padding: 4px 22px 0 8px;
   display: inline-block;
-}
-#lp-hierarchy {
-  background: #eee url(navigation-hierarchy-bg) repeat-x;
-  min-height: 25px;
-  float: left;
-}
-#lp-hierarchy:before {
-  vertical-align: top;
-  float: left;
-  content: url(navigation-hierarchy-nw);
 }
 #lp-hierarchy .item {
   background: url(navigation-hierarchy-chevron-normal) no-repeat right;
@@ -694,15 +695,12 @@ ul#menuroot li.selected a.breadcrumb {
   display: none;
 }
 
-/* In most pages, the location bar includes six centered application tabs: */
-#lp-apps {
-  position: relative;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  text-align: center;
-}
-/* This separates the app bar from the hierarchy */
+/* === Location spine === */
+/*
+  A narrow horizontal bar ties the location bar together. On those pages with
+  application tabs, it visually connects the selected hierarchy element and
+  the selected tab:
+*/
 .apps-separator {
   height: 5px;
   margin: 0;
@@ -711,14 +709,23 @@ ul#menuroot li.selected a.breadcrumb {
   border-top: 1px solid #ccc;
   border-bottom: 1px solid #ccc;
 }
+
+/* === Location application tabs === */
+/* In most pages, the location bar includes six centered application tabs: */
+#lp-apps {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
 /* The tabs have text separators for the benefit of those without CSS: */
 #lp-apps small {display: none;}
 /* The tabs are equal size, not too wide, and attached to the center bar: */
 #lp-apps span {
   position: relative;
   display: inline-block;
-  top: -1px;
-  border-top: 1px solid #ddd;
+  top: -2px;
   width: 16%; /* = (100% - 1%) / 6 */
   max-width: 12em;
   margin: 0;
@@ -745,12 +752,12 @@ ul#menuroot li.selected a.breadcrumb {
 }
 #lp-apps .overview-active {
   background: url(navigation-tabs-sw-overview-active) bottom right no-repeat;
+  border-top: 1px solid #ddd;
 }
 #lp-apps .overview-active strong, #lp-apps .overview-active a {
   background: url(navigation-tabs-se-overview-active) bottom left no-repeat;
   font-weight: bold;
   border-top: 1px solid #ddd;
-  top: -1px;
 }
 #lp-apps .branches {
   background: url(navigation-tabs-sw-code) bottom right no-repeat;
@@ -764,13 +771,11 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .branches-active {
   background: url(navigation-tabs-sw-code-active) bottom right no-repeat;
   border-top: 1px solid #ddd;
-  top: -1px;
 }
 #lp-apps .branches-active strong, #lp-apps .branches-active a {
   background: url(navigation-tabs-se-code-active) bottom left no-repeat;
   font-weight: bold;
   border-top: 1px solid #ddd;
-  top: -1px;
 }
 #lp-apps .bugs {
   background: url(navigation-tabs-sw-bugs) bottom right no-repeat;
@@ -784,13 +789,11 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .bugs-active {
   background: url(navigation-tabs-sw-bugs-active) bottom right no-repeat;
   border-top: 1px solid #ddd;
-  top: -1px;
 }
 #lp-apps .bugs-active strong, #lp-apps .bugs-active a {
   background: url(navigation-tabs-se-bugs-active) bottom left no-repeat;
   font-weight: bold;
   border-top: 1px solid #ddd;
-  top: -1px;
 }
 #lp-apps .specifications {
   background: url(navigation-tabs-sw-blueprints) bottom right no-repeat;
@@ -804,13 +807,11 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .specifications-active {
   background: url(navigation-tabs-sw-blueprints-active) bottom right no-repeat;
   border-top: 1px solid #ddd;
-  top: -1px;
 }
 #lp-apps .specifications-active strong, #lp-apps .specifications-active a {
   background: url(navigation-tabs-se-blueprints-active) bottom left no-repeat;
   font-weight: bold;
   border-top: 1px solid #ddd;
-  top: -1px;
 }
 #lp-apps .translations {
   background: url(navigation-tabs-sw-translations) bottom right no-repeat;
@@ -824,13 +825,11 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .translations-active {
   background: url(navigation-tabs-sw-translations-active) bottom right no-repeat;
   border-top: 1px solid #ddd;
-  top: -1px;
 }
 #lp-apps .translations-active strong, #lp-apps .translations-active a {
   background: url(navigation-tabs-se-translations-active) bottom left no-repeat;
   font-weight: bold;
   border-top: 1px solid #ddd;
-  top: -1px;
 }
 #lp-apps .answers {
   background: url(navigation-tabs-sw-answers) bottom right no-repeat;
@@ -844,13 +843,11 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .answers-active {
   background: url(navigation-tabs-sw-answers-active) bottom right no-repeat;
   border-top: 1px solid #ddd;
-  top: -1px;
 }
 #lp-apps .answers-active strong, #lp-apps .answers-active a {
   background: url(navigation-tabs-se-answers-active) bottom left no-repeat;
   font-weight: bold;
   border-top: 1px solid #ddd;
-  top: -1px;
 }
 /* After all has been said and done, we still want disabled ones to look disabled */
 #lp-apps .disabled-tab {
@@ -876,7 +873,18 @@ ul#menuroot li.selected a.breadcrumb {
   vertical-align: -1px;
 }
 
-
+/* === Help pane === */
+/*
+Inline help is contained in a <div> and dynamically positioned by JavaScript.
+*/
+#help-pane {
+  position: absolute;
+  border: 5px solid black;
+  padding: 10px;
+  z-index: 3000;  /* This should appear above all other content. */
+  background-color: #fff;
+  width: 25em;
+}
 /* We want the hidden pane to have dimensions so that we can position the
 frame with them.  This works because the element an absolute position, taking
 it out of the page flow. */
@@ -974,11 +982,11 @@ span.help {font-weight: normal;}
   background-image: url(/+icing/navigation-se-selected.png);
 }
 
-/* Immediately above the global footer is a global search field: */
+/* Immediately above the global footer, on most pages, is a search field: */
 #globalsearch {font-size: smaller; margin: 4em 0 2em; text-align: center;}
 #globalsearch input {display: block; margin: 0 auto;}
 /* The last element on every page is a standard footer. */
-#globalfooter {clear: both; margin: 0.5em 20px;}
+#globalfooter {clear: both; margin: 0.5em 0;}
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
@@ -1074,7 +1082,7 @@ top left (y), and top right (z) of the rounded border. */
 
 /* Inside those is a container for the main content, and the portlets if any. */
 #container {
-  margin: 30px 0 0;
+  margin-top: 30px;
   padding: 0 0 40px;
   position: relative;
 }
@@ -1103,7 +1111,7 @@ top left (y), and top right (z) of the rounded border. */
   float: left;
   margin-left: -212px;
   text-align: right;
-  width: 200px;
+  width: 192px;
 }
 /* There is a margin between each section and the previous one: */
 .pillar div.portlet, .pillar div.section {clear: left; padding-top: 2em;}
@@ -1834,4 +1842,11 @@ div.popupTitle {
 
 #no-results span.search_text {
   font-weight: bold;
+}
+
+/* From nice_pre in tales.py */
+pre.wrap {
+  white-space: -moz-pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
 }

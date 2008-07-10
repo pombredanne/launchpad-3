@@ -418,6 +418,11 @@ class WadlOperationAPI(WadlAPI):
             raise AssertionError("Named operations must use GET or POST.")
 
     @property
+    def is_get(self):
+        """Whether or not the operation is a GET operation."""
+        return self.http_method == "GET"
+
+    @property
     def doc(self):
         """Human-readable documentation for this operation."""
         return self.docstringToXHTML(self.operation.__doc__)
