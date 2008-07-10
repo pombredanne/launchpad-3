@@ -555,7 +555,7 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
         proposal = self.context.resubmit(self.user)
         self.request.response.addInfoNotification(_(
             "Please update the whiteboard for the new proposal."))
-        self._next_url = canonical_url(proposal) + "/+edit"
+        self.next_url = canonical_url(proposal) + "/+edit"
 
 
 class BranchMergeProposalReviewView(MergeProposalEditView,
@@ -629,7 +629,7 @@ class BranchMergeProposalDeleteView(MergeProposalEditView):
         """Delete the merge proposal and go back to the source branch."""
         self.context.deleteProposal()
         # Override the next url to be the source branch.
-        self._next_url = canonical_url(self.source_branch)
+        self.next_url = canonical_url(self.source_branch)
 
 
 class BranchMergeProposalMergedView(LaunchpadEditFormView):
