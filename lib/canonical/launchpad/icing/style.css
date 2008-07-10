@@ -797,7 +797,19 @@ ul#menuroot li.selected a.breadcrumb {
   vertical-align: -1px;
 }
 
+/* === Help pane === */
 
+/*
+Inline help is contained in a <div> and dynamically positioned by JavaScript.
+*/
+#help-pane {
+  position: absolute;
+  border: 5px solid black;
+  padding: 10px;
+  z-index: 3000;  /* This should appear above all other content. */
+  background-color: #fff;
+  width: 25em;
+}
 /* We want the hidden pane to have dimensions so that we can position the
 frame with them.  This works because the element an absolute position, taking
 it out of the page flow. */
@@ -995,7 +1007,7 @@ top left (y), and top right (z) of the rounded border. */
 
 /* Inside those is a container for the main content, and the portlets if any. */
 #container {
-  margin: 30px 0 0;
+  margin-top: 30px;
   padding: 0 0 40px;
   position: relative;
 }
