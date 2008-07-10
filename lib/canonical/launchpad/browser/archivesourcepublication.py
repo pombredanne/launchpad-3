@@ -53,7 +53,7 @@ class ArchiveSourcePublications:
 
     def __init__(self, source_publications):
         """Receives the list of target `SourcePackagePublishingHistory`."""
-        self._source_publications = source_publications
+        self._source_publications = list(source_publications)
         self._source_publications_ids = [
             pub.id for pub in self._source_publications]
 

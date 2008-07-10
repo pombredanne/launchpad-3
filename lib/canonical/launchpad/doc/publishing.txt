@@ -645,7 +645,7 @@ Generating respective "Packages" stanzas:
 
 == IPublishingSet ==
 
-This utility is implements the following methods:
+This utility implements the following methods:
 
  * getBuildsForSources();
  * getFilesForSources();
@@ -674,11 +674,12 @@ passing a list with a single source publication ID. Now we will
 document how they work for multiple source publications.
 
 IPublishingSet is a essential component for
-`ArchiveSourcePublications` feature, see further information in
-archivesourcepublications.txt.
+`ArchiveSourcePublications` feature, see more  information below in
+its corresponding test section.
 
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     IPublishingSet)
+
     >>> publishing_set = getUtility(IPublishingSet)
 
 We will assembly a list of source publications based on what was
@@ -777,3 +778,171 @@ check that they unpack as specified, a triple.
 
     >>> print ordered_filenames[-1]
     firefox-0.9.2.orig.tar.gz
+
+
+== ArchiveSourcePublications ==
+
+`ArchiveSourcePublications` wraps `IPublishingSet` methods to build a
+set of objects which decorates `ISourcePackagePublishingHistory` with
+cached references.
+
+All references related with the given set of source publications are
+fetch in a fixed number of queries (3) instead of varying according
+the size of the set (3 * N).
+
+     >>> from canonical.launchpad.browser.archivesourcepublication import (
+     ...     ArchiveSourcePublications)
+
+We will use all published sources in Celso's PPA as our initial set.
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov_published_sources = cprov.archive.getPublishedSources(
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+We use the source publications to initialise `ArchiveSourcePublications`.
+
+    >>> decorated_set = ArchiveSourcePublications(cprov_published_sources)
+    >>> empty_decorated_set = ArchiveSourcePublications([])
+
+`ArchiveSourcePublications` implements __nonzero__, so callsites can
+verify in advance whether there are elements to be iterated or not.
+
+    >>> bool(decorated_set)
+    True
+
+    >>> bool(empty_decorated_set)
+    False
+
+Note that this check is *cheap* since it's based only on the given set
+of source publications and doesn't require the class to fetch the
+extra information. The extra information will be only fetch when the
+set gets iterated.
+
+The size of the `ArchiveSourcePublications` always matches the given
+source publication set size:
+
+    >>> cprov_published_sources.count()
+    6
+
+    >>> len(list(decorated_set))
+    6
+
+The decorated objects are returned in the same order used in the given
+'source_publications'.
+
+    >>> def compare_ids(given, returned):
+    ...     given_ids = [obj.id for obj in given]
+    ...     returned_ids = [obj.id for obj in returned]
+    ...     if given_ids == returned_ids:
+    ...        print 'Matches'
+    ...     else:
+    ...        print 'Mismatch:', given_ids, returned_ids
+
+    >>> compare_ids(cprov_published_sources, decorated_set)
+    Matches
+
+Now we will shuffle the order of the given publications and check if
+the order is respected:
+
+    >>> original_sources_list = list(cprov_published_sources)
+    >>> shuffled_sources_list = list(cprov_published_sources)
+
+    >>> import random
+    >>> random.shuffle(shuffled_sources_list)
+
+    >>> shuffled_decorated_list = ArchiveSourcePublications(
+    ...      shuffled_sources_list)
+
+The shuffled sources list order is respected by ArchiveSourcePublication.
+
+    >>> compare_ids(shuffled_sources_list, shuffled_decorated_list)
+    Matches
+
+And the order is not the same than the original source set.
+
+    >>> compare_ids(original_sources_list, shuffled_decorated_list)
+    Mismatch: ...
+
+We will check a little bit of the `ArchiveSourcePublications`
+internals. There are three essential methods to fetch distinct
+information to be cached in the decorated objects:
+
+  * getBuildsBySource;
+  * getFilesBySource;
+  * getBinariesBySource.
+
+They exclude the extra references ('prejoins') returned  from the
+corresponding `IPublishingSet` methods and group the wanted results as
+a dictionary, keyed by `SourcePackagePublishingHistory `, in way they
+can be quickly looked up when building `ArchiveSourcePublications`.
+
+    >>> real_pub = cprov_published_sources[0]
+
+Builds by source.
+
+    >>> builds_by_source = decorated_set.getBuildsBySource()
+
+    >>> compare_ids(
+    ...     real_pub.getBuilds(), builds_by_source.get(real_pub, []))
+    Matches
+
+Binary publications by source.
+
+    >>> binaries_by_source = decorated_set.getBinariesBySource()
+
+    >>> compare_ids(
+    ...     real_pub.getPublishedBinaries(),
+    ...     binaries_by_source.get(real_pub, []))
+    Matches
+
+Files by source.
+
+    >>> files_by_source = decorated_set.getFilesBySource()
+    >>> unordered_files = files_by_source.get(real_pub, [])
+
+Note that at this point the `LibrarianFileAlias` are unordered, since
+they are coming from a UNION. We have to order them as done by the
+user-visible method (filename) before comparing.
+
+    >>> import operator
+    >>> ordered_files = sorted(
+    ...     unordered_files, key=operator.attrgetter('filename'))
+
+    >>> compare_ids(
+    ...     real_pub.getSourceAndBinaryLibraryFiles(), ordered_files)
+    Matches
+
+Enough internals! What really matters for callsites is that, when
+iterated, `ArchiveSourcePublications`returns `ArchiveSourcePublication`
+objects that decorates `ISourcePackagePublishingHistory` and have
+expensive references for other objects already cached. This makes the
+whole difference when rendering PPA pages with many source
+publications.
+
+    >>> decorated_pub = list(decorated_set)[0]
+
+    >>> print decorated_pub
+    <...ArchiveSourcePublication ...>
+
+    >>> verifyObject(ISourcePackagePublishingHistory, decorated_pub)
+    True
+
+`ArchiveSourcePublication` caches the returned values for following
+methods:
+
+  * getBuilds;
+  * getSourceAndBinaryLibraryFiles;
+  * getPublishedBinaries.
+
+    >>> compare_ids(real_pub.getBuilds(), decorated_pub.getBuilds())
+    Matches
+
+    >>> compare_ids(
+    ...     real_pub.getPublishedBinaries(),
+    ...     decorated_pub.getPublishedBinaries())
+    Matches
+
+    >>> compare_ids(
+    ...     real_pub.getSourceAndBinaryLibraryFiles(),
+    ...     decorated_pub.getSourceAndBinaryLibraryFiles())
+    Matches
