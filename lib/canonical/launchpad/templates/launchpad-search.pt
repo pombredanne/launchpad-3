@@ -23,7 +23,7 @@
         <div id="search-results" tal:condition="view/has_matches">
           <tal:has_exact_matches condition="view/has_exact_matches">
 
-            <div class="upper-batch-nav">
+            <div class="upper-batch-nav search-batch">
               <strong class="batch-navigation-index">Exact matches</strong>
             </div>
 
