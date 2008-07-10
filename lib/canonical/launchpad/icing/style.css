@@ -100,6 +100,7 @@ h1, h2, h3, h4, h5, h6 { margin-bottom: 0.5em; }
 /* H1 is only used at the top the maincontent, maybe below a short description
    of the displayed object. It must have zero margin-top. */
 h2, h3, h4, h5, h6 { margin-top: 1em; }
+ul{padding-left:0; list-style-position: inside;}
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
@@ -992,12 +993,11 @@ aside {margin-left: 20px;}
 a conditional comment in main-template.pt to work around the above rule. */
 /* Portlets look the same whether as <div class="portlet"> or <aside>: */
 #portlets .portlet, aside {
-  background-color: #ebebeb;
-  border: 1px solid;
-  border-color: #fff #ccc #ccc #fff;
+  background-color: #fafafa;
+  border:1px solid #d6d6d6;
   margin: 0 0 0.5em 0;
   color: #717171;
-  padding: 4px 8px;
+  padding: 8px 8px 8px;
   width: 182px; /* = 200px column - 2*1px vertical border - 2*8px padding */
   overflow: hidden;
 }
@@ -1013,6 +1013,14 @@ highlighting menu items, so padding is handled by the contents instead: */
   font-weight: bold;
   margin: 0 0 1em;
   padding: 0 0 1px;
+}
+#portlets .portlet section {
+  display: block;
+  margin-bottom: 1.5em;
+}
+#portlets .subscribers {
+  padding: 1px;
+  padding-bottom: 3px;
 }
 #actions ul {
   list-style-type: none;

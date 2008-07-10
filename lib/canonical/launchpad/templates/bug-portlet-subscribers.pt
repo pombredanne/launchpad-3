@@ -10,69 +10,71 @@
     also_notified_subscribers context/getAlsoNotifiedSubscribers
   "
 >
-  <h2>Subscribe/Unsubscribe</h2>
-  <ul tal:define="context_menu context/menu:context">
-    <li
-      tal:define="link context_menu/subscription"
-      tal:condition="link/enabled"
-      tal:attributes="
-        style python: 'list-style-image: url(/@@/' + link.icon + ')'
-      "
-    ><a tal:attributes="href link/url" tal:content="link/text" /></li>
-    <li
-      tal:define="link context_menu/addsubscriber"
-      tal:condition="link/enabled"
-      tal:attributes="
-        style python: 'list-style-image: url(/@@/' + link.icon + ')'
-      "
-    ><a tal:attributes="href link/url" tal:content="link/text" /></li>
-  </ul>
-  <h2>Subscribers</h2>
-  <ul
-    id="subscribers-direct"
-    class="person"
-    tal:condition="direct_subscriptions"
-  >
+  <section>
+    <h2><img src="/@@/mail"> Subscribe/Unsubscribe</h2>
+    <tal:block define="context_menu context/menu:context">
+      <div tal:define="link context_menu/subscription"
+           tal:condition="link/enabled"
+       ><a tal:attributes="href link/url"
+       ><img tal:attributes="src string:/@@/${link/icon}" /> <tal:block replace="link/text" />
+      </a>
+      </div>
+      <div tal:define="link context_menu/addsubscriber"
+           tal:condition="link/enabled"
+      ><a tal:attributes="href link/url">
+          <img tal:attributes="src string:/@@/${link/icon}" /> <tal:block replace="link/text" />
+      </a>
+     </div>
+  </tal:block>
+  </section>
 
-      <li tal:repeat="subscription direct_subscriptions">
-        <a href="#"
-           tal:content="subscription/person/browsername"
-           tal:attributes="
-               href subscription/person/fmt:url;
-               title subscription/display_subscribed_by">
-	  Dafydd Harries
-	</a>
-      </li>
-    </ul>
+  <section>
+  <h2><img src="/@@/mail"> Subscribers</h2>
+
+  <div tal:repeat="subscription direct_subscriptions"
+       tal:condition="direct_subscriptions"
+       class="subscribers">
+    <a href="#"
+       tal:attributes="href subscription/person/fmt:url;
+                       title subscription/display_subscribed_by">
+       <tal:block replace="structure subscription/person/image:icon" /> 
+       <tal:block replace="structure subscription/person/browsername" />
+    </a>
+  </div>
+
+  </section>
 
   <div tal:condition="not:direct_subscriptions">None</div>
 
-    <div tal:condition="from_dupes_subscriptions">
-
-      <h2>From duplicates</h2>
-      <ul id="subscribers-from-duplicates" class="person">
-        <li tal:repeat="subscription from_dupes_subscriptions">
-          <a href="#"
-             tal:content="subscription/person/browsername"
-             tal:attributes="
+    <tal:block condition="from_dupes_subscriptions">
+     <section>
+       <h2><img src="/@@/mail"> From duplicates</h2>
+       <div tal:repeat="subscription from_dupes_subscriptions"
+            class="subscribers">
+         <a href="#"
+            tal:attributes="
                  href subscription/person/fmt:url;
-                 title subscription/display_subscribed_by">Dafydd Harries</a>
-        </li>
-      </ul>
-    </div>
+                 title subscription/display_subscribed_by">
+           <tal:block replace="structure subscription/person/image:icon" /> 
+           <tal:block replace="subscription/person/browsername" />
+         </a>
+       </div>
+     </section>
+    </tal:block>
 
-    <div tal:condition="also_notified_subscribers">
+    <tal:block condition="also_notified_subscribers">
+     <section>
+       <h2><img src="/@@/mail"> Also notified</h2>
 
-    <h2>Also notified</h2>
-
-      <ul id="subscribers-also-notified" class="person">
-        <li tal:repeat="subscriber also_notified_subscribers">
-          <a href="#"
-             tal:content="subscriber/browsername"
-             tal:attributes="href subscriber/fmt:url">Dafydd Harries</a>
-        </li>
-      </ul>
-
-    </div>
+       <div tal:repeat="subscriber also_notified_subscribers"
+            class="subscribers">
+         <a href="#"
+            tal:attributes="href subscriber/fmt:url">
+           <tal:block replace="structure subscriber/image:icon" /> 
+           <tal:block replace="structure subscriber/browsername" />
+        </a>
+       </div>
+     </section>
+    </tal:block>
 
 </div>
