@@ -336,7 +336,7 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         terms = []
 
         results = list(self.sources[:self.max_sources_presented])
-        for pub in ArchiveSourcePublications(results):
+        for pub in results:
             terms.append(SimpleTerm(pub, str(pub.id), pub.displayname))
         return form.Fields(
             List(__name__='selected_sources',

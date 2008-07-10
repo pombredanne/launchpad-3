@@ -1030,11 +1030,18 @@ class PublishingSet:
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 Build.sourcepackagereleaseID,
             BinaryPackageRelease.build == Build.id,
-            DistroArchSeries.id == Build.distroarchseriesID,
-            BinaryPackagePublishingHistory.binarypackagerelease ==
-                BinaryPackageRelease.id,
             BinaryPackageRelease.binarypackagenameID ==
                 BinaryPackageName.id,
+            SourcePackagePublishingHistory.distroseriesID ==
+                DistroArchSeries.distroseriesID,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.pocket ==
+               SourcePackagePublishingHistory.pocket,
+            BinaryPackagePublishingHistory.archiveID ==
+               SourcePackagePublishingHistory.archiveID,
             In(BinaryPackagePublishingHistory.status,
                [enum.value for enum in active_publishing_status]),
             In(SourcePackagePublishingHistory.id, source_publication_ids))
