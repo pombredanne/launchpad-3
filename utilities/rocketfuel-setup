@@ -1,12 +1,11 @@
 #! /bin/bash
 
-#
 # This script will setup a brand new Ubuntu machine as a LP developer
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
-#
 
-source utilities/rocketfuel-env.sh
+utilities_dir="$(cd $(dirname $0) && pwd)"
+source "$utilities_dir/rocketfuel-env.sh"
 
 # load up Ubuntu release details so we know which repos to enable
 source /etc/lsb-release
@@ -296,6 +295,9 @@ fi
 
 # Setup scripts in /usr/local/bin
 cd /usr/local/bin
+if [ ! -e rocketfuel-env.sh ]; then
+  sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-env.sh
+fi
 if [ ! -e rocketfuel-get ]; then
   sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-get
 fi

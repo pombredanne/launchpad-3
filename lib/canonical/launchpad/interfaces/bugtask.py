@@ -33,13 +33,14 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskStatus',
     'valid_remote_bug_url']
 
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
+    Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
@@ -47,6 +48,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ProductNameField, PublicPersonChoice, StrippedTextLine, Summary,
     Tag)
+from canonical.launchpad.interfaces.bugwatch import (
+    IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
@@ -60,7 +63,7 @@ from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry, export_operation_as,
+    REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
     rename_parameters_as, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
@@ -310,6 +313,15 @@ class UserCannotEditBugTaskStatus(Unauthorized):
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
 
+class UserCannotEditBugTaskImportance(Unauthorized):
+    """User not permitted to change importance.
+
+    Raised when a user tries to transition to a new importance who
+    doesn't have the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
+
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
@@ -342,7 +354,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                default=BugTaskStatus.NEW, readonly=True))
     importance = exported(
         Choice(title=_('Importance'), vocabulary=BugTaskImportance,
-               default=BugTaskImportance.UNDECIDED))
+               default=BugTaskImportance.UNDECIDED, readonly=True))
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = exported(
@@ -523,6 +535,17 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         no longer useful.
         """
 
+    @rename_parameters_as(new_importance='importance')
+    @operation_parameters(new_importance=copy_field(importance))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def transitionToImportance(new_importance, user):
+        """Set the BugTask importance.
+
+        Set the bugtask importance, making sure that the user is
+        authorised to do so.
+        """
+
     def setImportanceFromDebbugs(severity):
         """Set the Launchpad BugTask importance on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',
@@ -613,10 +636,19 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         not a package task, returns None.
         """
 
+    def userCanEditMilestone(user):
+        """Can the user edit the Milestone field?"""
 
-# Set Object schemas that were impossible to specify during the
-# definition of IBugTask itself.
+    def userCanEditImportance(user):
+        """Can the user edit the Importance field?"""
+
+
+# Set schemas that were impossible to specify during the definition of
+# IBugTask itself.
 IBugTask['related_tasks'].value_type.schema = IBugTask
+
+# We are forced to define this now to avoid circular import problems.
+IBugWatch['bugtasks'].value_type.schema = IBugTask
 
 
 class INullBugTask(IBugTask):
@@ -1116,10 +1148,9 @@ class IBugTaskSet(Interface):
             'open_inprogress': The number of open bugs that are In Progress.
         """
 
+
 def valid_remote_bug_url(value):
     """Verify that the URL is to a bug to a known bug tracker."""
-    from canonical.launchpad.interfaces.bugwatch import (
-        IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
     try:
         getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
     except NoBugTrackerFound:
