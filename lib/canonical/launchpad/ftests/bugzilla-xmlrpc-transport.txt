@@ -36,7 +36,7 @@ error will be raised.
 If a namespace exists but there is no method registered under that
 namespace with a given method name, an AssertionError will be raised.
 
-    >>> 'unregistered_method' in bugzilla_transport.methods['Bug']
+    >>> 'unregistered_method' in bugzilla_transport.methods['Launchpad']
     False
 
     >>> server.Launchpad.unregistered_method()
