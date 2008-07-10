@@ -222,7 +222,6 @@ We get the same error if we try to register the branch with a slash appended:
     ...
     Fault: <Fault 50: 'http://foo.com/other_branch is already registered.'>
 
-
 Attempting to register a branch for a product where the branch visibility
 policy is forbidden will cause a fault result.
 
@@ -273,7 +272,6 @@ explains the problem:
     Traceback (most recent call last):
     ...
     Fault: <Fault 260: "Invalid branch name '.bzr'. Branch names must ...
-
 
 Crazy unicode characters are also invalid:
 
