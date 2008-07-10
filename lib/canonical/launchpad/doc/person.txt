@@ -762,11 +762,23 @@ are now owned/driven by the registry admins team.
     >>> registry_teams.issuperset(foobar_teams)
     True
 
-    # We need to restore Foo Bar's name because some of our further tests rely
-    # on that name existing in the database and it'd be a lot more painful
-    # to update them. :/
-    >>> foobar.name = 'name16'
-    >>> flush_database_updates()
+
+== Reactivating user accounts ==
+
+Accounts can be reactivated. A comment is required to log why this
+was done.
+
+    >>> foobar.reactivateAccount(
+    ...     'User reactivated the account using reset password.')
+    >>> foobar.account_status
+    <DBItem AccountStatus.ACTIVE...
+    >>> foobar.account_status_comment
+    u'User reactivated the account using reset password.'
+
+The account name is fixed if it was altered when it was deactivated.
+
+    >>> foobar.name
+    u'name16'
 
 
 == Searching ==

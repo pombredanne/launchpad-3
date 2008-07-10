@@ -46,6 +46,8 @@ from canonical.launchpad.interfaces import (
     IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, LoginTokenType,
     PersonCreationRationale, ShipItConstants, UBUNTU_WIKI_URL,
     UnexpectedFormData)
+from canonical.launchpad.interfaces.account import AccountStatus
+
 
 UTC = pytz.timezone('UTC')
 
@@ -300,6 +302,13 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         naked_person = removeSecurityProxy(person)
         #      end of evil code.
 
+        # Reset password can be used to reactivate a deactivated account.
+        if naked_person.account.status == AccountStatus.DEACTIVATED:
+            naked_person.reactivateAccount(
+                "User reactivated the account using reset password.")
+            self.request.response.addInfoNotification(
+                _('Welcome back to Launchpad.'))
+
         # Make sure this person has a preferred email address.
         if naked_person.preferredemail != emailaddress:
             naked_person.validateAndEnsurePreferredEmail(emailaddress)
@@ -311,7 +320,7 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
 
         self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
-            _('Your password has been reset successfully'))
+            _('Your password has been reset successfully.'))
 
         return self.maybeCompleteOpenIDRequest()
 

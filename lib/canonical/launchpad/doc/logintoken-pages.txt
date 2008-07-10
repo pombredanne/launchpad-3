@@ -1,0 +1,116 @@
+= LoginToken pages =
+
+Users interact with login tokens for operations that require the user
+to prove his identity by performing an action that is external to
+Launchpad. For example, claiming an email address or reseting a password
+require the user to use the login token sent to him in an email.
+
+
+== Reset password view ==
+
+A user can reset his password if he forgets it. A link for a LoginToken
+is sent to the email address that the user claims is his. The view
+displays a form asking the user to confirm his email address and provide
+a new password.
+
+    >>> from zope.component import getMultiAdapter, getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.logintoken import (
+    ...     ILoginTokenSet, LoginTokenType)
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> person_set = getUtility(IPersonSet)
+    >>> no_priv = person_set.getByEmail('no-priv@canonical.com')
+    >>> no_priv_account = removeSecurityProxy(no_priv.account)
+    >>> old_password = no_priv_account.password
+
+    >>> login_token_set = getUtility(ILoginTokenSet)
+    >>> login_token = login_token_set.new(
+    ...     no_priv, 'no-priv@canonical.com',
+    ...     'no-priv@canonical.com', LoginTokenType.PASSWORDRECOVERY)
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='token/%s/+resetpassword' % login_token.token,
+    ...     method='POST',
+    ...     form={
+    ...         'field.email': 'no-priv@canonical.com',
+    ...         'field.password': 'test1',
+    ...         'field.password_dupe': 'test1',
+    ...         'field.actions.continue': 'Continue',
+    ...         })
+    >>> resetpassword_view = getMultiAdapter(
+    ...     (login_token, request), name="+resetpassword")
+    >>> resetpassword_view.initialize()
+    >>> old_password == no_priv_account.password
+    False
+
+If the user submits the wrong email address for the token, an error is
+stored. The password is not reset.
+
+    >>> login_token = login_token_set.new(
+    ...     no_priv, 'no-priv@canonical.com',
+    ...     'no-priv@canonical.com', LoginTokenType.PASSWORDRECOVERY)
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='token/%s/+resetpassword' % login_token.token,
+    ...     method='POST',
+    ...     form={
+    ...         'field.email': 'wrong@canonical.com',
+    ...         'field.password': 'test2',
+    ...         'field.password_dupe': 'test2',
+    ...         'field.actions.continue': 'Continue',
+    ...         })
+    >>> resetpassword_view = getMultiAdapter(
+    ...     (login_token, request), name="+resetpassword")
+    >>> resetpassword_view.initialize()
+    >>> resetpassword_view.errors
+    [u"The email address ... didn't match ... the password reset."]
+
+    >>> old_password == no_priv_account.password
+    True
+
+
+=== Reactivating an account using reset password ===
+
+A user with a DEACTIVATED account does not have a password--he must use
+the +resetpassword view to set his account to ACTIVE and add a password.
+
+    >>> former_user = person_set.getByEmail('former-user@canonical.com')
+    >>> former_user.name
+    u'former-user-deactivatedaccount'
+
+    >>> former_user_account = removeSecurityProxy(former_user.account)
+    >>> former_user_account.status
+    <DBItem AccountStatus.DEACTIVATED, ...>
+    >>> print former_user_account.password
+    None
+
+    >>> login_token = login_token_set.new(
+    ...     former_user, 'former-user@canonical.com',
+    ...     'former-user@canonical.com', LoginTokenType.PASSWORDRECOVERY)
+
+If the user provides the correct email address for the token, the
+password is reset, and the account status is set ACTIVE.
+
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='token/%s/+resetpassword' % login_token.token,
+    ...     method='POST',
+    ...     form={
+    ...         'field.email': 'former-user@canonical.com',
+    ...         'field.password': 'test3',
+    ...         'field.password_dupe': 'test3',
+    ...         'field.actions.continue': 'Continue',
+    ...         })
+    >>> resetpassword_view = getMultiAdapter(
+    ...     (login_token, request), name="+resetpassword")
+    >>> resetpassword_view.initialize()
+
+    >>> former_user.name
+    u'former-user'
+    >>> former_user_account.status
+    <DBItem AccountStatus.ACTIVE, ...>
+    >>> former_user_account.password
+    u'...'
+
