@@ -16,11 +16,11 @@ import re
 missing = object()
 
 
-def camelcase_to_underscore_separated(str):
+def camelcase_to_underscore_separated(name):
     """Convert 'ACamelCaseString' to 'a_camel_case_string'"""
     def prepend_underscore(match):
         return '_' + match.group(1)
-    return re.compile('\B([A-Z])').sub(prepend_underscore, str).lower()
+    return re.sub('\B([A-Z])', prepend_underscore, name).lower()
 
 
 def safe_hasattr(ob, name):

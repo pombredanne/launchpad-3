@@ -987,8 +987,11 @@ class EntryAdapterUtility(RESTUtilityBase):
             if (IInterface.providedBy(registration.provided)
                 and registration.provided.isOrExtends(IEntry)
                 and entry_interface.implementedBy(registration.value))]
-        assert len(entry_classes) == 1, (
-            "There must be one and only one implementation of %s." %
+        assert not len(entry_classes) > 1, (
+            "%s provides more than one IEntry subclass." %
+            entry_interface.__name__)
+        assert not len(entry_classes) < 1, (
+            "%s does not provide any IEntry subclass." %
             entry_interface.__name__)
         return EntryAdapterUtility(entry_classes[0])
 

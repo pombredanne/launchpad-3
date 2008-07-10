@@ -758,7 +758,8 @@ is kept in the <resource_type> tag.
     '...resource_type'
 
     >>> methods = list(entry_type)
-    >>> get, put, patch, transitionToStatus, transitionToAssignee = methods
+    >>> (get, put, patch, transitionToStatus,
+    ...     transitionToImportance, transitionToAssignee) = methods
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
@@ -770,11 +771,12 @@ XML id. Here that's not a problem; we have one custom POST method
 ('bug_task-transitionToStatus'), plus the standard GET, PATCH, and PUT.
 
     >>> [method.attrib['name'] for method in methods]
-    ['GET', 'PUT', 'PATCH', 'POST', 'POST']
+    ['GET', 'PUT', 'PATCH', 'POST', 'POST', 'POST']
 
     >>> [method.attrib['id'] for method in methods]
     ['bug_task-get', 'bug_task-put',
      'bug_task-patch', 'bug_task-transitionToStatus',
+     'bug_task-transitionToImportance',
      'bug_task-transitionToAssignee']
 
 

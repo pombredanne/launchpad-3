@@ -32,6 +32,8 @@ from canonical.launchpad.interfaces.openidserver import (
     IOpenIdAuthorizationSet, IOpenIDRPConfig, IOpenIDRPConfigSet,
     IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
+from canonical.launchpad.webapp.url import urlparse
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class OpenIdAuthorization(SQLBase):
@@ -234,7 +236,13 @@ class OpenIDRPSummarySet:
         :param date_used: an optional datetime the login happened. The current
             datetime is used if date_used is None.
         :raise AssertionError: If the account is not ACTIVE.
+        :return: An `IOpenIDRPSummary` or None if the trust_root is
+            Launchpad or one of its vhosts.
         """
+        trust_site = urlparse(trust_root)[1]
+        launchpad_site = allvhosts.configs['mainsite'].hostname
+        if trust_site.endswith(launchpad_site):
+            return None
         if account.status != AccountStatus.ACTIVE:
             raise AssertionError(
                 'Account %d is not ACTIVE account.' % account.id)
