@@ -14,7 +14,8 @@
     This project needs to have its licensing information entered.
     Select the appropriate license checkboxes from
     <a tal:attributes="href string:${context/fmt:url}/+edit">
-      Change details</a>.
+      Change details
+    </a>.
   </div>
 </div>
 </tal:root>

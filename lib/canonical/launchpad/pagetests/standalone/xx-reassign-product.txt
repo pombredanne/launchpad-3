@@ -79,12 +79,6 @@
   >>> admin_browser.url
   'http://launchpad.dev/firefox/'
 
-  Here we see the new registrant: No Privileges person. 
-
-  >>> portlet = find_portlet(admin_browser.contents, 'Lifecycle')
-  >>> portlet.fetchText('Registered by:')[0].findNext('a').string
-  u'No Privileges Person'
-
   >>> login('no-priv@canonical.com')
 
   >>> firefox = productset.getByName('firefox')
@@ -122,7 +116,3 @@
   >>> browser.getControl(name='field.owner').value = 'name12'
   >>> browser.getControl(name='existing').value = ['existing']
   >>> browser.getControl('Change Registrant').click()
-
-  >>> portlet = find_portlet(browser.contents, 'Lifecycle')
-  >>> portlet.fetchText('Registered by:')[0].findNext('a').string
-  u'Sample Person'

@@ -59,7 +59,7 @@ We'll also set it as officially using codehosting.
     >>> registrant_browser.getControl(
     ...     'Code for this project is published in Bazaar branches on'
     ...     ' Launchpad').selected = True
-    >>> registrant_browser.getControl('Save changes').click()
+    >>> registrant_browser.getControl('Change').click()
 
 On the product page, we can see that the product doesn't use any bug
 tracker, not even Launchpad.
@@ -84,7 +84,7 @@ Now let's go back and choose to use a specific bug tracker.
     >>> registrant_browser.getControl(
     ...     name='field.bugtracker.bugtracker').displayValue = [
     ...         'GnomeGBug GTracker']
-    >>> registrant_browser.getControl('Save changes').click()
+    >>> registrant_browser.getControl('Change').click()
     >>> content = find_main_content(registrant_browser.contents)
     >>> uses = content.find('p', id='uses')
     >>> print extract_text(uses)
@@ -107,7 +107,7 @@ Let's reset it to the way it was before.
     >>> registrant_browser.getControl(
     ...     'Expire Incomplete bug reports when they '
     ...     'become inactive').selected = False
-    >>> registrant_browser.getControl('Save changes').click()
+    >>> registrant_browser.getControl('Change').click()
     >>> content = find_main_content(registrant_browser.contents)
     >>> uses = content.find('p', id='uses')
     >>> print extract_text(uses)
@@ -125,7 +125,7 @@ email address where bug reports should be sent.
     >>> registrant_browser.getControl(
     ...     name='field.bugtracker.upstream_email_address').value = (
     ...         'puff@magicdragon.example.com')
-    >>> registrant_browser.getControl('Save changes').click()
+    >>> registrant_browser.getControl('Change').click()
 
 An Email Address bug tracker is automatically created.
 
@@ -143,7 +143,7 @@ An error message is shown if the email address is not filled in.
     ...     'By emailing an upstream bug contact').selected = True
     >>> registrant_browser.getControl(
     ...     name='field.bugtracker.upstream_email_address').value = ''
-    >>> registrant_browser.getControl('Save changes').click()
+    >>> registrant_browser.getControl('Change').click()
     >>> registrant_browser.url
     'http://launchpad.dev/firefox/+edit'
     >>> for message in find_tags_by_class(
@@ -181,7 +181,7 @@ support JavaScript so this behaviour is easy to simulate.)
     True
 
     >>> registrant_browser.getControl('Somewhere else').selected = True
-    >>> registrant_browser.getControl('Save changes').click()
+    >>> registrant_browser.getControl('Change').click()
 
 The Status of Launchpad uses shows the bug tracker was changed.
 

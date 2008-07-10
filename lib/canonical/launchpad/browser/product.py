@@ -1139,8 +1139,8 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
             data['enable_bug_expiration'] = False
         ProductLicenseMixin.validate(self, data)
 
-    @action("Save changes", name='save')
-    def save_action(self, action, data):
+    @action("Change", name='change')
+    def change_action(self, action, data):
         previous_licenses = self.context.licenses
         self.updateContextFromData(data)
         # only send email the first time licenses are set

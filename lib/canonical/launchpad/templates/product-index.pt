@@ -9,12 +9,8 @@
   metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
-  <body>
-    <metal:portlets fill-slot="portlets">
-      <div tal:replace="structure context/@@+portlet-lifecycle" />
-      <div tal:replace="structure context/@@+portlet-milestones" />
-    </metal:portlets>
 
+<body>
 <div metal:fill-slot="main" id="maincontent" class="pillar">
 
   <p id="project-inactive" tal:condition="not: context/active" class="warning message">
@@ -57,6 +53,15 @@
           tal:condition="link/enabled"
           tal:content="structure link/render" />
     <span tal:define="link context/menu:overview/branding"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    <span tal:define="link context/menu:overview/reassign"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    <span tal:define="link context/menu:overview/reassign"
+          tal:condition="link/enabled"
+          tal:content="structure link/render" />
+    <span tal:define="link context/menu:overview/branch_visibility"
           tal:condition="link/enabled"
           tal:content="structure link/render" />
     )
@@ -196,7 +201,7 @@
       <div class="portlet">
         <h2>Series and milestones</h2>
         <div class="project series"
-              tal:repeat="series view/sorted_series_list">
+             tal:repeat="series view/sorted_series_list">
 
           <div tal:define="is_focus series/is_development_focus"
                tal:attributes="
@@ -210,12 +215,18 @@
           tal:condition="link/enabled"
           tal:content="structure link/render"
         />
+        <a href="+series">Series history</a><br/>
+        <a href="+milestones">Milestone history</a>
       </div>
 
       <div
         class="section"
         tal:content="structure context/@@+portlet-top-contributors"
       />
+      <div class="actions"
+           tal:define="link context/menu:overview/top_contributors"
+           tal:content="structure link/render" />
+
       <div
         class="section"
         tal:content="structure context/@@+portlet-packages"

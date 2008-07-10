@@ -10,6 +10,7 @@
                         evolution</span></h2>
 
   <div class="portletBody portletContent">
+
     <ul tal:condition="context/releases">
       <li class="product" tal:repeat="release context/releases">
         <a tal:content="release/version"
