@@ -247,13 +247,8 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         """Setup of the package search results."""
         self.batchnav = BatchNavigator(
             self.getPublishingRecords(), self.request)
-        self.search_results = self.batchnav.currentBatch()
-
-    @property
-    def decorated_search_results(self):
-        """Return a list of `CompleteSourcePackagePublishingHistory`."""
-        results = list(self.search_results)
-        return ArchiveSourcePublications(results)
+        results = list(self.batchnav.currentBatch())
+        self.search_results = ArchiveSourcePublications(results)
 
 
 class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
