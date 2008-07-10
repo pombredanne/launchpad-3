@@ -45,22 +45,35 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lazr.enum import DBItem
 
-from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
-from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.interfaces import (
-    BUG_SUPERVISOR_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
-    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
-    ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
-    IDistribution, IDistributionSet, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IDistroSeriesSet,
-    ILaunchpadCelebrities, INullBugTask, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProductSeriesSet, IProductSet, IProject,
-    IProjectMilestone, ISourcePackage, ISourcePackageNameSet,
-    IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UserCannotEditBugTaskStatus)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.bugnomination import BugNominationStatus
+from canonical.launchpad.interfaces.bugtask import (
+    BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
+    BugTaskStatus, BugTaskStatusSearch, ConjoinedBugTaskEditError, IBugTask,
+    IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
+    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
+from canonical.launchpad.interfaces.distribution import (
+    IDistribution, IDistributionSet)
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import (
+    IDistroSeries, IDistroSeriesSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.milestone import IProjectMilestone
+from canonical.launchpad.interfaces.product import IProduct, IProductSet
+from canonical.launchpad.interfaces.productseries import (
+    IProductSeries, IProductSeriesSet)
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
+from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
+from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
@@ -663,7 +676,8 @@ class BugTask(SQLBase, BugTaskMixin):
         # will be executed.
         if self.productID is not None or self.product is not None:
             alsoProvides(self, IUpstreamBugTask)
-        elif self.productseriesID is not None or self.productseries is not None:
+        elif (self.productseriesID is not None or
+              self.productseries is not None):
             alsoProvides(self, IProductSeriesBugTask)
         elif self.distroseriesID is not None or self.distroseries is not None:
             alsoProvides(self, IDistroSeriesBugTask)
@@ -679,6 +693,16 @@ class BugTask(SQLBase, BugTaskMixin):
         # XXX sinzui 2007-10-4 bug=149009:
         # This property is not needed. Code should inline this implementation.
         return self.pillar.official_malone
+
+
+    def transitionToImportance(self, new_importance, user):
+        """See `IBugTask`."""
+        if not self.userCanEditImportance(user):
+            raise UserCannotEditBugTaskImportance(
+                "User does not have sufficient permissions "
+                "to edit the bug task importance.")
+        else:
+            self.importance = new_importance
 
     def setImportanceFromDebbugs(self, severity):
         """See `IBugTask`."""
@@ -974,6 +998,33 @@ class BugTask(SQLBase, BugTaskMixin):
             return BugTaskDelta(**changes)
         else:
             return None
+
+    def _userIsPillarEditor(self, user):
+        """Can the user edit this tasks's pillar?"""
+        if user is None:
+            return False
+        if IUpstreamBugTask.providedBy(self):
+            pillar = self.product
+        elif IProductSeriesBugTask.providedBy(self):
+            pillar = self.productseries.product
+        elif IDistroBugTask.providedBy(self):
+            pillar = self.distribution
+        else:
+            pillar = self.distroseries.distribution
+        return ((pillar.bug_supervisor is not None and
+                 user.inTeam(pillar.bug_supervisor)) or
+                pillar.userCanEdit(user))
+
+    def userCanEditMilestone(self, user):
+        """See `IBugTask`."""
+        return self._userIsPillarEditor(user)
+
+    def userCanEditImportance(self, user):
+        """See `IBugTask`."""
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (self._userIsPillarEditor(user) or
+                user == celebs.bug_watch_updater or
+                user == celebs.bug_importer)
 
 
 def search_value_to_where_condition(search_value):
@@ -1591,6 +1642,16 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         store = getUtility(IZStorm).get('main')
         query, clauseTables, orderby = self.buildQuery(params)
+        if len(args) == 0:
+            # Do normal prejoins, if we don't have to do any UNION
+            # queries.  Prejoins don't work well with UNION, and the way
+            # we prefetch objects without prejoins cause problems with
+            # COUNT(*) queries, which get inefficient.
+            return BugTask.select(
+                query, clauseTables=clauseTables, orderBy=orderby,
+                prejoins=['product', 'sourcepackagename'],
+                prejoinClauseTables=['Bug'])
+
         bugtask_fti = SQL('BugTask.fti')
         result = store.find((BugTask, bugtask_fti), query,
                             AutoTables(SQL("1=1"), clauseTables))
@@ -1666,6 +1727,7 @@ class BugTaskSet:
                     distroseries=nomination.distroseries,
                     sourcepackagename=sourcepackagename,
                     **non_target_create_params)
+                accepted_series_task.updateTargetNameCache()
 
         if bugtask.conjoined_slave:
             bugtask._syncFromConjoinedSlave()

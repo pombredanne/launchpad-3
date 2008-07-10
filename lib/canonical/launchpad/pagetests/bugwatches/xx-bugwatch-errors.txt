@@ -36,7 +36,7 @@ messages are displayed.
     >>> from canonical.launchpad.interfaces import (BugWatchErrorType,
     ...     BugTaskStatus, IBugTrackerSet, UNKNOWN_REMOTE_STATUS)
 
-    >>> login('test@canonical.com')
+    >>> login('foo.bar@canonical.com')
     >>> tracker = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> bug12 = getUtility(IBugSet).get(12)
     >>> watch = bug12.getBugWatch(tracker, '900')
@@ -82,7 +82,7 @@ We can observe this for each of the BugWatchErrorType values:
 Finally, if the error gets solved (or no error occurs), the error
 message will go away.
 
-    >>> login('test@canonical.com')
+    >>> login('foo.bar@canonical.com')
     >>> watch.remotestatus = None
     >>> watch.last_error_type = None
     >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)

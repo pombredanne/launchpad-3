@@ -6,6 +6,7 @@ __all__ = ['Build', 'BuildSet']
 
 
 import apt_pkg
+from cStringIO import StringIO
 from datetime import datetime, timedelta
 import logging
 
@@ -19,11 +20,10 @@ from storm.references import Reference
 
 from canonical.config import config
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import cursor
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -32,57 +32,19 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
-    get_email_template, contactEmailAddresses)
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, BuildstateTransitionError, IBuild,
-    IBuildSet, IBuilderSet, NotFoundError, ILaunchpadCelebrities,
+     contactEmailAddresses, filenameToContentType, get_email_template)
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IBuild, IBuildSet)
+from canonical.launchpad.interfaces.builder import IBuilderSet
+from canonical.launchpad.interfaces.launchpad import (
+    NotFoundError, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-
-
-def update_archive_counters(obj, attr, value):
-    """Updates the archive build counters upon build state change.
-    """
-    if obj._SO_creating:
-        # The necessary initializations will be performed in the initialize()
-        # method. Please note that all Build instances are now created via
-        # the BuildSet.newBuild() method.
-        pass
-    else:
-        # The build state of a build instance was updated.
-        # Check whether the build state value actually changed.
-        if obj.buildstate == value:
-            # The value did not change, nothing to do.
-            pass
-        else:
-            # The build state value did change.
-            if isinstance(value, tuple):
-                # This is a forced build state change. The actual
-                # value is contained within a 1-tuple.
-                [value] = value
-                obj.stateForced(value)
-            else:
-                # This is a normal build state change, invoke the
-                # corresponding state transition method.
-                if value == BuildStatus.NEEDSBUILD:
-                    # A build is being retried.
-                    obj.buildRetried()
-                elif value == BuildStatus.FULLYBUILT:
-                    # A build succeeded.
-                    obj.buildSucceeded()
-                elif value == BuildStatus.SUPERSEDED:
-                    # A build was superseded.
-                    obj.buildDiscontinued()
-                elif value == BuildStatus.BUILDING:
-                    # A build started.
-                    obj.buildStarted()
-                else:
-                    # A build failed.
-                    obj.buildFailed(value)
-
-    return value
 
 
 class Build(SQLBase):
@@ -96,8 +58,7 @@ class Build(SQLBase):
     distroarchseries = ForeignKey(dbName='distroarchseries',
         foreignKey='DistroArchSeries', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True,
-                         schema=BuildStatus,
-                         storm_validator=update_archive_counters)
+                         schema=BuildStatus)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
     datebuilt = UtcDateTimeCol(dbName='datebuilt', default=None)
@@ -114,6 +75,10 @@ class Build(SQLBase):
 
     buildqueue_record = Reference("<primary key>", BuildQueue.buildID,
                                   on_remote=True)
+    date_first_dispatched = UtcDateTimeCol(dbName='date_first_dispatched')
+
+    upload_log = ForeignKey(
+        dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
 
     @property
     def current_component(self):
@@ -222,9 +187,16 @@ class Build(SQLBase):
             # re-tried.
             return False
 
+        failed_buildstates = [
+            BuildStatus.FAILEDTOBUILD,
+            BuildStatus.MANUALDEPWAIT,
+            BuildStatus.CHROOTWAIT,
+            BuildStatus.FAILEDTOUPLOAD,
+            ]
+
         # If the build is currently in any of the failed states,
         # it may be retried.
-        return self.hasFailed()
+        return self.buildstate in failed_buildstates
 
     @property
     def can_be_rescored(self):
@@ -256,6 +228,7 @@ class Build(SQLBase):
         self.buildduration = None
         self.builder = None
         self.buildlog = None
+        self.upload_log = None
         self.dependencies = None
         self.createBuildQueueEntry()
 
@@ -697,128 +670,21 @@ class Build(SQLBase):
                 fromaddress, toaddress, subject, message,
                 headers=extra_headers)
 
-    def hasFailed(self):
-        return self.buildstate in [BuildStatus.FAILEDTOBUILD,
-                                   BuildStatus.MANUALDEPWAIT,
-                                   BuildStatus.CHROOTWAIT,
-                                   BuildStatus.FAILEDTOUPLOAD]
+    def storeUploadLog(self, content):
+        """See `IBuild`."""
+        assert self.upload_log is None, (
+            "Upload log information already exist and cannot be overridden.")
 
-    def buildRetried(self):
-        """Handle the transition of the build state to 'pending'."""
-        # Only failed builds may be retried.
-        if not self.hasFailed():
-            raise BuildstateTransitionError(
-            "Build state transition failure (%s -> %s)" % (
-            self.buildstate, BuildStatus.NEEDSBUILD))
-        self.archive.pending_count += 1
-        self.archive.failed_count -= 1
+        filename = 'upload_%s_log.txt' % self.id
+        contentType = filenameToContentType(filename)
+        file_size = len(content)
+        file_content = StringIO(content)
+        restricted = self.archive.private
 
-    def buildSucceeded(self):
-        """Handle the transition of the build state to 'succeeded'."""
-        if self.buildstate != BuildStatus.BUILDING:
-            raise BuildstateTransitionError(
-                "Build state transition failure (%s -> %s)" % (
-                self.buildstate, BuildStatus.FULLYBUILT))
-        self.archive.succeeded_count += 1
-        self.archive.building_count -= 1
-
-    def buildDiscontinued(self):
-        """Handle the transition of the build state to 'superseded'."""
-        if self.buildstate != BuildStatus.NEEDSBUILD:
-            raise BuildstateTransitionError(
-                "Build state transition failure (%s -> %s)" % (
-                self.buildstate, BuildStatus.SUPERSEDED))
-        self.archive.pending_count -= 1
-        self.archive.total_count -= 1
-
-    def buildStarted(self):
-        """Handle the transition of the build state to 'building'."""
-        if self.buildstate != BuildStatus.NEEDSBUILD:
-            raise BuildstateTransitionError(
-                "Build state transition failure (%s -> %s)" % (
-                self.buildstate, BuildStatus.BUILDING))
-        self.archive.building_count += 1
-        self.archive.pending_count -= 1
-
-    def buildFailed(self, value):
-        """Handle the transition of the build state to 'failed'."""
-        if self.buildstate != BuildStatus.BUILDING:
-            raise BuildstateTransitionError(
-                "Build state transition failure (%s -> %s)" % (
-                self.buildstate, value))
-        self.archive.failed_count += 1
-        self.archive.building_count -= 1
-
-    def forceState(self, value):
-        """Set the build state to the value passed no matter what."""
-        # Packing the actual build state value in a 1-tuple will indicate
-        # that this is a forced state change to the validator function.
-        if value != self.buildstate:
-            self.buildstate = (value,)
-
-    def stateForced(self, value):
-        """Handle the forced change of the build state to new value.
-        """
-        # Take action according to the previous state.
-        if self.buildstate == BuildStatus.NEEDSBUILD:
-            # A pending build was changed.
-            self.archive.pending_count -= 1
-        elif self.buildstate == BuildStatus.FULLYBUILT:
-            # A successfully completed build was changed.
-            self.archive.succeeded_count -= 1
-        elif self.buildstate == BuildStatus.SUPERSEDED:
-            # A superseded build was changed.
-            self.archive.total_count += 1
-        elif self.buildstate == BuildStatus.BUILDING:
-            # A currently building build was changed.
-            self.archive.building_count -= 1
-        else:
-            # A failed build was changed.
-            self.archive.failed_count -= 1
-
-        # Take action according to the new state.
-        if value == BuildStatus.NEEDSBUILD:
-            # This is a pending build now.
-            self.archive.pending_count += 1
-        elif value == BuildStatus.FULLYBUILT:
-            # This is a succeeded build now.
-            self.archive.succeeded_count += 1
-        elif value == BuildStatus.SUPERSEDED:
-            # This is a superseded build now.
-            self.archive.total_count -= 1
-        elif value == BuildStatus.BUILDING:
-            # This is a currently active/building build now.
-            self.archive.building_count += 1
-        else:
-            # This is a failed build now.
-            self.archive.failed_count += 1
-
-    def initialize(self):
-        """Update archive counters according to build state.
-
-        This method is called immediately after a Build instance
-        creation.
-        """
-        # A new build instance was created.
-        if self.buildstate == BuildStatus.NEEDSBUILD:
-            # A pending build was created.
-            self.archive.total_count += 1
-            self.archive.pending_count += 1
-        elif self.buildstate == BuildStatus.FULLYBUILT:
-            # A successfully completed build was created.
-            self.archive.total_count += 1
-            self.archive.succeeded_count += 1
-        elif self.buildstate == BuildStatus.SUPERSEDED:
-            # A superseded build was created, no-op.
-            pass
-        elif self.buildstate == BuildStatus.BUILDING:
-            # A currently building build was created.
-            self.archive.total_count += 1
-            self.archive.building_count += 1
-        else:
-            # A failed build was created.
-            self.archive.total_count += 1
-            self.archive.failed_count += 1
+        library_file = getUtility(ILibraryFileAliasSet).create(
+            filename, file_size, file_content, contentType=contentType,
+            restricted=restricted)
+        self.upload_log = library_file
 
 
 class BuildSet:
@@ -1031,8 +897,16 @@ class BuildSet:
             """ % ','.join(
                 sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
+        prejoins = [
+            "sourcepackagerelease",
+            "sourcepackagerelease.sourcepackagename",
+            "buildlog",
+            "buildlog.content",
+            ]
+
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,
+                            prejoins=prejoins,
                             orderBy=orderBy)
 
     def retryDepWaiting(self, distroarchseries):
@@ -1064,47 +938,6 @@ class BuildSet:
             logger.info("Retrying %s" % build.title)
             build.retry()
             build.buildqueue_record.score()
-
-    def newBuild(
-        self, sourcepackagerelease, distroarchseries, pocket, processor,
-        archive, buildstate=BuildStatus.NEEDSBUILD, buildduration=None,
-        datecreated=None, datebuilt=None, estimated_build_duration=None,
-        builder=None, buildlog=None):
-        """Creates a new build object using the parameter values passed.
-        """
-        # These are mandatory Build instantiation parameters.
-        init_params = dict(
-            sourcepackagerelease=sourcepackagerelease,
-            distroarchseries=distroarchseries,
-            pocket=pocket,
-            processor=processor,
-            archive=archive)
-
-        # These are optional Build instantiation parameters and will
-        # be passed if set.
-        if buildstate is not None:
-            init_params['buildstate'] = buildstate
-        if buildduration is not None:
-            init_params['buildduration'] = buildduration
-        if datecreated is not None:
-            init_params['datecreated'] = datecreated
-        if datebuilt is not None:
-            init_params['datebuilt'] = datebuilt
-        if estimated_build_duration is not None:
-            init_params['estimated_build_duration'] = estimated_build_duration
-        if builder is not None:
-            init_params['builder'] = builder
-        if buildlog is not None:
-            init_params['buildlog'] = buildlog
-
-        # Create build instance.
-        new_build = Build(**init_params)
-
-        # Allow the new Build instance to perform the necessary
-        # initializations (e.g. archive build counters maintenance)
-        new_build.initialize()
-
-        return new_build
 
     def getBuildsBySourcePackageRelease(self, sourcepackagerelease_ids,
                                         buildstate=None):

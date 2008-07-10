@@ -1106,6 +1106,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             'universe' : ArchivePurpose.PRIMARY,
             'multiverse' : ArchivePurpose.PRIMARY,
             'partner' : ArchivePurpose.PARTNER,
+            'contrib': ArchivePurpose.PRIMARY,
+            'non-free': ArchivePurpose.PRIMARY,
             }
 
         try:
@@ -1234,6 +1236,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
+
+    def userCanEdit(self, user):
+        """See `IDistribution`."""
+        if user is None:
+            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.owner) or user.inTeam(admins)
 
 
 class DistributionSet:

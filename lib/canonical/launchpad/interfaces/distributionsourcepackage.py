@@ -39,6 +39,15 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         "The list of all releases of this source package "
         "in this distribution.")
 
+    def getReleasesAndPublishingHistory():
+        """Return a list of all releases of this source package in this
+        distribution and their correspodning publishing history.
+
+        Items in the list are tuples comprised of a
+        DistributionSourcePackage and a list of
+        SourcePackagePublishingHistory objects.
+        """
+
     publishing_history = Attribute(
         "Return a list of publishing records for this source package in this "
         "distribution.")
