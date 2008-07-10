@@ -92,7 +92,7 @@ browse the code, and shown a simple command line to get the branch.
     >>> print extract_text(get_summary(browser))
     3 branches ...
     0 active reviews, 0 approved merges
-    You can browse the source code for development focus branch,
+    You can browse the source code for the development focus branch,
     or get a copy of the branch using the command:
        bzr branch lp://dev/evolution
 
