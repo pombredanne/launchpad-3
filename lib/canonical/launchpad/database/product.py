@@ -863,11 +863,6 @@ def get_allowed_default_stacking_names():
     return config.codehosting.allow_default_stacking.split(',')
 
 
-def get_allowed_default_stacking_names():
-    """Return a list of names of `Product`s that allow default stacking."""
-    return config.codehosting.allow_default_stacking.split(',')
-
-
 class ProductSet:
     implements(IProductSet)
 

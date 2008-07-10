@@ -258,7 +258,8 @@ class Hierarchy(LaunchpadView):
             L = []
             L.append(
                 '<span class="%s item">'
-                '<a href="/" class="breadcrumb container" id="homebreadcrumb">'
+                '<a href="/" class="breadcrumb container"'
+                ' id="homebreadcrumb">'
                 '<img alt="Launchpad"'
                 ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
                 '</a>&nbsp;</span>' % first_class)

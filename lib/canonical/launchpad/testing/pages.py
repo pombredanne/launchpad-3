@@ -517,7 +517,8 @@ def print_ppa_packages(contents):
 def print_location(contents):
     """Print the hierarchy, application tabs, and main heading of the page."""
     doc = find_tag_by_id(contents, 'document')
-    hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(recursive=False)
+    hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(
+        recursive=False)
     segments = [extract_text(step).encode('us-ascii', 'replace')
                 for step in hierarchy
                 if not step.name == 'small']
