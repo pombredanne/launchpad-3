@@ -641,3 +641,139 @@ Generating respective "Packages" stanzas:
 
     >>> [pub_file.archive_url for pub_file in bpph.files]
     [u'http://launchpad.dev/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
+
+
+== IPublishingSet ==
+
+This utility is implements the following methods:
+
+ * getBuildsForSources();
+ * getFilesForSources();
+ * getBinaryPublicationsForSources();
+
+They receive a list of `SourcePackagePublishingHistory` database IDs
+and fetch the corresponding information for all of them.
+
+Their returned `ResultSet` (they all use storm natively) follows a
+pattern:
+
+ * (`SourcePackagePublishingHistory`, <object>, [prejoins,])
+
+This way the useful references gets cached and the callsites can group
+the results as necessary.
+
+The `IPublishingSet` methods are also used to implement the corresponding
+features in `ISourcePackagePublishingHistory`:
+
+ * getBuilds -> IPublishingSet.getBuildsForSources;
+ * getSourceAndBinaryLibraryFiles -> IPublishingSet.getFilesForSources;
+ * getPublishedBinaries -> IPublishingSet.getBinaryPublicationsForSources;
+
+So, they were already tested implicitly before in this file, but only
+passing a list with a single source publication ID. Now we will
+document how they work for multiple source publications.
+
+IPublishingSet is a essential component for
+`ArchiveSourcePublications` feature, see further information in
+archivesourcepublications.txt.
+
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     IPublishingSet)
+    >>> publishing_set = getUtility(IPublishingSet)
+
+We will assembly a list of source publications based on what was
+ever published in Celso's PPA.
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov_sources_ids = [
+    ...    pub.id for pub in cprov.archive.getPublishedSources()]
+
+    >>> len(cprov_sources_ids)
+    8
+
+Now that we have a set of source publications let's get the builds in
+its context.
+
+    >>> cprov_builds = publishing_set.getBuildsForSources(cprov_sources_ids)
+
+It returns a `ResultSet` and it contains triples as
+`SourcePackagePublishingHistory`, `Build` and `DistroArchseries` for
+each build found.
+
+    >>> cprov_builds.count()
+    7
+
+The `ResultSet` is ordered by ascending
+`SourcePackagePublishingHistory.id` and ascending
+`DistroArchseries.architecturetag` in this order.
+
+    >>> source_pub, build, arch = cprov_builds.last()
+
+    >>> print source_pub.displayname
+    foo 666 in breezy-autotest
+
+    >>> print build.title
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+    >>> print arch.displayname
+    ubuntutest Breezy Badger Autotest i386
+
+Now we retrieve all binary publications for Celso's PPA sources.
+
+    >>> cprov_binaries = publishing_set.getBinaryPublicationsForSources(
+    ...     cprov_sources_ids)
+
+The returned `ResultSet` contains 5-element tuples as
+(`SourcePackagePublishingHistory`, `BinaryPackagePublishingHistory`,
+ `BinaryPackageRelease`, `BinaryPackageName`, `DistroArchSeries`).
+
+    >>> cprov_binaries.count()
+    10
+
+This result is ordered by ascending
+`SourcePackagePublishingHistory.id`, ascending `BinaryPackageName.name`,
+ascending `DistroArchSeries.architecturetag and descending
+`BinaryPackagePublishingHistory.id`.
+
+    >>> (source_pub, binary_pub, binary, binary_name,
+    ...  arch) = cprov_binaries.last()
+
+    >>> print source_pub.displayname
+    foo 666 in breezy-autotest
+
+    >>> print binary_pub.displayname
+    foo-bin 666 in breezy-autotest i386
+
+    >>> print binary.title
+    foo-bin-666
+
+    >>> print binary_name.name
+    foo-bin
+
+    >>> print arch.displayname
+    ubuntutest Breezy Badger Autotest i386
+
+Finally we can retrieve all files related with Celso's PPA
+publications.
+
+    >>> cprov_files = publishing_set.getFilesForSources(
+    ...     cprov_sources_ids)
+
+This `ResultSet` contains triples as
+(`SourcePackagePublishingHistory`, `LibraryFileAlias`,
+`LibraryFileContent`)
+
+    >>> cprov_files.count()
+    14
+
+This result are not ordered since it comes from SQL UNION, so call
+sites are responsible to order them appropriately. So, can can only
+check that they unpack as specified, a triple.
+
+    >>> source, file, content = cprov_files.any()
+
+    >>> ordered_filenames = sorted([
+    ...    file.filename for source, file, content in cprov_files])
+
+    >>> print ordered_filenames[-1]
+    firefox-0.9.2.orig.tar.gz
