@@ -196,7 +196,7 @@ class IOpenIDRPSummarySet(Interface):
 
         :param account: An `IAccount`.
         :param trust_root: A string used as an OpenID trust root.
-        :return: An `IOpenIDRPSummary`.
+        :return: An `IOpenIDRPSummary` or None.
         """
 
 

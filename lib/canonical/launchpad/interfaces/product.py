@@ -42,18 +42,24 @@ from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.lazr import DBEnumeratedType, DBItem
+
+from canonical.lazr.enum import DBEnumeratedType, DBItem
+from canonical.lazr.rest.declarations import (
+     export_as_webservice_entry, exported)
 
 
 class LicenseStatus(DBEnumeratedType):
     """The status of a project's license review."""
 
-    OPEN_SOURCE = DBItem(10, "Open Source",
-                        u"This project&lsquo;s license is open source.")
-    PROPRIETARY = DBItem(20, "Proprietary",
-                         u"This project&lsquo;s license is proprietary.")
-    UNREVIEWED = DBItem(30, "Unreviewed",
-                        u"This project&lsquo;s license has not been reviewed.")
+    OPEN_SOURCE = DBItem(
+        10, "Open Source",
+        u"This project&lsquo;s license is open source.")
+    PROPRIETARY = DBItem(
+        20, "Proprietary",
+        u"This project&lsquo;s license is proprietary.")
+    UNREVIEWED = DBItem(
+        30, "Unreviewed",
+        u"This project&lsquo;s license has not been reviewed.")
 
 
 class License(DBEnumeratedType):
@@ -110,25 +116,28 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others.
     """
+    export_as_webservice_entry()
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
     # in SQLObject soon.
     id = Int(title=_('The Project ID'))
 
-    project = Choice(
-        title=_('Part of'),
-        required=False,
-        vocabulary='Project',
-        description=_("""Super-project. In Launchpad, we can setup a
-            special "project group" that is an overarching initiative that
-            includes several related projects. For example, the
-            Mozilla Project produces Firefox, Thunderbird and Gecko. This
-            information is used to group those projects in a coherent way.
-            If you make this project part of a group, the group preferences
-            and decisions around bug tracking, translation and security
-            policy will apply to this project."""))
-
+    project = exported(
+        Choice(
+            title=_('Part of'),
+            required=False,
+            vocabulary='Project',
+            description=_(
+                'Super-project. In Launchpad, we can setup a special '
+                '"project group" that is an overarching initiative that '
+                'includes several related projects. For example, the Mozilla '
+                'Project produces Firefox, Thunderbird and Gecko. This '
+                'information is used to group those projects in a coherent '
+                'way. If you make this project part of a group, the group '
+                'preferences and decisions around bug tracking, translation '
+                'and security policy will apply to this project.')),
+        exported_as='project_group')
     owner = PublicPersonChoice(
         title=_('Owner'),
         required=True,
@@ -150,14 +159,14 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         "Presents the drivers of this project as a list. A list is "
         "required because there might be a project driver and also a "
         "driver appointed in the overarching project group.")
-
-    name = ProductNameField(
-        title=_('Name'),
-        constraint=name_validator,
-        description=_("""At least one lowercase letter or number, followed by
-            letters, dots, hyphens or plusses.
-            Keep this name short, as it is used in URLs."""))
-
+    name = exported(
+        ProductNameField(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_(
+                "At least one lowercase letter or number, followed by "
+                "letters, dots, hyphens or plusses. "
+                "Keep this name short, as it is used in URLs.")))
     displayname = TextLine(
         title=_('Display Name'),
         description=_("""The name of the project as it would appear in a
@@ -419,6 +428,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         Products may override language code definitions for translation
         import purposes.
         """
+
+    def userCanEdit(user):
+        """Can the user edit this product?"""
 
 
 class IProductSet(Interface):
