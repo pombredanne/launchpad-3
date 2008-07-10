@@ -1018,7 +1018,7 @@ highlighting menu items, so padding is handled by the contents instead: */
   display: block;
   margin-bottom: 1.5em;
 }
-#portlets .subscribers {
+#portlets .list-items {
   padding: 1px;
   padding-bottom: 3px;
 }

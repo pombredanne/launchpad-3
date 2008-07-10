@@ -15,12 +15,14 @@
     <tal:block define="context_menu context/menu:context">
       <div tal:define="link context_menu/subscription"
            tal:condition="link/enabled"
+           class="list-items"
        ><a tal:attributes="href link/url"
        ><img tal:attributes="src string:/@@/${link/icon}" /> <tal:block replace="link/text" />
       </a>
       </div>
       <div tal:define="link context_menu/addsubscriber"
            tal:condition="link/enabled"
+           class="list-items"
       ><a tal:attributes="href link/url">
           <img tal:attributes="src string:/@@/${link/icon}" /> <tal:block replace="link/text" />
       </a>
@@ -33,7 +35,7 @@
 
   <div tal:repeat="subscription direct_subscriptions"
        tal:condition="direct_subscriptions"
-       class="subscribers">
+       class="list-items">
     <a href="#"
        tal:attributes="href subscription/person/fmt:url;
                        title subscription/display_subscribed_by">
@@ -50,7 +52,7 @@
      <section>
        <h2><img src="/@@/mail"> From duplicates</h2>
        <div tal:repeat="subscription from_dupes_subscriptions"
-            class="subscribers">
+            class="list-items">
          <a href="#"
             tal:attributes="
                  href subscription/person/fmt:url;
@@ -67,7 +69,7 @@
        <h2><img src="/@@/mail"> Also notified</h2>
 
        <div tal:repeat="subscriber also_notified_subscribers"
-            class="subscribers">
+            class="list-items">
          <a href="#"
             tal:attributes="href subscriber/fmt:url">
            <tal:block replace="structure subscriber/image:icon" /> 
