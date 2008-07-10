@@ -634,11 +634,12 @@ Inline help is contained in a <div> and dynamically positioned by JavaScript.
 */
 #help-pane {
   position: absolute;
-  border: 5px solid black;
-  padding: 10px;
+  border: 1px solid black;
+  padding: 1px 1px 5px 10px;
   z-index: 3000;  /* This should appear above all other content. */
   background-color: #fff;
-  width: 25em;
+  width: 600px;  /* Width is chosen based on the help wiki include, should be
+                    changed once we do something more sensible */
 }
 /* We want the hidden pane to have dimensions so that we can position the
 frame with them.  This works because the element an absolute position, taking
@@ -652,15 +653,16 @@ it out of the page flow. */
 }
 
 #help-body {
-    background: url(spinner.gif) no-repeat center center;
+  background: url(spinner.gif) no-repeat center center;
 }
 #help-pane iframe {
-    width: 100%;
-    height: 18em;
+  width: 100%;
+  height: 300px;
+  border: 0;
 }
 #help-pane iframe.invisible {
-    visibility: hidden;
-    display: block;
+  visibility: hidden;
+  display: block;
 }
 #help-footer {
   padding: 3px;

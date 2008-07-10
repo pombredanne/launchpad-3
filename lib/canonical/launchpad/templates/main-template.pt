@@ -121,7 +121,7 @@
         <tr>
           <td tal:content="structure context/@@login_status" />
         </tr>
-      </table>
+    </table>
     </div>
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
@@ -363,10 +363,10 @@
 
     <div id="help-pane" class="invisible">
       <div id="help-body">
-        <iframe id="help-pane-content" class="invisible">Loading...</iframe>
+        <iframe id="help-pane-content" class="invisible"></iframe>
       </div>
       <div id="help-footer">
-        <a href="#" id="help-close-btn">Close</a>
+        <span id="help-close"></span>
       </div>
     </div>
     <div id="menupreload" style="visibility:hidden"
