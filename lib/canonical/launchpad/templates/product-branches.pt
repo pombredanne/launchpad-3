@@ -15,15 +15,16 @@
 <div metal:fill-slot="main">
 
   <div style="float:right" id="floating-buttons">
-    <div tal:define="link context/menu:overview/branch_visibility"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" />
-    <div tal:define="link context/menu:overview/branch_add"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" />
+    <div>
+      <a href="+addbranch" id="register-branch">
+        <img alt="Register a branch"
+             src="/+icing/but-lrg-registerabranch.gif"/>
+      </a>
+    </div>
     <div tal:condition="not: context/official_codehosting">
       <a href="/+code-imports/+new" id="new-code-import">
-        <img src="/@@/add" /> Import your project
+        <img alt="Import your project"
+             src="/+icing/but-lrg-importyourproject.gif"/>
       </a>
     </div>
   </div>
