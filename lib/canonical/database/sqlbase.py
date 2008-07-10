@@ -43,6 +43,7 @@ __all__ = [
     'quote',
     'quote_like',
     'quoteIdentifier',
+    'quote_identifier',
     'RandomiseOrderDescriptor',
     'rollback',
     'SQLBase',
@@ -448,7 +449,7 @@ def sqlvalues(*values, **kwvalues):
         return dict([(key, quote(value)) for key, value in kwvalues.items()])
 
 
-def quoteIdentifier(identifier):
+def quote_identifier(identifier):
     r'''Quote an identifier, such as a table name.
 
     In SQL, identifiers are quoted using " rather than ' which is reserved
@@ -466,6 +467,10 @@ def quoteIdentifier(identifier):
     "\"""
     '''
     return '"%s"' % identifier.replace('"','""')
+
+
+quoteIdentifier = quote_identifier # Backwards compatibility for now.
+
 
 def flush_database_updates():
     """Flushes all pending database updates for the current connection.
