@@ -113,7 +113,9 @@ class BugWatch(SQLBase):
 
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
-            linked_bugtask.importance = malone_importance
+            linked_bugtask.transitionToImportance(
+                malone_importance,
+                getUtility(ILaunchpadCelebrities).bug_watch_updater)
 
             if linked_bugtask.importance != old_bugtask.importance:
                 event = SQLObjectModifiedEvent(

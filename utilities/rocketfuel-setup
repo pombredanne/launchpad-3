@@ -295,6 +295,9 @@ fi
 
 # Setup scripts in /usr/local/bin
 cd /usr/local/bin
+if [ ! -e rocketfuel-env.sh ]; then
+  sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-env.sh
+fi
 if [ ! -e rocketfuel-get ]; then
   sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-get
 fi
