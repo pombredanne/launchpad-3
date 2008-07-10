@@ -1,0 +1,23 @@
+== Latest branches ==
+
+On the product overview page there is a portlet to show recently
+registered branches.
+
+    >>> def show_latest_branches(url):
+    ...     """Show the latest branches portlet at `url`."""
+    ...     browser.open(url)
+    ...     branches = find_portlet(browser.contents, 'Latest branches')
+    ...     if branches is None:
+    ...         print "No 'Latest branches' portlet found at %s" % (url,)
+    ...         return
+    ...     for list_item in branches.fetch('li'):
+    ...         print extract_text(list_item)
+
+
+    >>> show_latest_branches('http://launchpad.dev/gnome-terminal')
+    scanned: Sample Person
+    mirrored: Sample Person
+    pushed: Sample Person
+    launchpad: Launchpad Developers
+    klingon: Sample Person
+
