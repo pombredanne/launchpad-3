@@ -13,6 +13,8 @@ __all__ = [
     'ArchiveSourcePublications',
     ]
 
+import operator
+
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.publishing import (
@@ -36,7 +38,8 @@ class ArchiveSourcePublication:
         self._builds = builds
 
     def getSourceAndBinaryLibraryFiles(self):
-        return self._sourceandbinarylibraryfiles
+        return sorted(self._sourceandbinarylibraryfiles,
+                      key=operator.attrgetter('filename'))
 
     def getPublishedBinaries(self):
         return self._publishedbinaries

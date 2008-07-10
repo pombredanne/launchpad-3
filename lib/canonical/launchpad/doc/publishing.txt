@@ -293,7 +293,7 @@ getPublishedBinaries(), it considers both PENDING and PUBLISHED status
 as active, SUPERSEDED, DELETED and OBSOLETE are excluded. Differently,
 getBuiltBinaries() follows binaries in any state.
 
-    >>> source.getPublishedBinaries().count()
+    >>> len(source.getPublishedBinaries())
     2
 
     >>> len(source.getBuiltBinaries())
@@ -312,7 +312,7 @@ getBuiltBinaries() result.
     >>> superseded = a_binary.supersede()
     >>> syncUpdate(superseded)
 
-    >>> source.getPublishedBinaries().count()
+    >>> len(source.getPublishedBinaries())
     1
 
     >>> len(source.getBuiltBinaries())
@@ -325,7 +325,7 @@ published in the original location.
     ...     sabdfl, "go")
     >>> syncUpdate(deleted)
 
-    >>> source.getPublishedBinaries().count()
+    >>> len(source.getPublishedBinaries())
     0
 
     >>> len(source.getBuiltBinaries())
@@ -334,14 +334,14 @@ published in the original location.
 Finally we will mark both copied binary publication as obsolete and
 verify that the getPublishedBinaries() result is also empty after that.
 
-    >>> copied_source.getPublishedBinaries().count()
+    >>> len(copied_source.getPublishedBinaries())
     2
 
     >>> for bin in copied_source.getPublishedBinaries():
     ...     obsoleted = bin.requestObsolescence()
     ...     syncUpdate(obsoleted)
 
-    >>> copied_source.getPublishedBinaries().count()
+    >>> len(copied_source.getPublishedBinaries())
     0
 
     >>> len(copied_source.getBuiltBinaries())
@@ -535,8 +535,8 @@ Using the same Ubuntu source publishing example as above:
 
     >>> for file in source.getSourceAndBinaryLibraryFiles():
     ...     print file.filename
-    foo.dsc
     foo-bin_all.deb
+    foo.dsc
 
 We can also publish a package in a PPA and query on its files:
 
@@ -549,8 +549,8 @@ We can also publish a package in a PPA and query on its files:
 
     >>> for file in ppa_source.getSourceAndBinaryLibraryFiles():
     ...     print file.filename
-    foo.dsc
     foo-bin_all.deb
+    foo.dsc
 
 Notice that some files appear twice if they are published in more than one
 architecture (e.g. for arch-all files).
