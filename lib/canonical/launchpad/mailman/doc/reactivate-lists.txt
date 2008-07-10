@@ -7,8 +7,7 @@ restored.
 
 First, No Privileges Person will create a new team and its mailing list.
 
-    >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
+    >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
@@ -18,8 +17,9 @@ First, No Privileges Person will create a new team and its mailing list.
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
-    >>> list_one = itest_helper.review_list('itest-one')
+    >>> from canonical.launchpad.mailman.testing import helpers
     >>> from Mailman.Utils import list_names
+    >>> list_one = helpers.review_list('itest-one')
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
 
@@ -28,7 +28,9 @@ Give the mailing list a welcome message.
     >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
     >>> browser.getControl('Welcome message text').value = (
     ...     'Greetings team one members!')
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
+
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> serial_watcher = logwatcher.LogWatcher('serial')
     >>> browser.getControl('Save').click()
     >>> serial_watcher.wait()
 

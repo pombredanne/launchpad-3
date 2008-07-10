@@ -8,9 +8,8 @@ Mailman adds to the bottom of very message.
 First, create the mailing list, which will send a notification messages
 to all the members of the mailing list.  We can ignore these messages.
 
-    >>> import itest_helper
-    >>> list_one = itest_helper.create_list('itest-one')
-    >>> smtpd.reset()
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> list_one = helpers.create_list('itest-one')
 
 Add a member of the mailing list so that we can post messages to the list.
 
@@ -27,7 +26,9 @@ Add a member of the mailing list so that we can post messages to the list.
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
     >>> logout()
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
+
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> serial_watcher = logwatcher.LogWatcher('serial')
     >>> commit()
     >>> serial_watcher.wait()
 
@@ -45,7 +46,7 @@ contents below.
     u'anne.person@example.com'
     >>> logout()
 
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+    >>> smtp_watcher = logwatcher.LogWatcher('smtp')
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
@@ -127,7 +128,7 @@ list.  It is a list-wide url, not a url-specific to the individual message
 
 This url should exactly match the link given on the team's overview page.
 
-    >>> browser = itest_helper.make_browser()
+    >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~itest-one')
     >>> browser.getLink(id='mailing-list-archive')
     <Link text='Mailing list archive'

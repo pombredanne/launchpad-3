@@ -15,17 +15,38 @@ sync, but we can get close.  Start off by creating a few mailing lists.  When
 the mailing lists are created, messages get sent to the members of the team
 informing them of their new list.  We can ignore these.
 
-    >>> import itest_helper
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+    >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
+    >>> smtp_watcher = LogWatcher('smtp')
 
-    >>> list_one = itest_helper.create_list('itest-one')
-    >>> list_two = itest_helper.create_list('itest-two')
+    >>> from canonical.launchpad.ftests import (
+    ...     login, logout, mailinglists_helper)
+    >>> from canonical.database.sqlbase import commit
+
+    >>> login('foo.bar@canonical.com')
+    >>> team_one = mailinglists_helper.new_team('itest-one')
+    >>> team_two = mailinglists_helper.new_team('itest-two')
+    >>> commit()
+    >>> logout()
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> mailinglists_helper.apply_for_list(browser, 'itest-one')
+    >>> mailinglists_helper.apply_for_list(browser, 'itest-two')
+
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> serial_watcher = LogWatcher('serial')
+    >>> list_one = helpers.review_list('itest-one')
+    >>> list_two = helpers.review_list('itest-two')
+    >>> commit()
+    >>> serial_watcher.wait()
     >>> smtpd.reset()
 
-    >>> itest_helper.subscribe('Anne', 'itest-one')
-    >>> itest_helper.subscribe('Anne', 'itest-two')
-    >>> itest_helper.subscribe('Bart', 'itest-one')
-    >>> itest_helper.subscribe('Cris', 'itest-two')
+    >>> login('foo.bar@canonical.com')
+    >>> helpers.subscribe('Anne', 'itest-one')
+    >>> helpers.subscribe('Anne', 'itest-two')
+    >>> helpers.subscribe('Bart', 'itest-one')
+    >>> helpers.subscribe('Cris', 'itest-two')
+    >>> commit()
+    >>> logout()
+    >>> serial_watcher.wait()
 
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
@@ -73,21 +94,20 @@ informing them of their new list.  We can ignore these.
     ...     print message['sender']
     itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     itest-one-bounces+bart.person=example.com@lists.launchpad.dev
     itest-one-bounces+bart.person=example.com@lists.launchpad.dev
     itest-two-bounces+anne.person=example.com@lists.launchpad.dev
     itest-two-bounces+anne.person=example.com@lists.launchpad.dev
-    itest-two-bounces+archive=mail-archive.com@lists.launchpad.dev
-    itest-two-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-two-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    itest-two-bounces+archive=mail-archive.dev@lists.launchpad.dev
     itest-two-bounces+cris.person=example.com@lists.launchpad.dev
     itest-two-bounces+cris.person=example.com@lists.launchpad.dev
 
 Give one of the mailing lists a contact address, to further simulate what the
 sync script has to deal with.
 
-    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
     ...     EmailAddressStatus, IEmailAddressSet, IPersonSet)
@@ -127,7 +147,8 @@ Mailman data was copied).  In this case, we just delete the list from Mailman.
 That way if the list is created in Launchpad on staging, the Mailman list will
 also be created.
 
-    >>> source_dir = itest_helper.prepare_for_sync()
+    >>> from canonical.launchpad.mailman.testing import sync
+    >>> source_dir = sync.prepare_for_sync()
 
 Our simulation now has a staging database that has been copied, but the
 Mailman data has not yet been copied.  Let's take a look at what staging's
@@ -135,7 +156,7 @@ Mailman and Launchpad data looks like, before the Mailman data is sync'd.
 Note that fake-team is created by the prepare_for_sync() helper and
 illustrates a mailing list that exists in Mailman but not in Launchpad.
 
-    >>> itest_helper.dump_list_info()
+    >>> sync.dump_list_info()
     fake-team
         lists.launchpad.dev http://lists.launchpad.dev/mailman/
         No Launchpad team: fake-team
@@ -157,21 +178,26 @@ launchpad.conf file.
     ...     ('scripts/mlist-sync.py', '--hostname',
     ...      'lists.prod.launchpad.dev', source_dir),
     ...     stdout=PIPE, stderr=PIPE, cwd=config.root,
-    ...     env=dict(LPCONFIG='mailman-itests'))
+    ...     env=dict(LPCONFIG='testrunner-appserver'))
     >>> stdout, stderr = proc.communicate()
 
     # Ignore stdout and stderr, but print the return code.  stdout should be
-    # completely empty and stderr really is uninteresting.  It's also
-    # problematic because of the way log files are printed (breaking doctest
-    # ellipses).
+    # completely empty and stderr really is uninteresting unless things are
+    # broken.  It's also problematic because of the way log files are printed
+    # (breaking doctest ellipses).
     >>> proc.returncode
     0
+
+    # This is useful for debugging when things go wrong.
+    >>> assert proc.returncode == 0, stderr
 
 If the script ran correctly, Mailman should only know about the two mailing
 lists we created above, and not the fake-team list.  Also, the host_name and
 web_page_url attributes for these lists should not point to 'prod'.
 
-    >>> itest_helper.dump_list_info()
+    >>> from canonical.database.sqlbase import rollback
+    >>> rollback()
+    >>> sync.dump_list_info()
     itest-one
         lists.launchpad.dev http://lists.launchpad.dev/mailman/
         itest-one@lists.launchpad.dev

@@ -6,8 +6,7 @@ the only thing they can change is the list's welcome message.
 First, No Privileges Person will create a new team.  Then he will request a
 mailing list for that team, and an expert will approve that request.
 
-    >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
+    >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
@@ -35,7 +34,9 @@ feature is exposed.
     >>> list_one.welcome_message = 'Greetings team members!'
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
     >>> logout()
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
+
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> serial_watcher = logwatcher.LogWatcher('serial')
     >>> from canonical.database.sqlbase import commit
     >>> commit()
 

@@ -11,8 +11,7 @@ message, but again the reportStatus() call fails.  In both these cases,
 Mailman and Launchpad should eventually resynchronize their state
 automatically.
 
-    >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
+    >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
@@ -21,8 +20,11 @@ automatically.
     >>> browser.getControl('Create').click()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
-    >>> list_one = itest_helper.review_list('itest-one')
+
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> serial_watcher = logwatcher.LogWatcher('serial')
+    >>> list_one = helpers.review_list('itest-one')
     >>> serial_watcher.wait()
 
 
@@ -44,6 +46,7 @@ state.
     >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))
     >>> itest_one.status = MailingListStatus.CONSTRUCTING
     >>> serial_watcher.resync()
+    >>> logout()
     >>> commit()
 
 Now we just wait for Mailman to resynchronize its state with Launchpad.

@@ -10,26 +10,14 @@ Because we must use Python 2.4, we can't use the wizzy new mailbox module, so
 just write messages to the file.
 """
 
-import os
 import sys
-import errno
 import smtpd
 import signal
 import socket
-import smtplib
 import asyncore
 
-import itest_helper
 from email import message_from_string
-
-sys.path.insert(0, itest_helper.TOP)
-sys.path.insert(1, os.path.join(itest_helper.TOP, 'mailman'))
-
-from canonical.config import config
-from canonical.launchpad.mailman.config import configure_smtp
-
-from Mailman.Post import inject
-from Mailman.Utils import list_names
+from optparse import OptionParser
 
 
 class ResettingChannel(smtpd.SMTPChannel):
@@ -57,11 +45,12 @@ class ResettingChannel(smtpd.SMTPChannel):
 
 class Server(smtpd.SMTPServer):
     """An SMTP server subclass that stores to an mbox file."""
-    def __init__(self):
-        addr = configure_smtp(config.mailman.smtp)
+    def __init__(self, parser):
+        addr = (parser.options.host, parser.options.port)
         smtpd.SMTPServer.__init__(self, addr , None)
-        self._mbox_file = sys.argv[1]
+        self._mbox_file = parser.options.mbox
         self._mbox = open(self._mbox_file, 'w')
+        sys.path.insert(0, parser.options.path)
 
     def handle_accept(self):
         """Open a resetting channel."""
@@ -98,6 +87,7 @@ class Server(smtpd.SMTPServer):
         # tested first).  If the local part indicates that the message is
         # destined for a Mailman mailing list, deliver it to Mailman's
         # incoming queue.  Otherwise, deliver it to the upstream SMTPd.
+        from Mailman.Utils import list_names
         if 'x-beenthere' in message:
             # It came from Mailman and goes to the mbox.
             self._deliver_to_mbox(message)
@@ -111,6 +101,7 @@ class Server(smtpd.SMTPServer):
 
     def _deliver_to_mailman(self, listname, message):
         """Deliver the message to Mailman's incoming queue."""
+        from Mailman.Post import inject
         inject(listname, message)
 
     def _deliver_to_mbox(self, message):
@@ -133,13 +124,26 @@ def handle_signal(*ignore):
     asyncore.socket_map.clear()
 
 
-# Catch the parent's exit signal, and also C-c.
-signal.signal(signal.SIGTERM, handle_signal)
-signal.signal(signal.SIGINT, handle_signal)
+def parse_arguments():
+    parser = OptionParser()
+    parser.add_option('--host', default='localhost', action='store')
+    parser.add_option('--port', default=25, type='int')
+    parser.add_option('--mbox', action='store')
+    parser.add_option('--path', action='store')
+    options, arguments = parser.parse_args()
+    parser.options = options
+    parser.arguments = arguments
+    return parser
 
 
-# Run the main loop.
-server = Server()
-asyncore.loop()
-asyncore.close_all()
-server.close()
+if __name__ == '__main__':
+    # Catch the parent's exit signal, and also C-c.
+    signal.signal(signal.SIGTERM, handle_signal)
+    signal.signal(signal.SIGINT, handle_signal)
+
+    parser = parse_arguments()
+    # Run the main loop.
+    server = Server(parser)
+    asyncore.loop()
+    asyncore.close_all()
+    server.close()

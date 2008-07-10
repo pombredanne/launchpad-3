@@ -182,12 +182,14 @@ def reconnect_stores(database_config_section='launchpad'):
     assert session_store is not None, 'Failed to reconnect'
 
 
-def wait_children(seconds=120):
+def wait_children(seconds=120, child_pids=None):
     """Wait for all children to exit.
 
     :param seconds: Maximum number of seconds to wait.  If None, wait
         forever.
     """
+    if child_pids is None:
+        child_pids = set()
     now = datetime.datetime.now
     if seconds is None:
         until = None
@@ -195,11 +197,13 @@ def wait_children(seconds=120):
         until = now() + datetime.timedelta(seconds=seconds)
     while True:
         try:
-            os.waitpid(-1, os.WNOHANG)
+            pid, exit_status = os.waitpid(-1, os.WNOHANG)
         except OSError, error:
             if error.errno != errno.ECHILD:
                 raise
             break
+        else:
+            child_pids.discard(pid)
         if until is not None and now() > until:
             break
 
@@ -1226,15 +1230,37 @@ class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
                 event.set()
 
 
-class AppServerLayer(LaunchpadLayer):
+class AppServerLayer(LaunchpadFunctionalLayer):
     """Environment for starting and stopping the app server."""
 
-    services = ('librarian', 'restricted-librarian')
     LPCONFIG = 'testrunner-appserver'
+
+    # Keep track of the pids of all child processes directly spawned in this
+    # layer (but not any granchilden).
+    _children = set()
 
     @classmethod
     @profiled
     def setUp(cls):
+        cls.startAllServices()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        cls.stopAllServicesAndWaitForTheirDemise()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        DatabaseLayer.force_dirty_database()
+
+    @classmethod
+    def startAllServices(cls):
         cls.stopAllServices()
         # Get the child process's pid file.
         path = os.path.join(config.root, 'configs', cls.LPCONFIG,
@@ -1261,6 +1287,7 @@ class AppServerLayer(LaunchpadLayer):
             os._exit()
         # The parent.  Wait until the app server is responsive, but not
         # forever.  Make sure the test database is set up.
+        cls._children.add(pid)
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().setUp()
         until = time.time() + 60
@@ -1279,8 +1306,7 @@ class AppServerLayer(LaunchpadLayer):
             cls.stopAllServices()
 
     @classmethod
-    @profiled
-    def tearDown(cls):
+    def stopAllServicesAndWaitForTheirDemise(cls):
         # Force the database to reset.
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().tearDown()
@@ -1293,21 +1319,13 @@ class AppServerLayer(LaunchpadLayer):
                 raise
         else:
             cls.stopAllServices()
-            raise LayerIsolationError('Child processes have leaked through.')
+            if len(cls._children) > 0:
+                raise LayerIsolationError(
+                    'Child processes have leaked through: %s' %
+                    COMMA.join(cls._children))
 
     @classmethod
-    @profiled
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        DatabaseLayer.force_dirty_database()
-
-    @classmethod
-    @profiled
     def stopAllServices(cls):
         os.system('make -i -s LPCONFIG=%s stop_quickly_and_quietly'
                   % cls.LPCONFIG)
-        wait_children()
+        wait_children(child_pids=cls._children)
