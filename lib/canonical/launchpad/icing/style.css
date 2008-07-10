@@ -623,7 +623,6 @@ ul#menuroot li.selected a.breadcrumb {
   margin: 0;
   padding: 0;
   text-align: center;
-  top: -1px;
 }
 /* This separates the app bar from the hierarchy */
 .apps-separator {
