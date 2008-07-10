@@ -1,1689 +1,0 @@
-Running canonical.testing.layers.PageTestLayer tests:
-  Set up canonical.testing.layers.BaseLayer in 0.029 seconds.
-  Set up canonical.testing.layers.DatabaseLayer in 0.967 seconds.
-  Set up canonical.testing.layers.LibrarianLayer in 20.428 seconds.
-  Set up canonical.testing.layers.LaunchpadLayer in 0.000 seconds.
-  Set up canonical.testing.layers.FunctionalLayer in 8.917 seconds.
-  Set up canonical.testing.layers.GoogleServiceLayer in 1.257 seconds.
-  Set up canonical.testing.layers.LaunchpadFunctionalLayer in 0.000 seconds.
-  Set up canonical.testing.layers.PageTestLayer in 0.000 seconds.
-  Running:
-    51/5313 (1.0%)                      57/5313 (1.1%)                      66/5313 (1.2%)                      71/5313 (1.3%)                      88/5313 (1.7%)                      94/5313 (1.8%)                      121/5313 (2.3%)                       134/5313 (2.5%)                       146/5313 (2.7%)                       161/5313 (3.0%)                       166/5313 (3.1%)                       227/5313 (4.3%)                       239/5313 (4.5%)                       249/5313 (4.7%)                       256/5313 (4.8%)                       262/5313 (4.9%)                       271/5313 (5.1%)                       278/5313 (5.2%)                       283/5313 (5.3%)                       290/5313 (5.5%)                       314/5313 (5.9%)                       332/5313 (6.2%)                       352/5313 (6.6%)                       359/5313 (6.8%)                       390/5313 (7.3%)                       396/5313 (7.5%)                       432/5313 (8.1%)                       433/5313 (8.1%)                       436/5313 (8.2%)                       437/5313 (8.2%)                       455/5313 (8.6%)                       456/5313 (8.6%)
-
-Failure in test lib/canonical/launchpad/pagetests/basics/max-batch-size.txt
-Failed doctest test for max-batch-size.txt
-  File "lib/canonical/launchpad/pagetests/basics/max-batch-size.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/basics/max-batch-size.txt", line 18, in max-batch-size.txt
-Failed example:
-    print extract_text(find_main_content(response.read()))
-Differences (ndiff with -expected +actual):
-    + Sign in or register
-    - Your location...
-    ?              ^^^
-    + Your location:
-    ?              ^
-    + Home
-    + Projects
-      Invalid Batch Size
-    - Your requested batch size exceeded the maximum batch size allowed which
-    ?                                                                        -
-    + Your requested batch size exceeded the maximum batch size allowed which
-    - is ...
-    + is 300.
-    + Traceback (innermost last):
-    + Module zope.publisher.publish, line 138, in publish
-    +
-    + result = publication.callObject(request, object)
-    + Module canonical.launchpad.webapp.publication, line 325, in callObject
-    +
-    + return mapply(ob, request.getPositionalArguments(), request)
-    + Module zope.publisher.publish, line 113, in mapply
-    +
-    + return debug_call(object, args)
-    +
-    + __traceback_info__: &lt;security proxied zope.app.pagetemplate.simpleviewclass.SimpleViewClass from /home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/templates/products-all.pt instance at 0xdbdfcec&gt;
-    + Module zope.publisher.publish, line 119, in debug_call
-    +
-    + return object(*args)
-    + Module canonical.launchpad.webapp.publisher, line 230, in __call__
-    +
-    + return self.render()
-    + Module canonical.launchpad.webapp.publisher, line 215, in render
-    +
-    + return self.template()
-    + Module zope.app.pagetemplate.viewpagetemplatefile, line 83, in __call__
-    +
-    + return self.im_func(im_self, *args, **kw)
-    + Module zope.app.pagetemplate.viewpagetemplatefile, line 51, in __call__
-    +
-    + sourceAnnotations=getattr(debug_flags, 'sourceAnnotations', 0),
-    + Module zope.pagetemplate.pagetemplate, line 117, in pt_render
-    +
-    + strictinsert=0, sourceAnnotations=sourceAnnotations)()
-    + Module zope.tal.talinterpreter, line 277, in __call__
-    +
-    + self.interpret(self.program)
-    + Module zope.tal.talinterpreter, line 352, in interpret
-    +
-    + handlers[opcode](self, args)
-    + Module zope.tal.talinterpreter, line 908, in do_useMacro
-    +
-    + self.interpret(macro)
-    + Module zope.tal.talinterpreter, line 352, in interpret
-    +
-    + handlers[opcode](self, args)
-    + Module zope.tal.talinterpreter, line 538, in do_optTag_tal
-    +
-    + self.do_optTag(stuff)
-    + Module zope.tal.talinterpreter, line 523, in do_optTag
-    +
-    + return self.no_tag(start, program)
-    + Module zope.tal.talinterpreter, line 518, in no_tag
-    +
-    + self.interpret(program)
-    + Module zope.tal.talinterpreter, line 352, in interpret
-    +
-    + handlers[opcode](self, args)
-    + Module zope.tal.talinterpreter, line 872, in do_condition
-    +
-    + self.interpret(block)
-    + Module zope.tal.talinterpreter, line 352, in interpret
-    +
-    + handlers[opcode](self, args)
-    + Module zope.tal.talinterpreter, line 872, in do_condition
-    +
-    + self.interpret(block)
-    + Module zope.tal.talinterpreter, line 352, in interpret
-    +
-    + handlers[opcode](self, args)
-    + Module zope.tal.talinterpreter, line 966, in do_defineSlot
-    +
-    + self.interpret(slot)
-    + Module zope.tal.talinterpreter, line 352, in interpret
-    +
-    + handlers[opcode](self, args)
-    + Module zope.tal.talinterpreter, line 588, in do_setLocal_tal
-    +
-    + self.engine.setLocal(name, self.engine.evaluateValue(expr))
-    + Module zope.tales.tales, line 696, in evaluate
-    +
-    + return expression(self)
-    + /home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/templates/products-all.pt
-    + Line 13, Column 2
-    + Expression: &lt;PathExpr standard:u'view/all_batched'&gt;
-    +
-    + - Names:
-    +
-    + {'args': (),
-    +
-    + 'context': &lt;canonical.launchpad.database.product.ProductSet object at 0xc3bd54c&gt;,
-    +
-    + 'default': &lt;object object at 0xb7de3460&gt;,
-    +
-    + 'loop': {},
-    +
-    + 'nothing': None,
-    +
-    + 'options': {},
-    +
-    + 'repeat': {},
-    +
-    + 'request': &lt;canonical.launchpad.webapp.servers.LaunchpadBrowserRequest instance URL=http://launchpad.dev/projects/+all&gt;,
-    +
-    + 'template': &lt;zope.app.pagetemplate.viewpagetemplatefile.ViewPageTemplateFile object at 0xc3bde8c&gt;,
-    +
-    + 'usage': &lt;zope.pagetemplate.pagetemplate.TemplateUsage object at 0xdbdf26c&gt;,
-    +
-    + 'view': &lt;zope.app.pagetemplate.simpleviewclass.SimpleViewClass from /home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/templates/products-all.pt object at 0xdbdfcec&gt;,
-    +
-    + 'views': &lt;zope.app.pagetemplate.viewpagetemplatefile.ViewMapper object at 0xc586c8c&gt;}
-    + Module zope.tales.expressions, line 205, in __call__
-    +
-    + return self._eval(econtext)
-    + Module zope.tales.expressions, line 199, in _eval
-    +
-    + return ob()
-    + Module canonical.launchpad.browser.product, line 1190, in all_batched
-    +
-    + return BatchNavigator(self.context.all_active, self.request)
-    + Module canonical.launchpad.webapp.batching, line 106, in __init__
-    +
-    + raise InvalidBatchSizeError(
-    + InvalidBatchSizeError: Maximum for "batch" parameter is 300.
-    + Terms of Use |
-    + Help improve Launchpad |
-    + FAQ |
-    + Documentation
-    + &copy; 2004-2008 Canonical Ltd.
-    + |
-    + Version 1.2.6 | build
-    + 6543
-    + | DEVMODE
-    + Loading...
-    + Close
-    + Projects
-    + Distributions
-    + People
-    + Meetings
-
-    458/5313 (8.6%)                       461/5313 (8.7%)                       487/5313 (9.2%)                       489/5313 (9.2%)                       493/5313 (9.3%)                       501/5313 (9.4%)                       514/5313 (9.7%)                       519/5313 (9.8%)                       523/5313 (9.8%)                       538/5313 (10.1%)                        553/5313 (10.4%)                        619/5313 (11.7%)                        626/5313 (11.8%)                        647/5313 (12.2%)                        658/5313 (12.4%)                        672/5313 (12.6%)                        690/5313 (13.0%)                        697/5313 (13.1%)                        711/5313 (13.4%)                        718/5313 (13.5%)                        729/5313 (13.7%)                        739/5313 (13.9%)                        747/5313 (14.1%)                        754/5313 (14.2%)                        756/5313 (14.2%)                        759/5313 (14.3%)                        768/5313 (14.5%)                        770/5313 (14.5%)                        771/5313 (14.5%)                        776/5313 (14.6%)                        778/5313 (14.6%)                        787/5313 (14.8%)                        793/5313 (14.9%)                        800/5313 (15.1%)                        804/5313 (15.1%)                        813/5313 (15.3%)                        847/5313 (15.9%)                        873/5313 (16.4%)                        904/5313 (17.0%)                        994/5313 (18.7%)                        1009/5313 (19.0%)                         1016/5313 (19.1%)                         1020/5313 (19.2%)                         1026/5313 (19.3%)                         1042/5313 (19.6%)                         1052/5313 (19.8%)                         1069/5313 (20.1%)                         1078/5313 (20.3%)                         1109/5313 (20.9%)                         1120/5313 (21.1%)                         1123/5313 (21.1%)                         1144/5313 (21.5%)                         1161/5313 (21.9%)                         1165/5313 (21.9%)                         1167/5313 (22.0%)                         1192/5313 (22.4%)                         1194/5313 (22.5%)                         1211/5313 (22.8%)                         1224/5313 (23.0%)                         1226/5313 (23.1%)                         1235/5313 (23.2%)                         1240/5313 (23.3%)                         1241/5313 (23.4%)                         1244/5313 (23.4%)                         1250/5313 (23.5%)                         1253/5313 (23.6%)                         1269/5313 (23.9%)                         1286/5313 (24.2%)                         1298/5313 (24.4%)                         1304/5313 (24.5%)                         1308/5313 (24.6%)                         1314/5313 (24.7%)                         1316/5313 (24.8%)                         1318/5313 (24.8%)                         1322/5313 (24.9%)                         1323/5313 (24.9%)                         1326/5313 (25.0%)                         1333/5313 (25.1%)                         1336/5313 (25.1%)                         1337/5313 (25.2%)                         1339/5313 (25.2%)                         1343/5313 (25.3%)                         1347/5313 (25.4%)                         1353/5313 (25.5%)                         1359/5313 (25.6%)                         1360/5313 (25.6%)                         1368/5313 (25.7%)                         1372/5313 (25.8%)                         1381/5313 (26.0%)                         1384/5313 (26.0%)                         1390/5313 (26.2%)                         1392/5313 (26.2%)                         1400/5313 (26.4%)                         1404/5313 (26.4%)                         1408/5313 (26.5%)                         1410/5313 (26.5%)                         1411/5313 (26.6%)                         1413/5313 (26.6%)                         1415/5313 (26.6%)                         1422/5313 (26.8%)                         1423/5313 (26.8%)                         1433/5313 (27.0%)                         1441/5313 (27.1%)                         1451/5313 (27.3%)                         1457/5313 (27.4%)                         1476/5313 (27.8%)                         1485/5313 (28.0%)                         1490/5313 (28.0%)                         1499/5313 (28.2%)                         1503/5313 (28.3%)                         1523/5313 (28.7%)                         1525/5313 (28.7%)                         1540/5313 (29.0%)                         1552/5313 (29.2%)                         1555/5313 (29.3%)                         1556/5313 (29.3%)                         1563/5313 (29.4%)                         1565/5313 (29.5%)                         1576/5313 (29.7%)                         1577/5313 (29.7%)                         1585/5313 (29.8%)                         1590/5313 (29.9%)                         1592/5313 (30.0%)                         1593/5313 (30.0%)                         1607/5313 (30.2%)                         1610/5313 (30.3%)                         1631/5313 (30.7%)                         1632/5313 (30.7%)                         1634/5313 (30.8%)                         1635/5313 (30.8%)                         1653/5313 (31.1%)                         1654/5313 (31.1%)                         1663/5313 (31.3%)                         1665/5313 (31.3%)                         1668/5313 (31.4%)                         1670/5313 (31.4%)                         1672/5313 (31.5%)                         1673/5313 (31.5%)                         1681/5313 (31.6%)                         1690/5313 (31.8%)                         1696/5313 (31.9%)                         1706/5313 (32.1%)                         1715/5313 (32.3%)                         1717/5313 (32.3%)                         1720/5313 (32.4%)                         1721/5313 (32.4%)                         1741/5313 (32.8%)                         1745/5313 (32.8%)                         1750/5313 (32.9%)                         1774/5313 (33.4%)                         1781/5313 (33.5%)                         1786/5313 (33.6%)                         1796/5313 (33.8%)                         1798/5313 (33.8%)                         1800/5313 (33.9%)                         1808/5313 (34.0%)                         1841/5313 (34.7%)                         1848/5313 (34.8%)                         1858/5313 (35.0%)                         1867/5313 (35.1%)                         1872/5313 (35.2%)                         1873/5313 (35.3%)                         1876/5313 (35.3%)                         1880/5313 (35.4%)                         1888/5313 (35.5%)                         1892/5313 (35.6%)                         1899/5313 (35.7%)                         1909/5313 (35.9%)                         1928/5313 (36.3%)                         1931/5313 (36.3%)                         1936/5313 (36.4%)                         1942/5313 (36.6%)                         1962/5313 (36.9%)                         1963/5313 (36.9%)                         1964/5313 (37.0%)                         1965/5313 (37.0%)                         1966/5313 (37.0%)                         1970/5313 (37.1%)                         1971/5313 (37.1%)                         1975/5313 (37.2%)                         1978/5313 (37.2%)                         1980/5313 (37.3%)                         1989/5313 (37.4%)                         1993/5313 (37.5%)                         2015/5313 (37.9%)                         2019/5313 (38.0%)                         2024/5313 (38.1%)                         2029/5313 (38.2%)                         2030/5313 (38.2%)                         2031/5313 (38.2%)                         2046/5313 (38.5%)                         2066/5313 (38.9%)                         2069/5313 (38.9%)                         2071/5313 (39.0%)                         2078/5313 (39.1%)                         2097/5313 (39.5%)                         2098/5313 (39.5%)                         2101/5313 (39.5%)                         2106/5313 (39.6%)                         2117/5313 (39.8%)                         2118/5313 (39.9%)                         2134/5313 (40.2%)                         2152/5313 (40.5%)                         2161/5313 (40.7%)                         2181/5313 (41.1%)                         2189/5313 (41.2%)                         2194/5313 (41.3%)                         2203/5313 (41.5%)                         2206/5313 (41.5%)                         2211/5313 (41.6%)                         2216/5313 (41.7%)                         2225/5313 (41.9%)
-
-Failure in test lib/canonical/launchpad/pagetests/foaf/xx-deactivate-account.txt
-Failed doctest test for xx-deactivate-account.txt
-  File "lib/canonical/launchpad/pagetests/foaf/xx-deactivate-account.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/xx-deactivate-account.txt", line 11, in xx-deactivate-account.txt
-Failed example:
-    print extract_text(find_tags_by_class(browser.contents, "login")[0])
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-deactivate-account.txt[4]>", line 1, in ?
-    IndexError: list index out of range
-
-    2233/5313 (42.0%)                         2242/5313 (42.2%)                         2250/5313 (42.3%)                         2273/5313 (42.8%)                         2277/5313 (42.9%)                         2285/5313 (43.0%)                         2295/5313 (43.2%)                         2299/5313 (43.3%)                         2308/5313 (43.4%)                         2317/5313 (43.6%)                         2322/5313 (43.7%)                         2364/5313 (44.5%)                         2365/5313 (44.5%)                         2373/5313 (44.7%)                         2394/5313 (45.1%)                         2396/5313 (45.1%)
-
-Failure in test lib/canonical/launchpad/pagetests/foaf/01-login.txt
-Failed doctest test for 01-login.txt
-  File "lib/canonical/launchpad/pagetests/foaf/01-login.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/01-login.txt", line 31, in 01-login.txt
-Failed example:
-    print http(r"""
-    POST /+login HTTP/1.1
-    Content-Length: ...
-    Content-Type: application/x-www-form-urlencoded
-    Cookie: launchpad=eBes5vRt2aAQaTWWVKrSoTp3JS8WXuf1Xt8W7Xzt1MM3GPTSy7o1aA
-
-    loginpage_email=foo%40baz.com&loginpage_password=f&loginpage_submit_login=Log+In""")
-Differences (ndiff with -expected +actual):
-      HTTP/1.1 303 See Other
-    - Content-Length: ...
-    ?                 ^^^
-    + Content-Length: 4781
-    ?                 ^^^^
-      Content-Type: text/html;charset=utf-8
-    - ...
-    - ...Logged in as...
-    - ...foo...
-    - ...
-    + Location: http://localhost:9000
-    + Set-Cookie: launchpad_tests=Eh46C26q5o2CBP7OF7KlJty3vTgldSy-VnupTwrJZBWzNLtDMr-CiI; expires=Fri, 03 Jul 2009 16:31:30 GMT; Path=/;
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-    + <BLANKLINE>
-    + <html xmlns="http://www.w3.org/1999/xhtml"
-    +       xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en"
-    +       lang="en" dir="ltr">
-    +   <head>
-    +     <title>Log in or register with Launchpad</title>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +     <!-- Launchpad style sheet -->
-    + <BLANKLINE>
-    +     <style type="text/css" media="screen, print">@import url(http://launchpad.dev/+icing/rev6543/style.css);</style>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +     <!--[if lte IE 7]>
-    +       <style type="text/css">
-    +         input[type="text"] {width: 95%}
-    +         textarea {width: 95%;}
-    +       </style>
-    +     <![endif]-->
-    + <BLANKLINE>
-    +     <!--[if IE 7]>
-    +       <style type="text/css">
-    +         #container {margin-top: 28px; position: static;}
-    +         #portlets {left: 20px;}
-    +       </style>
-    +     <![endif]-->
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +     <style type="text/css">
-    +       fieldset.collapsed div, fieldset div.collapsed {display: none;}
-    +     </style>
-    +     <noscript>
-    +       <style type="text/css">
-    +         fieldset.collapsible div, fieldset div.collapsed {display: block;}
-    +       </style>
-    +     </noscript>
-    + <BLANKLINE>
-    +     <script type="text/javascript"
-    +             src="http://launchpad.dev/+icing/rev6543/MochiKit.js"></script>
-    +     <script type="text/javascript"
-    +             src="http://launchpad.dev/+icing/rev6543/launchpad.js"></script>
-    +     <script type="text/javascript"
-    +             src="http://launchpad.dev/+icing/rev6543/lpmenu.js"></script>
-    +     <script type="text/javascript"
-    +             src="http://launchpad.dev/+icing/rev6543/sorttable.js"></script>
-    +     <script type="text/javascript"
-    +             src="http://launchpad.dev/+icing/rev6543/inlinehelp.js"></script>
-    +     <script type="text/javascript">var cookie_scope = '; Path=/';</script>
-    +     <script type="text/javascript">
-    +       function onLoadFunction() {
-    +         lpmenu.initialize(['menuroot'], '/', 'menupreload',
-    +                            [], '1.3em', 16, true);
-    +         sortables_init();
-    +         initInlineHelp();
-    +       }
-    +       registerLaunchpadFunction(onLoadFunction);
-    +     </script>
-    +     <link rel="shortcut icon"
-    +           href="http://launchpad.dev/+icing/rev6543/launchpad.png" />
-    +     <head>
-    +     <meta name="robots" content="noindex" />
-    +   </head>
-    +   </head>
-    +   <body id="document" class="tab-overview freeform">
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <div id="logincontrol">
-    +   <form action="+logout" method="post">
-    +     <input type="hidden" name="loggingout" value="1" />
-    +     <a href="http://localhost:9000/~foo"><img alt="" width="14" height="14" src="/@@/person" />&nbsp;foobar</a> &bull;
-    +     <input type="submit" name="logout" value="Log Out" />
-    +   </form>
-    + </div>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +     <div id="topline"></div>
-    +     <div id="locationbar" xml:lang="en" lang="en" dir="ltr">
-    +       <strong id="yourlocation">Your location:</strong>
-    +       <ul id="menuroot">
-    + <BLANKLINE>
-    +       </ul>
-    +     </div>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +       <!--id="mainarea"-->
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +         <div>
-    + <BLANKLINE>
-    +       <!-- 1. already logged in and shouldn't be here: -->
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +         <!-- 2. just logged in successfully: -->
-    +         <p>
-    +           You are now logged in as <strong>foobar</strong>.
-    +         </p>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +     </div>
-    +         <div style="clear: both; height: 2em;">&nbsp;</div>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +      <div id="globalfooter" class="clearfix" xml:lang="en" lang="en" dir="ltr">
-    + <BLANKLINE>
-    +         <div id="colophon">
-    +           <a href="/legal">Terms&nbsp;of&nbsp;Use</a> |
-    +           <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
-    +           <a href="/faq">FAQ</a> |
-    +           <a href="https://help.launchpad.net/">Documentation</a>
-    +         </div>
-    +         <div id="copyright">
-    +             &copy;&nbsp;2004-2008&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-    + <BLANKLINE>
-    +               | <a href="https://help.launchpad.net/LaunchpadReleases">
-    +               Version 1.2.6</a> | build
-    +               6543
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +           | DEVMODE
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +         </div>
-    + <BLANKLINE>
-    +       </div><!--id="globalfooter"-->
-    + <BLANKLINE>
-    +     <div id="help-pane" class="invisible">
-    +       <div id="help-body">
-    +         <iframe id="help-pane-content" class="invisible">Loading...</iframe>
-    +       </div>
-    +       <div id="help-footer">
-    +         <a href="#" id="help-close-btn">Close</a>
-    +       </div>
-    +     </div>
-    +     <div id="menupreload" style="visibility:hidden" xml:lang="en" lang="en" dir="ltr">
-    +       <ul class="menu" lpm:mid="root">
-    + <BLANKLINE>
-    +           <li class="item"
-    +               lpm:mid="/~foo/+menudata/contributions"><a class="container" href="/projects">Projects</a></li>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +         <li class="item"><a href="/distros">Distributions</a></li>
-    +         <li class="item"><a href="/people">People</a></li>
-    +         <li class="item"><a href="/sprints">Meetings</a></li>
-    +       </ul>
-    +     </div>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +   </body>
-    + </html>
-    + <!-- at least 21 queries issued in 0.19 seconds -->
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-
-    2403/5313 (45.2%)                         2404/5313 (45.2%)                         2407/5313 (45.3%)
-
-Failure in test lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt
-Failed doctest test for 07-reg-with-existing-email.txt
-  File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 10, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.getLink('Log In / Register').click()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[1]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 286, in getLink
-        return Link(self.mech_browser.find_link(**args), self)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/mechanize/_mechanize.py", line 557, in find_link
-        return self._find_links(True, **kwds)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/mechanize/_mechanize.py", line 627, in _find_links
-        raise LinkNotFoundError()
-    LinkNotFoundError
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 12, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.getControl('E-mail address:', index=1).value = (
-        'test@canonical.com')
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[2]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'E-mail address:'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 14, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.getControl('Register').click()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[3]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Register'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 16, in 07-reg-with-existing-email.txt
-Failed example:
-    for message in get_feedback_messages(browser.contents):
-        print message
-Differences (ndiff with -expected +actual):
-    - Sorry, someone with the address test@canonical.com already has a
-    - Launchpad account. If this is you and you've forgotten your password,
-    - Launchpad can reset it for you.
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 27, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.getControl('E-mail address:', index=1).value = 'mpo@iki.fi'
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[5]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'E-mail address:'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 28, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.getControl('Register').click()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[6]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Register'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 30, in 07-reg-with-existing-email.txt
-Failed example:
-    print extract_text(find_tag_by_id(browser.contents, 'address'))
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[7]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 354, in extract_text
-        soup = BeautifulSoup(content)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/BeautifulSoup.py", line 1326, in __init__
-        BeautifulStoneSoup.__init__(self, *args, **kwargs)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/BeautifulSoup.py", line 973, in __init__
-        self._feed()
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/BeautifulSoup.py", line 987, in _feed
-        smartQuotesTo=self.smartQuotesTo)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/BeautifulSoup.py", line 1594, in __init__
-        u = self._convertFrom(proposed_encoding)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/BeautifulSoup.py", line 1627, in _convertFrom
-        markup)
-    TypeError: expected string or buffer
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 36, in 07-reg-with-existing-email.txt
-Failed example:
-    from_addr, to_addr, msg = stub.test_emails.pop()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[10]>", line 1, in ?
-    IndexError: pop from empty list
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 37, in 07-reg-with-existing-email.txt
-Failed example:
-    token_url = get_token_url_from_email(msg)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[11]>", line 1, in ?
-    NameError: name 'msg' is not defined
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 38, in 07-reg-with-existing-email.txt
-Failed example:
-    token_url
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[12]>", line 1, in ?
-    NameError: name 'token_url' is not defined
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 41, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.open(token_url)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[13]>", line 1, in ?
-    NameError: name 'token_url' is not defined
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 42, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.url == '%s/+newaccount' % token_url
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[14]>", line 1, in ?
-    NameError: name 'token_url' is not defined
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 45, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.getControl('Name').value = 'My name'
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[15]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Name'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 47, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.getControl(label).selected = True
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[17]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Hide my email addresses from other Launchpad users'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 48, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.getControl(name='field.password').value = 'foo'
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[18]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: name 'field.password'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 49, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.getControl(name='field.password_dupe').value = 'foo'
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[19]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: name 'field.password_dupe'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 51, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.getControl('Continue').click()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[20]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Continue'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 52, in 07-reg-with-existing-email.txt
-Failed example:
-    browser.url
-Differences (ndiff with -expected +actual):
-    - 'http://launchpad.dev'
-    + 'http://launchpad.dev/'
-    ?                      +
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 55, in 07-reg-with-existing-email.txt
-Failed example:
-    for message in get_feedback_messages(browser.contents):
-        print message
-Differences (ndiff with -expected +actual):
-    - Registration completed successfully
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 77, in 07-reg-with-existing-email.txt
-Failed example:
-    anon_browser.getLink('Log In / Register').click()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[26]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 286, in getLink
-        return Link(self.mech_browser.find_link(**args), self)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/mechanize/_mechanize.py", line 557, in find_link
-        return self._find_links(True, **kwds)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/mechanize/_mechanize.py", line 627, in _find_links
-        raise LinkNotFoundError()
-    LinkNotFoundError
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 79, in 07-reg-with-existing-email.txt
-Failed example:
-    anon_browser.getControl('E-mail address:', index=1).value = (
-        'andrew.bennetts@ubuntulinux.com')
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[27]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'E-mail address:'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 81, in 07-reg-with-existing-email.txt
-Failed example:
-    anon_browser.getControl('Register').click()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[28]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Register'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 83, in 07-reg-with-existing-email.txt
-Failed example:
-    from_addr, to_addr, msg = stub.test_emails.pop()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[29]>", line 1, in ?
-    IndexError: pop from empty list
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 84, in 07-reg-with-existing-email.txt
-Failed example:
-    to_addr
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[30]>", line 1, in ?
-    NameError: name 'to_addr' is not defined
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 86, in 07-reg-with-existing-email.txt
-Failed example:
-    token_url = get_token_url_from_email(msg)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[31]>", line 1, in ?
-    NameError: name 'msg' is not defined
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 87, in 07-reg-with-existing-email.txt
-Failed example:
-    token_url
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[32]>", line 1, in ?
-    NameError: name 'token_url' is not defined
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 90, in 07-reg-with-existing-email.txt
-Failed example:
-    anon_browser.open(token_url)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[33]>", line 1, in ?
-    NameError: name 'token_url' is not defined
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 91, in 07-reg-with-existing-email.txt
-Failed example:
-    anon_browser.url == "%s/+newaccount" % token_url
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[34]>", line 1, in ?
-    NameError: name 'token_url' is not defined
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 94, in 07-reg-with-existing-email.txt
-Failed example:
-    anon_browser.getControl('Name').value = 'My name'
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[35]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Name'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 95, in 07-reg-with-existing-email.txt
-Failed example:
-    anon_browser.getControl(name='field.password').value = 'foo'
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[36]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: name 'field.password'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 96, in 07-reg-with-existing-email.txt
-Failed example:
-    anon_browser.getControl(name='field.password_dupe').value = 'foo'
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[37]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: name 'field.password_dupe'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 97, in 07-reg-with-existing-email.txt
-Failed example:
-    anon_browser.getControl('Continue').click()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 07-reg-with-existing-email.txt[38]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Continue'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 99, in 07-reg-with-existing-email.txt
-Failed example:
-    anon_browser.url
-Differences (ndiff with -expected +actual):
-    - 'http://launchpad.dev'
-    + 'http://launchpad.dev/'
-    ?                      +
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/07-reg-with-existing-email.txt", line 101, in 07-reg-with-existing-email.txt
-Failed example:
-    for message in get_feedback_messages(anon_browser.contents):
-        print message
-Differences (ndiff with -expected +actual):
-    - Registration completed successfully
-
-    2408/5313 (45.3%)                         2409/5313 (45.3%)                         2411/5313 (45.4%)                         2415/5313 (45.5%)                         2422/5313 (45.6%)                         2432/5313 (45.8%)                         2433/5313 (45.8%)                         2435/5313 (45.8%)                         2443/5313 (46.0%)                         2448/5313 (46.1%)
-
-Failure in test lib/canonical/launchpad/pagetests/foaf/29-changepassword.txt
-Failed doctest test for 29-changepassword.txt
-  File "lib/canonical/launchpad/pagetests/foaf/29-changepassword.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/29-changepassword.txt", line 71, in 29-changepassword.txt
-Failed example:
-    print browser.contents
-Differences (ndiff with -expected +actual):
-    - <...
-    - ...Logged in as...
-    - ...foo...
-    + <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-    + <BLANKLINE>
-    + <html xmlns="http://www.w3.org/1999/xhtml"
-    +       xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en"
-    +       lang="en" dir="ltr">
-    +   <head>
-    +     <title>Launchpad</title>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +         <link rel="alternate" type="application/atom+xml"
-    +               href="http://feeds.launchpad.dev/announcements.atom"
-    +               title="All Announcements" />
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +     <!-- Launchpad style sheet -->
-    + <BLANKLINE>
-    +     <style type="text/css" media="screen, print">@import url(http://launchpad.dev/+icing/rev6543/style.css);</style>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +     <!--[if lte IE 7]>
-    +       <style type="text/css">
-    +         input[type="text"] {width: 95%}
-    +         textarea {width: 95%;}
-    +       </style>
-    +     <![endif]-->
-    + <BLANKLINE>
-    +     <!--[if IE 7]>
-    +       <style type="text/css">
-    +         #container {margin-top: 28px; position: static;}
-    +         #portlets {left: 20px;}
-    +       </style>
-    +     <![endif]-->
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +     <style type="text/css">
-    +       fieldset.collapsed div, fieldset div.collapsed {display: none;}
-    +     </style>
-    +     <noscript>
-    +       <style type="text/css">
-    +         fieldset.collapsible div, fieldset div.collapsed {display: block;}
-    +       </style>
-    +     </noscript>
-    + <BLANKLINE>
-    +     <script type="text/javascript"
-    +             src="http://launchpad.dev/+icing/rev6543/MochiKit.js"></script>
-    +     <script type="text/javascript"
-    +             src="http://launchpad.dev/+icing/rev6543/launchpad.js"></script>
-    +     <script type="text/javascript"
-    +             src="http://launchpad.dev/+icing/rev6543/lpmenu.js"></script>
-    +     <script type="text/javascript"
-    +             src="http://launchpad.dev/+icing/rev6543/sorttable.js"></script>
-    +     <script type="text/javascript"
-    +             src="http://launchpad.dev/+icing/rev6543/inlinehelp.js"></script>
-    +     <script type="text/javascript">var cookie_scope = '; Path=/; Domain=.launchpad.dev';</script>
-    +     <script type="text/javascript">
-    +       function onLoadFunction() {
-    +         lpmenu.initialize(['menuroot'], '/', 'menupreload',
-    +                            [], '1.3em', 16, true);
-    +         sortables_init();
-    +         initInlineHelp();
-    +       }
-    +       registerLaunchpadFunction(onLoadFunction);
-    +     </script>
-    +     <link rel="shortcut icon"
-    +           href="http://launchpad.dev/+icing/rev6543/launchpad.png" />
-    + <BLANKLINE>
-    +   </head>
-    +   <body id="document" class="tab-unknown freeform">
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <div id="logincontrol">
-    +   <form action="+logout" method="post">
-    +     <input type="hidden" name="loggingout" value="1" />
-    +     <a href="http://launchpad.dev/~foo"><img alt="" width="14" height="14" src="/@@/person" />&nbsp;foobar</a> &bull;
-    +     <input type="submit" name="logout" value="Log Out" />
-    +   </form>
-    + </div>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +     <div id="topline"></div>
-    +     <div id="locationbar" xml:lang="en" lang="en" dir="ltr">
-    +       <strong id="yourlocation">Your location:</strong>
-    +       <ul id="menuroot">
-    +         <li lpm:mid="root" class="item"><a href="http://launchpad.dev/" class="breadcrumb container" id="homebreadcrumb"><em><span>Home</span></em></a></li>
-    +       </ul>
-    +     </div>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +       <!--id="mainarea"-->
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +         <div>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +       <div id="applications"><a href="http://launchpad.dev/projects/">
-    +   <img    width="146"    height="146"    alt="register"    src="/+icing/app-register.gif"    title="Register your project to encourage community collaboration."  />
-    + </a>
-    + <BLANKLINE>
-    + <a href="http://code.launchpad.dev/">
-    +   <img    width="146"    height="146"    alt="code"    src="/+icing/app-code.gif"    title="Publish your code for people to merge and branch from."  />
-    + </a>
-    + <BLANKLINE>
-    + <a href="http://bugs.launchpad.dev/">
-    +   <img    width="146"    height="146"    alt="bugs"    src="/+icing/app-bugs.gif"    title="Share bug reports and fixes."  />
-    + </a>
-    + <BLANKLINE>
-    + <a href="http://blueprints.launchpad.dev/">
-    +   <img    width="146"    height="146"    alt="blueprints"    src="/+icing/app-blueprints.gif"    title="Track blueprints through approval and implementation."  />
-    + </a>
-    + <BLANKLINE>
-    + <a href="http://translations.launchpad.dev/">
-    +   <img    width="146"    height="146"    alt="translations"    src="/+icing/app-translations.gif"    title="Localize software into your favorite language."  />
-    + </a>
-    + <BLANKLINE>
-    + <a href="http://answers.launchpad.dev/">
-    +   <img    width="146"    height="146"    alt="answers"    src="/+icing/app-answers.gif"    title="Ask and answer questions about software."  />
-    + </a>
-    + </div>
-    +       <form id="project-search" class="central front_page" style="text-align: center;" action="/projects/" method="get" accept-charset="UTF-8">
-    + <BLANKLINE>
-    +         <label for="text">Is your project registered yet?</label>
-    +         <input id="text" type="text" name="text" size="20" />
-    +         <input type="submit" value="Search" />
-    +       </form>
-    + <BLANKLINE>
-    +         <div class="three column left">
-    +           <h2>What is Launchpad?</h2>
-    +           <p id="application-summary">
-    +             Launchpad is a free software hosting and development
-    +             website. We make it easy to <strong>collaborate
-    +             across multiple projects</strong>.
-    +             <br />
-    +             <center>
-    +               <a href="/+about">
-    +                 <img alt="Take a tour" src="/+icing/but-lrg-takeatour.gif" />
-    +               </a>
-    +             </center>
-    +           </p>
-    + <BLANKLINE>
-    +            <h2>Join the Launchpad beta team</h2>
-    +            <p id="beta-test">
-    +             Get first access to new features and take part in the Launchpad development process.
-    +             Join the <a href="https://help.launchpad.net/BetaTesting">beta team</a> today!
-    +            </p>
-    + <BLANKLINE>
-    +         </div>
-    +         <div class="three column middle">
-    +           <h2>What&#8217;s new here?</h2>
-    +           <ul>
-    +            <li class="news">
-    +               <a href="http://news.launchpad.net/cool-new-stuff/review-branch-merge-proposals-in-launchpad">
-    +                 <strong>Code merger reviews</strong><br />
-    +                 Review proposed branch mergers, using comments and voting, direct in Launchpad.
-    +               </a>
-    +            </li>
-    +            <li class="news">
-    +               <a href="http://news.launchpad.net/?p=80">
-    +                 <strong>Site-wide search improvements</strong><br />
-    +                 We have significantly enhanced our site-wide search feature to
-    +                 provide better results. Give it a try!
-    +               </a>
-    +            </li>
-    +             <li class="news">
-    +               <a href="http://news.launchpad.net/category/podcast">
-    +                 <strong>New Launchpad podcast</strong><br />
-    +                 Hear the latest from the Launchpad team, with interviews and
-    +                 news in Launchpod - the Launchpad team podcast.
-    +               </a>
-    +            </li>
-    +             <li class="news">
-    +               <a href="http://news.launchpad.net/?p=75">
-    +                 <strong>Package diffs</strong><br />
-    +                 View a diff of your newly uploaded source package with the
-    +                 currently published package
-    +               </a>
-    +             </li>
-    +             <li class="news">
-    +               <a href="http://news.launchpad.net/?p=74">
-    +                 <strong>Search translations</strong><br />
-    +                 Find words and phrases within translation files. Ideal for
-    +                 locating and correcting errors.
-    +               </a>
-    +             </li>
-    +             <li class="news">
-    +               <a href="https://help.launchpad.net/PPAQuickStart#copy">
-    +                 <strong>Copy PPA packages</strong><br />
-    +                 Now you can copy source and binary packages between distro
-    +                 releases within a PPA or to any other PPA for which you
-    +                 have upload permission.
-    +               </a>
-    +             </li>
-    +           </ul>
-    +           <div class="discreet" style="text-align: right">
-    +             Updated 2008-05-30.
-    +             <a href="http://news.launchpad.net">More...</a>
-    +           </div>
-    +         </div>
-    +         <div class="three column right" id="featured-projects">
-    +           <h2>Featured projects</h2>
-    +           <table>
-    +             <tr>
-    +               <td><span title="This project&lsquo;s license has not been reviewed."><a href="/applets"><img alt="" width="14" height="14" src="/@@/product" />&nbsp;Gnome Applets</a> (Unreviewed)</span></td>
-    +             </tr>
-    +             <tr>
-    +               <td><span title="This project&lsquo;s license has not been reviewed."><a href="/bazaar"><img alt="" width="14" height="14" src="/@@/product" />&nbsp;Bazaar</a> (Unreviewed)</span></td>
-    +             </tr>
-    +             <tr>
-    +               <td><span title="This project&lsquo;s license has not been reviewed."><a href="/firefox"><img alt="" width="14" height="14" src="/@@/product" />&nbsp;Mozilla Firefox</a> (Unreviewed)</span></td>
-    +             </tr>
-    +             <tr>
-    +               <td><a href="/gentoo"><img alt="" width="14" height="14" src="/@@/distribution" />&nbsp;Gentoo</a></td>
-    +             </tr>
-    +             <tr>
-    +               <td><a href="/gnome"><img alt="" width="14" height="14" src="/@@/project" />&nbsp;GNOME</a></td>
-    +             </tr>
-    +             <tr>
-    +               <td><span title="This project&lsquo;s license has not been reviewed."><a href="/gnome-terminal"><img alt="" width="14" height="14" src="/@@/product" />&nbsp;GNOME Terminal</a> (Unreviewed)</span></td>
-    +             </tr>
-    +             <tr>
-    +               <td><a href="/mozilla"><img alt="" width="14" height="14" src="/@@/project" />&nbsp;the Mozilla Project</a></td>
-    +             </tr>
-    +             <tr>
-    +               <td><span title="This project&lsquo;s license has not been reviewed."><a href="/thunderbird"><img alt="" width="14" height="14" src="/@@/product" />&nbsp;Mozilla Thunderbird</a> (Unreviewed)</span></td>
-    +             </tr>
-    +             <tr>
-    +               <td><a href="/ubuntu"><img alt="" width="14" height="14" src="/@@/distribution" />&nbsp;Ubuntu</a></td>
-    +             </tr>
-    +           </table>
-    + <BLANKLINE>
-    +           <p>
-    + <BLANKLINE>
-    +           </p>
-    +         </div>
-    +     </div>
-    +         <div style="clear: both; height: 2em;">&nbsp;</div>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +      <div id="globalfooter" class="clearfix" xml:lang="en" lang="en" dir="ltr">
-    + <BLANKLINE>
-    +         <div id="colophon">
-    +           <a href="/legal">Terms&nbsp;of&nbsp;Use</a> |
-    +           <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
-    +           <a href="/faq">FAQ</a> |
-    +           <a href="https://help.launchpad.net/">Documentation</a>
-    +         </div>
-    +         <div id="copyright">
-    +             &copy;&nbsp;2004-2008&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-    + <BLANKLINE>
-    +               | <a href="https://help.launchpad.net/LaunchpadReleases">
-    +               Version 1.2.6</a> | build
-    +               6543
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +           | DEVMODE
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +         </div>
-    + <BLANKLINE>
-    +       </div><!--id="globalfooter"-->
-    + <BLANKLINE>
-    +     <div id="help-pane" class="invisible">
-    +       <div id="help-body">
-    +         <iframe id="help-pane-content" class="invisible">Loading...</iframe>
-    +       </div>
-    +       <div id="help-footer">
-    +         <a href="#" id="help-close-btn">Close</a>
-    +       </div>
-    +     </div>
-    +     <div id="menupreload" style="visibility:hidden" xml:lang="en" lang="en" dir="ltr">
-    +       <ul class="menu" lpm:mid="root">
-    + <BLANKLINE>
-    +           <li class="item"
-    +               lpm:mid="/~foo/+menudata/contributions"><a class="container" href="/projects">Projects</a></li>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +         <li class="item"><a href="/distros">Distributions</a></li>
-    +         <li class="item"><a href="/people">People</a></li>
-    +         <li class="item"><a href="/sprints">Meetings</a></li>
-    +       </ul>
-    +     </div>
-    + <BLANKLINE>
-    + <BLANKLINE>
-    +   </body>
-    + </html>
-    + <!-- at least 43 queries issued in 0.32 seconds -->
-    + <BLANKLINE>
-    + <!-- 1-0 done could use a team icon though -->
-    + <BLANKLINE>
-
-    2462/5313 (46.3%)                         2466/5313 (46.4%)                         2483/5313 (46.7%)                         2487/5313 (46.8%)
-
-Failure in test lib/canonical/launchpad/pagetests/foaf/51-team-home.txt
-Failed doctest test for 51-team-home.txt
-  File "lib/canonical/launchpad/pagetests/foaf/51-team-home.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/51-team-home.txt", line 21, in 51-team-home.txt
-Failed example:
-    print extract_text(
-        find_tag_by_id(browser.contents, 'recently-applied'))
-Differences (ndiff with -expected +actual):
-      Recently applied
-      Sample Person (name12)
-    - My name (spiv)
-    + Andrew Bennetts (spiv)
-
-    2495/5313 (47.0%)                         2502/5313 (47.1%)                         2513/5313 (47.3%)
-
-Failure in test lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt
-Failed doctest test for 99-resetpassword.txt
-  File "lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt", line 84, in 99-resetpassword.txt
-Failed example:
-    for tag in find_tags_by_class(browser.contents, 'login'):
-        print extract_text(tag)
-Differences (ndiff with -expected +actual):
-    - Logged in as David Allouche &ndash;
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt", line 107, in 99-resetpassword.txt
-Failed example:
-    browser.getLink('Log In / Register').click()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 99-resetpassword.txt[38]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 286, in getLink
-        return Link(self.mech_browser.find_link(**args), self)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/mechanize/_mechanize.py", line 557, in find_link
-        return self._find_links(True, **kwds)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/mechanize/_mechanize.py", line 627, in _find_links
-        raise LinkNotFoundError()
-    LinkNotFoundError
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt", line 109, in 99-resetpassword.txt
-Failed example:
-    browser.getControl(
-        'E-mail address:', index=0).value = 'david.allouche@canonical.com'
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 99-resetpassword.txt[39]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'E-mail address:'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt", line 111, in 99-resetpassword.txt
-Failed example:
-    browser.getControl('Password').value = 'test2'
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 99-resetpassword.txt[40]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Password'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt", line 112, in 99-resetpassword.txt
-Failed example:
-    browser.getControl('Log In').click()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 99-resetpassword.txt[41]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Log In'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt", line 114, in 99-resetpassword.txt
-Failed example:
-    browser.url
-Differences (ndiff with -expected +actual):
-    - 'http://launchpad.dev'
-    + 'http://launchpad.dev/?loggingout=1'
-    ?                      ++++++++++++++
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt", line 117, in 99-resetpassword.txt
-Failed example:
-    for tag in find_tags_by_class(browser.contents, 'login'):
-        print extract_text(tag)
-Differences (ndiff with -expected +actual):
-    - Logged in as David Allouche &ndash;
-
-    2546/5313 (47.9%)                         2552/5313 (48.0%)                         2555/5313 (48.1%)                         2561/5313 (48.2%)                         2564/5313 (48.3%)                         2565/5313 (48.3%)                         2569/5313 (48.4%)                         2575/5313 (48.5%)                         2578/5313 (48.5%)                         2585/5313 (48.7%)                         2606/5313 (49.0%)                         2617/5313 (49.3%)                         2620/5313 (49.3%)                         2632/5313 (49.5%)                         2637/5313 (49.6%)                         2645/5313 (49.8%)                         2646/5313 (49.8%)                         2657/5313 (50.0%)                         2666/5313 (50.2%)                         2679/5313 (50.4%)                         2690/5313 (50.6%)                         2706/5313 (50.9%)                         2708/5313 (51.0%)                         2734/5313 (51.5%)                         2736/5313 (51.5%)                         2746/5313 (51.7%)                         2759/5313 (51.9%)                         2768/5313 (52.1%)                         2773/5313 (52.2%)                         2776/5313 (52.2%)                         2779/5313 (52.3%)                         2798/5313 (52.7%)                         2812/5313 (52.9%)                         2841/5313 (53.5%)                         2893/5313 (54.5%)                         2900/5313 (54.6%)                         2920/5313 (55.0%)                         2929/5313 (55.1%)                         2958/5313 (55.7%)
-
-Failure in test lib/canonical/launchpad/pagetests/milestone/xx-object-milestones.txt
-Failed doctest test for xx-object-milestones.txt
-  File "lib/canonical/launchpad/pagetests/milestone/xx-object-milestones.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/milestone/xx-object-milestones.txt", line 132, in xx-object-milestones.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-object-milestones.txt[32]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/milestone/xx-object-milestones.txt", line 147, in xx-object-milestones.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-object-milestones.txt[34]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-
-    2964/5313 (55.8%)
-
-Failure in test lib/canonical/launchpad/pagetests/navigation-links/pofile.txt
-Failed doctest test for pofile.txt
-  File "lib/canonical/launchpad/pagetests/navigation-links/pofile.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/navigation-links/pofile.txt", line 16, in pofile.txt
-Failed example:
-    print_tab_links(browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest pofile.txt[2]>", line 1, in ?
-        print_tab_links(browser.contents)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 414, in print_tab_links
-        tabs = chooser.findAll('li')
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/navigation-links/pofile.txt", line 42, in pofile.txt
-Failed example:
-    print_tab_links(browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest pofile.txt[6]>", line 1, in ?
-        print_tab_links(browser.contents)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 414, in print_tab_links
-        tabs = chooser.findAll('li')
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-
-    2972/5313 (55.9%)
-
-Failure in test lib/canonical/launchpad/pagetests/navigation-links/pomsgset.txt
-Failed doctest test for pomsgset.txt
-  File "lib/canonical/launchpad/pagetests/navigation-links/pomsgset.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/navigation-links/pomsgset.txt", line 18, in pomsgset.txt
-Failed example:
-    print_tab_links(browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest pomsgset.txt[2]>", line 1, in ?
-        print_tab_links(browser.contents)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 414, in print_tab_links
-        tabs = chooser.findAll('li')
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/navigation-links/pomsgset.txt", line 49, in pomsgset.txt
-Failed example:
-    for tag in find_tags_by_class(browser.contents, 'tab-overview'):
-        print tag
-Differences (ndiff with -expected +actual):
-    - <...
-    - ...http://launchpad.dev/ubuntu/hoary/+source/evolution"...
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/navigation-links/pomsgset.txt", line 53, in pomsgset.txt
-Failed example:
-    for tag in find_tags_by_class(browser.contents, 'tab-branches'):
-        print tag
-Differences (ndiff with -expected +actual):
-    - <...
-    - ...unavailable tab-branches...
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/navigation-links/pomsgset.txt", line 57, in pomsgset.txt
-Failed example:
-    for tag in find_tags_by_class(browser.contents, 'tab-bugs'):
-        print tag
-Differences (ndiff with -expected +actual):
-    - <...
-    - ...http://bugs.launchpad.dev/ubuntu/hoary/+source/evolution"...
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/navigation-links/pomsgset.txt", line 61, in pomsgset.txt
-Failed example:
-    for tag in find_tags_by_class(browser.contents, 'tab-specifications'):
-        print tag
-Differences (ndiff with -expected +actual):
-    - <...
-    - ...unavailable tab-specifications...
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/navigation-links/pomsgset.txt", line 67, in pomsgset.txt
-Failed example:
-    for tag in find_tags_by_class(browser.contents, 'tab-answers'):
-        print tag
-Differences (ndiff with -expected +actual):
-    - <...
-    - ...http://answers.launchpad.dev/ubuntu/hoary/+source/evolution"...
-
-    2978/5313 (56.1%)
-
-Failure in test lib/canonical/launchpad/pagetests/navigation-links/potemplate.txt
-Failed doctest test for potemplate.txt
-  File "lib/canonical/launchpad/pagetests/navigation-links/potemplate.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/navigation-links/potemplate.txt", line 14, in potemplate.txt
-Failed example:
-    print_tab_links(browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest potemplate.txt[2]>", line 1, in ?
-        print_tab_links(browser.contents)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 414, in print_tab_links
-        tabs = chooser.findAll('li')
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/navigation-links/potemplate.txt", line 42, in potemplate.txt
-Failed example:
-    print_tab_links(browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest potemplate.txt[6]>", line 1, in ?
-        print_tab_links(browser.contents)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 414, in print_tab_links
-        tabs = chooser.findAll('li')
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-
-    2982/5313 (56.1%)                         2987/5313 (56.2%)                         2991/5313 (56.3%)                         2996/5313 (56.4%)                         3018/5313 (56.8%)                         3020/5313 (56.8%)                         3032/5313 (57.1%)                         3034/5313 (57.1%)                         3035/5313 (57.1%)                         3038/5313 (57.2%)                         3049/5313 (57.4%)                         3052/5313 (57.4%)                         3060/5313 (57.6%)                         3071/5313 (57.8%)
-
-Failure in test lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt
-Failed doctest test for xx-package-pages-navigation.txt
-  File "lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt", line 21, in xx-package-pages-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-package-pages-navigation.txt[1]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt", line 33, in xx-package-pages-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-package-pages-navigation.txt[3]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt", line 54, in xx-package-pages-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-package-pages-navigation.txt[5]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt", line 76, in xx-package-pages-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-package-pages-navigation.txt[7]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt", line 95, in xx-package-pages-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-package-pages-navigation.txt[9]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt", line 111, in xx-package-pages-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-package-pages-navigation.txt[11]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt", line 133, in xx-package-pages-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-package-pages-navigation.txt[13]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt", line 152, in xx-package-pages-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-package-pages-navigation.txt[15]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt", line 171, in xx-package-pages-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-package-pages-navigation.txt[17]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/packaging/xx-package-pages-navigation.txt", line 201, in xx-package-pages-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-package-pages-navigation.txt[21]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-
-    3074/5313 (57.9%)                         3077/5313 (57.9%)                         3078/5313 (57.9%)                         3086/5313 (58.1%)                         3093/5313 (58.2%)                         3099/5313 (58.3%)                         3100/5313 (58.3%)                         3169/5313 (59.6%)                         3197/5313 (60.2%)                         3211/5313 (60.4%)                         3223/5313 (60.7%)
-
-Failure in test lib/canonical/launchpad/pagetests/ppa/xx-ppa-navigation.txt
-Failed doctest test for xx-ppa-navigation.txt
-  File "lib/canonical/launchpad/pagetests/ppa/xx-ppa-navigation.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/ppa/xx-ppa-navigation.txt", line 16, in xx-ppa-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-ppa-navigation.txt[4]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/ppa/xx-ppa-navigation.txt", line 50, in xx-ppa-navigation.txt
-Failed example:
-    print_navigation(anon_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-ppa-navigation.txt[13]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-
-    3260/5313 (61.4%)                         3268/5313 (61.5%)                         3280/5313 (61.7%)                         3335/5313 (62.8%)                         3357/5313 (63.2%)                         3360/5313 (63.2%)                         3380/5313 (63.6%)                         3421/5313 (64.4%)                         3438/5313 (64.7%)                         3452/5313 (65.0%)                         3454/5313 (65.0%)                         3458/5313 (65.1%)                         3460/5313 (65.1%)                         3467/5313 (65.3%)                         3475/5313 (65.4%)                         3486/5313 (65.6%)                         3487/5313 (65.6%)                         3497/5313 (65.8%)                         3498/5313 (65.8%)                         3509/5313 (66.0%)                         3512/5313 (66.1%)                         3517/5313 (66.2%)                         3518/5313 (66.2%)                         3519/5313 (66.2%)                         3528/5313 (66.4%)                         3532/5313 (66.5%)                         3537/5313 (66.6%)                         3540/5313 (66.6%)                         3545/5313 (66.7%)                         3557/5313 (66.9%)                         3559/5313 (67.0%)                         3573/5313 (67.3%)                         3575/5313 (67.3%)                         3588/5313 (67.5%)                         3592/5313 (67.6%)                         3595/5313 (67.7%)                         3605/5313 (67.9%)                         3623/5313 (68.2%)                         3628/5313 (68.3%)                         3635/5313 (68.4%)                         3640/5313 (68.5%)                         3644/5313 (68.6%)                         3668/5313 (69.0%)                         3672/5313 (69.1%)                         3688/5313 (69.4%)                         3692/5313 (69.5%)                         3700/5313 (69.6%)                         3705/5313 (69.7%)                         3715/5313 (69.9%)                         3763/5313 (70.8%)                         3774/5313 (71.0%)                         3779/5313 (71.1%)                         3788/5313 (71.3%)                         3805/5313 (71.6%)                         3807/5313 (71.7%)                         3819/5313 (71.9%)                         3824/5313 (72.0%)                         3831/5313 (72.1%)                         3837/5313 (72.2%)                         3845/5313 (72.4%)                         3847/5313 (72.4%)                         3850/5313 (72.5%)                         3862/5313 (72.7%)                         3865/5313 (72.7%)                         3874/5313 (72.9%)                         3883/5313 (73.1%)                         3905/5313 (73.5%)                         3918/5313 (73.7%)                         3940/5313 (74.2%)                         3946/5313 (74.3%)                         3953/5313 (74.4%)                         3971/5313 (74.7%)                         3983/5313 (75.0%)                         4003/5313 (75.3%)                         4009/5313 (75.5%)                         4019/5313 (75.6%)                         4032/5313 (75.9%)                         4034/5313 (75.9%)                         4035/5313 (75.9%)                         4036/5313 (76.0%)                         4039/5313 (76.0%)                         4040/5313 (76.0%)                         4048/5313 (76.2%)                         4052/5313 (76.3%)                         4069/5313 (76.6%)                         4081/5313 (76.8%)                         4116/5313 (77.5%)                         4117/5313 (77.5%)                         4137/5313 (77.9%)                         4144/5313 (78.0%)                         4171/5313 (78.5%)                         4175/5313 (78.6%)                         4197/5313 (79.0%)                         4217/5313 (79.4%)                         4230/5313 (79.6%)                         4252/5313 (80.0%)                         4256/5313 (80.1%)                         4283/5313 (80.6%)                         4294/5313 (80.8%)                         4334/5313 (81.6%)                         4335/5313 (81.6%)                         4343/5313 (81.7%)                         4345/5313 (81.8%)                         4346/5313 (81.8%)                         4348/5313 (81.8%)                         4350/5313 (81.9%)                         4366/5313 (82.2%)                         4367/5313 (82.2%)                         4372/5313 (82.3%)                         4377/5313 (82.4%)                         4381/5313 (82.5%)                         4419/5313 (83.2%)                         4424/5313 (83.3%)                         4427/5313 (83.3%)                         4429/5313 (83.4%)                         4438/5313 (83.5%)                         4445/5313 (83.7%)                         4448/5313 (83.7%)                         4463/5313 (84.0%)                         4467/5313 (84.1%)                         4483/5313 (84.4%)
-
-Failure in test lib/canonical/launchpad/pagetests/standalone/xx-beta-testers-redirection.txt
-Failed doctest test for xx-beta-testers-redirection.txt
-  File "lib/canonical/launchpad/pagetests/standalone/xx-beta-testers-redirection.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/standalone/xx-beta-testers-redirection.txt", line 162, in xx-beta-testers-redirection.txt
-Failed example:
-    browser.getLink('Log In / Register').click()
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-beta-testers-redirection.txt[34]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 286, in getLink
-        return Link(self.mech_browser.find_link(**args), self)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/mechanize/_mechanize.py", line 557, in find_link
-        return self._find_links(True, **kwds)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/mechanize/_mechanize.py", line 627, in _find_links
-        raise LinkNotFoundError()
-    LinkNotFoundError
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/standalone/xx-beta-testers-redirection.txt", line 163, in xx-beta-testers-redirection.txt
-Failed example:
-    print browser.url
-Differences (ndiff with -expected +actual):
-    - http://launchpad.dev/ubuntu/+login
-    ?                            -------
-    + http://launchpad.dev/ubuntu
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/standalone/xx-beta-testers-redirection.txt", line 165, in xx-beta-testers-redirection.txt
-Failed example:
-    browser.getControl('E-mail address',
-                       index=0).value = 'beta-admin@launchpad.net'
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-beta-testers-redirection.txt[36]>", line 2, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'E-mail address'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/standalone/xx-beta-testers-redirection.txt", line 167, in xx-beta-testers-redirection.txt
-Failed example:
-    browser.getControl('Password').value = 'test'
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-beta-testers-redirection.txt[37]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Password'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/standalone/xx-beta-testers-redirection.txt", line 168, in xx-beta-testers-redirection.txt
-Failed example:
-    check(browser.getControl('Log In').click)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest xx-beta-testers-redirection.txt[38]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 323, in getControl
-        control, form = disambiguate(intermediate, msg, index)
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testbrowser/browser.py", line 52, in disambiguate
-        raise LookupError(msg)
-    LookupError: label 'Log In'
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/standalone/xx-beta-testers-redirection.txt", line 174, in xx-beta-testers-redirection.txt
-Failed example:
-    check(browser.open, 'http://launchpad.dev/ubuntu')
-Differences (ndiff with -expected +actual):
-    - HTTP Error 303: See Other
-    - Location: http://beta.launchpad.dev/ubuntu
-
-    4484/5313 (84.4%)                         4486/5313 (84.4%)
-
-Failure in test lib/canonical/launchpad/pagetests/standalone/xx-cookie-authentication.txt
-Failed doctest test for xx-cookie-authentication.txt
-  File "lib/canonical/launchpad/pagetests/standalone/xx-cookie-authentication.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/standalone/xx-cookie-authentication.txt", line 8, in xx-cookie-authentication.txt
-Failed example:
-    'Logged in as' in browser.contents
-Differences (ndiff with -expected +actual):
-    - True
-    + False
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/standalone/xx-cookie-authentication.txt", line 19, in xx-cookie-authentication.txt
-Failed example:
-    'Logged in as' in browser.contents
-Differences (ndiff with -expected +actual):
-    - True
-    + False
-
-    4487/5313 (84.5%)                         4489/5313 (84.5%)                         4499/5313 (84.7%)                         4501/5313 (84.7%)                         4502/5313 (84.7%)                         4507/5313 (84.8%)                         4512/5313 (84.9%)                         4516/5313 (85.0%)
-
-Failure in test lib/canonical/launchpad/pagetests/standalone/xx-invalid-people-cant-login.txt
-Failed doctest test for xx-invalid-people-cant-login.txt
-  File "lib/canonical/launchpad/pagetests/standalone/xx-invalid-people-cant-login.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/standalone/xx-invalid-people-cant-login.txt", line 15, in xx-invalid-people-cant-login.txt
-Failed example:
-    'Logged in as' in browser.contents
-Differences (ndiff with -expected +actual):
-    - True
-    + False
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/standalone/xx-invalid-people-cant-login.txt", line 44, in xx-invalid-people-cant-login.txt
-Failed example:
-    'Logged in as' in browser.contents
-Differences (ndiff with -expected +actual):
-    - True
-    + False
-
-    4518/5313 (85.0%)                         4521/5313 (85.1%)                         4538/5313 (85.4%)                         4539/5313 (85.4%)                         4549/5313 (85.6%)                         4551/5313 (85.7%)                         4557/5313 (85.8%)                         4563/5313 (85.9%)                         4567/5313 (86.0%)                         4575/5313 (86.1%)                         4580/5313 (86.2%)                         4583/5313 (86.3%)                         4592/5313 (86.4%)                         4593/5313 (86.4%)                         4597/5313 (86.5%)                         4599/5313 (86.6%)                         4605/5313 (86.7%)                         4616/5313 (86.9%)                         4617/5313 (86.9%)                         4625/5313 (87.1%)                         4629/5313 (87.1%)                         4632/5313 (87.2%)                         4634/5313 (87.2%)                         4636/5313 (87.3%)                         4637/5313 (87.3%)                         4642/5313 (87.4%)                         4647/5313 (87.5%)                         4656/5313 (87.6%)                         4660/5313 (87.7%)                         4663/5313 (87.8%)                         4666/5313 (87.8%)                         4668/5313 (87.9%)                         4669/5313 (87.9%)                         4670/5313 (87.9%)                         4672/5313 (87.9%)                         4678/5313 (88.0%)                         4690/5313 (88.3%)                         4691/5313 (88.3%)                         4705/5313 (88.6%)                         4708/5313 (88.6%)                         4714/5313 (88.7%)                         4725/5313 (88.9%)
-
-Failure in test lib/canonical/launchpad/pagetests/team-polls/00-createpolls.txt
-Failed doctest test for 00-createpolls.txt
-  File "lib/canonical/launchpad/pagetests/team-polls/00-createpolls.txt", line 0
-
-----------------------------------------------------------------------
-File "lib/canonical/launchpad/pagetests/team-polls/00-createpolls.txt", line 121, in 00-createpolls.txt
-Failed example:
-    print_navigation(team_admin_browser.contents)
-Exception raised:
-    Traceback (most recent call last):
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/zope/testing/doctest.py", line 1260, in __run
-        compileflags, 1) in test.globs
-      File "<doctest 00-createpolls.txt[45]>", line 1, in ?
-      File "/home/mpt/hacking/lpsrc/2008-2.0-7-hierarchy/lib/canonical/launchpad/testing/pages.py", line 536, in print_navigation
-        for tab in doc.find(id='applicationchooser').findAll('li'):
-    AttributeError: 'NoneType' object has no attribute 'findAll'
-
-    4732/5313 (89.1%)                         4737/5313 (89.2%)                         4754/5313 (89.5%)                         4758/5313 (89.6%)                         4768/5313 (89.7%)                         4772/5313 (89.8%)                         4799/5313 (90.3%)                         4801/5313 (90.4%)                         4807/5313 (90.5%)                         4812/5313 (90.6%)                         4823/5313 (90.8%)                         4831/5313 (90.9%)                         4835/5313 (91.0%)                         4836/5313 (91.0%)                         4849/5313 (91.3%)                         4856/5313 (91.4%)                         4861/5313 (91.5%)                         4866/5313 (91.6%)                         4870/5313 (91.7%)                         4871/5313 (91.7%)                         4875/5313 (91.8%)                         4886/5313 (92.0%)                         4895/5313 (92.1%)                         4897/5313 (92.2%)                         4903/5313 (92.3%)                         4910/5313 (92.4%)                         4916/5313 (92.5%)                         4922/5313 (92.6%)                         4927/5313 (92.7%)                         4936/5313 (92.9%)                         4937/5313 (92.9%)                         4938/5313 (92.9%)                         4939/5313 (93.0%)                         4941/5313 (93.0%)                         4942/5313 (93.0%)                         4945/5313 (93.1%)                         4946/5313 (93.1%)                         4956/5313 (93.3%)                         4970/5313 (93.5%)                         4987/5313 (93.9%)                         5024/5313 (94.6%)                         5033/5313 (94.7%)                         5039/5313 (94.8%)                         5073/5313 (95.5%)                         5077/5313 (95.6%)                         5079/5313 (95.6%)                         5089/5313 (95.8%)                         5155/5313 (97.0%)                         5161/5313 (97.1%)                         5172/5313 (97.3%)                         5175/5313 (97.4%)                         5183/5313 (97.6%)                         5191/5313 (97.7%)                         5200/5313 (97.9%)                         5212/5313 (98.1%)                         5222/5313 (98.3%)                         5228/5313 (98.4%)                         5234/5313 (98.5%)                         5240/5313 (98.6%)                         5251/5313 (98.8%)                         5254/5313 (98.9%)                         5262/5313 (99.0%)                         5270/5313 (99.2%)                         5279/5313 (99.4%)                         5291/5313 (99.6%)                         5301/5313 (99.8%)                         5307/5313 (99.9%)                         5313/5313 (100.0%)                      
-  Ran 5313 tests with 17 failures and 0 errors in 7006.800 seconds.
-Tearing down left over layers:
-  Tear down canonical.testing.layers.PageTestLayer in 0.000 seconds.
-  Tear down canonical.testing.layers.LaunchpadFunctionalLayer in 0.000 seconds.
-  Tear down canonical.testing.layers.LaunchpadLayer in 0.000 seconds.
-  Tear down canonical.testing.layers.LibrarianLayer in 10.285 seconds.
-  Tear down canonical.testing.layers.GoogleServiceLayer in 2.941 seconds.
-  Tear down canonical.testing.layers.FunctionalLayer ... not supported
-  Tear down canonical.testing.layers.DatabaseLayer in 0.199 seconds.
-  Tear down canonical.testing.layers.BaseLayer in 0.000 seconds.

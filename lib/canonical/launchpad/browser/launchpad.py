@@ -259,7 +259,8 @@ class Hierarchy(LaunchpadView):
             L.append(
                 '<span class="%s item">'
                 '<a href="/" class="breadcrumb container" id="homebreadcrumb">'
-                '<img alt="" src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
+                '<img alt="Launchpad"'
+                ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
                 '</a>&nbsp;</span>' % first_class)
 
             last_element = elements[-1]
@@ -285,9 +286,10 @@ class Hierarchy(LaunchpadView):
                             cgi.escape(element.text)))
             hierarchy = prefix + '<small> &gt; </small>'.join(L) + suffix
         else: # We're on the home page
-            hierarchy = '<div id="lp-hierarchy-home">' \
+            hierarchy = '<div id="lp-hierarchy" class="home">' \
                         '<a href="/" class="breadcrumb">' \
-                        '<img alt="" src="/@@/launchpad-logo-and-name-hierarchy.png"/>' \
+                        '<img alt="Launchpad" ' \
+                        ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>' \
                         '</a></div>' \
                         '<span class="last-rounded">&nbsp;</span>' \
                         '<div class="apps-separator"><!-- --></div>'

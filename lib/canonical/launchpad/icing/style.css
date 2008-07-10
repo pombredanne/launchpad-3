@@ -592,7 +592,7 @@ ul#menuroot li.selected a.breadcrumb {
 /* === Location hierarchy === */
 /*
   The location bar begins with a series of interlocking segments, showing
-  your location in the hierarchy of people and projects.
+  your location in the hierarchy of people and projects:
 */
 #lp-hierarchy {
   background: #eee url(navigation-hierarchy-bg) repeat-x;
@@ -600,53 +600,37 @@ ul#menuroot li.selected a.breadcrumb {
   min-height: 25px;
   float: left;
 }
+/* The segments have '>' separators for the benefit of those without CSS: */
+#lp-hierarchy small {display: none;}
+/* The last segment is darker (on the front page, this is the only item): */
+#lp-hierarchy.home {background: #ddd;}
+/* The first segment has a rounded top left corner: */
 #lp-hierarchy:before {
   vertical-align: top;
   float: left;
   content: url(navigation-hierarchy-nw);
 }
-#lp-hierarchy-home {
-  background: #ddd;
-  min-height: 25px;
-  float: left;
-}
-#lp-hierarchy-home:before {
-  vertical-align: top;
-  float: left;
-  content: url(navigation-hierarchy-nw-home);
-}
-#lp-hierarchy-home a {
-  padding: 4px 22px 0 8px;
-  display: inline-block;
-}
+#lp-hierarchy.home:before {content: url(navigation-hierarchy-nw-home);}
+/* Each segment appears as a clickable button: */
+#lp-hierarchy a {color: #000; display: inline-block; padding: 4px 22px 0 8px;}
+/* The segments have chevrons to convey their parent-child relationship: */
 #lp-hierarchy .item {
   background: url(navigation-hierarchy-chevron-normal) no-repeat right;
   display: inline-block;
   min-height: 25px;
   vertical-align: middle;
 }
-#lp-hierarchy a {
-  color: #000;
-  display: inline-block;
-  padding: 4px 22px 0 8px;
-}
+/* The penultimate segment leads into the dark color of the last segment: */
 #lp-hierarchy .before-last {
   background-image: url(navigation-hierarchy-chevron-selected);
 }
-#lp-hierarchy .last {
-  background: #ddd;
-}
-#lp-hierarchy .last a {
-  font-weight: bold;
-  padding-right: 4px;
-}
+#lp-hierarchy .last a {font-weight: bold; padding-right: 4px;}
+/* The last segment is dark, and has a rounded top right corner: */
+#lp-hierarchy .last {background: #ddd;}
 .last-rounded {
   background: #ddd url(navigation-hierarchy-ne) no-repeat top right;
   min-height: 25px;
   display: inline-block;
-}
-#lp-hierarchy small {
-  display: none;
 }
 
 /* === Location spine === */
