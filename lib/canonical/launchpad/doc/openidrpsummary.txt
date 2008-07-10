@@ -185,7 +185,26 @@ root, a new OpenIDRPSummary is created.
       identifier: http://openid.launchpad.dev/+id/name12_oid
       trust_root: http://ubuntu-live.org
 
-A OpenIDRPSummary object cannot be created or updated id the account
+Launchpad does not record itself. The OpenIDSummarySet is needed to
+record what relying parties know about Launchpad users. This information
+is permanent, meaning that the relying parties cannot change the data.
+Launchpad, because it can change its data, it is not permanent, thus
+should not be recorded.
+
+    >>> print rp_summary_set.record(sample_person, 'http://launchpad.dev')
+    None
+
+This rules also applies to Launchpad vhosts.
+
+    >>> print rp_summary_set.record(
+    ...     sample_person, 'http://edge.launchpad.dev')
+    None
+
+    >>> print rp_summary_set.record(
+    ...     sample_person, 'http://bugs.edge.launchpad.dev')
+    None
+
+A OpenIDRPSummary object cannot be created or updated if the account
 is not ACTIVE, even if the account already has a summary for the
 trust_root.
 
@@ -198,7 +217,7 @@ trust_root.
 
     >>> former_user = former_summaries[0].account
     >>> former_user.status
-    <DBItem AccountStatus.SUSPENDED, ...>
+    <DBItem AccountStatus.DEACTIVATED, ...>
 
     >>> rp_summary_set.record(
     ...     former_user, 'https://shop.canonical.com')
@@ -226,4 +245,3 @@ database does not have a constraint to guard against this.
      ...
     AssertionError: More than 1 account has the OpenID identifier of
                     http://openid.launchpad.dev/+id/knightsOfNi.
-
