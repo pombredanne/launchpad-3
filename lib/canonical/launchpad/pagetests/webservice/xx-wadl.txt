@@ -547,14 +547,15 @@ The <method> tag for a named operation will contain one or more
 'newTeam' custom operation takes a number of parameters.
 
     >>> new_team_request, new_team_response = newTeam
-    >>> [param.attrib['name'] for param in new_team_request]
+    >>> new_team_representation = single_list_value(new_team_request)
+    >>> [param.attrib['name'] for param in new_team_representation]
     ['ws.op', 'display_name', 'name', 'default_membership_period',
      'team_description', 'default_renewal_period', 'subscription_policy']
 
 The 'ws.op' parameter is present for every named operation, and has a
 fixed value: the name of the operation.
 
-    >>> ws_op = single_list_value(new_team_request)
+    >>> ws_op = single_list_value(new_team_representation)
     >>> ws_op.attrib['fixed']
     'newTeam'
 
@@ -820,16 +821,27 @@ link to them instead of describing them every time.
 
 === Custom operations ===
 
-Custom operations define parameters, just like representations do.
+Custom operations activated with GET may have URL parameters.
 
-    >>> post_params = transitionToStatus[0]
-    >>> [param.attrib['name'] for param in post_params]
+    >>> get_request = single_list_value(findPerson)
+    >>> [param.attrib['name'] for param in get_request]
+    ['ws.op', 'text']
+
+Custom operations activated with POST may have a form-encoded
+representation.
+
+    >>> post_request = single_list_value(transitionToStatus)
+    >>> post_representation = single_list_value(post_request)
+    >>> post_representation.attrib['mediaType']
+    'application/x-www-form-urlencoded'
+    >>> [param.attrib['name'] for param in post_representation]
     ['ws.op', 'status']
 
-The 'ws.op' parameter is present for all custom operations. It's always
+The 'ws.op' parameter is present for all custom operations, either as
+a URL parameter or as part of the representation. It's always
 required, and fixed to a particular value.
 
-    >>> ws_op, status = post_params
+    >>> ws_op, status = post_representation
     >>> ws_op.attrib['required']
     'true'
     >>> ws_op.attrib['fixed']

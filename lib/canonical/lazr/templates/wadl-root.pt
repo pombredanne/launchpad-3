@@ -72,23 +72,26 @@
           Human-readable documentation for the method.
         </wadl:doc>
         <request>
-          <param style="query" name="ws.op" required="true"
-                 tal:attributes="fixed operation/name">
-            <doc>The name of the operation being invoked.</doc>
-          </param>
-          <param style="query" tal:repeat="field operation/op/params"
-                 tal:attributes="name field/__name__;
-                                 required field/wadl:required">
-            <wadl:doc tal:content="field/wadl:doc"
-                 tal:condition="field/wadl:doc"
-                 xmlns="http://www.w3.org/1999/xhtml/">
-              Field title: field description
-            </wadl:doc>
-            <link tal:condition="field/wadl:is_represented_as_link"
-                  tal:attributes="resource_type field/wadl:type_link" />
-            <option tal:repeat="option field/wadl:options"
-                    tal:attributes="value option/title" />
-          </param>
+          <representation mediaType="application/x-www-form-urlencoded"
+                          tal:omit-tag="operation/op/wadl_operation:is_get">
+            <param style="query" name="ws.op" required="true"
+                   tal:attributes="fixed operation/name">
+              <doc>The name of the operation being invoked.</doc>
+            </param>
+            <param style="query" tal:repeat="field operation/op/params"
+                   tal:attributes="name field/__name__;
+                                   required field/wadl:required">
+              <wadl:doc tal:content="field/wadl:doc"
+                        tal:condition="field/wadl:doc"
+                        xmlns="http://www.w3.org/1999/xhtml/">
+                Field title: field description
+              </wadl:doc>
+              <link tal:condition="field/wadl:is_represented_as_link"
+                    tal:attributes="resource_type field/wadl:type_link" />
+              <option tal:repeat="option field/wadl:options"
+                      tal:attributes="value option/title" />
+            </param>
+          </representation>
         </request>
         <response
            tal:condition="operation/op/wadl_operation:has_return_type">
@@ -155,21 +158,24 @@
              xmlns="http://www.w3.org/1999/xhtml/">
         </wadl:doc>
         <request>
-          <param style="query" name="ws.op" required="true"
-                 tal:attributes="fixed operation/name" />
-          <param style="query" tal:repeat="field operation/op/params"
-                 tal:attributes="name field/__name__;
-                                 required field/wadl:required">
-            <wadl:doc tal:content="field/wadl:doc"
-                 tal:condition="field/wadl:doc"
-                 xmlns="http://www.w3.org/1999/xhtml/">
-              Field title: field description
-            </wadl:doc>
-            <link tal:condition="field/wadl:is_represented_as_link"
-                  tal:attributes="resource_type field/wadl:type_link" />
-            <option tal:repeat="option field/wadl:options"
-                    tal:attributes="value option/title" />
-          </param>
+          <representation mediaType="application/x-www-form-urlencoded"
+                          tal:omit-tag="operation/op/wadl_operation:is_get">
+            <param style="query" name="ws.op" required="true"
+                   tal:attributes="fixed operation/name" />
+            <param style="query" tal:repeat="field operation/op/params"
+                   tal:attributes="name field/__name__;
+                                   required field/wadl:required">
+              <wadl:doc tal:content="field/wadl:doc"
+                        tal:condition="field/wadl:doc"
+                        xmlns="http://www.w3.org/1999/xhtml/">
+                Field title: field description
+              </wadl:doc>
+              <link tal:condition="field/wadl:is_represented_as_link"
+                    tal:attributes="resource_type field/wadl:type_link" />
+              <option tal:repeat="option field/wadl:options"
+                      tal:attributes="value option/title" />
+            </param>
+          </representation>
         </request>
         <response
            tal:condition="operation/op/wadl_operation:has_return_type">
