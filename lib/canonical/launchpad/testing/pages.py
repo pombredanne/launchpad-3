@@ -518,12 +518,10 @@ def print_location(contents):
     """Print the hierarchy, application tabs, and main heading of the page."""
     doc = find_tag_by_id(contents, 'document')
     hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(recursive=False)
-    hierarchy_string = 'Location: '
-    for segment in hierarchy:
-        if not segment.small:
-            hierarchy_string += ' > %s' % (
-                extract_text(segment).encode('us-ascii', 'replace'))
-    print hierarchy_string
+    segments = [extract_text(step).encode('us-ascii', 'replace')
+                for step in hierarchy
+                if not step.name == 'small']
+    print 'Location:', ' > '.join(segments[1:])
     print 'Tabs:'
     print_location_apps(contents)
     main_heading = doc.h1
