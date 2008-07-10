@@ -4,7 +4,7 @@
 # uncommitted changes, also check which ones have revisions that have not yet
 # landed on trunk.
 
-source "~/.rocketfuel-env.sh"
+source "$HOME/.rocketfuel-env.sh"
 
 cd $LP_PROJECT_PATH
 for branch in *; do

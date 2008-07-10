@@ -3,7 +3,7 @@
 # Create a new branch of LP called "foo" in $LP_PROJECT_PATH/foo, with all the
 # source dependencies properly linked in.
 
-source "~/.rocketfuel-env.sh"
+source "$HOME/.rocketfuel-env.sh"
 
 if [ "x$1" == "x" ]; then
     echo "Usage: $0 new-branch-name"

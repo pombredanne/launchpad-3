@@ -4,7 +4,7 @@
 # sure all source dependencies are properly linked in to all the branches you
 # are working on.
 
-source "~/.rocketfuel-env.sh"
+source "$HOME/.rocketfuel-env.sh"
 
 DEVPAD="devpad.canonical.com"
 ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"

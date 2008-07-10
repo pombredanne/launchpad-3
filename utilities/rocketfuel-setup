@@ -4,7 +4,7 @@
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
 
-if [ ! -e "~/.rocketfuel-env.sh" ]; then
+if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
   echo "# Common environment variables for the rocketfuel-* scripts.
 #
 # The ones you can set are:
@@ -33,10 +33,10 @@ LP_SOURCEDEPS_PATH=\$LP_PROJECT_ROOT/\$LP_SOURCEDEPS_DIR/sourcecode
 
 # Force tilde expansion
 LP_SOURCEDEPS_PATH=\$(eval echo \${LP_SOURCEDEPS_PATH})
-" > "~/.rocketfuel-env.sh"
+" > "$HOME/.rocketfuel-env.sh"
 fi
 
-source "~/.rocketfuel-env.sh"
+source "$HOME/.rocketfuel-env.sh"
 
 # load up Ubuntu release details so we know which repos to enable
 source /etc/lsb-release
@@ -325,8 +325,8 @@ if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
 fi
 
 # Setup environment variables in a ~ dot file
-cd ~
-if [ ! -e ~/.rocketfuel-env.sh ]; then
+cd $HOME
+if [ ! -e $HOME/.rocketfuel-env.sh ]; then
   ln -s $LP_TRUNK_PATH/utilities/rocketfuel-env.sh .rocketfuel-env.sh
 fi
 
