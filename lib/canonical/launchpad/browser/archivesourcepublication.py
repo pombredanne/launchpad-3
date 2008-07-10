@@ -49,13 +49,17 @@ class ArchiveSourcePublication:
 
 
 class ArchiveSourcePublications:
-    """`ArchiveSourcePublication` generator."""
+    """`ArchiveSourcePublication` iterator."""
 
     def __init__(self, source_publications):
         """Receives the list of target `SourcePackagePublishingHistory`."""
         self._source_publications = source_publications
         self._source_publications_ids = [
             pub.id for pub in self._source_publications]
+
+    @property
+    def _has_sources(self):
+        return len(self._source_publications) > 0
 
     def getBuildsBySource(self):
         """Builds for all source publications."""
@@ -86,11 +90,19 @@ class ArchiveSourcePublications:
         for source, binary_pub in binary_set:
             binaries = result.setdefault(source, [])
             binaries.append(binary_pub)
-
         return result
 
+    def __nonzero__(self):
+        """Allow callsites to check for empty sets before iterations."""
+        return self._has_sources
+
     def __iter__(self):
-        """`ArchiveSourcePublication` generator."""
+        """`ArchiveSourcePublication` iterator"""
+        results = []
+
+        if not self._has_sources:
+            return iter(results)
+
         builds_by_source = self.getBuildsBySource()
         files_by_source = self.getFilesBySource()
         binaries_by_source = self.getBinariesBySource()
@@ -99,11 +111,10 @@ class ArchiveSourcePublications:
             builds = builds_by_source.get(pub, [])
             files = files_by_source.get(pub, [])
             binaries = binaries_by_source.get(pub, [])
-
             complete_pub = ArchiveSourcePublication(
                 pub, sourceandbinarylibraryfiles=files,
                 publishedbinaries=binaries, builds=builds)
+            results.append(complete_pub)
 
-            yield complete_pub
-
+        return iter(results)
 
