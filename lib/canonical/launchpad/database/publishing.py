@@ -619,9 +619,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IPublishing`."""
         publishing_set = getUtility(IPublishingSet)
         source_publication_ids = [self.id]
-        source_and_files = publishing_set.getFilesForSources(
+        result_set = publishing_set.getFilesForSources(
             source_publication_ids)
-        libraryfiles = [file for source, file in source_and_files]
+        libraryfiles = [file for source, file, content in result_set]
 
         return sorted(libraryfiles, key=operator.attrgetter('filename'))
 
@@ -955,9 +955,6 @@ class PublishingSet:
 
     def getBuildsForSources(self, source_publication_ids):
         """See `PublishingSet`."""
-        if len(source_publication_ids) == 0:
-            return []
-
         from canonical.launchpad.database.build import Build
         from canonical.launchpad.database.distroarchseries import (
             DistroArchSeries)
@@ -973,16 +970,10 @@ class PublishingSet:
                 Build.sourcepackagereleaseID,
             In(SourcePackagePublishingHistory.id, source_publication_ids))
 
-        results = [
-            (source, build) for source, build, arch in result_set]
-
-        return results
+        return result_set
 
     def getFilesForSources(self, source_publication_ids):
         """See `IPublishingSet`."""
-        if len(source_publication_ids) == 0:
-            return []
-
         from canonical.launchpad.database.binarypackagerelease import (
             BinaryPackageRelease)
         from canonical.launchpad.database.build import Build
@@ -1017,19 +1008,13 @@ class PublishingSet:
                 SourcePackagePublishingHistory.archiveID,
             In(SourcePackagePublishingHistory.id, source_publication_ids))
 
-        results = [
-            (source, file) for source, file, content in source_result]
-        results.extend(
-            (source, file)
-            for source, file, content in binary_result.config(distinct=True))
+        result_set = source_result.union(
+            binary_result.config(distinct=True))
 
-        return results
+        return result_set
 
     def getBinaryPublicationsForSources(self, source_publication_ids):
         """See `IPublishingSet`."""
-        if len(source_publication_ids) == 0:
-            return []
-
         from canonical.launchpad.database.binarypackagename import (
             BinaryPackageName)
         from canonical.launchpad.database.binarypackagerelease import (
@@ -1039,7 +1024,7 @@ class PublishingSet:
             DistroArchSeries)
 
         store = getUtility(IZStorm).get('main')
-        result = store.find(
+        result_set = store.find(
             (SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
              BinaryPackageRelease, BinaryPackageName, DistroArchSeries),
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -1054,7 +1039,4 @@ class PublishingSet:
                [enum.value for enum in active_publishing_status]),
             In(SourcePackagePublishingHistory.id, source_publication_ids))
 
-        results = [
-            (source, binary)
-            for source, binary, binary_release, name, arch in result]
-        return results
+        return result_set

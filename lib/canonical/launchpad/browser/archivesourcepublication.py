@@ -13,9 +13,6 @@ __all__ = [
     'ArchiveSourcePublications',
     ]
 
-import itertools
-import operator
-
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.publishing import (
@@ -58,55 +55,58 @@ class ArchiveSourcePublications:
             pub.id for pub in self._source_publications]
 
     @property
-    def _has_sources(self):
+    def has_sources(self):
         return len(self._source_publications) > 0
+
+    def groupBySource(self, source_and_value_list):
+        source_and_values = {}
+        for source, value in source_and_value_list:
+            values = source_and_values.setdefault(source, [])
+            values.append(value)
+        return source_and_values
 
     def getBuildsBySource(self):
         """Builds for all source publications."""
         build_set = getUtility(IPublishingSet).getBuildsForSources(
             self._source_publications_ids)
-        result = {}
-        for source, build in build_set:
-            builds = result.setdefault(source, [])
-            builds.append(build)
-        return result
+        source_and_builds = [
+            (source, build) for source, build, arch in build_set]
+        return self.groupBySource(source_and_builds)
 
     def getFilesBySource(self):
         """Source and binary files for all source publications."""
         file_set = getUtility(IPublishingSet).getFilesForSources(
             self._source_publications_ids)
-        result = {}
-        for source, file in file_set:
-            files = result.setdefault(source, [])
-            files.append(file)
-        return result
+        source_and_files = [
+            (source, file) for source, file, content in file_set]
+        return self.groupBySource(source_and_files)
 
     def getBinariesBySource(self):
         """Binary publication for sources."""
         publishing_set = getUtility(IPublishingSet)
         binary_set = publishing_set.getBinaryPublicationsForSources(
             self._source_publications_ids)
-        result = {}
-        for source, binary_pub in binary_set:
-            binaries = result.setdefault(source, [])
-            binaries.append(binary_pub)
-        return result
+        source_and_binaries = [
+            (source, binary)
+            for source, binary, binary_release, name, arch in binary_set]
+        return self.groupBySource(source_and_binaries)
 
     def __nonzero__(self):
         """Allow callsites to check for empty sets before iterations."""
-        return self._has_sources
+        return self.has_sources
 
     def __iter__(self):
         """`ArchiveSourcePublication` iterator"""
         results = []
-
-        if not self._has_sources:
+        if not self.has_sources:
             return iter(results)
 
+        # Load the extra-information for all source publications.
         builds_by_source = self.getBuildsBySource()
         files_by_source = self.getFilesBySource()
         binaries_by_source = self.getBinariesBySource()
 
+        # Build the decorated object with the information we have.
         for pub in self._source_publications:
             builds = builds_by_source.get(pub, [])
             files = files_by_source.get(pub, [])
