@@ -564,9 +564,11 @@ a link back to the superseded proposal.
 
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'superseded-proposal'))
-    This proposal supersedes an earlier proposal.
+    This proposal supersedes a proposal from ...
 
-    >>> sample_browser.getLink('earlier proposal').click()
+    >>> import re
+    >>> sample_browser.getLink(
+    ...     re.compile('proposal from .*')).click()
     >>> print_summary(sample_browser)
     Source branch: ~name12/gnome-terminal/scanned
     Target branch: ~name12/gnome-terminal/main
@@ -581,8 +583,9 @@ new proposal that supersedes it.
 
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'superseded-by'))
-    This proposal has been superseded by a later proposal.
-    >>> sample_browser.getLink('later proposal').click()
+    This proposal has been superseded by a proposal from ...
+    >>> sample_browser.getLink(
+    ...     re.compile('proposal from .*')).click()
 
     >>> print extract_text(find_tag_by_id(
     ...      sample_browser.contents, 'branch-whiteboard-value'))

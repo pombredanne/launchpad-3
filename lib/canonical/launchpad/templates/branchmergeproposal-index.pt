@@ -68,25 +68,6 @@
        Add comment
   </div>
 
-  <tal:votes replace="structure context/@@+votes"/>
-
-  <div tal:define="link context_menu/request_review"
-       tal:condition="link/enabled"
-       tal:content="structure link/render">
-       Request review
-  </div>
-
-  <div tal:define="link context_menu/add_comment"
-       tal:condition="link/enabled"
-       tal:content="structure link/render">
-       Add comment
-  </div>
-
-      <tal:comments repeat="row view/comments" >
-      <div tal:content="structure row/comment/@@+fragment-summary"
-           tal:attributes="style row/style" />
-      </tal:comments>
-
   <div id="source-revisions"
        tal:condition="not: context/queue_status/enumvalue:MERGED">
   <h2>Unmerged revisions</h2>
