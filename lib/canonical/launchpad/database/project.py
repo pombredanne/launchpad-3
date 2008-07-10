@@ -27,6 +27,8 @@ from canonical.launchpad.interfaces import (
     SpecificationImplementationStatus, SpecificationSort,
     SprintSpecificationStatus, TranslationPermission)
 
+from canonical.launchpad.components.launchpadcontainer import (
+    LaunchpadContainerMixin)
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
@@ -54,7 +56,8 @@ from canonical.launchpad.helpers import shortlist
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               MakesAnnouncements, HasSprintsMixin, KarmaContextMixin,
-              BranchVisibilityPolicyMixin, StructuralSubscriptionTargetMixin):
+              BranchVisibilityPolicyMixin, StructuralSubscriptionTargetMixin,
+              LaunchpadContainerMixin):
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
