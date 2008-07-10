@@ -585,6 +585,14 @@ ul#menuroot li.selected a.breadcrumb {
 
 /* === Location hierarchy === */
 /*
+  # XXX 20080710 mpt: Known issues with the hierarchy (bug 247420):
+  - The left border and bevel of the 'Launchpad' segment is missing.
+  - The top border and bevel of the last segment is missing.
+  - The right border and bevel of the last segment is missing.
+  - The border between the last segment and the spine should not be present.
+  - The spine should have a slight top bevel as well as a border.
+*/
+/*
   The location bar begins with a series of interlocking segments, showing
   your location in the hierarchy of people and projects:
 */
