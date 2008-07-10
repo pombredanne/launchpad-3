@@ -81,7 +81,7 @@ now redirected to the relevant tour page.
 
 == +tour compatibility ==
 
-Similarly, each application has a their +tour redirecting to the proper
+Similarly, each application has their +tour redirecting to their proper
 tour page.
 
     >>> browser.open('http://launchpad.dev/+tour')
@@ -111,7 +111,7 @@ tour page.
 
 == +faq compatibility ==
 
-All application had also a +faq link, that link is also redirected to
+Each application also had a +faq link, that link is also redirected to
 the appropriate tour page.
 
     >>> browser.open('http://code.launchpad.dev/+faq')
@@ -137,8 +137,8 @@ the appropriate tour page.
 
 == Links to tour on application main page ==
 
-Each application home page features a 'Learn more...' link and a 'Take a
-tour' button that brings the user to the appropriate tour page.
+Each application home page features a 'Take a tour' button that brings
+the user to the appropriate tour page.
 
 
 === Code ===
