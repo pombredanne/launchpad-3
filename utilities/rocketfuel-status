@@ -4,8 +4,7 @@
 # uncommitted changes, also check which ones have revisions that have not yet
 # landed on trunk.
 
-utilities_dir="$(cd $(dirname $0) && pwd)"
-source "$utilities_dir/rocketfuel-env.sh"
+source "~/.rocketfuel-env.sh"
 
 cd $LP_PROJECT_PATH
 for branch in *; do

@@ -4,8 +4,7 @@
 # sure all source dependencies are properly linked in to all the branches you
 # are working on.
 
-utilities_dir="$(cd $(dirname $0) && pwd)"
-source "$utilities_dir/rocketfuel-env.sh"
+source "~/.rocketfuel-env.sh"
 
 DEVPAD="devpad.canonical.com"
 ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"

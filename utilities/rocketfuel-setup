@@ -4,8 +4,7 @@
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
 
-utilities_dir="$(cd $(dirname $0) && pwd)"
-if [ ! -e "$utilities_dir/rocketfuel-env.sh" ]; then
+if [ ! -e "~/.rocketfuel-env.sh" ]; then
   echo "# Common environment variables for the rocketfuel-* scripts.
 #
 # The ones you can set are:
@@ -34,10 +33,10 @@ LP_SOURCEDEPS_PATH=\$LP_PROJECT_ROOT/\$LP_SOURCEDEPS_DIR/sourcecode
 
 # Force tilde expansion
 LP_SOURCEDEPS_PATH=\$(eval echo \${LP_SOURCEDEPS_PATH})
-" > "$utilities_dir/rocketfuel-env.sh"
+" > "~/.rocketfuel-env.sh"
 fi
 
-source "$utilities_dir/rocketfuel-env.sh"
+source "~/.rocketfuel-env.sh"
 
 # load up Ubuntu release details so we know which repos to enable
 source /etc/lsb-release
@@ -325,11 +324,14 @@ if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
   echo "Setup ssh key for local supermirror ssh access."
 fi
 
+# Setup environment variables in a ~ dot file
+cd ~
+if [ ! -e ~/.rocketfuel-env.sh ]; then
+  ln -s $LP_TRUNK_PATH/utilities/rocketfuel-env.sh .rocketfuel-env.sh
+fi
+
 # Setup scripts in /usr/local/bin
 cd /usr/local/bin
-if [ ! -e rocketfuel-env.sh ]; then
-  sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-env.sh
-fi
 if [ ! -e rocketfuel-get ]; then
   sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-get
 fi
