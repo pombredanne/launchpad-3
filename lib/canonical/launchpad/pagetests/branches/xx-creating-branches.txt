@@ -107,15 +107,10 @@ A remote branch may have a URL, but doesn't have to.
 
 We should be able to create a new branch from a product.
 
-First, check that the +addbranch link is visible on product overview page and
-the product code facet page.
+First, check that the +addbranch link is visible on the product code
+facet page.
 
-    >>> user_browser.open('http://launchpad.dev/applets')
-    >>> link = user_browser.getLink('Register branch')
-    >>> print link.url
-    http://launchpad.dev/applets/+addbranch
-
-    >>> user_browser.getLink('Code').click()
+    >>> user_browser.open('http://code.launchpad.dev/applets')
     >>> print user_browser.url
     http://code.launchpad.dev/applets
 
