@@ -6,7 +6,8 @@
 
 <div class="portlet" id="portlet-details">
 
-  <h2>Bragging rights</h2>
+  <h2 tal:condition="not: context/is_team">Bragging rights</h2>
+  <h2 tal:condition="context/is_team">Summary</h2>
 
   <div class="portletBody portletContent">
 
@@ -60,7 +61,7 @@
       </tal:not-ubuntero>
     </tal:valid_person>
 
-    <tal:is_team condition="context/teamowner">
+    <tal:is_team condition="context/is_team">
 
       <b>Team owner:</b>
         <a
