@@ -83,7 +83,7 @@
                 </div>
               </li>
 
-              <li tal:condition="view/pillar" class="pillar">
+              <li tal:condition="view/pillar">
                 <div>
                   <a tal:replace="structure view/pillar/fmt:link">
                     The GNOME project
