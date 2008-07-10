@@ -596,6 +596,7 @@ ul#menuroot li.selected a.breadcrumb {
 */
 #lp-hierarchy {
   background: #eee url(navigation-hierarchy-bg) repeat-x;
+  clear: left;
   min-height: 25px;
   float: left;
 }
@@ -655,6 +656,7 @@ ul#menuroot li.selected a.breadcrumb {
   the selected tab:
 */
 .apps-separator {
+  clear: left;
   height: 5px;
   margin: 0;
   padding: 0;
@@ -692,6 +694,7 @@ ul#menuroot li.selected a.breadcrumb {
   color: #333;
   text-decoration: none;
   margin: 0;
+  overflow: hidden;
   padding: 0 0 5px;
 }
 #lp-apps .overview {
