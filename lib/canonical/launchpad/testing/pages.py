@@ -517,10 +517,13 @@ def print_ppa_packages(contents):
 def print_location(contents):
     """Print the hierarchy, application tabs, and main heading of the page."""
     doc = find_tag_by_id(contents, 'document')
-    breadcrumbs = doc.find(attrs={'id': 'menuroot'}).findAll('a')
-    print "Location: %s" % " > ".join(
-        extract_text(tag).encode('us-ascii', 'replace') for tag in breadcrumbs
-        if tag.get('id') != 'homebreadcrumb')
+    hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(recursive=False)
+    hierarchy_string = 'Location: '
+    for segment in hierarchy:
+        if not segment.small:
+            hierarchy_string += ' > %s' % (
+                extract_text(segment).encode('us-ascii', 'replace'))
+    print hierarchy_string
     print 'Tabs:'
     print_location_apps(contents)
     main_heading = doc.h1
