@@ -342,12 +342,6 @@ hr {
   color: #FFF;
   font-size: 13px;
 }
-/* Small launchpad icon and rasterized text. */
-#globalheader img.launchpad {
-  position: absolute;
-  top: 0;
-  right: 0;
-}
 /* Thin line at the top, when we don't have a global header site message */
 #topline {
   position: relative;

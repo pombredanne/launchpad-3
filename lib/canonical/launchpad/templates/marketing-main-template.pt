@@ -39,9 +39,6 @@
     <body>
       <div id="globalheader" tal:condition="site_message">
         <div class="sitemessage" tal:content="structure site_message"/>
-        <img class="launchpad" width="90" height="20"
-             tal:attributes="src string:${icingroot}/globalheader_launchpad_bg.gif"
-             alt="Launchpad"/>
       </div>
       <div id="breadcrumb">
         <dl>
