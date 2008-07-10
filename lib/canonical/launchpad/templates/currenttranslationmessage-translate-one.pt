@@ -496,7 +496,7 @@
         </td>
         <td>
           <input
-            style="width: 100%;"
+            style="width: 96%; margin-right: 2px; float:left;"
             type="text"
             tal:condition="not:translation_dictionary/is_multi_line"
             tal:attributes="
@@ -507,14 +507,14 @@
               value translation_dictionary/submitted_translation;
               onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
-              " />
-          <input type="button" value="Add more lines" title="Lets you add more than one line"
+              " /><span
             tal:condition="not:translation_dictionary/is_multi_line"
             tal:attributes="
               name string:${translation_dictionary/html_id_translation}_new_to_textarea;
               id string:${translation_dictionary/html_id_translation}_new_to_textarea;
+              class string:translations_add_more_lines;
               onClick string:javascript:upgradeToTextAreaForTranslation('${translation_dictionary/html_id_translation}_new');"
-            />
+              ></span>
           <tal:multi-line condition="translation_dictionary/is_multi_line">
             <tal:with-content
               condition="translation_dictionary/submitted_translation">
