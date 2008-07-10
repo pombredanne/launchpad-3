@@ -431,7 +431,13 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     # Map namespaces onto method names.
     methods = {
-        'Launchpad': ['login', 'time', 'add_comment', 'comments', 'get_bugs'],
+        'Launchpad': [
+            'add_comment',
+            'comments',
+            'get_bugs',
+            'login',
+            'time',
+            ],
         'Test': ['login_required']
         }
 
