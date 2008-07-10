@@ -848,6 +848,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
 
+    def userCanEdit(self, user):
+        """See `IProduct`."""
+        if user is None:
+            return False
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(celebs.registry_experts) or
+            user.inTeam(celebs.admin) or
+            user.inTeam(self.owner))
 
 def get_allowed_default_stacking_names():
     """Return a list of names of `Product`s that allow default stacking."""

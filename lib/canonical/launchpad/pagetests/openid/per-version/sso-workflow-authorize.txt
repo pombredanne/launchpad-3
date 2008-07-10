@@ -22,11 +22,13 @@ authenticate before starting the login procedure:
 
     >>> openid_store = MemoryStore()
     >>> consumer = Consumer(session={}, store=openid_store)
-
     >>> request = consumer.beginWithoutDiscovery(
     ...     make_identifier_select_endpoint(PROTOCOL_URI))
+
+    # Use localhost instead of launchpad.dev because Launchpad is not
+    # recorded as an OpenIDRPSummary.
     >>> browser.open(request.redirectURL(
-    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+    ...     'http://localhost/', 'http://localhost/+openid-consumer'))
 
 Each OpenID authentication is recorded as an OpenIDRPSummary. This user
 has not ever used Launchpad to authenticate with a relying party.
@@ -48,14 +50,14 @@ At this point, the user is presented with a form asking if they want
 to authenticate to the relying party
 
     >>> print browser.title
-    Authenticate to http://launchpad.dev/
+    Authenticate to http://localhost/
 
 By clicking the "Sign In" button, the user is returned to the relying
 party with their identity URL:
 
     >>> browser.getControl('Sign In', index=0).click()
     >>> print browser.url
-    http://launchpad.dev/+openid-consumer?...
+    http://localhost/+openid-consumer?...
     >>> info = complete_from_browser(
     ...     consumer, browser, 'http://openid.launchpad.dev/+id/sabdfl_oid')
     >>> print info.status
@@ -75,7 +77,7 @@ user has used the replying part once.
     ...     summary.trust_root
     ...     summary.total_logins
     u'http://openid.launchpad.dev/+id/sabdfl_oid'
-    u'http://launchpad.dev/'
+    u'http://localhost/'
     1
 
     >>> logout()
