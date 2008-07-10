@@ -685,14 +685,14 @@ ul#menuroot li.selected a.breadcrumb {
   padding: 0;
   text-align: center;
   color: #333;
-  line-height: 2.2em;
+  line-height: 1.5em;
 }
 #lp-apps span a, #lp-apps span strong {
   display: block;
   color: #333;
   text-decoration: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 5px;
 }
 #lp-apps .overview {
   background: url(navigation-tabs-sw-overview) bottom right no-repeat;
