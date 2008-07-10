@@ -33,11 +33,10 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import, make_running_import)
-from canonical.launchpad.testing.pages import (
-    get_feedback_messages, setupBrowser)
+from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing import LaunchpadFunctionalLayer, PageTestLayer
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 def login_for_code_imports():
@@ -950,16 +949,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
     the button and check that appropriate notifications are displayed.
     """
 
-    layer = PageTestLayer
-
-    def getUserBrowserAtPage(self, url):
-        """Return a Browser object for a logged in user opened at `url`."""
-        user = logged_in_as(ANONYMOUS)(self.factory.makePerson)(
-            password='test')
-        email = removeSecurityProxy(user.preferredemail).email
-        user_browser = setupBrowser(auth="Basic %s:test" % str(email))
-        user_browser.open(url)
-        return user_browser
+    layer = LaunchpadFunctionalLayer
 
     @logged_in_for_code_imports
     def getNewCodeImportIDAndBranchURL(self):
@@ -996,7 +986,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         # If the import has been requested by another user, we display a
         # notification saying who it was.
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
-        user_browser = self.getUserBrowserAtPage(branch_url)
+        user_browser = self.getUserBrowserAtURL(branch_url)
         self.requestJobByUserWithDisplayName(code_import_id, "New User")
         user_browser.getControl('Import Now').click()
         self.assertEqual(
@@ -1007,7 +997,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         # If the import job has been deleled, for example because the code
         # import has been suspended, we display a notification saying this.
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
-        user_browser = self.getUserBrowserAtPage(branch_url)
+        user_browser = self.getUserBrowserAtURL(branch_url)
         self.deleteJob(code_import_id)
         user_browser.getControl('Import Now').click()
         self.assertEqual(
@@ -1017,7 +1007,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
     def test_pressButtonJobStarted(self):
         # If the job has started, we display a notification saying so.
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
-        user_browser = self.getUserBrowserAtPage(branch_url)
+        user_browser = self.getUserBrowserAtURL(branch_url)
         self.startJob(code_import_id)
         user_browser.getControl('Import Now').click()
         self.assertEqual(

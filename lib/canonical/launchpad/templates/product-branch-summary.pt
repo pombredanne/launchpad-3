@@ -78,9 +78,11 @@
          tal:define="config modules/canonical.config/config;
                      codebrowse_root config/codehosting/codebrowse_root;
                      dev_focus context/development_focus/series_branch">
-      You can <a tal:attributes="href string:${codebrowse_root}${dev_focus/unique_name}">browse the source 
-      code</a> for the development focus branch,
-      or get a copy of the branch using the command:<br/>
+      You can
+      <a id="browse_dev_focus"
+         tal:attributes="href string:${codebrowse_root}${dev_focus/unique_name}"
+         >browse the source code</a> for the development focus branch or get a copy of the
+      branch using the command:<br/>
       <tt style="padding-left:2em">bzr branch <tal:project-name replace="dev_focus/bzr_identity"/></tt>
     </div>
 

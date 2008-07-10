@@ -81,6 +81,25 @@ class TestCaseWithFactory(TestCase):
     def tearDown(self):
         logout()
 
+    def getUserBrowser(self):
+        """Return a Browser object logged in as a freshly created user."""
+        # Do the import here to avoid issues with import cycles.
+        from canonical.launchpad.testing.pages import setupBrowser
+        user = self.factory.makePerson(password='test')
+        naked_user = removeSecurityProxy(user)
+        email = naked_user.preferredemail.email
+        return setupBrowser(
+            auth="Basic %s:test" % str(email))
+
+    def getUserBrowserAtUrl(self, url):
+        """Return a Browser object logged in as a fresh user, opened at `url`.
+        """
+        login(ANONYMOUS)
+        browser = self.getUserBrowser()
+        logout()
+        browser.open(url)
+        return browser
+
 
 def capture_events(callable_obj, *args, **kwargs):
     """Capture the events emitted by a callable.
