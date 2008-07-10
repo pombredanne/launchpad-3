@@ -1000,6 +1000,8 @@ a conditional comment in main-template.pt to work around the above rule. */
   padding: 8px 8px 8px;
   width: 182px; /* = 200px column - 2*1px vertical border - 2*8px padding */
   overflow: hidden;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
 }
 /* In the Actions menu, part of the horizontal padding is used for
 highlighting menu items, so padding is handled by the contents instead: */
