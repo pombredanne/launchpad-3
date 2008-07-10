@@ -373,11 +373,20 @@ class CodeImportEditView(CodeImportBaseView):
         """If the status is different, and the user is super, show button."""
         return self._super_user and self.code_import.review_status != status
 
+    def _updateWhiteboardAndCheckIfChangedFromData(self, data):
+        whiteboard = data.pop('whiteboard')
+        if whiteboard != self.context.whiteboard:
+            self.context.whiteboard = whiteboard
+            return whiteboard
+        else:
+            return None
+
     def _makeStatusChangeAction(label, status_method_name, status, text):
         def condition(self, ignored):
             return self._showButtonForStatus(status)
         def success(self, action, data):
             """Make the requested status change."""
+            whiteboard = self._updateWhiteboardAndCheckIfChangedFromData(data)
             getattr(self.code_import, status_method_name)(data, self.user)
             self.request.response.addNotification(
                 'The code import has been ' + text + '.')
@@ -387,6 +396,7 @@ class CodeImportEditView(CodeImportBaseView):
 
     def update_success(self, action, data):
         """Update the details."""
+        whiteboard = self._updateWhiteboardAndCheckIfChangedFromData(data)
         self.code_import.updateFromData(data, self.user)
 
     actions = form.Actions(
