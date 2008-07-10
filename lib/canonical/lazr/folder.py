@@ -143,7 +143,7 @@ class ExportedImageFolder(ExportedFolder):
         root, ext = os.path.splitext(filename)
         if ext == '' and not os.path.exists(root):
             for image_ext in self.image_extensions:
-                if os.path.exists(root+ image_ext):
+                if os.path.exists(root + image_ext):
                     filename = filename + image_ext
                     break
         return super(

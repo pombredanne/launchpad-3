@@ -791,7 +791,11 @@ class LaunchpadTourFolder(ExportedFolder):
     export_subdirectories = True
 
     def publishTraverse(self, request, name):
-        """Hide the source directory."""
+        """Hide the source directory.
+
+        The source directory contains source material that we don't want
+        published over the web.
+        """
         if name == 'source':
             raise NotFound(request, name)
         return super(LaunchpadTourFolder, self).publishTraverse(request, name)
