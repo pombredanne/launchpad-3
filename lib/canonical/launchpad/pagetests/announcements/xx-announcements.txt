@@ -5,7 +5,6 @@ list is available as a portlet on the project home page, as well as on a
 dedicated batched page showing all announcements, and as an RSS/Atom
 news feed.
 
-    >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import BeautifulSoup
     >>> from BeautifulSoup import SoupStrainer
     >>> from canonical.launchpad.ftests.feeds_helper import (
