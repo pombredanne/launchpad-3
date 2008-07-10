@@ -16,28 +16,28 @@
       <div metal:fill-slot="extra_bottom">
         <table>
           <tbody>
-            <p><span
-                 tal:replace="
-                 structure context/menu:overview/editlanguages/render"
-                 >Set your preferred language</span>
+            <p
+              tal:replace="
+              structure context/menu:overview/editlanguages/render">
+              Set your preferred language
             </p>
 
-            <p><span
-                 tal:replace="
-                 structure context/menu:overview/editwikinames/render"
-                 >Edit your wiki names</span>
+            <p
+              tal:replace="
+              structure context/menu:overview/editwikinames/render">
+              Edit your wiki names
             </p>
 
-            <p><span
-                 tal:replace="
-                 structure context/menu:overview/editircnicknames/render"
-                 >Edit your IRC contact names</span>
+            <p
+              tal:replace="
+              structure context/menu:overview/editircnicknames/render">
+              Edit your IRC contact names
             </p>
 
-            <p><span
-                 tal:replace="
-                 structure context/menu:overview/editjabberids/render"
-                 >Edit your Jabber contact names</span>
+            <p
+              tal:content="
+              structure context/menu:overview/editjabberids/render">
+              Edit your Jabber contact names
             </p>
           </tbody>
         </table>
