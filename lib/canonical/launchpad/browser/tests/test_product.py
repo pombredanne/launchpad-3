@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Tests for the product view classes and templates."""
 
 __metaclass__ = type
 
@@ -8,13 +8,14 @@ import unittest
 
 from mechanize import LinkNotFoundError
 
+from canonical.config import config
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.testing import LaunchpadFunctionalLayer
 
 class TestBrowseDevelopmentFocusCodeLink(TestCaseWithFactory):
-    """Tests for the presence or otherwise of  """
+    """Tests for the 'browse source' link on the product code home page."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -35,16 +36,8 @@ class TestBrowseDevelopmentFocusCodeLink(TestCaseWithFactory):
         :raises Something: if the branch is not found.
         """
         url = canonical_url(product, rootsite='code')
-        browser = self.getUserBrowserAtUrl(
-            canonical_url(product, rootsite='code'))
+        browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         return browser.getLink('browse the source code')
-
-    def assertProductBranchSummaryHasBrowseLink(self, product):
-        """Assert there is a browse code link on the product's code home."""
-        try:
-            self.getBranchSummaryBrowseLinkForProduct(product)
-        except LinkNotFoundError:
-            self.fail("Browse link present when it should not have been.")
 
     def assertProductBranchSummaryDoesNotHaveBrowseLink(self, product):
         """Assert there is not a browse code link on the product's code home.
@@ -63,7 +56,10 @@ class TestBrowseDevelopmentFocusCodeLink(TestCaseWithFactory):
         branch.updateScannedDetails(self.factory.getUniqueString(), 1)
         self.assertTrue(branch.code_is_browseable)
 
-        self.assertProductBranchSummaryHasBrowseLink(product)
+        link = self.getBranchSummaryBrowseLinkForProduct(product)
+        login(ANONYMOUS)
+        self.assertEqual(
+            link.url, config.codehosting.codebrowse_root + branch.unique_name)
 
     def test_unbrowseable_branch_does_not_have_link(self):
         # If the product's development focus branch is not browseable, there

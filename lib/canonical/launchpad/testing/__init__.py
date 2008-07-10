@@ -81,23 +81,20 @@ class TestCaseWithFactory(TestCase):
     def tearDown(self):
         logout()
 
-    def getUserBrowser(self):
-        """Return a Browser object logged in as a freshly created user."""
+    def getUserBrowser(self, url=None):
+        """Return a Browser logged in as a fresh user, maybe opened at `url`.
+        """
         # Do the import here to avoid issues with import cycles.
         from canonical.launchpad.testing.pages import setupBrowser
+        login(ANONYMOUS)
         user = self.factory.makePerson(password='test')
         naked_user = removeSecurityProxy(user)
         email = naked_user.preferredemail.email
-        return setupBrowser(
-            auth="Basic %s:test" % str(email))
-
-    def getUserBrowserAtUrl(self, url):
-        """Return a Browser object logged in as a fresh user, opened at `url`.
-        """
-        login(ANONYMOUS)
-        browser = self.getUserBrowser()
         logout()
-        browser.open(url)
+        browser = setupBrowser(
+            auth="Basic %s:test" % str(email))
+        if url is not None:
+            browser.open(url)
         return browser
 
 

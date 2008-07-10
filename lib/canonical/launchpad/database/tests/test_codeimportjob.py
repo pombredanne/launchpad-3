@@ -986,7 +986,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         # If the import has been requested by another user, we display a
         # notification saying who it was.
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
-        user_browser = self.getUserBrowserAtUrl(branch_url)
+        user_browser = self.getUserBrowser(branch_url)
         self.requestJobByUserWithDisplayName(code_import_id, "New User")
         user_browser.getControl('Import Now').click()
         self.assertEqual(
@@ -997,7 +997,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         # If the import job has been deleled, for example because the code
         # import has been suspended, we display a notification saying this.
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
-        user_browser = self.getUserBrowserAtUrl(branch_url)
+        user_browser = self.getUserBrowser(branch_url)
         self.deleteJob(code_import_id)
         user_browser.getControl('Import Now').click()
         self.assertEqual(
@@ -1007,7 +1007,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
     def test_pressButtonJobStarted(self):
         # If the job has started, we display a notification saying so.
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
-        user_browser = self.getUserBrowserAtUrl(branch_url)
+        user_browser = self.getUserBrowser(branch_url)
         self.startJob(code_import_id)
         user_browser.getControl('Import Now').click()
         self.assertEqual(
