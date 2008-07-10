@@ -81,7 +81,8 @@ If we mark the bug as critical, the open_critical count will increase.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import BugTaskImportance
     >>> [ubuntu_firefox_bugtask] = bug.bugtasks
-    >>> ubuntu_firefox_bugtask.importance = BugTaskImportance.CRITICAL
+    >>> ubuntu_firefox_bugtask.transitionToImportance(
+    ...     BugTaskImportance.CRITICAL, getUtility(ILaunchBag).user)
     >>> syncUpdate(ubuntu_firefox_bugtask)
 
     >>> package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(

@@ -28,6 +28,29 @@ See further information about this issue in bug #69988.
     Build log: netapplet-1.0.0.tar.gz
     Finished: 2005-10-02 (took three minutes)
 
+'Upload log' is only mentioned when it contains a reference to a
+library file and it only happens for FAILEDTOUPLOAD builds.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/22")
+    >>> build_details = extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
+
+    >>> print_text(build_details)
+    Changes file: not available
+    Archive: ubuntu archive
+    Component: main
+    Status: Failed to upload
+    Queued: 2007-04-20
+    Started: 2007-04-19
+    Builder: Bob The Builder
+    Build log: netapplet-1.0.0.tar.gz
+    Upload log: upload_22_log.txt
+    Finished: 2007-04-20 (took a minute)
+
+    >>> print anon_browser.getLink("upload_22_log.txt").url
+    http://.../upload_22_log.txt
+
 Let's also check a successfully built record.
 
     >>> anon_browser.open(
@@ -66,40 +89,30 @@ still in the build queue.
     >>> build_details = extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'build-details'))
     >>> print_text(build_details)
-    Changes file:
-    not available
-    Archive:
-    ubuntu archive
-    Component:
-    main
-    Status:
-    Needs building
-    Queued:
-    2006-02-14
-    Estimated build start:
-    not available
-    Build score:
-    10
-    Build log:
-    not available
-    Finished:
-    not available
+    Changes file: not available
+    Archive: ubuntu archive
+    Component: main
+    Status: Needs building
+    Queued: 2006-02-14
+    Estimated build start: not available
+    Build score: 10
+    Build log: not available
+    Finished: not available
 
 == Build Retrying ==
 
 In order to test build retrying action we have to make ubuntu/warty
 active for development.
 
-    >>> import transaction
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, DistroSeriesStatus)
-    >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
     >>> warty.status = DistroSeriesStatus.DEVELOPMENT
     >>> logout()
+    >>> import transaction
     >>> transaction.commit()
 
 With anonymous access, Retry Build link should not be there.

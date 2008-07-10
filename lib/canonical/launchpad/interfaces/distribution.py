@@ -361,6 +361,8 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         language codes for translation import purposes.
         """
 
+    def userCanEdit(user):
+        """Can the user edit this distribution?"""
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""

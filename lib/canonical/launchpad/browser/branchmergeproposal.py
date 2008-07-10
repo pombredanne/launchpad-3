@@ -659,8 +659,9 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
 
     @property
     def initial_values(self):
-        # Default to reviewing the tip of the source branch.
-        return {'merged_revno': self.context.source_branch.revision_count}
+        # Default to the tip of the target branch, on the assumption that the
+        # source branch has just been merged into it.
+        return {'merged_revno': self.context.target_branch.revision_count}
 
     @property
     def next_url(self):
