@@ -209,7 +209,6 @@ see it:
     Bragging rights
     ...
     Ubuntero: No
-    ...
 
 You can grab certain bits of information programatically:
 
