@@ -318,7 +318,8 @@ packagebugs_search_view.total_bug_counts.
     ...     title="Some new bug",
     ...     comment="this is a new bug")
     >>> new_bug = ubuntu_mozilla_firefox.createBug(bug_params)
-    >>> new_bug.bugtasks[0].importance = BugTaskImportance.CRITICAL
+    >>> new_bug.bugtasks[0].transitionToImportance(
+    ...     BugTaskImportance.CRITICAL, name16)
     >>> flush_database_updates()
 
 We re-create the view since total_bug_counts and package_bug_counts are

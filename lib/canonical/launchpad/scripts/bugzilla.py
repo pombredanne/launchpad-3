@@ -161,11 +161,13 @@ class BugzillaBackend:
         joins = []
         conditions = []
         if product:
-            joins.append('INNER JOIN products ON bugs.product_id = products.id')
+            joins.append(
+                'INNER JOIN products ON bugs.product_id = products.id')
             conditions.append('products.name IN (%s)' %
                 ', '.join([self.conn.escape(p) for p in product]))
         if component:
-            joins.append('INNER JOIN components ON bugs.component_id = components.id')
+            joins.append(
+                'INNER JOIN components ON bugs.component_id = components.id')
             conditions.append('components.name IN (%s)' %
                 ', '.join([self.conn.escape(c) for c in component]))
         if status:
@@ -223,7 +225,8 @@ class Bug:
 
     def mapSeverity(self, bugtask):
         """Set a Launchpad bug task's importance based on this bug's severity."""
-        bugtask.importance = {
+        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+        importance_map = {
             'blocker': BugTaskImportance.CRITICAL,
             'critical': BugTaskImportance.CRITICAL,
             'major': BugTaskImportance.HIGH,
@@ -231,7 +234,10 @@ class Bug:
             'minor': BugTaskImportance.LOW,
             'trivial': BugTaskImportance.LOW,
             'enhancement': BugTaskImportance.WISHLIST
-            }.get(self.bug_severity, BugTaskImportance.UNKNOWN)
+            }
+        importance = importance_map.get(
+            self.bug_severity, BugTaskImportance.UNKNOWN)
+        bugtask.transitionToImportance(importance, bug_importer)
 
     def mapStatus(self, bugtask):
         """Set a Launchpad bug task's status based on this bug's status.
