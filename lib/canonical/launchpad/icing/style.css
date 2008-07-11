@@ -834,6 +834,13 @@ it out of the page flow. */
 
 span.help {font-weight: normal;}
 
+/* === ID and timestamp === */
+/* The first text in many pages is the object's timestamp and identifier. */
+/* The timestamp is the date last modified or (more usually) registered: */
+.object.timestamp {float: right;}
+/* An identifier is a unique label, such as a bug number or branch ID: */
+.object.identifier {float: left;}
+
 /* === Navigation menus === */
 /* A "navigation menu" categorizes the information about an object. */
 /* For example, a distribution has "Details / Announcements / Mentoring..." */
@@ -1010,10 +1017,13 @@ top left (y), and top right (z) of the rounded border. */
   To let the main content width = 100% - 220px for the portlets,
   we apply a negative right margin so the portlets can float on the right:
 */
-#maincontent {float: left; margin-right: -220px; width: 100%;}
+#maincontent, #maincontentsub {float: left; margin-right: -220px; width: 100%;}
+/* (maincontentsub is used for a two-column section in bugtask-index.pt.) */
 /* To avoid overlap, we need an extra container with positive right margin: */
 #nonportlets {margin-right: 220px;}
 #portlets .portlet {width: 200px;}
+/* Pages using the one-column layout can construct portlets using <aside>: */
+aside {clear: right; float: right; width: 200px;}
 
 /* -- Pillar indexes -- */
 
@@ -1032,7 +1042,8 @@ top left (y), and top right (z) of the rounded border. */
 .pillar div.portlet, .pillar div.section {clear: left; padding-top: 2em;}
 .pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
 
-/* --- Portlets --- */
+/* === Portlets === */
+/* The two-column layout includes a column of portlets: */
 #portlets {
   display: inline;
   float: right;
@@ -1042,16 +1053,17 @@ top left (y), and top right (z) of the rounded border. */
   padding-left: 20px; /* 20px margin between main content and portlets */
   list-style: none;
 }
+/* Alternatively, individual portlets can be put in an <aside> element: */
+aside {margin-left: 20px;}
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
 * html #portlets {left: 20px;}
 /* IE7 gets the padding right but overcalculates the left margin, so we use
 a conditional comment in main-template.pt to work around the above rule. */
-#portlets .portlet {
+/* Portlets look the same whether as <div class="portlet"> or <aside>: */
+#portlets .portlet, aside {
   background-color: #ebebeb;
   border: 1px solid;
   border-color: #fff #ccc #ccc #fff;
-  clear: both;
-  float: left;
   margin: 0 0 0.5em 0;
   color: #717171;
   padding: 4px 8px;
@@ -1063,8 +1075,8 @@ highlighting menu items, so padding is handled by the contents instead: */
 #portlets #actions {
   padding: 4px 0; width: 198px; /* 200px column - 2*1px vertical border */
 }
-#portlets .portlet, #portlets .portlet h2 {font-size: 12px;}
-#portlets .portlet h2 {
+#portlets .portlet, aside, #portlets .portlet h2, aside h2 {font-size: 12px;}
+#portlets .portlet h2, aside h2 {
   border-bottom: 1px solid #ccc;
   color: inherit;
   font-weight: bold;
