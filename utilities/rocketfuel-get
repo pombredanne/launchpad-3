@@ -4,7 +4,11 @@
 # sure all source dependencies are properly linked in to all the branches you
 # are working on.
 
-source utilities/rocketfuel-env.sh
+source "$HOME/.rocketfuel-env.sh"
+if [ "$?" != 0 ]; then
+    echo "Please run rocketfuel-setup first."
+    exit 1
+fi
 
 DEVPAD="devpad.canonical.com"
 ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"

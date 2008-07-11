@@ -299,13 +299,16 @@ class SourcePackageRelease(SQLBase):
             return 0.0
 
     def createBuild(self, distroarchseries, pocket, archive, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=None):
         """See ISourcePackageRelease."""
         # Guess a processor if one is not provided
         if processor is None:
             pf = distroarchseries.processorfamily
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
+
+        if status is None:
+            status = BuildStatus.NEEDSBUILD
 
         # Force the current timestamp instead of the default
         # UTC_NOW for the transaction, avoid several row with

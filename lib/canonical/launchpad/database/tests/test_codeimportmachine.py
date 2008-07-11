@@ -11,12 +11,12 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.database.tests.test_codeimportjob import (
+    login_for_code_imports)
 from canonical.launchpad.interfaces import (
     CodeImportMachineOfflineReason, CodeImportMachineState,
     ICodeImportJobWorkflow)
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.tests.test_codeimportjob import (
-    login_for_code_imports)
 from canonical.testing import LaunchpadFunctionalLayer
 
 

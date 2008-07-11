@@ -180,23 +180,10 @@ Project also have the 'Latest questions' portlet and the
 
 == Persons ==
 
-On the page about a person, there is a porlet showing the latest
-questions opened by that person.
+The 'Answers' facet link will display a page listing all the questions
+involving a person.
 
     >>> browser.open('http://launchpad.dev/~name16')
-    >>> find_portlet(browser.contents, 'Latest questions')
-    <div class="portlet" id="...">
-        <h2>Latest questions</h2>
-        ...
-    </div>
-    >>> browser.getLink('Slow system').url
-    '.../ubuntu/+question/7'
-    >>> browser.getLink('Firefox loses focus').url
-    '.../firefox/+question/4'
-
-The 'Answers' facet link will display a page listing all the questions
-involving that person.
-
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/~name16'
     >>> browser.getLink('Answers').click()

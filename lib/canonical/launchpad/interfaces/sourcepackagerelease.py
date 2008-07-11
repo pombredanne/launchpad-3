@@ -15,7 +15,6 @@ from zope.schema import TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import BuildStatus
 
 
 class ISourcePackageRelease(Interface):
@@ -137,7 +136,7 @@ class ISourcePackageRelease(Interface):
         """
 
     def createBuild(distroarchseries, pocket, archive, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=None):
         """Create a build for a given distroarchseries/pocket/archive
 
         If the processor isn't given, guess it from the distroarchseries.

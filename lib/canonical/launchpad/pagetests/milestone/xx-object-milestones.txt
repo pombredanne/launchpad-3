@@ -129,7 +129,7 @@ associated with that milestone for products of this project:
 A project milestone page has the same navigation as the project:
 
     >>> anon_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> print_navigation(anon_browser.contents)
+    >>> print_location(anon_browser.contents)
     Location: Mozilla Firefox
     Tabs:
     * Overview (http://launchpad.dev/firefox)
@@ -144,7 +144,7 @@ Similarly, a distribution milestone page has the same navigation as
 the distribution:
 
     >>> anon_browser.open('http://launchpad.dev/debian/+milestone/3.1')
-    >>> print_navigation(anon_browser.contents)
+    >>> print_location(anon_browser.contents)
     Location: Debian
     Tabs:
     * Overview (http://launchpad.dev/debian)
