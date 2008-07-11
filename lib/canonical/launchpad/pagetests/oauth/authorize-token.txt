@@ -67,7 +67,7 @@ This page contains one submit button for each item of OAuthPermission.
     <SubmitControl...
 
     >>> actions = main_content.findAll('input', attrs={'type': 'submit'})
-    >>> from canonical.launchpad.interfaces import OAuthPermission
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> len(actions) == len(OAuthPermission.items)
     True
 

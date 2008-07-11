@@ -739,6 +739,7 @@ INSERT INTO account (id, date_created, creation_rationale, status, date_status_s
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243616, '2007-12-18 16:31:34.790641', 15, 10, '2007-12-18 16:31:34.790641', 'Martin Pitt', 'R8FpwXd', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243617, '2008-03-06 09:55:27.289842', 1, 20, '2008-06-16 07:02:18.857109', 'Tim Penhey', 'CALDpFr', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243622, '2008-05-12 17:38:38.798696', 8, 20, '2008-06-16 07:02:18.857109', 'Commercial Member', 'rPwGRk4', NULL, NULL);
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243623, '2008-06-27 14:49:11.149508', 8, 20, '2008-06-27 14:49:11.149508', 'Brad Crittenden', 'mTmeENb', NULL, NULL);
 
 
 ALTER TABLE account ENABLE TRIGGER ALL;
@@ -792,6 +793,7 @@ INSERT INTO accountpassword (id, account, password) VALUES (243610, 243610, '9I7
 INSERT INTO accountpassword (id, account, password) VALUES (243611, 243611, 'zpAkRDpNGKvwvoPeBHuuwK4RFNCrwUnEMglcuWfzV1FCZ0M9nskK8w==');
 INSERT INTO accountpassword (id, account, password) VALUES (243617, 243617, '8Z3kccpOP4HerugZDi/VS5VePtVDHk48XE11Mx0DmpnqiPsDLczI3g==');
 INSERT INTO accountpassword (id, account, password) VALUES (243622, 243622, 'x3AXXkF9hiPAvbgZSrM/6wczynYy0x+o7SNoT+Gy2Z1GZCMcDNb08A==');
+INSERT INTO accountpassword (id, account, password) VALUES (243623, 243623, '0HM7dR9mHB8uh4Pi88me/V7VrPBbsZZCIVWtkjyHV9WtA0QMcaVM5w==');
 
 
 ALTER TABLE accountpassword ENABLE TRIGGER ALL;
@@ -1506,7 +1508,7 @@ INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, dat
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (18, '2004-09-27 11:57:14', 1, 8, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL, 1, NULL, NULL, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (19, '2005-03-24 00:00:00', 1, 8, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (21, '2006-12-01 00:00:00', 1, 1, 2, NULL, NULL, NULL, NULL, 33, 0, NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (22, '2007-04-20 00:00:00', 1, 8, 7, '2007-04-20 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 1, NULL, NULL, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (22, '2007-04-20 00:00:00', 1, 8, 7, '2007-04-20 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 1, NULL, NULL, NULL, 91);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (23, '2006-04-11 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 1, NULL, NULL, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (24, '2007-05-30 00:00:00', 1, 1, 2, '2007-05-30 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 11, NULL, NULL, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (25, '2007-07-08 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 9, NULL, NULL, NULL, NULL);
@@ -2231,6 +2233,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (75, 'tim@canonical.com', 243617, 4, '2008-03-06 09:55:27.289842', 243617);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (76, 'commercial-member@canonical.com', 243622, 4, '2008-05-12 17:38:38.798696', 243622);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (77, 'former-user@canonical.com', 70, 3, '2006-05-12 17:38:38.798696', 70);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (78, 'bac@canonical.com', 243623, 4, '2008-06-27 14:49:11.149508', 243623);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -3403,6 +3406,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (88, 88, 'README.txt', 'text/plain', NULL, '2008-03-17 15:37:48.465157', '2008-03-17 15:37:48.465157', false);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (89, 89, 'alsa-1.0.9a.tgz', 'application/x-tar', NULL, '2008-03-17 15:38:16.866444', '2008-03-17 15:38:16.866444', false);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (90, 90, 'pmount_1.0-1_all.deb', 'application/x-debian-package', NULL, '2008-05-08 10:15:32.440132', '2008-05-08 10:10:27.899028', false);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (91, 91, 'upload_22_log.txt', 'application/text', NULL, '2008-07-07 22:30:01.123456', '2008-07-07 22:30:01.123456', false);
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -3495,6 +3499,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (88, '2008-03-17 15:37:48.465157', NULL, 3, '55ca6286e3e4f4fba5d0448333fa99fc5a404a73', false, '764efa883dda1e11db47671c4a3bbd9e');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (89, '2008-03-17 15:38:16.866444', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (90, '2008-05-08 10:10:16.866444', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4caa', false, '8a8a67b8dbc5f203ae8712092c68c7aa');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (91, '2008-07-07 22:30:01.123456', NULL, 10, '0c805a60b31058a1018680f99447033dcb9d4c01', false, '8a8a67b8dbc5f203ae8712092c68c701');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3502,6 +3507,7 @@ ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
 
 ALTER TABLE logintoken DISABLE TRIGGER ALL;
 
+INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype, token, fingerprint, redirection_url, date_consumed) VALUES (1, NULL, NULL, 'bac@canonical.com', '2008-06-27 14:48:38.308457', 3, 'mzsJ6LBvNKjFqP1Csfw7', NULL, 'http://launchpad.dev', '2008-06-27 14:49:11.149508');
 
 
 ALTER TABLE logintoken ENABLE TRIGGER ALL;
@@ -4391,6 +4397,8 @@ INSERT INTO person (id, displayname, teamowner, teamdescription, name, language,
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243620, 'Canonical Partner Developers', 28, NULL, 'canonical-partner-dev', NULL, NULL, NULL, NULL, 2, NULL, '2008-05-14 10:29:17.539543', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243621, 'Commercial Subscription Admins', 243622, NULL, 'commercial-admins', NULL, NULL, NULL, NULL, 3, NULL, '2008-04-21 21:29:56.881698', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243622, 'Commercial Member', NULL, NULL, 'commercial-member', NULL, NULL, NULL, NULL, 1, NULL, '2008-05-12 17:38:38.798696', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243622);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243623, 'Brad Crittenden', NULL, NULL, 'bac', NULL, NULL, NULL, NULL, 1, NULL, '2008-06-27 14:49:11.149508', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243623);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243624, 'Commercial Subscription Approvers', 243623, NULL, 'commercial-approvers', NULL, NULL, NULL, NULL, 1, NULL, '2008-06-27 14:49:38.676264', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -4473,6 +4481,7 @@ INSERT INTO pillarname (id, name, product, project, distribution, active, alias_
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (36, 'bzr', 21, NULL, NULL, true, NULL);
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (37, 'redfish', 22, NULL, NULL, true, NULL);
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (38, 'derby', 23, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (39, 'mega-money-maker', 24, NULL, NULL, true, NULL);
 
 
 ALTER TABLE pillarname ENABLE TRIGGER ALL;
@@ -7274,6 +7283,7 @@ INSERT INTO product (id, project, owner, name, displayname, title, summary, desc
     * Derby also supports the more familiar client/server mode with the Derby Network Client JDBC driver and Derby Network Server.
     * Derby is easy to install, deploy, and use.
 ', '2007-11-19 12:44:30.603892', 'http://db.apache.org/derby/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 25, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved) VALUES (24, NULL, 243623, 'mega-money-maker', 'Mega Money Maker', 'Sample Commercial Project', 'Proprietary project', NULL, '2008-06-27 14:51:47.366199', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 26, NULL, NULL, NULL, NULL, false, false, false, 'All rights reserved.  Not free.', false, false, NULL, NULL, false, false);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -7300,6 +7310,7 @@ ALTER TABLE productlicense DISABLE TRIGGER ALL;
 INSERT INTO productlicense (id, product, license) VALUES (1, 1, 10);
 INSERT INTO productlicense (id, product, license) VALUES (2, 1, 20);
 INSERT INTO productlicense (id, product, license) VALUES (3, 23, 30);
+INSERT INTO productlicense (id, product, license) VALUES (4, 24, 1000);
 
 
 ALTER TABLE productlicense ENABLE TRIGGER ALL;
@@ -7531,6 +7542,7 @@ INSERT INTO productseries (id, product, name, summary, import_branch, importstat
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, owner, user_branch, date_published_sync, status) VALUES (23, 21, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-27 16:28:27.763632', NULL, 12, NULL, NULL, 2);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, owner, user_branch, date_published_sync, status) VALUES (24, 22, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-04-18 20:58:56.846607', NULL, 12, NULL, NULL, 2);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, owner, user_branch, date_published_sync, status) VALUES (25, 23, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-11-19 12:44:30.603892', NULL, 1, NULL, NULL, 2);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, owner, user_branch, date_published_sync, status) VALUES (26, 24, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2008-06-27 14:51:47.366199', NULL, 243623, NULL, NULL, 2);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
@@ -8748,6 +8760,7 @@ INSERT INTO teammembership (id, person, team, status, date_joined, date_expires,
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (80, 28, 243620, 3, '2008-05-14 10:29:25.097554', NULL, NULL, NULL, 28, NULL, 28, '2008-05-14 10:29:25.097554', NULL, NULL, '2008-05-14 10:29:25.097554', NULL, NULL, NULL, '2008-05-14 10:29:17.539543');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (81, 16, 243620, 2, '2008-05-14 12:07:14.22745', NULL, NULL, NULL, 16, NULL, 16, '2008-05-14 12:07:14.22745', NULL, NULL, '2008-05-14 12:07:14.22745', NULL, NULL, NULL, '2008-05-14 12:07:14.140921');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (83, 243622, 243621, 3, '2008-05-12 17:40:08.720578', NULL, NULL, NULL, 16, NULL, 16, '2008-05-12 17:40:08.720578', NULL, NULL, '2008-05-12 17:40:08.720578', NULL, NULL, NULL, '2008-05-12 17:40:08.637114');
+INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (84, 243623, 243624, 3, '2008-06-27 14:49:38.698594', NULL, NULL, NULL, 243623, NULL, 243623, '2008-06-27 14:49:38.698594', NULL, NULL, '2008-06-27 14:49:38.698594', NULL, NULL, NULL, '2008-06-27 14:49:38.676264');
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -8920,6 +8933,9 @@ INSERT INTO teamparticipation (id, team, person) VALUES (181, 243621, 243621);
 INSERT INTO teamparticipation (id, team, person) VALUES (182, 243621, 243622);
 INSERT INTO teamparticipation (id, team, person) VALUES (183, 243622, 243622);
 INSERT INTO teamparticipation (id, team, person) VALUES (184, 70, 70);
+INSERT INTO teamparticipation (id, team, person) VALUES (185, 243623, 243623);
+INSERT INTO teamparticipation (id, team, person) VALUES (186, 243624, 243624);
+INSERT INTO teamparticipation (id, team, person) VALUES (187, 243624, 243623);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9868,6 +9884,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (64, 243615, 'https://w
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (65, 243616, 'https://wiki.ubuntu.com/', 'MartinPitt2');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (66, 243617, 'https://wiki.ubuntu.com/', 'TimPenhey');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (67, 243622, 'https://wiki.ubuntu.com/', 'CommercialMember');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (68, 243623, 'https://wiki.ubuntu.com/', 'BradCrittenden');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;

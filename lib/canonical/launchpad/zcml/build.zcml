@@ -13,7 +13,7 @@
        <require
             permission="zope.Public"
             set_attributes="buildlog datebuilt buildduration builder
-                            buildstate dependencies"/>
+                            buildstate dependencies upload_log"/>
     </content>
 
     <browser:defaultView
