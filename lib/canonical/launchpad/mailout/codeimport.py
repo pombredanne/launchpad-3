@@ -47,19 +47,19 @@ def make_email_body_for_code_import_update(event):
     code_import = event.code_import
     event_data = dict(event.items())
 
-    status = []
+    body = []
 
     if CodeImportEventDataType.OLD_REVIEW_STATUS in event_data:
         if code_import.review_status == CodeImportReviewStatus.INVALID:
-            status.append("The import has been marked as invalid.")
+            body.append("The import has been marked as invalid.")
         elif code_import.review_status == CodeImportReviewStatus.REVIEWED:
-            status.append(
+            body.append(
                 "The import has been approved and an import will start "
                 "shortly.")
         elif code_import.review_status == CodeImportReviewStatus.SUSPENDED:
-            status.append("The import has been suspended.")
+            body.append("The import has been suspended.")
         elif code_import.review_status == CodeImportReviewStatus.FAILING:
-            status.append("The import has been marked as failing.")
+            body.append("The import has been marked as failing.")
         else:
             raise AssertionError('Unexpected review status for code import.')
 
@@ -77,19 +77,19 @@ def make_email_body_for_code_import_update(event):
                 CodeImportEventDataType.OLD_CVS_MODULE,
                 code_import.cvs_module)
             old_details = '    %s from %s' % (old_module, old_root)
-            status.append((details_change_prefix + '\n' + new_details +
+            body.append((details_change_prefix + '\n' + new_details +
                            "\ninstead of:\n" + old_details))
     elif code_import.rcs_type == RevisionControlSystems.SVN:
         if CodeImportEventDataType.OLD_SVN_BRANCH_URL in event_data:
             old_url = event_data[CodeImportEventDataType.OLD_SVN_BRANCH_URL]
-            status.append(details_change_prefix + '\n    ' +
+            body.append(details_change_prefix + '\n    ' +
                           code_import.svn_branch_url + "\ninstead of:\n    " +
                           old_url)
     else:
         raise AssertionError(
             'Unexpected rcs_type %r for code import.' % code_import.rcs_type)
 
-    return '\n\n'.join(status)
+    return '\n\n'.join(body)
 
 
 def code_import_updated(event):
