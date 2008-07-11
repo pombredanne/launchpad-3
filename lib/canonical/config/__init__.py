@@ -143,6 +143,10 @@ class CanonicalConfig:
 
     def __getattr__(self, name):
         self._getConfig()
+        # Check first if it's not one of the name added directly
+        # on this instance.
+        if name in self.__dict__:
+            return self.__dict__[name]
         return getattr(self._config, name)
 
     def __contains__(self, key):

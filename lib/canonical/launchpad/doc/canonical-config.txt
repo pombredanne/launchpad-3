@@ -191,10 +191,10 @@ argument to the constructor.
     >>> dev_config.process_name
     'authserver'
 
-    >>> dev_config.authserver.dbuser
-    'authserver'
     >>> dev_config.devmode
     True
+    >>> dev_config.authserver.dbuser
+    'authserver'
 
 # XXX sinzui 2008-03-25 bug=78545: This cannot be tested until the
 # config can be restored when this test is torn down.
