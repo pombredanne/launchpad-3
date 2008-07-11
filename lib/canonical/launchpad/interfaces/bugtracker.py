@@ -190,7 +190,7 @@ class IBugTracker(Interface):
             required=False),
         exported_as='base_url_aliases')
     owner = exported(
-        Object(title=_('Owner'), schema=IPerson),
+        Reference(title=_('Owner'), schema=IPerson),
         exported_as='registrant')
     contactdetails = exported(
         Text(

@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
-    IHasOwner, IHasSecurityContact, ILaunchpadUsage)
+    IHasOwner, IHasSecurityContact, ILaunchpadContainer, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
@@ -51,12 +51,15 @@ from canonical.lazr.rest.declarations import (
 class LicenseStatus(DBEnumeratedType):
     """The status of a project's license review."""
 
-    OPEN_SOURCE = DBItem(10, "Open Source",
-                        u"This project&lsquo;s license is open source.")
-    PROPRIETARY = DBItem(20, "Proprietary",
-                         u"This project&lsquo;s license is proprietary.")
-    UNREVIEWED = DBItem(30, "Unreviewed",
-                        u"This project&lsquo;s license has not been reviewed.")
+    OPEN_SOURCE = DBItem(
+        10, "Open Source",
+        u"This project&lsquo;s license is open source.")
+    PROPRIETARY = DBItem(
+        20, "Proprietary",
+        u"This project&lsquo;s license is proprietary.")
+    UNREVIEWED = DBItem(
+        30, "Unreviewed",
+        u"This project&lsquo;s license has not been reviewed.")
 
 
 class License(DBEnumeratedType):
@@ -105,7 +108,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
                IHasSecurityContact, IHasSprints, IHasTranslationGroup,
                IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
-               IPillar):
+               IPillar, ILaunchpadContainer):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -425,6 +428,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         Products may override language code definitions for translation
         import purposes.
         """
+
+    def userCanEdit(user):
+        """Can the user edit this product?"""
 
 
 class IProductSet(Interface):
