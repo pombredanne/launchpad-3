@@ -1,0 +1,33 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="privacy"
+  tal:attributes="
+    class python: path('context/private') and 'portlet private' or 'portlet public'
+  "
+  tal:define="link context/menu:context/admin"
+>
+  <div tal:condition="not:context/private">
+    <a
+      tal:condition="link/enabled"
+      tal:attributes="href link/url; title link/text"
+      style="
+        padding-left: 18px; background: url(/@@/edit) center left no-repeat;
+      "
+    >This archive is public</a>
+    <tal:unchangeable condition="not:link/enabled"
+    >This archive is public</tal:unchangeable>
+  </div>
+  <div tal:condition="context/private">
+    <a
+      tal:condition="link/enabled"
+      tal:attributes="href link/url; title link/text"
+      style="
+        padding-left: 18px; background: url(/@@/edit) center left no-repeat;
+      "
+    >This archive is <strong>private</strong></a>
+    <tal:unchangeable condition="not:link/enabled"
+    >This archive is private</tal:unchangeable>
+  </div>
+</div>
