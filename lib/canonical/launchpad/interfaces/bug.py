@@ -207,10 +207,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         exported_as='bug_watches')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
-    subscriptions = exported(CollectionField(
-        title=_('Subscriptions.'),
-        value_type=Reference(schema=Interface),
-        readonly=True))
+    subscriptions = exported(
+        CollectionField(
+            title=_('Subscriptions.'),
+            value_type=Reference(schema=Interface),
+            readonly=True))
     duplicates = exported(
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
