@@ -1,6 +1,6 @@
 # Copyright 2004-2008 Canonical Ltd
 
-"""Person-related wiew classes."""
+"""Person-related view classes."""
 
 __metaclass__ = type
 
@@ -2141,8 +2141,15 @@ class PersonVouchersView(LaunchpadFormView):
     custom_widget('project', SinglePopupWidget)
 
     def setUpFields(self):
-        self.form_fields = (self.createProjectField() +
-                            self.createVoucherField())
+        """Set up the fields for this view."""
+
+        self.form_fields = []
+        # Make the less expensive test for commercial projects first
+        # to avoid the more costly fetching of unredeemed vouchers.
+        if (len(self.owned_commercial_projects) > 0 and
+            len(self.unredeemed_vouchers) > 0):
+            self.form_fields = (self.createProjectField() +
+                                self.createVoucherField())
 
     def createProjectField(self):
         """Create the project field for selection commercial projects.
@@ -2182,12 +2189,14 @@ class PersonVouchersView(LaunchpadFormView):
 
     @cachedproperty
     def unredeemed_vouchers(self):
+        """Get the unredeemed vouchers owned by the user."""
         unredeemed, redeemed = (
             self.context.getCommercialSubscriptionVouchers())
         return unredeemed
 
     @cachedproperty
     def owned_commercial_projects(self):
+        """Get the commercial projects owned by the user."""
         commercial_projects = []
         for project in self.context.getOwnedProjects():
             if not project.qualifies_for_free_hosting:
@@ -2202,7 +2211,6 @@ class PersonVouchersView(LaunchpadFormView):
 
     @action(_("Redeem"), name="redeem")
     def redeem_action(self, action, data):
-        error_msg = None
         salesforce_proxy = getUtility(ISalesforceVoucherProxy)
         project = data['project']
         voucher = data['voucher']
@@ -2221,16 +2229,17 @@ class PersonVouchersView(LaunchpadFormView):
                 subscription_months=voucher.term_months)
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
-            # Force the page to reload so the just consumed voucher is not
-            # displayed again (since the field has already been created.)
+            # Force the page to reload so the just consumed voucher is
+            # not displayed again (since the field has already been
+            # created).
             self.next_url = self.request.URL
         except SalesforceVoucherProxyException, error:
-            self.error_message = (
-                "The voucher could not be redeemed at this time.")
-            # Log an oops report with raising an error.
+            self.addError(
+                _("The voucher could not be redeemed at this time."))
+            # Log an OOPS report without raising an error.
             info = (error.__class__, error, None)
             globalErrorUtility = getUtility(IErrorReportingUtility)
-            globalErrorUtility.raising(info, self.context.request)
+            globalErrorUtility.raising(info, self.request)
 
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
