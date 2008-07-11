@@ -285,11 +285,6 @@
       />
     <!-- Products Portlets -->
     <browser:page
-      name="+details"
-      facet="overview"
-      template="../templates/product-details.pt"
-      />
-    <browser:page
       name="+portlet-requires-subscription"
       facet="overview"
       template="../templates/product-portlet-requires-subscription.pt"

@@ -37,6 +37,8 @@ from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.interfaces.launchpad import (
+    IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
     IBug, IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
     IProject, IDistributionSourcePackage, NotFoundError,
@@ -1057,6 +1059,19 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
             for index, data_item in enumerate(self.bug_count_items)])
         return js_template % dict(
             color_list=color_list, label_list=label_list, data_list=data_list)
+
+    @property
+    def official_malone(self):
+        launchpad_usage = ILaunchpadUsage(self.context)
+        return launchpad_usage.official_malone
+
+    @property
+    def external_bugtracker(self):
+        has_external_bugtracker = IHasExternalBugTracker(self.context, None)
+        if has_external_bugtracker is None:
+            return None
+        else:
+            return has_external_bugtracker.getExternalBugTracker()
 
 
 class BugTargetBugTagsView(LaunchpadView):

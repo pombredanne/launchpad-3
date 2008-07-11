@@ -30,7 +30,8 @@ from canonical.launchpad.interfaces.branchvisibilitypolicy import (
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
+    IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker,
+    IHasIcon, IHasLogo, IHasMugshot,
     IHasOwner, IHasSecurityContact, ILaunchpadContainer, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
@@ -104,11 +105,12 @@ class License(DBEnumeratedType):
 
 
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
-               IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
+               IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
+               ILaunchpadContainer, IHasMentoringOffers,
                IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
                IHasSecurityContact, IHasSprints, IHasTranslationGroup,
                IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
-               IPillar, ILaunchpadContainer):
+               IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -294,14 +296,6 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         required=False,
         description=_(
             "Description of licenses that do not appear in the list above."))
-
-    def getExternalBugTracker():
-        """Return the external bug tracker used by this bug tracker.
-
-        If the product uses Launchpad, return None.
-        If the product doesn't have a bug tracker specified, return the
-        project bug tracker instead.
-        """
 
     bugtracker = ProductBugTracker(
         title=_('Bugs are tracked'),
