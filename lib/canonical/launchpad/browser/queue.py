@@ -92,7 +92,7 @@ class QueueItemsView(LaunchpadView):
 
     def builds_dict(self, upload_ids, binary_files):
         """Return a dictionary of PackageUploadBuild keyed on build ID.
-        
+
         :param upload_ids: A list of PackageUpload IDs.
         :param binary_files: A list of BinaryPackageReleaseFiles.
         """
@@ -177,7 +177,7 @@ class QueueItemsView(LaunchpadView):
         """
         uploads = list(self.batchnav.currentBatch())
 
-        if not uploads:
+        if len(uploads) == 0:
             return None
 
         upload_ids = [upload.id for upload in uploads]

@@ -69,9 +69,9 @@ class IBinaryPackageNameSet(Interface):
         For the `BinaryPackageName` ids specified, return a (possible)
         subset where they are published, thus excluding "new" records.
 
-        :param ids: A sequence of IDs of `BinaryPackageName`s
-        :param distroseries: The context `DistroSeries` for the publications
-        :param archive_ids: The context `Archive` IDs for the publications
+        :param ids: A sequence of IDs of `BinaryPackageName`s.
+        :param distroseries: The context `DistroSeries` for the publications.
+        :param archive_ids: The context `Archive` IDs for the publications.
         """
 
 

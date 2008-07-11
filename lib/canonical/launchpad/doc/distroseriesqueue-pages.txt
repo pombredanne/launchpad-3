@@ -234,10 +234,10 @@ for a package "foo" and uploading a new build that has "foo" and
     ...     SoyuzTestPublisher)
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     PackagePublishingStatus)
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> stp = SoyuzTestPublisher()
     >>> hoary = ubuntu['hoary']
     >>> stp.prepareBreezyAutotest()
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
     >>> trash = hoary['i386'].addOrUpdateChroot(fake_chroot)
     >>> foo_source = stp.getPubSource(
@@ -250,18 +250,18 @@ for a package "foo" and uploading a new build that has "foo" and
 Now that "foo" is published in Hoary, we can upload a new build.
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> import_public_test_keys()
     >>> from canonical.launchpad.interfaces import IComponentSet
     >>> from canonical.launchpad.database.component import ComponentSelection
-    >>> universe = getUtility(IComponentSet)['universe']
-    >>> trash = ComponentSelection(distroseries=hoary, component=universe)
     >>> from canonical.archiveuploader.tests import (
     ...     datadir, getPolicy, mock_logger_quiet)
+    >>> from canonical.archiveuploader.nascentupload import NascentUpload
+    >>> import_public_test_keys()
+    >>> universe = getUtility(IComponentSet)['universe']
+    >>> trash = ComponentSelection(distroseries=hoary, component=universe)
     >>> sync_policy = getPolicy(name='sync', distro='ubuntu',
     ...    distroseries='hoary')
     >>> sync_policy.can_upload_binaries = True
     >>> sync_policy.can_upload_mixed = True
-    >>> from canonical.archiveuploader.nascentupload import NascentUpload
     >>> foo_upload = NascentUpload(
     ...    datadir('suite/foo_1.0-2_multi_binary/foo_1.0-2_i386.changes'),
     ...    sync_policy, mock_logger_quiet)
@@ -276,7 +276,7 @@ Now we can examine the view, which provides an is_new method:
     >>> queue_view.setupQueueList()
 
 The template calls decoratedQueueBatch() to retrieve the current batch
-of uploads to display - this action also calculates data that the
+of uploads to display; this action also calculates data that the
 is_new() method requires to work.
 
     >>> discard = queue_view.decoratedQueueBatch()

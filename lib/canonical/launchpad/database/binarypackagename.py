@@ -90,14 +90,14 @@ class BinaryPackageNameSet:
         """See `IBinaryPackageNameSet`."""
         # Here we're returning `BinaryPackageName`s where the records
         # for the supplied `BinaryPackageName` IDs are published in the
-        # supplied distroseries.  If they're already publoshed then they
+        # supplied distroseries.  If they're already published then they
         # must not be new.
         if len(name_ids) == 0:
             return EmptyResultSet()
 
         statuses = (
             PackagePublishingStatus.PUBLISHED,
-            PackagePublishingStatus.PENDING
+            PackagePublishingStatus.PENDING,
             )
 
         return BinaryPackageName.select("""

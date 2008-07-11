@@ -54,7 +54,7 @@ it was built for. If not, then 'is_new' will be True, otherwise False.
 
 The IBinaryPackageNameSet.getNotNewByNames() returns all the
 BinaryPackageName records for BinaryPackageReleases that are published
-in the supplied distroseries in the archives with the suplied
+in the supplied distroseries in the archives with the supplied
 BinaryPackageNames.  This is a way of quickly establishing the "is_new"
 value for a range of packages all at the same time, although it returns
 old (published) packages, not new ones.  However, the new packages can
@@ -63,7 +63,9 @@ be quickly ascertained through a set operation.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces.binarypackagename import (
     ...     IBinaryPackageNameSet)
+    >>> foobar_name = getUtility(IBinaryPackageNameSet)['foobar']
     >>> name_ids = (
+    ...     foobar_name.id,
     ...     pmount_bin_release.binarypackagename.id,
     ...     firefox_bin_release.binarypackagename.id)
     >>> archive_ids = removeSecurityProxy(
