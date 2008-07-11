@@ -41,6 +41,7 @@ __all__ = [
     'IHasBug',
     'IHasDateCreated',
     'IHasDrivers',
+    'IHasExternalBugTracker',
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
@@ -79,6 +80,16 @@ __all__ = [
 
 class NameNotAvailable(KeyError):
     """You're trying to set a name, but the name you chose isn't available."""
+
+
+class IHasExternalBugTracker(Interface):
+    def getExternalBugTracker():
+        """Return the external bug tracker used by this bug tracker.
+
+        If the product uses Launchpad, return None.
+        If the product doesn't have a bug tracker specified, return the
+        project bug tracker instead.
+        """
 
 
 class ILaunchpadCelebrities(Interface):

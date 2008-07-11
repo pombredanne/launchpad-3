@@ -110,22 +110,21 @@
             </tbody>
           </table>
           <ul class="cross-reference">
-            <li id="bugtracker"
-                tal:define="official_malone context/official_malone | context/product/official_malone">
+            <li id="bugtracker">
               <strong>Bug tracker:</strong>
-              <span tal:condition="official_malone">
+              <span tal:condition="view/official_malone">
                 Launchpad
               </span>
               <tal:otherbugtracker
-                tal:condition="not:official_malone"
-                tal:define="bugtracker context/getExternalBugTracker | context/product/getExternalBugTracker"
-              >
+                tal:condition="not:view/official_malone">
                 <a
-                  tal:condition="bugtracker"
-                  tal:attributes="href bugtracker/fmt:url"
-                  tal:content="bugtracker/title"
+                  tal:condition="view/external_bugtracker"
+                  tal:attributes="href view/external_bugtracker/fmt:url"
+                  tal:content="view/external_bugtracker/title"
                 >BugzApp</a>
-                <tal:none condition="not:bugtracker">None specified</tal:none>
+                <tal:none condition="not:view/external_bugtracker">
+                  None specified
+                </tal:none>
               </tal:otherbugtracker>
             </li>
             <li tal:define="fixed_elsewhere view/bugs_fixed_elsewhere_info">

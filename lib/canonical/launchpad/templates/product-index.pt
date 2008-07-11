@@ -31,6 +31,8 @@
 
   <tal:mugshot replace="structure context/image:mugshot" />
 
+  <h1 tal:content="context/title">Name of project</h1>
+
   <div style="float:right">
     <span tal:define="link context/menu:overview/review_license"
           tal:condition="link/enabled"
@@ -66,7 +68,6 @@
           tal:content="structure link/render" />
     )
   </div>
-  <h1 tal:content="context/title">Name of project</h1>
   <p>
     <strong tal:content="structure context/license_status/description">
       This project's license is open source.
