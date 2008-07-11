@@ -134,10 +134,9 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 /* Debugging messages are white on grey, with alerts having an info icon: */
 .debugging     {background: #666; color: white;}
 .debugging.message::before     {content: url(/@@/info-large);}
-/* Form errors use the color as a border instead of a background, avoiding
-the problem of horizontal padding vs. horizontal alignment of fields: */
-table.form tr.error {background: inherit; border-top: 6px solid #ffe4e4;}
-table.form tr.error th, table.form tr.error td {padding-top: 8px;}
+/* Form errors override this background color, because the lack of space
+between the edge of fields and the edge of the color would look bad: */
+table.form .error {background: none;}
 /* And inside, the error message itself uses a smaller icon: */
 .error .message {
   background: url(/@@/error) center left no-repeat;
