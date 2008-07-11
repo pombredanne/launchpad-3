@@ -38,10 +38,11 @@ def new_import(code_import, event):
         simple_sendmail(from_address, address, subject, body, headers)
 
 
-def code_import_status_updated(code_import, user):
+def code_import_updated(event):
     """Email the branch subscribers, and the vcs-imports team with new status.
 
     """
+    code_import = event.code_import
     branch = code_import.branch
     recipients = branch.getNotificationRecipients()
     # Add in the vcs-imports user.
@@ -51,10 +52,10 @@ def code_import_status_updated(code_import, user):
         'You are getting this email because you are a member of the '
         'vcs-imports team.')
 
-    headers = {'X-Launchpad-Branch': code_import.branch.unique_name}
+    headers = {'X-Launchpad-Branch': branch.unique_name}
 
     subject = 'Code import %s/%s status: %s' % (
-        code_import.product.name, code_import.branch.name,
+        code_import.product.name, branch.name,
         code_import.review_status.title)
 
     if code_import.review_status == CodeImportReviewStatus.INVALID:
@@ -74,7 +75,8 @@ def code_import_status_updated(code_import, user):
         'status': status,
         'branch': canonical_url(branch)}
 
-    from_address = format_address(user.displayname, user.preferredemail.email)
+    from_address = format_address(
+        event.person.displayname, event.person.preferredemail.email)
 
     interested_levels = (
         BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,

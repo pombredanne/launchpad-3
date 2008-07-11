@@ -199,12 +199,14 @@ class ICodeImport(Interface):
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
 
-        Create a MODIFY `CodeImportEvent` if needed.
+        Creates and returns a MODIFY `CodeImportEvent` if changes were made.
 
         :param data: dictionary whose keys are attribute names and values are
             attribute values.
         :param user: user who made the change, to record in the
             `CodeImportEvent`.
+        :return: The MODIFY `CodeImportEvent`, if any changes were made, or
+            None if no changes were made.
         """
 
 
