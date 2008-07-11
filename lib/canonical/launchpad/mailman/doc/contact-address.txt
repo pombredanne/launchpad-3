@@ -33,11 +33,12 @@ delivered.
     >>> from canonical.launchpad.ftests import sync
     >>> sync(list_one)
     >>> list_one.subscribe(anne)
-    >>> from canonical.database.sqlbase import commit
+
     >>> logout()
     >>> from canonical.launchpad.mailman.testing import logwatcher
     >>> serial_watcher = logwatcher.LogWatcher('serial')
-    >>> commit()
+    >>> import transaction
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
 It's possible to set the team as a project's answer contact.

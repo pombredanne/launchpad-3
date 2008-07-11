@@ -16,8 +16,8 @@ to all the members of the mailing list.  We can ignore these messages.
 
 Add a member of the mailing list so that we can post messages to the list.
 
+    >>> import transaction
     >>> from operator import itemgetter
-    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -32,7 +32,7 @@ Add a member of the mailing list so that we can post messages to the list.
 
     >>> from canonical.launchpad.mailman.testing import logwatcher
     >>> serial_watcher = logwatcher.LogWatcher('serial')
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
     >>> from Mailman.MailList import MailList

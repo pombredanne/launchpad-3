@@ -27,9 +27,6 @@ feature is exposed.
     ...     ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
-
     >>> list_set = getUtility(IMailingListSet)
     >>> list_one = list_set.get('itest-one')
     >>> list_one.welcome_message = 'Greetings team members!'
@@ -41,10 +38,11 @@ feature is exposed.
 
     >>> from canonical.launchpad.mailman.testing import logwatcher
     >>> serial_watcher = logwatcher.LogWatcher('serial')
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
 
+    >>> import transaction
+    >>> transaction.commit()
     >>> serial_watcher.wait()
+
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']

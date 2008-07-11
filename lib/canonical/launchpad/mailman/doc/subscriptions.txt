@@ -29,11 +29,11 @@ Anne registers with Launchpad and decides to subscribe to the mailing list.
     >>> bart = new_person('Bart')
     >>> bart.join(team_one)
     >>> list_one.subscribe(bart, get_alternative_email(bart))
-    >>> from canonical.database.sqlbase import commit
 
+    >>> import transaction
     >>> from canonical.launchpad.mailman.testing import logwatcher
     >>> serial_watcher = logwatcher.LogWatcher('serial')
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
 Both Anne and Bart are now members of the mailing list.  Both have two
@@ -82,7 +82,7 @@ preferred email address, and Bart unsubscribes from the mailing list.
     >>> anne.setPreferredEmail(get_alternative_email(anne))
     >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
 Anne is now subscribed with her alternate email address, and Cris and Dirk are
@@ -112,7 +112,7 @@ the membership list, either as an enabled or disabled address.
     >>> email_set = getUtility(IEmailAddressSet)
     >>> email = email_set.new('anne.x.person@example.net', anne)
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
 
     # This will time out because no changes have been propagated to Mailman.
     >>> serial_watcher.wait()
@@ -134,7 +134,7 @@ Once Anne validates her address though, she may post from it.
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> logout()
     >>> serial_watcher.wait()
 
@@ -174,7 +174,7 @@ bug #218628.
 
     >>> error_watcher = logwatcher.LogWatcher('error')
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
     >>> xmlrpc_watcher = logwatcher.LogWatcher('xmlrpc')
     >>> xmlrpc_watcher.wait()

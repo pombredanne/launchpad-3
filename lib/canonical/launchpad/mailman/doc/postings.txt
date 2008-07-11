@@ -48,16 +48,17 @@ will also be summarily discarded.  To demonstrate this, we'll add Anne as a
 normal Launchpad user, but de-certify her alternative address.  This is
 equivalent to making it unvalidated.
 
+    >>> import transaction
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
-    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+
     >>> login('foo.bar@canonical.com')
     >>> anne = new_person('Anne')
     >>> alternative_email = get_alternative_email(anne)
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative_email.status = EmailAddressStatus.NEW
-    >>> commit()
+    >>> transaction.commit()
     >>> print alternative_email.email, alternative_email.status.title
     aperson@example.org New Email Address
 
@@ -348,13 +349,12 @@ to the mailing list.
     # Subscribe Anne with her preferred address.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.database.sqlbase import commit
     >>> login('foo.bar@canonical.com')
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
     >>> print anne.preferredemail.email, anne.preferredemail.status.title
@@ -458,7 +458,7 @@ However, once she validates this address, she can post from it.
     >>> alternative_email.status = EmailAddressStatus.VALIDATED
     >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
     >>> smtp_watcher.resync()
@@ -529,7 +529,7 @@ Anne now leaves the team, but she does not unsubscribe from the mailing list.
     >>> anne.leave(team_one)
     >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
 Because she is not a team member, her message is held for moderation.
@@ -573,7 +573,7 @@ not need to re-subscribe to the mailing list.
     >>> anne.join(team_one)
     >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
     >>> smtp_watcher.resync()
@@ -607,7 +607,7 @@ have their posts held for moderation.
 
     >>> login('foo.bar@canonical.com')
     >>> bart = new_person('Bart')
-    >>> commit()
+    >>> transaction.commit()
     >>> bart.personal_standing
     <DBItem PersonalStanding.UNKNOWN...
 
@@ -643,7 +643,7 @@ list.
     >>> from canonical.launchpad.interfaces import PersonalStanding
     >>> login('foo.bar@canonical.com')
     >>> bart.personal_standing = PersonalStanding.GOOD
-    >>> commit()
+    >>> transaction.commit()
 
     >>> inject('itest-one', """\
     ... From: bart.person@example.com
@@ -668,7 +668,7 @@ list.
 A member in excellent standing can of course also post to the list.
 
     >>> bart.personal_standing = PersonalStanding.EXCELLENT
-    >>> commit()
+    >>> transaction.commit()
 
     >>> inject('itest-one', """\
     ... From: bart.person@example.com
@@ -693,7 +693,7 @@ A member in excellent standing can of course also post to the list.
 But a person in poor standing will have their messages held for approval.
 
     >>> bart.personal_standing = PersonalStanding.POOR
-    >>> commit()
+    >>> transaction.commit()
 
     >>> vette_watcher.resync()
     >>> inject('itest-one', """\

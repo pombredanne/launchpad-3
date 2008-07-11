@@ -43,6 +43,7 @@ Subscribe Anne to the mailing list so that she can post to after
 re-activation.
 
     # For convenience, don't do this through the web.
+    >>> import transaction
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
@@ -54,15 +55,14 @@ re-activation.
     >>> from canonical.launchpad.ftests import sync
     >>> sync(list_one)
     >>> list_one.subscribe(anne)
-    >>> from canonical.database.sqlbase import commit
     >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
     >>> mlist.Load()
     >>> sorted(mlist.getMembers())
     ['anne.person@example.com', 'aperson@example.org',
-     'archive@mail-archive.com']
+     'archive@mail-archive.dev']
 
 Now the team owner deactivates the list.
 
@@ -108,4 +108,4 @@ list was deactivated.
 
     >>> sorted(mlist.getMembers())
     ['anne.person@example.com', 'aperson@example.org',
-     'archive@mail-archive.com']
+     'archive@mail-archive.dev']

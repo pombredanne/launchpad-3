@@ -18,14 +18,14 @@ informing them of their new list.  We can ignore these.
     >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
     >>> smtp_watcher = LogWatcher('smtp')
 
+    >>> import transaction
     >>> from canonical.launchpad.ftests import (
     ...     login, logout, mailinglists_helper)
-    >>> from canonical.database.sqlbase import commit
 
     >>> login('foo.bar@canonical.com')
     >>> team_one = mailinglists_helper.new_team('itest-one')
     >>> team_two = mailinglists_helper.new_team('itest-two')
-    >>> commit()
+    >>> transaction.commit()
     >>> logout()
     >>> browser = Browser('no-priv@canonical.com:test')
     >>> mailinglists_helper.apply_for_list(browser, 'itest-one')
@@ -35,8 +35,6 @@ informing them of their new list.  We can ignore these.
     >>> serial_watcher = LogWatcher('serial')
     >>> list_one = helpers.review_list('itest-one')
     >>> list_two = helpers.review_list('itest-two')
-    >>> commit()
-    >>> serial_watcher.wait()
     >>> smtpd.reset()
 
     >>> login('foo.bar@canonical.com')
@@ -44,7 +42,7 @@ informing them of their new list.  We can ignore these.
     >>> helpers.subscribe('Anne', 'itest-two')
     >>> helpers.subscribe('Bart', 'itest-one')
     >>> helpers.subscribe('Cris', 'itest-two')
-    >>> commit()
+    >>> transaction.commit()
     >>> logout()
     >>> serial_watcher.wait()
 
@@ -118,7 +116,7 @@ sync script has to deal with.
     ...     'contact@example.com', team, EmailAddressStatus.VALIDATED)
     >>> team.setContactAddress(email)
     >>> logout()
-    >>> commit()
+    >>> transaction.commit()
 
 Now we need to simulate the difference between the staging and production
 databases.  To do this, we'll use a helper, but first we need to stop Mailman.

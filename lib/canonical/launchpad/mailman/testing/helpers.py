@@ -20,11 +20,11 @@ import re
 import time
 import errno
 import pickle
+import transaction
 
 from subprocess import Popen, PIPE
 from zope.component import getUtility
 
-from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
@@ -72,7 +72,7 @@ def review_list(list_name, status=None):
     # mailing list.  Don't worry about the return value because if the log
     # watcher times out, other things will notice this failure.
     serial_watcher = LogWatcher('serial')
-    commit()
+    transaction.commit()
     # Wait until Mailman has actually created the mailing list.
     serial_watcher.wait()
     # Return an updated mailing list object.
@@ -127,7 +127,7 @@ def subscribe(first_name, team_name):
     mailing_list = getUtility(IMailingListSet).get(team_name)
     mailing_list.subscribe(person)
     serial_watcher = LogWatcher('serial')
-    commit()
+    transaction.commit()
     serial_watcher.wait()
 
 
