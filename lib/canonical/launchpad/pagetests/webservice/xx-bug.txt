@@ -500,8 +500,17 @@ Now, bug 1 has one attachment:
    (u'start', 0),
    (u'total_size', 1)]
 
-Let's check out that attachment's libraryfile:
+We can also fetch the attachment directly:
 
   >>> [attachment] = attachments['entries']
   >>> show(webservice.get(attachment['self_link']).jsonBody())
-  Boom!
+  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+   (u'data_link',
+    u'http://api.launchpad.dev/beta/bugs/1/attachments/1/data'),
+   (u'message_link',
+    u'http://api.launchpad.dev/beta/firefox/+bug/1/comments/2'),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#BugAttachmentEntryAdapter'),
+   (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/attachments/1'),
+   (u'title', u'Some numbers'),
+   (u'type', u'Unspecified')]
