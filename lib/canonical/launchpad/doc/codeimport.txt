@@ -420,7 +420,7 @@ UI: changeDetails also sends out an email describing the changes.
 
     >>> login('david.allouche@canonical.com')
     >>> data = {'svn_branch_url': 'svn://svn.example.com/trunk'}
-    >>> code_import.changeDetails(data, nopriv)
+    >>> svn_import.changeDetails(data, nopriv)
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
@@ -428,5 +428,17 @@ UI: changeDetails also sends out an email describing the changes.
     <BLANKLINE>
     The foreign branch details for the import have been changed to:
         svn://svn.example.com/trunk
+    ...
+    ----------------------------------------
+
+    >>> data = {'cvs_root': ':pserver:anoncvs@cvs.example.com:/var/cvsroot'}
+    >>> cvs_import.changeDetails(data, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: no-priv@canonical.com
+    Subject: Code import product.../name... status: Failing
+    <BLANKLINE>
+    The foreign branch details for the import have been changed to:
+        evolution from :pserver:anoncvs@cvs.example.com:/var/cvsroot
     ...
     ----------------------------------------

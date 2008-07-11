@@ -85,7 +85,7 @@ def code_import_updated(event):
     if code_import.rcs_type == RevisionControlSystems.CVS:
         if (CodeImportEventDataType.OLD_CVS_ROOT in event_data or
             CodeImportEventDataType.OLD_CVS_MODULE in event_data):
-            new_details = '%s %s' % (code_import.cvs_root, code_import.cvs_module)
+            new_details = '%s from %s' % (code_import.cvs_root, code_import.cvs_module)
             status.append(details_change_prefix + new_details)
     elif code_import.rcs_type == RevisionControlSystems.SVN:
         if CodeImportEventDataType.OLD_SVN_BRANCH_URL in event_data:
