@@ -487,7 +487,8 @@ class BugzillaLPPlugin(Bugzilla):
             'bug_ids': [actual_bug_id],
             'include_fields': ['id'],
             }
-        bug_comments_dict = self.xmlrpc_proxy.Launchpad.comments(request_params)
+        bug_comments_dict = self.xmlrpc_proxy.Launchpad.comments(
+            request_params)
 
         bug_comments = bug_comments_dict['bugs'][actual_bug_id]
         return [comment['id'] for comment in bug_comments]
@@ -501,7 +502,8 @@ class BugzillaLPPlugin(Bugzilla):
             'bug_ids': [actual_bug_id],
             'ids': comment_ids,
             }
-        bug_comments_dict = self.xmlrpc_proxy.Launchpad.comments(request_params)
+        bug_comments_dict = self.xmlrpc_proxy.Launchpad.comments(
+            request_params)
         comment_list = bug_comments_dict['bugs'][actual_bug_id]
 
         # Transfer the comment list into a dict.
