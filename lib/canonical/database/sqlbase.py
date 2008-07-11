@@ -159,7 +159,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
 
     @staticmethod
     def _get_store():
-        return getUtility(IZStorm).get('main')
+        return getUtility(IZStorm).get('main-master')
 
     def __repr__(self):
         # XXX jamesh 2008-05-09:

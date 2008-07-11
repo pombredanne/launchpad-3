@@ -65,7 +65,10 @@ if startup:
 from storm.locals import *
 from storm.expr import *
 from storm.zope.interfaces import IZStorm
-store = getUtility(IZStorm).get('main')
+from canonical.launchpad.webapp.adapter import (
+        get_store, MAIN, AUTH, MASTER, SLAVE,
+        )
+store = get_store(MAIN, MASTER)
 
 #
 # Let's get a few handy objects going

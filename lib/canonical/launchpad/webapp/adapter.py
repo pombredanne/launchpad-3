@@ -40,6 +40,7 @@ __all__ = [
     'get_request_duration',
     'hard_timeout_expired',
     'soft_timeout_expired',
+    'get_store',
     ]
 
 
@@ -224,7 +225,14 @@ isolation_level_map = {
     'serializable': ISOLATION_LEVEL_SERIALIZABLE,
     }
 
+
 class LaunchpadDatabase(Postgres):
+
+    def __init__(self, uri):
+        # The uri is just a property name in the config, such as main_master
+        # or auth_slave.
+        config_entry = uri.database.replace('-', '_')
+        self._dsn = getattr(dbconfig, config_entry)
 
     def raw_connect(self):
         # Prevent database connections from the main thread if
@@ -232,10 +240,6 @@ class LaunchpadDatabase(Postgres):
         if (_main_thread_id is not None and
             _main_thread_id == thread.get_ident()):
             raise StormAccessFromMainThread()
-
-        self._dsn = 'dbname=%s user=%s' % (dbconfig.dbname, dbconfig.dbuser)
-        if dbconfig.dbhost:
-            self._dsn += ' host=%s' % dbconfig.dbhost
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
@@ -367,3 +371,33 @@ class LaunchpadStatementTracer:
 
 install_tracer(LaunchpadTimeoutTracer())
 install_tracer(LaunchpadStatementTracer())
+
+# Stores
+MAIN = 'main'
+AUTH = 'auth'
+
+# Flavors
+MASTER = 'master'
+SLAVE = 'slave'
+
+
+class MasterUnavailable(Exception):
+    """A master (writable replica) database was requested but not available.
+    """
+
+
+def get_store(name, flavor):
+    """Get a Storm Store.
+
+    Results should not be shared between threads, as which store is returned
+    for a given name or flavor can depend on thread state (eg. the HTTP
+    request currently being handled).
+
+    If a readonly flavor is requested (such as SLAVE), a writable Store may
+    be returned anyway.
+
+    :raises MasterUnavailable: if a master database was requested but it isn't
+        available.
+    """
+    return getUtility(IZStorm).get('%s-%s' % (name, flavor))
+

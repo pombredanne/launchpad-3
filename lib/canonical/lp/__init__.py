@@ -18,21 +18,8 @@ from canonical.database.sqlbase import (
 
 
 __all__ = [
-    'dbname', 'dbhost', 'dbuser', 'isZopeless', 'initZopeless',
+    'isZopeless', 'initZopeless',
     ]
-
-# Allow override by environment variables for backwards compatibility.
-# This was needed to allow tests to propagate settings to spawned processes.
-# However, now we just have a single environment variable (LAUNCHPAD_CONF)
-# which specifies which section of the config file to use instead,
-# Note that an empty host is different to 'localhost', as the latter
-# connects via TCP/IP instead of a Unix domain socket. Also note that
-# if the host is empty it can be overridden by the standard PostgreSQL
-# environment variables, this feature currently required by Async's
-# office environment.
-dbname = os.environ.get('LP_DBNAME', config.database.dbname)
-dbhost = os.environ.get('LP_DBHOST', config.database.dbhost or '')
-dbuser = os.environ.get('LP_DBUSER', config.launchpad.dbuser)
 
 
 def isZopeless():
