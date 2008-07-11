@@ -384,6 +384,8 @@ class WadlFieldAPI(WadlAPI):
             schema = self.field.schema
         else:
             raise TypeError("Field is not of a supported type.")
+        assert schema is not IObject, (
+            "Null schema provided for %s" % self.field.__name__)
         return EntryAdapterUtility.forSchemaInterface(schema)
 
 
@@ -416,6 +418,11 @@ class WadlOperationAPI(WadlAPI):
             return "POST"
         else:
             raise AssertionError("Named operations must use GET or POST.")
+
+    @property
+    def is_get(self):
+        """Whether or not the operation is a GET operation."""
+        return self.http_method == "GET"
 
     @property
     def doc(self):

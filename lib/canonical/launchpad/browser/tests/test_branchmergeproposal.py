@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Unit tests for BranchMergeProposals."""
 
@@ -8,12 +8,34 @@ from datetime import timedelta
 import unittest
 
 from canonical.launchpad.browser.branchmergeproposal import (
-    BranchMergeProposalVoteView)
+    BranchMergeProposalMergedView, BranchMergeProposalVoteView)
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.testing import TestCaseWithFactory, time_counter
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
+
+
+class TestBranchMergeProposalMergedView(TestCaseWithFactory):
+    """Tests for `BranchMergeProposalMergedView`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Use an admin so we don't have to worry about launchpad.Edit
+        # permissions on the merge proposals for adding comments, or
+        # nominating reviewers.
+        TestCaseWithFactory.setUp(self, user="foo.bar@canonical.com")
+        self.bmp = self.factory.makeBranchMergeProposal()
+
+    def test_initial_values(self):
+        # The default merged_revno is the head revno of the target branch.
+        view = BranchMergeProposalMergedView(self.bmp, LaunchpadTestRequest())
+        self.bmp.source_branch.revision_count = 1
+        self.bmp.target_branch.revision_count = 2
+        self.assertEqual(
+            {'merged_revno': self.bmp.target_branch.revision_count},
+            view.initial_values)
 
 
 class TestBranchMergeProposalVoteView(TestCaseWithFactory):
