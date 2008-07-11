@@ -7,7 +7,7 @@
     last_page_url context/lastBatchURL;
     total context/batch/total;
     size context/batch/size"
-  class="search-batch"
+    width="100%"
 >
   <tbody>
     <tr>
