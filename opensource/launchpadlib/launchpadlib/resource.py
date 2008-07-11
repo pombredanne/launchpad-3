@@ -42,9 +42,9 @@ class Resource:
         self.__dict__['wadl_resource'] = wadl_resource
 
     def has_param(self, param_name):
-        """Does this resource have a paramater with the given name?"""
+        """Does this resource have a parameter with the given name?"""
         for suffix in ['_link', '_collection_link', '']:
-            if self.wadl_resource.get_param(param_name + suffix):
+            if self.wadl_resource.get_parameter(param_name + suffix):
                 return True
         return False
 
@@ -56,11 +56,11 @@ class Resource:
                  representation, if the parameter is a link.
         """
         for suffix in ['_link', '_collection_link']:
-            param = self.wadl_resource.get_param(param_name + suffix)
+            param = self.wadl_resource.get_parameter(param_name + suffix)
             if param is not None:
                 return self._wrap_resource(
                     param.linked_resource, param_name=param.name)
-        param = self.wadl_resource.get_param(param_name)
+        param = self.wadl_resource.get_parameter(param_name)
         if param is None:
             raise KeyError("No such parameter: %s" % param_name)
         return param.get_value()

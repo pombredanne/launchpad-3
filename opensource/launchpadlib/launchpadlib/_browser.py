@@ -67,6 +67,7 @@ class Browser:
             str(url), method=method, body=data, headers=headers)
         # Turn non-2xx responses into exceptions.
         if response.status // 100 != 2:
+            import pdb; pdb.set_trace()
             raise HTTPError(response, content)
         return response, content
 
