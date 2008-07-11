@@ -124,7 +124,9 @@
       for="canonical.launchpad.interfaces.IBug"
       class="canonical.launchpad.browser.BugView"
       permission="zope.Public">
-
+      <browser:page
+          name="+portlet-privacy"
+          template="../templates/bug-portlet-privacy.pt" />
       <browser:page
           name="+portlet-watch"
           template="../templates/bug-portlet-watch.pt" />

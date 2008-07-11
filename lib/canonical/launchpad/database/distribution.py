@@ -1237,6 +1237,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
 
+    def userCanEdit(self, user):
+        """See `IDistribution`."""
+        if user is None:
+            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.owner) or user.inTeam(admins)
+
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""

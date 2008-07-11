@@ -40,7 +40,8 @@ class IBranchSetAPI(Interface):
     """
 
     def register_branch(branch_url, branch_name, branch_title,
-                        branch_description, author_email, product_name):
+                        branch_description, author_email, product_name,
+                        owner_name=''):
         """Register a new branch in Launchpad."""
 
     def link_branch_to_bug(branch_url, bug_id, whiteboard):
@@ -52,12 +53,24 @@ class BranchSetAPI(LaunchpadXMLRPCView):
     implements(IBranchSetAPI)
 
     def register_branch(self, branch_url, branch_name, branch_title,
-                        branch_description, author_email, product_name):
+                        branch_description, author_email, product_name,
+                        owner_name=''):
         """See IBranchSetAPI."""
-        owner = getUtility(ILaunchBag).user
-        assert owner is not None, (
+        registrant = getUtility(ILaunchBag).user
+        assert registrant is not None, (
             "register_branch shouldn't be accessible to unauthenicated"
             " requests.")
+
+        person_set = getUtility(IPersonSet)
+        if owner_name:
+            owner = person_set.getByName(owner_name)
+            if owner is None:
+                raise faults.NoSuchPersonWithName(owner_name)
+            if not registrant.inTeam(owner):
+                raise faults.NotInTeam(registrant.name, owner_name)
+        else:
+            owner = registrant
+
         if product_name:
             product = getUtility(IProductSet).getByName(product_name)
             if product is None:
@@ -87,12 +100,12 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             branch_title = None
 
         if not branch_name:
-            branch_name = branch_url.split('/')[-1]
+            branch_name = unicode_branch_url.split('/')[-1]
 
         if author_email:
-            author = getUtility(IPersonSet).getByEmail(author_email)
+            author = person_set.getByEmail(author_email)
         else:
-            author = owner
+            author = registrant
         if author is None:
             return faults.NoSuchPerson(
                 type="author", email_address=author_email)
@@ -104,7 +117,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 branch_type = BranchType.HOSTED
             branch = branch_set.new(
                 branch_type=branch_type,
-                name=branch_name, registrant=owner, owner=owner,
+                name=branch_name, registrant=registrant, owner=owner,
                 product=product, url=branch_url, title=branch_title,
                 summary=branch_description, author=author)
             if branch_type == BranchType.MIRRORED:
@@ -113,6 +126,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             return faults.BranchCreationForbidden(product.displayname)
         except BranchCreationException, err:
             return faults.BranchNameInUse(err)
+        except LaunchpadValidationError, err:
+            return faults.InvalidBranchName(err)
 
         return canonical_url(branch)
 
@@ -253,7 +268,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         owner_name, project_name, branch_name = unique_name[1:].split('/')
         owner = getUtility(IPersonSet).getByName(owner_name)
         if owner is None:
-            raise faults.NoSuchPersonWithUsername(owner_name)
+            raise faults.NoSuchPersonWithName(owner_name)
         if project_name != '+junk':
             project = getUtility(IProductSet).getByName(project_name)
             if project is None:

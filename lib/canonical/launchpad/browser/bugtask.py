@@ -94,6 +94,7 @@ from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
@@ -1060,26 +1061,14 @@ class BugTaskEditView(LaunchpadEditFormView):
 
         If yes, return True, otherwise return False.
         """
-        product_or_distro = self._getProductOrDistro()
-
-        return (
-            ((product_or_distro.bug_supervisor and
-                 self.user and
-                 self.user.inTeam(product_or_distro.bug_supervisor)) or
-                check_permission("launchpad.Edit", product_or_distro)))
+        return self.context.userCanEditMilestone(self.user)
 
     def userCanEditImportance(self):
         """Can the user edit the Importance field?
 
         If yes, return True, otherwise return False.
         """
-        product_or_distro = self._getProductOrDistro()
-
-        return (
-            ((product_or_distro.bug_supervisor and
-                 self.user and
-                 self.user.inTeam(product_or_distro.bug_supervisor)) or
-                check_permission("launchpad.Edit", product_or_distro)))
+        return self.context.userCanEditImportance(self.user)
 
     def _getProductOrDistro(self):
         """Return the product or distribution relevant to the context."""
@@ -1252,12 +1241,14 @@ class BugTaskEditView(LaunchpadEditFormView):
             bugtask.transitionToAssignee(new_assignee)
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
+            bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
             if bugtask.bugwatch is None:
                 # Reset the status and importance to the default values,
                 # since Unknown isn't selectable in the UI.
                 bugtask.transitionToStatus(
-                    IBugTask['status'].default, self.user)
-                bugtask.importance = IBugTask['importance'].default
+                    IBugTask['status'].default, bug_importer)
+                bugtask.transitionToImportance(
+                    IBugTask['importance'].default, bug_importer)
             else:
                 #XXX: Bjorn Tillenius 2006-03-01:
                 #     Reset the bug task's status information. The right
@@ -1265,8 +1256,9 @@ class BugTaskEditView(LaunchpadEditFormView):
                 #     Launchpad status, but it's not trivial to do at the
                 #     moment. I will fix this later.
                 bugtask.transitionToStatus(
-                    BugTaskStatus.UNKNOWN, self.user)
-                bugtask.importance = BugTaskImportance.UNKNOWN
+                    BugTaskStatus.UNKNOWN, bug_importer)
+                bugtask.transitionToImportance(
+                    BugTaskImportance.UNKNOWN,  bug_importer)
                 bugtask.transitionToAssignee(None)
 
         if changed:
