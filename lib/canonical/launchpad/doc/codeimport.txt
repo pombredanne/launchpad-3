@@ -264,7 +264,6 @@ invalidated.
     ...
     ----------------------------------------
 
-Finally, an email is sent out if the details are updated.
 
 == Update intervals ==
 
