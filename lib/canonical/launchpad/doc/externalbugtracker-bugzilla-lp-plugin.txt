@@ -410,8 +410,8 @@ bugtracker we can pass None as the rfc822msgid, since Bugzilla won't use
 it. addRemoteComment() returns the ID of the new comment on the remote
 server.
 
-addRemoteComment() calls Launchpad.add_comment() on the remote server, which
-requires authentication. To demonstrate this, we'll expire the
+addRemoteComment() calls Launchpad.add_comment() on the remote server,
+which requires authentication. To demonstrate this, we'll expire the
 authorization cookie so that it gets regenerated.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = True

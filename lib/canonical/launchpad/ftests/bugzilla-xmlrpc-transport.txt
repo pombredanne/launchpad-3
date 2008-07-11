@@ -129,9 +129,10 @@ The plugin API offers a get_bugs() method which can be used to retrieve
 bugs from a remote Bugzilla instance. It takes a list of bug IDs to
 retrieve and returns a list of dicts containing those bugs' data.  As is
 standard with the Bugzilla XMLRPC API, arguments are enclosed in a dict
-so that they are treated as key: value pairs.
+so that they are treated as "key: value" pairs.
 
-    >>> return_value = server.Launchpad.get_bugs({'ids': [1], 'permissive': True})
+    >>> return_value = server.Launchpad.get_bugs(
+    ...     {'ids': [1], 'permissive': True})
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict):
     ...     print "%s: %s" % (key, bug_dict[key])
@@ -234,8 +235,8 @@ bugs. We'll define a helper method for printing out comments.
     ...             print
     ...         print
 
-If Launchpad.comments() is passed a list of bug IDs it will return all the
-comments for all of those bugs.
+If Launchpad.comments() is passed a list of bug IDs it will return all
+the comments for all of those bugs.
 
     >>> return_dict = server.Launchpad.comments({'bug_ids': [1, 2]})
     >>> bugs_dict = return_dict['bugs']
