@@ -526,17 +526,17 @@ class IPublishingSet(Interface):
 
         The returned ResultSet contains entries with the wanted `Build`s
         associated with the corresponding source publication and its
-        targeted `DistroArchSeries` in a triple. This way the extra information
-        will be cached and the callsites can group builds in any convenient
-        form.
+        targeted `DistroArchSeries` in a triple. This way the extra
+        information will be cached and the callsites can group builds in
+        any convenient form.
 
         The result is ordered by:
 
          1. Ascending `SourcePackagePublishingHistory.id`,
          2. Ascending `DistroArchSeries.architecturetag`.
 
-        :param source_publication_ids: list of `SourcePackagePublishingHistory`
-            database IDs.
+        :param source_publication_ids: list of
+            `SourcePackagePublishingHistory`database IDs.
 
         :return: a storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
@@ -554,8 +554,8 @@ class IPublishingSet(Interface):
         Callsites should order this result after grouping by source,
         because SQL UNION can't be correctly ordered in SQL level.
 
-        :param source_publication_ids: list of `SourcePackagePublishingHistory`
-            database IDs.
+        :param source_publication_ids: list of
+            `SourcePackagePublishingHistory` database IDs.
 
         :return: an *unordered* storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `LibraryFileAlias`,
@@ -579,11 +579,12 @@ class IPublishingSet(Interface):
          3. Ascending `DistroArchSeries.architecturetag`.
          4. Descending `BinaryPackagePublishingHistory.id`.
 
-        :param source_publication_ids: list of `SourcePackagePublishingHistory`
-            database IDs.
+        :param source_publication_ids: list of
+            `SourcePackagePublishingHistory` database IDs.
 
         :return: a storm ResultSet containing tuples as
-            (`SourcePackagePublishingHistory`, `BinaryPackagePublishingHistory`,
+            (`SourcePackagePublishingHistory`,
+             `BinaryPackagePublishingHistory`,
              `BinaryPackageRelease`, `BinaryPackageName`, `DistroArchSeries`)
         """
 

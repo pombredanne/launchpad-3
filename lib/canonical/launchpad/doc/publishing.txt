@@ -673,7 +673,7 @@ So, they were already tested implicitly before in this file, but only
 passing a list with a single source publication ID. Now we will
 document how they work for multiple source publications.
 
-IPublishingSet is a essential component for
+IPublishingSet is an essential component for
 `ArchiveSourcePublications` feature, see more  information below in
 its corresponding test section.
 
