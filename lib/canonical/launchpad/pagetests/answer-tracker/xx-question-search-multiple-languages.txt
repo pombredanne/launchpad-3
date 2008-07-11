@@ -245,26 +245,10 @@ English, and can use it to locate English questions.
     'Slow system'
 
 
-== Multiple Request Languages in Latest Questions ==
-
-The portlet that lists the latest questions involving a person displays
-all the questions, whatever the user preferred languages. (Since this
-portlet is there to give an idea of activity, it also advertise
-multi-language activity. Besides this avoids misleading the user by
-showing no questions when there could be in other languages.)
-
-    >>> browser.open('http://launchpad.dev/~carlos')
-    >>> portlet = find_portlet(
-    ...    browser.contents, 'Latest questions')
-    >>> for link in portlet.fetch('a'):
-    ...    link.renderContents()
-    'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
-
-
 == Questions by language ==
 
 When open questions are in languages that no answer contacts
-speak, the project questions page displays links to see those 
+speak, the project questions page displays links to see those
 questions. Each link is to a page that displays the questions
 for a specific language. No Privileges Person is looking for a
 project that needs help. He visits Kubuntu and does not see a need,
