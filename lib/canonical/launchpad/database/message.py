@@ -181,7 +181,8 @@ class MessageSet:
 
     def fromEmail(self, email_message, owner=None, filealias=None,
             parsed_message=None, distribution=None,
-            create_missing_persons=False, fallback_parent=None):
+            create_missing_persons=False, fallback_parent=None,
+            date_created=None):
         """See IMessageSet.fromEmail."""
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
@@ -298,14 +299,18 @@ class MessageSet:
             parent = fallback_parent
 
         # figure out the date of the message
-        try:
-            datestr = parsed_message['date']
-            thedate = parsedate_tz(datestr)
-            timestamp = mktime_tz(thedate)
-            datecreated = datetime.fromtimestamp(timestamp,
-                tz=pytz.timezone('UTC'))
-        except (TypeError, ValueError, OverflowError):
-            raise InvalidEmailMessage('Invalid date %s' % datestr)
+        if date_created is not None:
+            datecreated = date_created
+        else:
+            try:
+                datestr = parsed_message['date']
+                thedate = parsedate_tz(datestr)
+                timestamp = mktime_tz(thedate)
+                datecreated = datetime.fromtimestamp(timestamp,
+                    tz=pytz.timezone('UTC'))
+            except (TypeError, ValueError, OverflowError):
+                raise InvalidEmailMessage('Invalid date %s' % datestr)
+
         # make sure we don't create an email with a datecreated in the
         # future. also make sure we don't create an ancient one
         now = datetime.now(pytz.timezone('UTC'))

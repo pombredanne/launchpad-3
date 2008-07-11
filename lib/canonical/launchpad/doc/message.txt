@@ -434,11 +434,33 @@ Also, we generally insist that a message has a date associated with it.
         [...]
     InvalidEmailMessage: Invalid date...
 
-But, we make sure that we don't create a message with a date that is
-futuristic:
+However, we can override this behaviour by passing a date_created
+parameter to fromEmail(). This is optional, and defaults to None, but it
+allows us to deal with those situations where fromEmail() would
+otherwise reject the method as invalid.
 
     >>> from datetime import datetime
     >>> import pytz
+
+    >>> msg_text = '''\
+    ... From: foo.bar@canonical.com
+    ... Subject: I have no date! Oh teh noes!
+    ... Message-Id: <therearenofnords>
+    ...
+    ... In search of cheesy comestibles.
+    ... '''
+
+    >>> date_created = datetime(
+    ...     2008, 7, 9, 14, 27, 40, tzinfo=pytz.timezone('UTC'))
+    >>> msg = msgset.fromEmail(
+    ...     msg_text, date_created=date_created)
+
+    >>> msg.datecreated
+    datetime.datetime(2008, 7, 9, 14, 27, 40, tzinfo=<UTC>)
+
+But, we make sure that we don't create a message with a date that is
+futuristic:
+
     >>> msg = msgset.fromEmail('''\
     ... From: foo.bar@canonical.com
     ... Date: Fri, 17 Jun 2016 10:45:13 +0100
