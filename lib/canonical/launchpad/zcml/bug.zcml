@@ -62,6 +62,12 @@
             />
     </content>
 
+    <adapter
+        for="canonical.launchpad.interfaces.IBug"
+        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+        factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"
+        />
+
     <browser:menus
         module="canonical.launchpad.browser"
         classes="BugFacets"

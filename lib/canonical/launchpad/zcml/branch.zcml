@@ -47,6 +47,12 @@
 
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+      factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBranchContainer"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
       factory="canonical.launchpad.browser.BranchSOP"
       />
