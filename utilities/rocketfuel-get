@@ -5,6 +5,10 @@
 # are working on.
 
 source "$HOME/.rocketfuel-env.sh"
+if [ "$?" != 0 ]; then
+    echo "Please run rocketfuel-setup first."
+    exit 1
+fi
 
 DEVPAD="devpad.canonical.com"
 ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"

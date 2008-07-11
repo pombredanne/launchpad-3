@@ -37,6 +37,10 @@ LP_SOURCEDEPS_PATH=\$(eval echo \${LP_SOURCEDEPS_PATH})
 fi
 
 source "$HOME/.rocketfuel-env.sh"
+if [ "$?" != 0 ]; then
+    echo "Something went wrong with rocketfuel-setup!"
+    exit 1
+fi
 
 # load up Ubuntu release details so we know which repos to enable
 source /etc/lsb-release
@@ -79,7 +83,27 @@ if [ $? -ne 0 ]; then
   echo "launchpad.dev added to /etc/hosts"
 fi
 
-for hostname in code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev xmlrpc-private.launchpad.dev openid.launchpad.dev shipit.ubuntu.dev shipit.kubuntu.dev shipit.edubuntu.dev feeds.launchpad.dev beta.launchpad.dev api.launchpad.dev bazaar.launchpad.dev; do
+declare -a hostnames
+hostnames=$(cat <<EOF
+    answers.launchpad.dev
+    api.launchpad.dev
+    bazaar.launchpad.dev
+    beta.launchpad.dev
+    blueprints.launchpad.dev
+    bugs.launchpad.dev
+    code.launchpad.dev
+    feeds.launchpad.dev
+    openid.launchpad.dev
+    shipit.edubuntu.dev
+    shipit.kubuntu.dev
+    shipit.ubuntu.dev
+    translations.launchpad.dev
+    xmlrpc-private.launchpad.dev
+    xmlrpc.launchpad.dev
+EOF
+    )
+
+for hostname in $hostnames; do
   dev_host;
 done
 

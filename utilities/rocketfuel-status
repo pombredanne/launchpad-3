@@ -5,6 +5,10 @@
 # landed on trunk.
 
 source "$HOME/.rocketfuel-env.sh"
+if [ "$?" != 0 ]; then
+    echo "Please run rocketfuel-setup first."
+    exit 1
+fi
 
 cd $LP_PROJECT_PATH
 for branch in *; do

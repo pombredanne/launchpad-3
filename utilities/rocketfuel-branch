@@ -4,6 +4,10 @@
 # source dependencies properly linked in.
 
 source "$HOME/.rocketfuel-env.sh"
+if [ "$?" != 0 ]; then
+    echo "Please run rocketfuel-setup first."
+    exit 1
+fi
 
 if [ "x$1" == "x" ]; then
     echo "Usage: $0 new-branch-name"
