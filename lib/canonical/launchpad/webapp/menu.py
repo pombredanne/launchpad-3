@@ -38,7 +38,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator, get_current_browser_request,
     LaunchpadView, UserAttributeCache)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -473,6 +472,7 @@ class enabled_with_permission:
         the logged-in user, disables the link, before returning it to the
         called.
         """
+        from canonical.launchpad.webapp.authorization import check_permission
         permission = self.permission
         def enable_if_allowed(self):
             link = func(self)
