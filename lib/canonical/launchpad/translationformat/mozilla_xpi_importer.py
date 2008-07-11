@@ -7,10 +7,7 @@ __all__ = [
     ]
 
 import textwrap
-from os.path import splitext
-from StringIO import StringIO
 from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
-from zipfile import ZipFile
 from zope.component import getUtility
 from zope.interface import implements
 

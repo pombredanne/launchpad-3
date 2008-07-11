@@ -7,6 +7,7 @@ __all__ = [
     'MozillaZipFile',
     ]
 
+from os.path import splitext
 from StringIO import StringIO
 from zipfile import ZipFile
 
