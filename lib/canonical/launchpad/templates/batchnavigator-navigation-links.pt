@@ -6,8 +6,7 @@
     next_page_url context/nextBatchURL;
     last_page_url context/lastBatchURL;
     total context/batch/total;
-    size context/batch/size
-  "
+    size context/batch/size"
   style="width: 100%;"
 >
   <tbody>
@@ -25,6 +24,15 @@
       </td>
       <td style="text-align: right; white-space: nowrap" 
           class="batch-navigation-links">
+        <a
+          tal:condition="first_page_url"
+          tal:attributes="href first_page_url"
+          class="first"
+          rel="first"
+        >First</a>
+        <span tal:condition="not:first_page_url" class="first inactive"
+        >First</span>
+        &#149;
         <a
           tal:condition="prev_page_url"
           tal:attributes="href prev_page_url"
