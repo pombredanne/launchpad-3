@@ -400,7 +400,7 @@ that made the change, so we need to pass the user as an argument.
     u'svn://svn.example.com/trunk'
     >>> data = {'svn_branch_url': 'svn://svn.example.com/branch/1.0'}
     >>> modify_event = svn_import.updateFromData(data, nopriv)
-    >>> modify_event.type.name
+    >>> modify_event.event_type.name
     'MODIFY'
     >>> svn_import.svn_branch_url
     u'svn://svn.example.com/branch/1.0'

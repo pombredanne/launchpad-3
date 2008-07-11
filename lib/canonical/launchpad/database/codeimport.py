@@ -187,6 +187,13 @@ class CodeImport(SQLBase):
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.FAILING)
         self._removeJob()
 
+    def changeDetails(self, data, user):
+        if 'review_status' in data:
+            raise AssertionError(
+                'changeDetails cannot be used to change review_status.')
+        modify_event = self.updateFromData(data, user)
+        #code_import_updated(modify_event)
+
     def _setStatusAndEmail(self, data, user, status):
         """Update the review_status and email interested parties."""
         data['review_status'] = status

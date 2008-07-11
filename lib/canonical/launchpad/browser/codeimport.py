@@ -374,7 +374,9 @@ class CodeImportEditView(CodeImportBaseView):
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         """Update the details."""
-        self.code_import.updateFromData(data, self.user)
+        self.code_import.changeDetails(data, self.user)
+        self.request.response.addNotification(
+            'The code import has been updated.')
 
     @action(_('Approve'), name='approve', condition=_showApprove)
     def approve_action(self, action, data):
