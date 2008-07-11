@@ -1057,7 +1057,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def searchPackages(self, text):
         """See `IDistroSeries`."""
-        drpcaches = DistroSeriesPackageCache.select("""
+        package_caches = DistroSeriesPackageCache.select("""
             distroseries = %s AND
             archive IN %s AND
             (fti @@ ftq(%s) OR
@@ -1071,7 +1071,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distinct=True)
         return [DistroSeriesBinaryPackage(
             distroseries=self,
-            binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
+            binarypackagename=cache.binarypackagename, cache=cache)
+            for cache in package_caches]
 
     def newArch(self, architecturetag, processorfamily, official, owner,
                 supports_virtualized=False):

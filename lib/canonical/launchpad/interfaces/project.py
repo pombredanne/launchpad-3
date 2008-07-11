@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
-    IHasOwner)
+    IHasOwner, ILaunchpadContainer)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
@@ -35,6 +35,9 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
+
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 
 class ProjectNameField(PillarNameField):
@@ -49,8 +52,9 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
                IHasMentoringOffers, IHasMilestones, IHasMugshot,
                IHasOwner, IHasSpecifications, IHasSprints,
                IHasTranslationGroup, IMakesAnnouncements,
-               IKarmaContext, IPillar):
+               IKarmaContext, IPillar, ILaunchpadContainer):
     """A Project."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True)
 
@@ -61,13 +65,15 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
         description=_("""Project group owner, it can either a valid
             Person or Team inside Launchpad context."""))
 
-    name = ProjectNameField(
-        title=_('Name'),
-        required=True,
-        description=_("""A unique name, used in URLs, identifying the project
-            group.  All lowercase, no special characters.
-            Examples: apache, mozilla, gimp."""),
-        constraint=name_validator)
+    name = exported(
+        ProjectNameField(
+            title=_('Name'),
+            required=True,
+            description=_(
+                """A unique name, used in URLs, identifying the project
+                group.  All lowercase, no special characters.
+                Examples: apache, mozilla, gimp."""),
+            constraint=name_validator))
 
     displayname = TextLine(
         title=_('Display Name'),

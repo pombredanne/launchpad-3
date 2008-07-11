@@ -70,7 +70,8 @@ class TestLpQueryDistroScript(unittest.TestCase):
             extra_args=[])
 
         self.assertEqual(
-            1, returncode, "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
+            1, returncode,
+            "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
             % (returncode, out, err))
         self.assertEqual(out.strip(), '')
         self.assertEqual(err.strip(), 'ERROR   <action> is required')
@@ -81,16 +82,19 @@ class TestLpQueryDistroScript(unittest.TestCase):
         Check if:
          * return code is ONE,
          * standard output is empty
-         * standard error contains the additional information about the failure.
+         * standard error contains the additional information about the
+           failure.
         """
         returncode, out, err = self.runLpQueryDistro(
             extra_args=['nahhh'])
 
         self.assertEqual(
-            1, returncode, "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
+            1, returncode,
+            "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
             % (returncode, out, err))
         self.assertEqual(out.strip(), '')
-        self.assertEqual(err.strip(), 'ERROR   Action "nahhh" is not supported')
+        self.assertEqual(
+            err.strip(), 'ERROR   Action "nahhh" is not supported')
 
     def testUnexpectedArgument(self):
         """Making lp-query-distro.py to fail by passing unexpected action.
@@ -104,7 +108,8 @@ class TestLpQueryDistroScript(unittest.TestCase):
             extra_args=['-s', 'hoary', 'current'])
 
         self.assertEqual(
-            1, returncode, "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
+            1, returncode,
+            "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
             % (returncode, out, err))
         self.assertEqual(out.strip(), '')
         self.assertEqual(
@@ -142,7 +147,7 @@ class TestLpQueryDistro(unittest.TestCase):
         self.assertEqual(self.test_output, u'warty')
 
     def testDevelopmentAndFrozenDistroSeries(self):
-        """Check if the 'developement' action copes with FROZEN distroseries."""
+        """The 'development' action should cope with FROZEN distroseries."""
         helper = self.getLpQueryDistro(test_args=['development'])
         helper.runAction(presenter=self.presenter)
         hoary = self.ubuntu['hoary']
@@ -213,40 +218,44 @@ class TestLpQueryDistro(unittest.TestCase):
         helper = self.getLpQueryDistro(test_args=[])
         helper._buildLocation()
 
-        self.assertEqual(helper.get_current, 'warty')
-        self.assertEqual(helper.get_development, 'hoary')
-        self.assertEqual(helper.get_supported, 'hoary warty')
-        self.assertEqual(helper.get_pending_suites, 'warty')
-        self.assertEqual(helper.get_archs, 'hppa i386')
-        self.assertEqual(helper.get_official_archs, 'i386')
-        self.assertEqual(helper.get_nominated_arch_indep, 'i386')
+        self.assertEqual(helper.current, 'warty')
+        self.assertEqual(helper.development, 'hoary')
+        self.assertEqual(helper.supported, 'hoary warty')
+        self.assertEqual(helper.pending_suites, 'warty')
+        self.assertEqual(helper.archs, 'hppa i386')
+        self.assertEqual(helper.official_archs, 'i386')
+        self.assertEqual(helper.nominated_arch_indep, 'i386')
+        self.assertEqual(helper.pocket_suffixes,
+                         '-backports -proposed -security -updates')
+
+    def assertAttributeRaisesScriptFailure(self, obj, attr_name):
+        """Asserts if accessing the given attribute name fails.
+
+        Check if `LaunchpadScriptFailure` is raised.
+        """
+        self.assertRaises(
+            LaunchpadScriptFailure, operator.attrgetter(attr_name), obj)
 
     def testActionsWithDefinedSuite(self):
         """Opposite of  testActionsWithUndefinedSuite.
 
-        Only some actions ('archs', 'official_arch', 'nominated_arch_indep')
-        work with defined suite, the other actions ('current', 'development'
-        and 'supported') will raise LaunchpadScriptError if the suite is
-        defined.
+        Only some actions ('archs', 'official_arch', 'nominated_arch_indep',
+        and pocket_suffixes) work with defined suite, the other actions
+        ('current', 'development' and 'supported') will raise
+        LaunchpadScriptError if the suite is defined.
         """
         helper = self.getLpQueryDistro(test_args=['-s', 'warty'])
         helper._buildLocation()
 
-        self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('get_current'),
-            helper)
-        self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('get_development'),
-            helper)
-        self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('get_supported'),
-            helper)
-        self.assertRaises(
-            LaunchpadScriptFailure, operator.attrgetter('get_pending_suites'),
-            helper)
-        self.assertEqual(helper.get_archs, 'hppa i386')
-        self.assertEqual(helper.get_official_archs, 'i386')
-        self.assertEqual(helper.get_nominated_arch_indep, 'i386')
+        self.assertAttributeRaisesScriptFailure(helper, 'current')
+        self.assertAttributeRaisesScriptFailure(helper, 'development')
+        self.assertAttributeRaisesScriptFailure(helper, 'supported')
+        self.assertAttributeRaisesScriptFailure(helper, 'pending_suites')
+        self.assertEqual(helper.archs, 'hppa i386')
+        self.assertEqual(helper.official_archs, 'i386')
+        self.assertEqual(helper.nominated_arch_indep, 'i386')
+        self.assertEqual(helper.pocket_suffixes,
+                         '-backports -proposed -security -updates')
 
 
 def test_suite():

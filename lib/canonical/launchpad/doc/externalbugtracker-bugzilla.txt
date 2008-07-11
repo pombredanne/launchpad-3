@@ -1,12 +1,11 @@
-ExternalBugTracker: Bugzilla
-============================
+= ExternalBugTracker: Bugzilla =
 
 An ExternalBugtracker is used to talk to remote bug trackers and update bug
 watches. This document describes how the Bugzilla implementation of
 ExternalBugTracker works.
 
-Basics
-------
+
+== Basics ==
 
 The class that implements EBT is called Bugzilla. It works differently
 depending on which version of Bugzilla it is talking to. If it's a
@@ -32,8 +31,81 @@ slightly modified implementation.
     >>> version
     (2, 20)
 
-Status Conversion
------------------
+
+== Launchpad plugin ==
+
+Some Bugzillas have a Launchpad plugin installed. For these bugtrackers,
+we use the BugzillaLPPlugin ExternalBugTracker class. The Bugzilla
+ExternalBugTracker class has a getExternalBugTrackerToUse() method which
+will return a BugzillaLPPlugin instance if the remote Bugzilla has the
+plugin installed or a standard Bugzilla ExternalBugTracker if not.
+
+The Bugzilla ExternalBugTracker has an xmlrpc_proxy property which we
+override for the purpose of this test.
+
+    >>> import xmlrpclib
+    >>> class FailingXMLRPCTransport(xmlrpclib.Transport):
+    ...
+    ...     error = xmlrpclib.Fault('Client', "Method doesn't exist")
+    ...
+    ...     def request(self, host, handler, request, verbose=None):
+    ...         if self.error is not None:
+    ...             raise self.error
+    ...         else:
+    ...             # We need to return something here, otherwise
+    ...             # xmlrpclib will explode.
+    ...             return '0.42-test'
+    ...
+    >>> test_transport = FailingXMLRPCTransport()
+
+    >>> class BugzillaWithFakeProxy(Bugzilla):
+    ...
+    ...     _test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...         'http://example.com/xmlrpc.cgi', transport=test_transport)
+
+    >>> bugzilla = BugzillaWithFakeProxy('http://example.com')
+
+When getExternalBugTrackerToUse() receives a Fault of type 'Client' from
+the remote server in response to its check, it will return a standard
+Bugzilla instance.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     BugzillaLPPlugin)
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+
+The returned bugtracker will be a Bugzilla instance bug not a
+BugzillaLPPlugin instance.
+
+    >>> (isinstance(bugzilla_to_use, Bugzilla) and
+    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    True
+
+The same is true if getExternalBugTrackerToUse() receives a 404 error
+from the remote server.
+
+    >>> test_transport.error = xmlrpclib.ProtocolError(
+    ...     'http://example.com/xmlrpc.cgi', 404, 'Not Found', None)
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+
+    >>> (isinstance(bugzilla_to_use, Bugzilla) and
+    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    True
+
+Some Bugzillas respond to an invalid XML-RPC method call by returning a
+500 error. getExternalBugTrackerToUse() handles those, too.
+
+    >>> test_transport.error = xmlrpclib.ProtocolError(
+    ...     'http://example.com/xmlrpc.cgi', 500, 'Server Error', None)
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+
+    >>> (isinstance(bugzilla_to_use, Bugzilla) and
+    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    True
+
+
+== Status Conversion ==
 
 It contains a function for converting one of its own status to a Malone
 status. Bugzilla statuses consist of two parts, the status, and the
@@ -79,8 +151,7 @@ returned.
     UnknownRemoteStatusError: FOO
 
 
-Updating Bug Watches
---------------------
+== Updating Bug Watches ==
 
 The main use of an ExternalBugtracker is to update bug watches. This is
 done through updateBugWatches(), which expects a list of bug watches to
@@ -229,7 +300,9 @@ We don't yet support updating the importance for Bugzilla bugs, so let's set it
 to some bogus value, to see that it gets set to UNKNOWN.
 
     >>> from canonical.launchpad.interfaces import BugTaskImportance
-    >>> thunderbird_task.importance = BugTaskImportance.HIGH
+    >>> thunderbird_task.transitionToImportance(
+    ...     BugTaskImportance.HIGH,
+    ...     thunderbird_task.pillar.owner)
 
 We need to create a new ExternalBugtracker for the Mozilla tracker:
 

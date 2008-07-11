@@ -6,41 +6,190 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuildstateTransitionError',
     'BuildStatus',
     'IBuild',
     'IBuildSet',
-    'IHasBuildRecords'
+    'IHasBuildRecords',
+    'incomplete_building_status',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Timedelta
+from zope.schema import Choice, Datetime, Int, Object, TextLine, Timedelta
 
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.launchpad.interfaces.archive import IArchive
+from canonical.launchpad.interfaces.builder import IBuilder
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.processor import IProcessor
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket)
+from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ISourcePackageRelease)
 
-class BuildstateTransitionError(Exception):
-    """Error raised when an invalid buildstate transition occurs."""
+
+class BuildStatus(DBEnumeratedType):
+    """Build status type
+
+    Builds exist in the database in a number of states such as 'complete',
+    'needs build' and 'dependency wait'. We need to track these states in
+    order to correctly manage the autobuilder queues in the BuildQueue table.
+    """
+
+    NEEDSBUILD = DBItem(0, """
+        Needs building
+
+        Build record is fresh and needs building. Nothing is yet known to
+        block this build and it is a candidate for building on any free
+        builder of the relevant architecture
+        """)
+
+    FULLYBUILT = DBItem(1, """
+        Successfully built
+
+        Build record is an historic account of the build. The build is complete
+        and needs no further work to complete it. The build log etc are all
+        in place if available.
+        """)
+
+    FAILEDTOBUILD = DBItem(2, """
+        Failed to build
+
+        Build record is an historic account of the build. The build failed and
+        cannot be automatically retried. Either a new upload will be needed
+        or the build will have to be manually reset into 'NEEDSBUILD' when
+        the issue is corrected
+        """)
+
+    MANUALDEPWAIT = DBItem(3, """
+        Dependency wait
+
+        Build record represents a package whose build dependencies cannot
+        currently be satisfied within the relevant DistroArchSeries. This
+        build will have to be manually given back (put into 'NEEDSBUILD') when
+        the dependency issue is resolved.
+        """)
+
+    CHROOTWAIT = DBItem(4, """
+        Chroot problem
+
+        Build record represents a build which needs a chroot currently known
+        to be damaged or bad in some way. The buildd maintainer will have to
+        reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
+        has been fixed.
+        """)
+
+    SUPERSEDED = DBItem(5, """
+        Build for superseded Source
+
+        Build record represents a build which never got to happen because the
+        source package release for the build was superseded before the job
+        was scheduled to be run on a builder. Builds which reach this state
+        will rarely if ever be reset to any other state.
+        """)
+
+    BUILDING = DBItem(6, """
+        Currently building
+
+        Build record represents a build which is being build by one of the
+        available builders.
+        """)
+
+    FAILEDTOUPLOAD = DBItem(7, """
+        Failed to upload
+
+        Build record is an historic account of a build that could not be
+        uploaded correctly. It's mainly genereated by failures in
+        process-upload which quietly rejects the binary upload resulted
+        by the build procedure.
+        In those cases all the build historic information will be stored (
+        buildlog, datebuilt, duration, builder, etc) and the buildd admins
+        will be notified via process-upload about the reason of the rejection.
+        """)
+
+
+incomplete_building_status = (
+    BuildStatus.NEEDSBUILD,
+    BuildStatus.BUILDING,
+    )
 
 
 class IBuild(Interface):
     """A Build interface"""
-    id = Attribute("The build ID.")
-    datecreated = Attribute("Date of BinPackage Creation")
-    processor = Attribute("BinaryPackage Processor")
-    distroarchseries = Attribute("The Distro Arch Series")
-    buildstate = Attribute("BinaryBuild State")
-    datebuilt = Attribute("Binary Date of Built")
-    buildduration = Attribute("Build Duration Interval")
-    buildlog = Attribute("The Build LOG Referency")
-    builder = Attribute("The Builder")
-    sourcepackagerelease = Attribute("SourcePackageRelease reference")
-    pocket = Attribute("Target pocket of this build")
-    dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
-    archive = Attribute("The archive")
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+
+    datecreated = Datetime(
+        title=_('Date created'), required=True, readonly=True,
+        description=_("The time when the build request was created."))
+
+    processor = Object(
+        title=_("Processor"), schema=IProcessor,
+        required=True, readonly=True,
+        description=_("The Processor where this build should be built."))
+
+    sourcepackagerelease = Object(
+        title=_('Source'), schema=ISourcePackageRelease,
+        required=True, readonly=True,
+        description=_("The SourcePackageRelease requested to build."))
+
+    distroarchseries = Object(
+        title=_("Architecture"), schema=IDistroArchSeries,
+        required=True, readonly=True,
+        description=_("The DistroArchSeries context for this build."))
+
+    archive = Object(
+        title=_("Archive"), schema=IArchive,
+        required=True, readonly=True,
+        description=_("The Archive context for this build."))
+
+    pocket = Choice(
+        title=_('Pocket'), required=True, vocabulary=PackagePublishingPocket,
+        description=_("The build targeted pocket."))
+
+    buildstate = Choice(
+        title=_('State'), required=True, vocabulary=BuildStatus,
+        description=_("The current build state."))
+
     estimated_build_duration = Timedelta(
         title=_("Estimated Build Duration"), required=False,
-        description=_("Estimated build duration interval"))
+        description=_("Estimated build duration interval. Optionally "
+                      "set during build creation time."))
+
+    date_first_dispatched = Datetime(
+        title=_('Date first dispatched'), required=False,
+        description=_("The actual build start time. Set when the build "
+                      "is dispatched the first time and not changed in "
+                      "subsequent build attempts."))
+
+    dependencies = TextLine(
+        title=_("Dependencies"), required=False,
+        description=_("Debian-like dependency line that must be satisfied "
+                      "before attempting to build this request."))
+
+    builder = Object(
+        title=_("Builder"), schema=IBuilder, required=False,
+        description=_("The Builder which address this build request."))
+
+    datebuilt = Datetime(
+        title=_('Date built'), required=False,
+        description=_("The time when the build result got collected."))
+
+    buildduration = Timedelta(
+        title=_("Build Duration"), required=False,
+        description=_("Build duration interval, calculated when the "
+                      "build result gets collected."))
+
+    buildlog = Object(
+        schema=ILibraryFileAlias, required=False,
+        title=_("The LibraryFileAlias containing the entire buildlog."))
+
+    upload_log = Object(
+        schema=ILibraryFileAlias, required=False,
+        title=_("The LibraryFileAlias containing the upload log for "
+                "build resulting in binaries that could not be processed "
+                "successfully. Otherwise it will be None."))
 
     # Properties
     current_component = Attribute(
@@ -146,88 +295,16 @@ class IBuild(Interface):
             `BuildStatus.NEEDSBUILD` state.
         """
 
-    def forceState(value):
-        """Set the build state to the value passed no matter what."""
+    def storeUploadLog(content):
+        """Store the given content as the build upload_log.
 
+        The given content is stored in the librarian, restricted as necessary
+        according to the targeted archive's privacy.  The content object's
+        'upload_log' attribute will point to the `LibrarianFileAlias`.
 
-class BuildStatus(DBEnumeratedType):
-    """Build status type
-
-    Builds exist in the database in a number of states such as 'complete',
-    'needs build' and 'dependency wait'. We need to track these states in
-    order to correctly manage the autobuilder queues in the BuildQueue table.
-    """
-
-    NEEDSBUILD = DBItem(0, """
-        Needs building
-
-        Build record is fresh and needs building. Nothing is yet known to
-        block this build and it is a candidate for building on any free
-        builder of the relevant architecture
-        """)
-
-    FULLYBUILT = DBItem(1, """
-        Successfully built
-
-        Build record is an historic account of the build. The build is complete
-        and needs no further work to complete it. The build log etc are all
-        in place if available.
-        """)
-
-    FAILEDTOBUILD = DBItem(2, """
-        Failed to build
-
-        Build record is an historic account of the build. The build failed and
-        cannot be automatically retried. Either a new upload will be needed
-        or the build will have to be manually reset into 'NEEDSBUILD' when
-        the issue is corrected
-        """)
-
-    MANUALDEPWAIT = DBItem(3, """
-        Dependency wait
-
-        Build record represents a package whose build dependencies cannot
-        currently be satisfied within the relevant DistroArchSeries. This
-        build will have to be manually given back (put into 'NEEDSBUILD') when
-        the dependency issue is resolved.
-        """)
-
-    CHROOTWAIT = DBItem(4, """
-        Chroot problem
-
-        Build record represents a build which needs a chroot currently known
-        to be damaged or bad in some way. The buildd maintainer will have to
-        reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
-        has been fixed.
-        """)
-
-    SUPERSEDED = DBItem(5, """
-        Build for superseded Source
-
-        Build record represents a build which never got to happen because the
-        source package release for the build was superseded before the job
-        was scheduled to be run on a builder. Builds which reach this state
-        will rarely if ever be reset to any other state.
-        """)
-
-    BUILDING = DBItem(6, """
-        Currently building
-
-        Build record represents a build which is being build by one of the
-        available builders.
-        """)
-
-    FAILEDTOUPLOAD = DBItem(7, """
-        Failed to upload
-
-        Build record is an historic account of a build that could not be
-        uploaded correctly. It's mainly genereated by failures in
-        process-upload which quietly rejects the binary upload resulted
-        by the build procedure.
-        In those cases all the build historic information will be stored (
-        buildlog, datebuilt, duration, builder, etc) and the buildd admins
-        will be notified via process-upload about the reason of the rejection.
-        """)
+        :param content: string containing the upload-processor log output for
+            the binaries created in this build.
+        """
 
 
 class IBuildSet(Interface):
@@ -283,12 +360,14 @@ class IBuildSet(Interface):
     def getCurrentPublication():
         """Return the publishing record for this build."""
 
-    def newBuild(
-        sourcepackagerelease, distroarchseries, pocket, processor, archive,
-        buildstate=BuildStatus.NEEDSBUILD, buildduration=None,
-        datecreated=None, datebuilt=None, estimated_build_duration=None,
-        builder=None, buildlog=None):
-        """Creates a new build object using the parameter values passed.
+    def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
+                                        buildstate=None):
+        """Return all builds related with the given list of source releases.
+
+        :param sourcepackagerelease_ids: list of `ISourcePackageRelease`s;
+        :param buildstate: option build state filter.
+
+        :return: a list of `IBuild` records not target to PPA archives.
         """
 
 

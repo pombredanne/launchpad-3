@@ -1,16 +1,18 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, Object, Text
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
 
+from canonical.lazr import EnumeratedType, Item
 
 __metaclass__ = type
 __all__ = [
     'ITranslationRelicensingAgreement',
     'ITranslationRelicensingAgreementEdit',
+    'TranslationRelicensingAgreementOptions'
     ]
 
 
@@ -25,10 +27,8 @@ class ITranslationRelicensingAgreement(Interface):
         title=_("The person who responded to the relicensing question"),
         readonly=False, required=True, schema=IPerson)
 
-    # Title of this field appears in the web form, thus it's
-    # oriented more towards being a useful UI than being a docstring.
     allow_relicensing = Bool(
-        title=_("License all my translations under BSD license"),
+        title=_("Whether the person agreed to the BSD license"),
         readonly=False, default=True, required=True)
 
     date_decided = Datetime(
@@ -36,8 +36,19 @@ class ITranslationRelicensingAgreement(Interface):
         readonly=True, required=True)
 
 
+class TranslationRelicensingAgreementOptions(EnumeratedType):
+    BSD = Item("""License all my translations under the BSD license""")
+    REMOVE = Item("""Have all my translations removed from Launchpad""")
+
+
 class ITranslationRelicensingAgreementEdit(ITranslationRelicensingAgreement):
-    """Extended ITranslaitonRelicensingAgreement with `back_to` field."""
+    """Extend ITranslationRelicensingAgreement with `back_to` field."""
+
     back_to = Text(
         title=_("URL to go back to after question is shown"),
         readonly=False, required=False)
+
+    allow_relicensing = Choice(
+        title=_("I would rather"),
+        vocabulary=TranslationRelicensingAgreementOptions,
+        required=True)

@@ -5,6 +5,7 @@ system understands the intrinsic differences between those kinds of
 organisation. This test just ensures we can view the distributions in the
 system.
 
+
 == Distribution listings ==
 
 There is a listing of all distributions at /distributions/:
@@ -13,31 +14,64 @@ There is a listing of all distributions at /distributions/:
     >>> print anon_browser.title
     Distributions registered in Launchpad
 
+
 == Distribution home pages ==
 
-Each distribution has a home page in the system. This test ensures that we
-can view that page for distributions that have series, and also those that
-do not have series.
+Each distribution has a home page in the system.  The page will show a
+consolidated view of series and milestones of that series.
 
-Some distributions have listings of major versions, for example Ubuntu:
+Some distributions have listings of major versions, for example Debian:
 
-    >>> anon_browser.open('http://launchpad.dev/ubuntu')
-    >>> print extract_text(find_portlet(
-    ...         anon_browser.contents, 'Major current versions'))
-    Major current versions
-    ...Hoary...
-    ...Warty...
+    >>> anon_browser.open('http://launchpad.dev/debian')
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'sandm'))
+    Series &amp; milestones
+    3.1 &#8220;Sarge&#8221; series - frozen
+    3.0 &#8220;Woody&#8221; series - current
+        Milestones: 3.1 and 3.1-rc1
+    All series
+    All milestones
 
-Others do not have series:
+If we add another milestone the list is well formatted using English grammar
+rules.
+
+    >>> admin_browser.open("http://launchpad.dev/debian/woody/+addmilestone")
+    >>> admin_browser.getControl("Name:").value = "testmilestone"
+    >>> admin_browser.getControl("Register milestone").click()
+
+    >>> anon_browser.open('http://launchpad.dev/debian')
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'sandm'))
+    Series &amp; milestones
+    ...
+        Milestones: testmilestone, 3.1, and 3.1-rc1
+    ...
+
+Each series and milestone are links that take you to that
+series and milestone page.
+
+    >>> anon_browser.getLink(url='/debian/sarge').text
+    '3.1 \xe2\x80\x9cSarge\xe2\x80\x9d series'
+
+    >>> anon_browser.getLink(url='/debian/woody').text
+    '3.0 \xe2\x80\x9cWoody\xe2\x80\x9d series'
+
+    >>> anon_browser.getLink(url='/debian/+milestone/3.1').text
+    '3.1'
+
+    >>> anon_browser.getLink(url='/debian/+milestone/3.1-rc1').text
+    '3.1-rc1'
+
+There are also two links "All series" and "All milestones" that take you
+to the distribution series and milestones pages respectively.
+
+    >>> anon_browser.getLink('All series').url
+    'http://launchpad.dev/debian/+series'
+
+    >>> anon_browser.getLink('All milestones').url
+    'http://launchpad.dev/debian/+milestones'
+
+Others do not have any series so the portlet is not shown.
 
     >>> anon_browser.open('http://launchpad.dev/gentoo')
-    >>> print find_portlet(anon_browser.contents, 'Major current versions')
+    >>> print find_tag_by_id(anon_browser.contents, 'sandm')
     None
 
-
-= Bug subscriptions =
-
-    >>> user_browser.open('http://launchpad.dev/ubuntu')
-    >>> user_browser.getLink('Subscribe to bug mail').click()
-    >>> print user_browser.url
-    http://launchpad.dev/ubuntu/+subscribe

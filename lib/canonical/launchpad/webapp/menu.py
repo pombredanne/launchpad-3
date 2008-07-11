@@ -394,10 +394,6 @@ class NavigationMenu(MenuBase):
 
     title = None
 
-    def _get_link(self, name):
-        return IFacetLink(
-            super(NavigationMenu, self)._get_link(name))
-
     def iterlinks(self, request_url=None):
         """See `INavigationMenu`.
 
@@ -408,19 +404,31 @@ class NavigationMenu(MenuBase):
         request = get_current_browser_request()
         view = get_current_view(request)
         if request_url is None:
-            request_url = request.getURL()
-        else:
-            request_url = str(request_url)
+            request_url = URI(request.getURL())
 
         for link in super(NavigationMenu, self).iterlinks():
-            link_url = str(link.url)
-            link.linked = not request_url.startswith(link_url)
-            # A link is selected when the request_url matches the link's URL
-            # or because the menu for the current view is the link's menu.
-            link.selected = (request_url.startswith(link_url)
-                             or self._is_menulink_for_view(link, view))
+            # The link should be unlinked if it is the current URL, or if
+            # the menu for the current view is the link's menu.
             link.url = link.url.ensureNoSlash()
+            link.linked = not (self._is_current_url(request_url, link.url)
+                               or self._is_menulink_for_view(link, view))
             yield link
+
+    def _is_current_url(self, request_url, link_url):
+        """Determines if <link_url> is the current URL.
+
+        There are two cases to consider:
+        1) If the link target doesn't have query parameters, the request URL
+        must be the same link (ignoring query parameters).
+        2) If the link target has query parameters, the request url must be
+        a prefix of it to be the current url.
+        """
+        if link_url.query is not None:
+            return str(request_url).startswith(str(link_url))
+        else:
+            request_url_without_query = (
+                request_url.replace(query=None).ensureNoSlash())
+            return link_url == request_url_without_query
 
     def _is_menulink_for_view(self, link, view):
         """Return True if the menu-link is for the current view.

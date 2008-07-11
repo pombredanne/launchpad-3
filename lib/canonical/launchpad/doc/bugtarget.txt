@@ -40,7 +40,8 @@ values to have some sample data for examples following.
 
     >>> bug_one_in_debian_firefox = getUtility(IBugTaskSet).get(4)
     >>> bug_two_in_debian_firefox = getUtility(IBugTaskSet).get(5)
-    >>> bug_one_in_debian_firefox.importance = BugTaskImportance.CRITICAL
+    >>> bug_one_in_debian_firefox.transitionToImportance(
+    ...     BugTaskImportance.CRITICAL, getUtility(ILaunchBag).user)
     >>> bug_one_in_debian_firefox.transitionToStatus(
     ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
     >>> bug_two_in_debian_firefox.transitionToStatus(

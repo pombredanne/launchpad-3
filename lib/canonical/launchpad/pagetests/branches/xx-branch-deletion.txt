@@ -31,6 +31,7 @@ delete the branch.
     Subscription of Sample Person to ~name.../firefox/to-delete (This is a
     subscription to this branch.)
     Branch deletion is permanent.
+    or Cancel
 
 Once the branch has been deleted, the user is taken back to the code
 listing for the owner of the branch, and a message is shown saying that

@@ -175,7 +175,7 @@ class ErrorReport:
         pageid = msg.getheader('page-id')
         username = msg.getheader('user')
         url = msg.getheader('url')
-        duration = int(msg.getheader('duration', '-1'))
+        duration = int(float(msg.getheader('duration', '-1')))
 
         # Explicitely use an iterator so we can process the file
         # sequentially. In most instances the iterator will actually
@@ -551,4 +551,3 @@ def end_request(event):
         globalErrorUtility.raising(
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)
-

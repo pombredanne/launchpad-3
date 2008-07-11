@@ -4,8 +4,9 @@ Launchpad provides a way for people to search across products, projects and
 distributions.
 
     >>> browser.open('http://launchpad.dev/')
-    >>> browser.getControl(name='text').value = 'whizzbar'
-    >>> browser.getControl('Search').click()
+    >>> project_search = browser.getForm(id='project-search')
+    >>> project_search.getControl(name='text').value = 'whizzbar'
+    >>> browser.getControl('Search', index=0).click()
 
 The actual search is done at the /projects page:
 
@@ -18,8 +19,9 @@ And when no matches are found, we are told so:
     True
 
     >>> browser.open('http://launchpad.dev/projects')
-    >>> browser.getControl(name='text').value = 'ubuntu'
-    >>> browser.getControl('Search').click()
+    >>> project_search = browser.getForm(id='project-search')
+    >>> project_search.getControl(name='text').value = 'ubuntu'
+    >>> project_search.getControl('Search').click()
     >>> browser.url
     'http://launchpad.dev/projects/+index?text=ubuntu'
 
@@ -62,9 +64,10 @@ If the user tries to do a search without any search terms, we ask him to enter
 some terms and do another search.
 
     >>> browser.open('http://launchpad.dev/projects')
-    >>> browser.getControl(name='text').value
+    >>> project_search = browser.getForm(id='project-search')
+    >>> project_search.getControl(name='text').value
     ''
-    >>> browser.getControl('Search').click()
+    >>> project_search.getControl('Search').click()
     >>> empty_search = find_tag_by_id(browser.contents, 'empty-search-string')
     >>> print empty_search.renderContents()
     <BLANKLINE>
@@ -111,12 +114,12 @@ instead.
     ...     os.path.dirname(canonical.launchpad.__file__), 'images')
     >>> ubuntu_icon = open(os.path.join(image_dir, 'branch.png'))
 
-    >>> admin_browser.open('http://launchpad.dev/ubuntu/+branding')
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/+edit')
     >>> emblem_ctrl = admin_browser.getControl(name='field.icon.action')
     >>> emblem_ctrl.getControl('Change to').selected = True
     >>> admin_browser.getControl(name='field.icon.image').add_file(
     ...     ubuntu_icon, 'image/png', 'ubuntu-icon.png')
-    >>> admin_browser.getControl('Change Branding', index=-1).click()
+    >>> admin_browser.getControl('Change', index=-1).click()
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu'
 

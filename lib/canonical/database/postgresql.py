@@ -73,7 +73,7 @@ def listReferences(cur, table, column, _state=None):
             AND NOT ref_pg_attribute.attisdropped
         ORDER BY src_pg_class.relname, src_pg_attribute.attname
         """
-    cur.execute(sql, vars())
+    cur.execute(sql, dict(table=table, column=column))
 
     # Recursive function. Create the list that stores our state.
     # We pass this down to subinvocations to avoid loops.
@@ -141,7 +141,7 @@ def listUniques(cur, table, column):
             t.relname = %(table)s
             AND a.attnum > 0
         '''
-    cur.execute(sql, vars())
+    cur.execute(sql, dict(table=table))
     for num,name in cur.fetchall():
         attributes[int(num)] = name
 
@@ -158,7 +158,7 @@ def listUniques(cur, table, column):
             i.indisunique = true
             AND t.relname = %(table)s
         '''
-    cur.execute(sql, vars())
+    cur.execute(sql, dict(table=table))
     for indkey, in cur.fetchall():
         # We have a space seperated list of integer keys into the attribute
         # mapping. Ignore the 0's, as they indicate a function and we don't
@@ -219,7 +219,7 @@ def listSequences(cur):
                     AND c.relname = %(table)s
                     AND a.attname = %(column)s
                 """
-            cur.execute(sql, vars())
+            cur.execute(sql, dict(schema=schema, table=table, column=column))
             num = cur.fetchone()[0]
             if num == 1:
                 rv.append( (schema, sequence, table, column) )

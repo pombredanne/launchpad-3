@@ -19,7 +19,7 @@ __all__ = ['IPillar', 'IPillarName', 'IPillarNameSet']
 
 class IPillar(Interface):
     active = Bool(title=_('Active'), description=_("""Whether or not
-        this pillar is considered active."""))
+        this item is active."""))
 
 
 class IPillarName(Interface):

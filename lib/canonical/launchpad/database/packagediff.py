@@ -11,19 +11,21 @@ import shutil
 from subprocess import Popen
 import tempfile
 
+from sqlobject import ForeignKey
+from storm.expr import Desc, In
+from storm.store import EmptyResultSet
+from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
-
-from sqlobject import ForeignKey
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.packagediff import (
     IPackageDiff, IPackageDiffSet)
 
 
@@ -129,6 +131,11 @@ class PackageDiff(SQLBase):
                 ancestry_archive.distribution.name.capitalize())
         return '%s to %s' % (ancestry_identifier, self.to_source.version)
 
+    @property
+    def private(self):
+        """See `IPackageDiff`."""
+        return self.to_source.upload_archive.private
+
     def performDiff(self):
         """See `IPackageDiff`.
 
@@ -189,9 +196,9 @@ class PackageDiff(SQLBase):
             result_file = None
             try:
                 result_file = open(result_path)
-                self.diff_content = getUtility(ILibrarianClient).addFile(
+                self.diff_content = getUtility(ILibraryFileAliasSet).create(
                     result_filename, compressed_bytes, result_file,
-                    'application/gzipped-patch')
+                    'application/gzipped-patch', restricted=self.private)
             finally:
                 if result_file is not None:
                     result_file.close()
@@ -221,3 +228,14 @@ class PackageDiffSet:
         """
         return PackageDiff.select(
             query, limit=limit, orderBy=['id'])
+
+    def getDiffsToReleases(self, sprs):
+        """See `IPackageDiffSet`."""
+        if len(sprs) == 0:
+            return EmptyResultSet()
+        store = getUtility(IZStorm).get('main')
+        spr_ids = [spr.id for spr in sprs]
+        result = store.find(PackageDiff, In(PackageDiff.to_sourceID, spr_ids))
+        result.order_by(PackageDiff.to_sourceID,
+                        Desc(PackageDiff.date_requested))
+        return result
