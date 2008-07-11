@@ -46,6 +46,7 @@ import errno
 import gc
 import logging
 import os
+import shutil
 import signal
 import socket
 import sys
@@ -1242,6 +1243,15 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     @classmethod
     @profiled
     def setUp(cls):
+        # Clear out the appserver's librarian directory to prevent any
+        # previous test's librarian data from conflicting.
+        child_config = cls._getConfig()
+        try:
+            shutil.rmtree(child_config.librarian_server.root)
+        except OSError, error:
+            if error.errno != errno.ENOENT:
+                raise
+            # Ignore it if the directory already doesn't exist.
         cls.startAllServices()
 
     @classmethod
@@ -1262,13 +1272,7 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     @classmethod
     def startAllServices(cls):
         cls.stopAllServices()
-        # Get the child process's pid file.
-        path = os.path.join(config.root, 'configs', cls.LPCONFIG,
-                            'launchpad-lazr.conf')
-        schema = ImplicitTypeSchema(config.schema.filename)
-        child_config = schema.load(path)
-        # lazr.config doesn't set this attribute.
-        child_config.instance_name = cls.LPCONFIG
+        child_config = cls._getConfig()
         pid = pidfile.get_pid('launchpad', child_config)
         if pid is not None:
             # Don't worry if the process no longer exists.
@@ -1329,3 +1333,14 @@ class AppServerLayer(LaunchpadFunctionalLayer):
         os.system('make -i -s LPCONFIG=%s stop_quickly_and_quietly'
                   % cls.LPCONFIG)
         wait_children(child_pids=cls._children)
+
+    @classmethod
+    def _getConfig(cls):
+        # Get the child process's configuration.
+        path = os.path.join(config.root, 'configs', cls.LPCONFIG,
+                            'launchpad-lazr.conf')
+        schema = ImplicitTypeSchema(config.schema.filename)
+        child_config = schema.load(path)
+        # lazr.config doesn't set this attribute.
+        child_config.instance_name = cls.LPCONFIG
+        return child_config

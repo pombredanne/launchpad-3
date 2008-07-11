@@ -20,7 +20,6 @@ CONFFILE=configs/${LPCONFIG}/launchpad.conf
 MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
-MAILMAN_VARDIR=/var/tmp/mailman
 
 APPSERVER_ENV = \
   LPCONFIG=${LPCONFIG} \
@@ -222,7 +221,7 @@ clean:
 	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
-	rm -rf lib/mailman $(MAILMAN_VARDIR)/*
+	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
 
 realclean: clean

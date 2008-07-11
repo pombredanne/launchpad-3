@@ -9,6 +9,9 @@ to all the members of the mailing list.  We can ignore these messages.
     >>> from canonical.launchpad.mailman.testing import helpers
     >>> list_one = helpers.create_list('itest-one')
 
+    # We don't care about the list creation notification message.
+    >>> smtpd.reset()
+
 
 == Non-member postings ==
 
@@ -36,8 +39,6 @@ mailing list.
 
     >>> len(smtpd.getMessages())
     0
-    >>> for message in smtpd.getMessage():
-    ...     print message.as_string()
 
 
 == Unvalidated member postings ==
@@ -352,7 +353,6 @@ to the mailing list.
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
-    >>> logout()
     >>> serial_watcher.resync()
     >>> commit()
     >>> serial_watcher.wait()
@@ -368,6 +368,7 @@ to the mailing list.
     ...
     ... Hi, I am now a member of this team's list!
     ... """)
+    >>> logout()
     >>> smtp_watcher.wait()
 
 Anne's message got posted to the mailing list.  Two copies were sent; one to
@@ -453,7 +454,9 @@ validated yet.
 
 However, once she validates this address, she can post from it.
 
+    >>> login('foo.bar@canonical.com')
     >>> alternative_email.status = EmailAddressStatus.VALIDATED
+    >>> logout()
     >>> serial_watcher.resync()
     >>> commit()
     >>> serial_watcher.wait()
