@@ -421,7 +421,7 @@ class FileBugViewBase(LaunchpadFormView):
                     file_description = filename
 
                 bug.addAttachment(
-                    owner=self.user, file_=StringIO(data['filecontent']),
+                    owner=self.user, data=StringIO(data['filecontent']),
                     filename=filename, description=file_description,
                     comment=attachment_comment, is_patch=data['patch'])
 
@@ -431,7 +431,7 @@ class FileBugViewBase(LaunchpadFormView):
 
             for attachment in extra_data.attachments:
                 bug.addAttachment(
-                    owner=self.user, file_=attachment['content'],
+                    owner=self.user, data=attachment['content'],
                     description=attachment['description'],
                     comment=attachment_comment,
                     filename=attachment['filename'],
