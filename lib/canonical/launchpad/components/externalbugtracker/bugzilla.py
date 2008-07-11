@@ -485,7 +485,7 @@ class BugzillaLPPlugin(Bugzilla):
         # 'comments' field of the bug.
         request_params = {
             'bug_ids': [actual_bug_id],
-            'include': ['id'],
+            'include_fields': ['id'],
             }
         bug_comments_dict = self.xmlrpc_proxy.Launchpad.comments(request_params)
 

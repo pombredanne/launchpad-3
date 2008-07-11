@@ -299,8 +299,10 @@ bugtracker and a couple of bugwatches.
 ISupportsCommentImport.getCommentIds() is the method used to get all the
 comment IDs for a given bug on a remote bugtracker.
 
-    >>> bugzilla.xmlrpc_transport.print_method_calls = False
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
     >>> bug_comment_ids = bugzilla.getCommentIds(bug_watch)
+    CALLED Launchpad.comments({'bug_ids': [1], 'include_fields': ['id']})
+
     >>> print sorted(bug_comment_ids)
     [1, 3]
 
@@ -319,6 +321,7 @@ ISupportsCommentImport.fetchComments() is the method used to fetch a
 given set of comments from the remote bugtracker. It takes a bug watch
 and a list of the comment IDs to retrieve for that bug watch.
 
+    >>> bugzilla.xmlrpc_transport.print_method_calls = False
     >>> bugzilla.fetchComments(bug_watch, [1, 3])
 
 The comments will be stored in the bugs dict as a dict of comment id =>

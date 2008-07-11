@@ -291,11 +291,11 @@ whose IDs are in the list of IDs passed will be returned.
         text: Bring the passengers to the bridge please Marvin.
         time: 20080616T13:08:08
 
-Passing an include parameter allows us to limit which fields are
+Passing an include_fields parameter allows us to limit which fields are
 returned for each comment.
 
     >>> return_dict = server.Launchpad.comments(
-    ...     {'bug_ids': [1, 2], 'include': ('id', 'author')})
+    ...     {'bug_ids': [1, 2], 'include_fields': ('id', 'author')})
     >>> bugs_dict = return_dict['bugs']
 
     >>> print_bug_comments(bugs_dict, sort_key='id')

@@ -609,7 +609,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
         bug_ids = arguments['bug_ids']
         comment_ids = arguments.get('ids')
-        fields_to_return = arguments.get('include')
+        fields_to_return = arguments.get('include_fields')
         comments_by_bug_id = {}
 
         def copy_comment(comment):
