@@ -11,12 +11,15 @@ __all__ = [
 import operator
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import (
     IArchivePermissionSet, IComponentSet, IHasQueueItems,
     IPackageUpload, IPackageUploadSet, ISectionSet, NotFoundError,
     PackagePublishingPriority, QueueInconsistentStateError,
     UnexpectedFormData, PackageUploadStatus)
+from canonical.launchpad.interfaces.binarypackagename import (
+    IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.files import (
     IBinaryPackageFileSet, ISourcePackageReleaseFileSet)
 from canonical.launchpad.scripts.queue import name_priority_map
@@ -119,7 +122,10 @@ class QueueItemsView(LaunchpadView):
                 package_upload_build.build.id] = package_upload_build
 
         build_upload_files = {}
+        binary_package_names = set()
         for binary_file in binary_files:
+            binary_package_names.add(
+                binary_file.binarypackagerelease.binarypackagename.id)
             build_id = binary_file.binarypackagerelease.build.id
             id = package_upload_builds_dict[build_id].packageupload.id
             if id not in build_upload_files:
@@ -152,9 +158,29 @@ class QueueItemsView(LaunchpadView):
                 source_upload_files[id] = []
             source_upload_files[id].append(source_file)
 
+        # One further optimisation we can make is to pre-calculate with
+        # a single query which of the uploaded binary files in this batch
+        # are new.
+        name_set = getUtility(IBinaryPackageNameSet)
+        # removeSecurityProxy is needed because sqlvalues() inside
+        # getNotNewByIDs can't handle a security-wrapped list of
+        # integers.
+        archive_ids = removeSecurityProxy(
+            self.context.distribution.all_distro_archive_ids)
+        old_binary_packages = name_set.getNotNewByNames(
+            binary_package_names, self.context, archive_ids)
+        # Listify to avoid repeated queries.
+        self.old_binary_packages = list(old_binary_packages)
+
         return [CompletePackageUpload(item, build_upload_files,
                                       source_upload_files)
                 for item in uploads]
+
+    def is_new(self, binarypackagerelease):
+        """Return True if the binarypackagerelease has no ancestry."""
+        return (
+            binarypackagerelease.binarypackagename
+            not in self.old_binary_packages)
 
     def availableActions(self):
         """Return the available actions according to the selected queue state.

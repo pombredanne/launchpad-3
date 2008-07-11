@@ -63,6 +63,17 @@ class IBinaryPackageNameSet(Interface):
         Returns the BinaryPackageName
         """
 
+    def getNotNewByNames(name_ids, distroseries, archive_ids):
+        """Return `BinaryPackageName`s that are already published.
+
+        For the `BinaryPackageName` ids specified, return a (possible)
+        subset where they are published, thus excluding "new" records.
+
+        :param ids: A sequence of IDs of `BinaryPackageName`s
+        :param distroseries: The context `DistroSeries` for the publications
+        :param archive_ids: The context `Archive` IDs for the publications
+        """
+
 
 class IBinaryAndSourcePackageName(Interface):
     """A Binary or SourcePackage name.

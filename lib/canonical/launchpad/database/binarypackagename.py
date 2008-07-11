@@ -17,11 +17,14 @@ from zope.schema.vocabulary import SimpleTerm
 from sqlobject import (
     SQLObjectNotFound, StringCol, SQLMultipleJoin, CONTAINSSTRING)
 
+from storm.store import EmptyResultSet
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectHugeVocabulary, BatchedCountableIterator)
 from canonical.launchpad.interfaces import (
     IBinaryPackageName, IBinaryPackageNameSet, NotFoundError)
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 
@@ -82,6 +85,36 @@ class BinaryPackageNameSet:
             return BinaryPackageName.byName(name)
         except SQLObjectNotFound:
             return BinaryPackageName(name=name)
+
+    def getNotNewByNames(self, name_ids, distroseries, archive_ids):
+        """See `IBinaryPackageNameSet`."""
+        # Here we're returning `BinaryPackageName`s where the records
+        # for the supplied `BinaryPackageName` IDs are published in the
+        # supplied distroseries.  If they're already publoshed then they
+        # must not be new.
+        if len(name_ids) == 0:
+            return EmptyResultSet()
+
+        statuses = (
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.PENDING
+            )
+
+        return BinaryPackageName.select("""
+            BinaryPackagePublishingHistory.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackagePublishingHistory.distroarchseries =
+                DistroArchSeries.id AND
+            DistroArchSeries.distroseries = %s AND
+            BinaryPackagePublishingHistory.status IN %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
+            BinaryPackageRelease.binarypackagename = BinaryPackageName.id AND
+            BinaryPackageName.id IN %s
+            """ % sqlvalues(distroseries, statuses, archive_ids, name_ids),
+            distinct=True,
+            clauseTables=["BinaryPackagePublishingHistory",
+                          "BinaryPackageRelease",
+                          "DistroArchSeries"])
 
 
 class BinaryPackageNameIterator(BatchedCountableIterator):
