@@ -418,30 +418,21 @@ The launchpad.Edit privilege is required to use CodeImport.updateFromData.
 CodeImports provide a slightly different method for updates from the
 UI: changeDetails also sends out an email describing the changes.
 
+    >>> from canonical.launchpad.mailout.codeimport import (
+    ...     make_email_body_for_code_import_update)
     >>> login('david.allouche@canonical.com')
-    >>> new_svn_import = factory.makeCodeImport(
-    ...     svn_branch_url='svn://svn.example.com/trunk')
-    >>> ignored_mail = pop_notifications()
-    >>> data = {'svn_branch_url': 'svn://svn.example.com/real-trunk'}
-    >>> new_svn_import.changeDetails(data, nopriv)
-    >>> print_emails(group_similar=True)
-    From: ...
-    To: ...
-    Subject: Code import product.../name... status: 
-    <BLANKLINE>
-    The foreign branch details for the import have been changed to:
+    >>> data = {'svn_branch_url': 'svn://svn.example.com/trunk'}
+    >>> modify_event = svn_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(modify_event)
+    ~vcs-imports/firefox/trunk-svn is now being imported from:
         svn://svn.example.com/trunk
-    ...
-    ----------------------------------------
+    instead of:
+        svn://svn.example.com/branch/1.0
 
     >>> data = {'cvs_root': ':pserver:anoncvs@cvs.example.com:/var/cvsroot'}
-    >>> cvs_import.changeDetails(data, nopriv)
-    >>> print_emails(group_similar=True)
-    From: No Privileges Person <no-priv@canonical.com>
-    To: no-priv@canonical.com
-    Subject: Code import product.../name... status: Failing
-    <BLANKLINE>
-    The foreign branch details for the import have been changed to:
-        evolution from :pserver:anoncvs@cvs.example.com:/var/cvsroot
-    ...
-    ----------------------------------------
+    >>> modify_event = cvs_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(modify_event)
+    ~vcs-imports/firefox/trunk-cvs is now being imported from:
+        hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
+    instead of:
+        hello from :pserver:anonymous@cvs.example.com:/cvsroot

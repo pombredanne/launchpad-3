@@ -43,6 +43,55 @@ def new_import(code_import, event):
         simple_sendmail(from_address, address, subject, body, headers)
 
 
+def make_email_body_for_code_import_update(event):
+    code_import = event.code_import
+    event_data = dict(event.items())
+
+    status = []
+
+    if CodeImportEventDataType.OLD_REVIEW_STATUS in event_data:
+        if code_import.review_status == CodeImportReviewStatus.INVALID:
+            status.append("The import has been marked as invalid.")
+        elif code_import.review_status == CodeImportReviewStatus.REVIEWED:
+            status.append(
+                "The import has been approved and an import will start "
+                "shortly.")
+        elif code_import.review_status == CodeImportReviewStatus.SUSPENDED:
+            status.append("The import has been suspended.")
+        elif code_import.review_status == CodeImportReviewStatus.FAILING:
+            status.append("The import has been marked as failing.")
+        else:
+            raise AssertionError('Unexpected review status for code import.')
+
+    details_change_prefix = '\n'.join(textwrap.wrap(
+        "%s is now being imported from:" % code_import.branch.unique_name))
+    if code_import.rcs_type == RevisionControlSystems.CVS:
+        if (CodeImportEventDataType.OLD_CVS_ROOT in event_data or
+            CodeImportEventDataType.OLD_CVS_MODULE in event_data):
+            new_details = '    %s from %s' % (
+                code_import.cvs_module, code_import.cvs_root)
+            old_root = event_data.get(
+                CodeImportEventDataType.OLD_CVS_ROOT,
+                code_import.cvs_root)
+            old_module = event_data.get(
+                CodeImportEventDataType.OLD_CVS_MODULE,
+                code_import.cvs_module)
+            old_details = '    %s from %s' % (old_module, old_root)
+            status.append((details_change_prefix + '\n' + new_details +
+                           "\ninstead of:\n" + old_details))
+    elif code_import.rcs_type == RevisionControlSystems.SVN:
+        if CodeImportEventDataType.OLD_SVN_BRANCH_URL in event_data:
+            old_url = event_data[CodeImportEventDataType.OLD_SVN_BRANCH_URL]
+            status.append(details_change_prefix + '\n    ' +
+                          code_import.svn_branch_url + "\ninstead of:\n    " +
+                          old_url)
+    else:
+        raise AssertionError(
+            'Unexpected rcs_type %r for code import.' % code_import.rcs_type)
+
+    return '\n\n'.join(status)
+
+
 def code_import_updated(event):
     """Email the branch subscribers, and the vcs-imports team with new status.
 
@@ -63,54 +112,10 @@ def code_import_updated(event):
         code_import.product.name, branch.name,
         code_import.review_status.title)
 
-    event_data = dict(event.items())
-
-    status = []
-
-    if CodeImportEventDataType.OLD_REVIEW_STATUS in event_data:
-        if code_import.review_status == CodeImportReviewStatus.INVALID:
-            status.append("The import has been marked as invalid.")
-        elif code_import.review_status == CodeImportReviewStatus.REVIEWED:
-            status.append(
-                "The import has been approved and an import will start "
-                "shortly.")
-        elif code_import.review_status == CodeImportReviewStatus.SUSPENDED:
-            status.append("The import has been suspended.")
-        elif code_import.review_status == CodeImportReviewStatus.FAILING:
-            status.append("The import has been marked as failing.")
-        else:
-            raise AssertionError('Unexpected review status for code import.')
-
-    details_change_prefix = '\n'.join(textwrap.wrap(
-        "%s is now being imported from:" % branch.unique_name))
-    if code_import.rcs_type == RevisionControlSystems.CVS:
-        if (CodeImportEventDataType.OLD_CVS_ROOT in event_data or
-            CodeImportEventDataType.OLD_CVS_MODULE in event_data):
-            new_details = '    %s from %s' % (
-                code_import.cvs_root, code_import.cvs_module)
-            old_root = event_data.get(
-                CodeImportEventDataType.OLD_CVS_ROOT,
-                code_import.cvs_root)
-            old_module = event_data.get(
-                CodeImportEventDataType.OLD_CVS_MODULE,
-                code_import.cvs_module)
-            old_details = '    %s from %s' % (old_module, old_root)
-            status.append((details_change_prefix + '\n' + new_details +
-                           "instead of:\n" + old_details))
-    elif code_import.rcs_type == RevisionControlSystems.SVN:
-        if CodeImportEventDataType.OLD_SVN_BRANCH_URL in event_data:
-            old_url = event_data[CodeImportEventDataType.OLD_SVN_BRANCH_URL]
-            status.append(details_change_prefix + '\n    ' +
-                          code_import.svn_branch_url + "instead of:\n    " +
-                          old_url)
-    else:
-        raise AssertionError(
-            'Unexpected rcs_type %r for code import.' % code_import.rcs_type)
-
     email_template = get_email_template('code-import-status-updated.txt')
     template_params = {
-        'status': '\n\n'.join(status),
-        'branch': canonical_url(branch)}
+        'body': make_email_body_for_code_import_update(event),
+        'branch': canonical_url(code_import.branch)}
 
     from_address = format_address(
         event.person.displayname, event.person.preferredemail.email)
