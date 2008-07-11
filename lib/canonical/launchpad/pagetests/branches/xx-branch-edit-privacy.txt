@@ -76,10 +76,8 @@ Mark the public branch private.
 
 The branch is now private, so it assumes the standard private presentation.
 
-    >>> print find_tag_by_id(browser.contents, 'container')
-    <div...class="private"...</div>
-    >>> print find_tag_by_id(browser.contents, 'privatebadge')
-    <img...private...>
+    >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
+    This branch is private
 
 However when the user now looks to edit the branch details, there
 is no option to mark the branch as public.
