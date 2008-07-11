@@ -1,4 +1,4 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -7,6 +7,7 @@ import os
 import shutil
 import socket
 import sys
+from xmlrpclib import ServerProxy
 import urllib2
 
 from bzrlib.branch import Branch
@@ -15,11 +16,15 @@ from bzrlib.errors import (
     BzrError, NotBranchError, ParamikoNotPresent,
     UnknownFormatError, UnsupportedFormatError)
 from bzrlib.progress import DummyProgress
+from bzrlib.transport import get_transport
 import bzrlib.ui
 
 from canonical.config import config
 from canonical.codehosting import ProgressUIFactory
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller import get_lock_id_for_branch_id
+from canonical.codehosting.transport import (
+    BlockingProxy, get_chrooted_transport, LaunchpadInternalServer)
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -156,6 +161,13 @@ class PullerWorker:
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
+    def _getLaunchpadServer(self):
+        """Return a LaunchpadInternalServer for fetching hosted branches."""
+        authserver = BlockingProxy(ServerProxy(config.codehosting.authserver))
+        branch_transport = get_chrooted_transport(
+            config.codehosting.branches_root)
+        return LaunchpadInternalServer(authserver, branch_transport)
+
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
 
@@ -272,7 +284,6 @@ class PullerWorker:
             else:
                 # The destination is in a different format to the source, so
                 # we'll delete it and mirror from scratch.
-                shutil.rmtree(self.dest)
                 branch = self._createDestBranch()
         self._dest_branch = branch
 
@@ -282,7 +293,9 @@ class PullerWorker:
         #    Bzrdir.sprout is *almost* what we want here, except that sprout
         #    creates a working tree that we don't need. Instead, we do some
         #    low-level operations.
-        os.makedirs(self.dest)
+        if os.path.exists(self.dest):
+            shutil.rmtree(self.dest)
+        ensure_base(get_transport(self.dest))
         bzrdir_format = self._source_branch.bzrdir._format
         bzrdir = bzrdir_format.initialize(self.dest)
         repo_format = self._source_branch.repository._format
@@ -312,16 +325,31 @@ class PullerWorker:
         oops_id = self._record_oops(error)
         self.protocol.mirrorFailed(self, error, oops_id)
 
+    def mirrorWithoutChecks(self):
+        """Mirror the source branch to the destination branch.
+
+        This method doesn't do any error handling or send any messages via the
+        reporting protocol -- a "naked mirror", if you will. This is
+        particularly useful for tests that want to mirror a branch and be
+        informed immediately of any errors.
+        """
+        server = self._getLaunchpadServer()
+        server.setUp()
+        try:
+            self._checkSourceUrl()
+            self._checkBranchReference()
+            self._openSourceBranch()
+            self._mirrorToDestBranch()
+        finally:
+            server.tearDown()
+
     def mirror(self):
         """Open source and destination branches and pull source into
         destination.
         """
         self.protocol.startMirroring(self)
         try:
-            self._checkSourceUrl()
-            self._checkBranchReference()
-            self._openSourceBranch()
-            self._mirrorToDestBranch()
+            self.mirrorWithoutChecks()
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #

@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # _valid_nick() in generate_nick causes E1101
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,E1101,W0612
@@ -361,8 +361,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
-
-    commercial_vouchers = None
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -1090,21 +1088,20 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def getCommercialSubscriptionVouchers(self):
         """See `IPerson`."""
-        if self.commercial_vouchers is None:
-            voucher_proxy = getUtility(ISalesforceVoucherProxy)
-            self.commercial_vouchers = voucher_proxy.getAllVouchers(self)
-            self.unredeemed_commercial_vouchers = []
-            self.redeemed_commercial_vouchers = []
-            for voucher in self.commercial_vouchers:
-                assert voucher.status in VOUCHER_STATUSES, (
-                    "Voucher %s has unrecoginzed status %s" %
-                    (voucher.voucher_id, voucher.status))
-                if voucher.status == 'Redeemed':
-                    self.redeemed_commercial_vouchers.append(voucher)
-                else:
-                    self.unredeemed_commercial_vouchers.append(voucher)
-        return (self.unredeemed_commercial_vouchers,
-                self.redeemed_commercial_vouchers)
+        voucher_proxy = getUtility(ISalesforceVoucherProxy)
+        commercial_vouchers = voucher_proxy.getAllVouchers(self)
+        unredeemed_commercial_vouchers = []
+        redeemed_commercial_vouchers = []
+        for voucher in commercial_vouchers:
+            assert voucher.status in VOUCHER_STATUSES, (
+                "Voucher %s has unrecognized status %s" %
+                (voucher.voucher_id, voucher.status))
+            if voucher.status == 'Redeemed':
+                redeemed_commercial_vouchers.append(voucher)
+            else:
+                unredeemed_commercial_vouchers.append(voucher)
+        return (unredeemed_commercial_vouchers,
+                redeemed_commercial_vouchers)
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -2033,6 +2030,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
+            # Automated processes need access to set the account().
+            removeSecurityProxy(email).account = email.person.account
             getUtility(IHWSubmissionSet).setOwnership(email)
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
@@ -2063,6 +2062,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.account.status = AccountStatus.ACTIVE
             self.account.status_comment = None
             self.account.sync() # sync so validpersoncache updates.
+        # Anonymous users may claim their profile; remove the proxy
+        # to set the account.
+        removeSecurityProxy(email).account = self.account
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2089,7 +2091,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.
-        email = EmailAddress.get(email.id)
+        email = removeSecurityProxy(email)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
         getUtility(IHWSubmissionSet).setOwnership(email)
@@ -2518,8 +2520,17 @@ class PersonSet:
         query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def find(self, text="", orderBy=None):
+    def getAllValidPersonsAndTeams(self):
         """See `IPersonSet`."""
+        return self.getAllTeams().union(
+            self.getAllValidPersons(),
+            orderBy=Person._sortingColumnsForSetOperations)
+
+    def find(self, text, orderBy=None):
+        """See `IPersonSet`."""
+        if not text:
+            # Return an empty result set.
+            return Person.select("1 = 2")
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
@@ -2941,7 +2952,8 @@ class PersonSet:
                 UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
                 WHERE owner = %(from_id)s AND name = %(name)s
                     AND (%(product)s IS NULL OR product = %(product)s)
-                ''', vars())
+                ''', dict(to_id=to_id, from_id=from_id,
+                          name=name, new_name=new_name, product=product))
         skip.append(('branch','owner'))
 
         # Update MailingListSubscription. Note that no remaining records
@@ -3091,9 +3103,9 @@ class PersonSet:
 
         # Update PackageBugSupervisor entries.
         cur.execute('''
-            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)s
-            WHERE bug_supervisor=%(from_id)s
-            ''', vars())
+            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)d
+            WHERE bug_supervisor=%(from_id)d
+            ''' % vars())
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
         # Update the SpecificationFeedback entries that will not conflict

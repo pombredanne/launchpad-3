@@ -7,6 +7,8 @@
   <!-- DistributionSourcePackage -->
   <content class="canonical.launchpad.database.DistributionSourcePackage">
     <allow
+      interface="canonical.launchpad.interfaces.launchpad.ILaunchpadContainer" />
+    <allow
       attributes="distribution sourcepackagename name displayname title
                   distro get_distroseries_packages subscribers currentrelease
                   releases publishing_history binary_package_names
@@ -19,7 +21,8 @@
                   bugtargetdisplayname bugtargetname getMostCommonBugs
                   getBugCounts bug_subscriptions getSubscriptions
                   getSubscription parent_subscription_target
-                  getBugNotificationsRecipients" />
+                  getBugNotificationsRecipients
+                  getReleasesAndPublishingHistory" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addSubscription addBugSubscription

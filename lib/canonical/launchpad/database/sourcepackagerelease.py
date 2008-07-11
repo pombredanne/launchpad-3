@@ -27,7 +27,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
-from canonical.launchpad.interfaces.build import BuildStatus, IBuildSet
+from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packagediff import (
     PackageDiffAlreadyRequested)
@@ -299,13 +299,16 @@ class SourcePackageRelease(SQLBase):
             return 0.0
 
     def createBuild(self, distroarchseries, pocket, archive, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=None):
         """See ISourcePackageRelease."""
         # Guess a processor if one is not provided
         if processor is None:
             pf = distroarchseries.processorfamily
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
+
+        if status is None:
+            status = BuildStatus.NEEDSBUILD
 
         # Force the current timestamp instead of the default
         # UTC_NOW for the transaction, avoid several row with
@@ -359,11 +362,14 @@ class SourcePackageRelease(SQLBase):
                 estimate = 5
             estimated_build_duration = datetime.timedelta(minutes=estimate)
 
-        return getUtility(IBuildSet).newBuild(
-            distroarchseries=distroarchseries, sourcepackagerelease=self,
-            processor=processor, buildstate=status, datecreated=datecreated,
-            pocket=pocket, estimated_build_duration=estimated_build_duration,
-            archive=archive)
+        return Build(distroarchseries=distroarchseries,
+                     sourcepackagerelease=self,
+                     processor=processor,
+                     buildstate=status,
+                     datecreated=datecreated,
+                     pocket=pocket,
+                     estimated_build_duration=estimated_build_duration,
+                     archive=archive)
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""

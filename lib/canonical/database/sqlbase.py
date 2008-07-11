@@ -12,10 +12,11 @@ from psycopg2.extensions import (
 import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
-import storm.sqlobject
 from storm.zope.interfaces import IZStorm
 from sqlobject.sqlbuilder import sqlrepr
 import transaction
+
+from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -45,6 +46,7 @@ __all__ = [
     'quoteIdentifier',
     'quote_identifier',
     'RandomiseOrderDescriptor',
+    'reset_store',
     'rollback',
     'SQLBase',
     'sqlvalues',
@@ -523,9 +525,17 @@ def block_implicit_flushes(func):
             return func(*args, **kwargs)
         finally:
             store.unblock_implicit_flushes()
-    wrapped.__name__ = func.__name__
-    wrapped.__doc__ = func.__doc__
-    return wrapped
+    return mergeFunctionMetadata(func, wrapped)
+
+
+def reset_store(func):
+    """Function decorator that resets the main store."""
+    def wrapped(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        finally:
+            getUtility(IZStorm).get("main").reset()
+    return mergeFunctionMetadata(func, wrapped)
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid
@@ -568,12 +578,36 @@ def connect_string(user, dbname=None):
     return con_str
 
 
-def cursor():
-    '''Return a cursor from the current database connection.
+class cursor:
+    """A DB-API cursor-like object for the Storm connection.
 
-    This is useful for code that needs to issue database queries
-    directly rather than using the SQLObject interface
-    '''
-    connection = getUtility(IZStorm).get('main')._connection
-    connection._ensure_connected()
-    return connection.build_raw_cursor()
+    Use of this class is deprecated in favour of using Store.execute().
+    """
+    def __init__(self):
+        self._connection = getUtility(IZStorm).get('main')._connection
+        self._result = None
+
+    def execute(self, query, params=None):
+        self.close()
+        if isinstance(params, dict):
+            query = query % sqlvalues(**params)
+        elif params is not None:
+            query = query % sqlvalues(*params)
+        self._result = self._connection.execute(query)
+
+    @property
+    def rowcount(self):
+        return self._result._raw_cursor.rowcount
+
+    def fetchone(self):
+        assert self._result is not None, "No results to fetch"
+        return self._result.get_one()
+
+    def fetchall(self):
+        assert self._result is not None, "No results to fetch"
+        return self._result.get_all()
+
+    def close(self):
+        if self._result is not None:
+            self._result.close()
+            self._result = None

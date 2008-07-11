@@ -11,12 +11,14 @@ __all__ = [
 
 from zope.interface import Attribute
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadContainer
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 
 
-class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
+class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget,
+                                 ILaunchpadContainer):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking
@@ -38,6 +40,15 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
     releases = Attribute(
         "The list of all releases of this source package "
         "in this distribution.")
+
+    def getReleasesAndPublishingHistory():
+        """Return a list of all releases of this source package in this
+        distribution and their correspodning publishing history.
+
+        Items in the list are tuples comprised of a
+        DistributionSourcePackage and a list of
+        SourcePackagePublishingHistory objects.
+        """
 
     publishing_history = Attribute(
         "Return a list of publishing records for this source package in this "
