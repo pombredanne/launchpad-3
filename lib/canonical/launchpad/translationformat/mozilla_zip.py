@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'get_file_suffix',
     'MozillaZipFile',
     ]
 
@@ -12,6 +13,18 @@ from zipfile import ZipFile
 from canonical.launchpad.translationformat.xpi_header import XpiHeader
 from canonical.launchpad.translationformat.xpi_manifest import (
     make_jarpath, XpiManifest)
+
+
+def get_file_suffix(path_in_zip):
+    """Given a full file path inside a zip archive, return filename suffix.
+
+    :param path_in_zip: Full file path inside a zip archive, e.g.
+        "foo/bar.dtd".
+    :return: Filename suffix, or empty string if none found.  For example,
+        "foo/bar.dtd" results in ".dtd".
+    """
+    root, ext = splitext(path_in_zip)
+    return ext
 
 
 class MozillaZipFile:

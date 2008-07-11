@@ -19,21 +19,10 @@ from canonical.launchpad.interfaces import (
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
-from canonical.launchpad.translationformat.mozilla_zip import MozillaZipFile
+from canonical.launchpad.translationformat.mozilla_zip import (
+    get_file_suffix, MozillaZipFile)
 from canonical.launchpad.translationformat.xpi_header import XpiHeader
 from canonical.librarian.interfaces import ILibrarianClient
-
-
-def get_file_suffix(path_in_zip):
-    """Given a full file path inside a zip archive, return filename suffix.
-
-    :param path_in_zip: Full file path inside a zip archive, e.g.
-        "foo/bar.dtd".
-    :return: Filename suffix, or empty string if none found.  For example,
-        "foo/bar.dtd" results in ".dtd".
-    """
-    root, ext = splitext(path_in_zip)
-    return ext
 
 
 def add_source_comment(message, comment):
@@ -48,7 +37,7 @@ def add_source_comment(message, comment):
 
 
 class MozillaZipImportParser(MozillaZipFile):
-    """Base XPI and jar parser for import purposes.
+    """XPI and jar parser for import purposes.
 
     Looks for DTD and properties files, and parses them for messages.
     All messages found are left in `self.messages`.
