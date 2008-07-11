@@ -390,13 +390,19 @@ class MessageSet:
                 filename = part.get_filename() or 'unnamed'
                 # Note we use the Content-Type header instead of
                 # part.get_content_type() here to ensure we keep
-                # parameters as sent
+                # parameters as sent. If Content-Type is None we default
+                # to application/octet-stream.
+                if part['content-type'] is None:
+                    content_type = 'application/octet-stream'
+                else:
+                    content_type = part['content-type']
+
                 if len(content) > 0:
                     blob = file_alias_set.create(
                         name=filename,
                         size=len(content),
                         file=cStringIO(content),
-                        contentType=part['content-type']
+                        contentType=content_type
                         )
                     MessageChunk(message=message, sequence=sequence,
                                  blob=blob)
