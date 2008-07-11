@@ -425,7 +425,7 @@ UI: changeDetails also sends out an email describing the changes.
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
-    Subject: Code import product.../name... status: Suspended
+    Subject: Code import product.../name... status: Failing
     <BLANKLINE>
     The foreign branch details for the import have been changed to:
         svn://svn.example.com/trunk
