@@ -11,6 +11,9 @@ to all the members of the mailing list.  We can ignore these messages.
     >>> from canonical.launchpad.mailman.testing import helpers
     >>> list_one = helpers.create_list('itest-one')
 
+    # Ignore the list creation message.
+    >>> smtpd.reset()
+
 Add a member of the mailing list so that we can post messages to the list.
 
     >>> from operator import itemgetter
@@ -36,7 +39,7 @@ Add a member of the mailing list so that we can post messages to the list.
     >>> m = MailList('itest-one', lock=False)
     >>> sorted(m.getMembers())
     ['anne.person@example.com', 'aperson@example.org',
-     'archive@mail-archive.com']
+     'archive@mail-archive.dev']
 
 Send a message to the list, then retrieve it from the mbox.  We'll examine its
 contents below.
@@ -57,9 +60,6 @@ contents below.
     ... Hi, I am a member of this team's list.
     ... """)
     >>> smtp_watcher.wait()
-    >>> messages = smtpd.getMessages()
-    >>> messages.sort(key=itemgetter('sender'))
-    >>> message = messages[0]
 
 
 == VERP headers ==
@@ -75,10 +75,20 @@ rewrites there are.
 the MTA, but it's close enough in intent and exactly the same in
 implementation so we use the same terminology in Mailman.)
 
-    >>> message['sender']
-    'itest-one-bounces+anne.person=example.com@lists.launchpad.dev'
-    >>> message['errors-to']
-    'itest-one-bounces+anne.person=example.com@lists.launchpad.dev'
+    >>> messages = sorted(smtpd.getMessages(), key=itemgetter('sender'))
+    >>> for message in messages:
+    ...     print message['sender']
+    ...     print message['errors-to']
+    ...     print '---'
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    ---
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    ---
+
+For the following discussion, it doesn't matter which message we look at in
+detail, so the last one in the sorted sequence is just fine.
 
 
 == RFC 2369 headers ==
