@@ -188,6 +188,7 @@ class CodeImport(SQLBase):
         self._removeJob()
 
     def changeDetails(self, data, user):
+        """See `ICodeImport`."""
         if 'review_status' in data:
             raise AssertionError(
                 'changeDetails cannot be used to change review_status.')

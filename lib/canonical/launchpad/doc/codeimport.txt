@@ -419,12 +419,15 @@ CodeImports provide a slightly different method for updates from the
 UI: changeDetails also sends out an email describing the changes.
 
     >>> login('david.allouche@canonical.com')
-    >>> data = {'svn_branch_url': 'svn://svn.example.com/trunk'}
-    >>> svn_import.changeDetails(data, nopriv)
+    >>> new_svn_import = factory.makeCodeImport(
+    ...     svn_branch_url='svn://svn.example.com/trunk')
+    >>> ignored_mail = pop_notifications()
+    >>> data = {'svn_branch_url': 'svn://svn.example.com/real-trunk'}
+    >>> new_svn_import.changeDetails(data, nopriv)
     >>> print_emails(group_similar=True)
-    From: No Privileges Person <no-priv@canonical.com>
-    To: no-priv@canonical.com
-    Subject: Code import product.../name... status: Failing
+    From: ...
+    To: ...
+    Subject: Code import product.../name... status: 
     <BLANKLINE>
     The foreign branch details for the import have been changed to:
         svn://svn.example.com/trunk

@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import textwrap
 
 from zope.component import getUtility
 
@@ -80,16 +81,28 @@ def code_import_updated(event):
         else:
             raise AssertionError('Unexpected review status for code import.')
 
-    details_change_prefix = ("The foreign branch details for the import have "
-                             "been changed to:\n    ")
+    details_change_prefix = '\n'.join(textwrap.wrap(
+        "%s is now being imported from:" % branch.unique_name))
     if code_import.rcs_type == RevisionControlSystems.CVS:
         if (CodeImportEventDataType.OLD_CVS_ROOT in event_data or
             CodeImportEventDataType.OLD_CVS_MODULE in event_data):
-            new_details = '%s from %s' % (code_import.cvs_root, code_import.cvs_module)
-            status.append(details_change_prefix + new_details)
+            new_details = '    %s from %s' % (
+                code_import.cvs_root, code_import.cvs_module)
+            old_root = event_data.get(
+                CodeImportEventDataType.OLD_CVS_ROOT,
+                code_import.cvs_root)
+            old_module = event_data.get(
+                CodeImportEventDataType.OLD_CVS_MODULE,
+                code_import.cvs_module)
+            old_details = '    %s from %s' % (old_module, old_root)
+            status.append((details_change_prefix + '\n' + new_details +
+                           "instead of:\n" + old_details))
     elif code_import.rcs_type == RevisionControlSystems.SVN:
         if CodeImportEventDataType.OLD_SVN_BRANCH_URL in event_data:
-            status.append(details_change_prefix + code_import.svn_branch_url)
+            old_url = event_data[CodeImportEventDataType.OLD_SVN_BRANCH_URL]
+            status.append(details_change_prefix + '\n    ' +
+                          code_import.svn_branch_url + "instead of:\n    " +
+                          old_url)
     else:
         raise AssertionError(
             'Unexpected rcs_type %r for code import.' % code_import.rcs_type)
