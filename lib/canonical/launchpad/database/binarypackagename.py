@@ -139,16 +139,17 @@ class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
     iterator = BinaryPackageNameIterator
 
 
-def getBinaryPackageDescriptions(results, use_names=False, max_title_length=50):
+def getBinaryPackageDescriptions(results, use_names=False,
+                                 max_title_length=50):
     """Return a dict of descriptions keyed by package name.
 
     See sourcepackage.py:getSourcePackageDescriptions, which is analogous.
     """
     if use_names:
-       clause = ("BinaryPackageName.name in %s" %
+        clause = ("BinaryPackageName.name in %s" %
                  sqlvalues([pn.name for pn in results]))
     else:
-       clause = ("BinaryPackageName.id in %s" %
+        clause = ("BinaryPackageName.id in %s" %
                  sqlvalues([bpn.id for bpn in results]))
 
     descriptions = {}
