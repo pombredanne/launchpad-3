@@ -34,9 +34,21 @@ class CanonicalConfig:
     is thread safe (not that this will be a problem if we stick with
     simple configuration).
     """
-    _config = None
-    _instance_name = os.environ.get(LPCONFIG, DEFAULT_CONFIG)
-    _process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+    def __init__(self, instance_name=None, process_name=None):
+        """Create a new instance of CanonicalConfig.
+
+        :param instance_name: the configuration instance to use. Defaults to
+            the value of the LPCONFIG environment variable
+        :param process_name: the process configuration name to use. Defaults
+            to the basename of sys.argv[0] without any extension.
+       """
+        self._config = None
+        if instance_name is None:
+            instance_name = os.environ.get(LPCONFIG, DEFAULT_CONFIG)
+        if process_name is None:
+            process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+        self._instance_name = instance_name
+        self._process_name = process_name
 
     @property
     def instance_name(self):
@@ -110,24 +122,24 @@ class CanonicalConfig:
         """Modify the config, adding automatically generated settings"""
         # Root of the launchpad tree so code can stop jumping through hoops
         # with __file__
-        config.root = os.path.abspath(os.path.join(
+        self.root = os.path.abspath(os.path.join(
             here, os.pardir, os.pardir, os.pardir))
 
         schemafile = os.path.join(
-            config.root, 'lib/zope/app/server/schema.xml')
+            self.root, 'lib/zope/app/server/schema.xml')
         configfile = os.path.join(config_dir, 'launchpad.conf')
         schema = ZConfig.loadSchema(schemafile)
         root_options, handlers = ZConfig.loadConfig(schema, configfile)
 
         # Devmode from the zope.app.server.main config, copied here for
         # ease of access.
-        config.devmode = root_options.devmode
+        self.devmode = root_options.devmode
 
         # The defined servers.
-        config.servers = root_options.servers
+        self.servers = root_options.servers
 
         # The number of configured threads.
-        config.threads = root_options.threads
+        self.threads = root_options.threads
 
     def __getattr__(self, name):
         self._getConfig()
