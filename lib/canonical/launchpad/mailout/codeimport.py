@@ -12,6 +12,8 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeImportReviewStatus,
     ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.codeimportevent import (
+    CodeImportEventDataType)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import canonical_url
 
@@ -58,17 +60,20 @@ def code_import_updated(event):
         code_import.product.name, branch.name,
         code_import.review_status.title)
 
-    if code_import.review_status == CodeImportReviewStatus.INVALID:
-        status = "The import has been marked as invalid."
-    elif code_import.review_status == CodeImportReviewStatus.REVIEWED:
-        status = (
-            "The import has been approved and an import will start shortly.")
-    elif code_import.review_status == CodeImportReviewStatus.SUSPENDED:
-        status = "The import has been suspended."
-    elif code_import.review_status == CodeImportReviewStatus.FAILING:
-        status = "The import has been marked as failing."
-    else:
-        raise AssertionError('Unexpected review status for code import.')
+    event_data = dict(event.items())
+
+    if CodeImportEventDataType.OLD_REVIEW_STATUS in event_data:
+        if code_import.review_status == CodeImportReviewStatus.INVALID:
+            status = "The import has been marked as invalid."
+        elif code_import.review_status == CodeImportReviewStatus.REVIEWED:
+            status = (
+                "The import has been approved and an import will start shortly.")
+        elif code_import.review_status == CodeImportReviewStatus.SUSPENDED:
+            status = "The import has been suspended."
+        elif code_import.review_status == CodeImportReviewStatus.FAILING:
+            status = "The import has been marked as failing."
+        else:
+            raise AssertionError('Unexpected review status for code import.')
 
     email_template = get_email_template('code-import-status-updated.txt')
     template_params = {

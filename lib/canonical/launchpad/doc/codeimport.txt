@@ -415,3 +415,19 @@ The launchpad.Edit privilege is required to use CodeImport.updateFromData.
     Traceback (most recent call last):
     ...
     Unauthorized: (<CodeImport ...>, 'updateFromData', 'launchpad.Edit')
+
+CodeImports provide a slightly different method for updates from the
+UI: changeDetails also sends out an email describing the changes.
+
+    >>> login('david.allouche@canonical.com')
+    >>> data = {'svn_branch_url': 'svn://svn.example.com/trunk'}
+    >>> code_import.changeDetails(data, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: no-priv@canonical.com
+    Subject: Code import product.../name... status: Suspended
+    <BLANKLINE>
+    The foreign branch details for the import have been changed to:
+        svn://svn.example.com/trunk
+    ...
+    ----------------------------------------
