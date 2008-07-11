@@ -179,12 +179,8 @@
         </tbody>
       </table>
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
+        <div id="container">
 
-                      <div
-                        id="container"
-                        tal:define="context_badges CONTEXTS/lp:context_badges"
-                        tal:attributes="class python: path('view/isPrivate | context_badges/isPrivateBadgeVisible') and 'private' or None"
-                      >
                         <tal:noportlets
                           condition="not: view/macro:pagehas/portlets"
                         >
@@ -222,10 +218,6 @@
                         >
                           <div id="nonportlets">
 
-                          <div id="big-badges" style="float: right">
-                            <tal:big-badges replace="structure context/badges:large"/>
-                          </div>
-
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
@@ -254,8 +246,8 @@
                           <div class="clear"></div><!-- needed for Safari -->
                         </div>
                         <div class="clear"></div>
-                      </div><!--id="container"-->
 
+         </div><!--id="container"-->
       </div><!--id="mainarea"-->
       <tal:noborder condition="not:view/macro:pagehas/applicationborder">
         <tal:notifications

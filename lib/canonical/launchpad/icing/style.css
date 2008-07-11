@@ -1010,9 +1010,6 @@ top left (y), and top right (z) of the rounded border. */
 }
 * html #container {margin-top: 0; position: static;} /* fixes in IE6 */
 
-/* Something private for a public project has a cordon inside the tabs: */
-#container.private {background: url(/@@/private-bg) left 28px repeat-x;}
-
 /*
   To let the main content width = 100% - 220px for the portlets,
   we apply a negative right margin so the portlets can float on the right:
@@ -1099,6 +1096,15 @@ highlighting menu items, so padding is handled by the contents instead: */
   padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */
 }
 #actions a:hover {background-color: #fff; text-decoration: underline;}
+
+/* === Public/private status === */
+/* The first portlet on many pages discloses whether the object is private: */
+#privacy {background: #fff;}
+#privacy.private {
+  background: #eee url(/@@/private-bg) top left repeat-x; /* 8px high */
+  padding-top: 12px; /* = 8px + the usual 4px top padding */
+}
+
 .check,
 .radio {
   background: transparent;
