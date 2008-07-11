@@ -25,6 +25,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
+from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
@@ -214,13 +215,16 @@ class IBug(IMessageTarget, ICanBeMentored):
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
             value_type=BugField(), readonly=True))
-    attachments = Attribute("List of bug attachments.")
+    attachments = exported(
+        CollectionField(
+            title=_("List of bug attachments."),
+            value_type=Reference(schema=IBugAttachment),
+            readonly=True))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     bug_branches = Attribute(
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
-
     tags = exported(
         List(title=_("Tags"), description=_("Separated by whitespace."),
              value_type=Tag(), required=False))
@@ -373,8 +377,14 @@ class IBug(IMessageTarget, ICanBeMentored):
         Returns an IBugBranch.
         """
 
-    def addAttachment(owner, file_, description, comment, filename,
-                      is_patch=False):
+    @call_with(owner=REQUEST_USER)
+    @operation_parameters(
+        data=Bytes(constraint=bug_attachment_size_constraint),
+        comment=Text(), filename=TextLine(), is_patch=Bool(),
+        content_type=TextLine(), description=Text())
+    @export_factory_operation(IBugAttachment, [])
+    def addAttachment(owner, data, comment, filename=None, is_patch=False,
+                      content_type=None, description=None):
         """Attach a file to this bug.
 
         :owner: An IPerson.
@@ -529,6 +539,7 @@ class IBug(IMessageTarget, ICanBeMentored):
 
 
 # We are forced to define this now to avoid circular import problems.
+IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug
 
 # In order to avoid circular dependencies, we only import

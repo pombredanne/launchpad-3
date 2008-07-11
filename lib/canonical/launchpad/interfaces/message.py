@@ -20,6 +20,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.person import IPerson
 
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
 
@@ -73,16 +74,22 @@ class IMessage(Interface):
     followup_title = Attribute(_('Candidate title for a followup message.'))
 
     title = Attribute(_('The message title, usually just the subject.'))
-    bugattachments = Attribute("A list of BugAttachments connected to this "
-        "message.")
+    bugattachments = exported(
+        CollectionField(
+            title=_("A list of BugAttachments connected to this "
+                    "message."),
+            value_type=Reference(Interface)),
+        exported_as='bug_attachments')
     has_new_title = Attribute("Whether or not the title of this message "
         "is different to that of its parent.")
 
     def __iter__():
         """Iterate over all the message chunks."""
 
+
 # Fix for self-referential schema.
 IMessage['parent'].schema = IMessage
+
 
 class IMessageSet(Interface):
     """Set of IMessage"""

@@ -638,10 +638,16 @@ class Bug(SQLBase):
             Store.of(bug_watch).flush()
         return bug_watch
 
-    def addAttachment(self, owner, file_, comment, filename,
+    def addAttachment(self, owner, data, comment, filename=None,
                       is_patch=False, content_type=None, description=None):
         """See `IBug`."""
-        filecontent = file_.read()
+        if isinstance(data, str):
+            filecontent = data
+        else:
+            filecontent = data.read()
+
+        if filename is None:
+            filename = getattr(data, 'name', 'unnamed')
 
         if is_patch:
             attach_type = BugAttachmentType.PATCH

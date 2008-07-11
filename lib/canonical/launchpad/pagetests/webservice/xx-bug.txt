@@ -21,8 +21,8 @@ At the top level we provide a collection of bugs.
   15
   >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
   >>> show(bug_entries[0])
-  [(u'bug_attachments_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/11/bug_attachments'),
+  [(u'attachments_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/11/attachments'),
    (u'bug_tasks_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/bug_tasks'),
    (u'bug_watches_collection_link',
@@ -450,9 +450,13 @@ renamed bug tracker.
 Bug 1 has no attachments:
 
   >>> attachments = webservice.get(
-  ...     bug_one['bug_attachments_collection_link']).jsonBody()
+  ...     bug_one['attachments_collection_link']).jsonBody()
   >>> show(attachments)
-  Blah
+  [(u'entries', []),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#BugAttachmentEntryAdapter-page-resource'),
+   (u'start', None),
+   (u'total_size', 0)]
 
 An attachment can be added to the bug:
 
@@ -463,12 +467,28 @@ An attachment can be added to the bug:
   HTTP/1.1 201 Created
   Content-Length: 0
   Content-Type: text/plain;charset=utf-8
-  Location: http://api.launchpad.dev/beta/bugs/1/blah
+  Location: http://api.launchpad.dev/beta/bugs/1/attachments/1
 
 Now, bug 1 has one attachment:
 
   >>> attachments = webservice.get(
-  ...     bug_one['bug_attachments_collection_link']).jsonBody()
+  ...     bug_one['attachments_collection_link']).jsonBody()
   >>> show(attachments)
-  Blah
+  [(u'entries',
+    [{u'bug_link': u'http://api.launchpad.dev/beta/bugs/1',
+      u'data_link': u'http://api.launchpad.dev/beta/bugs/1/attachments/1/data',
+      u'message_link': u'http://api.launchpad.dev/beta/firefox/+bug/1/comments/2',
+      u'resource_type_link': u'http://api.launchpad.dev/beta/#BugAttachmentEntryAdapter',
+      u'self_link': u'http://api.launchpad.dev/beta/bugs/1/attachments/1',
+      u'title': u'Some numbers',
+      u'type': u'Unspecified'}]),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#BugAttachmentEntryAdapter-page-resource'),
+   (u'start', 0),
+   (u'total_size', 1)]
 
+Let's check out that attachment's libraryfile:
+
+  >>> [attachment] = attachments['entries']
+  >>> show(webservice.get(attachment['self_link']).jsonBody())
+  Boom!
