@@ -154,10 +154,10 @@ specify the person to subscribe.  The person field is required.
     ...     '5000 lines']
     >>> browser.getControl('Subscribe').click()
 
-    >>> for error in find_tags_by_class(browser.contents, 'error'):
-    ...     print error.renderContents()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     There is 1 error.
-    ...field.person...Required input is missing...
+    Required input is missing.
 
     >>> browser.getControl('Person').value = 'sabdfl'
     >>> browser.getControl('Subscribe').click()
@@ -183,10 +183,10 @@ Subscribing a team is as simple as putting in the team name.
 
 The user can only subscribe teams that they are members of.
 
-    >>> for error in find_tags_by_class(browser.contents, 'error'):
-    ...     print error.renderContents()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     There is 1 error.
-    ...field.person...You can only subscribe teams that you are a member of...
+    You can only subscribe teams that you are a member of.
 
 Sample Person is a member of Landscape Developers.
 

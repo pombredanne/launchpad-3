@@ -49,7 +49,8 @@ Visit the token URL mentioned in the email, and get redirected to
 
 Check that the email address now shows up as validated.
 
-    >>> browser.getLink('Change e-mail settings').click()
+    >>> browser.getLink('Change details').click()
+    >>> browser.getLink('E-mail Settings').click()
     >>> browser.getControl(name="field.VALIDATED_SELECTED").getControl(
     ...     value='salgado@ubuntu.com')
     <ItemControl...optionValue='salgado@ubuntu.com'>
