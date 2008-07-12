@@ -280,8 +280,10 @@
         accept-charset="UTF-8"
         tal:attributes="action string:${rooturl}+search"
       >
-        <label for="search-text">Search Launchpad</label>
+        <label>
+          Search Launchpad:
           <input type="search" id="search-text" name="field.text" />
+        </label>
       </form>
      <div id="globalfooter" class="clearfix" xml:lang="en" lang="en" dir="ltr">
         <div id="applications-footer"
