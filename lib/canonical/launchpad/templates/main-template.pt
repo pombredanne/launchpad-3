@@ -1,7 +1,12 @@
 <metal:page
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
-  define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+  define-macro="master"
+  tal:define="
+    revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+    version string:Launchpad 2.0 (r${revno});
+  "
+><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
@@ -17,12 +22,13 @@
                   dir view/dir|string:ltr"
   tal:define="
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-      revno modules/canonical.launchpad.versioninfo/revno;
       icingroot string:${rooturl}+icing/rev${revno};
       site_message modules/canonical.config/config/launchpad/site_message;
       devmode modules/canonical.config/config/devmode;
       is_demo modules/canonical.config/config/launchpad/is_demo;
-      is_edge modules/canonical.config/config/launchpad/is_edge"
+      is_edge modules/canonical.config/config/launchpad/is_edge;
+      is_production modules/canonical.config/config/launchpad/is_production;
+  "
 >
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
@@ -291,18 +297,19 @@
           >What is Launchpad?</a>
           <a tal:condition="request/lp:person" href="/feedback"
           >Help improve Launchpad</a>
-          |
-          <a href="/legal">Terms of use</a>
         </div>
-        <div id="copyright">
+        <div id="lp-arcana">
             &copy;&nbsp;2004-2008&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           |
-          <tal:block condition="revno" replace="revno" />
-          <tal:block condition="not: revno">unknown</tal:block>
-          <tal:devmode condition="devmode">devmode</tal:devmode>
-          <tal:demo condition="is_demo">demo site</tal:demo>
-          <tal:edge condition="is_edge">beta site</tal:edge>
+          <a href="/legal">Terms of use</a>
+          <span tal:condition="not:is_production" id="lp-version">
+            |
+            <tal:version replace="version" />
+            <tal:devmode condition="devmode">devmode</tal:devmode>
+            <tal:demo condition="is_demo">demo site</tal:demo>
+            <tal:edge condition="is_edge">beta site</tal:edge>
+          </span>
         </div>
         <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
             <li>Facet name:
@@ -409,5 +416,6 @@
 <tal:requestlog
     define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
     replace="structure string:&lt;!-- at least ${log} --&gt;" />
+<tal:version replace="structure string:&lt;!-- ${version} -->" />
 </metal:page>
 <!-- 1-0 inprogress portlets wrong in IE/Mac -->

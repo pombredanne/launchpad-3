@@ -925,9 +925,9 @@ body.freeform #globalfooter {
   border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
   padding-top: 0.5em;
 }
-#colophon            {float: left;                     width: 49%;}
-#applications-footer {float: right; text-align: right; width: 49%;}
-#copyright           {float: right; text-align: right; width: 48%;}
+#colophon            {float: left;}
+#applications-footer {float: right;}
+#copyright           {float: right;}
 
 /* === Specific page layouts === */
 
