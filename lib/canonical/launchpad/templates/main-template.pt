@@ -27,7 +27,7 @@
       devmode modules/canonical.config/config/devmode;
       is_demo modules/canonical.config/config/launchpad/is_demo;
       is_edge modules/canonical.config/config/launchpad/is_edge;
-      is_production modules/canonical.config/config/launchpad/is_production;
+      is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
   "
 >
   <head>
@@ -303,7 +303,7 @@
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           |
           <a href="/legal">Terms of use</a>
-          <span tal:condition="not:is_production" id="lp-version">
+          <span tal:condition="not:is_lpnet" id="lp-version">
             |
             <tal:version replace="version" />
             <tal:devmode condition="devmode">devmode</tal:devmode>
