@@ -38,13 +38,16 @@ class ArchiveSourcePublication:
         self._builds = builds
 
     def getSourceAndBinaryLibraryFiles(self):
+        """See `ISourcePackagePublishingHistory`."""
         return sorted(self._sourceandbinarylibraryfiles,
                       key=operator.attrgetter('filename'))
 
     def getPublishedBinaries(self):
+        """See `ISourcePackagePublishingHistory`."""
         return self._publishedbinaries
 
     def getBuilds(self):
+        """See `ISourcePackagePublishingHistory`."""
         return self._builds
 
 
@@ -54,14 +57,22 @@ class ArchiveSourcePublications:
     def __init__(self, source_publications):
         """Receives the list of target `SourcePackagePublishingHistory`."""
         self._source_publications = list(source_publications)
-        self._source_publications_ids = [
-            pub.id for pub in self._source_publications]
 
     @property
     def has_sources(self):
+        """Whether or not there are sources to be processed."""
         return len(self._source_publications) > 0
 
     def groupBySource(self, source_and_value_list):
+        """Group the give list of tuples as a dictionary.
+
+        This is a common internal task for this class, it groups the given
+        list of tuples, (source, related_object), as a dictionary keyed by
+        distinct sources and pointing to a list of `relates_object`s.
+
+        :return: a dictionary keyed by the disctinct sources and pointing to
+            a list of `related_object`s in their original order.
+        """
         source_and_values = {}
         for source, value in source_and_value_list:
             values = source_and_values.setdefault(source, [])
@@ -71,7 +82,7 @@ class ArchiveSourcePublications:
     def getBuildsBySource(self):
         """Builds for all source publications."""
         build_set = getUtility(IPublishingSet).getBuildsForSources(
-            self._source_publications_ids)
+            self._source_publications)
         source_and_builds = [
             (source, build) for source, build, arch in build_set]
         return self.groupBySource(source_and_builds)
@@ -79,7 +90,7 @@ class ArchiveSourcePublications:
     def getFilesBySource(self):
         """Source and binary files for all source publications."""
         file_set = getUtility(IPublishingSet).getFilesForSources(
-            self._source_publications_ids)
+            self._source_publications)
         source_and_files = [
             (source, file) for source, file, content in file_set]
         return self.groupBySource(source_and_files)
@@ -88,14 +99,14 @@ class ArchiveSourcePublications:
         """Binary publication for sources."""
         publishing_set = getUtility(IPublishingSet)
         binary_set = publishing_set.getBinaryPublicationsForSources(
-            self._source_publications_ids)
+            self._source_publications)
         source_and_binaries = [
             (source, binary)
             for source, binary, binary_release, name, arch in binary_set]
         return self.groupBySource(source_and_binaries)
 
     def __nonzero__(self):
-        """Allow callsites to check for empty sets before iterations."""
+        """Are there any sources to iterate?"""
         return self.has_sources
 
     def __iter__(self):

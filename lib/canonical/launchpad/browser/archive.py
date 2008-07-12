@@ -31,11 +31,11 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad import _
-from canonical.launchpad.browser.archivesourcepublication import (
-    ArchiveSourcePublications)
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
+from canonical.launchpad.components.archivesourcepublication import (
+    ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
     IArchivePackageCopyingForm, IArchivePackageDeletionForm,
@@ -134,8 +134,8 @@ class ArchiveViewBase:
     @property
     def is_active(self):
         """Whether or not this PPA already have publications in it."""
-        # XXX cprov 20080708: use bool() when it gets fixed in storm.
-        # See bug #246200
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
         return self.context.getPublishedSources().count() > 0
 
     @property
@@ -381,8 +381,8 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
     def has_sources(self):
         """Whether or not the PPA has published source packages."""
         available_sources = self.getSources()
-        # XXX cprov 20080708: use bool() when it gets fixed in storm.
-        # See bug #246200
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
         return available_sources.count() > 0
 
     @property
@@ -765,8 +765,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     @cachedproperty
     def has_dependencies(self):
         """Whether or not the PPA has recorded dependencies."""
-        # XXX cprov 20080708: use bool() when it gets fixed in storm.
-        # See bug #246200
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
         return self.context.dependencies.count() > 0
 
     def validate_remove(self, action, data):

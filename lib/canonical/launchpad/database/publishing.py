@@ -24,7 +24,9 @@ from warnings import warn
 
 from zope.component import getUtility
 from zope.interface import implements
+
 from sqlobject import ForeignKey, StringCol, BoolCol
+
 from storm.expr import Desc, In
 from storm.store import Store
 from storm.zope.interfaces import IZStorm
@@ -34,7 +36,11 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.files import (
+    BinaryPackageFile, SourcePackageReleaseFile)
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
@@ -447,9 +453,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
-        source_publication_ids = [self.id]
-        result_set = publishing_set.getBinaryPublicationsForSources(
-            source_publication_ids)
+        result_set = publishing_set.getBinaryPublicationsForSources(self)
 
         return [binary_pub
                 for source, binary_pub, binary, binary_name, arch
@@ -497,9 +501,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def getBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
-        source_publication_ids = [self.id]
-        result_set = publishing_set.getBuildsForSources(
-            source_publication_ids)
+        result_set = publishing_set.getBuildsForSources(self)
 
         return [build for source, build, arch in result_set]
 
@@ -572,12 +574,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def getSourceAndBinaryLibraryFiles(self):
         """See `IPublishing`."""
         publishing_set = getUtility(IPublishingSet)
-        source_publication_ids = [self.id]
-        result_set = publishing_set.getFilesForSources(
-            source_publication_ids)
+        result_set = publishing_set.getFilesForSources(self)
         libraryfiles = [file for source, file, content in result_set]
 
-        # XXX cprov 20080710: UNIONs can be ordered appropriately.
+        # XXX cprov 20080710: UNIONs cannot be ordered appropriately.
         # See IPublishing.getFilesForSources().
         return sorted(libraryfiles, key=operator.attrgetter('filename'))
 
@@ -909,11 +909,34 @@ class PublishingSet:
 
     implements(IPublishingSet)
 
-    def getBuildsForSources(self, source_publication_ids):
+    def _extractIDs(self, one_or_more_source_publications):
+        """Return a list of database IDs for the given list or single object.
+
+        :param one_or_more_source_publications: an single object or a list of
+            `ISourcePackagePublishingHistory` objects.
+
+        :return: a list of database IDs corresponding to the give set of
+            objects.
+        """
+        try:
+            source_publications = tuple(one_or_more_source_publications)
+        except TypeError:
+            source_publications = (one_or_more_source_publications,)
+
+        return [source_publication.id
+                for source_publication in source_publications]
+
+    def getBuildsForSources(self, one_or_more_source_publications):
         """See `PublishingSet`."""
+        # Import Build and DistroArchSeries locally to avoid circular
+        # imports, since that Build uses SourcePackagePublishingHistory
+        # and DistroArchSeries uses BinaryPackagePublishingHistory.
         from canonical.launchpad.database.build import Build
         from canonical.launchpad.database.distroarchseries import (
             DistroArchSeries)
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
 
         store = getUtility(IZStorm).get('main')
         result_set = store.find(
@@ -932,15 +955,18 @@ class PublishingSet:
 
         return result_set
 
-    def getFilesForSources(self, source_publication_ids):
+    def getFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
+        # Import Build and BinaryPackageRelease locally to avoid circular
+        # imports, since that Build already imports
+        # SourcePackagePublishingHistory and BinaryPackageRelease imports
+        # Build.
         from canonical.launchpad.database.binarypackagerelease import (
             BinaryPackageRelease)
         from canonical.launchpad.database.build import Build
-        from canonical.launchpad.database.files import (
-            BinaryPackageFile, SourcePackageReleaseFile)
-        from canonical.launchpad.database.librarian import (
-            LibraryFileContent)
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
 
         store = getUtility(IZStorm).get('main')
         source_result = store.find(
@@ -973,15 +999,21 @@ class PublishingSet:
 
         return result_set
 
-    def getBinaryPublicationsForSources(self, source_publication_ids):
+    def getBinaryPublicationsForSources(
+        self, one_or_more_source_publications):
         """See `IPublishingSet`."""
-        from canonical.launchpad.database.binarypackagename import (
-            BinaryPackageName)
+        # Import Build, BinaryPackageRelease and DistroArchSeries locally
+        # to avoid circular imports, since Build uses
+        # SourcePackagePublishingHistory, BinaryPackageRelease uses Build
+        # and DistroArchSeries uses BinaryPackagePublishingHistory.
         from canonical.launchpad.database.binarypackagerelease import (
             BinaryPackageRelease)
         from canonical.launchpad.database.build import Build
         from canonical.launchpad.database.distroarchseries import (
             DistroArchSeries)
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
 
         store = getUtility(IZStorm).get('main')
         result_set = store.find(

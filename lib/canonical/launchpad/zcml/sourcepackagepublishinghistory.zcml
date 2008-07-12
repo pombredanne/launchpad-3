@@ -64,9 +64,9 @@
   </content>
 
   <!-- PublishingSet -->
-  <content class="canonical.launchpad.database.publishing.PublishingSet">
+  <class class="canonical.launchpad.database.publishing.PublishingSet">
     <allow interface="canonical.launchpad.interfaces.publishing.IPublishingSet"/>
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.publishing.PublishingSet"

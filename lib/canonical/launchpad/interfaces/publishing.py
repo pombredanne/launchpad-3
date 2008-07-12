@@ -6,16 +6,16 @@
 __metaclass__ = type
 
 __all__ = [
-    'ISourcePackageFilePublishing',
+    'IArchiveSafePublisher',
     'IBinaryPackageFilePublishing',
-    'ISecureSourcePackagePublishingHistory',
-    'ISecureBinaryPackagePublishingHistory',
-    'ISourcePackagePublishingHistory',
     'IBinaryPackagePublishingHistory',
     'ICanPublishPackages',
     'IFilePublishing',
-    'IArchiveSafePublisher',
     'IPublishingSet',
+    'ISecureBinaryPackagePublishingHistory',
+    'ISecureSourcePackagePublishingHistory',
+    'ISourcePackageFilePublishing',
+    'ISourcePackagePublishingHistory',
     'NotInPool',
     'PackagePublishingPocket',
     'PackagePublishingPriority',
@@ -381,7 +381,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         same archive context are returned as a list of LibraryFileAlias
         records.
 
-        :return: a list of `ILibraryFileAliasSet`.
+        :return: a list of `ILibraryFileAlias`.
         """
 
     def changeOverride(new_component=None, new_section=None):
@@ -521,12 +521,12 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
-    def getBuildsForSources(source_publication_ids):
+    def getBuildsForSources(one_or_more_source_publications):
         """Return all builds related with each given source publication.
 
         The returned ResultSet contains entries with the wanted `Build`s
         associated with the corresponding source publication and its
-        targeted `DistroArchSeries` in a triple. This way the extra
+        targeted `DistroArchSeries` in a 3-elememt tuple. This way the extra
         information will be cached and the callsites can group builds in
         any convenient form.
 
@@ -535,39 +535,39 @@ class IPublishingSet(Interface):
          1. Ascending `SourcePackagePublishingHistory.id`,
          2. Ascending `DistroArchSeries.architecturetag`.
 
-        :param source_publication_ids: list of
-            `SourcePackagePublishingHistory`database IDs.
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
 
         :return: a storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
         """
 
-    def getFilesForSources(source_publication_ids):
+    def getFilesForSources(one_or_more_source_publication):
         """Return all files related with each given source publication.
 
         The returned ResultSet contains entries with the wanted
         `LibraryFileAlias`s (source and binaires) associated with the
         corresponding source publication and its `LibraryFileContent`
-        in a triple. This way the extra information will be cached and
-        the callsites can group files in any convenient form.
+        in a 3-element tuple. This way the extra information will be
+        cached and the callsites can group files in any convenient form.
 
         Callsites should order this result after grouping by source,
         because SQL UNION can't be correctly ordered in SQL level.
 
-        :param source_publication_ids: list of
-            `SourcePackagePublishingHistory` database IDs.
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
 
         :return: an *unordered* storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `LibraryFileAlias`,
              `LibraryFileContent`)
         """
 
-    def getBinaryPublicationsForSources(source_publication_ids):
+    def getBinaryPublicationsForSources(one_or_more_source_publications):
         """Return all binary publication for the given source publications.
 
         The returned ResultSet contains entries with the wanted
         `BinaryPackagePublishingHistory`s associated with the corresponding
-        source publication and its targetted `DistroArchSeries`,
+        source publication and its targeted `DistroArchSeries`,
         `BinaryPackageRelease` and `BinaryPackageName` in a 5-element tuple.
         This way the extra information will be cached and the callsites can
         group binary publications in any convenient form.
@@ -575,12 +575,12 @@ class IPublishingSet(Interface):
         The result is ordered by:
 
          1. Ascending `SourcePackagePublishingHistory.id`,
-         2. Asncending `BinaryPackageName.name`,
+         2. Ascending `BinaryPackageName.name`,
          3. Ascending `DistroArchSeries.architecturetag`.
          4. Descending `BinaryPackagePublishingHistory.id`.
 
-        :param source_publication_ids: list of
-            `SourcePackagePublishingHistory` database IDs.
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
 
         :return: a storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`,
