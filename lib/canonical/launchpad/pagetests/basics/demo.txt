@@ -14,12 +14,12 @@ This is controlled by a config variable.
     <...
     <style...url(/@@/demo)...</style>
     ...
-    <div id="copyright">...DEMO...</div>
+    <div id="copyright">...demo site...</div>
     ...
 
     >>> config.launchpad.is_demo = False
     >>> browser.open('http://launchpad.dev')
-    >>> 'DEMO' in browser.contents
+    >>> 'demo site' in browser.contents
     False
 
 We could hard code this behavior for certain database names, as was done
