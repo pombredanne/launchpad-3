@@ -109,21 +109,9 @@
     <div id="globalheader"  xml:lang="en" lang="en" dir="ltr"
       tal:condition="site_message">
       <div class="sitemessage" tal:content="structure site_message"/>
-      <img class="launchpad" width="90" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_launchpad_bg.gif" alt="Launchpad"/>
     </div>
-    <div id="topline" tal:condition="not: site_message"></div>
-    <div id="locationbar" xml:lang="en" lang="en" dir="ltr">
-      <strong id="yourlocation">Your location:</strong>
-      <ul id="menuroot">
-        <tal:hierarchy content="structure context/@@+breadcrumbs" />
-      </ul>
-      <table id="logincontrol">
-        <tr>
-          <td tal:content="structure context/@@login_status" />
-        </tr>
-      </table>
-    </div>
-    <div class="apps-separator"><!-- --></div>
+    <tal:login replace="structure context/@@login_status" />
+    <tal:hierarchy replace="structure context/@@+hierarchy" />
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
       tal:define="facetmenu CONTEXTS/menu:facet"
