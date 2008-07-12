@@ -79,11 +79,11 @@ branch page for people that are not able to see it.  Get an admin
 to mark the bug private.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/9')
-    >>> admin_browser.getLink('Set privacy/security').click()
+    >>> admin_browser.getLink('This report is public').click()
     >>> admin_browser.getControl('This bug report should be private').click()
     >>> admin_browser.getControl('Change').click()
-    >>> find_tag_by_id(admin_browser.contents, 'privatebadge')
-    <img...src="/@@/private-large".../>
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'privacy'))
+    This report is private
 
 Sample person can see it...
 

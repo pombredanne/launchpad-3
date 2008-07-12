@@ -12,7 +12,8 @@ address he prefers to login with.
 
     >>> browser = setupBrowser(auth='Basic testing@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name12')
-    >>> browser.getLink('Change e-mail settings').click()
+    >>> browser.getLink('Change details').click()
+    >>> browser.getLink('E-mail Settings').click()
     >>> browser.url
     'http://launchpad.dev/~name12/+editemails'
     >>> browser.title
