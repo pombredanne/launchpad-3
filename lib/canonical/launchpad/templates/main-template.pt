@@ -286,34 +286,23 @@
         </label>
       </form>
      <div id="globalfooter" class="clearfix" xml:lang="en" lang="en" dir="ltr">
-        <div id="applications-footer"
-          tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
-          tal:replace="nothing">
-          <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
-          <a tal:attributes="href vhosts/code/rooturl">Code</a> |
-          <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
-          <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
-          <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
-          <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
-        </div>
         <div id="colophon">
-          <a href="/legal">Terms&nbsp;of&nbsp;Use</a> |
-          <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
-          <a href="/faq">FAQ</a> |
-          <a href="https://help.launchpad.net/">Documentation</a>
+          <a tal:condition="not:request/lp:person" href="/+tour"
+          >What is Launchpad?</a>
+          <a tal:condition="request/lp:person" href="/feedback"
+          >Help improve Launchpad</a>
+          |
+          <a href="/legal">Terms of use</a>
         </div>
         <div id="copyright">
             &copy;&nbsp;2004-2008&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-          <tal:block>
-              | <a href="https://help.launchpad.net/LaunchpadReleases">
-              Version 1.99</a> | build
-              <tal:block condition="revno" replace="revno" />
-              <tal:block condition="not: revno">unknown</tal:block>
-          </tal:block>
-          <tal:devmode condition="devmode">| DEVMODE</tal:devmode>
-          <tal:demo condition="is_demo">| DEMO</tal:demo>
-          <tal:edge condition="is_edge">| EDGE</tal:edge>
+          |
+          <tal:block condition="revno" replace="revno" />
+          <tal:block condition="not: revno">unknown</tal:block>
+          <tal:devmode condition="devmode">devmode</tal:devmode>
+          <tal:demo condition="is_demo">demo site</tal:demo>
+          <tal:edge condition="is_edge">beta site</tal:edge>
         </div>
         <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
             <li>Facet name:

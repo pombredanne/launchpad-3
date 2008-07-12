@@ -1,6 +1,6 @@
-= Launchpad Marketing Microsite =
+= Launchpad tour =
 
-From Launchpad's front page, you can access a "marketing microsite"
+From Launchpad's front page, you can access the tour.
 
     >>> browser.open('http://launchpad.dev/')
     >>> tour_link = browser.getLink('Take a tour')
@@ -11,6 +11,27 @@ From Launchpad's front page, you can access a "marketing microsite"
     Launchpad tour
     >>> print browser.url
     http://launchpad.dev/+tour/index.html
+
+The tour is also linked to from the bottom of every page, if you are not
+logged in.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu')
+    >>> anon_browser.getLink('What is Launchpad?').click()
+    >>> print anon_browser.title
+    Launchpad tour
+
+(If you are logged in, this link is replaced by the link for helping improve
+Launchpad.)
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu')
+    >>> user_browser.getLink('What is Launchpad?')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> user_browser.open('http://launchpad.dev/ubuntu')
+    >>> feedback_link = user_browser.getLink('Help improve Launchpad')
+    >>> print feedback_link.url
+    http://launchpad.dev/feedback
 
 The tour is circular. Clicking the Next button repeatedly will bring you
 back to the tour start.
