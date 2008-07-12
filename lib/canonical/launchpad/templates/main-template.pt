@@ -121,7 +121,7 @@
         <tr>
           <td tal:content="structure context/@@login_status" />
         </tr>
-    </table>
+      </table>
     </div>
     <div class="apps-separator"><!-- --></div>
     <div
