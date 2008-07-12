@@ -51,8 +51,8 @@ When you are not on a demo site, the text no longer appears.
     
 == Launchpad.net ==
 
-On launchpad.net, Launchpad's version and revision numbers are displayed
-in the page footer.
+On every instance except launchpad.net, Launchpad's version and revision
+numbers are displayed in the page footer.
 
     >>> print config.launchpad.is_lpnet
     False
