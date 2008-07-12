@@ -73,7 +73,8 @@ be quickly ascertained through a set operation.
     >>> names = getUtility(IBinaryPackageNameSet).getNotNewByNames(
     ...     name_ids, warty, archive_ids)
 
-    >>> for name in sorted(names):
+    >>> import operator
+    >>> for name in sorted(names, key=operator.attrgetter('name')):
     ...     print name.name
     mozilla-firefox
     pmount
@@ -83,7 +84,6 @@ Passing no name_ids gives the EmptyResultSet.
     >>> getUtility(IBinaryPackageNameSet).getNotNewByNames(
     ...     [], warty, archive_ids).count()
     0
-
 
 Check IBinaryPackageRelease.override() behaviour:
 
