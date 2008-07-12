@@ -1,9 +1,9 @@
 = LoginToken pages =
 
-Users interact with login tokens for operations that require the user
-to prove his identity by performing an action that is external to
-Launchpad. For example, claiming an email address or reseting a password
-require the user to use the login token sent to him in an email.
+Users interact with login tokens for operations that require the user to
+prove he has access to a resource that is external to Launchpad. For
+example, claiming an email address or resetting a password require the
+user to use the login token sent to him in an email.
 
 
 == Reset password view ==
@@ -111,6 +111,6 @@ password is reset, and the account status is set ACTIVE.
     u'former-user'
     >>> former_user_account.status
     <DBItem AccountStatus.ACTIVE, ...>
-    >>> former_user_account.password
-    u'...'
+    >>> former_user.is_valid_person
+    True
 

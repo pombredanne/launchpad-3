@@ -653,6 +653,7 @@ spec to be reassigned.
     []
     >>> foobar.name
     u'name16'
+    >>> foobar_preferredemail = foobar.preferredemail
     >>> foobar.preferredemail.email
     u'foo.bar@canonical.com'
     >>> [coc.active for coc in foobar.signedcocs]
@@ -766,7 +767,27 @@ are now owned/driven by the registry admins team.
 == Reactivating user accounts ==
 
 Accounts can be reactivated. A comment is required to log why this
-was done.
+was done. There are two preconditions before this method can be
+called on a Person: The person must have a password and must have
+a preferred email address.
+
+    >>> foobar.reactivateAccount('This will raise an error.')
+    Traceback (most recent call last):
+     ...
+    AssertionError: User name16-deactivatedaccount cannot be reactivate
+                    without first setting a password.
+
+    >>> foobar.password = 'test'
+    >>> foobar.reactivateAccount('This will raise an error.')
+    Traceback (most recent call last):
+     ...
+    AssertionError: User name16-deactivatedaccount cannot be reactivate
+                    without first setting a preferred email address.
+
+    >>> foobar.setPreferredEmail(foobar_preferredemail)
+
+The account can be reactivated after the password and preferred
+email address are set.
 
     >>> foobar.reactivateAccount(
     ...     'User reactivated the account using reset password.')

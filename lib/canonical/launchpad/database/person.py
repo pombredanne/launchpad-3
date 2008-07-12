@@ -1792,6 +1792,14 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         Set the account status to ACTIVE and possibly restore the user's
         name.
         """
+        if self.password is None:
+            raise AssertionError(
+                "User %s cannot be reactivate without first setting a "
+                "password." % self.name)
+        if self.preferredemail is None:
+            raise AssertionError(
+                "User %s cannot be reactivate without first setting a "
+                "preferred email address." % self.name)
         self.account.status = AccountStatus.ACTIVE
         self.account.status_comment = comment
         if '-deactivatedaccount' in self.name:

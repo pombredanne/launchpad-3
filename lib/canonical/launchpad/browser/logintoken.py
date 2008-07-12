@@ -302,12 +302,14 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         naked_person = removeSecurityProxy(person)
         #      end of evil code.
 
-        # Reset password can be used to reactivate a deactivated account.
+        # XXX sinzui 2008-07-11 bug=247374, 247375:
+        # Person.setPreferredEmail() can set an account active without
+        # Updating the name. That method should have that responsibility
+        # removed when these bugs are fixed.
         if naked_person.account.status == AccountStatus.DEACTIVATED:
-            naked_person.reactivateAccount(
-                "User reactivated the account using reset password.")
-            self.request.response.addInfoNotification(
-                _('Welcome back to Launchpad.'))
+            do_reactivation = True
+        else:
+            do_reactivation = False
 
         # Make sure this person has a preferred email address.
         if naked_person.preferredemail != emailaddress:
@@ -315,6 +317,13 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
 
         naked_person.password = data.get('password')
         self.context.consume()
+
+        # Reset password can be used to reactivate a deactivated account.
+        if do_reactivation:
+            naked_person.reactivateAccount(
+                "User reactivated the account using reset password.")
+            self.request.response.addInfoNotification(
+                _('Welcome back to Launchpad.'))
 
         self.logInPersonByEmail(self.context.email)
 
