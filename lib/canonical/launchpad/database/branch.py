@@ -524,8 +524,12 @@ class Branch(SQLBase):
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
-        return BranchRevision(
+        branch_revision = BranchRevision(
             branch=self, sequence=sequence, revision=revision)
+        # Allocate karma if no karma has been allocated for this revision.
+        if not revision.karma_allocated:
+            revision.allocateKarma(self)
+        return branch_revision
 
     def getTipRevision(self):
         """See `IBranch`."""

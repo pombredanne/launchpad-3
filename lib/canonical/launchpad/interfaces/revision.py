@@ -9,7 +9,7 @@ __all__ = [
     'IRevisionSet']
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Text, TextLine
+from zope.schema import Bool, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -29,6 +29,9 @@ class IRevision(Interface):
     revision_date = Datetime(
         title=_("The date the revision was committed."),
         required=True, readonly=True)
+    karma_allocated = Bool(
+        title=_("Has karma been allocated for this revision?"),
+        required=True, readonly=True, default=False)
     parents = Attribute("The RevisionParents for this revision.")
     parent_ids = Attribute("The revision_ids of the parent Revisions.")
     properties = Attribute("The `RevisionProperty`s for this revision.")

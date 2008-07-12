@@ -11,14 +11,17 @@ import email
 
 import pytz
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
+    BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
+    SQLMultipleJoin)
 
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet,
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
@@ -42,6 +45,8 @@ class Revision(SQLBase):
                             alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
 
+    karma_allocated = BoolCol(default=False, notNull=True)
+
     properties = SQLMultipleJoin('RevisionProperty', joinColumn='revision')
 
     @property
@@ -60,8 +65,20 @@ class Revision(SQLBase):
         return [parent.parent_id for parent in self.parents]
 
     def getProperties(self):
-        """See IRevision."""
+        """See `IRevision`."""
         return dict((prop.name, prop.value) for prop in self.properties)
+
+    def allocateKarma(self, branch):
+        """See `IRevision`."""
+        # If we know who the revision author is, give them karma.
+        author = self.revision_author.person
+        if (author is not None and branch.product is not None):
+            # No karma for junk branches as we need a product to link
+            # against.
+            karma = author.assignKarma('revisionadded', branch.product)
+            # Backdate the karma to the time the revision was created.
+            karma.datecreated = self.revision_date
+            self.karma_allocated = True
 
 
 class RevisionAuthor(SQLBase):
@@ -97,6 +114,8 @@ class RevisionAuthor(SQLBase):
         # Only accept an email address that is validated.
         if lp_email.status != EmailAddressStatus.NEW:
             self.person = lp_email.person
+            # If we have just linked a Launchpad Person to a RevisionAuthor we
+            # create karma actions for those revisions.
             return True
         else:
             return False
