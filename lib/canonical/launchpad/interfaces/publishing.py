@@ -505,7 +505,7 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
     """A binary package publishing record."""
 
     distroarchseriesbinarypackagerelease = Attribute("The object that "
-        "represents this binarypacakgerelease in this distroarchseries.")
+        "represents this binarypackagerelease in this distroarchseries.")
 
     def changeOverride(new_component=None, new_section=None,
                        new_priority=None):
@@ -526,7 +526,7 @@ class IPublishingSet(Interface):
 
         The returned ResultSet contains entries with the wanted `Build`s
         associated with the corresponding source publication and its
-        targeted `DistroArchSeries` in a 3-elememt tuple. This way the extra
+        targeted `DistroArchSeries` in a 3-element tuple. This way the extra
         information will be cached and the callsites can group builds in
         any convenient form.
 
@@ -546,7 +546,7 @@ class IPublishingSet(Interface):
         """Return all files related with each given source publication.
 
         The returned ResultSet contains entries with the wanted
-        `LibraryFileAlias`s (source and binaires) associated with the
+        `LibraryFileAlias`s (source and binaries) associated with the
         corresponding source publication and its `LibraryFileContent`
         in a 3-element tuple. This way the extra information will be
         cached and the callsites can group files in any convenient form.

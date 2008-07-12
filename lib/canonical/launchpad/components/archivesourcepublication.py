@@ -70,7 +70,7 @@ class ArchiveSourcePublications:
         list of tuples, (source, related_object), as a dictionary keyed by
         distinct sources and pointing to a list of `relates_object`s.
 
-        :return: a dictionary keyed by the disctinct sources and pointing to
+        :return: a dictionary keyed by the distinct sources and pointing to
             a list of `related_object`s in their original order.
         """
         source_and_values = {}
