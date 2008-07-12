@@ -1,10 +1,10 @@
-= Demo and production =
+= Demo and launchpad.net =
 
 == Demo sites ==
 
 Launchpad can brand instances as 'demo' instances to make it obvious to
 users that they are working in a playpen and changes they make do not
-affect the production systems.
+affect the launchpad.net database.
 
 This is controlled by a config variable.
 
@@ -49,24 +49,24 @@ When you are not on a demo site, the text no longer appears.
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
     |...Launchpad...) devmode
     
-== Production sites ==
+== Launchpad.net ==
 
-On non-production sites, Launchpad's version and revision numbers are
-displayed in the page footer.
+On launchpad.net, Launchpad's version and revision numbers are displayed
+in the page footer.
 
-    >>> print config.launchpad.is_production
+    >>> print config.launchpad.is_lpnet
     False
     >>> browser.open('http://launchpad.dev/')
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
     |...Launchpad ... (r...)...
 
-On production sites, however, the version and revision numbers are
-presented only in an HTML comment.
+On launchpad.net, however, the version and revision numbers are presented
+only in an HTML comment.
 
-    >>> # Pretend that we're on production:
+    >>> # Pretend that we're on launchpad.net:
     >>> test_data = dedent("""
     ...     [launchpad]
-    ...     is_production: True
+    ...     is_lpnet: True
     ...     """)
     >>> config.push('test_data', test_data)
 
@@ -79,7 +79,7 @@ presented only in an HTML comment.
 
     >>> # Restore the previous config:
     >>> config_data = config.pop('test_data')
-    >>> print config.is_production
+    >>> print config.is_lpnet
     Traceback (most recent call last):
     ...
-    AttributeError: No section or category named is_production.
+    AttributeError: No section or category named is_lpnet.
