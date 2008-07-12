@@ -8,8 +8,8 @@ are sent to other vhosts in the same domain.
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar...
     >>> raw_cookie = browser.headers['Set-Cookie']
-    >>> '; Domain=.launchpad.dev;' in raw_cookie
-    True
+    >>> print raw_cookie
+    launchpad...; Domain=.launchpad.dev;...
 
 If we visit another vhost in the domain, we remain logged in.
 
@@ -19,9 +19,8 @@ If we visit another vhost in the domain, we remain logged in.
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar...
     >>> raw_cookie = browser.headers['Set-Cookie']
-    >>> '; Domain=.launchpad.dev;' in raw_cookie
-    True
+    >>> print raw_cookie
+    launchpad...; Domain=.launchpad.dev;...
 
-XXX: We need to test that for https: URLs, the secure attribute is set on
-the cookie. This is blocked on Bug #56601 -- StuartBishop 20060816
-
+# XXX stub 20060816 bug=56601: We need to test that for https: URLs, the
+# secure attribute is set on the cookie.

@@ -521,7 +521,7 @@ def print_location(contents):
         recursive=False)
     segments = [extract_text(step).encode('us-ascii', 'replace')
                 for step in hierarchy
-                if not step.name == 'small']
+                if step.name != 'small']
     print 'Location:', ' > '.join(segments[1:])
     print 'Tabs:'
     print_location_apps(contents)

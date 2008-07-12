@@ -585,7 +585,7 @@ ul#menuroot li.selected a.breadcrumb {
 
 /* === Location hierarchy === */
 /*
-  # XXX 20080710 mpt: Known issues with the hierarchy (bug 247420):
+  # XXX mpt 20080710 bug=247420: Known issues with the hierarchy:
   - The left border and bevel of the 'Launchpad' segment is missing.
   - The top border and bevel of the last segment is missing.
   - The right border and bevel of the last segment is missing.

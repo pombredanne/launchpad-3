@@ -7,7 +7,7 @@
 <div id="logincontrol" tal:condition="view/login_shown"
 ><a tal:attributes="href view/login_url">Log in / Register</a></div>
 <div id="logincontrol" tal:condition="view/logged_in">
-  <form tal:condition="view/logged_in" action="+logout" method="post">
+  <form action="+logout" method="post">
     <input type="hidden" name="loggingout" value="1" />
     <a tal:replace="structure request/lp:person/fmt:link" /> &bull;
     <input type="submit" name="logout" value="Log Out" />

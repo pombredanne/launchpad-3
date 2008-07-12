@@ -244,19 +244,20 @@ class Hierarchy(LaunchpadView):
         For each element, element.text is cgi escaped.
         """
         elements = list(self.request.breadcrumbs)
-        
-        if len(elements) > 0: # We're not on the home page
+
+        if len(elements) > 0:
+            # We're not on the home page.
             prefix = '<div id="lp-hierarchy">'
-            suffix = '</div><span class="last-rounded">&nbsp;</span>' \
-                     '<div class="apps-separator"><!-- --></div>'
+            suffix = ('</div><span class="last-rounded">&nbsp;</span>'
+                     '<div class="apps-separator"><!-- --></div>')
 
             if len(elements) == 1:
                 first_class = 'before-last'
             else:
                 first_class = 'first'
 
-            L = []
-            L.append(
+            steps = []
+            steps.append(
                 '<span class="%s item">'
                 '<a href="/" class="breadcrumb container"'
                 ' id="homebreadcrumb">'
@@ -280,20 +281,24 @@ class Hierarchy(LaunchpadView):
                     cssclass = ' '.join(['before-last', cssclass])
                 elif element is last_element:
                     cssclass = ' '.join(['last', cssclass])
-                L.append('<span class="%s"%s>'
+                else:
+                    # No extra CSS class.
+                    pass
+                steps.append('<span class="%s"%s>'
                          '<a href="%s">%s</a>'
                          '</span>'
                          % (cssclass, menudata, element.url,
                             cgi.escape(element.text)))
-            hierarchy = prefix + '<small> &gt; </small>'.join(L) + suffix
-        else: # We're on the home page
-            hierarchy = '<div id="lp-hierarchy" class="home">' \
-                        '<a href="/" class="breadcrumb">' \
-                        '<img alt="Launchpad" ' \
-                        ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>' \
-                        '</a></div>' \
-                        '<span class="last-rounded">&nbsp;</span>' \
-                        '<div class="apps-separator"><!-- --></div>'
+            hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
+        else:
+            # We're on the home page.
+            hierarchy = ('<div id="lp-hierarchy" class="home">'
+                        '<a href="/" class="breadcrumb">'
+                        '<img alt="Launchpad" '
+                        ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
+                        '</a></div>'
+                        '<span class="last-rounded">&nbsp;</span>'
+                        '<div class="apps-separator"><!-- --></div>')
 
         return hierarchy
 
