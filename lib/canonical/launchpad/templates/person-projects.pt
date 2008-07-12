@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -19,17 +19,17 @@
   <h1>Projects <span tal:replace="context/displayname" /> is involved with</h1>
 </metal:heading>
 
-<div metal:fill-slot="main"> 
+<div metal:fill-slot="main">
   <p tal:condition="view/tooManyRelatedProjectsFound"
        class="informational message">
       <span tal:replace="view/related_projects_count" /> projects are related
         to <span tal:replace="context/displayname" />. Displaying only the
         first <span tal:replace="view/max_results_to_display" />:
   </p>
- 
+
   <table tal:condition="view/relatedProjects"
-         tal:define="pillarnames view/relatedProjects" 
-         class="listing" 
+         tal:define="pillarnames view/relatedProjects"
+         class="listing"
          id="related-projects">
     <thead>
       <tr>

@@ -22,6 +22,23 @@ from canonical.launchpad.interfaces import ISalesforceVoucherProxy
 
 TERM_RE = re.compile("^LPCBS(\d{2})-.*")
 
+
+def force_fault(func):
+    """Decorator to force a fault for testing.
+
+    If the property forced_fault is set and the function matches the specified
+    function name, then the fault is returned.  The property must be a tuple
+    of (method name, fault, message).
+    """
+    def decorator(self, *args, **kwargs):
+        if self.forced_fault is not None:
+            func_name, fault, message = self.forced_fault
+            if func_name == func.__name__:
+                raise Fault(fault, message)
+        return func(self, *args, **kwargs)
+    return decorator
+
+
 class Voucher:
     """Test data for a single voucher."""
     def __init__(self, voucher_id, owner):
@@ -71,6 +88,9 @@ class SalesforceXMLRPCTestTransport(Transport):
 
     voucher_index = 0
     voucher_prefix = 'LPCBS%02d-f78df324-0cc2-11dd-0000-%012d'
+    # The forced_fault is a tuple (method name, fault, message) or None.  See
+    # the decorator `force_fault` for details.
+    forced_fault = None
 
     def __init__(self):
         self.vouchers = [
@@ -84,6 +104,16 @@ class SalesforceXMLRPCTestTransport(Transport):
                     'cprov_oid'),
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000005',
                     'cprov_oid'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000001',
+                    'mTmeENb'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000002',
+                    'mTmeENb'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000003',
+                    'mTmeENb'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000004',
+                    'mTmeENb'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000005',
+                    'mTmeENb'),
             ]
 
 
@@ -102,16 +132,16 @@ class SalesforceXMLRPCTestTransport(Transport):
                 return voucher
         return None
 
+    @force_fault
     def getServerStatus(self):
         """Get the server status.  If it responds it is healthy.
 
         Included here for completeness though it is never called by
         Launchpad.
         """
-        import time
-        time.sleep(0.5)
         return "Server is running normally"
 
+    @force_fault
     def getUnredeemedVouchers(self, lp_openid):
         """Return the list of unredeemed vouchers for a given id.
 
@@ -123,6 +153,7 @@ class SalesforceXMLRPCTestTransport(Transport):
                         voucher.status == 'Reserved')]
         return vouchers
 
+    @force_fault
     def getAllVouchers(self, lp_openid):
         """Return the complete list of vouchers for a given id.
 
@@ -133,6 +164,7 @@ class SalesforceXMLRPCTestTransport(Transport):
                     if voucher.owner == lp_openid]
         return vouchers
 
+    @force_fault
     def getVoucher(self, voucher_id):
         """Return the voucher."""
 
@@ -143,6 +175,7 @@ class SalesforceXMLRPCTestTransport(Transport):
         voucher = voucher.asDict()
         return voucher
 
+    @force_fault
     def redeemVoucher(self, voucher_id, lp_openid,
                       lp_project_id, lp_project_name):
         """Redeem the voucher.
@@ -174,6 +207,7 @@ class SalesforceXMLRPCTestTransport(Transport):
         product = voucher.voucher_id.split('-')[0]
         return [True]
 
+    @force_fault
     def updateProjectName(self, lp_project_id, lp_project_name):
         """Set the project name for the given project id.
 
@@ -189,6 +223,7 @@ class SalesforceXMLRPCTestTransport(Transport):
                         'No vouchers matching product id %s' % lp_project_id)
         return [num_updated]
 
+    @force_fault
     def grantVoucher(self, admin_openid, approver_openid, recipient_openid,
                      recipient_name, recipient_preferred_email, term_months):
         """Grant a new voucher to the user."""

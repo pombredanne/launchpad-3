@@ -14,7 +14,7 @@ service interface.  The set of people is available from the service root.
     >>> from launchpadlib.testing.helpers import salgado_with_full_permissions
     >>> launchpad = salgado_with_full_permissions.login()
     >>> len(launchpad.people)
-    57
+    59
 
 You can find a person by name.
 
@@ -30,9 +30,9 @@ You can iterate through all the people in the set.
 
     >>> names = sorted(person.name for person in launchpad.people)
     >>> len(names)
-    57
+    59
     >>> names
-    [u'admins', u'bazaar-experts', u'bug-importer',
+    [u'admins', u'bac', u'bazaar-experts', u'bug-importer',
      ...
      u'ubuntu-translators', u'vcs-imports', u'warty-gnome']
 
