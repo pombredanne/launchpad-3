@@ -18,6 +18,7 @@
 abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
 address {font-style: inherit;}
 * html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
+aside {display: block;}
 caption {caption-side: bottom; text-align: left;}
 dt dfn {font-style: normal; font-weight: bold;}
 dd {margin-bottom: 1em;}
