@@ -18,7 +18,6 @@ from zope.interface import implements
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.hastranslationimports import (
     HasTranslationImportsView)
