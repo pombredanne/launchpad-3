@@ -15,7 +15,7 @@ use, but the bug is not yet targeted to that milestone.
     >>> table = find_tag_by_id(owner_browser.contents, 'affected-software')
     >>> print extract_text(table)
     Affects          Status  Importance  Assigned to        Milestone
-    Mozilla Firefox  New     Low         Mark Shuttleworth 
+    Mozilla Firefox  New     Low         Mark Shuttleworth
     ...
 
     >>> milestone_control = owner_browser.getControl(

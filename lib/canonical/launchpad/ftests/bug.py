@@ -1,4 +1,4 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 """Helper functions for bug-related doctests and pagetests."""
 
@@ -44,15 +44,16 @@ def print_subscribers(bug_page, subscriber_list_id):
     """Print the subscribers listed in the subscriber portlet."""
     subscriber_list = find_tag_by_id(bug_page, subscriber_list_id)
     if subscriber_list is None:
-        # No list with this ID, as can happen if there are
-        # no indirect subscribers, so just print an empty string
+        # No list with this ID (as can happen if there are
+        # no indirect subscribers), so just print an empty string.
         print ""
     else:
-        for li in subscriber_list.fetch('li'):
-            if li.a:
-                sub_display = li.a.renderContents()
-                if li.a.has_key('title'):
-                    sub_display += (' (%s)' % li.a['title'])
+        for li in subscriber_list.findAll('li'):
+            anchor = li.a
+            if anchor is not None:
+                sub_display = anchor.renderContents()
+                if anchor.has_key('title'):
+                    sub_display += (' (%s)' % anchor['title'])
                 print sub_display
 
 

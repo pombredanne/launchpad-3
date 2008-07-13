@@ -6,7 +6,7 @@
   id="portlet-subscribers"
   tal:define="
     direct_subscriptions context/getDirectSubscriptions;
-		from_dupes_subscriptions context/getSubscriptionsFromDuplicates;
+    from_dupes_subscriptions context/getSubscriptionsFromDuplicates;
     also_notified_subscribers context/getAlsoNotifiedSubscribers
   "
 >
@@ -15,16 +15,12 @@
     <li
       tal:define="link context_menu/subscription"
       tal:condition="link/enabled"
-      tal:attributes="
-        style python: 'list-style-image: url(/@@/' + link.icon + ')'
-      "
+      tal:attributes="style string:list-style-image: url(/@@/${link/icon})"
     ><a tal:attributes="href link/url" tal:content="link/text" /></li>
     <li
       tal:define="link context_menu/addsubscriber"
       tal:condition="link/enabled"
-      tal:attributes="
-        style python: 'list-style-image: url(/@@/' + link.icon + ')'
-      "
+      tal:attributes="style string:list-style-image: url(/@@/${link/icon})"
     ><a tal:attributes="href link/url" tal:content="link/text" /></li>
   </ul>
   <h2>Subscribers</h2>

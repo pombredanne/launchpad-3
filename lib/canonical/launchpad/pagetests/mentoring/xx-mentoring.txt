@@ -624,8 +624,12 @@ First we show that 'One Membership' is not initially a subscriber to the
 bug:
 
     >>> subs = find_tag_by_id(browser.contents, 'portlet-subscribers')
-    >>> 'One Membership' in subs.renderContents()
-    False
+    >>> for subscriber in subs.findAll('li'):
+    ...     print extract_text(subscriber)
+    Subscribe
+    Subscribe someone else
+    Foo Bar
+    Ubuntu Team
 
 Now we offer mentoring, and along the way we request to be subscribed:
 
@@ -638,7 +642,10 @@ Now we offer mentoring, and along the way we request to be subscribed:
 And now 'One Membership' is a subscriber:
 
     >>> subs = find_tag_by_id(browser.contents, 'portlet-subscribers')
-    >>> 'One Membership' in subs.renderContents()
-    True
-
-
+    >>> for subscriber in subs.findAll('li'):
+    ...     print extract_text(subscriber)
+    Unsubscribe
+    Subscribe someone else
+    Foo Bar
+    One Membership
+    Ubuntu Team
