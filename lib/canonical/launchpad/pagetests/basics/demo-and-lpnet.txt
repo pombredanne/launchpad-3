@@ -12,10 +12,10 @@ This is controlled by a config variable.
     >>> config.launchpad.is_demo
     False
 
-(We could hard code this behavior for certain database names, as was done
-in the past, but using an explicit config option future proofs us against
-future changes, such as using multiple launchpad databases, and makes it
-easier to test the feature and see the styling.)
+(We could hard-code database names rather than using config variables.
+But using config variables future-proofs us against changes such as
+using multiple launchpad databases. It also makes testing and examining
+instance-specific customizations much easier.)
 
 When you are on a demo site, this is advertised by both the page
 background, and the text "demo site" in the page footer.
@@ -48,11 +48,12 @@ When you are not on a demo site, the text no longer appears.
     >>> browser.open('http://launchpad.dev')
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
     |...Launchpad...) devmode
-    
+
+
 == Launchpad.net ==
 
-On every instance except launchpad.net, Launchpad's version and revision
-numbers are displayed in the page footer.
+On every instance except launchpad.net, Launchpad's version and
+revision numbers are displayed in the page footer.
 
     >>> print config.launchpad.is_lpnet
     False
@@ -60,8 +61,8 @@ numbers are displayed in the page footer.
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
     |...Launchpad ... (r...)...
 
-On launchpad.net, however, the version and revision numbers are presented
-only in an HTML comment.
+On launchpad.net, however, the version and revision numbers are
+presented only in an HTML comment.
 
     >>> # Pretend that we're on launchpad.net:
     >>> test_data = dedent("""
@@ -79,7 +80,5 @@ only in an HTML comment.
 
     >>> # Restore the previous config:
     >>> config_data = config.pop('test_data')
-    >>> print config.is_lpnet
-    Traceback (most recent call last):
-    ...
-    AttributeError: No section or category named is_lpnet.
+    >>> print config.launchpad.is_lpnet
+    False

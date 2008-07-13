@@ -20,8 +20,8 @@ logged in.
     >>> print anon_browser.title
     Launchpad tour
 
-(If you are logged in, this link is replaced by the link for helping improve
-Launchpad.)
+(If you are logged in, this link is replaced by the link for helping
+improve Launchpad.)
 
     >>> user_browser.open('http://launchpad.dev/ubuntu')
     >>> user_browser.getLink('What is Launchpad?')

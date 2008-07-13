@@ -1,3 +1,10 @@
+/* = Launchpad style sheet = */
+/*
+Guidelines:
+ * Use absolute units (e.g. px, pt) only when image sizes or CSS limitations
+   demand it. Otherwise, use relative units (%, em).
+*/
+
 .demo {background-color: #fee;}
 
 /* === Stuff browsers should do but don't === */
@@ -907,16 +914,16 @@ span.help {font-weight: normal;}
 /* Immediately above the global footer, on most pages, is a search field: */
 #globalsearch {
   font-size: small;
-  margin: 1em 0; 
+  margin: 1em 0;
   text-align: center;
-  padding: 10px;
+  padding: 0.5em 1em 1em;
   background: #e7effc;
   color: #000;
   border: solid #c1c9d6;
   border-width: 1px 0;
 }
-#globalsearch label {font-weight: normal;}
-#globalsearch input {display: block; margin: 4px auto 0;}
+#globalsearch label {display: block; font-weight: normal;}
+#globalsearch input {display: block; margin: 0.5em auto 0;}
 /* The last element on every page is a standard footer. */
 #globalfooter {clear: both; margin: 0.5em 0;}
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
