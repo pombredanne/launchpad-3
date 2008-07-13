@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Tests for Branches."""
+"""Tests for IBranchNavigationMenu implementations"""
 
 __metaclass__ = type
 
