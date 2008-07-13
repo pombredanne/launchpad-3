@@ -232,6 +232,7 @@ table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 .batch-navigation-links .next.inactive {
   background-image: url(/@@/arrowRight-inactive);
 }
+.batch-navigation-links .inactive {color: #999ea7;}
 /* And all the links have spacing between them: */
 .batch-navigation-links .previous, .batch-navigation-links .next,
 .batch-navigation-links .last {
@@ -1774,15 +1775,18 @@ div.popupTitle {
   margin-top: 1em;
   margin-bottom: 1em;
 }
-
-#search-results, #no-search{
-  width: 40em;
+#search-results ul.site-matches {
+  max-width: 55em;
 }
 
 #search-results div.upper-batch-nav {
   border-top: 1px solid #d2d2d2;
-  margin-top: 1.5em;
+  margin-top: 2.5em;
   margin-bottom: 0.5em;
+}
+#search-results .search-batch {
+  background: #e7effc;
+  margin-bottom: 10px;
 }
 
 #search-results div.lower-batch-nav {
