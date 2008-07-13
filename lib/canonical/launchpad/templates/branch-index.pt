@@ -14,6 +14,9 @@
   .logtail {
     padding-left: 2em;
   }
+  #merge-summary {
+    margin: 1em 0;
+  }
 </style>
 
 <body>
@@ -43,6 +46,12 @@
           <td><tal:link replace="structure context/product/fmt:link" /></td>
         </tr>
       </tal:not-junk-branch>
+      <tr>
+        <th>Status:</th>
+        <td
+          tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
+          tal:content="context/lifecycle_status/title" />
+      </tr>
       <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
         <tr><th>Location:</th><td tal:content="view/mirror_location" /></tr>
         <tal:mirror-failures tal:replace="structure context/@@+mirror-status" />
