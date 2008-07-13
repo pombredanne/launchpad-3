@@ -42,7 +42,7 @@
                        replace="structure link/render"/>
       </div>
       <p id="uses">
-        <tal:uses content="structure view/usesLaunchpadFor" />
+        <tal:uses content="structure view/uses_launchpad_for" />
       </p>
       <div class="section">
         <h2>Packages</h2>

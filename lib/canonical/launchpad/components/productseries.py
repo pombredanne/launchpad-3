@@ -4,14 +4,13 @@
 
 __metaclass__ = type
 __all__ = [
-    'productseries_to_hasexternalbugtracker',
-    'productseries_to_launchpadusage',
+    'productseries_to_product',
     ]
 
-def productseries_to_hasexternalbugtracker(productseries):
-    """Adapts IProductSeries object to IHasExternalBugTracker."""
-    return productseries.product
+def productseries_to_product(productseries):
+    """Adapts `IProductSeries` object to `IProduct`.
 
-def productseries_to_launchpadusage(productseries):
-    """Adapts IProductSeries object to ILaunchpadUsage."""
+    This is useful for adapting to `IHasExternalBugTracker`
+    or `ILaunchpadUsage`.
+    """
     return productseries.product

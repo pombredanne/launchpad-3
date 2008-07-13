@@ -130,7 +130,7 @@
   </p>
 
   <p id="uses">
-    <tal:uses content="structure view/usesLaunchpadFor" />
+    <tal:uses content="structure view/uses_launchpad_for" />
   </p>
 
   <p id="product-languages" tal:condition="context/programminglang">

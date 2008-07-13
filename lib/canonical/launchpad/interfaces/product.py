@@ -30,9 +30,9 @@ from canonical.launchpad.interfaces.branchvisibilitypolicy import (
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker,
-    IHasIcon, IHasLogo, IHasMugshot,
-    IHasOwner, IHasSecurityContact, ILaunchpadContainer, ILaunchpadUsage)
+    IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
+    ILaunchpadContainer, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar

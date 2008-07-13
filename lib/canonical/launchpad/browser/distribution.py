@@ -80,9 +80,10 @@ from canonical.widgets.image import ImageChangeWidget
 
 
 class UsesLaunchpadMixin:
-    """This code is used for the overview page of products and distros."""
+    """This mixin is used for the overview page of products and distros."""
 
-    def usesLaunchpadFor(self):
+    @property
+    def uses_launchpad_for(self):
         """Return a string of LP apps (comma-separated) this distro uses."""
         uses = []
         if self.context.official_answers:
@@ -98,12 +99,12 @@ class UsesLaunchpadMixin:
             uses.append("<strong>Translations</strong>")
 
         if len(uses) == 0:
-            return "%s does not use Launchpad." % self.context.title
+            text = "%s does not use Launchpad." % self.context.title
         else:
             apps = english_list(uses)
+            text = "%s uses Launchpad for %s." % (self.context.title, apps)
 
-
-        return "%s uses Launchpad for %s." % (self.context.title, apps)
+        return text
 
 
 class DistributionNavigation(
