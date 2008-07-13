@@ -1361,6 +1361,7 @@ returned.
      (u'Bazaar Experts', u'Tim Penhey'),
      (u'Canonical Partner Developers', u'Celso Providelo'),
      (u'Commercial Subscription Admins', u'Commercial Member'),
+     (u'Commercial Subscription Approvers', u'Brad Crittenden'),
      (u'Drummers', u'David Allouche'),
      (u'Flautists', u'David Allouche'),
      (u'GuadaMen', u'Foo Bar'),

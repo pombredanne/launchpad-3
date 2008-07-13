@@ -34,6 +34,8 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
+from canonical.launchpad.components.archivesourcepublication import (
+    ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
     IArchivePackageCopyingForm, IArchivePackageDeletionForm,
@@ -132,7 +134,9 @@ class ArchiveViewBase:
     @property
     def is_active(self):
         """Whether or not this PPA already have publications in it."""
-        return bool(self.context.getPublishedSources())
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return self.context.getPublishedSources().count() > 0
 
     @property
     def source_count_text(self):
@@ -243,7 +247,8 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         """Setup of the package search results."""
         self.batchnav = BatchNavigator(
             self.getPublishingRecords(), self.request)
-        self.search_results = self.batchnav.currentBatch()
+        results = list(self.batchnav.currentBatch())
+        self.search_results = ArchiveSourcePublications(results)
 
 
 class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
@@ -325,7 +330,9 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         infrastructure will do the validation for us.
         """
         terms = []
-        for pub in self.sources[:self.max_sources_presented]:
+
+        results = list(self.sources[:self.max_sources_presented])
+        for pub in ArchiveSourcePublications(results):
             terms.append(SimpleTerm(pub, str(pub.id), pub.displayname))
         return form.Fields(
             List(__name__='selected_sources',
@@ -374,7 +381,9 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
     def has_sources(self):
         """Whether or not the PPA has published source packages."""
         available_sources = self.getSources()
-        return bool(available_sources)
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return available_sources.count() > 0
 
     @property
     def available_sources_size(self):
@@ -756,7 +765,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     @cachedproperty
     def has_dependencies(self):
         """Whether or not the PPA has recorded dependencies."""
-        return bool(self.context.dependencies)
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return self.context.dependencies.count() > 0
 
     def validate_remove(self, action, data):
         """Validate dependency removal parameters.

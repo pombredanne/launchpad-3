@@ -1,18 +1,55 @@
-Check the list of people that have signed the Code of Conduct. Foo Bar should
-appear on the list even though he signed the 1.0 version, which is non-current
-but still valid.
+= Codes of Conduct and Ubunteros =
 
-  >>> admin_browser.open('http://launchpad.dev/people/+ubunterolist')
-  >>> admin_browser.title
-  'Ubunteros registered in Launchpad'
-  >>> admin_browser.getLink('Foo Bar (name16)').click()
-  >>> admin_browser.url
-  'http://launchpad.dev/~name16'
+Administrators can check the list of people that have signed the Code of
+Conduct. Foo Bar should appear on the list even though he signed the 1.0
+version, which is non-current but still valid.
 
-  >>> admin_browser.getLink('Codes of Conduct').click() 
+    # A useful helper
+    >>> def get_details_portlet(page):
+    ...     portlet = find_tag_by_id(page, 'portlet-details')
+    ...     return extract_text(portlet)
 
-  >>> '2005-09-27' in admin_browser.contents
-  True
-  >>> '1024D/12345678' in admin_browser.contents
-  True
+    >>> admin_browser.open('http://launchpad.dev/people/+ubunterolist')
+    >>> admin_browser.title
+    'Ubunteros registered in Launchpad'
+    >>> admin_browser.getLink('Foo Bar (name16)').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~name16'
+    >>> print get_details_portlet(admin_browser.contents)
+    Bragging rights
+    ...
+    Ubuntero: Yes
 
+    >>> admin_browser.getLink(url='+codesofconduct').click()
+    >>> signatures = find_tags_by_class(admin_browser.contents, 'signature')
+    >>> for signature in signatures:
+    ...     print extract_text(signature)
+    2005-09-27: digitally signed by Foo Bar (1024D/12345678)
+
+A regular user can't see the link to Foo Bar's signed codes of conduct.
+
+    >>> browser.open('http://launchpad.dev/~name16')
+    >>> print get_details_portlet(browser.contents)
+    Bragging rights
+    ...
+    Ubuntero: Yes
+
+    >>> browser.getLink(url='+codesofconduct')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+No-priv hasn't signed up to be an Ubuntero yet.  His homepage has
+a link to the Ubuntero Code of Conduct forms.
+
+    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~no-priv')
+    >>> print get_details_portlet(browser.contents)
+    Bragging rights
+    ...
+    Ubuntero: No
+
+    >>> browser.getLink(url='codeofconduct')
+    <Link
+      text='Apply to become an Ubuntero[IMG]'
+      url='http://launchpad.dev/codeofconduct'>
