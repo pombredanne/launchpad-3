@@ -12,21 +12,23 @@ __all__ = [
     ]
 
 import os
+from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
+from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.hastranslationimports import (
     HasTranslationImportsView)
 from canonical.launchpad.interfaces import (
     IDistroSeries, IEditTranslationImportQueueEntry, ILanguageSet, IPOFileSet,
     IPOTemplateSet, ITranslationImportQueue, ITranslationImportQueueEntry,
-    NotFoundError, RosettaImportStatus)
+    NotFoundError, RosettaImportStatus, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, canonical_url, LaunchpadFormView, action
-    )
+    action, canonical_url, GetitemNavigation, LaunchpadFormView)
+
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 
@@ -230,15 +232,37 @@ class TranslationImportQueueView(HasTranslationImportsView):
                 target=target, import_status=import_status,
                 file_extensions=extensions)
 
+    @cachedproperty
+    def _target_vocab_factory(self):
+        """Reusable target vocabulary factory."""
+        return TranslationImportTargetVocabularyFactory(self)
+
     def createFilterTargetField(self):
         """Create a field with a vocabulary to filter by target.
 
         :return: A form.Fields instance containing the target field.
         """
         return self.createFilterFieldHelper(
-            name='filter_target',
-            source=TranslationImportTargetVocabularyFactory(self),
+            name='filter_target', source=self._target_vocab_factory,
             title='Choose which target to show')
+
+    def isValidTarget(self, target_name):
+        """Is `target_name` a valid target to filter for?
+
+        In this view, unlike the default base-class implementation, the
+        user can filter freely.  Validate the target's name.
+        """
+        return target_name in self._target_vocab_factory.vocab
+
+
+class TolerantVocabulary(SimpleVocabulary):
+    """Simple vocabulary that returns None for unknown names."""
+    default_term = None
+
+    def getTerm(self, value):
+        if value not in self:
+            return self.default_term
+        return super(TolerantVocabulary, self).getTerm(value)
 
 
 class TranslationImportTargetVocabularyFactory:
@@ -254,7 +278,15 @@ class TranslationImportTargetVocabularyFactory:
         """
         self.view = view
 
-    def __call__(self, context):
+    @cachedproperty
+    def vocab(self):
+        """Produce (in either sense of the word) a vocabulary instance.
+
+        The same view may use this factory for both generating its list
+        of possible targets and validating a parameter picking a target.
+        This vocabulary can be reused across both without changes, so
+        the factory caches it.
+        """
         import_queue = getUtility(ITranslationImportQueue)
         targets = import_queue.getRequestTargets()
         filtered_targets = set()
@@ -265,7 +297,10 @@ class TranslationImportTargetVocabularyFactory:
         # factory.
         status_widget = self.view.widgets['filter_status']
         if status_widget.hasInput():
-            status_filter = status_widget.getInputValue()
+            try:
+                status_filter = status_widget.getInputValue()
+            except ConversionError:
+                raise UnexpectedFormData("Invalid status parameter.")
             if status_filter != 'all':
                 try:
                     status = RosettaImportStatus.items[status_filter]
@@ -275,7 +310,8 @@ class TranslationImportTargetVocabularyFactory:
                     # Unknown status.  Ignore.
                     pass
 
-        terms = [SimpleTerm('all', 'all', 'All targets')]
+        all_term = SimpleTerm('all', 'all', 'All targets')
+        terms = [all_term]
         for target in targets:
             if IDistroSeries.providedBy(target):
                 # Distroseries are not pillar names, we need to note
@@ -289,4 +325,14 @@ class TranslationImportTargetVocabularyFactory:
                 displayname += '*'
 
             terms.append(SimpleTerm(term_name, term_name, displayname))
-        return SimpleVocabulary(terms)
+        vocab = TolerantVocabulary(terms)
+        vocab.default_term = all_term
+        return vocab
+
+    def __call__(self, context):
+        """Produce vocabulary.  Returns same one every time.
+
+        :param context: ignored.
+        """
+        return self.vocab
+

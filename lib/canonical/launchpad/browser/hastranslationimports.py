@@ -250,8 +250,7 @@ class HasTranslationImportsView(LaunchpadFormView):
         file_extension = None
         status = None
         filter_target_widget = self.widgets.get('filter_target')
-        if (filter_target_widget is not None and
-            filter_target_widget.hasValidInput()):
+        if filter_target_widget and filter_target_widget.hasValidInput():
             target = filter_target_widget.getInputValue()
             pillar_name_set = getUtility(IPillarNameSet)
             if target == 'all':
@@ -303,6 +302,15 @@ class HasTranslationImportsView(LaunchpadFormView):
     def has_target_filter(self):
         """Whether the form should show the target filter."""
         return self.widgets.get('filter_target') is not None
+
+    def isValidTarget(self, target_name):
+        """Is `target_name` a valid target to filter for?
+
+        In the default implementation, the view's context defines the
+        target; the target has to be valid or otherwise we wouldn't have
+        gotten this far in the first place.
+        """
+        return True
 
     @cachedproperty
     def batchnav(self):
