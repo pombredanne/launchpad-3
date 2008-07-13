@@ -303,15 +303,6 @@ class HasTranslationImportsView(LaunchpadFormView):
         """Whether the form should show the target filter."""
         return self.widgets.get('filter_target') is not None
 
-    def isValidTarget(self, target_name):
-        """Is `target_name` a valid target to filter for?
-
-        In the default implementation, the view's context defines the
-        target; the target has to be valid or otherwise we wouldn't have
-        gotten this far in the first place.
-        """
-        return True
-
     @cachedproperty
     def batchnav(self):
         """Return batch object for this page."""

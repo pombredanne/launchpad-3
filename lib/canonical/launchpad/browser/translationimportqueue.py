@@ -232,27 +232,15 @@ class TranslationImportQueueView(HasTranslationImportsView):
                 target=target, import_status=import_status,
                 file_extensions=extensions)
 
-    @cachedproperty
-    def _target_vocab_factory(self):
-        """Reusable target vocabulary factory."""
-        return TranslationImportTargetVocabularyFactory(self)
-
     def createFilterTargetField(self):
         """Create a field with a vocabulary to filter by target.
 
         :return: A form.Fields instance containing the target field.
         """
         return self.createFilterFieldHelper(
-            name='filter_target', source=self._target_vocab_factory,
+            name='filter_target',
+            source=TranslationImportTargetVocabularyFactory(self),
             title='Choose which target to show')
-
-    def isValidTarget(self, target_name):
-        """Is `target_name` a valid target to filter for?
-
-        In this view, unlike the default base-class implementation, the
-        user can filter freely.  Validate the target's name.
-        """
-        return target_name in self._target_vocab_factory.vocab
 
 
 class TolerantVocabulary(SimpleVocabulary):
@@ -278,15 +266,7 @@ class TranslationImportTargetVocabularyFactory:
         """
         self.view = view
 
-    @cachedproperty
-    def vocab(self):
-        """Produce (in either sense of the word) a vocabulary instance.
-
-        The same view may use this factory for both generating its list
-        of possible targets and validating a parameter picking a target.
-        This vocabulary can be reused across both without changes, so
-        the factory caches it.
-        """
+    def __call__(self, context):
         import_queue = getUtility(ITranslationImportQueue)
         targets = import_queue.getRequestTargets()
         filtered_targets = set()
@@ -328,11 +308,4 @@ class TranslationImportTargetVocabularyFactory:
         vocab = TolerantVocabulary(terms)
         vocab.default_term = all_term
         return vocab
-
-    def __call__(self, context):
-        """Produce vocabulary.  Returns same one every time.
-
-        :param context: ignored.
-        """
-        return self.vocab
 
