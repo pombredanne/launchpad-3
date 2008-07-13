@@ -71,7 +71,8 @@ Sample Person can't log into Launchpad anymore.
     >>> browser.getControl('Log In').click()
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    The email address and password do not match.
+    The email address belongs to a deactivated account.
+    Use the "Forgotten your password" link to reactivate it.
 
 The bugs that were assigned to Sample Person will no longer have an
 assignee.
