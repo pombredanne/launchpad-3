@@ -7,8 +7,8 @@ not Launchpad users.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IPerson, IEmailAddressSet, IHasStanding,
-    ...     IHasTranslationImports)
+    ...     IPersonSet, IPerson, IProductSet, IEmailAddressSet,
+    ...     IHasStanding, IHasTranslationImports)
 
 Any Person object (either a person or a team) implements IPerson...
 
@@ -998,13 +998,26 @@ projects.
 
 == Project owned by a person or team ==
 
-To obtain all projects owned by a person or team, we can use the
+To obtain active projects owned by a person or team, we can use the
 getOwnedProjects() method of IPerson.  This method returns
 projects ordered by displayname.
 
     >>> for project in sabdfl.getOwnedProjects():
     ...     print project.displayname
     Derby
+    Gnome Applets
+    Tomcat
+    a52dec
+    alsa-utils
+    gnomebaker
+
+The method does not return inactive projects.
+
+    >>> login('commercial-member@canonical.com')
+    >>> derby = getUtility(IProductSet).getByName('derby')
+    >>> derby.active = False
+    >>> for project in sabdfl.getOwnedProjects():
+    ...     print project.displayname
     Gnome Applets
     Tomcat
     a52dec
