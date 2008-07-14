@@ -1,13 +1,11 @@
 = Presenting private bug reports =
 
-When a bug report is public, it appears like any other Launchpad page.
+When a bug report is public, it says so.
 
     >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/bugs/4")
-    >>> print find_tag_by_id(browser.contents, 'container')
-    <div id="container">...</div>
-    >>> print find_tag_by_id(browser.contents, 'privatebadge')
-    None
+    >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
+    This report is public
 
 But when marked private, it gains the standard Launchpad presentation
 for private things. The date and time at which the bug report was
@@ -19,8 +17,6 @@ title/tooltip):
     >>> browser.getControl("Change").click()
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/4
-    >>> print find_tag_by_id(browser.contents, 'container')
-    <div...class="private"...</div>
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
     This report is private
 
@@ -31,8 +27,6 @@ Bugs created before we started recording the date and time and who
 marked the bug private show only a simple message:
 
     >>> browser.open("http://launchpad.dev/bugs/14")
-    >>> print find_tag_by_id(browser.contents, 'container')
-    <div...class="private"...</div>
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
     This report is private...
 
