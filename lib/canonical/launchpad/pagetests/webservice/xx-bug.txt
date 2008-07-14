@@ -182,12 +182,24 @@ Let's try modifying the importance of a task.
   >>> body = webservice.get(bugtask_path).jsonBody()
   >>> body['importance']
   u'Low'
-  >>> body = {'importance': 'High'}
+  >>> print webservice.named_post(
+  ...     bugtask_path, 'transitionToImportance', importance='High')
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  <BLANKLINE>
+  null
+  >>> body = webservice.get(bugtask_path).jsonBody()
+  >>> body['importance']
+  u'High'
 
-  >>> from simplejson import dumps
+Only bug supervisors or people who can otherwise edit the bugtask's
+pillar are authorised to edit the importance.
 
-  >>> response = webservice.patch(
-  ...     bugtask_path, 'application/json', dumps(body))
+  >>> print user_webservice.named_post(
+  ...     bugtask_path, 'transitionToImportance', importance='Low')
+  HTTP/1.1 401 Unauthorized...
+
   >>> body = webservice.get(bugtask_path).jsonBody()
   >>> body['importance']
   u'High'
@@ -299,6 +311,7 @@ We can modify the remote bug.
   >>> bug_watch['remote_bug']
   u'2000'
 
+  >>> from simplejson import dumps
   >>> patch = {u'remote_bug': u'1234'}
   >>> response = webservice.patch(
   ...     bug_watch_path, 'application/json', dumps(patch))
@@ -369,6 +382,7 @@ Following the redirect, we can see the new bug watch:
    (u'bug_tracker_type', u'Bugzilla'),
    (u'contact_details', u'Carrier pigeon only'),
    (u'name', u'mozilla.org'),
+   (u'registrant_link', u'http://api.launchpad.dev/beta/~name12'),
    (u'resource_type_link',
     u'http://api.launchpad.dev/beta/#BugTrackerEntryAdapter'),
    (u'self_link',
@@ -430,6 +444,7 @@ renamed bug tracker.
    (u'bug_tracker_type', u'Bugzilla'),
    (u'contact_details', u'bob@example.com'),
    (u'name', u'bob'),
+   (u'registrant_link', u'http://api.launchpad.dev/beta/~name12'),
    (u'resource_type_link',
     u'http://api.launchpad.dev/beta/#BugTrackerEntryAdapter'),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/bugtrackers/bob'),

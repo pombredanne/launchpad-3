@@ -231,7 +231,7 @@ class TestExpandURL(TestCaseWithFactory):
             self.factory.getUniqueString(), self.factory.getUniqueString())
         self.assertFault(
             nonexistent_owner_branch,
-            faults.NoSuchPersonWithUsername('doesntexist'))
+            faults.NoSuchPersonWithName('doesntexist'))
 
     def test_tooManySegments(self):
         """If we have more segments than are necessary to refer to a branch,

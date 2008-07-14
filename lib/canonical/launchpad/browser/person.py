@@ -1,6 +1,6 @@
 # Copyright 2004-2008 Canonical Ltd
 
-"""Person-related wiew classes."""
+"""Person-related view classes."""
 
 __metaclass__ = type
 
@@ -117,6 +117,7 @@ from canonical.widgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription, PasswordChangeWidget)
 from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
@@ -140,9 +141,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
-from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
@@ -1080,7 +1081,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         enabled = bool(self.context.mentoring_offers)
         return Link(target, text, enabled=enabled, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
         target = '+editsshkeys'
         text = 'Update SSH keys'
@@ -1177,8 +1178,8 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     usedfor = IPersonEditMenu
     facet = 'overview'
-    title = 'Personal'
-    links = ('personal', 'contact_details', 'email_settings',
+    title = 'Edit your profile'
+    links = ('personal', 'email_settings',
              'sshkeys', 'gpgkeys', 'passwords')
 
     def personal(self):
@@ -1186,16 +1187,12 @@ class PersonEditNavigationMenu(NavigationMenu):
         text = 'Personal'
         return Link(target, text)
 
-    def contact_details(self):
-        target = '+editcontactdetails'
-        text = 'Contact Details'
-        return Link(target, text)
-
     def email_settings(self):
         target = '+editemails'
         text = 'E-mail Settings'
         return Link(target, text)
 
+    @enabled_with_permission('launchpad.Special')
     def sshkeys(self):
         target = '+editsshkeys'
         text = 'SSH Keys'
@@ -2141,8 +2138,15 @@ class PersonVouchersView(LaunchpadFormView):
     custom_widget('project', SinglePopupWidget)
 
     def setUpFields(self):
-        self.form_fields = (self.createProjectField() +
-                            self.createVoucherField())
+        """Set up the fields for this view."""
+
+        self.form_fields = []
+        # Make the less expensive test for commercial projects first
+        # to avoid the more costly fetching of unredeemed vouchers.
+        if (len(self.owned_commercial_projects) > 0 and
+            len(self.unredeemed_vouchers) > 0):
+            self.form_fields = (self.createProjectField() +
+                                self.createVoucherField())
 
     def createProjectField(self):
         """Create the project field for selection commercial projects.
@@ -2182,12 +2186,14 @@ class PersonVouchersView(LaunchpadFormView):
 
     @cachedproperty
     def unredeemed_vouchers(self):
+        """Get the unredeemed vouchers owned by the user."""
         unredeemed, redeemed = (
             self.context.getCommercialSubscriptionVouchers())
         return unredeemed
 
     @cachedproperty
     def owned_commercial_projects(self):
+        """Get the commercial projects owned by the user."""
         commercial_projects = []
         for project in self.context.getOwnedProjects():
             if not project.qualifies_for_free_hosting:
@@ -2202,7 +2208,6 @@ class PersonVouchersView(LaunchpadFormView):
 
     @action(_("Redeem"), name="redeem")
     def redeem_action(self, action, data):
-        error_msg = None
         salesforce_proxy = getUtility(ISalesforceVoucherProxy)
         project = data['project']
         voucher = data['voucher']
@@ -2221,16 +2226,17 @@ class PersonVouchersView(LaunchpadFormView):
                 subscription_months=voucher.term_months)
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
-            # Force the page to reload so the just consumed voucher is not
-            # displayed again (since the field has already been created.)
+            # Force the page to reload so the just consumed voucher is
+            # not displayed again (since the field has already been
+            # created).
             self.next_url = self.request.URL
         except SalesforceVoucherProxyException, error:
-            self.error_message = (
-                "The voucher could not be redeemed at this time.")
-            # Log an oops report with raising an error.
+            self.addError(
+                _("The voucher could not be redeemed at this time."))
+            # Log an OOPS report without raising an error.
             info = (error.__class__, error, None)
             globalErrorUtility = getUtility(IErrorReportingUtility)
-            globalErrorUtility.raising(info, self.context.request)
+            globalErrorUtility.raising(info, self.request)
 
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
@@ -3286,12 +3292,30 @@ class PersonEditHomePageView(BasePersonEditView):
 
 
 class PersonEditView(BasePersonEditView):
+    """The Person 'Edit' page."""
+
+    field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
+                   'hide_email_addresses', 'verbose_bugnotifications',
+                   'time_zone']
+    custom_widget('time_zone', SelectWidget, size=15)
+    custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     implements(IPersonEditMenu)
 
-    field_names = ['displayname', 'name', 'hide_email_addresses',
-        'verbose_bugnotifications', 'time_zone']
-    custom_widget('time_zone', SelectWidget, size=15)
+    @property
+    def cancel_url(self):
+        """The URL that the 'Cancel' link should return to."""
+        return canonical_url(self.context)
+
+    def htmlJabberIDs(self):
+        """Return the person's Jabber IDs somewhat obfuscated.
+
+        The IDs are encoded using HTML hexadecimal entities to hinder
+        email harvesting. (Jabber IDs are sometime valid email accounts,
+        gmail for example.)
+        """
+        return [convertToHtmlCode(jabber.jabberid)
+                for jabber in self.context.jabberids]
 
     # XXX: salgado, 2008-06-19: This will be removed as soon as the new UI
     # for setting a person's location/time_zone lands.
@@ -3302,6 +3326,11 @@ class PersonEditView(BasePersonEditView):
             self.context.latitude, self.context.longitude,
             time_zone, self.user)
         super(PersonEditView, self).updateContextFromData(data)
+
+    @action(_("Save Changes"), name="save")
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class PersonBrandingView(BrandingChangeView):
@@ -4347,6 +4376,8 @@ class SourcePackageReleaseWithStats:
 
 class PersonPackagesView(LaunchpadView):
     """View for +packages."""
+
+    implements(IPersonRelatedSoftwareMenu)
 
     PACKAGE_LIMIT = 50
 

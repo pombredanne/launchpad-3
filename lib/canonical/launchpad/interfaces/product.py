@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
-    IHasOwner, IHasSecurityContact, ILaunchpadUsage)
+    IHasOwner, IHasSecurityContact, ILaunchpadContainer, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
@@ -105,10 +105,10 @@ class License(DBEnumeratedType):
 
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
-               IHasMilestones, IHasMugshot, IHasOwner, IHasSecurityContact,
-               IHasSprints, IHasTranslationGroup, IKarmaContext,
-               ILaunchpadUsage, IMakesAnnouncements, IPillar,
-               ISpecificationTarget):
+               IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
+               IHasSecurityContact, IHasSprints, IHasTranslationGroup,
+               IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
+               IPillar, ILaunchpadContainer):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -428,6 +428,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         Products may override language code definitions for translation
         import purposes.
         """
+
+    def userCanEdit(user):
+        """Can the user edit this product?"""
 
 
 class IProductSet(Interface):

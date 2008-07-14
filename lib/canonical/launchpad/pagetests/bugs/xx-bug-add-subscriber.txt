@@ -8,7 +8,7 @@ someone else to the bug.
 Anonymous users should not be able to subscribe someone else to a bug.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> anon_browser.getLink('Someone else').click()
+    >>> anon_browser.getLink('Subscribe someone else').click()
     Traceback (most recent call last):
     ...
     Unauthorized: ...
@@ -17,14 +17,14 @@ No Privileges wants to subscribe David Allouche to the bug because he knows
 that he's interested in that feature.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> user_browser.getLink('Someone else').click()
+    >>> user_browser.getLink('Subscribe someone else').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
 
 By looking at the 'Subscribers' portlet, he sees that David Allouche is not
 currently subscribed to the bug:
 
-    >>> subs = find_portlet(user_browser.contents, 'Subscribers')
+    >>> subs = find_tag_by_id(user_browser.contents, 'portlet-subscribers')
     >>> 'David Allouche' not in extract_text(subs.ul)
     True
 
@@ -44,8 +44,8 @@ He is notified that David Allouche has been subscribed.
 
 The subscribers portlet now contains the new subscriber's name.
 
-    >>> subs = find_portlet(user_browser.contents, 'Subscribers')
-    >>> extract_text(subs.ul)
+    >>> subs = find_tag_by_id(user_browser.contents, 'subscribers-direct')
+    >>> extract_text(subs)
     u'...David Allouche...'
 
 David got a notification, saying that he was subscribed to the bug.
@@ -67,7 +67,7 @@ David got a notification, saying that he was subscribed to the bug.
 
 He subscribes the Landscape developers team.
 
-    >>> user_browser.getLink('Someone else').click()
+    >>> user_browser.getLink('Subscribe someone else').click()
     >>> user_browser.getControl("Person").value = 'landscape-developers'
     >>> user_browser.getControl("Add").click()
     >>> user_browser.url
@@ -82,6 +82,6 @@ He is notified that Landscape developers team has been subscribed.
 
 The subscribers portlet display the new subscribed team.
 
-    >>> subs = find_portlet(user_browser.contents, 'Subscribers')
-    >>> extract_text(subs.ul)
+    >>> subs = find_tag_by_id(user_browser.contents, 'subscribers-direct')
+    >>> extract_text(subs)
     u'...Landscape Developers...'

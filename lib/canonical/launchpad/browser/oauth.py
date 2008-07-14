@@ -12,10 +12,11 @@ from zope.formlib.form import Action, Actions
 
 from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, IOAuthRequestToken, IOAuthRequestTokenSet,
-    OAuthPermission, OAUTH_CHALLENGE)
+    OAUTH_CHALLENGE)
 from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
+from canonical.launchpad.webapp.interfaces import OAuthPermission
 
 
 class OAuthRequestTokenView(LaunchpadView):

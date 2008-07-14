@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
-    IHasOwner)
+    IHasOwner, ILaunchpadContainer)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
@@ -49,9 +49,10 @@ class ProjectNameField(PillarNameField):
 
 class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
                IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
-               IHasSpecifications, IHasSprints, IHasTranslationGroup,
-               IMakesAnnouncements, IKarmaContext, IPillar):
+               IHasMentoringOffers, IHasMilestones, IHasMugshot,
+               IHasOwner, IHasSpecifications, IHasSprints,
+               IHasTranslationGroup, IMakesAnnouncements,
+               IKarmaContext, IPillar, ILaunchpadContainer):
     """A Project."""
     export_as_webservice_entry()
 
