@@ -379,8 +379,11 @@ class MessageSet:
             if (mime_type == 'text/plain' and no_attachment 
                 and part.get_filename() is None):
                 charset = part.get_content_charset()
-                if charset:
+                if charset is not None:
                     content = content.decode(charset, 'replace')
+                else:
+                    content = content.decode('latin-1', 'replace')
+
                 if content.strip():
                     MessageChunk(
                         message=message, sequence=sequence,
