@@ -623,13 +623,11 @@ Now let's do the same with a bug.
 First we show that 'One Membership' is not initially a subscriber to the
 bug:
 
-    >>> subs = find_tag_by_id(browser.contents, 'portlet-subscribers')
-    >>> for subscriber in subs.findAll('li'):
-    ...     print extract_text(subscriber)
-    Subscribe
-    Subscribe someone else
-    Foo Bar
-    Ubuntu Team
+    >>> from canonical.launchpad.ftests.bug import (
+    ...     print_direct_subscribers, print_indirect_subscribers)
+
+    >>> print_direct_subscribers(browser.contents)
+    Foo Bar (Subscribed by Launchpad Janitor)
 
 Now we offer mentoring, and along the way we request to be subscribed:
 
@@ -641,11 +639,6 @@ Now we offer mentoring, and along the way we request to be subscribed:
 
 And now 'One Membership' is a subscriber:
 
-    >>> subs = find_tag_by_id(browser.contents, 'portlet-subscribers')
-    >>> for subscriber in subs.findAll('li'):
-    ...     print extract_text(subscriber)
-    Unsubscribe
-    Subscribe someone else
-    Foo Bar
-    One Membership
-    Ubuntu Team
+    >>> print_direct_subscribers(browser.contents)
+    Foo Bar (Subscribed by Launchpad Janitor)
+    One Membership (Subscribed themselves)

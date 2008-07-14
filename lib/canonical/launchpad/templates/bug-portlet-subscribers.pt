@@ -14,7 +14,7 @@
     <div tal:content="structure context_menu/subscription/render" />
     <div tal:content="structure context_menu/addsubscriber/render" />
   </section>
-  <section>
+  <section id="subscribers-direct">
     <h2>Subscribers</h2>
       <div
         tal:condition="direct_subscriptions"
@@ -32,7 +32,10 @@
       </div>
       <div tal:condition="not:direct_subscriptions">None</div>
   </section>
-  <section tal:condition="from_dupes_subscriptions">
+  <section
+    tal:condition="from_dupes_subscriptions"
+    id="subscribers-from-duplicates"
+  >
     <h2>From duplicates</h2>
     <div tal:repeat="subscription from_dupes_subscriptions">
       <a
@@ -46,7 +49,7 @@
       </a>
     </div>
   </section>
-  <section tal:condition="also_notified_subscribers">
+  <section tal:condition="also_notified_subscribers" id="subscribers-indirect">
     <h2>Also notified</h2>
     <div
       tal:repeat="subscriber also_notified_subscribers"
