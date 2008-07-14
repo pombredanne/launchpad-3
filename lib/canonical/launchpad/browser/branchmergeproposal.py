@@ -18,6 +18,7 @@ __all__ = [
     'BranchMergeProposalRequestReviewView',
     'BranchMergeProposalResubmitView',
     'BranchMergeProposalReviewView',
+    'BranchMergeProposalSubscribersView',
     'BranchMergeProposalView',
     'BranchMergeProposalVoteLinkView',
     'BranchMergeProposalVoteView',
@@ -48,6 +49,8 @@ from canonical.launchpad.interfaces import (
     IMessageSet,
     IStructuralObjectPresentation,
     WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.branchsubscription import (
+    CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.interfaces.codereviewvote import (
@@ -828,3 +831,55 @@ class BranchMergeProposalJumpQueueView(LaunchpadEditFormView):
     @property
     def action_url(self):
         return "%s/+jump-queue" % canonical_url(self.context)
+
+
+class BranchMergeProposalSubscribersView(LaunchpadView):
+    """Used to show the pagelet subscribers on the main proposal page."""
+
+    __used_for__ = IBranchMergeProposal
+
+    def initialize(self):
+        """See `LaunchpadView`."""
+        # Get the subscribers and dump them into two sets.
+        self._full_subscribers = set()
+        self._status_subscribers = set()
+        # Add subscribers from the source and target branches.
+        self._add_subscribers_for_branch(self.context.source_branch)
+        self._add_subscribers_for_branch(self.context.target_branch)
+        # Remove all the people from the comment_subscribers from the
+        # status_and_vote_subscribers as they recipients will get the email
+        # only once, and for the most detailed subscription from the source
+        # and target branches.
+        self._status_subscribers = (
+            self._status_subscribers - self._full_subscribers)
+
+    def _add_subscribers_for_branch(self, branch):
+        """Add the subscribers to the subscription sets for the branch."""
+        for subscription in branch.subscriptions:
+            level = subscription.review_level
+            if level == CodeReviewNotificationLevel.FULL:
+                self._full_subscribers.add(subscription.person)
+            elif level == CodeReviewNotificationLevel.STATUS:
+                self._status_subscribers.add(subscription.person)
+            else:
+                # We don't do anything right now with people who say they
+                # don't want to see anything.
+                pass
+
+    @cachedproperty
+    def full_subscribers(self):
+        """A list of full subscribers ordered by displayname."""
+        return sorted(
+            self._full_subscribers, key=operator.attrgetter('displayname'))
+
+    @cachedproperty
+    def status_subscribers(self):
+        """A list of full subscribers ordered by displayname."""
+        return sorted(
+            self._status_subscribers, key=operator.attrgetter('displayname'))
+
+    @property
+    def has_subscribers(self):
+        """True if there are subscribers to the branch."""
+        return len(self.full_subscribers) + len(self.status_subscribers)
+
