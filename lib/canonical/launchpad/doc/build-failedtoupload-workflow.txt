@@ -23,10 +23,15 @@ See more information in build-notification.txt file.
 Let's use a sampledata build record in FAILEDTOUPLOAD:
 
   >>> failedtoupload_candidate = buildset.getByBuildID(22)
-  >>> failedtoupload_candidate.title
-  u'i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE'
-  >>> failedtoupload_candidate.buildstate.name
-  'FAILEDTOUPLOAD'
+
+  >>> print failedtoupload_candidate.title
+  i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+
+  >>> print failedtoupload_candidate.buildstate.name
+  FAILEDTOUPLOAD
+
+  >>> print failedtoupload_candidate.upload_log.filename
+  upload_22_log.txt
 
 FAILEDTOUPLOAD notification requires 'extra_info' argument to be filled:
 
@@ -103,20 +108,19 @@ Note that the generated notification contain the 'extra_info' content:
 Let's emulate the procedure of rescuing an FAILEDTOUPLOAD build.
 A FAILEDTOUPLOAD build obviously has no binaries:
 
-  >>> failedtoupload_candidate.buildstate.name
-  'FAILEDTOUPLOAD'
+  >>> print failedtoupload_candidate.buildstate.name
+  FAILEDTOUPLOAD
 
   >>> failedtoupload_candidate.binarypackages.count()
   0
 
-
 But once the person responsible have received the information about
-the binary upload failure via build notification, he will be aware of:
+the binary upload failure via build notification, or accessing the
+build page, he will be aware of:
 
  * The targeted Build ID
  * Path where the rejected/failed upload is, usually in some
    destination inside buildd upload queue (/srv/launchpad.net/builddmaster/*)
-
 
 Having those informations, one of buildd-admin team members will be
 able to reprocess the binary upload via an shell account following
@@ -138,7 +142,6 @@ these steps:
    binary uploads.
  * It's possible to use '-n' (dry-run) if he is unsure about the parameters.
 
-
 For simplicity we will process the binary upload using the
 NascentUpload class instead of calling the script:
 
@@ -147,7 +150,6 @@ NascentUpload class instead of calling the script:
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger_quiet)
-
 
 The policy contains the right arguments to reprocess the build for the
 right target location, they are passed via process-upload command-line:
@@ -165,16 +167,19 @@ right target location, they are passed via process-upload command-line:
   >>> cdrkit_bin_upload.is_rejected
   False
   >>> success = cdrkit_bin_upload.do_accept()
-  >>> cdrkit_bin_upload.queue_root.status.name
-  'NEW'
-
+  >>> print cdrkit_bin_upload.queue_root.status.name
+  NEW
 
 After successfully reprocessing binary upload the originally
-FAILEDTOUPLOAD build record is already in FULLYBUILT state (it is
-updated during the upload processing time):
+FAILEDTOUPLOAD build record is already in FULLYBUILT state and the
+previously stored upload_log is dereferenced (they are both updated
+during the upload processing time):
 
-  >>> failedtoupload_candidate.buildstate.name
-  'FULLYBUILT'
+  >>> print failedtoupload_candidate.buildstate.name
+  FULLYBUILT
+
+  >>> print failedtoupload_candidate.upload_log
+  None
 
 And contains the associated binaries.
 

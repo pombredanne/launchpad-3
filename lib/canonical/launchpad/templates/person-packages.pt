@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -18,12 +18,13 @@
 
   <div id="packages">
 
-  <tal:maintained-packages 
+  <tal:maintained-packages
     define="sourcepackagereleases view/getLatestMaintainedPackagesWithStats"
     condition="sourcepackagereleases">
 
   <h2>Maintained packages</h2>
 
+  <tal:size replace="view/PACKAGE_LIMIT"/> Most recently uploaded packages
   <table class="listing">
     <thead>
       <tr>
@@ -48,6 +49,7 @@
 
   <h2>Uploaded packages</h2>
 
+  <tal:size replace="view/PACKAGE_LIMIT"/> Most recently uploaded packages
   <table class="listing">
     <thead>
       <tr>
@@ -71,6 +73,7 @@
 
   <h2>PPA packages</h2>
 
+  <tal:size replace="view/PACKAGE_LIMIT"/> Most recently uploaded packages
   <table class="listing">
     <thead>
       <tr>

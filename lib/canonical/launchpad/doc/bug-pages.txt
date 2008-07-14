@@ -239,7 +239,8 @@ duplicate link remains in the current context.
 
     >>> getUtility(IOpenLaunchBag).add(bug_five_in_firefox)
 
-    >>> print bug_page_view.getDupeBugLink(bug_six)
+    >>> for dupe in bug_page_view.duplicates():
+    ...     print dupe['url']
     http://.../firefox/+bug/6
 
 Bug 2 is not reported in Firefox. Let's mark bug 2 as a dupe of bug 5,
@@ -251,8 +252,10 @@ and see how the returned link changes.
     >>> bug_page_view = getMultiAdapter(
     ...     (bug_five_in_firefox.bug, request), name="+portlet-duplicates")
 
-    >>> print bug_page_view.getDupeBugLink(bug_two)
+    >>> for dupe in bug_page_view.duplicates():
+    ...     print dupe['url']
     http://.../bugs/2
+    ...
 
 == Bug Navigation ==
 

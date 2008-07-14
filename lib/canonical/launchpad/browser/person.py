@@ -1,6 +1,6 @@
 # Copyright 2004-2008 Canonical Ltd
 
-"""Person-related wiew classes."""
+"""Person-related view classes."""
 
 __metaclass__ = type
 
@@ -82,9 +82,11 @@ __all__ = [
     'TeamNavigation',
     'TeamOverviewMenu',
     'TeamMembershipView',
+    'TeamMugshotView',
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'UbunteroListView',
+    'archive_to_person',
     ]
 
 import cgi
@@ -116,6 +118,7 @@ from canonical.widgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription, LocationWidget, PasswordChangeWidget)
 from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
@@ -141,13 +144,15 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
-    ITranslationRelicensingAgreementEdit)
+    ITranslationRelicensingAgreementEdit,
+    TranslationRelicensingAgreementOptions)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -1083,7 +1088,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         enabled = bool(self.context.mentoring_offers)
         return Link(target, text, enabled=enabled, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
         target = '+editsshkeys'
         text = 'Update SSH keys'
@@ -1125,13 +1130,16 @@ class IPersonRelatedSoftwareMenu(Interface):
 class PersonOverviewNavigationMenu(NavigationMenu):
     """The top-level menu of actions a Person may take."""
 
-    usedfor = IPerson
+    usedfor = IHasPersonNavigationMenu
     facet = 'overview'
-    title = 'Profile'
     links = ('profile', 'related_software', 'karma', 'show_ppa')
 
+    def __init__(self, context):
+        context = IPerson(context)
+        super(PersonOverviewNavigationMenu, self).__init__(context)
+
     def profile(self):
-        target = '+index'
+        target = ''
         text = 'Profile'
         return Link(target, text, menu=IPersonEditMenu)
 
@@ -1146,9 +1154,30 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def show_ppa(self):
-        target = '+archive'
+        """Show the link to a Personal Package Archive.
+
+        The person's archive link changes depending on the status of the
+        archive and the privileges of the viewer.
+        """
+        archive = self.context.archive
+        has_archive = archive is not None
+        user_can_edit_archive = check_permission('launchpad.Edit',
+                                                 self.context)
+
         text = 'Personal Package Archive'
-        return Link(target, text)
+        summary = 'Browse Personal Package Archive packages.'
+        if has_archive:
+            target = '+archive'
+            enable_link = check_permission('launchpad.View', archive)
+        elif user_can_edit_archive:
+            summary = 'Activate Personal Package Archive'
+            target = '+activate-ppa'
+            enable_link = True
+        else:
+            target = '+archive'
+            enable_link = False
+
+        return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
 class PersonEditNavigationMenu(NavigationMenu):
@@ -1156,8 +1185,8 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     usedfor = IPersonEditMenu
     facet = 'overview'
-    title = 'Personal'
-    links = ('personal', 'contact_details', 'email_settings',
+    title = 'Edit your profile'
+    links = ('personal', 'email_settings',
              'sshkeys', 'gpgkeys', 'passwords')
 
     def personal(self):
@@ -1165,16 +1194,12 @@ class PersonEditNavigationMenu(NavigationMenu):
         text = 'Personal'
         return Link(target, text)
 
-    def contact_details(self):
-        target = '+editcontactdetails'
-        text = 'Contact Details'
-        return Link(target, text)
-
     def email_settings(self):
         target = '+editemails'
         text = 'E-mail Settings'
         return Link(target, text)
 
+    @enabled_with_permission('launchpad.Special')
     def sshkeys(self):
         target = '+editsshkeys'
         text = 'SSH Keys'
@@ -1652,7 +1677,7 @@ class PersonRdfView:
     """A view that embeds PersonRdfContentsView in a standalone page."""
 
     template = ViewPageTemplateFile(
-        '../templates/person-foaf.pt')
+        '../templates/person-rdf.pt')
 
     def __call__(self):
         """Render RDF output, and return it as a string encoded in UTF-8.
@@ -1679,7 +1704,7 @@ class PersonRdfContentsView:
     # preserve the case of the elements (which is not preserved in the
     # parsing of the default text/html content-type.)
     template = ViewPageTemplateFile(
-        '../templates/person-foaf-contents.pt',
+        '../templates/person-rdf-contents.pt',
         content_type="application/rdf+xml")
 
     def __init__(self, context, request):
@@ -1689,13 +1714,16 @@ class PersonRdfContentsView:
     def buildMemberData(self):
         members = []
         members_by_id = {}
-        for member in self.context.allmembers:
-            member = PersonWithKeysAndPreferredEmail(member)
-            members.append(member)
-            members_by_id[member.id] = member
-        if not members:
+        raw_members = list(self.context.allmembers)
+        if not raw_members:
             # Empty teams have nothing to offer.
             return []
+        personset = getUtility(IPersonSet)
+        personset.cacheBrandingForPeople(raw_members)
+        for member in raw_members:
+            decorated_member = PersonWithKeysAndPreferredEmail(member)
+            members.append(decorated_member)
+            members_by_id[member.id] = decorated_member
         sshkeyset = getUtility(ISSHKeySet)
         gpgkeyset = getUtility(IGPGKeySet)
         emailset = getUtility(IEmailAddressSet)
@@ -2122,8 +2150,15 @@ class PersonVouchersView(LaunchpadFormView):
     custom_widget('project', SinglePopupWidget)
 
     def setUpFields(self):
-        self.form_fields = (self.createProjectField() +
-                            self.createVoucherField())
+        """Set up the fields for this view."""
+
+        self.form_fields = []
+        # Make the less expensive test for commercial projects first
+        # to avoid the more costly fetching of unredeemed vouchers.
+        if (len(self.owned_commercial_projects) > 0 and
+            len(self.unredeemed_vouchers) > 0):
+            self.form_fields = (self.createProjectField() +
+                                self.createVoucherField())
 
     def createProjectField(self):
         """Create the project field for selection commercial projects.
@@ -2163,12 +2198,14 @@ class PersonVouchersView(LaunchpadFormView):
 
     @cachedproperty
     def unredeemed_vouchers(self):
+        """Get the unredeemed vouchers owned by the user."""
         unredeemed, redeemed = (
             self.context.getCommercialSubscriptionVouchers())
         return unredeemed
 
     @cachedproperty
     def owned_commercial_projects(self):
+        """Get the commercial projects owned by the user."""
         commercial_projects = []
         for project in self.context.getOwnedProjects():
             if not project.qualifies_for_free_hosting:
@@ -2183,7 +2220,6 @@ class PersonVouchersView(LaunchpadFormView):
 
     @action(_("Redeem"), name="redeem")
     def redeem_action(self, action, data):
-        error_msg = None
         salesforce_proxy = getUtility(ISalesforceVoucherProxy)
         project = data['project']
         voucher = data['voucher']
@@ -2202,16 +2238,17 @@ class PersonVouchersView(LaunchpadFormView):
                 subscription_months=voucher.term_months)
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
-            # Force the page to reload so the just consumed voucher is not
-            # displayed again (since the field has already been created.)
+            # Force the page to reload so the just consumed voucher is
+            # not displayed again (since the field has already been
+            # created).
             self.next_url = self.request.URL
         except SalesforceVoucherProxyException, error:
-            self.error_message = (
-                "The voucher could not be redeemed at this time.")
-            # Log an oops report with raising an error.
+            self.addError(
+                _("The voucher could not be redeemed at this time."))
+            # Log an OOPS report without raising an error.
             info = (error.__class__, error, None)
             globalErrorUtility = getUtility(IErrorReportingUtility)
-            globalErrorUtility.raising(info, self.context.request)
+            globalErrorUtility.raising(info, self.request)
 
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
@@ -2994,20 +3031,24 @@ class PersonTranslationView(LaunchpadView):
 
 class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
-    label = "Use BSD licence for your translations?"
     schema = ITranslationRelicensingAgreementEdit
     field_names = ['allow_relicensing', 'back_to']
+    custom_widget(
+        'allow_relicensing', LaunchpadRadioWidget, orientation='vertical')
     custom_widget('back_to', TextWidget, visible=False)
 
     @property
     def initial_values(self):
-        """Set the user's current relicensing preference or a True default."""
-        default = self.context.translations_relicensing_agreement
-        if default is None:
-            default = True
+        """Set the default value for the relicensing radio buttons."""
+        # If the person has previously made a choice, we default to that.
+        # Otherwise, we default to BSD, because that's what we'd prefer.
+        if self.context.translations_relicensing_agreement == False:
+            default = TranslationRelicensingAgreementOptions.REMOVE
+        else:
+            default = TranslationRelicensingAgreementOptions.BSD
         return {
-            "allow_relicensing" : default,
-            "back_to" : self.request.get('back_to'),
+            "allow_relicensing": default,
+            "back_to": self.request.get('back_to'),
             }
 
     @property
@@ -3022,7 +3063,7 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         else:
             return canonical_url(self.context)
 
-    @action(_("Update my decision"), name="submit")
+    @action(_("Confirm"), name="submit")
     def submit_action(self, action, data):
         """Store person's decision about translations relicensing.
 
@@ -3031,18 +3072,21 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         which uses TranslationRelicensingAgreement table.
         """
         allow_relicensing = data['allow_relicensing']
-        self.context.translations_relicensing_agreement = allow_relicensing
-        if allow_relicensing:
+        if allow_relicensing == TranslationRelicensingAgreementOptions.BSD:
+            self.context.translations_relicensing_agreement = True
             self.request.response.addInfoNotification(_(
-                "Your choice has been saved. "
-                "Thank you for deciding to license your translations under "
-                "BSD license."))
+                "Thank you for BSD-licensing your translations."))
+        elif (allow_relicensing ==
+            TranslationRelicensingAgreementOptions.REMOVE):
+            self.context.translations_relicensing_agreement = False
+            self.request.response.addInfoNotification(_(
+                "We respect your choice. "
+                "Your translations will be removed once we complete the "
+                "switch to the BSD license. "
+                "Thanks for trying out Launchpad Translations."))
         else:
-            self.request.response.addInfoNotification(_(
-                "Your choice has been saved. "
-                "Your translations will be removed once we completely "
-                "switch to BSD license for translations."))
-
+            raise AssertionError(
+                "Unknown allow_relicensing value: %r" % allow_relicensing)
         self.next_url = self.getSafeRedirectURL(data['back_to'])
 
 
@@ -3277,11 +3321,33 @@ class PersonEditHomePageView(BasePersonEditView):
 
 
 class PersonEditView(BasePersonEditView):
+    """The Person 'Edit' page."""
+
+    field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
+                   'hide_email_addresses', 'verbose_bugnotifications']
+    custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     implements(IPersonEditMenu)
 
-    field_names = ['displayname', 'name', 'hide_email_addresses',
-                   'verbose_bugnotifications']
+    @property
+    def cancel_url(self):
+        """The URL that the 'Cancel' link should return to."""
+        return canonical_url(self.context)
+
+    def htmlJabberIDs(self):
+        """Return the person's Jabber IDs somewhat obfuscated.
+
+        The IDs are encoded using HTML hexadecimal entities to hinder
+        email harvesting. (Jabber IDs are sometime valid email accounts,
+        gmail for example.)
+        """
+        return [convertToHtmlCode(jabber.jabberid)
+                for jabber in self.context.jabberids]
+
+    @action(_("Save Changes"), name="save")
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class PersonBrandingView(BrandingChangeView):
@@ -3522,6 +3588,13 @@ class PersonEditEmailsView(LaunchpadFormView):
                   orientation='vertical')
     custom_widget('mailing_list_auto_subscribe_policy',
                   LaunchpadRadioWidgetWithDescription)
+
+    def initialize(self):
+        if self.context.is_team:
+            # +editemails is not available on teams.
+            name = self.request['PATH_INFO'].split('/')[-1]
+            raise NotFound(self, name, request=self.request)
+        super(PersonEditEmailsView, self).initialize()
 
     def setUpFields(self):
         """Set up fields for this view.
@@ -3977,6 +4050,17 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.next_url = self.action_url
 
 
+class TeamMugshotView(LaunchpadView):
+    """A view for the team mugshot (team photo) page"""
+    def initialize(self):
+        """Cache images to avoid dying from a million cuts."""
+        getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
+
+    @cachedproperty
+    def allmembers(self):
+        return list(self.context.allmembers)
+
+
 class TeamReassignmentView(ObjectReassignmentView):
 
     ownerOrMaintainerAttr = 'teamowner'
@@ -4310,6 +4394,10 @@ class SourcePackageReleaseWithStats:
 class PersonPackagesView(LaunchpadView):
     """View for +packages."""
 
+    implements(IPersonRelatedSoftwareMenu)
+
+    PACKAGE_LIMIT = 50
+
     def getLatestUploadedPPAPackagesWithStats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
@@ -4326,7 +4414,7 @@ class PersonPackagesView(LaunchpadView):
         # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
         # query is virtually impossible!
         results = []
-        for package in packages:
+        for package in packages[:self.PACKAGE_LIMIT]:
             # Make a shallow copy to remove the Zope security.
             archives = set(package.published_archives)
             # Ensure the SPR.upload_archive is also considered.
@@ -4339,16 +4427,16 @@ class PersonPackagesView(LaunchpadView):
 
     def getLatestMaintainedPackagesWithStats(self):
         """Return the latest maintained packages, including stats."""
-        return self._addStatsToPackages(
-            self.context.getLatestMaintainedPackages())
+        packages = self.context.getLatestMaintainedPackages()
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
     def getLatestUploadedButNotMaintainedPackagesWithStats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
         """
-        return self._addStatsToPackages(
-            self.context.getLatestUploadedButNotMaintainedPackages())
+        packages = self.context.getLatestUploadedButNotMaintainedPackages()
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
     def _calculateBuildStats(self, package_releases):
         """Calculate failed builds and needs_build state.
@@ -4542,3 +4630,8 @@ class PersonEditLocationView(LaunchpadFormView):
         longitude = new_location.longitude
         time_zone = new_location.time_zone
         self.context.setLocation(latitude, longitude, time_zone, self.user)
+
+
+def archive_to_person(archive):
+    """Adapts an `IArchive` to an `IPerson`."""
+    return IPerson(archive.owner)

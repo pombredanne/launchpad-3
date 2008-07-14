@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportResultSet,
     ICodeImportSet,
     ICountrySet,
+    IDistributionSet,
     IEmailAddressSet,
     ILibraryFileAliasSet,
     IPersonSet,
@@ -215,9 +216,10 @@ class LaunchpadObjectFactory:
             name, title, summary, owner)
 
     def makeProduct(self, name=None, project=None, displayname=None,
-                    licenses=None):
+                    licenses=None, owner=None):
         """Create and return a new, arbitrary Product."""
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
@@ -605,7 +607,8 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString()
         series = product.newSeries(
             product.owner, name, self.getUniqueString(), user_branch)
-        series.import_branch = import_branch
+        if import_branch is not None:
+            series.import_branch = import_branch
         syncUpdate(series)
         return series
 
@@ -639,3 +642,17 @@ class LaunchpadObjectFactory:
         log_alias_id = getUtility(ILibrarianClient).addFile(
             filename, len(log_data), StringIO(log_data), 'text/plain')
         return getUtility(ILibraryFileAliasSet)[log_alias_id]
+
+    def makeDistribution(self):
+        """Make a new distribution."""
+        name = self.getUniqueString()
+        displayname = self.getUniqueString()
+        title = self.getUniqueString()
+        description = self.getUniqueString()
+        summary = self.getUniqueString()
+        domainname = self.getUniqueString()
+        owner = self.makePerson()
+        members = self.makeTeam(owner)
+        return getUtility(IDistributionSet).new(
+            name, displayname, title, description, summary, domainname,
+            members, owner)

@@ -29,7 +29,7 @@
          tal:condition="view/has_sources">
 
       <metal:selectable-sources
-        use-macro="context/@@+form-macros/selectable-sources" />
+        use-macro="context/@@+macros/selectable-sources" />
 
       <tal:actions condition="view/available_sources_size"
                    define="widget nocall:view/widgets/deletion_comment;
