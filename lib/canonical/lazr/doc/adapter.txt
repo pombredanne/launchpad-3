@@ -1,0 +1,113 @@
+= Finding the nearest adapter =
+
+The nearest_adapter() and nearest_context_with_adapter() will search the
+navigation hierarchy for a content-type that supplies the requested
+adaptation.
+
+First, we'll construct an example object hierarchy.
+
+    >>> from canonical.launchpad.webapp import (canonical_url,
+    ...     nearest_adapter, nearest_context_with_adapter, urlsplit)
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IApplicationMenu, ICanonicalUrlData, IContextMenu, IFacetLink,
+    ...     IFacetMenu, ILink, ILinkData)
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from zope.interface import implements, directlyProvides, Interface
+    >>> from zope.component import queryAdapter
+    >>> from zope.security.management import endInteraction, newInteraction
+
+    >>> class ObjectThatHasUrl:
+    ...     implements(ICanonicalUrlData)
+    ...     def __init__(self, name, parent):
+    ...         self.name = name  # Used in examples later.
+    ...         self.path = name  # See ICanonicalUrlData.
+    ...         self.inside = parent  # See ICanonicalUrlData.
+    ...         self.rootsite = None  # See ICanonicalUrlData.
+
+    >>> class ExampleContentObject(ObjectThatHasUrl):
+    ...     pass
+
+    # Adapter testing requires a request object that provides the traversed
+    # objects. This function does most of the work, but views must be
+    # assigned to the _last_obj_traversed attribute.
+    >>> def make_fake_request(url, traversed_objects=None):
+    ...     """Return a fake request object for menu testing."""
+    ...     url_parts = urlsplit(url)
+    ...     server_url = '://'.join(url_parts[0:2])
+    ...     path_info = url_parts[2]
+    ...     request = LaunchpadTestRequest(
+    ...         SERVER_URL=server_url,
+    ...         PATH_INFO=path_info)
+    ...     request._traversed_names = path_info.split('/')[1:]
+    ...     request.traversed_objects = traversed_objects
+    ...     # After making the request, setup a new interaction.
+    ...     endInteraction()
+    ...     newInteraction(request)
+    ...     return request
+
+Here is the structure of our hierarchy:
+
+    >>> class IThingWithFacets(Interface):
+    ...     """An object with facets."""
+
+    >>> root = ExampleContentObject('', None)
+    >>> street = ExampleContentObject('sesamestreet', root)
+    >>> directlyProvides(street, IThingWithFacets)
+    >>> house = ExampleContentObject('number73', street)
+
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev/sesamestreet/number73',
+    ...     traversed_objects=[root, street])
+
+    >>> canonical_url(street)
+    u'http://launchpad.dev/sesamestreet'
+    >>> canonical_url(house)
+    u'http://launchpad.dev/sesamestreet/number73'
+
+Right now, none of our example objects have a facet menu.
+
+    >>> print nearest_adapter(root, IFacetMenu)
+    None
+    >>> print nearest_adapter(street, IFacetMenu)
+    None
+    >>> print nearest_adapter(house, IFacetMenu)
+    None
+
+The same holds true for nearest_context_with_adapter():
+
+    >>> nearest_context_with_adapter(root, IFacetMenu)
+    (None, None)
+
+We'll make the "street" object adaptable to IFactetMenu
+
+    >>> class FacetMenu:
+    ...     implements(IFacetMenu)
+    ...     def __init__(self, context):
+    ...         self.context = context
+
+    >>> from zope.component import provideAdapter
+    >>> provideAdapter(FacetMenu, [IThingWithFacets], IFacetMenu)
+
+    >>> IFacetMenu(street)
+    <...FacetMenu instance ...>
+
+The nearest_adapter() function will look up the hierarchy for an object
+that has the requested adaptation.
+
+"house" does not provide IThingWithFacets, but "street" does, so its
+adapter will be returned.
+
+    >>> print nearest_adapter(house, IFacetMenu)
+    <...FacetMenu instance ...>
+
+"street" itself will return the FacetMenu adapter:
+
+    >>> print nearest_adapter(street, IFacetMenu)
+    <...FacetMenu instance ...>
+
+Looking for the adaptation at the hierarchy root returns nothing:
+the root does not have the requested adaptation, and there are no higher
+objects to search.
+
+    >>> print nearest_adapter(root, IFacetMenu)
+    None
