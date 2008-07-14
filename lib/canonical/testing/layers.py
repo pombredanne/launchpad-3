@@ -32,7 +32,6 @@ __all__ = [
     'LaunchpadScriptLayer',
     'LaunchpadZopelessLayer',
     'LayerIsolationError',
-    'LayerInvariantError',
     'LibrarianLayer',
     'PageTestLayer',
     'TwistedLaunchpadZopelessLayer',
@@ -42,15 +41,14 @@ __all__ = [
     'reconnect_stores',
     ]
 
-import atexit
 import datetime
 import errno
 import gc
 import logging
 import os
+import shutil
 import signal
 import socket
-import subprocess
 import sys
 import threading
 import time
@@ -72,7 +70,8 @@ from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 
-from canonical.config import CanonicalConfig, config, dbconfig
+from canonical import pidfile
+from canonical.config import config, dbconfig
 from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
@@ -84,6 +83,7 @@ from canonical.launchpad.testing.tests.googleserviceharness import (
     GoogleServiceTestSetup)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
+from canonical.lazr.config import ImplicitTypeSchema
 from canonical.lazr.timeout import (
     get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
@@ -183,12 +183,14 @@ def reconnect_stores(database_config_section='launchpad'):
     assert session_store is not None, 'Failed to reconnect'
 
 
-def wait_children(seconds=120):
+def wait_children(seconds=120, child_pids=None):
     """Wait for all children to exit.
 
     :param seconds: Maximum number of seconds to wait.  If None, wait
         forever.
     """
+    if child_pids is None:
+        child_pids = set()
     now = datetime.datetime.now
     if seconds is None:
         until = None
@@ -196,11 +198,13 @@ def wait_children(seconds=120):
         until = now() + datetime.timedelta(seconds=seconds)
     while True:
         try:
-            os.waitpid(-1, os.WNOHANG)
+            pid, exit_status = os.waitpid(-1, os.WNOHANG)
         except OSError, error:
             if error.errno != errno.ECHILD:
                 raise
             break
+        else:
+            child_pids.discard(pid)
         if until is not None and now() > until:
             break
 
@@ -1230,76 +1234,30 @@ class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
 class AppServerLayer(LaunchpadFunctionalLayer):
     """Environment for starting and stopping the app server."""
 
-    # Holds the Popen instance of the spawned app server.
-    appserver = None
+    LPCONFIG = 'testrunner-appserver'
 
-    # The config used by the spawned app server.
-    appserver_config = CanonicalConfig('testrunner-appserver', 'runlaunchpad')
+    # Keep track of the pids of all child processes directly spawned in this
+    # layer (but not any granchilden).
+    _children = set()
 
     @classmethod
     @profiled
     def setUp(cls):
-        if cls.appserver is not None:
-            raise LayerInvariantError(
-                'setUp() called twice')
-        cls.startAppServer()
-        cls.waitUntilAppServerIsReady()
-        # Make sure that the app server is killed even if tearDown() is
-        # skipped.
-        atexit.register(cls.tearDown)
-
-    @classmethod
-    def startAppServer(cls):
-        """Start the app server using runlaunchpad.py"""
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        # The database must be available for the app server to start.
-        LaunchpadTestSetup().setUp()
-        _config = cls.appserver_config
-        cmd = [
-            os.path.join(_config.root, 'runlaunchpad.py'),
-            '-C', 'configs/%s/launchpad.conf' % _config.instance_name]
-        environ = dict(os.environ)
-        environ['LPCONFIG'] = _config.instance_name
-        cls.appserver = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            env=environ, cwd=_config.root)
-
-    @classmethod
-    def waitUntilAppServerIsReady(cls):
-        """Wait until the app server accepts connection."""
-        assert cls.appserver is not None, "App server isn't started."
-        root_url = cls.appserver_config.vhost.mainsite.rooturl
-        until = time.time() + 30
-        while time.time() < until:
-            try:
-                connection = urlopen(root_url)
-                connection.read()
-            except IOError, (error_message, error):
-                if error.args[0] != errno.ECONNREFUSED:
-                    raise
-                returncode = cls.appserver.poll()
-                if returncode is not None:
-                    raise RuntimeError(
-                        'App server failed to start (status=%d):\n%s' % (
-                            returncode, cls.appserver.stdout.read()))
-                time.sleep(0.5)
-            else:
-                connection.close()
-                break
-        else:
-            os.kill(cls.appserver.pid, signal.SIGTERM)
-            cls.appserver = None
+        # Clear out the appserver's librarian directory to prevent any
+        # previous test's librarian data from conflicting.
+        child_config = cls._getConfig()
+        try:
+            shutil.rmtree(child_config.librarian_server.root)
+        except OSError, error:
+            if error.errno != errno.ENOENT:
+                raise
+            # Ignore it if the directory already doesn't exist.
+        cls.startAllServices()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        """Kills a started app server."""
-        if cls.appserver is None:
-            return
-        if cls.appserver.poll() is None:
-            os.kill(cls.appserver.pid, signal.SIGTERM)
-            cls.appserver.wait()
-        cls.appserver = None
+        cls.stopAllServicesAndWaitForTheirDemise()
 
     @classmethod
     @profiled
@@ -1309,9 +1267,80 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        if cls.appserver.poll() is not None:
-            raise LayerIsolationError(
-                "App server died in this test (status=%s):\n%s" % (
-                    cls.appserver.returncode, cls.appserver.stdout.read()))
         DatabaseLayer.force_dirty_database()
 
+    @classmethod
+    def startAllServices(cls):
+        cls.stopAllServices()
+        child_config = cls._getConfig()
+        pid = pidfile.get_pid('launchpad', child_config)
+        if pid is not None:
+            # Don't worry if the process no longer exists.
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except OSError, error:
+                if error.errno != errno.ESRCH:
+                    raise
+            pidfile.remove_pidfile('launchpad', child_config)
+        pid = os.fork()
+        if pid == 0:
+            # The child.
+            os.execlp('make', 'make', '-i' '-s', 'LPCONFIG=%s' % cls.LPCONFIG,
+                      'run_all_quickly_and_quietly')
+            # Should never get here...
+            os._exit()
+        # The parent.  Wait until the app server is responsive, but not
+        # forever.  Make sure the test database is set up.
+        cls._children.add(pid)
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().setUp()
+        until = time.time() + 60
+        while time.time() < until:
+            try:
+                connection = urlopen('http://launchpad.dev:8085')
+                connection.read()
+            except IOError, (error_message, error):
+                if error.args[0] != errno.ECONNREFUSED:
+                    raise
+                time.sleep(0.5)
+            else:
+                connection.close()
+                break
+        else:
+            cls.stopAllServices()
+
+    @classmethod
+    def stopAllServicesAndWaitForTheirDemise(cls):
+        # Force the database to reset.
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().tearDown()
+        cls.stopAllServices()
+        # Ensure that there are no child processes still running.
+        try:
+            os.waitpid(-1, os.WNOHANG)
+        except OSError, error:
+            if error.errno != errno.ECHILD:
+                raise
+        else:
+            cls.stopAllServices()
+            if len(cls._children) > 0:
+                raise LayerIsolationError(
+                    'Child processes have leaked through: %s' %
+                    COMMA.join(cls._children))
+
+    @classmethod
+    def stopAllServices(cls):
+        os.system('make -i -s LPCONFIG=%s stop_quickly_and_quietly'
+                  % cls.LPCONFIG)
+        wait_children(child_pids=cls._children)
+
+    @classmethod
+    def _getConfig(cls):
+        # Get the child process's configuration.
+        path = os.path.join(config.root, 'configs', cls.LPCONFIG,
+                            'launchpad-lazr.conf')
+        schema = ImplicitTypeSchema(config.schema.filename)
+        child_config = schema.load(path)
+        # lazr.config doesn't set this attribute.
+        child_config.instance_name = cls.LPCONFIG
+        return child_config

@@ -273,6 +273,7 @@ def review_list(list_name, status=None):
     list_set = getUtility(IMailingListSet)
     mailing_list = list_set.get(list_name)
     mailing_list.review(lpadmin, status)
+    return mailing_list
 
 
 class MailmanStub:
