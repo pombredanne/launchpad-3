@@ -165,6 +165,7 @@ class CodeImport(SQLBase):
             raise AssertionError('Review status is already reviewed.')
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.REVIEWED)
         CodeImportJobWorkflow().newJob(self)
+        return True
 
     def suspend(self, data, user):
         """See `ICodeImport`."""
@@ -172,6 +173,7 @@ class CodeImport(SQLBase):
             raise AssertionError('Review status is already suspended.')
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.SUSPENDED)
         self._removeJob()
+        return True
 
     def invalidate(self, data, user):
         """See `ICodeImport`."""
@@ -179,6 +181,7 @@ class CodeImport(SQLBase):
             raise AssertionError('Review status is already invalid.')
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.INVALID)
         self._removeJob()
+        return True
 
     def markFailing(self, data, user):
         """See `ICodeImport`."""
@@ -186,6 +189,7 @@ class CodeImport(SQLBase):
             raise AssertionError('Review status is already failing.')
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.FAILING)
         self._removeJob()
+        return True
 
     def changeDetails(self, data, user):
         """See `ICodeImport`."""
@@ -195,6 +199,9 @@ class CodeImport(SQLBase):
         modify_event = self.updateFromData(data, user)
         if modify_event is not None:
             code_import_updated(modify_event)
+            return True
+        else:
+            return False
 
     def _setStatusAndEmail(self, data, user, status):
         """Update the review_status and email interested parties."""

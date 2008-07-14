@@ -173,6 +173,7 @@ class ICodeImport(Interface):
             attribute values.
         :param user: user who made the change, to record in the
             `CodeImportEvent`.
+        :return: A boolean indicating if changes were made.
         """
 
     def suspend(data, user):
@@ -188,6 +189,7 @@ class ICodeImport(Interface):
             attribute values.
         :param user: user who made the change, to record in the
             `CodeImportEvent`.
+        :return: A boolean indicating if changes were made.
         """
 
     def invalidate(data, user):
@@ -203,6 +205,7 @@ class ICodeImport(Interface):
             attribute values.
         :param user: user who made the change, to record in the
             `CodeImportEvent`.
+        :return: A boolean indicating if changes were made.
         """
 
     def changeDetails(data, user):
@@ -216,6 +219,7 @@ class ICodeImport(Interface):
             attribute values.
         :param user: user who made the change, to record in the
             `CodeImportEvent`.
+        :return: A boolean indicating if changes were made.
         """
 
     def updateFromData(data, user):

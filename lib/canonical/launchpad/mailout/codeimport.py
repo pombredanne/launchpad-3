@@ -102,7 +102,6 @@ def make_email_body_for_code_import_update(event):
 
 def code_import_updated(event):
     """Email the branch subscribers, and the vcs-imports team with new status.
-
     """
     code_import = event.code_import
     branch = code_import.branch

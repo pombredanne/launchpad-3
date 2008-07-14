@@ -390,9 +390,13 @@ class CodeImportEditView(CodeImportBaseView):
         def success(self, action, data):
             """Make the requested status change."""
             whiteboard = self._updateWhiteboardAndCheckIfChangedFromData(data)
-            getattr(self.code_import, status_method_name)(data, self.user)
-            self.request.response.addNotification(
-                'The code import has been ' + text + '.')
+            updated = getattr(self.code_import, status_method_name)(
+                data, self.user)
+            if updated:
+                self.request.response.addNotification(
+                    'The code import has been ' + text + '.')
+            else:
+                self.request.response.addNotification('No changes made.')
         return form.Action(
             label, name=status_method_name, success=success,
             condition=condition)
