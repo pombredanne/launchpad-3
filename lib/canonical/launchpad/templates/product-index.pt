@@ -60,9 +60,6 @@
     <span tal:define="link context/menu:overview/reassign"
           tal:condition="link/enabled"
           tal:content="structure link/render" />
-    <span tal:define="link context/menu:overview/reassign"
-          tal:condition="link/enabled"
-          tal:content="structure link/render" />
     <span tal:define="link context/menu:overview/branch_visibility"
           tal:condition="link/enabled"
           tal:content="structure link/render" />
