@@ -86,7 +86,7 @@ distribution Overview page.
 Say "nothing" when the distribution uses nothing:
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))
-    Ubuntu Linux does not use Launchpad.
+    Ubuntu Linux does not use Launchpad for development.
 
 
 == enable_bug_expiration and JavaScript ==
@@ -128,7 +128,7 @@ operation before the page complete loading.
 
     >>> content = find_main_content(admin_browser.contents)
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))
-    Ubuntu Linux does not use Launchpad.
+    Ubuntu Linux does not use Launchpad for development.
 
 Returning to the edit page, Foo Bar can see that bug expiration was
 also disabled.
