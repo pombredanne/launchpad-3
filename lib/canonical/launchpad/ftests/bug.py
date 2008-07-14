@@ -25,7 +25,6 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.testing.pages import extract_text
 
 
 def print_direct_subscribers(bug_page):
