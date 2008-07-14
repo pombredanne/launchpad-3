@@ -116,17 +116,24 @@
         </td>
       </tr>
       <tal:block condition="python: view.isMultiLineLayout(field_name)">
-        <tr
-          tal:condition="display_label|widget/display_label|python:True"
-          tal:attributes="class error_class"
-        >
-          <td colspan="2" style="text-align: left"><label
+        <tr tal:attributes="class error_class">
+          <td colspan="2" style="text-align: left">
+            <tal:showlabel
+              condition="display_label|widget/display_label|python:True"
+            >
+
+            <label
               tal:attributes="for widget/name"
               tal:content="string:${widget/label}:">Label:</label>
             <span tal:condition="show_optional"
                   class="fieldRequired">(Optional)</span>
-            <div class="message" tal:condition="error"
-                 tal:content="structure error">Error message</div>
+            
+            </tal:showlabel>
+            <div
+              tal:condition="error"
+              tal:content="structure error"
+              class="message"
+            >Error message</div>
             <div tal:content="structure widget">
               <input type="text" style="width: 100%" />
             </div>
