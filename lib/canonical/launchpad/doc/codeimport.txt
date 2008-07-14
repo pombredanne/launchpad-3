@@ -88,6 +88,8 @@ three members of the vcs-imports team.
     >>> message = email.message_from_string(stub.test_emails[0][2])
     >>> print message['subject']
     New code import: firefox/trunk-cvs
+    >>> print message['X-Launchpad-Message-Rationale']
+    Herder @vcs-imports
     >>> print message.get_payload()
     A new code import has been requested by No Privileges Person:
         http://code.launchpad.dev/~vcs-imports/firefox/trunk-cvs
