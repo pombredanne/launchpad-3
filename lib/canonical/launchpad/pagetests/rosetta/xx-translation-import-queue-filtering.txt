@@ -295,7 +295,7 @@ The only entry that shows up now is the one Carlos just uploaded.
 === Target filter validation ===
 
 If Carlos attempts to filter for a nonexistent target, e.g. through a
-mistyped URL, the filter value is ignored.
+mistyped URL, an UnexpectedFormData is raised.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
