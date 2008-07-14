@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 import unittest
+
 from canonical.launchpad.translationformat.mozilla_zip import (
     get_file_suffix, MozillaZipFile)
 from canonical.launchpad.translationformat.tests.xpi_helpers import (
@@ -12,6 +13,16 @@ from canonical.testing import LaunchpadZopelessLayer
 
 
 class TraversalRecorder(MozillaZipFile):
+    """XPI "parser": records traversal of an XPI or jar file.
+
+    Does nothing but keep track of the structure of nested zip files it
+    traverses, and the various parameters for each translatable file.
+
+    Produces a nice list of tuples (representing parameters for a
+    translatable file) and lists (representing nested jar files).  Each
+    zip file's traversal, including nested ones, is concluded with a
+    string containing a full stop (".").
+    """
     traversal = None
 
     def _begin(self):
@@ -34,11 +45,10 @@ class MozillaZipFileTestCase(unittest.TestCase):
 
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        self.xpi_content = get_en_US_xpi_file_to_import('en-US').read()
-
     def test_XpiTraversal(self):
-        record = TraversalRecorder('', self.xpi_content)
+        """Test a typical traversal of XPI file, with nested jar file."""
+        xpi_content = get_en_US_xpi_file_to_import('en-US').read()
+        record = TraversalRecorder('', xpi_content)
         self.assertEqual(record.traversal, [
                 [
                     ('copyover1.foo', 'en-US',
@@ -67,6 +77,25 @@ class MozillaZipFileTestCase(unittest.TestCase):
                     ),
                     '.'
                 ],
+                '.'
+            ])
+
+    def test_WithoutManifest(self):
+        """Test traversal of an XPI file without manifest."""
+        xpi_content = get_en_US_xpi_file_to_import('no-manifest').read()
+        record = TraversalRecorder('', xpi_content)
+        # Without manifest, there is no knowledge of locale or chrome
+        # paths, so those are None.
+        self.assertEqual(record.traversal, [
+                [
+                    ('file.txt', None,
+                        'jar:chrome/en-US.jar!/file.txt', None
+                    ),
+                    '.'
+                ],
+                ('no-jar.txt', None,
+                    'no-jar.txt', None
+                ),
                 '.'
             ])
 

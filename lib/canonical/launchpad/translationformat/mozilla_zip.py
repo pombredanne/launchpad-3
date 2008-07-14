@@ -102,7 +102,11 @@ class MozillaZipFile:
                 self._processNestedJar(nested_instance)
                 return
 
-        xpi_path = "%s/%s" % (xpi_path, entry)
+        if xpi_path == '':
+            xpi_path = entry
+        else:
+            xpi_path = "%s/%s" % (xpi_path, entry)
+
         if self.manifest is None:
             # No manifest, so we don't have chrome paths.  Process
             # everything just to be sure.
