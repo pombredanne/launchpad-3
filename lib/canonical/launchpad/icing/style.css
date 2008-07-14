@@ -1116,10 +1116,6 @@ highlighting menu items, so padding is handled by the contents instead: */
   display: block;
   margin-bottom: 1.5em;
 }
-#portlets .list-items {
-  padding: 1px;
-  padding-bottom: 3px;
-}
 #actions ul {
   list-style-type: none;
   margin: 0;
@@ -1141,7 +1137,7 @@ highlighting menu items, so padding is handled by the contents instead: */
 /* The first portlet on many pages discloses whether the object is private: */
 #privacy {background: #fff;}
 #privacy.private {
-  background: #eee url(/@@/private-bg) top left repeat-x; /* 8px high */
+  background: url(/@@/private-bg) top left repeat-x; /* 8px high */
   padding-top: 12px; /* = 8px + the usual 4px top padding */
 }
 

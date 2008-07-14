@@ -2,7 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet"
+  class="portlet subscribers"
   id="portlet-subscribers"
   tal:define="
     direct_subscriptions context/getDirectSubscriptions;
@@ -10,28 +10,13 @@
     also_notified_subscribers context/getAlsoNotifiedSubscribers
   "
 >
-  <section>
-    <h2><img src="/@@/mail"> Subscribe/Unsubscribe</h2>
-    <tal:block define="context_menu context/menu:context">
-      <div tal:define="link context_menu/subscription"
-           tal:condition="link/enabled"
-           class="list-items"
-       ><a tal:attributes="href link/url"
-       ><img tal:attributes="src string:/@@/${link/icon}" /> <tal:block replace="link/text" />
-      </a>
-      </div>
-      <div tal:define="link context_menu/addsubscriber"
-           tal:condition="link/enabled"
-           class="list-items"
-      ><a tal:attributes="href link/url">
-          <img tal:attributes="src string:/@@/${link/icon}" /> <tal:block replace="link/text" />
-      </a>
-     </div>
-  </tal:block>
+  <section tal:define="context_menu context/menu:context">
+    <div tal:content="structure context_menu/subscription/render" />
+    <div tal:content="structure context_menu/addsubscriber/render" />
   </section>
 
   <section>
-  <h2><img src="/@@/mail"> Subscribers</h2>
+    <h2>Subscribers</h2>
 
   <div tal:repeat="subscription direct_subscriptions"
        tal:condition="direct_subscriptions"
@@ -44,13 +29,12 @@
     </a>
   </div>
 
-  </section>
-
   <div tal:condition="not:direct_subscriptions">None</div>
 
-    <tal:block condition="from_dupes_subscriptions">
-     <section>
-       <h2><img src="/@@/mail"> From duplicates</h2>
+  </section>
+  <section tal:condition="from_dupes_subscriptions">
+
+       <h2>From duplicates</h2>
        <div tal:repeat="subscription from_dupes_subscriptions"
             class="list-items">
          <a href="#"
@@ -61,22 +45,18 @@
            <tal:block replace="subscription/person/browsername" />
          </a>
        </div>
-     </section>
-    </tal:block>
 
-    <tal:block condition="also_notified_subscribers">
-     <section>
-       <h2><img src="/@@/mail"> Also notified</h2>
+  </section>
 
-       <div tal:repeat="subscriber also_notified_subscribers"
-            class="list-items">
-         <a href="#"
-            tal:attributes="href subscriber/fmt:url">
-           <tal:block replace="structure subscriber/image:icon" /> 
-           <tal:block replace="structure subscriber/browsername" />
-        </a>
-       </div>
-     </section>
-    </tal:block>
+  <section tal:condition="also_notified_subscribers">
+
+       <h2>Also notified</h2>
+
+       <div
+          tal:repeat="subscriber also_notified_subscribers"
+          tal:content="structure subscriber/fmt:link"
+       />
+
+  </section>
 
 </div>
