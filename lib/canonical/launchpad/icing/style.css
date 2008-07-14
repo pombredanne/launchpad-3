@@ -18,6 +18,7 @@
 abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
 address {font-style: inherit;}
 * html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
+aside {display: block;}
 caption {caption-side: bottom; text-align: left;}
 dt dfn {font-style: normal; font-weight: bold;}
 dd {margin-bottom: 1em;}
@@ -1038,9 +1039,6 @@ top left (y), and top right (z) of the rounded border. */
 }
 * html #container {margin-top: 0; position: static;} /* fixes in IE6 */
 
-/* Something private for a public project has a cordon inside the tabs: */
-#container.private {background: url(/@@/private-bg) left 28px repeat-x;}
-
 /*
   To let the main content width = 100% - 220px for the portlets,
   we apply a negative right margin so the portlets can float on the right:
@@ -1106,7 +1104,8 @@ highlighting menu items, so padding is handled by the contents instead: */
 #portlets .portlet, aside, #portlets .portlet h2, aside h2 {font-size: 12px;}
 #portlets .portlet h2, aside h2 {
   border-bottom: 1px solid #ccc;
-  color: inherit;
+  color: inherit !important;
+    /* http://launchpad.dev/ubuntu/+source/pmount/+filebug-advanced */
   font-weight: bold;
   margin: 0 0 1em;
   padding: 0 0 1px;
@@ -1127,6 +1126,15 @@ highlighting menu items, so padding is handled by the contents instead: */
   padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */
 }
 #actions a:hover {background-color: #fff; text-decoration: underline;}
+
+/* === Public/private status === */
+/* The first portlet on many pages discloses whether the object is private: */
+#privacy {background: #fff;}
+#privacy.private {
+  background: #eee url(/@@/private-bg) top left repeat-x; /* 8px high */
+  padding-top: 12px; /* = 8px + the usual 4px top padding */
+}
+
 .check,
 .radio {
   background: transparent;

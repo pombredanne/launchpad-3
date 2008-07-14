@@ -16,7 +16,8 @@
         padding-left: 18px; background: url(/@@/edit) center left no-repeat;
       "
     >This report is public</a>
-    <tal:unchangeable condition="not:link/enabled">public</tal:unchangeable>
+    <tal:unchangeable condition="not:link/enabled"
+    >This report is public</tal:unchangeable>
   </div>
   <div tal:condition="context/private">
     <a
@@ -26,7 +27,8 @@
         padding-left: 18px; background: url(/@@/edit) center left no-repeat;
       "
     >This report is <strong>private</strong></a>
-    <tal:unchangeable condition="not:link/enabled">private</tal:unchangeable>
+    <tal:unchangeable condition="not:link/enabled"
+    >This report is private</tal:unchangeable>
   </div>
   <div
     tal:condition="context/security_related"
