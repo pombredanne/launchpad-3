@@ -80,7 +80,7 @@ class MozillaZipFileTestCase(unittest.TestCase):
                 '.'
             ])
 
-    def test_WithoutManifest(self):
+    def test_XpiTraversalWithoutManifest(self):
         """Test traversal of an XPI file without manifest."""
         xpi_content = get_en_US_xpi_file_to_import('no-manifest').read()
         record = TraversalRecorder('', xpi_content)
@@ -98,6 +98,12 @@ class MozillaZipFileTestCase(unittest.TestCase):
                 ),
                 '.'
             ])
+
+    def test_GetFileSuffix(self):
+        """Test `get_file_suffix`."""
+        self.assertEqual(get_file_suffix('plainname'), '')
+        self.assertEqual(get_file_suffix('a.b'), '.b')
+        self.assertEqual(get_file_suffix('a.b.c'), '.c')
 
 
 def test_suite():
