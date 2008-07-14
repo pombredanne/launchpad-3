@@ -7,8 +7,6 @@ __all__ = [
     'escape',
     'get_current_view',
     'get_facet',
-    'nearest_context_with_adapter',
-    'nearest_adapter',
     'structured',
     'translate_if_msgid',
     'FacetMenu',
@@ -31,8 +29,7 @@ from zope.security.proxy import (
     isinstance as zope_isinstance, ProxyFactory, removeSecurityProxy)
 
 from canonical.lazr import decorates
-from canonical.lazr.adapter import (nearest_adapter,
-    nearest_context_with_adapter)
+from canonical.lazr.adapter import nearest_adapter
 
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,

@@ -9,8 +9,7 @@ adaptation.
 
 First, we'll construct an example object hierarchy.
 
-    >>> from canonical.launchpad.webapp import (canonical_url,
-    ...     nearest_adapter, nearest_context_with_adapter, urlsplit)
+    >>> from canonical.launchpad.webapp import canonical_url, urlsplit
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     ICanonicalUrlData, IFacetMenu)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -71,6 +70,9 @@ Here is the structure of our hierarchy:
 == Using nearest_adapter ==
 
 Right now, none of our example objects have a facet menu.
+
+    >>> from canonical.lazr.adapter import (nearest_adapter,
+    ...     nearest_context_with_adapter)
 
     >>> print nearest_adapter(root, IFacetMenu)
     None
