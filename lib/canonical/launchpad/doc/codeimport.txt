@@ -191,7 +191,8 @@ administrators can update the details of the code import, including
 the review status.  This is done using the code import methods:
 approve; suspend; invalidate and markFailing update the review status
 and the other details, and changeDetails just updates the other
-details.
+details.  All of these methods return a boolean indicating if they
+made a change.
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
@@ -221,6 +222,7 @@ created if done through the web UI, so we'll add nopriv here.
     ...     pop_notifications, print_emails)
     >>> ignore_old_emails = pop_notifications()
     >>> code_import.approve({}, nopriv)
+    True
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
@@ -238,6 +240,7 @@ Similarly, an email is sent out when the import is suspended or
 invalidated.
 
     >>> code_import.suspend({}, nopriv)
+    True
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
@@ -248,6 +251,7 @@ invalidated.
     ----------------------------------------
 
     >>> code_import.invalidate({}, nopriv)
+    True
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
@@ -258,6 +262,7 @@ invalidated.
     ----------------------------------------
 
     >>> code_import.markFailing({}, nopriv)
+    True
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
@@ -272,6 +277,7 @@ summary of the changes made.
 
     >>> data = {'svn_branch_url': 'http://svn.example.com/project/trunk'}
     >>> code_import.changeDetails(data, nopriv)
+    True
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
@@ -289,6 +295,7 @@ changeDetails is smart enough to not send an email if no changes were
 actually made.
 
     >>> code_import.changeDetails({}, nopriv)
+    False
     >>> print_emails(group_similar=True)
 
 
