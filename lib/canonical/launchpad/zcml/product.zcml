@@ -295,11 +295,6 @@
       template="../templates/product-portlet-license-missing.pt"
       />
     <browser:page
-      name="+portlet-lifecycle"
-      facet="overview"
-      template="../templates/product-portlet-lifecycle.pt"
-      />
-    <browser:page
       name="+portlet-series"
       facet="overview"
       template="../templates/product-portlet-series.pt"
@@ -341,10 +336,6 @@
     <browser:page
       name="+portlet-latestbranches"
       template="../templates/product-portlet-latestbranches.pt"
-      />
-    <browser:page
-      name="+portlet-productfiles"
-      template="../templates/product-portlet-latestfiles.pt"
       />
     <browser:page
       name="+purchase-subscription"
