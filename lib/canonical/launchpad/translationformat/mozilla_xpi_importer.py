@@ -147,14 +147,6 @@ class MozillaZipImportParser(MozillaZipFile):
             self.messages.append(message)
 
 
-class XpiImportParser(MozillaZipImportParser):
-    """XPI parser for import purposes."""
-    def _begin(self):
-        """Overridable hook for `MozillaZipFile`.
-
-        This implementation looks for a manifest file.
-        """
-
 class MozillaDtdConsumer (xmldtd.WFCDTD):
     """Mozilla DTD translatable message parser.
 
