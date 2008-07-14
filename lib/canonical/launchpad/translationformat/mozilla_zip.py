@@ -84,10 +84,45 @@ class MozillaZipFile:
 
         self._complete()
 
+    def _processEntry(self, entry, xpi_path):
+        """Read one zip archive entry, figure out what to do with it."""
+        is_jar = entry.endswith('.jar')
+
+        if is_jar:
+            jarpath = make_jarpath(xpi_path, entry)
+            if not self.manifest or self.manifest.containsLocales(jarpath):
+                # If this is a jar file that may contain localizable
+                # resources, don't process it in the normal way; recurse
+                # by creating another parser instance.
+                content = self.archive.read(entry)
+                nested_instance = self.__class__(
+                    filename=entry, xpi_path=jarpath, content=content,
+                    manifest=self.manifest)
+
+                self._processNestedJar(nested_instance)
+                return
+
+        xpi_path = "%s/%s" % (xpi_path, entry)
+        if self.manifest is None:
+            # No manifest, so we don't have chrome paths.  Process
+            # everything just to be sure.
+            chrome_path = None
+            locale_code = None
+        else:
+            chrome_path, locale_code = self.manifest.getChromePathAndLocale(
+                xpi_path)
+            if chrome_path is None:
+                # Not in a directory containing localizable resources.
+                return
+
+        self._processTranslatableFile(
+            entry, locale_code, xpi_path, chrome_path)
+
     def _begin(self):
         """Overridable hook: pre-traversal actions."""
 
-    def _process(self, entry, locale_code, xpi_path, chrome_path):
+    def _processTranslatableFile(self, entry, locale_code, xpi_path,
+                                 chrome_path):
         """Overridable hook: process a file entry.
 
         Called only for files that may be localizable.  If there is a
@@ -106,61 +141,14 @@ class MozillaZipFile:
             the XPI paths describe) may be different.
         """
 
-    def _descend(self, entry, content, xpi_path):
-        """Overridable hook: descend into jar file.
+    def _procesesNestedJar(self, zip_instance):
+        """Overridable hook: handle a nested jar file.
 
-        Default implementation recurses by creating a new instance of
-        the same `MozillaZipFile` implementation.
-
-        Any value returned by this method will be passed to a matching
-        invocation of `_emerge`, which backtracks the recursion.
-
-        :param entry: Full name of jar file inside this zip archive.
-        :param content: Bytes of this jar file.
-        :param xpi_path: Base XPI path for jar file.  Prefix this to an
-            entry in the jar file to get the entry's full XPI path.
-
-        :return: In the default implementation, an instance of the same
-            class as self, but one that traverses the jar file.
-        """
-        return self.__class__(filename=entry, xpi_path=xpi_path,
-            content=content, manifest=self.manifest)
-
-    def _emerge(self, descend_result):
-        """Overridable hook: return from descent into jar file.
-
-        :param descend_result: return value from matching `_descend`().
+        :param zip_instance: An instance of the same class as self, which
+            has just parsed the nested jar file.
         """
 
     def _complete(self):
-        """Overridable hook: post-traveral actions."""
+        """Overridable hook: post-traversal actions."""
 
-    def _processEntry(self, entry, xpi_path):
-        """Read one zip archive entry, figure out what to do with it."""
-        is_jar = entry.endswith('.jar')
-
-        if is_jar:
-            jarpath = make_jarpath(xpi_path, entry)
-            if not self.manifest or self.manifest.containsLocales(jarpath):
-                # If this is a jar file that may contain localizable
-                # resources, don't process it in the normal way; descend into
-                # it.
-                content = self.archive.read(entry)
-                self._emerge(self._descend(entry, content, jarpath))
-                return
-
-        xpi_path = "%s/%s" % (xpi_path, entry)
-        if self.manifest is None:
-            # No manifest, so we don't have chrome paths.  Process
-            # everything just to be sure.
-            chrome_path = None
-            locale_code = None
-        else:
-            chrome_path, locale_code = self.manifest.getChromePathAndLocale(
-                xpi_path)
-            if chrome_path is None:
-                # Not in a directory containing localizable resources.
-                return
-
-        self._process(entry, locale_code, xpi_path, chrome_path)
 

@@ -66,7 +66,8 @@ class MozillaZipImportParser(MozillaZipFile):
         for message in self.messages:
             message.file_references = ', '.join(message.file_references_list)
 
-    def _process(self, entry, locale_code, xpi_path, chrome_path):
+    def _processTranslatableFile(self, entry, locale_code, xpi_path,
+                                 chrome_path):
         """Overridable hook for `MozillaZipFile`.
         
         This implementation is only interested in DTD and properties
@@ -88,13 +89,13 @@ class MozillaZipImportParser(MozillaZipFile):
         if parsed_file is not None:
             self.extend(parsed_file.messages)
 
-    def _emerge(self, descend_result):
+    def _processNestedJar(self, zip_instance):
         """Overridable hook for `MozillaZipFile`.
 
         This implementation complements `self.messages` with those found in
         the jar file we just parsed.
         """
-        self.extend(descend_result.messages)
+        self.extend(zip_instance.messages)
 
     def _isCommandKeyMessage(self, message):
         """Whether the message represents a command key shortcut."""
@@ -116,7 +117,8 @@ class MozillaZipImportParser(MozillaZipFile):
     def extend(self, newdata):
         """Complement `self.messages` with messages found in contained file.
 
-
+        :param newdata: a sequence representing the messages found in a
+            contained file.
         """
         for message in newdata:
             # Special case accesskeys and commandkeys:
