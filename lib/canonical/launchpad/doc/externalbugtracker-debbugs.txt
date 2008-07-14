@@ -407,6 +407,66 @@ owner, so we'll turn Teun Vink into a Person.
     >>> print message.text_contents
     Things happen.
 
+Where the DebBugs comment specifies a date in its Received header,
+getMessageForComment will use that date as the date for the message it
+returns rather than the one listed in the email's Date header. This is
+because the Date header is set by the client and can't, therefore, be
+trusted to be correct. The Received header is set by the server and is
+therefore more likely to be accurate.
+
+    >>> external_debbugs.debbugs_db._data_file = (
+    ...     'debbugs-comment-with-received-date.txt')
+
+    >>> comment_ids = external_debbugs.getCommentIds(bug_watch)
+    >>> print comment_ids
+    ['<yetanothermessageid@launchpad>']
+
+    >>> external_debbugs.fetchComments(bug_watch, comment_ids)
+    >>> message = external_debbugs.getMessageForComment(
+    ...     bug_watch, comment_ids[0], poster)
+
+    >>> print message.datecreated
+    2008-05-30 21:18:12+00:00
+
+If we parse the comment manually we'll see that the message's
+datecreated comes not from the Date header but from the Received header.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     read_test_file)
+    >>> parsed_message = email.message_from_string(
+    ...     read_test_file('debbugs-comment-with-received-date.txt'))
+
+    >>> print parsed_message['date']
+    Fri, 14 Dec 2007 18:54:30 +0000
+
+    >>> print parsed_message['received']
+    (at 220301) by example.com; 30 May 2008 21:18:12 +0000
+
+However, if none of the Received headers don't match the hostname that
+we have for the remote debbugs instance, getMessageForComment() will
+default to using the Date header again.
+
+    >>> external_debbugs.debbugs_db._data_file = (
+    ...     'debbugs-comment-with-no-useful-received-date.txt')
+
+    >>> comment_ids = external_debbugs.getCommentIds(bug_watch)
+
+    >>> external_debbugs.fetchComments(bug_watch, comment_ids)
+    >>> message = external_debbugs.getMessageForComment(
+    ...     bug_watch, comment_ids[0], poster)
+
+    >>> print message.datecreated
+    2007-12-14 18:54:30+00:00
+
+    >>> parsed_message = email.message_from_string(
+    ...     read_test_file('debbugs-comment-with-received-date.txt'))
+
+    >>> print parsed_message['date']
+    Fri, 14 Dec 2007 18:54:30 +0000
+
+    >>> print parsed_message['received']
+    (at 220301) by example.com; 30 May 2008 21:18:12 +0000
+
 
 === Pushing comments to DebBugs ===
 
