@@ -44,14 +44,14 @@ class Resource:
         self.__dict__['_root'] = root
         self.__dict__['_wadl_resource'] = wadl_resource
 
-    def _has_param(self, param_name):
+    def lp_has_param(self, param_name):
         """Does this resource have a parameter with the given name?"""
         for suffix in ['_link', '_collection_link', '']:
             if self._wadl_resource.get_parameter(param_name + suffix):
                 return True
         return False
 
-    def _get_param(self, param_name):
+    def lp_get_param(self, param_name):
         """Get the value of one of the resource's parameters.
 
         :return: A scalar value if the parameter is not a link. A new
@@ -108,7 +108,7 @@ class Resource:
                 representation, representation_media_type,
                 representation_needs_processing))
 
-    def _refresh(self, new_url=None):
+    def lp_refresh(self, new_url=None):
         """Update this resource's representation."""
         if new_url is not None:
             self._wadl_resource._url = new_url
@@ -121,7 +121,7 @@ class Resource:
     def __getattr__(self, attr):
         """Try to retrive a parameter of the given name."""
         try:
-            return self._get_param(attr)
+            return self.lp_get_param(attr)
         except KeyError:
             raise AttributeError("'%s' object has no attribute '%s'"
                                  % (self.__class__.__name__, attr))
@@ -154,17 +154,17 @@ class Entry(Resource):
 
     def __setattr__(self, name, value):
         """Set the parameter of the given name."""
-        if not self._has_param(name):
+        if not self.lp_has_param(name):
             raise AttributeError("'%s' object has no attribute '%s'" %
                                  (self.__class__.__name__, name))
         self._dirty_attributes[name] = value
 
-    def _refresh(self, new_url=None):
+    def lp_refresh(self, new_url=None):
         """Update this resource's representation."""
-        super(Entry, self)._refresh(new_url)
+        super(Entry, self).lp_refresh(new_url)
         self._dirty_attributes.clear()
 
-    def save(self):
+    def lp_save(self):
         """Save changes to the entry."""
         representation = self._dirty_attributes
         # PATCH the new representation to the 'self' link.  It's possible that
@@ -174,7 +174,7 @@ class Entry(Resource):
             self._root._browser.patch(URI(self.self_link), representation)
         except HTTPError, error:
             if error.response.status == 301:
-                self._refresh(error.response['location'])
+                self.lp_refresh(error.response['location'])
             else:
                 raise
         self._dirty_attributes.clear()
@@ -223,7 +223,7 @@ class Collection(Resource):
             current_page = simplejson.loads(
                 self._root._browser.get(URI(next_link)))
 
-    def get(self, key, default=None):
+    def lp_get(self, key, default=None):
         """Look up a subordinate resource by unique ID."""
         try:
             return self[key]

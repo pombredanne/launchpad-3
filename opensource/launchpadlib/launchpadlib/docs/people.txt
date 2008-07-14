@@ -43,14 +43,14 @@ But if no person by that name is registered, you get the expected KeyError...
     ...
     KeyError: 'not-a-registered-person'
 
-...unless of course, you use the `get()` interface, which acts just like
+...unless of course, you use the `lp_get()` interface, which acts just like
 `dict.get()`.
 
-    >>> launchpad.people.get('salgado').display_name
+    >>> launchpad.people.lp_get('salgado').display_name
     u'Guilherme Salgado'
-    >>> print launchpad.people.get('not-a-registered-person')
+    >>> print launchpad.people.lp_get('not-a-registered-person')
     None
-    >>> launchpad.people.get('not-a-registered-person', 'missing')
+    >>> launchpad.people.lp_get('not-a-registered-person', 'missing')
     'missing'
 
 Besides a name and a display name, a person has many other attributes that you

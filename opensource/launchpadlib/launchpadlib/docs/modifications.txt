@@ -6,7 +6,7 @@ interface which is available through direct attribute access.
     >>> from launchpadlib.testing.helpers import salgado_with_full_permissions
     >>> launchpad = salgado_with_full_permissions.login()
 
-    >>> salgado = launchpad.people.get('salgado')
+    >>> salgado = launchpad.people.lp_get('salgado')
     >>> salgado.display_name
     u'Guilherme Salgado'
 
@@ -16,24 +16,26 @@ pushed to the web service until the entry is explicitly saved.  This allows
 Salgado to batch the changes over the wire for efficiency.
 
     >>> salgado.display_name = u'Salgado'
-    >>> launchpad.people.get('salgado').display_name
+    >>> launchpad.people['salgado'].display_name
     u'Guilherme Salgado'
 
 Once the changes are saved though, they are saved on the web service.
 
 XXX BarryWarsaw 12-Jun-2008 We currently make no guarantees about the
-synchronization between the local object's state and the remote object's
-state.  Future development will add a "conditional PATCH" feature based on
-Last-Modified/ETag headers; this will serve as a transction number, so that if
-the two objects get out of sync, the .save() would fail.  Since this is not
-yet implemented, we will do a .get() every time we want to guarantee that we
-have the up-to-date state of the object.  The only other time we can make this
-guarantee is when we change an attribute that causes a 301 'Moved permanently'
-HTTP error, because we implicitly re-fetch the object's state in that case.
-However, this latter condition is not exposed through the web service.
+synchronization between the local object's state and the remote
+object's state.  Future development will add a "conditional PATCH"
+feature based on Last-Modified/ETag headers; this will serve as a
+transction number, so that if the two objects get out of sync, the
+.lp_save() would fail.  Since this is not yet implemented, we will do
+a [] lookup every time we want to guarantee that we have the
+up-to-date state of the object.  The only other time we can make this
+guarantee is when we change an attribute that causes a 301 'Moved
+permanently' HTTP error, because we implicitly re-fetch the object's
+state in that case.  However, this latter condition is not exposed
+through the web service.
 
-    >>> salgado.save()
-    >>> launchpad.people.get('salgado').display_name
+    >>> salgado.lp_save()
+    >>> launchpad.people['salgado'].display_name
     u'Salgado'
 
 The entry object is a normal Python object like any other. Attributes
@@ -66,8 +68,8 @@ they'll all be changed when the entry is saved.
     >>> salgado.hide_email_addresses = True
     >>> salgado.mailing_list_auto_subscribe_policy = (
     ...     u'Never subscribe to mailing lists')
-    >>> salgado.save()
-    >>> salgado = launchpad.people.get('salgado')
+    >>> salgado.lp_save()
+    >>> salgado = launchpad.people['salgado']
 
     >>> print salgado.homepage_content
     This is my home page.
@@ -81,7 +83,7 @@ Salgado cannot set his time zone to an illegal value.
     >>> from launchpadlib.errors import HTTPError
     >>> def print_error_on_save(entry):
     ...     try:
-    ...         entry.save()
+    ...         entry.lp_save()
     ...     except HTTPError, error:
     ...         for line in sorted(error.content.splitlines()):
     ...             print line
@@ -109,7 +111,7 @@ description.  Salgado also understand that anybody can achieve awesomeoness.
     >>> bassists.team_description = (
     ...     u'The most important instrument in the world')
     >>> bassists.subscription_policy = u'Open Team'
-    >>> bassists.save()
+    >>> bassists.lp_save()
 
     >>> bassists = launchpad.people['bassists']
     >>> print bassists.team_description
@@ -123,33 +125,33 @@ description.  Salgado also understand that anybody can achieve awesomeoness.
 Salgado can actually rename and move his person by changing the 'name'
 attribute.
 
-    >>> salgado = launchpad.people.get('salgado')
+    >>> salgado = launchpad.people['salgado']
     >>> salgado.name = u'guilherme'
-    >>> salgado.save()
+    >>> salgado.lp_save()
 
 Once this is done, he can no longer access his data through the old name.  But
 Salgado's person is available through the new name.
 
-    >>> print launchpad.people.get('salgado')
+    >>> print launchpad.people.lp_get('salgado')
     None
-    >>> launchpad.people.get('guilherme').display_name
+    >>> launchpad.people['guilherme'].display_name
     u'Guilherme Salgado'
 
 Under the covers though, a refresh of the original object has been retrieved
 from Launchpad, so it's save to continue using, and changing it.
 
     >>> salgado.display_name = u'Salgado!'
-    >>> salgado.save()
-    >>> launchpad.people.get('guilherme').display_name
+    >>> salgado.lp_save()
+    >>> launchpad.people['guilherme'].display_name
     u'Salgado!'
 
 It's just as easy to move Salgado back to the old name.
 
     >>> salgado.name = u'salgado'
-    >>> salgado.save()
-    >>> print launchpad.people.get('guilherme')
+    >>> salgado.lp_save()
+    >>> print launchpad.people.lp_get('guilherme')
     None
-    >>> launchpad.people.get('salgado').display_name
+    >>> launchpad.people['salgado'].display_name
     u'Salgado!'
 
 
