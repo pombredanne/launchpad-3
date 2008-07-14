@@ -55,7 +55,7 @@
         <response>
           <representation
              tal:attributes="
-               href entry_schema/wadl_entry:entry_page_representation_link"
+               href entry_schema/wadl_entry_interface:entry_page_representation_link"
              />
           <representation mediaType="application/vd.sun.wadl+xml"
             tal:attributes="id string:${context/wadl_collection:collection_type}-wadl" />

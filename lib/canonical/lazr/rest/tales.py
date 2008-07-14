@@ -25,7 +25,8 @@ from canonical.lazr.interfaces import (
     IResourcePOSTOperation, IScopedCollection)
 from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
-from canonical.lazr.interfaces.rest import WebServiceLayer
+from canonical.lazr.interfaces.rest import (
+    LAZR_WEBSERVICE_NAME, WebServiceLayer)
 from canonical.lazr.rest import (
     CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
 
@@ -196,6 +197,22 @@ class WadlResourceAdapterAPI(WadlAPI):
         return ops
 
 
+class WadlEntryInterfaceAdapterAPI(WadlResourceAdapterAPI):
+    """Namespace for WADL functions that operate on entry interfaces.
+
+    That is, IEntry subclasses.
+    """
+    def __init__(self, entry_interface):
+        super(WadlEntryInterfaceAdapterAPI, self).__init__(
+            entry_interface, IEntry)
+        self.utility = EntryAdapterUtility.forEntryInterface(entry_interface)
+
+    @property
+    def entry_page_representation_link(self):
+        "The URL to the description of a collection of this kind of object."
+        return self.utility.entry_page_representation_link
+
+
 class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
     """Namespace for WADL functions that operate on entry adapter classes.
 
@@ -244,11 +261,6 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
         return self.utility.entry_page_representation_id
 
     @property
-    def entry_page_representation_link(self):
-        "The URL to the description of a collection of this kind of object."
-        return self.utility.entry_page_representation_link
-
-    @property
     def all_fields(self):
         "Return all schema fields for the object."
         return getFields(self.adapter.schema).values()
@@ -272,7 +284,8 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
     @property
     def collection_type(self):
         """The name of this kind of resource."""
-        return self.adapter.__name__
+        tag = self.entry_schema.queryTaggedValue(LAZR_WEBSERVICE_NAME)
+        return tag['plural']
 
     @property
     def type_link(self):
