@@ -54,13 +54,13 @@ class Launchpad(Resource):
         self.credentials = credentials
         # Get the WADL definition.
         self._browser = Browser(self.credentials)
-        self.wadl = self._browser.getWADL(self._root)
+        self.wadl = self._browser.get_wadl_application(self._root)
 
         # Get the root resource.
-        resource = self.wadl.get_resource_by_path('')
-        bound_resource = resource.bind(
-            self._browser.get(resource), 'application/json')
-        super(Launchpad, self).__init__(None, bound_resource)
+        root_resource = self.wadl.get_resource_by_path('')
+        bound_root = root_resource.bind(
+            self._browser.get(root_resource), 'application/json')
+        super(Launchpad, self).__init__(None, bound_root)
 
     @classmethod
     def login(cls, consumer_name, token_string, access_secret):

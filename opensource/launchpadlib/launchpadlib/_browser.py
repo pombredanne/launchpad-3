@@ -67,7 +67,6 @@ class Browser:
             str(url), method=method, body=data, headers=headers)
         # Turn non-2xx responses into exceptions.
         if response.status // 100 != 2:
-            import pdb; pdb.set_trace()
             raise HTTPError(response, content)
         return response, content
 
@@ -81,7 +80,7 @@ class Browser:
         response, content = self._request(url)
         return content
 
-    def getWADL(self, url):
+    def get_wadl_application(self, url):
         """GET a WADL representation of the resource at the requested url."""
         response, content = self._request(
             url, media_type='application/vd.sun.wadl+xml')

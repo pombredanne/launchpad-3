@@ -199,10 +199,14 @@
     <representation mediaType="application/json"
        tal:attributes="id string:${context/wadl_entry:singular_type}-full">
       <param style="plain" name="self_link" path="$['self_link']">
+        <wadl:doc>The canonical link to this resource.</wadl:doc>
         <link tal:attributes="resource_type context/wadl_entry:type_link" />
       </param>
       <param style="plain" name="resource_type_link"
              path="$['resource_type_link']">
+        <wadl:doc>
+          The link to the WADL description of this resource.
+        </wadl:doc>
         <link />
       </param>
       <param style="plain"

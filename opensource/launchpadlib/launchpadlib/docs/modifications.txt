@@ -36,9 +36,10 @@ However, this latter condition is not exposed through the web service.
     >>> launchpad.people.get('salgado').display_name
     u'Salgado'
 
-The entry object is a normal Python object like any other.  Salgado can set
-any attribute on the object, but if it doesn't correspond to a web services
-object, it won't be persistent.
+The entry object is a normal Python object like any other. Attributes
+of the entry, like 'display_name', are available as attributes on the
+resource, and may be set. Only the attributes of the entry can be set
+or read as Python attributes.
 
     >>> salgado.display_name = u'Guilherme Salgado'
     >>> salgado.is_great = True
@@ -51,8 +52,8 @@ object, it won't be persistent.
     ...
     AttributeError: 'Entry' object has no attribute 'is_great'
 
-Salgado can also set more than one attribute at a time, and all will be
-changed when the entry is saved.
+The client can set more than one attribute on Salgado at a time:
+they'll all be changed when the entry is saved.
 
     >>> print salgado.homepage_content
     None

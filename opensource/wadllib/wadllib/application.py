@@ -209,7 +209,8 @@ class Resource(WADLResolvableDefinition):
     """A resource, possibly bound to a representation."""
 
     def __init__(self, application, url, resource_type,
-                 representation=None, media_type=None, _definition=None):
+                 representation=None, media_type=None,
+                 representation_needs_processing=True, _definition=None):
         """
         :param application: A WADLApplication.
         :param url: The URL to this resource.
@@ -220,6 +221,11 @@ class Resource(WADLResolvableDefinition):
             avoid dereferencing a bound resource definition; instead,
             we reuse the work done when dereferencing the unbound
             resource.
+        :param representation_needs_processing: Set to False if the
+            'representation' parameter should be used as
+            is. Otherwise, it will be transformed from a string into
+            an appropriate Python data structure, depending on its
+            media type.
         """
         super(Resource, self).__init__(application)
         self._url = url
@@ -235,11 +241,9 @@ class Resource(WADLResolvableDefinition):
         self.representation = None
         if representation is not None:
             if media_type == 'application/json':
-                try:
+                if representation_needs_processing:
                     self.representation = simplejson.loads(representation)
-                except TypeError:
-                    # The representation has already been transformed
-                    # from a string to a Python data structure.
+                else:
                     self.representation = representation
             else:
                 raise UnsupportedMediaTypeError(
@@ -278,16 +282,20 @@ class Resource(WADLResolvableDefinition):
         """Return the ID of this resource."""
         return self.tag.attrib['id']
 
-    def bind(self, representation, media_type='application/json'):
+    def bind(self, representation, media_type='application/json',
+             representation_needs_processing=True):
         """Bind the resource to a representation of that resource.
 
         :param representation: A string representation
         :param media_type: The media type of the representation.
+        :param representation_needs_processing: Set to False if the
+            'representation' parameter should be used as
+            is.
         :returns: A Resource bound to a particular representation.
         """
         return Resource(self.application, self.url, self.tag,
                         representation, media_type,
-                        self._definition)
+                        representation_needs_processing, self._definition)
 
     def get_representation_definition(self, media_type):
         """Get a description of one of this resource's representations."""
