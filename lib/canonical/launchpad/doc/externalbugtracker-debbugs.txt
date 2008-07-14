@@ -348,6 +348,16 @@ bug. DebBugs comment IDs are RFC822 message IDs.
     >>> print comment_ids
     ['<20040309081430.98BF411EE67@tux>']
 
+However, it will only return IDs for comments which can actually be
+imported. Comments which have no useable date will not be imported.
+
+    >>> external_debbugs.debbugs_db._data_file = (
+    ...     'debbugs-comment-with-no-date.txt')
+
+    >>> comment_ids = external_debbugs.getCommentIds(bug_watch)
+    >>> print comment_ids
+    []
+
 getCommentIds() will only return a given comment ID once, even if that
 comment ID exists several times in the DebBugs comment log. To
 demonstrate this we'll use a data file that contains two copies of the
@@ -369,7 +379,8 @@ copies of the same comment.
 
 However, getCommentIds() will only return the comment ID once.
 
-    >>> external_debbugs.getCommentIds(bug_watch)
+    >>> comment_ids = external_debbugs.getCommentIds(bug_watch)
+    >>> print comment_ids
     ['<20040309081430.98BF411EE67@tux>']
 
 The debbugs implementation of fetchComments() doesn't actually do
@@ -466,6 +477,42 @@ default to using the Date header again.
 
     >>> print parsed_message['received']
     (at 220301) by example.com; 30 May 2008 21:18:12 +0000
+
+DebBugs has a method, _getDateForComment(), which returns the correct
+date for a given email.Message.Message instance. This can be
+demonstrated by instantiating Message with some test data and passing
+the instance to _getDateForComment()
+
+    >>> test_message = email.Message.Message()
+
+If the message has no Date or useful Received headers,
+_getDateForComment() will return None.
+
+    >>> print external_debbugs._getDateForComment(test_message)
+    None
+
+If the message has only a Date header, that will be returned as the
+correct date.
+
+    >>> test_message['date'] = "Mon, 14 Jul 2008 21:10:10 +0100"
+    >>> external_debbugs._getDateForComment(test_message)
+    datetime.datetime(2008, 7, 14, 20, 10, 10, tzinfo=<UTC>)
+
+If we add a Received header that isn't related to the domain of the
+current instance, the Date header will still have precedence.
+
+    >>> test_message['received'] = (
+    ...     "by thiswontwork.com; Tue, 15 Jul 2008 09:12:11 +0100")
+    >>> external_debbugs._getDateForComment(test_message)
+    datetime.datetime(2008, 7, 14, 20, 10, 10, tzinfo=<UTC>)
+
+If there's a Received header that references the correct domain, the
+date in that header will take precedence.
+
+    >>> test_message['received'] = (
+    ...     "by example.com; Tue, 15 Jul 2008 10:20:11 +0100")
+    >>> external_debbugs._getDateForComment(test_message)
+    datetime.datetime(2008, 7, 15, 9, 20, 11, tzinfo=<UTC>)
 
 
 === Pushing comments to DebBugs ===

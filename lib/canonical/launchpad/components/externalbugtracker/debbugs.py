@@ -11,7 +11,6 @@ __all__ = [
 from datetime import datetime
 import email
 import os.path
-import pytz
 
 from email.Utils import mktime_tz, parseaddr, parsedate_tz
 
@@ -228,8 +227,12 @@ class DebBugs(ExternalBugTracker):
             # in a DebBugs comment log, since each control command in a
             # message results in that message being recorded once
             # against the bug that the command affects. We only want to
-            # know about the comment once, though.
-            if parsed_comment['message-id'] not in comment_ids:
+            # know about the comment once, though.  We also discard
+            # comments with no date, since we can't import those
+            # correctly.
+            comment_date = self._getDateForComment(parsed_comment)
+            if (comment_date is not None and
+                parsed_comment['message-id'] not in comment_ids):
                 comment_ids.append(parsed_comment['message-id'])
 
         return comment_ids
@@ -251,6 +254,45 @@ class DebBugs(ExternalBugTracker):
             if parsed_comment['message-id'] == comment_id:
                 return parseaddr(parsed_comment['from'])
 
+    def _getDateForComment(self, parsed_comment):
+        """Return the correct date for a comment.
+
+        If a message is specified in a Received header that we can use,
+        return that. Otherwise, return the Date field of the message.
+        """
+        # Check for a Received: header on the comment and use
+        # that to get the date, if possible. We only use the
+        # date received by this host (nominally bugs.debian.org)
+        # since that's the one that's likely to be correct.
+        received_headers = parsed_comment.get_all('received')
+        if received_headers is not None:
+            host_name = urlsplit(self.baseurl)[1]
+
+            received_headers = [
+                header for header in received_headers
+                if host_name in header]
+
+        # If there are too many - or too few - received headers then
+        # something's gone wrong and we default back to using
+        # the Date field.
+        if received_headers is not None and len(received_headers) == 1:
+            received_string = received_headers[0]
+            received_by, date_string = received_string.split(';', 2)
+        else:
+            date_string = parsed_comment['date']
+
+        # We parse the date_string if we can, otherwise we just return
+        # None.
+        if date_string is not None:
+            date_with_tz = parsedate_tz(date_string)
+            timestamp = mktime_tz(date_with_tz)
+            msg_date = datetime.fromtimestamp(timestamp,
+                tz=pytz.timezone('UTC'))
+        else:
+            msg_date = None
+
+        return msg_date
+
     def getMessageForComment(self, bug_watch, comment_id, poster):
         """See `ISupportsCommentImport`."""
         debian_bug = self._findBug(bug_watch.remotebug)
@@ -259,29 +301,7 @@ class DebBugs(ExternalBugTracker):
         for comment in debian_bug.comments:
             parsed_comment = email.message_from_string(comment)
             if parsed_comment['message-id'] == comment_id:
-                # Check for a Received: header on the comment and use
-                # that to get the date, if possible. We only use the
-                # date received by this host (nominally bugs.debian.org)
-                # since that's the one that's likely to be correct.
-                host_name = urlsplit(self.baseurl)[1]
-                received_headers = [
-                    header for header in parsed_comment.get_all('received')
-                    if host_name in header]
-
-                # If there are too many - or too few - received headers then
-                # something's gone wrong and we default back to using
-                # the Date field.
-                if len(received_headers) == 1:
-                    received_string = received_headers[0]
-                    received_by, received_date = received_string.split(';', 2)
-
-                    date_with_tz = parsedate_tz(received_date)
-                    timestamp = mktime_tz(date_with_tz)
-                    msg_date = datetime.fromtimestamp(timestamp,
-                        tz=pytz.timezone('UTC'))
-                else:
-                    msg_date = None
-
+                msg_date = self._getDateForComment(parsed_comment)
                 message = getUtility(IMessageSet).fromEmail(comment, poster,
                     parsed_message=parsed_comment, date_created=msg_date)
 
