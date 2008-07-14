@@ -1068,6 +1068,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             FROM Product, TeamParticipation
             WHERE TeamParticipation.person = %(person)s
             AND owner = TeamParticipation.team
+            AND Product.active IS TRUE
             """ % sqlvalues(person=self)]
 
         # We only want to use the extra query if match_name is not None and it
@@ -3657,4 +3658,3 @@ class IrcIDSet:
     def new(self, person, network, nickname):
         """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)
-
