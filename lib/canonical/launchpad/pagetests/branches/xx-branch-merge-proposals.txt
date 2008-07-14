@@ -56,6 +56,7 @@ Logged in users can.
     ...         '~name12/gnome-terminal/main')
     >>> nopriv_browser.getControl('Whiteboard').value = (
     ...     'This is the whiteboard')
+    >>> cancel = nopriv_browser.getLink('Cancel')
     >>> nopriv_browser.getControl('Register').click()
 
 Registering the merge proposal takes the user back to the
@@ -91,6 +92,8 @@ merge proposal is considered a "landing target" with an optional
     ...         for mp in tag.findAll(attrs={'class': 'mergeproposal'}):
     ...             print extract_text(mp)
 
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
     This is the whiteboard
@@ -111,6 +114,7 @@ shown.
     ...         '~name12/gnome-terminal/main')
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'This is the whiteboard')
+    >>> cancel = sample_browser.getLink('Cancel')
     >>> sample_browser.getControl('Register').click()
 
     >>> sample_browser.open(
@@ -162,6 +166,7 @@ and merging, so we have to settle for the sample data.
     ...         '~name12/firefox/main')
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'This is the whiteboard')
+    >>> cancel = sample_browser.getLink('Cancel')
     >>> sample_browser.getControl('Register').click()
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merges')
@@ -293,6 +298,7 @@ When a merge proposal is deleted, the user is taken back to the main page
 for the source_branch.
 
     >>> sample_browser.getLink('Delete proposal to merge').click()
+    >>> cancel = sample_browser.getLink('Cancel')
     >>> sample_browser.getControl('Delete proposal').click()
     >>> print sample_browser.url
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9
@@ -315,8 +321,10 @@ the target branch.
     ...     '~sabdfl/firefox/release-0.8')
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'This is the whiteboard')
+    >>> cancel = sample_browser.getLink('Cancel')
     >>> sample_browser.getControl('Register').click()
-    >>> sample_browser.getLink(url="+merges").click()
+    >>> sample_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merges')
     >>> printMergeProposals(sample_browser, 'landing-targets')
     ~name12/firefox/main - view proposal details
     This is the whiteboard
@@ -713,6 +721,7 @@ queue for merging branches that have been approved.
     >>> nopriv_browser.getControl(
     ...     name='field.target_branch.target_branch').value = (
     ...         '~name12/firefox/main')
+    >>> cancel = nopriv_browser.getLink('Cancel')
     >>> nopriv_browser.getControl('Register').click()
 
 Consume notification.

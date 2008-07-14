@@ -13,7 +13,7 @@ He was wondering who created that when he saw a very proeminent link, saying
     >>> soup = find_main_content(browser.contents)
     >>> print re.sub(r'\s+', ' ', soup('h1')[0].findNext('p').renderContents())
     Alexander Limi does not use Launchpad. This page was created...
-    ...2005-06-06...<strong>when importing bugs from 
+    ...2005-06-06...<strong>when importing bugs from
     http://bugzilla.ubuntu.com/</strong>.
 
     >>> browser.getLink("Are you Alexander Limi?").click()
@@ -102,12 +102,12 @@ can be claimed) they /do/ have a preferred email and we need to handle this.
 
     (To see spiv's email we must be logged in, so we'll use user_browser)
     >>> user_browser.open('http://launchpad.dev/~spiv')
-    >>> print user_browser.contents
-    <...
-    ...<a...Are you Andrew Bennetts?</a>...
-    ...Confirmed e-mail addresses...
-    ...andrew.bennetts@ubuntulinux.com...
-    ...
+    >>> unregistered_user_info = find_tag_by_id(
+    ...     user_browser.contents, 'not-lp-user-or-team')
+    >>> unregistered_user_info.li.renderContents()
+    '...andrew.bennetts@ubuntulinux.com...'
+    >>> unregistered_user_info.a.renderContents()
+    'Are you Andrew Bennetts?'
 
     >>> anon_browser.open('http://launchpad.dev/~spiv')
     >>> anon_browser.getLink("Are you Andrew Bennetts?").click()

@@ -21,10 +21,11 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-subscribers" />
-</metal:leftportlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-privacy" />
+      <div tal:replace="structure context/@@+portlet-details" />
+      <div tal:replace="structure context/@@+portlet-subscribers" />
+    </metal:portlets>
 
 <div metal:fill-slot="main">
 

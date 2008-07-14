@@ -699,10 +699,9 @@ class BranchDeletionView(LaunchpadFormView):
             row_dict[action].append(row)
         return row_dict
 
-    @action(_('Cancel'), name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the branch page."""
-        self.next_url = canonical_url(self.context)
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
@@ -1001,7 +1000,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     custom_widget('target_branch', TargetBranchWidget)
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
 
     def initialize(self):
@@ -1026,15 +1025,12 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             dependent_branch = None
 
         try:
-            source_branch.addLandingTarget(
+            proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
                 dependent_branch=dependent_branch, whiteboard=whiteboard)
+            self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the branch page."""
 
     def validate(self, data):
         source_branch = self.context

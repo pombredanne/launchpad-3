@@ -211,9 +211,10 @@ class LaunchpadObjectFactory:
             name, title, summary, owner)
 
     def makeProduct(self, name=None, project=None, displayname=None,
-                    licenses=None):
+                    licenses=None, owner=None):
         """Create and return a new, arbitrary Product."""
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:

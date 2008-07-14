@@ -1417,7 +1417,7 @@ team_edit = 'Edit team information'
 
 team_editproposed = ContextBrowsername('Proposed members of %s')
 
-team_index = ContextBrowsername(smartquote('"%s" team in Launchpad'))
+team_index = ContextBrowsername('%s in Launchpad')
 
 team_invitations = ContextBrowsername("Invitations sent to %s")
 
