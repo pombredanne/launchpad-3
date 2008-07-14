@@ -7,7 +7,7 @@ First, No Privileges Person will create a new team.  Then he will request a
 mailing list for that team, and an expert will approve that request.
 
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
@@ -58,7 +58,7 @@ what that is on the Mailman side.
 Once the list is created, the team owner can change the welcome message
 through the web.
 
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
+    >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
     >>> browser.getControl('Welcome message text').value = (
     ...     'Salutations team members!')
     >>> serial_watcher.resync()

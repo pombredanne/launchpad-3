@@ -12,7 +12,7 @@ Mailman and Launchpad should eventually resynchronize their state
 automatically.
 
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
@@ -58,7 +58,7 @@ Now we just wait for Mailman to resynchronize its state with Launchpad.
 However, if the list status on Launchpad is CONSTRUCTING, but the mailing list
 does not actually exist in Mailman, then Mailman will create it.
 
-    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-two'
     >>> browser.getControl('Display Name').value = 'ITest Two'
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
