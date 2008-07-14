@@ -313,7 +313,6 @@ class CodeImportNewView(CodeImportBaseView):
                     branch_name=existing_branch.name))
 
 
-
 class EditCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
@@ -381,7 +380,17 @@ class CodeImportEditView(CodeImportBaseView):
         else:
             return None
 
-    def _makeStatusChangeAction(label, status_method_name, status, text):
+    def _makeEditAction(label, method_name, status, text):
+        """Make an Action to call a particular code import method.
+
+        :param label: The label for the action, which will end up as the
+             button title.
+        :param method_name: The name of the method of the code import to call.
+        :param status: If the code import has this as its review_status, don't
+            show the button (always show the button if it is None).
+        :param text: The text to go after 'The code import has been' in a
+            notifcation, if a change was made.
+        """
         if status is not None:
             def condition(self, ignored):
                 return self._showButtonForStatus(status)
@@ -390,7 +399,7 @@ class CodeImportEditView(CodeImportBaseView):
         def success(self, action, data):
             """Make the requested status change."""
             whiteboard = self._updateWhiteboardAndCheckIfChangedFromData(data)
-            updated = getattr(self.code_import, status_method_name)(
+            updated = getattr(self.code_import, method_name)(
                 data, self.user)
             if updated:
                 self.request.response.addNotification(
@@ -398,22 +407,20 @@ class CodeImportEditView(CodeImportBaseView):
             else:
                 self.request.response.addNotification('No changes made.')
         return form.Action(
-            label, name=status_method_name, success=success,
-            condition=condition)
+            label, name=method_name, success=success, condition=condition)
 
     actions = form.Actions(
-        _makeStatusChangeAction(
-            _('Update'), 'changeDetails', None, 'updated'),
-        _makeStatusChangeAction(
+        _makeEditAction(_('Update'), 'changeDetails', None, 'updated'),
+        _makeEditAction(
             _('Approve'), 'approve', CodeImportReviewStatus.REVIEWED,
             'approved'),
-        _makeStatusChangeAction(
+        _makeEditAction(
             _('Mark Invalid'), 'invalidate', CodeImportReviewStatus.INVALID,
             'set as invalid'),
-        _makeStatusChangeAction(
+        _makeEditAction(
             _('Suspend'), 'suspend', CodeImportReviewStatus.SUSPENDED,
             'suspended'),
-        _makeStatusChangeAction(
+        _makeEditAction(
             _('Mark Failing'), 'markFailing', CodeImportReviewStatus.FAILING,
             'marked as failing'),
         )
