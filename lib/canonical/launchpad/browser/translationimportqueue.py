@@ -216,6 +216,9 @@ class TranslationImportQueueView(HasTranslationImportsView):
         """Useful initialization for this view class."""
         self._initial_values = {}
         LaunchpadFormView.initialize(self)
+        target_filter = self.widgets['filter_target']
+        if target_filter.hasInput() and not target_filter.hasValidInput():
+            raise UnexpectedFormData("Unknown target.")
 
     @property
     def entries(self):
@@ -240,16 +243,6 @@ class TranslationImportQueueView(HasTranslationImportsView):
             name='filter_target',
             source=TranslationImportTargetVocabularyFactory(self),
             title='Choose which target to show')
-
-
-class TolerantVocabulary(SimpleVocabulary):
-    """Simple vocabulary that returns None for unknown names."""
-    default_term = None
-
-    def getTerm(self, value):
-        if value not in self:
-            return self.default_term
-        return super(TolerantVocabulary, self).getTerm(value)
 
 
 class TranslationImportTargetVocabularyFactory:
@@ -289,8 +282,7 @@ class TranslationImportTargetVocabularyFactory:
                     # Unknown status.  Ignore.
                     pass
 
-        all_term = SimpleTerm('all', 'all', 'All targets')
-        terms = [all_term]
+        terms = [SimpleTerm('all', 'all', 'All targets')]
         for target in targets:
             if IDistroSeries.providedBy(target):
                 # Distroseries are not pillar names, we need to note
@@ -304,7 +296,4 @@ class TranslationImportTargetVocabularyFactory:
                 displayname += '*'
 
             terms.append(SimpleTerm(term_name, term_name, displayname))
-        vocab = TolerantVocabulary(terms)
-        vocab.default_term = all_term
-        return vocab
-
+        return SimpleVocabulary(terms)

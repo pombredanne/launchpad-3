@@ -300,7 +300,7 @@ mistyped URL, the filter value is ignored.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
     ...     'field.filter_target=bogus/target')
-
-    >>> print_batch_heading(browser)
-    1 ... 5 of 103 results
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: Unknown target.
 
