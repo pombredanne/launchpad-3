@@ -29,7 +29,7 @@ class IMessage(Interface):
     This is like an email (RFC822) message, though it could be created through
     the web as well.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry('message')
 
     id = Int(
             title=_('ID'), required=True, readonly=True,
