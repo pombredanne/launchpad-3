@@ -34,7 +34,8 @@
       <ol>
         <li>Purchase a Launchpad subscription in the
           <a tal:define="config modules/canonical.config/config"
-             tal:attributes="href config/commercial/purchase_subscription_url">
+             tal:attributes="href config/commercial/purchase_subscription_url;
+                             target string:_blank">
           Canonical Shop</a>.
         </li>
         <li>You will receive an email that your order has been processed.</li>
