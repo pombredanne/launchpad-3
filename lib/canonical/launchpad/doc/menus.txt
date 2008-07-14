@@ -4,8 +4,7 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
 
 === Construct an example url hierarchy ===
 
-    >>> from canonical.launchpad.webapp import (
-    ...     nearest_adapter, nearest_context_with_adapter, canonical_url)
+    >>> from canonical.launchpad.webapp import canonical_url
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IApplicationMenu, ICanonicalUrlData, IContextMenu, IFacetLink,
     ...     IFacetMenu, ILink, ILinkData)
