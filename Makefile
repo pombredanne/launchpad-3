@@ -144,11 +144,6 @@ run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
 
-run_all_quickly_and_quietly: stop_quickly_and_quietly
-	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
-		 -C $(CONFFILE) > /tmp/${LPCONFIG}-quiet.log 2>&1
-
 pull_branches: bzr_version_info
 	# Mirror the hosted branches in the development upload area to the
 	# mirrored area.
@@ -185,11 +180,6 @@ start: inplace stop bzr_version_info
 stop: build
 	@ $(APPSERVER_ENV) ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
-
-stop_quickly_and_quietly:
-	@ $(APPSERVER_ENV) ${PYTHON} \
-	  utilities/killservice.py librarian buildsequencer launchpad mailman \
-	  > /dev/null 2>&1
 
 shutdown: scheduleoutage stop
 	rm -f +maintenancetime.txt

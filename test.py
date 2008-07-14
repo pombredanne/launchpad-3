@@ -63,6 +63,12 @@ importfascist.install_import_fascist()
 import warninghandler
 warninghandler.install_warning_handler()
 
+# Ensure that atexit handlers are executed on TERM.
+import signal
+def exit_with_atexit_handlers(*ignored):
+    sys.exit(-1 * signal.SIGTERM)
+signal.signal(signal.SIGTERM, exit_with_atexit_handlers)
+
 # Ensure overrides are generated
 from configs import generate_overrides
 generate_overrides()
