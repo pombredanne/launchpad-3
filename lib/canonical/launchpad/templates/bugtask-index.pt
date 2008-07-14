@@ -1,51 +1,36 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:tal="http://xml.zope.org/namespaces/tal"
-    xmlns:metal="http://xml.zope.org/namespaces/metal"
-    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-    xml:lang="en"
-    lang="en"
-    dir="ltr"
-    metal:use-macro="view/macro:page/default2.0"
-    i18n:domain="malone"
-    >
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+>
   <body>
-    <metal:portlets fill-slot="portlets">
-
-      <div tal:replace="structure context/bug/@@+portlet-duplicates" />
-      <div tal:replace="structure context/bug/@@+portlet-subscribers" />
-      <div tal:replace="structure context/bug/@@+portlet-questions" />
-      <div tal:replace="structure context/bug/@@+portlet-specs" />
-      <div tal:replace="structure context/bug/@@+portlet-attachments" />
-      <div tal:replace="structure context/bug/@@+portlet-watch" />
-      <div tal:replace="structure context/@@+portlet-search" />
-
-      <div
-          tal:replace="structure context/target/@@+portlet-details | nothing"
-          />
-    </metal:portlets>
-
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
-      <div style="clear: both">
-        <div style="float: right; width: 65%; text-align: right">
+      <p class="clearfix">
+        <span class="object timestamp">
           Reported
+          by <tal:reporter replace="structure context/bug/owner/fmt:link" />
           <span
               tal:attributes="title context/bug/datecreated/fmt:datetime"
               tal:content="context/bug/datecreated/fmt:displaydate" />
-          by <tal:reporter replace="structure context/bug/owner/fmt:link" />
           <tal:activitylog
             define="link context_menu/activitylog"
             condition="link/enabled"
           >(<tal:link replace="structure link/render" />)</tal:activitylog>
-        </div>
-        <div style="float: left; width: 25%;">
+        </span>
+        <span class="object identifier">
           <tal:icon replace="structure context/image:icon" />
           Bug <tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
           condition="context/bug/name">
           (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>:
-        </div>
-      </div>
-      <h1 style="clear: both;">
+        </span>
+      </p>
+      <tal:privacy replace="structure context/bug/@@+portlet-privacy" />
+      <h1>
         <tal:summary replace="context/bug/title" />
         <a href="+edit">
           <img src="/@@/edit" alt="[edit]" title="Edit this summary" />
@@ -130,21 +115,14 @@
 
       <table style="width: 100%; margin-bottom: 0.33em;">
         <tr>
-          <td style="text-align: left; width: 33%;">
+          <td style="text-align: left; width: 50%;">
             <tal:markduplicate
                 define="link context_menu/markduplicate"
                 condition="link/enabled"
                 replace="structure link/render" />
           </td>
 
-          <td style="text-align: center; width: 34%;">
-            <tal:visibility
-                define="link context_menu/visibility"
-                condition="link/enabled"
-                replace="structure link/render" />
-          </td>
-
-          <td style="text-align: right; width: 33%;">
+          <td style="text-align: right; width: 50%;">
             <tal:createquestion
                 define="link context_menu/createquestion"
                 condition="link/enabled"
@@ -160,6 +138,9 @@
 
       <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
+      <div id="maincontentsub">
+        <div id="nonportlets">
+
       <div class="report">
         <tal:user condition="view/user">
           <tal:description
@@ -172,7 +153,6 @@
 
         <div id="bug-description" tal:content="structure description" />
 
-        <div style="width: 100%; clear: both;">
           <div id="bug-tags" tal:define="tags context/bug/tags" tal:condition="tags"
                style="width: 45%: text-align: left; float: right;">
             Tags:
@@ -181,7 +161,7 @@
                tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
           </div>
 
-          <div style="width: 45%: text-align: right; float: left;">
+          <div style="width: 45%: text-align: right; float: left;" class="clearfix">
             <tal:editdescription
                 define="link context_menu/editdescription"
                 condition="link/enabled"
@@ -189,8 +169,8 @@
             <span tal:condition="view/wasDescriptionModified" class="discreet"
             >(see <a href="comments/0">original description</a>)</span>
           </div>
-        </div>
-        <div style="clear:both; height: 1em;"></div>
+
+        <div class="clearfix"></div>
       </div>
 
       <tal:branches define="bug_branches view/bug_branches"
@@ -271,8 +251,6 @@
         </tal:comment-box>
       </tal:comment>
 
-      <div style="clear:both; height: 1em;">&nbsp;</div>
-
       <tal:logged-in condition="view/user">
         <fieldset class="collapsible collapsed">
           <legend>Add a comment/attachment</legend>
@@ -320,6 +298,21 @@
             for <tal:context replace="context/target/displayname" />
           </li>
         </ul>
+      </div>
+
+        </div><!-- id="nonportlets"-->
+      </div><!--- id="maincontentsub"-->
+      <div id="portlets">
+        <div
+          tal:replace="structure context/target/@@+portlet-details | nothing"
+        />
+        <div tal:replace="structure context/bug/@@+portlet-duplicates" />
+        <div tal:replace="structure context/bug/@@+portlet-subscribers" />
+        <div tal:replace="structure context/bug/@@+portlet-questions" />
+        <div tal:replace="structure context/bug/@@+portlet-specs" />
+        <div tal:replace="structure context/bug/@@+portlet-attachments" />
+        <div tal:replace="structure context/bug/@@+portlet-watch" />
+        <div tal:replace="structure context/@@+portlet-search" />
       </div>
     </div>
   </body>
