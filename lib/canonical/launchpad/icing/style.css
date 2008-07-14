@@ -618,8 +618,7 @@ ul#menuroot li.selected a.breadcrumb {
 /* The segments have chevrons to convey their parent-child relationship: */
 #lp-hierarchy .item {
   background: url(navigation-hierarchy-chevron-normal) no-repeat right;
-  display: block;
-  float: left;
+  display: inline-block;
   min-height: 25px;
   vertical-align: middle;
 }
@@ -662,7 +661,7 @@ ul#menuroot li.selected a.breadcrumb {
   max-width: 72em;
   padding: 0;
   text-align: center;
-  margin: 0 auto; 
+  margin: 0 auto;
 }
 /* The tabs have text separators for the benefit of those without CSS: */
 #lp-apps small {display: none;}
@@ -670,7 +669,7 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps span {
   position: relative;
   float: left;
-  width: 16%; /* = (100% - 1%) / 6 */
+  width: 16.3%; /* = (100% - 1%) / 6 */
   max-width: 12em;
   margin: 0;
   margin-right: 0.2em;

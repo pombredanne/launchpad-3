@@ -122,6 +122,7 @@
       tal:condition="view/macro:pagehas/applicationtabs"
       tal:define="facetmenu CONTEXTS/menu:facet"
       id="lp-apps"
+      class="clearfix"
     >
       <tal:XXX replace="nothing">
         # XXX mpt 20080702: The HTML comment works around bug 229931.
