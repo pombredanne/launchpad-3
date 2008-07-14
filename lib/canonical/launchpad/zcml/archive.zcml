@@ -95,6 +95,10 @@
       name="+builds-list"
       template="../templates/builds-list.pt"
       />
+    <browser:page
+      name="+portlet-privacy"
+      template="../templates/archive-portlet-privacy.pt"
+      />
   </browser:pages>
 
   <browser:page
