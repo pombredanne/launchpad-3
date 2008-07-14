@@ -249,9 +249,9 @@ class HasTranslationImportsView(LaunchpadFormView):
         target = None
         file_extension = None
         status = None
-        filter_target_widget = self.widgets.get('filter_target')
-        if filter_target_widget and filter_target_widget.hasValidInput():
-            target = filter_target_widget.getInputValue()
+        target_widget = self.widgets.get('filter_target')
+        if target_widget is not None and target_widget.hasValidInput():
+            target = target_widget.getInputValue()
             pillar_name_set = getUtility(IPillarNameSet)
             if target == 'all':
                 target = None
