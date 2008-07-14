@@ -9,8 +9,8 @@ address of our new team.  When the mailing lists are created, messages get
 sent to the members of the team informing them of their new list.  We can
 ignore these (there's only one, currently).
 
-    >>> import itest_helper
-    >>> list_one = itest_helper.create_list('itest-one')
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> list_one = helpers.create_list('itest-one')
     >>> from operator import itemgetter
     >>> for message in sorted(smtpd.getMessages(), key=itemgetter('sender')):
     ...     print message['subject']
@@ -33,16 +33,18 @@ delivered.
     >>> from canonical.launchpad.ftests import sync
     >>> sync(list_one)
     >>> list_one.subscribe(anne)
-    >>> from canonical.database.sqlbase import commit
+
     >>> logout()
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
-    >>> commit()
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> serial_watcher = logwatcher.LogWatcher('serial')
+    >>> import transaction
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
 It's possible to set the team as a project's answer contact.
 
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/~itest-one/+contactaddress')
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev:8085/~itest-one/+contactaddress')
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()
 
@@ -50,7 +52,8 @@ It's possible to set the team as a project's answer contact.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0The Launchpad mailing list for this team...]
 
-    >>> browser.open('http://answers.launchpad.dev/firefox/+answer-contact')
+    >>> browser.open(
+    ...     'http://answers.launchpad.dev:8085/firefox/+answer-contact')
     >>> browser.getControl(name='field.answer_contact_teams').displayValue = [
     ...     'Itest One']
     >>> browser.getControl('Continue').click()
@@ -58,9 +61,9 @@ It's possible to set the team as a project's answer contact.
 When the contact address for the team is its mailing list, creating new
 questions will email the mailing list.
 
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+    >>> smtp_watcher = logwatcher.LogWatcher('smtp')
 
-    >>> browser.open('http://answers.launchpad.dev/firefox/+addquestion')
+    >>> browser.open('http://answers.launchpad.dev:8085/firefox/+addquestion')
     >>> browser.getControl('Summary').value = 'A new question'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Description').value = 'More detail.'
@@ -160,8 +163,8 @@ Here is the message to the archive submission address.
     >>> print messages[2].as_string()
     MIME-Version: 1.0
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     ...
     <BLANKLINE>
     <BLANKLINE>
@@ -170,7 +173,7 @@ Similarly, if we subscribe our new team to a blueprint, a notification will be
 sent to Anne and to the archive via the mailing list.
 
     >>> browser.open(
-    ...     'http://launchpad.dev/firefox/+spec/canvas/+addsubscriber')
+    ...     'http://launchpad.dev:8085/firefox/+spec/canvas/+addsubscriber')
     >>> browser.getControl('Subscriber').value = 'itest-one'
     >>> browser.getControl('Continue').click()
 
@@ -217,8 +220,8 @@ This one gets sent to Anne...
     Subject: [Itest-one] [Blueprint canvas] Support <canvas> Objects
     X-BeenThere: itest-one@lists.launchpad.dev
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     You are now subscribed to the blueprint canvas - Support <canvas>
@@ -238,7 +241,7 @@ If we change the team's contact address to something other than the
 launchpad-hosted mailing list, though, the notifications won't be sent to the
 mailing list, they'll be sent to the team members individually.
 
-    >>> browser.open('http://launchpad.dev/~itest-one/+contactaddress')
+    >>> browser.open('http://launchpad.dev:8085/~itest-one/+contactaddress')
     >>> browser.getControl('Each member individually').selected = True
     >>> browser.getControl('Change').click()
 
@@ -246,7 +249,7 @@ mailing list, they'll be sent to the team members individually.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0Each member individually']
 
-    >>> browser.open('http://answers.launchpad.dev/firefox/+addquestion')
+    >>> browser.open('http://answers.launchpad.dev:8085/firefox/+addquestion')
     >>> browser.getControl('Summary').value = 'Another question'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Description').value = 'More detail.'
@@ -318,6 +321,8 @@ member.
 When emails are sent directly to the mailing list address they're still
 delivered since the mailing list is still active.
 
+    >>> from canonical.launchpad.ftests import ANONYMOUS
+    >>> login(ANONYMOUS)
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
     ... From: %s
@@ -327,6 +332,7 @@ delivered since the mailing list is still active.
     ...
     ... Hi, I am a member of Launchpad.
     ... """ % anne.preferredemail.email)
+    >>> logout()
     >>> smtp_watcher.wait()
     >>> messages = smtpd.getMessages()
 
@@ -364,8 +370,8 @@ address both get copies of the message.
     Subject: [Itest-one] A member post
     X-BeenThere: itest-one@lists.launchpad.dev
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am a member of Launchpad.

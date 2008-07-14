@@ -41,6 +41,11 @@ os.environ['STORM_CEXTENSIONS'] = '1'
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(here, 'lib'))
 
+# Mailman lives in a subdirectory.
+mailman_dir = os.path.join(here, 'lib', 'mailman')
+if os.path.isdir(mailman_dir):
+    sys.path.insert(0, mailman_dir)
+
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
@@ -186,4 +191,3 @@ if __name__ == '__main__':
     if main_process and options.verbose >= 3:
         profiled.report_profile_stats()
     sys.exit(result)
-
