@@ -63,8 +63,6 @@ for this new team.
 This time, however, the mailing list expert declines the application for a new
 mailing list.
 
-    >>> from canonical.launchpad.interfaces import MailingListStatus
-    >>> list_two = helpers.review_list('itest-two', MailingListStatus.DECLINED)
-
+    >>> list_two = helpers.review_list('itest-two', 'decline')
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']

@@ -57,13 +57,15 @@ def get_size(path):
         raise
 
 
-def review_list(list_name):
+def review_list(list_name, status='approve'):
     """Helper for approving a mailing list."""
+    # Circular import.
+    from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
     # Watch Mailman's logs/serial file.
     serial_watcher = LogWatcher('serial')
-    browser = Browser('no-priv@canonical.com:test')
+    browser = Browser('foo.bar@canonical.com:test')
     browser.open('http://launchpad.dev:8085/+mailinglists')
-    browser.getControl(name='field.' + list_name).value = ['approve']
+    browser.getControl(name='field.' + list_name).value = [status]
     browser.getControl('Submit').click()
     serial_watcher.wait()
     login('foo.bar@canonical.com')

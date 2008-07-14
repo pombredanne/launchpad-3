@@ -27,3 +27,14 @@ Mailman must also be able to import the shared package.
 
     >>> withlist('withlist_2.can_import', '-q')
     99
+
+
+== XMLRPC client ==
+
+Mailman communicates with Launchpad via XMLRPC, pulled by Mailman from
+Launchpad.  Everytime it does this (every few seconds), Mailman logs the
+connection.
+
+    >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
+    >>> xmlrpc = LogWatcher('xmlrpc')
+    >>> xmlrpc.wait()
