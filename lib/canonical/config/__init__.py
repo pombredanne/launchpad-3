@@ -38,7 +38,7 @@ class CanonicalConfig:
         """Create a new instance of CanonicalConfig.
 
         :param instance_name: the configuration instance to use. Defaults to
-            the value of the LPCONFIG environment variable
+            the value of the LPCONFIG environment variable.
         :param process_name: the process configuration name to use. Defaults
             to the basename of sys.argv[0] without any extension.
        """
@@ -121,7 +121,7 @@ class CanonicalConfig:
     def _setZConfig(self, here, config_dir):
         """Modify the config, adding automatically generated settings"""
         # Root of the launchpad tree so code can stop jumping through hoops
-        # with __file__
+        # with __file__.
         self.root = os.path.abspath(os.path.join(
             here, os.pardir, os.pardir, os.pardir))
 
