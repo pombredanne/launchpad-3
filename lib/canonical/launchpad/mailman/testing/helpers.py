@@ -29,7 +29,7 @@ from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.testing.pages import setupBrowser
+from canonical.launchpad.testing.browser import Browser
 
 from Mailman import mm_cfg
 from Mailman.MailList import MailList
@@ -57,25 +57,16 @@ def get_size(path):
         raise
 
 
-def review_list(list_name, status=None):
-    """Helper for approving a mailing list.
-
-    This functionality is not yet exposed through the web.
-    """
-    # Circular import.
-    from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
-    # These imports are at file scope because the paths are not yet set up
-    # correctly when this module is imported.
-    login('foo.bar@canonical.com')
-    mailinglists_helper.review_list(list_name, status)
-    # Commit the change and wait until Mailman has actually created the
-    # mailing list.  Don't worry about the return value because if the log
-    # watcher times out, other things will notice this failure.
+def review_list(list_name):
+    """Helper for approving a mailing list."""
+    # Watch Mailman's logs/serial file.
     serial_watcher = LogWatcher('serial')
-    transaction.commit()
-    # Wait until Mailman has actually created the mailing list.
+    browser = Browser('no-priv@canonical.com:test')
+    browser.open('http://launchpad.dev:8085/+mailinglists')
+    browser.getControl(name='field.' + list_name).value = ['approve']
+    browser.getControl('Submit').click()
     serial_watcher.wait()
-    # Return an updated mailing list object.
+    login('foo.bar@canonical.com')
     mailing_list = getUtility(IMailingListSet).get(list_name)
     logout()
     return mailing_list
@@ -85,7 +76,7 @@ def create_list(team_name):
     """Do everything you need to do to make the team's list live."""
     displayname = SPACE.join(
         word.capitalize() for word in team_name.split('-'))
-    browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    browser = Browser('no-priv@canonical.com:test')
     # Create the team.
     browser.open('http://launchpad.dev/people/+newteam')
     browser.getControl(name='field.name').value = team_name
