@@ -8,14 +8,16 @@ Mailman adds to the bottom of very message.
 First, create the mailing list, which will send a notification messages
 to all the members of the mailing list.  We can ignore these messages.
 
-    >>> import itest_helper
-    >>> list_one = itest_helper.create_list('itest-one')
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> list_one = helpers.create_list('itest-one')
+
+    # Ignore the list creation message.
     >>> smtpd.reset()
 
 Add a member of the mailing list so that we can post messages to the list.
 
+    >>> import transaction
     >>> from operator import itemgetter
-    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -27,15 +29,17 @@ Add a member of the mailing list so that we can post messages to the list.
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
     >>> logout()
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
-    >>> commit()
+
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> serial_watcher = logwatcher.LogWatcher('serial')
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
     >>> from Mailman.MailList import MailList
     >>> m = MailList('itest-one', lock=False)
     >>> sorted(m.getMembers())
     ['anne.person@example.com', 'aperson@example.org',
-     'archive@mail-archive.com']
+     'archive@mail-archive.dev']
 
 Send a message to the list, then retrieve it from the mbox.  We'll examine its
 contents below.
@@ -45,7 +49,7 @@ contents below.
     u'anne.person@example.com'
     >>> logout()
 
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+    >>> smtp_watcher = logwatcher.LogWatcher('smtp')
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
@@ -56,9 +60,6 @@ contents below.
     ... Hi, I am a member of this team's list.
     ... """)
     >>> smtp_watcher.wait()
-    >>> messages = smtpd.getMessages()
-    >>> messages.sort(key=itemgetter('sender'))
-    >>> message = messages[0]
 
 
 == VERP headers ==
@@ -74,10 +75,20 @@ rewrites there are.
 the MTA, but it's close enough in intent and exactly the same in
 implementation so we use the same terminology in Mailman.)
 
-    >>> message['sender']
-    'itest-one-bounces+anne.person=example.com@lists.launchpad.dev'
-    >>> message['errors-to']
-    'itest-one-bounces+anne.person=example.com@lists.launchpad.dev'
+    >>> messages = sorted(smtpd.getMessages(), key=itemgetter('sender'))
+    >>> for message in messages:
+    ...     print message['sender']
+    ...     print message['errors-to']
+    ...     print '---'
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    ---
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    ---
+
+For the following discussion, it doesn't matter which message we look at in
+detail, so the last one in the sorted sequence is just fine.
 
 
 == RFC 2369 headers ==
@@ -127,7 +138,7 @@ list.  It is a list-wide url, not a url-specific to the individual message
 
 This url should exactly match the link given on the team's overview page.
 
-    >>> browser = itest_helper.make_browser()
+    >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~itest-one')
     >>> browser.getLink(id='mailing-list-archive')
     <Link text='Mailing list archive'

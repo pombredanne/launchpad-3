@@ -6,8 +6,10 @@ by a sender who is not a Launchpad member will be summarily discarded.
 First, create the mailing list, which will send a notification messages
 to all the members of the mailing list.  We can ignore these messages.
 
-    >>> import itest_helper
-    >>> list_one = itest_helper.create_list('itest-one')
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> list_one = helpers.create_list('itest-one')
+
+    # We don't care about the list creation notification message.
     >>> smtpd.reset()
 
 
@@ -16,8 +18,8 @@ to all the members of the mailing list.  We can ignore these messages.
 Postings from addresses that are not registered and verified with Launchpad
 are summarily discarded.
 
-    # Watch Mailman's logs/vette for possible log messages.
-    >>> vette_watcher = itest_helper.LogWatcher('vette')
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> vette_watcher = logwatcher.LogWatcher('vette')
 
 Inject a message from a non-member into Mailman's incoming queue.
 
@@ -46,16 +48,17 @@ will also be summarily discarded.  To demonstrate this, we'll add Anne as a
 normal Launchpad user, but de-certify her alternative address.  This is
 equivalent to making it unvalidated.
 
+    >>> import transaction
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
-    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+
     >>> login('foo.bar@canonical.com')
     >>> anne = new_person('Anne')
     >>> alternative_email = get_alternative_email(anne)
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative_email.status = EmailAddressStatus.NEW
-    >>> commit()
+    >>> transaction.commit()
     >>> print alternative_email.email, alternative_email.status.title
     aperson@example.org New Email Address
 
@@ -132,10 +135,10 @@ administrator.
 
 The message is held for moderation by the team administrator.
 
-    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     1
-    >>> itest_helper.print_mailman_hold('itest-one', holds[0])
+    >>> helpers.print_mailman_hold('itest-one', holds[0])
     From: anne.person@example.com
     To: itest-one@lists.launchpad.dev
     Subject: An unsubscribed post
@@ -148,17 +151,17 @@ The team administrator can accept, decline or discard this posting.  By
 declining the message, Launchpad forgets about it, while Mailman sends a
 rejection notice to Anne.
 
-    >>> browser = itest_helper.make_browser()
+    >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Ccaribou%3E').value = [
     ...     'reject']
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+    >>> serial_watcher = logwatcher.LogWatcher('serial')
+    >>> smtp_watcher = logwatcher.LogWatcher('smtp')
 
     >>> browser.getControl('Moderate').click()
     >>> serial_watcher.wait()
 
-    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     0
 
@@ -239,7 +242,7 @@ rejection notice is sent to Anne.
     >>> smtp_watcher.wait()
     'Timed out'
 
-    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     0
 
@@ -281,10 +284,10 @@ This time, her message is on topic and is accepted.
         Message-ID: <elephant>
     ...
 
-    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     1
-    >>> itest_helper.print_mailman_hold('itest-one', holds[0])
+    >>> helpers.print_mailman_hold('itest-one', holds[0])
     From: anne.person@example.com
     To: itest-one@lists.launchpad.dev
     Subject: Another unsubscribed post
@@ -302,7 +305,7 @@ This time, her message is on topic and is accepted.
     >>> serial_watcher.wait()
     >>> smtp_watcher.wait()
 
-    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     0
 
@@ -324,8 +327,8 @@ This time, her message is on topic and is accepted.
     List-Archive: <http://lists.launchpad.dev/itest-one>
     List-Owner: <http://launchpad.dev/~itest-one>
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am still not yet a member of this team's list.
@@ -346,20 +349,17 @@ to the mailing list.
     # Subscribe Anne with her preferred address.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.database.sqlbase import commit
     >>> login('foo.bar@canonical.com')
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
-    >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
     >>> print anne.preferredemail.email, anne.preferredemail.status.title
     anne.person@example.com Preferred Email Address
-    >>> archive_watcher = itest_helper.LogWatcher('mhonarc')
+    >>> archive_watcher = logwatcher.LogWatcher('mhonarc')
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -368,6 +368,7 @@ to the mailing list.
     ...
     ... Hi, I am now a member of this team's list!
     ... """)
+    >>> logout()
     >>> smtp_watcher.wait()
 
 Anne's message got posted to the mailing list.  Two copies were sent; one to
@@ -410,8 +411,8 @@ Here's the copy sent to Anne...
     Message-ID: <falcon>
     Subject: [Itest-one] A member post
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am now a member of this team's list!
@@ -431,8 +432,7 @@ In addition, the in-house MHonArc archiver has archived this message.
     >>> archive_watcher.wait()
     >>> archive_watcher.wait()
     'Timed out'
-    >>> from itest_helper import collect_archive_message_ids
-    >>> collect_archive_message_ids('itest-one')
+    >>> helpers.collect_archive_message_ids('itest-one')
     ['elephant', 'falcon']
 
 Anne cannot post from her alternative email address because it has not been
@@ -454,9 +454,11 @@ validated yet.
 
 However, once she validates this address, she can post from it.
 
+    >>> login('foo.bar@canonical.com')
     >>> alternative_email.status = EmailAddressStatus.VALIDATED
+    >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
     >>> smtp_watcher.resync()
@@ -499,8 +501,8 @@ However, once she validates this address, she can post from it.
     Message-ID: <giraffe>
     Subject: [Itest-one] A member post
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am now a verified member of this team!
@@ -515,7 +517,7 @@ However, once she validates this address, she can post from it.
 There should also be no held requests pending.
 
     # Use a helper for complete safety.
-    >>> len(itest_helper.pending_hold_ids('itest-one'))
+    >>> len(helpers.pending_hold_ids('itest-one'))
     0
 
 
@@ -527,7 +529,7 @@ Anne now leaves the team, but she does not unsubscribe from the mailing list.
     >>> anne.leave(team_one)
     >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
 Because she is not a team member, her message is held for moderation.
@@ -571,7 +573,7 @@ not need to re-subscribe to the mailing list.
     >>> anne.join(team_one)
     >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
     >>> smtp_watcher.resync()
@@ -594,7 +596,7 @@ not need to re-subscribe to the mailing list.
     ...     print message['subject']
     itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     [Itest-one] A posting from a member once again
-    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     [Itest-one] A posting from a member once again
 
 
@@ -605,7 +607,7 @@ have their posts held for moderation.
 
     >>> login('foo.bar@canonical.com')
     >>> bart = new_person('Bart')
-    >>> commit()
+    >>> transaction.commit()
     >>> bart.personal_standing
     <DBItem PersonalStanding.UNKNOWN...
 
@@ -641,7 +643,7 @@ list.
     >>> from canonical.launchpad.interfaces import PersonalStanding
     >>> login('foo.bar@canonical.com')
     >>> bart.personal_standing = PersonalStanding.GOOD
-    >>> commit()
+    >>> transaction.commit()
 
     >>> inject('itest-one', """\
     ... From: bart.person@example.com
@@ -658,7 +660,7 @@ list.
         <kestrel>
         bart.person@example.com
         [Itest-one] A member in good standing
-    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
         <kestrel>
         bart.person@example.com
         [Itest-one] A member in good standing
@@ -666,7 +668,7 @@ list.
 A member in excellent standing can of course also post to the list.
 
     >>> bart.personal_standing = PersonalStanding.EXCELLENT
-    >>> commit()
+    >>> transaction.commit()
 
     >>> inject('itest-one', """\
     ... From: bart.person@example.com
@@ -683,7 +685,7 @@ A member in excellent standing can of course also post to the list.
         <llama>
         bart.person@example.com
         [Itest-one] A member in excellent standing
-    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
         <llama>
         bart.person@example.com
         [Itest-one] A member in excellent standing
@@ -691,7 +693,7 @@ A member in excellent standing can of course also post to the list.
 But a person in poor standing will have their messages held for approval.
 
     >>> bart.personal_standing = PersonalStanding.POOR
-    >>> commit()
+    >>> transaction.commit()
 
     >>> vette_watcher.resync()
     >>> inject('itest-one', """\
@@ -722,7 +724,7 @@ messages to the list.
 
     >>> from canonical.config import config
     >>> config.mailman.archive_address
-    'archive@mail-archive.com'
+    'archive@mail-archive.dev'
     >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: %s

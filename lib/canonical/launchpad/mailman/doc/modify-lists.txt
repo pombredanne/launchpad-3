@@ -6,8 +6,7 @@ the only thing they can change is the list's welcome message.
 First, No Privileges Person will create a new team.  Then he will request a
 mailing list for that team, and an expert will approve that request.
 
-    >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
+    >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
@@ -23,23 +22,27 @@ is created through the web, so this simulates how that would work when the
 feature is exposed.
 
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
     ...     ILaunchpadCelebrities, IMailingListSet, MailingListStatus)
 
-    >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> list_set = getUtility(IMailingListSet)
-    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-    >>> lpadmin = list(experts.allmembers)[0]
     >>> list_one = list_set.get('itest-one')
     >>> list_one.welcome_message = 'Greetings team members!'
+
+    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    >>> lpadmin = list(experts.allmembers)[0]
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
     >>> logout()
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
 
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> serial_watcher = logwatcher.LogWatcher('serial')
+
+    >>> import transaction
+    >>> transaction.commit()
     >>> serial_watcher.wait()
+
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
