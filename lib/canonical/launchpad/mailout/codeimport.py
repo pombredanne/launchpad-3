@@ -14,7 +14,7 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeImportReviewStatus,
     ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.codeimportevent import (
-    CodeImportEventDataType)
+    CodeImportEventDataType, CodeImportEventType)
 from canonical.launchpad.interfaces.productseries import (
     RevisionControlSystems)
 from canonical.launchpad.mail import format_address, simple_sendmail
