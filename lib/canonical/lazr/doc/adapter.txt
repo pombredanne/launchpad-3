@@ -14,7 +14,6 @@ First, we'll construct an example object hierarchy.
     ...     ICanonicalUrlData, IFacetMenu)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from zope.interface import implements, directlyProvides, Interface
-    >>> from zope.component import queryAdapter
     >>> from zope.security.management import endInteraction, newInteraction
 
     >>> class ObjectThatHasUrl:
