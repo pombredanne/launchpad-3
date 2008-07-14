@@ -1776,12 +1776,40 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         self.preferredemail.status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'
+        self.name = self._ensureNewName(base_new_name)
+
+    def _ensureNewName(self, base_new_name):
+        """Return a unique name."""
         new_name = base_new_name
         count = 1
         while Person.selectOneBy(name=new_name) is not None:
             new_name = base_new_name + str(count)
             count += 1
-        self.name = new_name
+        return new_name
+
+    def reactivateAccount(self, comment):
+        """Reactivate the account.
+
+        Set the account status to ACTIVE and possibly restore the user's
+        name.
+        """
+        if self.password is None:
+            raise AssertionError(
+                "User %s cannot be reactivate without first setting a "
+                "password." % self.name)
+        if self.preferredemail is None:
+            raise AssertionError(
+                "User %s cannot be reactivate without first setting a "
+                "preferred email address." % self.name)
+        self.account.status = AccountStatus.ACTIVE
+        self.account.status_comment = comment
+        if '-deactivatedaccount' in self.name:
+            # The name was changed by deactivateAccount(). Restore the
+            # name, but we must ensure it does not conflict with a current
+            # user.
+            name_parts = self.name.split('-deactivatedaccount')
+            base_new_name = name_parts[0]
+            self.name = self._ensureNewName(base_new_name)
 
     @property
     def visibility_consistency_warning(self):
