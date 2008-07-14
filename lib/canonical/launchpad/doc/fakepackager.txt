@@ -269,7 +269,7 @@ the source publishing record created are returned.
     >>> print zeca_pub.displayname, zeca_pub.status.name
     zeca 1.0-1 in hoary PENDING
 
-    >>> zeca_pub.getBuilds().count()
+    >>> len(zeca_pub.getBuilds())
     2
 
     >>> print ubuntu.getSourcePackage('zeca').currentrelease.version
@@ -280,7 +280,7 @@ version in ubuntu.
 
     >>> zeca_pub = zeca_packager.uploadSourceVersion('1.0-2')
 
-    >>> zeca_pub.getBuilds().count()
+    >>> len(zeca_pub.getBuilds())
     2
 
     >>> print ubuntu.getSourcePackage('zeca').currentrelease.version
@@ -291,7 +291,7 @@ allow unsigned uploads.
 
     >>> biscuit_pub = packager.uploadSourceVersion('1.0-1', policy="sync")
 
-    >>> biscuit_pub.getBuilds().count()
+    >>> len(biscuit_pub.getBuilds())
     2
 
     >>> print ubuntu.getSourcePackage('biscuit').currentrelease.version
@@ -321,7 +321,7 @@ So, uploading to a PPA only requires us to specify the target archive.
     >>> print ppa_pub.displayname, ppa_pub.status.name
     biscuit 1.0-5 in hoary PENDING
 
-    >>> ppa_pub.getBuilds().count()
+    >>> len(ppa_pub.getBuilds())
     1
 
 Upload errors are raised when they happen. In this case, packages

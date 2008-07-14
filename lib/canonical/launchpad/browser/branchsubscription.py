@@ -51,6 +51,8 @@ class _BranchSubscriptionView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    cancel_url = next_url
+
     def add_notification_message(self, initial,
                                  notification_level, max_diff_lines,
                                  review_level):
@@ -151,8 +153,6 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     # is never considered subscribed.
     user_is_subscribed = False
     subscribing_self = False
-    # Override the inherited property for next_url
-    next_url = None
 
     @action("Subscribe", name="subscribe_action")
     def subscribe_action(self, action, data):
@@ -168,22 +168,7 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         review_level = data['review_level']
         person = data['person']
         subscription = self.context.getSubscription(person)
-        self.next_url = canonical_url(self.context)
         if subscription is None:
-            # XXX thumper 2007-06-14 bug=117980:
-            # Restrictive policy is being enforced in the view
-            # rather than the model.
-            admins = getUtility(ILaunchpadCelebrities).admin
-            if (person.isTeam() and not self.user.inTeam(person)
-                and not self.user.inTeam(admins)):
-                # A person can only subscribe a team if they are members
-                # of that team (or a Launchpad Admin).
-                self.setFieldError(
-                    'person',
-                    "You can only subscribe teams that you are a member of.")
-                self.next_url = None
-                return
-
             self.context.subscribe(
                 person, notification_level, max_diff_lines, review_level)
 
@@ -197,6 +182,23 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
                 % person.displayname,
                 subscription.notification_level, subscription.max_diff_lines,
                 review_level)
+
+    def validate(self, data):
+        """Make sure that the if a team is subscribed, that the user is a member."""
+        celebs = getUtility(ILaunchpadCelebrities)
+        # An admin or bzr expert can subscribe anyone.
+        if self.user.inTeam(celebs.admin) or self.user.inTeam(celebs.bazaar_experts):
+            return
+            
+        person = data.get('person')
+        if (person is not None and 
+            person.isTeam() and
+            not self.user.inTeam(person)):
+            # A person can only subscribe a team if they are members
+            # of that team.
+            self.setFieldError(
+                'person',
+                "You can only subscribe teams that you are a member of.")
 
 
 class BranchSubscriptionEditView(LaunchpadEditFormView):
@@ -230,3 +232,6 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.branch)
+
+    cancel_url = next_url
+

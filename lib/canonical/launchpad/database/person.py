@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # _valid_nick() in generate_nick causes E1101
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,E1101,W0612
@@ -363,8 +363,6 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
-
-    commercial_vouchers = None
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -1092,21 +1090,20 @@ class Person(
 
     def getCommercialSubscriptionVouchers(self):
         """See `IPerson`."""
-        if self.commercial_vouchers is None:
-            voucher_proxy = getUtility(ISalesforceVoucherProxy)
-            self.commercial_vouchers = voucher_proxy.getAllVouchers(self)
-            self.unredeemed_commercial_vouchers = []
-            self.redeemed_commercial_vouchers = []
-            for voucher in self.commercial_vouchers:
-                assert voucher.status in VOUCHER_STATUSES, (
-                    "Voucher %s has unrecoginzed status %s" %
-                    (voucher.voucher_id, voucher.status))
-                if voucher.status == 'Redeemed':
-                    self.redeemed_commercial_vouchers.append(voucher)
-                else:
-                    self.unredeemed_commercial_vouchers.append(voucher)
-        return (self.unredeemed_commercial_vouchers,
-                self.redeemed_commercial_vouchers)
+        voucher_proxy = getUtility(ISalesforceVoucherProxy)
+        commercial_vouchers = voucher_proxy.getAllVouchers(self)
+        unredeemed_commercial_vouchers = []
+        redeemed_commercial_vouchers = []
+        for voucher in commercial_vouchers:
+            assert voucher.status in VOUCHER_STATUSES, (
+                "Voucher %s has unrecognized status %s" %
+                (voucher.voucher_id, voucher.status))
+            if voucher.status == 'Redeemed':
+                redeemed_commercial_vouchers.append(voucher)
+            else:
+                unredeemed_commercial_vouchers.append(voucher)
+        return (unredeemed_commercial_vouchers,
+                redeemed_commercial_vouchers)
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -1780,12 +1777,40 @@ class Person(
         self.preferredemail.status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'
+        self.name = self._ensureNewName(base_new_name)
+
+    def _ensureNewName(self, base_new_name):
+        """Return a unique name."""
         new_name = base_new_name
         count = 1
         while Person.selectOneBy(name=new_name) is not None:
             new_name = base_new_name + str(count)
             count += 1
-        self.name = new_name
+        return new_name
+
+    def reactivateAccount(self, comment):
+        """Reactivate the account.
+
+        Set the account status to ACTIVE and possibly restore the user's
+        name.
+        """
+        if self.password is None:
+            raise AssertionError(
+                "User %s cannot be reactivate without first setting a "
+                "password." % self.name)
+        if self.preferredemail is None:
+            raise AssertionError(
+                "User %s cannot be reactivate without first setting a "
+                "preferred email address." % self.name)
+        self.account.status = AccountStatus.ACTIVE
+        self.account.status_comment = comment
+        if '-deactivatedaccount' in self.name:
+            # The name was changed by deactivateAccount(). Restore the
+            # name, but we must ensure it does not conflict with a current
+            # user.
+            name_parts = self.name.split('-deactivatedaccount')
+            base_new_name = name_parts[0]
+            self.name = self._ensureNewName(base_new_name)
 
     @property
     def visibility_consistency_warning(self):

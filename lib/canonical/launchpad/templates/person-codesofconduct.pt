@@ -38,7 +38,7 @@
     <form name="coc" action="" method="post">
 
       <h2>Active signatures</h2>
-        <p>If you change your mind about agreeing to a code of conduct, 
+        <p>If you change your mind about agreeing to a code of conduct,
         you can deactivate your signature.</p>
           <table>
             <tbody>
@@ -53,6 +53,7 @@
                 <td>
                   <div>
                     <label
+                      class="signature"
                       tal:attributes="for string:code${sig/id}"
                       tal:content="sig/displayname"
                     >blah</label>
@@ -78,7 +79,7 @@
           Once <dfn>Inactive</dfn>, a signature can only be reactivated by a
           <a href="/~admins">Launchpad Administrator</a>.
         </p>
-      <ul> 
+      <ul>
          <li tal:repeat="sig context/inactivesignatures"
              tal:content="sig/displayname"/>
       </ul>
