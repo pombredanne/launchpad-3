@@ -22,17 +22,11 @@ __all__ = [
     'Launchpad',
     ]
 
+
 from launchpadlib._browser import Browser
 from launchpadlib._utils.uri import URI
 from launchpadlib.resource import Resource, Collection, Entry
 from launchpadlib.credentials import AccessToken, Consumer, Credentials
-
-# XXX BarryWarsaw 05-Jun-2008 this is a placeholder to satisfy the interface
-# required by the Launchpad.bugs property below.  It is temporary and will go
-# away when we flesh out the bugs interface.
-class _FakeBugCollection(Collection):
-    def _entry(self, entry_dict):
-        return Entry(entry_dict)
 
 
 class Launchpad(Resource):
@@ -54,10 +48,10 @@ class Launchpad(Resource):
         self.credentials = credentials
         # Get the WADL definition.
         self._browser = Browser(self.credentials)
-        self.wadl = self._browser.get_wadl_application(self._root)
+        self._wadl = self._browser.get_wadl_application(self._root)
 
         # Get the root resource.
-        root_resource = self.wadl.get_resource_by_path('')
+        root_resource = self._wadl.get_resource_by_path('')
         bound_root = root_resource.bind(
             self._browser.get(root_resource), 'application/json')
         super(Launchpad, self).__init__(None, bound_root)

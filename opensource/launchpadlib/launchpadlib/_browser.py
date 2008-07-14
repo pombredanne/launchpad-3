@@ -32,9 +32,9 @@ import simplejson
 
 from urllib import urlencode
 from wadllib.application import Application
+from launchpadlib.errors import HTTPError
 from launchpadlib._oauth.oauth import (
     OAuthRequest, OAuthSignatureMethod_PLAINTEXT)
-from launchpadlib.errors import HTTPError
 from launchpadlib._utils import uri
 
 OAUTH_REALM = 'https://api.launchpad.net'
@@ -48,7 +48,7 @@ class Browser:
         self._connection = httplib2.Http()
 
     def _request(self, url, data=None, method='GET',
-                 media_type="application/json", **extra_headers):
+                 media_type='application/json', extra_headers=None):
         """Create an authenticated request object."""
         oauth_request = OAuthRequest.from_consumer_and_token(
             self.credentials.consumer,
@@ -61,7 +61,8 @@ class Browser:
         # Calculate the headers for the request.
         headers = {'Accept' : media_type}
         headers.update(oauth_request.to_header(OAUTH_REALM))
-        headers.update(extra_headers)
+        if extra_headers is not None:
+            headers.update(extra_headers)
         # Make the request.
         response, content = self._connection.request(
             str(url), method=method, body=data, headers=headers)
@@ -95,4 +96,4 @@ class Browser:
     def patch(self, url, representation):
         """PATCH the object at url with the updated representation."""
         self._request(url, simplejson.dumps(representation), 'PATCH',
-                      **{'Content-Type': 'application/json'})
+                      extra_headers={'Content-Type': 'application/json'})

@@ -44,14 +44,14 @@ class Resource:
         self.__dict__['_root'] = root
         self.__dict__['_wadl_resource'] = wadl_resource
 
-    def lp_has_param(self, param_name):
+    def lp_has_parameter(self, param_name):
         """Does this resource have a parameter with the given name?"""
         for suffix in ['_link', '_collection_link', '']:
             if self._wadl_resource.get_parameter(param_name + suffix):
                 return True
         return False
 
-    def lp_get_param(self, param_name):
+    def lp_get_parameter(self, param_name):
         """Get the value of one of the resource's parameters.
 
         :return: A scalar value if the parameter is not a link. A new
@@ -121,7 +121,7 @@ class Resource:
     def __getattr__(self, attr):
         """Try to retrive a parameter of the given name."""
         try:
-            return self.lp_get_param(attr)
+            return self.lp_get_parameter(attr)
         except KeyError:
             raise AttributeError("'%s' object has no attribute '%s'"
                                  % (self.__class__.__name__, attr))
@@ -154,7 +154,7 @@ class Entry(Resource):
 
     def __setattr__(self, name, value):
         """Set the parameter of the given name."""
-        if not self.lp_has_param(name):
+        if not self.lp_has_parameter(name):
             raise AttributeError("'%s' object has no attribute '%s'" %
                                  (self.__class__.__name__, name))
         self._dirty_attributes[name] = value
@@ -255,7 +255,7 @@ class Collection(Resource):
         # We know that every Launchpad resource has a 'resource_type_link'
         # in its representation.
         resource_type_link = representation['resource_type_link']
-        resource = WadlResource(self._root.wadl, url, resource_type_link)
+        resource = WadlResource(self._root._wadl, url, resource_type_link)
         return self._wrap_resource(resource, representation=representation,
                                    representation_needs_processing=False)
 
