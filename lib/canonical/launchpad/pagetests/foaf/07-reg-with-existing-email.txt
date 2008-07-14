@@ -7,7 +7,7 @@ been validated, we show a message and point the user to the forgotten
 password page.
 
     >>> browser.open('http://launchpad.dev/')
-    >>> browser.getLink('Log In / Register').click()
+    >>> browser.getLink('Log in / Register').click()
 
     >>> browser.getControl('E-mail address:', index=1).value = (
     ...     'test@canonical.com')
@@ -73,7 +73,7 @@ this.
     '...andrew.bennetts@ubuntulinux.com...'
 
     >>> anon_browser.open('http://launchpad.dev/')
-    >>> anon_browser.getLink('Log In / Register').click()
+    >>> anon_browser.getLink('Log in / Register').click()
 
     >>> anon_browser.getControl('E-mail address:', index=1).value = (
     ...     'andrew.bennetts@ubuntulinux.com')
