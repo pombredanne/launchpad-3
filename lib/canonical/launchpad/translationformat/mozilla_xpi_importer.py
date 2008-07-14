@@ -6,6 +6,7 @@ __all__ = [
     'MozillaXpiImporter',
     ]
 
+import re
 import textwrap
 from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
 from zope.component import getUtility
@@ -305,7 +306,12 @@ class PropertyFile:
                 # Remove any white space before the useful data, like
                 # ' # foo'.
                 line = line.lstrip()
-                if line.startswith(u'#'):
+                if len(line) == 0:
+                    # It's an empty line. Reset any previous comment we have.
+                    last_comment = None
+                    last_comment_line_num = 0
+                    ignore_comment = False
+                elif line.startswith(u'#') or line.startswith(u'//'):
                     # It's a whole line comment.
                     ignore_comment = False
                     line = line[1:].strip()
@@ -320,11 +326,12 @@ class PropertyFile:
 
                     last_comment_line_num = line_num
                     continue
-                elif len(line) == 0:
-                    # It's an empty line. Reset any previous comment we have.
-                    last_comment = None
-                    last_comment_line_num = 0
-                    ignore_comment = False
+
+            # Unescaped URLs are a common mistake: the "//" starts an
+            # end-of-line comment.  To work around that, treat "://" as
+            # a special case.
+            just_saw_colon = False
+
             while line:
                 if is_multi_line_comment:
                     if line.startswith(u'*/'):
@@ -357,12 +364,6 @@ class PropertyFile:
                         # Jump the processed char.
                         line = line[1:]
                     continue
-                elif line.startswith(u'//'):
-                    # It's an 'end of the line comment'
-                    last_comment = '%s\n' % line[2:].strip()
-                    last_comment_line_num = line_num
-                    # Jump to next line
-                    break
                 elif line.startswith(u'/*'):
                     # It's a multi line comment
                     is_multi_line_comment = True
@@ -371,10 +372,18 @@ class PropertyFile:
                     # Jump the comment starting tag
                     line = line[2:]
                     continue
+                elif line.startswith(u'//') and not just_saw_colon:
+                    # End-of-line comment.
+                    last_comment = '%s\n' % line[2:].strip()
+                    last_comment_line_num = line_num
+                    # On to next line.
+                    break
                 elif is_message:
                     # Store the char and continue.
-                    translation += line[0]
+                    head_char = line[0]
+                    translation += head_char
                     line = line[1:]
+                    just_saw_colon = (head_char == ':')
                     continue
                 elif u'=' in line:
                     # Looks like a message string.

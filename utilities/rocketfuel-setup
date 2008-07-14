@@ -4,8 +4,43 @@
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
 
-utilities_dir="$(cd $(dirname $0) && pwd)"
-source "$utilities_dir/rocketfuel-env.sh"
+if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
+  echo "# Common environment variables for the rocketfuel-* scripts.
+#
+# The ones you can set are:
+#
+# LP_PROJECT_ROOT - The root directory of all your Canonical stuff.  Your
+#                   Launchpad shared repository will live in a child directory
+#                   of this directory.
+# LP_SHARED_REPO  - Your Launchpad shared repository directory.  All of your
+#                   Launchpad development branches will live under here.
+# LP_TRUNK_NAME   - The directory name (not path!) to your rocketfuel trunk
+#                   mirror directory.  This is relative to your shared repo.
+# LP_SOURCEDEPS_DIR - The name of the directory (not path!) where your
+#                   trunk sourcecode will be placed.  This is relative to your
+#                   LP_PROJECT_ROOT and should /not/ have the 'sourcecode'
+#                   path appended to it, since this is automatically added by
+#                   the scripts.
+
+LP_PROJECT_ROOT=\${LP_PROJECT_ROOT:=~/canonical}
+LP_SHARED_REPO=\${LP_SHARED_REPO:=lp-branches}
+LP_PROJECT_PATH=\$LP_PROJECT_ROOT/\$LP_SHARED_REPO
+LP_TRUNK_NAME=\${LP_TRUNK_NAME:=trunk}
+LP_TRUNK_PATH=\$LP_PROJECT_PATH/\$LP_TRUNK_NAME
+
+LP_SOURCEDEPS_DIR=\${LP_SOURCEDEPS_DIR:=lp-sourcedeps}
+LP_SOURCEDEPS_PATH=\$LP_PROJECT_ROOT/\$LP_SOURCEDEPS_DIR/sourcecode
+
+# Force tilde expansion
+LP_SOURCEDEPS_PATH=\$(eval echo \${LP_SOURCEDEPS_PATH})
+" > "$HOME/.rocketfuel-env.sh"
+fi
+
+source "$HOME/.rocketfuel-env.sh"
+if [ "$?" != 0 ]; then
+    echo "Something went wrong with rocketfuel-setup!"
+    exit 1
+fi
 
 # load up Ubuntu release details so we know which repos to enable
 source /etc/lsb-release
@@ -48,7 +83,27 @@ if [ $? -ne 0 ]; then
   echo "launchpad.dev added to /etc/hosts"
 fi
 
-for hostname in code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev bazaar.launchpad.dev shipit.ubuntu.dev shipit.kubuntu.dev shipit.edubuntu.dev feeds.launchpad.dev openid.launchpad.dev; do
+declare -a hostnames
+hostnames=$(cat <<EOF
+    answers.launchpad.dev
+    api.launchpad.dev
+    bazaar.launchpad.dev
+    beta.launchpad.dev
+    blueprints.launchpad.dev
+    bugs.launchpad.dev
+    code.launchpad.dev
+    feeds.launchpad.dev
+    openid.launchpad.dev
+    shipit.edubuntu.dev
+    shipit.kubuntu.dev
+    shipit.ubuntu.dev
+    translations.launchpad.dev
+    xmlrpc-private.launchpad.dev
+    xmlrpc.launchpad.dev
+EOF
+    )
+
+for hostname in $hostnames; do
   dev_host;
 done
 
@@ -268,22 +323,29 @@ fi
 if [ ! -e ~/.bazaar/locations.conf ]; then
   touch ~/.bazaar/locations.conf
 fi
-bn=$(basename $LP_PROJECT_ROOT)
-grep -q "$bn\/$LP_SHARED_REPO" ~/.bazaar/locations.conf
+grep -q "\[${LP_PROJECT_PATH}\]" ~/.bazaar/locations.conf
 if [ $? -ne 0 ]; then
-  branchloc=$(eval echo "$LP_PROJECT_PATH")
   echo "
-[${branchloc}]
+[$LP_PROJECT_PATH]
 pqm_email = Launchpad PQM <launchpad@pqm.canonical.com>
-pqm_branch = sftp://devpad.canonical.com/code/rocketfuel/launchpad/devel
+submit_branch = ${LP_TRUNK_PATH}
 public_branch = bzr+ssh://devpad.canonical.com/code/${whoami}/launchpad
 public_branch:policy = appendpath
 smtp_server = localhost
 push_location = bzr+ssh://devpad.canonical.com/code/${whoami}/launchpad
 push_location:policy = appendpath
-" | tee -a ~/.bazaar/locations.conf > /dev/null
+review_list = Launchpad Reviews <launchpad-reviews@lists.canonical.com>
+merge_target = ${LP_TRUNK_PATH}" | tee -a ~/.bazaar/locations.conf > /dev/null
   echo "Bazaar branch configuration updated. You may need to set smtp_server
 in ~/.bazaar/locations.conf to something other than localhost"
+fi
+
+grep -q "\[$LP_TRUNK_PATH\]" ~/.bazaar/locations.conf
+if [ $? -ne 0 ]; then
+  echo "
+[$LP_TRUNK_PATH]
+public_branch = sftp://devpad.canonical.com/code/rocketfuel/launchpad/devel\
+" | tee -a ~/.bazaar/locations.conf > /dev/null
 fi
 
 # Setup access to the local supermirror
@@ -293,11 +355,14 @@ if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
   echo "Setup ssh key for local supermirror ssh access."
 fi
 
+# Setup environment variables in a ~ dot file
+cd $HOME
+if [ ! -e $HOME/.rocketfuel-env.sh ]; then
+  ln -s $LP_TRUNK_PATH/utilities/rocketfuel-env.sh .rocketfuel-env.sh
+fi
+
 # Setup scripts in /usr/local/bin
 cd /usr/local/bin
-if [ ! -e rocketfuel-env.sh ]; then
-  sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-env.sh
-fi
 if [ ! -e rocketfuel-get ]; then
   sudo ln -s $LP_TRUNK_PATH/utilities/rocketfuel-get
 fi

@@ -109,19 +109,42 @@
     <div id="globalheader"  xml:lang="en" lang="en" dir="ltr"
       tal:condition="site_message">
       <div class="sitemessage" tal:content="structure site_message"/>
-      <img class="launchpad" width="90" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_launchpad_bg.gif" alt="Launchpad"/>
     </div>
-    <div id="topline" tal:condition="not: site_message"></div>
-    <div id="locationbar" xml:lang="en" lang="en" dir="ltr">
-      <strong id="yourlocation">Your location:</strong>
-      <ul id="menuroot">
-        <tal:hierarchy content="structure context/@@+breadcrumbs" />
-      </ul>
-      <table id="logincontrol">
-        <tr>
-          <td tal:content="structure context/@@login_status" />
-        </tr>
-      </table>
+    <tal:login replace="structure context/@@login_status" />
+    <tal:hierarchy replace="structure context/@@+hierarchy" />
+    <div
+      tal:condition="view/macro:pagehas/applicationtabs"
+      tal:define="facetmenu CONTEXTS/menu:facet"
+      id="lp-apps"
+    >
+      <tal:XXX replace="nothing">
+        # XXX mpt 20080702: The HTML comment works around bug 229931.
+      </tal:XXX>
+      <!-- :-) --><tal:facet repeat="link facetmenu">
+        <span
+          tal:condition="link/selected"
+          tal:attributes="title link/summary; class string:${link/name}-active"
+          ><strong
+            tal:condition="not:link/linked"
+            tal:content="structure link/escapedtext"
+          /><a
+            tal:condition="link/linked"
+            tal:attributes="href link/url"
+            tal:content="structure link/escapedtext"
+        /></span><span
+          tal:condition="python:link.selected is False and link.enabled is True"
+          tal:attributes="title link/summary; class link/name"
+          ><a
+            tal:condition="link/enabled"
+            tal:attributes="href link/url"
+            tal:content="structure link/escapedtext"
+        /></span><span
+          tal:condition="not:link/enabled"
+          tal:attributes="class string:${link/name} disabled-tab"
+          ><strong
+            tal:content="structure link/escapedtext"
+        /></span><small tal:condition="not:repeat/link/end"
+        > / </small></tal:facet>
     </div>
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
@@ -145,59 +168,6 @@
       </table>
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
 
-                <div class="x">
-                  <div class="y">
-                    <div class="z">
-                      <div
-                        tal:condition="not:view/macro:pagehas/applicationtabs"
-                        id="noapplicationchooser"
-                      ></div>
-                      <tal:applicationtabs
-                        condition="view/macro:pagehas/applicationtabs"
-                      >
-                        <ul
-                          id="applicationchooser"
-                          xml:lang="en" lang="en" dir="ltr"
-                          tal:define="facetmenu CONTEXTS/menu:facet"
-                          tal:condition="facetmenu"
-                        >
-                          <tal:facet repeat="link facetmenu">
-                            <tal:available condition="link/enabled">
-                              <li
-                                tal:condition="link/selected"
-                                tal:attributes="title link/summary; class string:current tab-${link/name}"
-                              >
-                                <a
-                                  tal:condition="link/linked"
-                                  tal:attributes="href link/url"
-                                  tal:content="structure link/escapedtext"
-                                >abc</a>
-                                <span
-                                  class="selected"
-                                  tal:condition="not: link/linked"
-                                  tal:content="structure link/escapedtext"
-                                >def</span>
-                              </li>
-                              <li
-                                tal:condition="not: link/selected"
-                                tal:attributes="title link/summary; class string:current tab-${link/name}"
-                              ><a
-                                  tal:attributes="href link/url"
-                                  tal:content="structure link/escapedtext"
-                                >ghi</a><span
-                                  class="disabled"
-                                  tal:condition="not: link/linked"
-                                  tal:content="structure link/escapedtext"
-                              >jkl</span></li>
-                            </tal:available>
-                            <li
-                              tal:condition="not: link/enabled"
-                              tal:attributes="title link/summary; class string:unavailable tab-${link/name}"
-                              tal:content="structure link/escapedtext"
-                            />
-                          </tal:facet>
-                        </ul>
-                      </tal:applicationtabs>
                       <div
                         id="container"
                         tal:define="context_badges CONTEXTS/lp:context_badges"
@@ -273,9 +243,6 @@
                         </div>
                         <div class="clear"></div>
                       </div><!--id="container"-->
-                    </div><!--id="z"-->
-                  </div><!--id="y"-->
-                </div><!--id="x"-->
 
       </div><!--id="mainarea"-->
       <tal:noborder condition="not:view/macro:pagehas/applicationborder">
