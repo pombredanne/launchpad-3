@@ -72,20 +72,9 @@ question page.
 
 == Distributions ==
 
-Distributions also have the 'Latest questions' porlet and
-'Ask a question' button on the front page:
+Distributions have an 'Ask a question' link on the front page:
 
     >>> user_browser.open('http://launchpad.dev/ubuntu')
-
-    >>> questions = find_portlet(user_browser.contents, 'Latest questions')
-    >>> print extract_text(
-    ...     questions.find('div')).encode('ASCII', 'backslashreplace')
-    [Open] Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
-    [Open] Continue playing after shutdown
-    [Answered] Play DVDs in Totem
-    [Solved] mailto: problem in webpage
-    [Answered] Installation of Java Runtime Environment for Mozilla
-
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about Ubuntu
@@ -203,23 +192,10 @@ Project also have the 'Latest questions' portlet and the
 
 == Persons ==
 
-On the page about a person, there is a porlet showing the latest
-questions opened by that person.
+The 'Answers' facet link will display a page listing all the questions
+involving a person.
 
     >>> browser.open('http://launchpad.dev/~name16')
-    >>> find_portlet(browser.contents, 'Latest questions')
-    <div class="portlet" id="...">
-        <h2>Latest questions</h2>
-        ...
-    </div>
-    >>> browser.getLink('Slow system').url
-    '.../ubuntu/+question/7'
-    >>> browser.getLink('Firefox loses focus').url
-    '.../firefox/+question/4'
-
-The 'Answers' facet link will display a page listing all the questions
-involving that person.
-
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/~name16'
     >>> browser.getLink('Answers').click()

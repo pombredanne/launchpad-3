@@ -52,6 +52,39 @@ it was built for. If not, then 'is_new' will be True, otherwise False.
    >>> pmount_bin_release.is_new
    True
 
+The IBinaryPackageNameSet.getNotNewByNames() returns all the
+BinaryPackageName records for BinaryPackageReleases that are published
+in the supplied distroseries in the archives with the supplied
+BinaryPackageNames.  This is a way of quickly establishing the "is_new"
+value for a range of packages all at the same time, although it returns
+old (published) packages, not new ones.  However, the new packages can
+be quickly ascertained through a set operation.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.binarypackagename import (
+    ...     IBinaryPackageNameSet)
+    >>> foobar_name = getUtility(IBinaryPackageNameSet)['foobar']
+    >>> name_ids = (
+    ...     foobar_name.id,
+    ...     pmount_bin_release.binarypackagename.id,
+    ...     firefox_bin_release.binarypackagename.id)
+    >>> archive_ids = removeSecurityProxy(
+    ...     warty.distribution.all_distro_archive_ids)
+    >>> names = getUtility(IBinaryPackageNameSet).getNotNewByNames(
+    ...     name_ids, warty, archive_ids)
+
+    >>> import operator
+    >>> for name in sorted(names, key=operator.attrgetter('name')):
+    ...     print name.name
+    mozilla-firefox
+    pmount
+
+Passing no name_ids gives the EmptyResultSet.
+
+    >>> getUtility(IBinaryPackageNameSet).getNotNewByNames(
+    ...     [], warty, archive_ids).count()
+    0
+
 Check IBinaryPackageRelease.override() behaviour:
 
 The override method does implicitly exactly the same than:

@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDistribution',
+    'IDistributionMirrorMenuMarker',
     'IDistributionSet',
     ]
 
@@ -20,6 +21,7 @@ from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.launchpad import ILaunchpadContainer
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasDrivers, IHasOwner,
@@ -35,6 +37,10 @@ from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 
+class IDistributionMirrorMenuMarker(Interface):
+    """Marker interface for Mirror navigation."""
+
+
 class DistributionNameField(PillarNameField):
     """The pillar for a distribution."""
     @property
@@ -45,7 +51,7 @@ class DistributionNameField(PillarNameField):
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     IHasMentoringOffers, IHasMilestones, IMakesAnnouncements, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, ISpecificationTarget, IPillar):
+    ILaunchpadUsage, ISpecificationTarget, IPillar, ILaunchpadContainer):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -356,6 +362,8 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         language codes for translation import purposes.
         """
 
+    def userCanEdit(user):
+        """Can the user edit this distribution?"""
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""

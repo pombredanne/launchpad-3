@@ -6,20 +6,23 @@
 __metaclass__ = type
 
 __all__ = [
-    'ISourcePackageFilePublishing',
+    'IArchiveSafePublisher',
     'IBinaryPackageFilePublishing',
-    'ISecureSourcePackagePublishingHistory',
-    'ISecureBinaryPackagePublishingHistory',
-    'ISourcePackagePublishingHistory',
     'IBinaryPackagePublishingHistory',
     'ICanPublishPackages',
     'IFilePublishing',
-    'IArchiveSafePublisher',
+    'IPublishingSet',
+    'ISecureBinaryPackagePublishingHistory',
+    'ISecureSourcePackagePublishingHistory',
+    'ISourcePackageFilePublishing',
+    'ISourcePackagePublishingHistory',
     'NotInPool',
     'PackagePublishingPocket',
     'PackagePublishingPriority',
     'PackagePublishingStatus',
     'PoolFileOverwriteError',
+    'active_publishing_status',
+    'inactive_publishing_status',
     'pocketsuffix'
     ]
 
@@ -330,8 +333,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         `DistroSeries` and in the same `IArchive` and Pocket, ordered
         by architecture tag.
 
-        :return: a `SelectResults` pointing to all corresponding publishing
-            records.
+        :return: a list with all corresponding publishing records.
         """
 
     def getBuiltBinaries():
@@ -346,9 +348,11 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         """
 
     def getBuilds():
-        """Return `IBuild` objects in this SourcePackageRelease` context.
+        """Return a list of `IBuild` objects in this publishing context.
 
         The builds are ordered by `DistroArchSeries.architecturetag`.
+
+        :return: a list of `IBuilds`.
         """
 
     def createMissingBuilds(architectures_available=None, pas_verify=None,
@@ -371,10 +375,13 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         """
 
     def getSourceAndBinaryLibraryFiles():
-        """Return LibraryFileAlias records for all source and binaries.
+        """Return a list of `LibraryFileAlias` for all source and binaries.
 
         All the source files and all binary files ever published to the
-        same archive context are returned as LibraryFileAlias records.
+        same archive context are returned as a list of LibraryFileAlias
+        records.
+
+        :return: a list of `ILibraryFileAlias`.
         """
 
     def changeOverride(new_component=None, new_section=None):
@@ -498,7 +505,7 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
     """A binary package publishing record."""
 
     distroarchseriesbinarypackagerelease = Attribute("The object that "
-        "represents this binarypacakgerelease in this distroarchseries.")
+        "represents this binarypackagerelease in this distroarchseries.")
 
     def changeOverride(new_component=None, new_section=None,
                        new_priority=None):
@@ -508,6 +515,77 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
         Return the overridden publishing record, either a
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        """
+
+
+class IPublishingSet(Interface):
+    """Auxiliary methods for dealing with sets of publications."""
+
+    def getBuildsForSources(one_or_more_source_publications):
+        """Return all builds related with each given source publication.
+
+        The returned ResultSet contains entries with the wanted `Build`s
+        associated with the corresponding source publication and its
+        targeted `DistroArchSeries` in a 3-element tuple. This way the extra
+        information will be cached and the callsites can group builds in
+        any convenient form.
+
+        The result is ordered by:
+
+         1. Ascending `SourcePackagePublishingHistory.id`,
+         2. Ascending `DistroArchSeries.architecturetag`.
+
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
+
+        :return: a storm ResultSet containing tuples as
+            (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
+        """
+
+    def getFilesForSources(one_or_more_source_publication):
+        """Return all files related with each given source publication.
+
+        The returned ResultSet contains entries with the wanted
+        `LibraryFileAlias`s (source and binaries) associated with the
+        corresponding source publication and its `LibraryFileContent`
+        in a 3-element tuple. This way the extra information will be
+        cached and the callsites can group files in any convenient form.
+
+        Callsites should order this result after grouping by source,
+        because SQL UNION can't be correctly ordered in SQL level.
+
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
+
+        :return: an *unordered* storm ResultSet containing tuples as
+            (`SourcePackagePublishingHistory`, `LibraryFileAlias`,
+             `LibraryFileContent`)
+        """
+
+    def getBinaryPublicationsForSources(one_or_more_source_publications):
+        """Return all binary publication for the given source publications.
+
+        The returned ResultSet contains entries with the wanted
+        `BinaryPackagePublishingHistory`s associated with the corresponding
+        source publication and its targeted `DistroArchSeries`,
+        `BinaryPackageRelease` and `BinaryPackageName` in a 5-element tuple.
+        This way the extra information will be cached and the callsites can
+        group binary publications in any convenient form.
+
+        The result is ordered by:
+
+         1. Ascending `SourcePackagePublishingHistory.id`,
+         2. Ascending `BinaryPackageName.name`,
+         3. Ascending `DistroArchSeries.architecturetag`.
+         4. Descending `BinaryPackagePublishingHistory.id`.
+
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
+
+        :return: a storm ResultSet containing tuples as
+            (`SourcePackagePublishingHistory`,
+             `BinaryPackagePublishingHistory`,
+             `BinaryPackageRelease`, `BinaryPackageName`, `DistroArchSeries`)
         """
 
 
@@ -663,6 +741,7 @@ class PackagePublishingPocket(DBEnumeratedType):
         Backported packages.
         """)
 
+
 pocketsuffix = {
     PackagePublishingPocket.RELEASE: "",
     PackagePublishingPocket.SECURITY: "-security",
@@ -670,3 +749,18 @@ pocketsuffix = {
     PackagePublishingPocket.PROPOSED: "-proposed",
     PackagePublishingPocket.BACKPORTS: "-backports",
 }
+
+
+active_publishing_status = (
+    PackagePublishingStatus.PENDING,
+    PackagePublishingStatus.PUBLISHED,
+    )
+
+
+inactive_publishing_status = (
+    PackagePublishingStatus.SUPERSEDED,
+    PackagePublishingStatus.DELETED,
+    PackagePublishingStatus.OBSOLETE,
+    )
+
+

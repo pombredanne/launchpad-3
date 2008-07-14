@@ -35,7 +35,7 @@ as well as the up to five latest members who proposed themselves.
 If new members are added/proposed, they'll show up at the top of the lists.
 
     >>> sample_person = personset.getByName('name12')
-    >>> login(sample_person.preferredemail.email)
+    >>> login_person(sample_person)
     >>> sample_person.join(ubuntu_team)
     >>> salgado = personset.getByName('salgado')
     >>> sabdfl = personset.getByName('sabdfl')

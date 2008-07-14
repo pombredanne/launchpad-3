@@ -103,7 +103,7 @@ pagetests: build
 
 inplace: build
 
-build:
+build: bzr_version_info
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
@@ -133,12 +133,12 @@ ftest_inplace: inplace
 	env PYTHONPATH=$(PYTHONPATH) \
 	    $(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
-run: inplace stop bzr_version_info
+run: inplace stop
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,google-webservice -C $(CONFFILE)
 
-run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecode/loggerhead
+run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
@@ -187,7 +187,7 @@ stop: build
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
 
 stop_quickly_and_quietly:
-	$(APPSERVER_ENV) ${PYTHON} \
+	@ $(APPSERVER_ENV) ${PYTHON} \
 	  utilities/killservice.py librarian buildsequencer launchpad mailman \
 	  > /dev/null 2>&1
 

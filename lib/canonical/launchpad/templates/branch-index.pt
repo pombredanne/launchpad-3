@@ -18,10 +18,11 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-subscribers" />
-</metal:leftportlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-privacy" />
+      <div tal:replace="structure context/@@+portlet-details" />
+      <div tal:replace="structure context/@@+portlet-subscribers" />
+    </metal:portlets>
 
 <div metal:fill-slot="main">
 
@@ -40,12 +41,7 @@
       <tal:not-junk-branch tal:condition="context/product">
         <tr>
           <th>Project:</th>
-          <td>
-            <img src="/@@/project"
-                 tal:replace="structure context/product/image:icon" />
-            <a tal:attributes="href context/product/fmt:url"
-               tal:content="context/product/displayname" />
-          </td>
+          <td><tal:link replace="structure context/product/fmt:link" /></td>
         </tr>
       </tal:not-junk-branch>
       <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">

@@ -1370,3 +1370,19 @@ class PackageUploadSet:
 
         query = " AND ".join(clauses)
         return PackageUpload.select(query).count()
+
+    def getBuildByBuildIDs(self, build_ids):
+        """See `IPackageUploadSet`."""
+        if build_ids is None or len(build_ids) == 0:
+            return []
+        return PackageUploadBuild.select("""
+            PackageUploadBuild.build IN %s
+            """ % sqlvalues(build_ids))
+
+    def getSourceBySourcePackageReleaseIDs(self, spr_ids):
+        """See `IPackageUploadSet`."""
+        if spr_ids is None or len(spr_ids) == 0:
+            return []
+        return PackageUploadSource.select("""
+            PackageUploadSource.sourcepackagerelease IN %s
+            """ % sqlvalues(spr_ids))

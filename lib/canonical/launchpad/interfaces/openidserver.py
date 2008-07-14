@@ -5,15 +5,17 @@
 
 __metaclass__ = type
 __all__ = [
-        'IOpenIdAuthorization',
-        'IOpenIdAuthorizationSet',
-        'IOpenIDPersistentIdentity',
-        'IOpenIDRPConfig',
-        'IOpenIDRPConfigSet',
-        'ILaunchpadOpenIdStoreFactory',
-        'ILoginServiceAuthorizeForm',
-        'ILoginServiceLoginForm',
-        ]
+    'IOpenIdAuthorization',
+    'IOpenIdAuthorizationSet',
+    'IOpenIDPersistentIdentity',
+    'IOpenIDRPConfig',
+    'IOpenIDRPConfigSet',
+    'IOpenIDRPSummary',
+    'IOpenIDRPSummarySet',
+    'ILaunchpadOpenIdStoreFactory',
+    'ILoginServiceAuthorizeForm',
+    'ILoginServiceLoginForm',
+    ]
 
 from zope.component import getUtility
 from zope.schema import Choice, Datetime, Int, List, Text, TextLine
@@ -23,7 +25,9 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BaseImageUpload, PasswordField, UniqueField)
+from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.person import PersonCreationRationale
+from canonical.lazr.fields import Reference
 
 
 class IOpenIdAuthorization(Interface):
@@ -152,6 +156,48 @@ class IOpenIDRPConfigSet(Interface):
 
     def getByTrustRoot(trust_root):
         """Return the IOpenIdRPConfig for a particular trust root"""
+
+
+class IOpenIDRPSummary(Interface):
+    """A summary of the interaction between an `Account` and an OpenID RP."""
+    id = Int(title=u'ID', required=True)
+    account = Reference(
+        title=u'The IAccount used to login.', schema=IAccount,
+        required=True, readonly=True)
+    openid_identifier = TextLine(
+        title=u'OpenID identifier', required=True, readonly=True)
+    trust_root = TextLine(
+        title=u'OpenID trust root', required=True, readonly=True)
+    date_created = Datetime(
+        title=u'Date Created', required=True, readonly=True)
+    date_last_used = Datetime(title=u'Date last used', required=True)
+    total_logins = Int(title=u'Total logins', required=True)
+
+    def increment(date_used=None):
+        """Increment the total_logins.
+
+        :param date_used: an optional datetime the login happened. The current
+            datetime is used if date_used is None.
+        """
+
+
+class IOpenIDRPSummarySet(Interface):
+    """A set of OpenID RP Summaries."""
+
+    def getByIdentifier(identifier):
+        """Get all the IOpenIDRPSummary objects for an OpenID identifier.
+
+        :param identifier: A string used as an OpenID identifier.
+        :return: An iterator of IOpenIDRPSummary objects.
+        """
+
+    def record(account, trust_root):
+        """Create or update an IOpenIDRPSummary.
+
+        :param account: An `IAccount`.
+        :param trust_root: A string used as an OpenID trust root.
+        :return: An `IOpenIDRPSummary` or None.
+        """
 
 
 class IOpenIDPersistentIdentity(Interface):

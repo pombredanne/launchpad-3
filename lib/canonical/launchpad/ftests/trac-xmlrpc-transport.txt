@@ -8,7 +8,7 @@ installed implement.
     >>> import xmlrpclib
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestTracXMLRPCTransport)
-    >>> trac_transport = TestTracXMLRPCTransport()
+    >>> trac_transport = TestTracXMLRPCTransport('http://example.com/xmlrpc')
     >>> server = xmlrpclib.ServerProxy(
     ...     'http://example.com/xmlrpc', transport=trac_transport)
 

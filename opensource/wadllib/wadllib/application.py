@@ -27,6 +27,7 @@ __all__ = [
     'WADLError',
     ]
 
+import urllib
 from urlparse import urlparse
 import simplejson
 try:
@@ -48,7 +49,21 @@ def wadl_xpath(tag_name):
     return './' + wadl_tag(tag_name)
 
 
-class NoBoundRepresentationError(Exception):
+def _merge_dicts(*dicts):
+    """Merge any number of dictionaries, some of which may be None."""
+    final = {}
+    for dict in dicts:
+        if dict is not None:
+            final.update(dict)
+    return final
+
+
+class WADLError(Exception):
+    """An exception having to do with the state of the WADL application."""
+    pass
+
+
+class NoBoundRepresentationError(WADLError):
     """An unbound resource was used where wadllib expected a bound resource.
 
     To obtain the value of a resource's parameter, you first must bind
@@ -58,7 +73,7 @@ class NoBoundRepresentationError(Exception):
     """
 
 
-class UnsupportedMediaTypeError(Exception):
+class UnsupportedMediaTypeError(WADLError):
     """A media type was given that's not supported in this context.
 
     A resource can only be bound to media types it has representations
@@ -68,6 +83,66 @@ class UnsupportedMediaTypeError(Exception):
 
 class WADLBase:
     """A base class for objects that contain WADL-derived information."""
+
+
+class HasParametersMixin:
+    """A mixin class for objects that have associated Parameter objects."""
+
+    def params(self, styles, resource=None):
+        """Find subsidiary parameters that have the given styles."""
+        if resource is None:
+            resource = self.resource
+        if resource is None:
+            raise ValueError("Could not find any particular resource")
+        if self.tag is None:
+            return []
+        param_tags = self.tag.findall(wadl_xpath('param'))
+        if param_tags is None:
+            return []
+        return [Parameter(resource, param_tag)
+                for param_tag in param_tags
+                if param_tag.attrib.get('style') in styles]
+
+    def validate_param_values(self, params, param_values,
+                              enforce_completeness=True, **kw_param_values):
+        """Make sure the given valueset is valid.
+
+        A valueset might be invalid because it contradicts a fixed
+        value or (if enforce_completeness is True) because it lacks a
+        required value.
+
+        :param params: A list of Parameter objects.
+        :param param_values: A dictionary of parameter values. May include
+           paramters whose names are not valid Python identifiers.
+        :param enforce_completeness: If True, this method will raise
+           an exception when the given value set lacks a value for a
+           required parameter.
+        :param kw_param_values: A dictionary of parameter values.
+        :return: A dictionary of validated parameter values.
+        """
+        param_values = _merge_dicts(param_values, kw_param_values)
+        validated_values = {}
+        for param in params:
+            name = param.name
+            if param.fixed_value is not None:
+                if (name in param_values
+                    and param_values[name] != param.fixed_value):
+                    raise ValueError(("Value '%s' for parameter '%s' "
+                                      "conflicts with fixed value '%s'")
+                                     % (param_values[name], name,
+                                        param.fixed_value))
+                param_values[name] = param.fixed_value
+            if (enforce_completeness and param.is_required
+                and not name in param_values):
+                raise ValueError("No value for required parameter '%s'"
+                                 % name)
+            if name in param_values:
+                validated_values[name] = param_values[name]
+                del param_values[name]
+        if len(param_values) > 0:
+            raise ValueError("Unrecognized parameter(s): '%s'"
+                             % "', '".join(param_values.keys()))
+        return validated_values
 
 
 class WADLResolvableDefinition(WADLBase):
@@ -202,16 +277,26 @@ class Resource(WADLResolvableDefinition):
         raise UnsupportedMediaTypeError("No definition for representation "
                                         "with media type %s." % media_type)
 
-    def get_method(self, http_method, fixed_params=None):
+    def get_method(self, http_method, media_type=None, query_params=None,
+                   representation_params=None):
         """Look up one of this resource's methods by HTTP method.
 
         :param http_method: The HTTP method used to invoke the desired
                             method. Case-insensitive.
 
-        :param fixed_params: The names and values of any fixed
+        :param media_type: The media type of the representation
+                           accepted by the method. Optional.
+
+        :param query_params: The names and values of any fixed query
                              parameters used to distinguish between
                              two methods that use the same HTTP
-                             method.
+                             method. Optional.
+
+        :param representation_params: The names and values of any
+                             fixed representation parameters used to
+                             distinguish between two methods that use
+                             the same HTTP method and have the same
+                             media type. Optional.
 
         :returns: A MethodDefinition, or None if there's no definition
                   that fits the given constraints.
@@ -220,29 +305,19 @@ class Resource(WADLResolvableDefinition):
         for method_tag in definition.findall(wadl_xpath('method')):
             name = method_tag.attrib.get('name', '').lower()
             if name == http_method.lower():
-                if fixed_params is not None:
-                    request = method_tag.find(wadl_xpath('request'))
-                    if request is None:
-                        # This method takes no special request
-                        # parameters. Skip to the next method.
-                        continue
-
-                    required_params = set(fixed_params.items())
-                    method_params = set(
-                        (param.attrib.get('name'),
-                         param.attrib.get('fixed'))
-                        for param in request.findall(wadl_xpath('param')))
-                    if not required_params.issubset(method_params):
-                        continue
-                return Method(self.application, method_tag)
+                method = Method(self, method_tag)
+                if method.is_described_by(media_type, query_params,
+                                          representation_params):
+                    return method
         return None
 
-    def get_param(self, param_name):
+    def get_parameter(self, param_name):
         """Find the value of a parameter within the representation."""
         if self.representation is None:
             raise NoBoundRepresentationError(
                 "Resource is not bound to any representation.")
-        representation_tag = self.representation_definition.resolve_definition().tag
+        definition = self.representation_definition.resolve_definition()
+        representation_tag = definition.tag
         for param_tag in representation_tag.findall(wadl_xpath('param')):
             if param_tag.attrib.get('name') == param_name:
                 return Parameter(self, param_tag)
@@ -265,25 +340,159 @@ class Resource(WADLResolvableDefinition):
 class Method(WADLBase):
     """A wrapper around an XML <method> tag.
     """
-    def __init__(self, application, method_tag):
+    def __init__(self, resource, method_tag):
         """Initialize with a <method> tag.
 
         :param method_tag: An ElementTree <method> tag.
         """
-        self.application = application
+        self.resource = resource
+        self.application = self.resource.application
         self.tag = method_tag
 
     @property
-    def response(self):
-        """Return the definition of the response to this method."""
-        return ResponseDefinition(self.application,
-                                  self.tag.find(wadl_xpath('response')))
+    def request(self):
+        """Return the definition of a request that invokes the WADL method."""
+        return RequestDefinition(self, self.tag.find(wadl_xpath('request')))
 
+    @property
+    def response(self):
+        """Return the definition of the response to the WADL method."""
+        return ResponseDefinition(self.resource,
+                                  self.tag.find(wadl_xpath('response')))
 
     @property
     def id(self):
-        """The XML ID of this method definition."""
+        """The XML ID of the WADL method definition."""
         return self.tag.attrib.get('id')
+
+    @property
+    def name(self):
+        """The name of the WADL method definition.
+
+        This is also the name of the HTTP method (GET, POST, etc.)
+        that should be used to invoke the WADL method.
+        """
+        return self.tag.attrib.get('name')
+
+    def build_request_url(self,  param_values=None, **kw_param_values):
+        """Return the request URL to use to invoke this method."""
+        return self.request.build_url(param_values, **kw_param_values)
+
+    def build_representation(self, media_type=None,
+                             param_values=None, **kw_param_values):
+        """Build a representation to be sent when invoking this method."""
+        return self.request.representation(
+            media_type, param_values, **kw_param_values)
+
+    def is_described_by(self, media_type=None, query_values=None,
+                        representation_values=None):
+        """Returns true if this method fits the given constraints.
+
+        :param media_type: The method must accept this media type as a
+                           representation.
+
+        :param query_values: These key-value pairs must be acceptable
+                           as values for this method's query
+                           parameters. This need not be a complete set
+                           of parameters acceptable to the method.
+
+        :param representation_values: These key-value pairs must be
+                           acceptable as values for this method's
+                           representation parameters. Again, this need
+                           not be a complete set of parameters
+                           acceptable to the method.
+        """
+        representation = None
+        if media_type is not None:
+            if self.media_type is not None:
+                representation = self.request.get_representation_definition(
+                    media_type)
+                if representation is None:
+                    return False
+
+        if query_values is not None and len(query_values) > 0:
+            request = self.request
+            if request is None:
+                # This method takes no special request
+                # parameters, so it can't match.
+                return False
+            try:
+                request.validate_param_values(
+                    request.query_params, query_values, False)
+            except ValueError:
+                return False
+
+        # At this point we know the media type and query values match.
+        if (representation_values is None
+            or len(representation_values) == 0):
+            return True
+
+        if representation is not None:
+            return representation.is_described_by(
+                representation_values)
+        for representation in self.request.representations:
+            try:
+                representation.validate_param_values(
+                    representation.params(self.resource),
+                    representation_values, False)
+            except ValueError:
+                pass
+            return True
+        return False
+
+
+class RequestDefinition(WADLBase, HasParametersMixin):
+    """A wrapper around the description of the request invoking a method."""
+    def __init__(self, method, request_tag):
+        """Initialize with a <request> tag.
+
+        :param resource: The resource to which this request can be sent.
+        :param request_tag: An ElementTree <request> tag.
+        """
+        self.method = method
+        self.resource = self.method.resource
+        self.application = self.resource.application
+        self.tag = request_tag
+
+    @property
+    def query_params(self):
+        """Return the query parameters for this method."""
+        return self.params(['query'])
+
+    @property
+    def representations(self):
+        for definition in self.tag.findall(wadl_xpath('representation')):
+            yield RepresentationDefinition(
+                self.application, self.resource, definition)
+
+    def representation_definition(self, media_type=None):
+        """Return the appropriate representation definition."""
+        for representation in self.representations:
+            if media_type is None or representation.media_type == media_type:
+                return representation
+        return None
+
+    def representation(self, media_type=None, param_values=None,
+                       **kw_param_values):
+        """Build a representation to be sent along with this request."""
+        definition = self.representation_definition(media_type)
+        if definition is None:
+            raise TypeError("Cannot build representation of media type %s"
+                            % media_type)
+        return definition.bind(param_values, **kw_param_values)
+
+    def build_url(self, param_values=None, **kw_param_values):
+        """Return the request URL to use to invoke this method."""
+        validated_values = self.validate_param_values(
+            self.query_params, param_values, **kw_param_values)
+        url = self.resource.url
+        if len(validated_values) > 0:
+            if '?' in url:
+                append = '&'
+            else:
+                append = '?'
+            url += append + urllib.urlencode(validated_values)
+        return url
 
 
 class ResponseDefinition(WADLBase):
@@ -294,12 +503,12 @@ class ResponseDefinition(WADLBase):
     # operations say what representations and/or status codes you get
     # back. Getting this to work with Launchpad requires work on the
     # Launchpad side.
-    def __init__(self, application, response_tag):
+    def __init__(self, resource, response_tag):
         """Initialize with a <response> tag.
 
         :param response_tag: An ElementTree <response> tag.
         """
-        self.application = application
+        self.resource = resource
         self.tag = response_tag
 
     def __iter__(self):
@@ -310,21 +519,36 @@ class ResponseDefinition(WADLBase):
         """
         path = wadl_xpath('representation')
         for representation_tag in self.tag.findall(path):
-            yield RepresentationDefinition(self.application,
-                                           representation_tag)
+            yield RepresentationDefinition(
+                self.resource.application, self.resource, representation_tag)
 
 
-class RepresentationDefinition(WADLResolvableDefinition):
+class RepresentationDefinition(WADLResolvableDefinition, HasParametersMixin):
     """A definition of the structure of a representation."""
 
-    def __init__(self, application, representation_tag):
+    def __init__(self, application, resource, representation_tag):
         super(RepresentationDefinition, self).__init__(application)
+        self.resource = resource
         self.tag = representation_tag
+
+    def params(self, resource):
+        return super(RepresentationDefinition, self).params(
+            ['query', 'plain'], resource)
 
     @property
     def media_type(self):
         """The media type of the representation described here."""
         return self.resolve_definition().tag.attrib['mediaType']
+
+    def bind(self, param_values, **kw_param_values):
+        """Bind the definition to parameter values, creating a document."""
+        validated_values = self.validate_param_values(
+            self.resolve_definition().params(self.resource),
+            param_values, **kw_param_values)
+        if self.media_type == 'application/x-www-form-urlencoded':
+            return urllib.urlencode(validated_values)
+        elif self.media_type == 'application/json':
+            return simplejson.dumps(validated_values)
 
     def _definition_factory(self, id):
         """Turn a representation ID into a RepresentationDefinition."""
@@ -355,6 +579,27 @@ class Parameter(WADLBase):
         self.application = resource_definition.application
         self.resource_definition = resource_definition
         self.tag = tag
+
+    @property
+    def name(self):
+        """The name of this parameter."""
+        return self.tag.attrib.get('name')
+
+    @property
+    def fixed_value(self):
+        """The value to which this parameter is fixed, if any.
+
+        A fixed parameter must be present in invocations of a WADL
+        method, and it must have a particular value. This is commonly
+        used to designate one parameter as containing the name of the
+        server-side operation to be invoked.
+        """
+        return self.tag.attrib.get('fixed')
+
+    @property
+    def is_required(self):
+        """Whether or not a value for this parameter is required."""
+        return self.tag.attrib.get('required', False).lower() in ['1', 'true']
 
     def get_value(self):
         """The value of this parameter in the bound representation.
@@ -463,7 +708,8 @@ class Application(WADLBase):
         for representation in self.doc.findall(wadl_xpath('representation')):
             id = representation.attrib.get('id')
             if id is not None:
-                definition = RepresentationDefinition(self, representation)
+                definition = RepresentationDefinition(
+                    self, None, representation)
                 self.representation_definitions[id] = definition
         for resource_type in self.doc.findall(wadl_xpath('resource_type')):
             id = resource_type.attrib['id']
@@ -476,14 +722,6 @@ class Application(WADLBase):
         if resource_type is None:
             raise KeyError('No such XML ID: "%s"' % resource_type_url)
         return resource_type
-
-        # XXX leonardr 2008-05-28:
-        # Eventually we need to implement this for non-relative URLs,
-        # so that a script using this client can navigate from a WADL
-        # representation of a non-root resource to its definition at
-        # the server root.
-        raise NotImplementedError("Can't look up definition in another "
-                                  "url (%s)" % resource_type_url)
 
     def lookup_xml_id(self, url):
         """A helper method for locating a part of a WADL document.

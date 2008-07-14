@@ -9,7 +9,12 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
 
 
-__all__ = ['login', 'logout', 'ANONYMOUS', 'is_logged_in']
+__all__ = [
+    'login',
+    'login_person',
+    'logout',
+    'ANONYMOUS',
+    'is_logged_in']
 
 
 ANONYMOUS = 'launchpad.anonymous'
@@ -47,6 +52,14 @@ def login(email, participation=None):
         principal = authutil.unauthenticatedPrincipal()
 
     setupInteraction(principal, login=email, participation=participation)
+
+
+def login_person(person, participation=None):
+    """Login the person with their preferred email."""
+    from zope.security.proxy import removeSecurityProxy
+    # Bypass zope's security because IEmailAddress.email is not public.
+    naked_email = removeSecurityProxy(person.preferredemail)
+    return login(naked_email.email, participation)
 
 
 def logout():

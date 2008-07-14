@@ -23,10 +23,11 @@ from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollection, IEntry, IResourceGETOperation, IResourceOperation,
     IResourcePOSTOperation, IScopedCollection)
-from canonical.lazr.interfaces.fields import ICollectionField
+from canonical.lazr.interfaces.fields import (
+    ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import WebServiceLayer
 from canonical.lazr.rest import (
-    CollectionResource, EntryAdapterUtility, RESTUtilityBase)
+    CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
 
 
 class WadlAPI(RESTUtilityBase):
@@ -219,8 +220,7 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
     @property
     def full_representation_link(self):
         """The URL to the description of the object's full representation."""
-        return "%s#%s-full" % (
-            self._service_root_url(), self.singular_type)
+        return self.utility.full_representation_link
 
     @property
     def patch_representation_link(self):
@@ -241,14 +241,12 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
     @property
     def entry_page_representation_id(self):
         "The name of the description of a colleciton of this kind of object."
-        return "%s-page" % self.singular_type
+        return self.utility.entry_page_representation_id
 
     @property
     def entry_page_representation_link(self):
         "The URL to the description of a collection of this kind of object."
-        return "%s#%s" % (
-            self._service_root_url(),
-            self.entry_page_representation_id)
+        return self.utility.entry_page_representation_link
 
     @property
     def all_fields(self):
@@ -340,10 +338,17 @@ class WadlFieldAPI(WadlAPI):
 
     @property
     def is_link(self):
-        """Is this field a link to another resource?"""
+        """Does this field have real data or is it just a link?"""
+        return IObjectLink.providedBy(self.field)
+
+    @property
+    def is_represented_as_link(self):
+        """Is this field represented as a link to another resource?"""
         return (IObject.providedBy(self.field) or
+                IReferenceChoice.providedBy(self.field) or
                 ICollectionField.providedBy(self.field) or
-                IBytes.providedBy(self.field))
+                IBytes.providedBy(self.field) or
+                self.is_link)
 
     @property
     def type_link(self):
@@ -353,18 +358,36 @@ class WadlFieldAPI(WadlAPI):
             return "%s#HostedFile" % self._service_root_url()
 
         # Handle entries and collections of entries.
-        if ICollectionField.providedBy(self.field):
-            schema = self.field.value_type.schema
-        elif IObject.providedBy(self.field):
-            schema = self.field.schema
-        else:
-            raise AssertionError("Field is not a link to another resource.")
-        utility = EntryAdapterUtility.forSchemaInterface(schema)
-
+        utility = self._entry_adapter_utility
         if ICollectionField.providedBy(self.field):
             return utility.entry_page_type_link
         else:
             return utility.type_link
+
+    @property
+    def representation_link(self):
+        """The URL of the description of the representation of this field."""
+        utility = self._entry_adapter_utility
+        if ICollectionField.providedBy(self.field):
+            return utility.entry_page_representation_link
+        else:
+            return utility.full_representation_link
+
+    @property
+    def _entry_adapter_utility(self):
+        """Find an entry adapter for this field."""
+        if ICollectionField.providedBy(self.field):
+            schema = self.field.value_type.schema
+        elif (IObject.providedBy(self.field)
+              or IObjectLink.providedBy(self.field)
+              or IReferenceChoice.providedBy(self.field)):
+            schema = self.field.schema
+        else:
+            raise TypeError("Field is not of a supported type.")
+        assert schema is not IObject, (
+            "Null schema provided for %s" % self.field.__name__)
+        return EntryAdapterUtility.forSchemaInterface(schema)
+
 
     @property
     def options(self):
@@ -397,6 +420,54 @@ class WadlOperationAPI(WadlAPI):
             raise AssertionError("Named operations must use GET or POST.")
 
     @property
+    def is_get(self):
+        """Whether or not the operation is a GET operation."""
+        return self.http_method == "GET"
+
+    @property
     def doc(self):
         """Human-readable documentation for this operation."""
         return self.docstringToXHTML(self.operation.__doc__)
+
+    @property
+    def has_return_type(self):
+        """Does this operation declare a return type?"""
+        return_field = getattr(self.operation, 'return_type', None)
+        return return_field is not None
+
+    @property
+    def returns_link(self):
+        """Does this operation return a link to an object?"""
+        return_field = getattr(self.operation, 'return_type', None)
+        if return_field is not None:
+            field_adapter = WadlFieldAPI(return_field)
+            return field_adapter.is_link
+        return False
+
+    @property
+    def return_type_resource_type_link(self):
+        """Link to the description of this operation's return value."""
+        return_field = getattr(self.operation, 'return_type', None)
+        if return_field is not None:
+            field_adapter = WadlFieldAPI(return_field)
+            try:
+                return field_adapter.type_link
+            except TypeError:
+                # The operation does not return any object exposed
+                # through the web service.
+                pass
+        return None
+
+    @property
+    def return_type_representation_link(self):
+        """Link to the representation of this operation's return value."""
+        return_field = getattr(self.operation, 'return_type', None)
+        if return_field is not None:
+            field_adapter = WadlFieldAPI(return_field)
+            try:
+                return field_adapter.representation_link
+            except TypeError:
+                # The operation does not return any object exposed
+                # through the web service.
+                pass
+        return None

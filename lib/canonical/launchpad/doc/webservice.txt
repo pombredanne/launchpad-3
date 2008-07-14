@@ -238,6 +238,24 @@ Here's a simple AuthorSet with predefined authors.
     >>> protect_schema(AuthorSet, IAuthorSet)
     >>> provideUtility(AuthorSet(), IAuthorSet)
 
+Here's a vocabulary of authors, for a field that presents a Choice
+among authors.
+
+    >>> from zope.schema.interfaces import IVocabulary
+    >>> class AuthorVocabulary:
+    ...     implements(IVocabulary)
+    ...     def __iter__(self):
+    ...         """Iterate over the authors."""
+    ...         return AuthorSet().getAllAuthors().__iter__()
+    ...
+    ...     def __len__(self):
+    ...         """Return the number of authors."""
+    ...         return len(AuthorSet().getAllAuthors())
+    ...
+    ...     def getTerm(self, name):
+    ...         """Retrieve an author by name."""
+    ...         return AuthorSet().getAuthor(name)
+
 Finally, a simple DishSet with predefined dishes.
 
     >>> class DishSet:
@@ -490,13 +508,27 @@ recipe to its cookbook.
     ...     instructions = Text(title=u"Name", required=True)
     ...     comments = CollectionField(value_type=Object(schema=IComment))
 
+    >>> from canonical.lazr.fields import ReferenceChoice
     >>> class ICookbookEntry(IEntry):
     ...     name = TextLine(title=u"Name", required=True)
     ...     cuisine = TextLine(title=u"Cuisine", required=False, default=None)
-    ...     author = Object(schema=IAuthor)
+    ...     author = ReferenceChoice(schema=IAuthor, vocabulary=AuthorVocabulary())
     ...     recipes = CollectionField(value_type=Object(schema=IRecipe))
     ...     comments = CollectionField(value_type=Object(schema=IComment))
     ...     cover = Bytes(0, 5000, title=u"An image of the cookbook's cover.")
+
+The 'author' field is a choice between Author objects. To make sure
+that the Author objects are properly marshalled to JSON, we need to
+define an adapter to IFieldMarshaller.
+
+    >>> from zope.schema.interfaces import IChoice
+    >>> from canonical.lazr.rest.marshallers import (
+    ...     ObjectLookupFieldMarshaller)
+    >>> from canonical.lazr.interfaces import (
+    ...     IFieldMarshaller, WebServiceLayer)
+    >>> provideAdapter(ObjectLookupFieldMarshaller,
+    ...     [IChoice, WebServiceLayer,
+    ...      AuthorVocabulary], IFieldMarshaller)
 
 
 == Implementing the resources ==
@@ -689,10 +721,12 @@ that implementsIResourceGETOperation.
     >>> from canonical.lazr.rest import ResourceGETOperation
     >>> from zope.schema import TextLine
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
+    >>> from canonical.lazr.fields import Reference
     >>> from canonical.lazr.interfaces import IResourceGETOperation
     >>> class FindRecipesOperation(ResourceGETOperation):
     ...    """An operation that searches for recipes across cookbooks."""
     ...    params = [ TextLine(__name__='name') ]
+    ...    return_type = CollectionField(value_type=Reference(schema=IRecipe))
     ...
     ...    def call(self, name):
     ...        try:
@@ -715,6 +749,7 @@ resource as a custom operation called 'find_similar_recipes'.
     >>> class FindSimilarRecipesOperation(ResourceGETOperation):
     ...    """Finds recipes with the same name."""
     ...    params = []
+    ...    return_type = CollectionField(value_type=Reference(schema=IRecipe))
     ...
     ...    def call(self):
     ...        try:
@@ -740,6 +775,7 @@ a named factory operation for creating a new cookbook.
     ...         TextLine(
     ...             __name__='cuisine', default=u'Brazilian', required=False),
     ...     )
+    ...     return_type = Object(schema=IRecipe)
     ...
     ...     def call(self, author_name, title, cuisine):
     ...         cookbook = CookbookSet().newCookbook(
@@ -983,7 +1019,7 @@ cookbooks.
     ...             'ws.op=find_recipes&name=Roast%20chicken'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
-    >>> sorted([c['instructions'] for c in chicken_recipes['entries']])
+    >>> sorted([c['instructions'] for c in chicken_recipes])
     [u'A perfectly roasted chicken is...',
      u'Draw, singe, stuff, and truss...',
      u'You can always judge...']
@@ -1052,18 +1088,35 @@ entry's resource), and possibly links to associated resources.
     >>> representation = simplejson.loads(collection())
     >>> entries = sorted(representation['entries'],
     ...                  key=operator.itemgetter('name'))
-    >>> entries[0]['name']
-    u'Beard on Bread'
     >>> entries[0]['self_link']
     u'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread'
 
-Each cookbook, for instance, has a link to its author and a link to a
-cover image.
+Regular data fields are exposed with their given names. The 'name'
+field stays 'name'.
+
+    >>> entries[0]['name']
+    u'Beard on Bread'
+
+Fields that are references to other objects -- Object, Reference, and
+ReferenceChoice -- are exposed as links to those objects. Each
+cookbook has such a link to its author.
 
     >>> entries[0]['author_link']
     u'http://api.launchpad.dev/beta/authors/James%20Beard'
+
+Fields that are references to externally hosted files (Bytes) are also
+exposed as links to those files. Each cookbook has such a link to its
+cover image.
+
     >>> entries[0]['cover_link']
     u'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread/cover'
+
+Fields that are references to collections of objects are exposed as
+links to those collections. Each cookbook has such a link to its
+recipes.
+
+    >>> entries[0]['recipes_collection_link']
+    u'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread/recipes'
 
 Calling the CollectionResource object makes it process the incoming
 request. Since this is a GET request, calling the resource publishes
@@ -1160,10 +1213,140 @@ across cookbooks.
     ...     environ={'QUERY_STRING' : 'ws.op=find_similar_recipes'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
-    >>> sorted([c['instructions'] for c in chicken_recipes['entries']])
+    >>> sorted([c['instructions'] for c in chicken_recipes])
     [u'A perfectly roasted chicken is...',
      u'Draw, singe, stuff, and truss...',
      u'You can always judge...']
+
+
+== Named operation return values ==
+
+The return value of a named operation is serialized to a JSON data
+structure, and the response's Content-Type header is set to
+application/json. These examples show how different return values are
+serialized.
+
+    >>> class DummyOperation(ResourceGETOperation):
+    ...
+    ...     params = ()
+    ...     result = None
+    ...
+    ...     def call(self):
+    ...         return self.result
+
+    >>> def make_dummy_operation_request(result):
+    ...    request = create_web_service_request('/')
+    ...    operation = DummyOperation(None, request)
+    ...    operation.result = result
+    ...    return request, operation
+
+Scalar Python values like strings and booleans are serialized as you'd
+expect.
+
+    >>> request, operation = make_dummy_operation_request("A string.")
+    >>> print operation()
+    "A string."
+    >>> request.response.getStatus()
+    200
+    >>> print request.response.getHeader('Content-Type')
+    application/json
+
+    >>> request, operation = make_dummy_operation_request(True)
+    >>> operation()
+    'true'
+
+    >>> request, operation = make_dummy_operation_request(10)
+    >>> operation()
+    '10'
+
+    >>> request, operation = make_dummy_operation_request(None)
+    >>> operation()
+    'null'
+
+    >>> request, operation = make_dummy_operation_request(1.3)
+    >>> operation()
+    '1.3'
+
+When a named operation returns an object that has an IEntry
+implementation, the object is serialized to a JSON hash.
+
+    >>> request, operation = make_dummy_operation_request(D2)
+    >>> operation()
+    '{...}'
+
+A named operation can return a data structure that incorporates
+objects with IEntry implementations. Here's a dictionary that contains
+a Dish object. The Dish object is serialized as a JSON dictionary
+within the larger dictionary.
+
+    >>> request, operation = make_dummy_operation_request({'dish': D2})
+    >>> operation()
+    '{"dish": {...}}'
+
+When a named operation returns a list or tuple of objects, we serve
+the whole thing as a JSON list.
+
+    >>> request, operation = make_dummy_operation_request([1,2,3])
+    >>> operation()
+    '[1, 2, 3]'
+
+    >>> request, operation = make_dummy_operation_request((C1_D1, C2_D1))
+    >>> operation()
+    '[{...}, {...}]'
+
+When a named operation returns a non-builtin object that provides the
+iterator protocol, we don't return the whole list. The object probably
+provides access to a potentially huge dataset, like a list of database
+results. In this case we do the same thing we do when serving a
+collection resource. We fetch one batch of results and represent it as
+a JSON hash containing a list of entries.
+
+    >>> class DummyResultSet(object):
+    ...     results = [C1_D1, C2_D1]
+    ...
+    ...     def __iter__(self):
+    ...         return iter(self.results)
+    ...
+    ...     def __len__(self):
+    ...         return len(self.results)
+    ...
+    ...     def __getitem__(self, index):
+    ...         return self.results[index]
+
+    >>> recipes = DummyResultSet()
+    >>> request, operation = make_dummy_operation_request(recipes)
+    >>> operation()
+    '{"total_size": 2, ... "entries": [{...}, {...}]}'
+
+When a named operation returns an object that has an ICollection
+implementation, the result is similar: we return a JSON hash
+describing one batch from the collection.
+
+    >>> request, operation = make_dummy_operation_request(DishSet())
+    >>> operation()
+    '{"total_size": ..., "start": ...}'
+
+If the return value can't be converted into JSON, you'll get an
+exception.
+
+    >>> request, operation = make_dummy_operation_request(object())
+    >>> operation()
+    Traceback (most recent call last):
+    ...
+    TypeError: Could not serialize object <object...> to JSON.
+
+    >>> request, operation = make_dummy_operation_request(
+    ...     {'anobject' : object()})
+    >>> operation()
+    Traceback (most recent call last):
+    ...
+    TypeError: Could not serialize object {'anobject': <object...>} to JSON.
+
+    >>> request, operation = make_dummy_operation_request([object()])
+    >>> operation()
+    Traceback (most recent call last):
+    ...
+    TypeError: Could not serialize object [<object object...>] to JSON.
 
 
 == Resource Visibility ==

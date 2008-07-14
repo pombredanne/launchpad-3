@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 
-from xmlrpclib import Fault, ServerProxy, SafeTransport
+from xmlrpclib import Fault, ServerProxy
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -20,27 +20,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.salesforce import (
-    ISalesforceVoucher, ISalesforceVoucherProxy)
-
-
-class SalesforceVoucherProxyException(Exception):
-    """Exception raised on failed call to the SalesforceVoucherProxy."""
-
-
-class SFDCError(SalesforceVoucherProxyException):
-    """An exception was reported by salesforce.com."""
-
-
-class SVPNotFoundException(SalesforceVoucherProxyException):
-    """A named object was not found."""
-
-
-class SVPAlreadyRedeemedException(SalesforceVoucherProxyException):
-    """The voucher has already been redeemed."""
-
-
-class SVPNotAllowedException(SalesforceVoucherProxyException):
-    """The operation is not allowed by the current user."""
+    ISalesforceVoucher, ISalesforceVoucherProxy, SFDCError,
+    SVPAlreadyRedeemedException, SVPNotAllowedException, SVPNotFoundException,
+    SalesforceVoucherProxyException)
+from canonical.lazr.timeout import SafeTransportWithTimeout
 
 
 def fault_mapper(func):
@@ -51,9 +34,9 @@ def fault_mapper(func):
                          AlreadyRedeemed=SVPAlreadyRedeemedException,
                          NotAllowed=SVPNotAllowedException)
 
-    def decorator(voucher, *args, **kwargs):
+    def decorator(*args, **kwargs):
         try:
-            results = func(voucher, *args, **kwargs)
+            results = func(*args, **kwargs)
         except Fault, fault:
             exception = errorcode_map.get(fault.faultCode,
                                           SalesforceVoucherProxyException)
@@ -89,7 +72,7 @@ class Voucher:
         if self.project is None:
             project_name = "unassigned"
         else:
-            project_name = self.project.displayname
+            project_name = self.project.name
         return "%s,%s,%s,%s" % (self.voucher_id,
                                 self.status,
                                 self.term_months,
@@ -101,7 +84,7 @@ class SalesforceVoucherProxy:
     implements(ISalesforceVoucherProxy)
 
     def __init__(self):
-        self.xmlrpc_transport = SafeTransport()
+        self.xmlrpc_transport = SafeTransportWithTimeout()
 
     @cachedproperty
     def url(self):
@@ -149,21 +132,24 @@ class SalesforceVoucherProxy:
         status = self.server.redeemVoucher(voucher_id,
                                            user.openid_identifier,
                                            project.id,
-                                           project.displayname)
+                                           project.name)
         return status
 
     @fault_mapper
     def updateProjectName(self, project):
         """See `ISalesforceVoucherProxy`."""
         num_updated = self.server.updateProjectName(project.id,
-                                                    project.displayname)
+                                                    project.name)
         return num_updated
 
     @fault_mapper
     def grantVoucher(self, admin, approver, recipient, term_months):
         """See `ISalesforceVoucherProxy`."""
+        from zope.security.proxy import removeSecurityProxy
+        # Bypass zope's security because IEmailAddress.email is not public.
+        naked_email = removeSecurityProxy(recipient.preferredemail)
         voucher_id = self.server.grantVoucher(
             admin.openid_identifier, approver.openid_identifier,
             recipient.openid_identifier, recipient.name,
-            recipient.preferredemail.email, term_months)
+            naked_email.email, term_months)
         return voucher_id

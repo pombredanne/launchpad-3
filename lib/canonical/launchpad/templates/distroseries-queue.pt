@@ -220,8 +220,7 @@
     :packageupload: A PackageUpload record for which we display files.
   </tal:comment>
 
-    <tal:source repeat="source packageupload/sources">
-      <tr tal:repeat="file source/sourcepackagerelease/files"
+      <tr tal:repeat="file packageupload/source_files"
           tal:attributes="class string:${filelist_class}"
           style="display:none">
         <td/>
@@ -234,13 +233,13 @@
         </td>
         <td colspan="6"/>
       </tr>
-    </tal:source>
 
     <tal:package repeat="package packageupload/binary_packages">
-      <tal:define define="is_new package/is_new;
-                          component_name package/component/name/lower;
-                          section_name package/section/name/lower;
-                          version package/version">
+      <tal:define
+        define="is_new python:view.is_new(package);
+                component_name package/component/name/lower;
+                section_name package/section/name/lower;
+                version package/version">
         <tr tal:repeat="file python:packageupload.binary_packages[package]"
             tal:attributes="class string:${filelist_class}"
             style="display:none">

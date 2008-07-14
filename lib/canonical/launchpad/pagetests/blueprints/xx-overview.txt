@@ -22,25 +22,6 @@ portlet on that product's home page:
         Support &lt;canvas&gt; Objects
         Extension Manager Upgrades...
 
-Users can see the similar portlet at a distribution's home page:
-
-    >>> user_browser.open('http://launchpad.dev/ubuntu')
-    >>> main = find_main_content(user_browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
-    Ubuntu Linux...
-    Latest blueprints
-        CD Media Integrity Check...
-
-If there are no blueprints, the "Latest blueprints" portlet is not visible:
-
-    >>> user_browser.open('http://launchpad.dev/debian')
-    >>> main = find_main_content(user_browser.contents)
-    >>> text = extract_text(main).encode('ascii', 'backslashreplace')
-    >>> print text
-    Debian GNU/Linux...
-    >>> 'Latest blueprints' not in text
-    True
-
 
 == Viewing lists of blueprints ==
 

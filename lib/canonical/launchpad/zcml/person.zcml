@@ -56,6 +56,10 @@
       interface="canonical.launchpad.interfaces.person.IPersonViewRestricted"
       />
     <require
+      permission="launchpad.EditLocation"
+      interface="canonical.launchpad.interfaces.location.ISetLocation"
+      />
+    <require
       permission="launchpad.Edit"
       interface="canonical.launchpad.interfaces.person.IPersonEditRestricted"
       />
@@ -70,7 +74,7 @@
       />
     <require
       permission="launchpad.Special"
-      attributes="deactivateAccount"
+      attributes="deactivateAccount reactivateAccount"
       />
     <require
       permission="launchpad.Edit"
@@ -231,6 +235,18 @@
       name="+portlet-contact-details"
       template="../templates/person-portlet-contact-details.pt"
       />
+    <browser:page
+      name="+portlet-contributions"
+      template="../templates/person-portlet-contributions.pt"
+      />
+    <browser:page
+      name="+portlet-currentfocus"
+      template="../templates/person-portlet-currentfocus.pt"
+      />
+    <browser:page
+      name="+portlet-memberships"
+      template="../templates/person-portlet-memberships.pt"
+      />
     <!-- this should be on IPerson because we don't always know if it is a
     team or a person -->
     <browser:page
@@ -287,6 +303,14 @@
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonRelatedProjectsView"
     template="../templates/person-portlet-related-projects.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+vouchers"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonVouchersView"
+    template="../templates/person-vouchers.pt"
     />
 
   <browser:page
@@ -565,6 +589,33 @@
     />
 
   <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonCodeSummaryView"
+    permission="zope.Public"
+    facet="branches"
+    name="+codesummary"
+    template="../templates/person-codesummary.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonActiveReviewsView"
+    permission="zope.Public"
+    facet="branches"
+    name="+activereviews"
+    template="../templates/person-mergeproposals.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonApprovedMergesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+approvedmerges"
+    template="../templates/person-mergeproposals.pt"
+    />
+
+  <browser:page
     name="+oauth-tokens"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonOAuthTokensView"
@@ -581,6 +632,14 @@
     />
 
   <!-- Team Views -->
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonIndexView"
+    name="+index"
+    template="../templates/team-index.pt"
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
@@ -602,6 +661,7 @@
     permission="zope.Public"
     name="+mugshots"
     template="../templates/team-mugshots.pt"
+    class="canonical.launchpad.browser.TeamMugshotView"
     />
 
   <browser:page

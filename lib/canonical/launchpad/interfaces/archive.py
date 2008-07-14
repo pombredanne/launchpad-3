@@ -129,6 +129,33 @@ class IArchive(IHasOwner):
         'The size of binaries published in the context archive.')
     estimated_size = Attribute('Estimated archive size.')
 
+    total_count = Int(
+        title=_("Total number of builds in archive"), required=True,
+        default=0,
+        description=_("The total number of builds in this archive. "
+                      "This counter does not include discontinued "
+                      "(superseded, cancelled, obsoleted) builds"))
+
+    pending_count = Int(
+        title=_("Number of pending builds in archive"), required=True,
+        default=0,
+        description=_("The number of pending builds in this archive."))
+
+    succeeded_count = Int(
+        title=_("Number of successful builds in archive"), required=True,
+        default=0,
+        description=_("The number of successful builds in this archive."))
+
+    building_count = Int(
+        title=_("Number of active builds in archive"), required=True,
+        default=0,
+        description=_("The number of active builds in this archive."))
+
+    failed_count = Int(
+        title=_("Number of failed builds in archive"), required=True,
+        default=0,
+        description=_("The number of failed builds in this archive."))
+
     def getPubConfig():
         """Return an overridden Publisher Configuration instance.
 
@@ -399,6 +426,24 @@ class IArchiveSet(Interface):
             and the number of 'uploads' keys and corresponding values.
         """
 
+    def getBuildCountersForArchitecture(archive, distroarchseries):
+        """Return a dictionary containing the build counters per status.
+
+        The result is restricted to the given archive and distroarchseries.
+
+        The returned dictionary contains the follwoing keys and values:
+
+         * 'total': total number of builds (includes SUPERSEDED);
+         * 'pending': number of builds in NEEDSBUILD or BUILDING state;
+         * 'failed': number of builds in FAILEDTOBUILD, MANUALDEPWAIT,
+           CHROOTWAIT and FAILEDTOUPLOAD state;
+         * 'succeeded': number of SUCCESSFULLYBUILT builds.
+
+        :param archive: target `IArchive`;
+        :param distroarchseries: target `IDistroArchSeries`.
+
+        :return a dictionary with the 4 keys specified above.
+        """
 
 class ArchivePurpose(DBEnumeratedType):
     """The purpose, or type, of an archive.

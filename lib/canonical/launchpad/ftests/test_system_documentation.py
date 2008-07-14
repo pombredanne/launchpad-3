@@ -561,6 +561,12 @@ special = {
             tearDown=tearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'bugtracker-person.txt': LayeredDocFileSuite(
+            '../doc/bugtracker-person.txt',
+            setUp=checkwatchesSetUp,
+            tearDown=uploaderTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
             '../doc/answer-tracker-notifications-linked-bug.txt',
             setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
@@ -591,11 +597,32 @@ special = {
             tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
             ),
+    'checkwatches.txt':
+            LayeredDocFileSuite(
+                '../doc/checkwatches.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                stdout_logging_level=logging.WARNING,
+                layer=LaunchpadZopelessLayer
+                ),
     'checkwatches-cli-switches.txt':
             LayeredDocFileSuite(
                 '../doc/checkwatches-cli-switches.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
+    'bugwatch.txt':
+            LayeredDocFileSuite(
+                '../doc/bugwatch.txt',
+                setUp=setUp, tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker.txt',
+                setUp=setUp, tearDown=tearDown,
+                stdout_logging_level=logging.WARNING,
                 layer=LaunchpadZopelessLayer
                 ),
     'externalbugtracker-bug-imports.txt':

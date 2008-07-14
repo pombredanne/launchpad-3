@@ -16,13 +16,19 @@
             set_schema="canonical.launchpad.interfaces.IDistroArchSeries"/>
     </content>
 
+    <adapter
+      for="canonical.launchpad.interfaces.IDistroArchSeries"
+      provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+      factory="canonical.launchpad.browser.distroarchseries_to_structuralheading"
+      />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroArchSeries"
         name="+index" />
 
    <browser:menus
         module="canonical.launchpad.browser.distroarchseries"
-        classes="DistroArchSeriesFacets DistroArchSeriesContextMenu"
+        classes="DistroArchSeriesContextMenu"
         />
 
     <browser:url

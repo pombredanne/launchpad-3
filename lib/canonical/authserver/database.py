@@ -18,19 +18,20 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
     UnknownBranchTypeError)
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import login, login_person, logout, ANONYMOUS
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.database.sqlbase import clear_current_connection_cache
+from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+from canonical.database.sqlbase import (
+    clear_current_connection_cache, reset_store)
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
-    READ_ONLY, WRITABLE)
+    IUserDetailsStorageV2, LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE,
+    PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 
 from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
@@ -47,6 +48,7 @@ def utf8(x):
 
 def read_only_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
+    @reset_store
     def transacted(*args, **kwargs):
         transaction.begin()
         clear_current_connection_cache()
@@ -61,9 +63,9 @@ def read_only_transaction(function):
 
 def writing_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
+    @reset_store
     def transacted(*args, **kwargs):
         transaction.begin()
-        clear_current_connection_cache()
         login(ANONYMOUS)
         try:
             ret = function(*args, **kwargs)
@@ -79,15 +81,24 @@ def writing_transaction(function):
 
 def run_as_requester(function):
     """Decorate 'function' by logging in as the user identified by its first
-    parameter, the `Person` object is then passed in to the function instead of
-    the login ID.
+    parameter, the `Person` object is then passed in to the function instead
+    of the login ID.
+
+    The exception is when the requesting login ID is `LAUNCHPAD_SERVICES`. In
+    that case, we'll pass through the `LAUNCHPAD_SERVICES` variable and the
+    method will do whatever security proxy hackery is required to provide read
+    privileges to the Launchpad services.
 
     Assumes that 'function' is on an object that implements a '_getPerson'
     method similar to `UserDetailsStorageMixin._getPerson`.
     """
     def as_user(self, loginID, *args, **kwargs):
+        if loginID == LAUNCHPAD_SERVICES:
+            # Don't pass in an actual user. Instead pass in LAUNCHPAD_SERVICES
+            # and expect `function` to use `removeSecurityProxy` or similar.
+            return function(self, LAUNCHPAD_SERVICES, *args, **kwargs)
         requester = self._getPerson(loginID)
-        login(requester.preferredemail.email)
+        login_person(requester)
         try:
             return function(self, requester, *args, **kwargs)
         finally:
@@ -104,9 +115,8 @@ class UserDetailsStorageMixin:
     def _getEmailAddresses(self, person):
         """Get the email addresses for a person"""
         emails = [person.preferredemail] + list(person.validatedemails)
-        return (
-            [person.preferredemail.email] +
-            [email.email for email in person.validatedemails])
+        # Bypass zope's security because IEmailAddress.email is not public.
+        return [removeSecurityProxy(email).email for email in emails]
 
     def getSSHKeys(self, loginID):
         """See `IUserDetailsStorage`."""
@@ -399,12 +409,14 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         branch.requestMirror()
         return True
 
-    def getDefaultStackedOnBranch(self, project_name):
+    def getDefaultStackedOnBranch(self, requester, project_name):
         return deferToThread(
-            self._getDefaultStackedOnBranchInteraction, project_name)
+            self._getDefaultStackedOnBranchInteraction, requester,
+            project_name)
 
     @read_only_transaction
-    def _getDefaultStackedOnBranchInteraction(self, project_name):
+    @run_as_requester
+    def _getDefaultStackedOnBranchInteraction(self, requester, project_name):
         if project_name == '+junk':
             return ''
         product = getUtility(IProductSet).getByName(project_name)
@@ -415,8 +427,11 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         branch = product.default_stacked_on_branch
         if branch is None:
             return ''
-        else:
-            return branch.unique_name
+        try:
+            unique_name = branch.unique_name
+        except Unauthorized:
+            return ''
+        return '/' + unique_name
 
     def getBranchInformation(self, loginID, userName, productName,
                              branchName):
@@ -424,6 +439,12 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return deferToThread(
             self._getBranchInformationInteraction, loginID, userName,
             productName, branchName)
+
+    def _canWriteToBranch(self, requester, branch):
+        if requester == LAUNCHPAD_SERVICES:
+            return False
+        return (branch.branch_type == BranchType.HOSTED
+                and requester.inTeam(branch.owner))
 
     @read_only_transaction
     @run_as_requester
@@ -437,18 +458,20 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             '~%s/%s/%s' % (userName, productName, branchName))
         if branch is None:
             return '', ''
+        if requester == LAUNCHPAD_SERVICES:
+            branch = removeSecurityProxy(branch)
         try:
             branch_id = branch.id
         except Unauthorized:
             return '', ''
-        if (requester.inTeam(branch.owner)
-            and branch.branch_type == BranchType.HOSTED):
-            return branch_id, WRITABLE
-        elif branch.branch_type == BranchType.REMOTE:
+        if branch.branch_type == BranchType.REMOTE:
             # Can't even read remote branches.
             return '', ''
+        if self._canWriteToBranch(requester, branch):
+            permissions = WRITABLE
         else:
-            return branch_id, READ_ONLY
+            permissions = READ_ONLY
+        return branch_id, permissions
 
 
 class DatabaseBranchDetailsStorage:

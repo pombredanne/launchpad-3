@@ -36,10 +36,8 @@ to retract it at the same time.
 
   >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> print browser.getLink('Offer to mentor someone fixing this bug').url
+  >>> print browser.getLink(menu_mentoring_offer).url
   http://bugs.launchpad.dev/tomcat/+bug/2/+mentor
-  >>> page_mentoring_offer in browser.contents
-  True
   >>> for tag in find_tags_by_class(
   ...     anon_browser.contents, 'menu-link-retractmentoring-disabled'):
   ...     print tag.renderContents()
@@ -86,7 +84,7 @@ complete.
 
   >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/8')
-  >>> browser.getLink('Offer to mentor someone fixing this bug')
+  >>> browser.getLink(menu_mentoring_offer)
   Traceback (most recent call last):
   ...
   LinkNotFoundError
@@ -108,7 +106,7 @@ In the case of bugs, we should not be able to offer mentorship on a bug
 which is a duplicate:
 
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/6')
-  >>> browser.getLink('Offer to mentor someone fixing this bug')
+  >>> browser.getLink(menu_mentoring_offer)
   Traceback (most recent call last):
   ...
   LinkNotFoundError
@@ -125,7 +123,7 @@ First, we will make an offer of mentorship on a bug.
 
   >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> browser.getLink('Offer to mentor someone fixing this bug').click()
+  >>> browser.getLink(menu_mentoring_offer).click()
   >>> print browser.url
   http://bugs.launchpad.dev/tomcat/+bug/2/+mentor
   >>> print browser.title
@@ -144,7 +142,7 @@ We should see the listing of mentors, now:
 And most importantly, we should no longer be able to offer mentoring on this
 bug, because we are ALREADY a mentor!
 
-  >>> browser.getLink('Offer to mentor someone fixing this bug')
+  >>> browser.getLink(menu_mentoring_offer)
   Traceback (most recent call last):
   ...
   LinkNotFoundError
@@ -164,10 +162,8 @@ retract mentoring:
 
   >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> print browser.getLink('Offer to mentor someone fixing this bug').url
+  >>> print browser.getLink(menu_mentoring_offer).url
   http://bugs.launchpad.dev/tomcat/+bug/2/+mentor
-  >>> page_mentoring_offer in browser.contents
-  True
   >>> browser.getLink('Retract my offer of mentorship')
   Traceback (most recent call last):
   ...
@@ -583,7 +579,7 @@ And finally let's do it on the bug.
   >>> browser.getControl('Retract Mentoring').click()
   >>> 'Blackhole Trash folder' in browser.title
   True
-  >>> print browser.getLink('Offer to mentor someone fixing this bug').url
+  >>> print browser.getLink(menu_mentoring_offer).url
   http://bugs.launchpad.dev/tomcat/+bug/2/+mentor
 
 
@@ -627,13 +623,17 @@ Now let's do the same with a bug.
 First we show that 'One Membership' is not initially a subscriber to the
 bug:
 
-  >>> subs = find_portlet(browser.contents, 'Subscribers')
-  >>> 'One Membership' in subs.renderContents()
-  False
+    >>> subs = find_tag_by_id(browser.contents, 'portlet-subscribers')
+    >>> for subscriber in subs.findAll('li'):
+    ...     print extract_text(subscriber)
+    Subscribe
+    Subscribe someone else
+    Foo Bar
+    Ubuntu Team
 
 Now we offer mentoring, and along the way we request to be subscribed:
 
-  >>> browser.getLink('Offer to mentor someone fixing this bug').click()
+  >>> browser.getLink(menu_mentoring_offer).click()
   >>> browser.getControl(name='field.subscription_request').value = True
   >>> browser.getControl('Offer Mentoring').click()
   >>> browser.url
@@ -641,8 +641,11 @@ Now we offer mentoring, and along the way we request to be subscribed:
 
 And now 'One Membership' is a subscriber:
 
-  >>> subs = find_portlet(browser.contents, 'Subscribers')
-  >>> 'One Membership' in subs.renderContents()
-  True
-
-
+    >>> subs = find_tag_by_id(browser.contents, 'portlet-subscribers')
+    >>> for subscriber in subs.findAll('li'):
+    ...     print extract_text(subscriber)
+    Unsubscribe
+    Subscribe someone else
+    Foo Bar
+    One Membership
+    Ubuntu Team

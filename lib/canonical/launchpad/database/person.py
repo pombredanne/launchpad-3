@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # _valid_nick() in generate_nick causes E1101
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,E1101,W0612
@@ -54,7 +54,8 @@ from canonical.launchpad.database.translationrelicensingagreement import (
     TranslationRelicensingAgreement)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
-from canonical.launchpad.helpers import contactEmailAddresses, shortlist
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, get_email_template, shortlist)
 
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet,
@@ -85,15 +86,20 @@ from canonical.launchpad.interfaces.mailinglist import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
-    InvalidName, IPerson, IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility, PersonalStanding,
-    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+    InvalidName, IPerson, IPersonSet, ITeam, IHasPersonNavigationMenu,
+    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
+    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.personnotification import (
+    IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
+from canonical.launchpad.interfaces.salesforce import (
+    ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from canonical.launchpad.interfaces.shipit import (
     ShipItConstants, ShippingRequestStatus)
 from canonical.launchpad.interfaces.specification import (
@@ -174,7 +180,8 @@ def validate_person_visibility(person, attr, value):
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
-    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
+    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot,
+               IHasPersonNavigationMenu)
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -228,7 +235,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
-   
+
     # XXX StuartBishop 2008-05-13 bug=237280: The openid_identifier, password,
     # account_status and account_status_comment properties should go. Note
     # that they override # the current strict controls on Account, allowing
@@ -388,29 +395,63 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             AND (date_expires IS NULL OR date_expires > %s)
             """ % sqlvalues(self, UTC_NOW))
 
-    @cachedproperty
-    def _location(self):
+    @cachedproperty('_location')
+    def location(self):
+        """See `IObjectWithLocation`."""
         return PersonLocation.selectOneBy(person=self)
 
-    def set_time_zone(self, timezone):
-        location = self._location
-        if location is None:
-            location = PersonLocation(
-                person=self,
-                latitude=None,
-                longitude=None,
-                time_zone=timezone,
-                last_modified_by=self)
-        location.time_zone = timezone
-        self._location = location
-
-    def get_time_zone(self):
-        location = self._location
-        if location is None:
+    @property
+    def time_zone(self):
+        """See `IHasLocation`."""
+        if self.location is None:
             return None
-        return location.time_zone
-    time_zone = property(get_time_zone, set_time_zone)
+        return self.location.time_zone
 
+    @property
+    def latitude(self):
+        """See `IHasLocation`."""
+        if self.location is None:
+            return None
+        return self.location.latitude
+
+    @property
+    def longitude(self):
+        """See `IHasLocation`."""
+        if self.location is None:
+            return None
+        return self.location.longitude
+
+    def setLocation(self, latitude, longitude, time_zone, user):
+        """See `ISetLocation`."""
+        assert not self.is_team, 'Cannot edit team location.'
+        assert ((latitude is None and longitude is None) or
+                (latitude is not None and longitude is not None)), (
+            "Cannot set a latitude without longitude (and vice-versa).")
+
+        if self.location is not None:
+            self.location.time_zone = time_zone
+            self.location.latitude = latitude
+            self.location.longitude = longitude
+            self.location.last_modified_by = user
+            self.location.date_last_modified = UTC_NOW
+        else:
+            self._location = PersonLocation(
+                person=self, time_zone=time_zone, latitude=latitude,
+                longitude=longitude, last_modified_by=user)
+
+        # Make a note that we need to tell this person that their
+        # information was updated by the user. We can only do this if we
+        # have a validated email address for this person.
+        if user != self and self.preferredemail is not None:
+            mail_text = get_email_template('person-location-modified.txt')
+            mail_text = mail_text % {
+                'actor': user.name,
+                'actor_browsername': user.browsername,
+                'person': self.name}
+            subject = '%s updated your location and time zone' % (
+                user.browsername)
+            getUtility(IPersonNotificationSet).addNotification(
+                self, subject, mail_text)
 
     def get_translations_relicensing_agreement(self):
         """Return whether translator agrees to relicense their translations.
@@ -817,7 +858,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def getBranch(self, product_name, branch_name):
         """See `IPerson`."""
-        # import here to work around a circular import problem
+        # Import here to work around a circular import problem.
         from canonical.launchpad.database import Product
 
         if product_name is None or product_name == '+junk':
@@ -1028,8 +1069,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             WHERE TeamParticipation.person = %(person)s
             AND owner = TeamParticipation.team
             """ % sqlvalues(person=self)]
-        if match_name is not None:
 
+        # We only want to use the extra query if match_name is not None and it
+        # is not the empty string ('' or u'').
+        if match_name:
             like_query = "'%%' || %s || '%%'" % quote_like(match_name)
             quoted_query = quote(match_name)
             clauses.append(
@@ -1042,6 +1085,23 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         results = Product.select("""id IN (%s)""" % query,
                                  orderBy=['displayname'])
         return results
+
+    def getCommercialSubscriptionVouchers(self):
+        """See `IPerson`."""
+        voucher_proxy = getUtility(ISalesforceVoucherProxy)
+        commercial_vouchers = voucher_proxy.getAllVouchers(self)
+        unredeemed_commercial_vouchers = []
+        redeemed_commercial_vouchers = []
+        for voucher in commercial_vouchers:
+            assert voucher.status in VOUCHER_STATUSES, (
+                "Voucher %s has unrecognized status %s" %
+                (voucher.voucher_id, voucher.status))
+            if voucher.status == 'Redeemed':
+                redeemed_commercial_vouchers.append(voucher)
+            else:
+                unredeemed_commercial_vouchers.append(voucher)
+        return (unredeemed_commercial_vouchers,
+                redeemed_commercial_vouchers)
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -1587,6 +1647,45 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             orderBy=Person.sortingColumns)
 
     @property
+    def mapped_participants(self):
+        """See `IPersonViewRestricted`."""
+        locations = PersonLocation.select("""
+            PersonLocation.person = TeamParticipation.person AND
+            TeamParticipation.team = %s AND
+            -- We only need to check for a latitude here because there's a DB
+            -- constraint which ensures they are both set or unset.
+            PersonLocation.latitude IS NOT NULL AND
+            Person.id = PersonLocation.person AND
+            Person.teamowner IS NULL
+            """ % sqlvalues(self.id),
+            clauseTables=['TeamParticipation', 'Person'],
+            prejoins=['person',])
+        # Pre-cache this location against its person.  Since we'll always
+        # iterate over all persons returned by this property (to build the map
+        # of team members), it becomes more important to cache their locations
+        # than to return a lazy SelectResults (or similar) object that only
+        # fetches the rows when they're needed.
+        for location in locations:
+            location.person._location = location
+        return [location.person for location in locations]
+
+    @property
+    def unmapped_participants(self):
+        """See `IPersonViewRestricted`."""
+        return Person.select("""
+            Person.id = TeamParticipation.person AND
+            TeamParticipation.team = %s AND
+            TeamParticipation.person NOT IN (
+                SELECT PersonLocation.person
+                FROM PersonLocation INNER JOIN TeamParticipation ON
+                     PersonLocation.person = TeamParticipation.person
+                WHERE TeamParticipation.team = %s AND
+                      PersonLocation.latitude IS NOT NULL) AND
+            Person.teamowner IS NULL
+            """ % sqlvalues(self.id, self.id),
+            clauseTables=['TeamParticipation'])
+
+    @property
     def open_membership_invitations(self):
         """See `IPerson`."""
         return TeamMembership.select("""
@@ -1676,12 +1775,40 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         self.preferredemail.status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'
+        self.name = self._ensureNewName(base_new_name)
+
+    def _ensureNewName(self, base_new_name):
+        """Return a unique name."""
         new_name = base_new_name
         count = 1
         while Person.selectOneBy(name=new_name) is not None:
             new_name = base_new_name + str(count)
             count += 1
-        self.name = new_name
+        return new_name
+
+    def reactivateAccount(self, comment):
+        """Reactivate the account.
+
+        Set the account status to ACTIVE and possibly restore the user's
+        name.
+        """
+        if self.password is None:
+            raise AssertionError(
+                "User %s cannot be reactivate without first setting a "
+                "password." % self.name)
+        if self.preferredemail is None:
+            raise AssertionError(
+                "User %s cannot be reactivate without first setting a "
+                "preferred email address." % self.name)
+        self.account.status = AccountStatus.ACTIVE
+        self.account.status_comment = comment
+        if '-deactivatedaccount' in self.name:
+            # The name was changed by deactivateAccount(). Restore the
+            # name, but we must ensure it does not conflict with a current
+            # user.
+            name_parts = self.name.split('-deactivatedaccount')
+            base_new_name = name_parts[0]
+            self.name = self._ensureNewName(base_new_name)
 
     @property
     def visibility_consistency_warning(self):
@@ -1931,6 +2058,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
+            # Automated processes need access to set the account().
+            removeSecurityProxy(email).account = email.person.account
             getUtility(IHWSubmissionSet).setOwnership(email)
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
@@ -1961,6 +2090,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.account.status = AccountStatus.ACTIVE
             self.account.status_comment = None
             self.account.sync() # sync so validpersoncache updates.
+        # Anonymous users may claim their profile; remove the proxy
+        # to set the account.
+        removeSecurityProxy(email).account = self.account
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -1987,7 +2119,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.
-        email = EmailAddress.get(email.id)
+        email = removeSecurityProxy(email)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
         getUtility(IHWSubmissionSet).setOwnership(email)
@@ -2282,10 +2414,6 @@ class PersonSet:
 
         if name is None:
             name = nickname.generate_nick(email)
-        if not valid_name(name):
-            raise InvalidName("%s is not a valid name for a person." % name)
-        if self.getByName(name, ignore_merged=False) is not None:
-            raise NameAlreadyTaken("The name '%s' is already taken." % name)
 
         if not displayname:
             displayname = name.capitalize()
@@ -2306,6 +2434,17 @@ class PersonSet:
 
         return person, email
 
+    def createPersonWithoutEmail(
+        self, name, rationale, comment=None, displayname=None,
+        registrant=None):
+        """Create and return a new Person without using an email address.
+
+        See `IPersonSet`.
+        """
+        return self._newPerson(
+            name, displayname, hide_email_addresses=True, rationale=rationale,
+            comment=comment, registrant=registrant)
+
     def _newPerson(self, name, displayname, hide_email_addresses,
                    rationale, comment=None, registrant=None, account=None):
         """Create and return a new Person with the given attributes.
@@ -2313,7 +2452,19 @@ class PersonSet:
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
         """
-        assert self.getByName(name, ignore_merged=False) is None
+        if not valid_name(name):
+            raise InvalidName(
+                "%s is not a valid name for a person." % name)
+        else:
+            # The name should be okay, move on...
+            pass
+        if self.getByName(name, ignore_merged=False) is not None:
+            raise NameAlreadyTaken(
+                "The name '%s' is already taken." % name)
+
+        if not displayname:
+            displayname = name.capitalize()
+
         person = Person(
             name=name, displayname=displayname, account=account,
             creation_rationale=rationale, creation_comment=comment,
@@ -2397,8 +2548,17 @@ class PersonSet:
         query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def find(self, text="", orderBy=None):
+    def getAllValidPersonsAndTeams(self):
         """See `IPersonSet`."""
+        return self.getAllTeams().union(
+            self.getAllValidPersons(),
+            orderBy=Person._sortingColumnsForSetOperations)
+
+    def find(self, text, orderBy=None):
+        """See `IPersonSet`."""
+        if not text:
+            # Return an empty result set.
+            return Person.select("1 = 2")
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
@@ -2411,7 +2571,7 @@ class PersonSet:
             Person.teamowner IS NULL
             AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%'
+            AND lower(EmailAddress.email) LIKE %s || '%%%%'
             AND Person.account = Account.id
             AND Account.status NOT IN %s
             """ % args
@@ -2432,7 +2592,7 @@ class PersonSet:
             Person.teamowner IS NOT NULL
             AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%'
+            AND lower(EmailAddress.email) LIKE %s || '%%%%'
             """ % (quote_like(text),)
         results = results.union(Person.select(
             team_email_query, clauseTables=['EmailAddress']))
@@ -2820,7 +2980,8 @@ class PersonSet:
                 UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
                 WHERE owner = %(from_id)s AND name = %(name)s
                     AND (%(product)s IS NULL OR product = %(product)s)
-                ''', vars())
+                ''', dict(to_id=to_id, from_id=from_id,
+                          name=name, new_name=new_name, product=product))
         skip.append(('branch','owner'))
 
         # Update MailingListSubscription. Note that no remaining records
@@ -2970,9 +3131,9 @@ class PersonSet:
 
         # Update PackageBugSupervisor entries.
         cur.execute('''
-            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)s
-            WHERE bug_supervisor=%(from_id)s
-            ''', vars())
+            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)d
+            WHERE bug_supervisor=%(from_id)d
+            ''' % vars())
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
         # Update the SpecificationFeedback entries that will not conflict
@@ -3045,8 +3206,6 @@ class PersonSet:
         skip.append(('sprintattendance', 'attendee'))
 
         # Update only the POSubscriptions that will not conflict
-        # XXX: StuartBishop 2005-03-31:
-        # Add sampledata and test to confirm this case.
         cur.execute('''
             UPDATE POSubscription
             SET person=%(to_id)d
@@ -3125,6 +3284,35 @@ class PersonSet:
         # to the old PPA to the new one, performing a careful_publishing on it
         # and removing the old one from disk.
         skip.append(('archive', 'owner'))
+
+        # Update only the CodeReviewVote that will not conflict
+        cur.execute('''
+            UPDATE CodeReviewVote
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM CodeReviewVote AS a, CodeReviewVote AS b
+                WHERE a.reviewer = %(from_id)d AND b.reviewer = %(to_id)d
+                AND a.branch_merge_proposal = b.branch_merge_proposal
+                )
+            ''' % vars())
+        # And leave conflicts as noise
+        skip.append(('codereviewvote', 'reviewer'))
+
+        # Update only the WebServiceBan that will not conflict
+        cur.execute('''
+            UPDATE WebServiceBan
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM WebServiceBan AS a, WebServiceBan AS b
+                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                AND ( (a.ip IS NULL AND b.ip IS NULL) OR (a.ip = b.ip) )
+                )
+            ''' % vars())
+        # And delete the rest
+        cur.execute('''
+            DELETE FROM WebServiceBan WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('webserviceban', 'person'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
@@ -3339,6 +3527,22 @@ class PersonSet:
                         PostedMessageStatus.APPROVED,
                         config.standingupdater.approvals_needed))
 
+    def cacheBrandingForPeople(self, people):
+        """See `IPersonSet`."""
+        from canonical.launchpad.database import LibraryFileAlias
+        aliases = []
+        aliases.extend(person.iconID for person in people
+                       if person.iconID is not None)
+        aliases.extend(person.logoID for person in people
+                       if person.logoID is not None)
+        aliases.extend(person.mugshotID for person in people
+                       if person.mugshotID is not None)
+        if not aliases:
+            return
+        # Listify, since this is a pure cache.
+        list(LibraryFileAlias.select("LibraryFileAlias.id IN %s"
+             % sqlvalues(aliases), prejoins=["content"]))
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'
@@ -3481,3 +3685,4 @@ class IrcIDSet:
     def new(self, person, network, nickname):
         """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)
+
