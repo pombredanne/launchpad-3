@@ -331,9 +331,9 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'distributions', 'packages', 'files', 'branch_add',
+        'mentorship', 'distributions', 'packages', 'files',
         'series_add', 'announce', 'announcements', 'administer',
-        'review_license', 'branch_visibility', 'rdf', 'subscribe']
+        'review_license', 'subscribe', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -392,13 +392,9 @@ class ProductOverviewMenu(ApplicationMenu):
         enabled = bool(self.context.announcements())
         return Link('+announcements', text, enabled=enabled)
 
-    def branch_add(self):
-        text = 'Register branch'
-        return Link('+addbranch', text, icon='add')
-
     def rdf(self):
         text = structured(
-            'Download <abbr title="Resource Description Framework">'
+            '<abbr title="Resource Description Framework">'
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
 
@@ -411,11 +407,6 @@ class ProductOverviewMenu(ApplicationMenu):
     def review_license(self):
         text = 'Review license'
         return Link('+review-license', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def branch_visibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit')
 
     def subscribe(self):
         text = 'Subscribe to bug mail'
@@ -480,10 +471,10 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
     usedfor = IProduct
     facet = 'branches'
     links = ['branch_add', 'list_branches', 'active_reviews',
-             'approved_merges']
+             'approved_merges', 'code_import', 'branch_visibility']
 
     def branch_add(self):
-        text = 'Register branch'
+        text = 'Register a branch'
         summary = 'Register a new Bazaar branch for this project'
         return Link('+addbranch', text, summary, icon='add')
 
@@ -505,6 +496,16 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
         else:
             text = 'approved merges'
         return Link('+approvedmerges', text)
+
+    @enabled_with_permission('launchpad.Admin')
+    def branch_visibility(self):
+        text = 'Define branch visibility'
+        return Link('+branchvisibility', text, icon='edit')
+
+    def code_import(self):
+        text = 'Import your project'
+        enabled = not self.context.official_codehosting
+        return Link('/+code-imports/+new', text, icon='add', enabled=enabled)
 
 
 class ProductSpecificationsMenu(ApplicationMenu):

@@ -48,9 +48,6 @@
     <span tal:define="link context/menu:overview/driver"
           tal:condition="link/enabled"
           tal:content="structure link/render" />
-    <span tal:define="link context/menu:overview/rdf"
-          tal:condition="link/enabled"
-          tal:content="structure link/render" />
     <span tal:define="link context/menu:overview/subscribe"
           tal:condition="link/enabled"
           tal:content="structure link/render" />
@@ -58,9 +55,6 @@
           tal:condition="link/enabled"
           tal:content="structure link/render" />
     <span tal:define="link context/menu:overview/reassign"
-          tal:condition="link/enabled"
-          tal:content="structure link/render" />
-    <span tal:define="link context/menu:overview/branch_visibility"
           tal:condition="link/enabled"
           tal:content="structure link/render" />
     )
@@ -232,8 +226,9 @@
       <div class="section">
         <h2>Registered</h2>
         <tal:created replace="context/datecreated/fmt:approximatedate" />
-        <br />
-        <a href="+rdf">RDF metadata</a>
+        <div tal:define="link context/menu:overview/rdf"
+             tal:condition="link/enabled"
+             tal:content="structure link/render" />
       </div>
     </div>
   </body>
