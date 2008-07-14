@@ -29,7 +29,6 @@ from zope.security.proxy import (
     isinstance as zope_isinstance, ProxyFactory, removeSecurityProxy)
 
 from canonical.lazr import decorates
-from canonical.lazr.adapter import nearest_adapter
 
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,
