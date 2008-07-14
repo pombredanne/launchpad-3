@@ -58,7 +58,7 @@ should be able to use the get_parameter() method to get the WADL
 definition of the 'people_collection_link' parameter and find out more
 about it--for instance, is it a link to another resource?
 
-   >>> link_name = people_collection_link'
+   >>> link_name = 'people_collection_link'
    >>> link_parameter = service_root.get_parameter(link_name)
    Traceback (most recent call last):
    ...
