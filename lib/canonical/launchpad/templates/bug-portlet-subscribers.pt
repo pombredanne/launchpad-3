@@ -26,8 +26,8 @@
             title subscription/display_subscribed_by;
           "
         >
-         <tal:block replace="structure subscription/person/image:icon" /> 
-         <tal:block replace="structure subscription/person/browsername" />
+          <tal:block replace="structure subscription/person/image:icon" /> 
+          <tal:block replace="structure subscription/person/browsername" />
         </a>
       </div>
       <div tal:condition="not:direct_subscriptions">None</div>

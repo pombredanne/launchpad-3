@@ -90,7 +90,7 @@ He is notified that Landscape developers team has been subscribed.
     ...     extract_text(tag)
     u'Landscape Developers team has been subscribed to this bug.'
 
-The subscribers portlet display the new subscribed team.
+The subscribers portlet displays the new subscribed team.
 
     >>> print_direct_subscribers(user_browser.contents)
     David Allouche (Subscribed by No Privileges Person)
