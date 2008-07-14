@@ -2,7 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet subscribers"
+  class="portlet"
   id="portlet-subscribers"
   tal:define="
     direct_subscriptions context/getDirectSubscriptions;
@@ -14,49 +14,43 @@
     <div tal:content="structure context_menu/subscription/render" />
     <div tal:content="structure context_menu/addsubscriber/render" />
   </section>
-
   <section>
     <h2>Subscribers</h2>
-
-  <div tal:repeat="subscription direct_subscriptions"
-       tal:condition="direct_subscriptions"
-       class="list-items">
-    <a href="#"
-       tal:attributes="href subscription/person/fmt:url;
-                       title subscription/display_subscribed_by">
-       <tal:block replace="structure subscription/person/image:icon" /> 
-       <tal:block replace="structure subscription/person/browsername" />
-    </a>
-  </div>
-
-  <div tal:condition="not:direct_subscriptions">None</div>
-
+      <div
+        tal:condition="direct_subscriptions"
+        tal:repeat="subscription direct_subscriptions"
+      >
+        <a
+          tal:attributes="
+            href subscription/person/fmt:url;
+            title subscription/display_subscribed_by;
+          "
+        >
+         <tal:block replace="structure subscription/person/image:icon" /> 
+         <tal:block replace="structure subscription/person/browsername" />
+        </a>
+      </div>
+      <div tal:condition="not:direct_subscriptions">None</div>
   </section>
   <section tal:condition="from_dupes_subscriptions">
-
-       <h2>From duplicates</h2>
-       <div tal:repeat="subscription from_dupes_subscriptions"
-            class="list-items">
-         <a href="#"
-            tal:attributes="
-                 href subscription/person/fmt:url;
-                 title subscription/display_subscribed_by">
-           <tal:block replace="structure subscription/person/image:icon" /> 
-           <tal:block replace="subscription/person/browsername" />
-         </a>
-       </div>
-
+    <h2>From duplicates</h2>
+    <div tal:repeat="subscription from_dupes_subscriptions">
+      <a
+        tal:attributes="
+          href subscription/person/fmt:url;
+          title subscription/display_subscribed_by;
+        "
+      >
+        <tal:block replace="structure subscription/person/image:icon" /> 
+        <tal:block replace="subscription/person/browsername" />
+      </a>
+    </div>
   </section>
-
   <section tal:condition="also_notified_subscribers">
-
-       <h2>Also notified</h2>
-
-       <div
-          tal:repeat="subscriber also_notified_subscribers"
-          tal:content="structure subscriber/fmt:link"
-       />
-
+    <h2>Also notified</h2>
+    <div
+      tal:repeat="subscriber also_notified_subscribers"
+      tal:content="structure subscriber/fmt:link"
+    />
   </section>
-
 </div>

@@ -51,6 +51,7 @@ legend legend {font-weight: normal;}
   border-width: 0 0 1px 0;
   display: block;
 }
+section {display: block; margin-bottom: 1em;}
 table {border-collapse: collapse;}
 textarea {display: block;}
 thead {vertical-align: bottom;}
@@ -1092,10 +1093,11 @@ a conditional comment in main-template.pt to work around the above rule. */
   border:1px solid #d6d6d6;
   margin: 0 0 0.5em 0;
   color: #717171;
-  padding: 8px 8px 8px;
+  padding: 8px;
   width: 182px; /* = 200px column - 2*1px vertical border - 2*8px padding */
   overflow: hidden;
   -moz-border-radius: 5px;
+  -o-border-radius: 5px;
   -webkit-border-radius: 5px;
 }
 /* In the Actions menu, part of the horizontal padding is used for
@@ -1111,10 +1113,6 @@ highlighting menu items, so padding is handled by the contents instead: */
   font-weight: bold;
   margin: 0 0 1em;
   padding: 0 0 1px;
-}
-#portlets .portlet section {
-  display: block;
-  margin-bottom: 1.5em;
 }
 #actions ul {
   list-style-type: none;
