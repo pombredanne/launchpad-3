@@ -184,16 +184,19 @@ This CodeImport is associated to the evolution/main ProductSeries
     u'trunk'
 
 
-== Updating code import review status ==
+== Updating code import details ==
 
 Members of the VCS Imports team (import operators), or Launchpad
-administrators can update the review status of code imports.  This is
-done using the code import methods: approve; suspend; invalidate and
-markFailing.
+administrators can update the details of the code import, including
+the review status.  This is done using the code import methods:
+approve; suspend; invalidate and markFailing update the review status
+and the other details, and changeDetails just updates the other
+details.
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
-    >>> code_import = factory.makeCodeImport()
+    >>> code_import = factory.makeCodeImport(
+    ...     svn_branch_url='http://svn.example.com/project')
     >>> print code_import.review_status.title
     Pending Review
 
@@ -261,6 +264,24 @@ invalidated.
     Subject: Code import product.../name... status: Failing
     <BLANKLINE>
     The import has been marked as failing.
+    ...
+    ----------------------------------------
+
+Finally, the changeDetails method also sends out an email with a
+summary of the changes made.
+
+    >>> data = {'svn_branch_url': 'http://svn.example.com/project/trunk'}
+    >>> code_import.changeDetails(data, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: no-priv@canonical.com
+    Subject: Code import product.../name... status: Failing
+    <BLANKLINE>
+    ... is now being imported from:
+        http://svn.example.com/project/trunk
+    instead of:
+        http://svn.example.com/project
+    <BLANKLINE>
     ...
     ----------------------------------------
 
@@ -415,20 +436,12 @@ The launchpad.Edit privilege is required to use CodeImport.updateFromData.
     ...
     Unauthorized: (<CodeImport ...>, 'updateFromData', 'launchpad.Edit')
 
-CodeImports provide a slightly different method for updates from the
-UI: changeDetails also sends out an email describing the changes.
+We saw above how changes to SVN details are displayed in emails above.
+CVS details are displayed in a similar way.
 
     >>> from canonical.launchpad.mailout.codeimport import (
     ...     make_email_body_for_code_import_update)
     >>> login('david.allouche@canonical.com')
-    >>> data = {'svn_branch_url': 'svn://svn.example.com/trunk'}
-    >>> modify_event = svn_import.updateFromData(data, nopriv)
-    >>> print make_email_body_for_code_import_update(modify_event)
-    ~vcs-imports/firefox/trunk-svn is now being imported from:
-        svn://svn.example.com/trunk
-    instead of:
-        svn://svn.example.com/branch/1.0
-
     >>> data = {'cvs_root': ':pserver:anoncvs@cvs.example.com:/var/cvsroot'}
     >>> modify_event = cvs_import.updateFromData(data, nopriv)
     >>> print make_email_body_for_code_import_update(modify_event)
