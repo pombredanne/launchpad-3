@@ -63,5 +63,17 @@
       set_schema="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory" />
   </content>
 
+  <!-- PublishingSet -->
+  <class class="canonical.launchpad.database.publishing.PublishingSet">
+    <allow interface="canonical.launchpad.interfaces.publishing.IPublishingSet"/>
+  </class>
+
+  <securedutility
+    class="canonical.launchpad.database.publishing.PublishingSet"
+    provides="canonical.launchpad.interfaces.publishing.IPublishingSet">
+    <allow interface="canonical.launchpad.interfaces.publishing.IPublishingSet" />
+  </securedutility>
+
+
 </facet>
 </configure>

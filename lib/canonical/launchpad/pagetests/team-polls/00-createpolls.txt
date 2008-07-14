@@ -118,7 +118,7 @@ We're redirected to the newly created poll
     'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080'
     >>> team_admin_browser.title
     'Poll: \xe2\x80\x9cDebian Project Leader Election 2080\xe2\x80\x9d'
-    >>> print_navigation(team_admin_browser.contents)
+    >>> print_location(team_admin_browser.contents)
     Location: ?Ubuntu Team? team
     Tabs:
     * Overview (http://launchpad.dev/~ubuntu-team)

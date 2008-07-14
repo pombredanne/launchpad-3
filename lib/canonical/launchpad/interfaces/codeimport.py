@@ -166,6 +166,9 @@ class ICodeImport(Interface):
         Additional attributes can also be updated.
         A code import job will be created for the import.
 
+        An email will be sent to the branch subscribers and ~vcs-imports team
+        about the change.
+
         :param data: dictionary whose keys are attribute names and values are
             attribute values.
         :param user: user who made the change, to record in the
@@ -177,6 +180,9 @@ class ICodeImport(Interface):
 
         Additional attributes can also be updated.
         If there was a pending job, it will be removed.
+
+        An email will be sent to the branch subscribers and ~vcs-imports team
+        about the change.
 
         :param data: dictionary whose keys are attribute names and values are
             attribute values.
@@ -190,6 +196,22 @@ class ICodeImport(Interface):
         Additional attributes can also be updated.
         If there was a pending job, it will be removed.
 
+        An email will be sent to the branch subscribers and ~vcs-imports team
+        about the change.
+
+        :param data: dictionary whose keys are attribute names and values are
+            attribute values.
+        :param user: user who made the change, to record in the
+            `CodeImportEvent`.
+        """
+
+    def changeDetails(data, user):
+        """Change the details of the import.
+
+        The difference between this method and `updateFromData` is that this
+        method cannot be used to change the review_status and an email will be
+        sent to the branch subscribers and ~vcs-imports team about the change.
+
         :param data: dictionary whose keys are attribute names and values are
             attribute values.
         :param user: user who made the change, to record in the
@@ -199,12 +221,14 @@ class ICodeImport(Interface):
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
 
-        Create a MODIFY `CodeImportEvent` if needed.
+        Creates and returns a MODIFY `CodeImportEvent` if changes were made.
 
         :param data: dictionary whose keys are attribute names and values are
             attribute values.
         :param user: user who made the change, to record in the
             `CodeImportEvent`.
+        :return: The MODIFY `CodeImportEvent`, if any changes were made, or
+            None if no changes were made.
         """
 
 

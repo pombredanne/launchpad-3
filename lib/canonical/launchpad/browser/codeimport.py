@@ -382,8 +382,11 @@ class CodeImportEditView(CodeImportBaseView):
             return None
 
     def _makeStatusChangeAction(label, status_method_name, status, text):
-        def condition(self, ignored):
-            return self._showButtonForStatus(status)
+        if status is not None:
+            def condition(self, ignored):
+                return self._showButtonForStatus(status)
+        else:
+            condition = None
         def success(self, action, data):
             """Make the requested status change."""
             whiteboard = self._updateWhiteboardAndCheckIfChangedFromData(data)
@@ -394,13 +397,9 @@ class CodeImportEditView(CodeImportBaseView):
             label, name=status_method_name, success=success,
             condition=condition)
 
-    def update_success(self, action, data):
-        """Update the details."""
-        whiteboard = self._updateWhiteboardAndCheckIfChangedFromData(data)
-        self.code_import.updateFromData(data, self.user)
-
     actions = form.Actions(
-        form.Action(_('Update'), name='update', success=update_success),
+        _makeStatusChangeAction(
+            _('Update'), 'changeDetails', None, 'updated'),
         _makeStatusChangeAction(
             _('Approve'), 'approve', CodeImportReviewStatus.REVIEWED,
             'approved'),

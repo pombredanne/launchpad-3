@@ -184,16 +184,19 @@ This CodeImport is associated to the evolution/main ProductSeries
     u'trunk'
 
 
-== Updating code import review status ==
+== Updating code import details ==
 
 Members of the VCS Imports team (import operators), or Launchpad
-administrators can update the review status of code imports.  This is
-done using the code import methods: approve; suspend; invalidate and
-markFailing.
+administrators can update the details of the code import, including
+the review status.  This is done using the code import methods:
+approve; suspend; invalidate and markFailing update the review status
+and the other details, and changeDetails just updates the other
+details.
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
-    >>> code_import = factory.makeCodeImport()
+    >>> code_import = factory.makeCodeImport(
+    ...     svn_branch_url='http://svn.example.com/project')
     >>> print code_import.review_status.title
     Pending Review
 
@@ -263,6 +266,30 @@ invalidated.
     The import has been marked as failing.
     ...
     ----------------------------------------
+
+Finally, the changeDetails method also sends out an email with a
+summary of the changes made.
+
+    >>> data = {'svn_branch_url': 'http://svn.example.com/project/trunk'}
+    >>> code_import.changeDetails(data, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: no-priv@canonical.com
+    Subject: Code import product.../name... status: Failing
+    <BLANKLINE>
+    ... is now being imported from:
+        http://svn.example.com/project/trunk
+    instead of:
+        http://svn.example.com/project
+    <BLANKLINE>
+    ...
+    ----------------------------------------
+
+changeDetails is smart enough to not send an email if no changes were
+actually made.
+
+    >>> code_import.changeDetails({}, nopriv)
+    >>> print_emails(group_similar=True)
 
 
 == Update intervals ==
@@ -390,15 +417,17 @@ on those objects.
       ...
     ForbiddenAttribute: ('svn_branch_url', <CodeImport ...>)
 
-Modifications can be done using the CodeImport.updateFromData method. If
-any change were made, this method creates a CodeImportEvent describing
-them. The CodeImportEvent records the user that made the change, so we
-need to pass the user as an argument.
+Modifications can be done using the CodeImport.updateFromData
+method. If any change were made, this method creates and returns a
+CodeImportEvent describing them. The CodeImportEvent records the user
+that made the change, so we need to pass the user as an argument.
 
     >>> svn_import.svn_branch_url
     u'svn://svn.example.com/trunk'
     >>> data = {'svn_branch_url': 'svn://svn.example.com/branch/1.0'}
-    >>> svn_import.updateFromData(data, nopriv)
+    >>> modify_event = svn_import.updateFromData(data, nopriv)
+    >>> modify_event.event_type.name
+    'MODIFY'
     >>> svn_import.svn_branch_url
     u'svn://svn.example.com/branch/1.0'
     >>> svn_events = event_set.getEventsForCodeImport(svn_import)
@@ -412,3 +441,17 @@ The launchpad.Edit privilege is required to use CodeImport.updateFromData.
     Traceback (most recent call last):
     ...
     Unauthorized: (<CodeImport ...>, 'updateFromData', 'launchpad.Edit')
+
+We saw above how changes to SVN details are displayed in emails above.
+CVS details are displayed in a similar way.
+
+    >>> from canonical.launchpad.mailout.codeimport import (
+    ...     make_email_body_for_code_import_update)
+    >>> login('david.allouche@canonical.com')
+    >>> data = {'cvs_root': ':pserver:anoncvs@cvs.example.com:/var/cvsroot'}
+    >>> modify_event = cvs_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(modify_event)
+    ~vcs-imports/firefox/trunk-cvs is now being imported from:
+        hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
+    instead of:
+        hello from :pserver:anonymous@cvs.example.com:/cvsroot

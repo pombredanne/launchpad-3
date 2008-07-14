@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, IBranchSet, ICodeImport, ICodeImportEventSet,
     ICodeImportSet, ILaunchpadCelebrities, ImportStatus, NotFoundError,
     RevisionControlSystems)
-from canonical.launchpad.mailout.codeimport import code_import_status_updated
+from canonical.launchpad.mailout.codeimport import code_import_updated
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -187,11 +187,20 @@ class CodeImport(SQLBase):
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.FAILING)
         self._removeJob()
 
+    def changeDetails(self, data, user):
+        """See `ICodeImport`."""
+        if 'review_status' in data:
+            raise AssertionError(
+                'changeDetails cannot be used to change review_status.')
+        modify_event = self.updateFromData(data, user)
+        if modify_event is not None:
+            code_import_updated(modify_event)
+
     def _setStatusAndEmail(self, data, user, status):
         """Update the review_status and email interested parties."""
         data['review_status'] = status
-        self.updateFromData(data, user)
-        code_import_status_updated(self, user)
+        modify_event = self.updateFromData(data, user)
+        code_import_updated(modify_event)
 
     def updateFromData(self, data, user):
         """See `ICodeImport`."""
@@ -199,7 +208,7 @@ class CodeImport(SQLBase):
         token = event_set.beginModify(self)
         for name, value in data.items():
             setattr(self, name, value)
-        event_set.newModify(self, user, token)
+        return event_set.newModify(self, user, token)
 
     def __repr__(self):
         return "<CodeImport for %s>" % self.branch.unique_name

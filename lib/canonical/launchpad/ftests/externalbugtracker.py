@@ -431,8 +431,13 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     # Map namespaces onto method names.
     methods = {
-        'Bug': ['add_comment', 'comments', 'get_bugs'],
-        'Launchpad': ['login', 'time'],
+        'Launchpad': [
+            'add_comment',
+            'comments',
+            'get_bugs',
+            'login',
+            'time',
+            ],
         'Test': ['login_required']
         }
 
@@ -451,7 +456,8 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get('example.com', {}).get('', {}).get('Bugzilla_logincookie')
+        return cookies.get(
+            'example.com', {}).get('', {}).get('Bugzilla_logincookie')
 
     @property
     def has_valid_auth_cookie(self):
@@ -604,7 +610,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
         bug_ids = arguments['bug_ids']
         comment_ids = arguments.get('ids')
-        fields_to_return = arguments.get('include')
+        fields_to_return = arguments.get('include_fields')
         comments_by_bug_id = {}
 
         def copy_comment(comment):
