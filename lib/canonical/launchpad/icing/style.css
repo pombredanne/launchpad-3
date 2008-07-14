@@ -18,6 +18,7 @@
 abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
 address {font-style: inherit;}
 * html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
+aside {display: block;}
 caption {caption-side: bottom; text-align: left;}
 dt dfn {font-style: normal; font-weight: bold;}
 dd {margin-bottom: 1em;}
@@ -232,6 +233,7 @@ table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 .batch-navigation-links .next.inactive {
   background-image: url(/@@/arrowRight-inactive);
 }
+.batch-navigation-links .inactive {color: #999ea7;}
 /* And all the links have spacing between them: */
 .batch-navigation-links .previous, .batch-navigation-links .next,
 .batch-navigation-links .last {
@@ -342,12 +344,6 @@ hr {
   color: #FFF;
   font-size: 13px;
 }
-/* Small launchpad icon and rasterized text. */
-#globalheader img.launchpad {
-  position: absolute;
-  top: 0;
-  right: 0;
-}
 /* Thin line at the top, when we don't have a global header site message */
 #topline {
   position: relative;
@@ -357,6 +353,7 @@ hr {
   margin: 0;
   background-color: #6D6D6D;
 }
+
 /* Next is a location bar. */
 
 #locationbar {
@@ -577,45 +574,86 @@ ul#menuroot li.selected a.breadcrumb {
   margin: 0px 0px 0px 0px;
   white-space: pre;
 }
-/* Login control goes on the right, taking up the full height of the
- * locationbar.
- */
-#logincontrol {
-  float: right;
-  height: 100%;
-  /* In narrow windows, when the "#menuroot" is wide, this can wrap around. So
-     use the same background color as the rest of the "#locationbar". */
-  background-color: #AFDB1F;
-  /* Override margin set in common.css (for help.launchpad.net). */
-  margin: 0;
-}
-/* The control itself is actually in a table cell, vertically aligned to
- * the middle of the locationbar.
- */
-#logincontrol td {
-  color: #FFFFFF;
-  font-size: 11px;
-  font-weight: bold;
-  vertical-align: middle;
-  /* Reset vertical padding specified by the "td" style. It causes the
-     "#logincontrol" background area to exceed the "#locationbar" height for
-     even modest increases in font size. */
-  padding-top: 0;
-  padding-bottom: 0;
-  /* Set horizontal padding to 10px, which is also the left padding of the
-     "#yourlocation" box (hence the visible space left of the location bar). */
-  padding-left: 10px;
-  padding-right: 10px;
-}
-/* Reset standard margin from "input[type='submit']" to avoid unwanted spacing
-   when logged in. */
-#logincontrol input[type='submit'] { margin-right: 0; }
-/* Link text is black. */
-#logincontrol a {
-    color: #000000;
+
+/* === Login control === */
+/* At the top right of the page is a link to log in or a button to log out: */
+#logincontrol {float: right;}
+/* The 'Log Out' button lacks the right margin that buttons usually have: */
+#logincontrol input[type='submit'] {
+  font-size: smaller;
+  margin-right: 0;
+  vertical-align: bottom;
 }
 
-/* === Application tabs === */
+/* === Location hierarchy === */
+/*
+  # XXX mpt 20080710 bug=247420: Known issues with the hierarchy:
+  - The left border and bevel of the 'Launchpad' segment is missing.
+  - The top border and bevel of the last segment is missing.
+  - The right border and bevel of the last segment is missing.
+  - The border between the last segment and the spine should not be present.
+  - The spine should have a slight top bevel as well as a border.
+*/
+/*
+  The location bar begins with a series of interlocking segments, showing
+  your location in the hierarchy of people and projects:
+*/
+#lp-hierarchy {
+  background: #eee url(navigation-hierarchy-bg) repeat-x;
+  clear: left;
+  min-height: 25px;
+  float: left;
+}
+/* The segments have '>' separators for the benefit of those without CSS: */
+#lp-hierarchy small {display: none;}
+/* The last segment is darker (on the front page, this is the only item): */
+#lp-hierarchy.home {background: #ddd;}
+/* The first segment has a rounded top left corner: */
+#lp-hierarchy:before {
+  vertical-align: top;
+  float: left;
+  content: url(navigation-hierarchy-nw);
+}
+#lp-hierarchy.home:before {content: url(navigation-hierarchy-nw-home);}
+/* Each segment appears as a clickable button: */
+#lp-hierarchy a {color: #000; display: inline-block; padding: 4px 22px 0 8px;}
+/* The segments have chevrons to convey their parent-child relationship: */
+#lp-hierarchy .item {
+  background: url(navigation-hierarchy-chevron-normal) no-repeat right;
+  display: inline-block;
+  min-height: 25px;
+  vertical-align: middle;
+}
+/* The penultimate segment leads into the dark color of the last segment: */
+#lp-hierarchy .before-last {
+  background-image: url(navigation-hierarchy-chevron-selected);
+}
+#lp-hierarchy .last a {font-weight: bold; padding-right: 4px;}
+/* The last segment is dark, and has a rounded top right corner: */
+#lp-hierarchy .last {background: #ddd;}
+.last-rounded {
+  background: #ddd url(navigation-hierarchy-ne) no-repeat top right;
+  min-height: 25px;
+  display: inline-block;
+}
+
+/* === Location spine === */
+/*
+  A narrow horizontal bar ties the location bar together. On those pages with
+  application tabs, it visually connects the selected hierarchy element and
+  the selected tab:
+*/
+.apps-separator {
+  clear: left;
+  height: 5px;
+  margin: 0;
+  padding: 0;
+  background: #ddd;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+}
+
+/* === Location application tabs === */
 /* In most pages, the location bar includes six centered application tabs: */
 #lp-apps {
   position: relative;
@@ -623,15 +661,6 @@ ul#menuroot li.selected a.breadcrumb {
   margin: 0;
   padding: 0;
   text-align: center;
-}
-/* This separates the app bar from the hierarchy */
-.apps-separator {
-  height: 5px;
-  margin: 0;
-  padding: 0;
-  background: #ddd;
-  border-top: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
 }
 /* The tabs have text separators for the benefit of those without CSS: */
 #lp-apps small {display: none;}
@@ -646,14 +675,15 @@ ul#menuroot li.selected a.breadcrumb {
   padding: 0;
   text-align: center;
   color: #333;
-  line-height: 2.2em;
+  line-height: 1.5em;
 }
 #lp-apps span a, #lp-apps span strong {
   display: block;
   color: #333;
   text-decoration: none;
   margin: 0;
-  padding: 0;
+  overflow: hidden;
+  padding: 0 0 5px;
 }
 #lp-apps .overview {
   background: url(navigation-tabs-sw-overview) bottom right no-repeat;
@@ -788,7 +818,6 @@ ul#menuroot li.selected a.breadcrumb {
 }
 
 /* === Help pane === */
-
 /*
 Inline help is contained in a <div> and dynamically positioned by JavaScript.
 */
@@ -1010,9 +1039,6 @@ top left (y), and top right (z) of the rounded border. */
 }
 * html #container {margin-top: 0; position: static;} /* fixes in IE6 */
 
-/* Something private for a public project has a cordon inside the tabs: */
-#container.private {background: url(/@@/private-bg) left 28px repeat-x;}
-
 /*
   To let the main content width = 100% - 220px for the portlets,
   we apply a negative right margin so the portlets can float on the right:
@@ -1078,7 +1104,8 @@ highlighting menu items, so padding is handled by the contents instead: */
 #portlets .portlet, aside, #portlets .portlet h2, aside h2 {font-size: 12px;}
 #portlets .portlet h2, aside h2 {
   border-bottom: 1px solid #ccc;
-  color: inherit;
+  color: inherit !important;
+    /* http://launchpad.dev/ubuntu/+source/pmount/+filebug-advanced */
   font-weight: bold;
   margin: 0 0 1em;
   padding: 0 0 1px;
@@ -1099,6 +1126,15 @@ highlighting menu items, so padding is handled by the contents instead: */
   padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */
 }
 #actions a:hover {background-color: #fff; text-decoration: underline;}
+
+/* === Public/private status === */
+/* The first portlet on many pages discloses whether the object is private: */
+#privacy {background: #fff;}
+#privacy.private {
+  background: #eee url(/@@/private-bg) top left repeat-x; /* 8px high */
+  padding-top: 12px; /* = 8px + the usual 4px top padding */
+}
+
 .check,
 .radio {
   background: transparent;
@@ -1747,15 +1783,18 @@ div.popupTitle {
   margin-top: 1em;
   margin-bottom: 1em;
 }
-
-#search-results, #no-search{
-  width: 40em;
+#search-results ul.site-matches {
+  max-width: 55em;
 }
 
 #search-results div.upper-batch-nav {
   border-top: 1px solid #d2d2d2;
-  margin-top: 1.5em;
+  margin-top: 2.5em;
   margin-bottom: 0.5em;
+}
+#search-results .search-batch {
+  background: #e7effc;
+  margin-bottom: 10px;
 }
 
 #search-results div.lower-batch-nav {

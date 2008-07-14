@@ -8,8 +8,8 @@ to use their accounts to log in.
     >>> browser.getControl('E-mail', index=0).value = 'test@canonical.com'
     >>> browser.getControl('Password').value = 'test'
     >>> browser.getControl('Log In').click()
-    >>> print extract_text(find_tags_by_class(browser.contents, "login")[0])
-    Logged in as Sample Person ...
+    >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
+    Sample Person...
 
 Deactivating a user's account will un-assign all their bug tasks. To
 demonstrate this, we'll assign a bug to the user that we're going to
@@ -71,7 +71,8 @@ Sample Person can't log into Launchpad anymore.
     >>> browser.getControl('Log In').click()
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    The email address and password do not match.
+    The email address belongs to a deactivated account.
+    Use the "Forgotten your password" link to reactivate it.
 
 The bugs that were assigned to Sample Person will no longer have an
 assignee.
