@@ -44,6 +44,13 @@ def new_import(code_import, event):
 
 
 def make_email_body_for_code_import_update(event):
+    """Construct the body of an email describing a MODIFY `CodeImportEvent`.
+
+    :param event: The MODIFY `CodeImportEvent`.
+    """
+    assert event.event_type == CodeImportEventType.MODIFY, (
+        "event type must be MODIFY, not %s" % event.event_type.name)
+
     code_import = event.code_import
     event_data = dict(event.items())
 
@@ -77,14 +84,15 @@ def make_email_body_for_code_import_update(event):
                 CodeImportEventDataType.OLD_CVS_MODULE,
                 code_import.cvs_module)
             old_details = '    %s from %s' % (old_module, old_root)
-            body.append((details_change_prefix + '\n' + new_details +
-                           "\ninstead of:\n" + old_details))
+            body.append(
+                details_change_prefix + '\n' + new_details +
+                "\ninstead of:\n" + old_details)
     elif code_import.rcs_type == RevisionControlSystems.SVN:
         if CodeImportEventDataType.OLD_SVN_BRANCH_URL in event_data:
             old_url = event_data[CodeImportEventDataType.OLD_SVN_BRANCH_URL]
-            body.append(details_change_prefix + '\n    ' +
-                          code_import.svn_branch_url + "\ninstead of:\n    " +
-                          old_url)
+            body.append(
+                details_change_prefix + '\n    ' +code_import.svn_branch_url +
+                "\ninstead of:\n    " + old_url)
     else:
         raise AssertionError(
             'Unexpected rcs_type %r for code import.' % code_import.rcs_type)

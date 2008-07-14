@@ -285,6 +285,12 @@ summary of the changes made.
     ...
     ----------------------------------------
 
+changeDetails is smart enough to not send an email if no changes were
+actually made.
+
+    >>> code_import.changeDetails({}, nopriv)
+    >>> print_emails(group_similar=True)
+
 
 == Update intervals ==
 
