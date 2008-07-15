@@ -152,7 +152,8 @@ declining the message, Launchpad forgets about it, while Mailman sends a
 rejection notice to Anne.
 
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist-moderate')
+    >>> browser.open(
+    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Ccaribou%3E').value = [
     ...     'reject']
     >>> serial_watcher = logwatcher.LogWatcher('serial')
@@ -234,7 +235,8 @@ rejection notice is sent to Anne.
 
     >>> smtp_watcher.resync()
     >>> serial_watcher.resync()
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist-moderate')
+    >>> browser.open(
+    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Cdonkey%3E').value = [
     ...     'discard']
     >>> browser.getControl('Moderate').click()
@@ -298,7 +300,8 @@ This time, her message is on topic and is accepted.
     
     >>> smtp_watcher.resync()
     >>> serial_watcher.resync()
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist-moderate')
+    >>> browser.open(
+    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Celephant%3E').value = [
     ...     'approve']
     >>> browser.getControl('Moderate').click()
@@ -428,10 +431,9 @@ In addition, the in-house MHonArc archiver has archived this message.
 
     # There might have been messages already in the archive queue waiting to
     # be processed when the watcher was create.  Wait twice, the second of
-    # which should time out.
-    >>> archive_watcher.wait()
-    >>> archive_watcher.wait()
-    'Timed out'
+    # which should time out.  We actually don't care though.
+    >>> ignore = archive_watcher.wait()
+    >>> ignore = archive_watcher.wait()
     >>> helpers.collect_archive_message_ids('itest-one')
     ['elephant', 'falcon']
 
@@ -561,7 +563,8 @@ Because she is not a team member, her message is held for moderation.
 
 The team administrator discards the message.
 
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist-moderate')
+    >>> browser.open(
+    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Chorse%3E').value = [
     ...     'discard']
     >>> browser.getControl('Moderate').click()
