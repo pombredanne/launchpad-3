@@ -4,31 +4,36 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 
-from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
-from canonical.launchpad.testing import LaunchpadObjectFactory
-
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestBranchNavigation(TestCase):
+class TestBranchNavigation(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        login('test@canonical.com')
-        self.factory = LaunchpadObjectFactory()
-
-    def test_branchNavInterfaces(self):
-        """Tests that proper database classes implement IBranchNavigation"""
+    def test_simple_branch(self):
+        """Branches implement IBranchNavigation"""
         branch = self.factory.makeBranch()
         self.assertTrue(IBranchNavigationMenu.providedBy(branch))
+
+    def test_merge_proposal(self):
+        """Merge proposals implement IBranchNavigation"""
         merge_proposal = self.factory.makeBranchMergeProposal()
         self.assertTrue(IBranchNavigationMenu.providedBy(merge_proposal))
-        code_review_comment = self.factory.makeCodeReviewComment()
-        self.assertTrue(IBranchNavigationMenu.providedBy(code_review_comment))
+
+    def test_branch_subscription(self):
+        """Branch subscriptions implement IBranchNavigation"""
+        subscription = self.factory.makeBranchSubscription()
+        self.assertTrue(IBranchNavigationMenu.providedBy(subscription))
+
+    def test_review_comment(self):
+        """Review comments implement IBranchNavigation"""
+        comment = self.factory.makeCodeReviewComment()
+        self.assertTrue(IBranchNavigationMenu.providedBy(comment))
 
 
 def test_suite():

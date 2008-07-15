@@ -6,7 +6,9 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.branch import BranchNavigationMenu
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.launchpad.browser.branch import BranchNavigationMenu
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -15,6 +17,9 @@ class TestBranchNavigationMenu(TestCaseWithFactory):
     """Test that the associated branch for the navigation menu are correct."""
 
     layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, 'test@canonical.com')
 
     def test_simple_branch(self):
         """Menu's branch should be the branch that the menu is created with"""
@@ -34,11 +39,13 @@ class TestBranchNavigationMenu(TestCaseWithFactory):
         menu = BranchNavigationMenu(subscription)
         self.assertEqual(subscription.branch, menu.branch)
 
-    def test_code_review_comment(self):
+    def test_review_comment(self):
         """Menu's branch for a review comment is the source branch"""
-        comment - self.factory.makeCodeReviewComment()
-        menu = BranchNavigationMenu(comment)
-        self.assertEqual(comment.branch, menu.branch)
+        proposal = self.factory.makeBranchMergeProposal()
+        comment = self.factory.makeCodeReviewComment()
+        naked_comment = removeSecurityProxy(comment)
+        menu = BranchNavigationMenu(naked_comment)
+        self.assertEqual(naked_comment.branch, menu.branch)
 
 
 def test_suite():
