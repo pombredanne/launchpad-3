@@ -34,30 +34,34 @@ class BranchScanner:
         self.ztm = ztm
         self.log = log
 
-    def _registerLaunchpadServer(self):
-        """Register a Launchpad internal transport for scanning branches."""
+    def _getLaunchpadServer(self):
+        """Get a Launchpad internal transport for scanning branches."""
         authserver = BlockingProxy(ServerProxy(config.codehosting.authserver))
         branch_transport = get_chrooted_transport(
             config.supermirror.warehouse_root_url)
-        server = LaunchpadInternalServer(authserver, branch_transport)
-        server.setUp()
+        return LaunchpadInternalServer(authserver, branch_transport)
 
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
         self.log.info('Starting branch scanning')
-        self._registerLaunchpadServer()
-        for branch in getUtility(IBranchSet).getBranchesToScan():
-            try:
-                self.scanOneBranch(branch)
-            except (KeyboardInterrupt, SystemExit):
-                # If either was raised, something really wants us to finish.
-                # Any other Exception is an error condition and must not
-                # terminate the script.
-                raise
-            except:
-                # Yes, bare except. Bugs or error conditions when scanning any
-                # given branch must not prevent scanning the other branches.
-                self.logScanFailure(branch)
+        server = self._getLaunchpadServer()
+        server.setUp()
+        try:
+            for branch in getUtility(IBranchSet).getBranchesToScan():
+                try:
+                    self.scanOneBranch(branch)
+                except (KeyboardInterrupt, SystemExit):
+                    # If either was raised, something really wants us to
+                    # finish. Any other Exception is an error condition and
+                    # must not terminate the script.
+                    raise
+                except:
+                    # Yes, bare except. Bugs or error conditions when scanning
+                    # any given branch must not prevent scanning the other
+                    # branches.
+                    self.logScanFailure(branch)
+        finally:
+            server.tearDown()
         self.log.info('Finished branch scanning')
 
     def scanOneBranch(self, branch):

@@ -12,10 +12,11 @@ from psycopg2.extensions import (
 import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
-import storm.sqlobject
 from storm.zope.interfaces import IZStorm
 from sqlobject.sqlbuilder import sqlrepr
 import transaction
+
+from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -43,6 +44,7 @@ __all__ = [
     'quote_like',
     'quoteIdentifier',
     'RandomiseOrderDescriptor',
+    'reset_store',
     'rollback',
     'SQLBase',
     'sqlvalues',
@@ -517,9 +519,17 @@ def block_implicit_flushes(func):
             return func(*args, **kwargs)
         finally:
             store.unblock_implicit_flushes()
-    wrapped.__name__ = func.__name__
-    wrapped.__doc__ = func.__doc__
-    return wrapped
+    return mergeFunctionMetadata(func, wrapped)
+
+
+def reset_store(func):
+    """Function decorator that resets the main store."""
+    def wrapped(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        finally:
+            getUtility(IZStorm).get("main").reset()
+    return mergeFunctionMetadata(func, wrapped)
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid

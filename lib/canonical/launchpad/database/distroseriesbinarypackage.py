@@ -29,9 +29,11 @@ class DistroSeriesBinaryPackage:
 
     implements(IDistroSeriesBinaryPackage)
 
-    def __init__(self, distroseries, binarypackagename):
+    def __init__(self, distroseries, binarypackagename, cache=None):
         self.distroseries = distroseries
         self.binarypackagename = binarypackagename
+        if cache is not None:
+            self._cache = cache
 
     @property
     def name(self):
@@ -49,7 +51,7 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         return self.distroseries.distribution
 
-    @cachedproperty
+    @cachedproperty('_cache')
     def cache(self):
         """See IDistroSeriesBinaryPackage."""
         return DistroSeriesPackageCache.selectOne("""

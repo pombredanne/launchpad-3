@@ -8,8 +8,9 @@
     <tal:translationgroups condition="view/has_translationgroup">
       This translation is managed by <!-- (nospace)
       --><tal:loop repeat="manager view/managers"><!-- (nospace)
-        --><tal:comma condition="repeat/manager/index">,</tal:comma>
-        <tal:and condition="repeat/manager/end"> and </tal:and>
+        --><tal:comma condition="repeat/manager/index">,
+          <tal:and condition="repeat/manager/end"> and </tal:and>
+        </tal:comma>
         <tal:team condition="manager/team">
           <a tal:replace="structure manager/team/fmt:link" />,
           assigned by

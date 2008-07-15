@@ -4,7 +4,11 @@
 """Database classes including and related to Product."""
 
 __metaclass__ = type
-__all__ = ['Product', 'ProductSet']
+__all__ = [
+    'get_allowed_default_stacking_names',
+    'Product',
+    'ProductSet',
+    ]
 
 
 import operator
@@ -18,10 +22,13 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.launchpad.components.launchpadcontainer import (
+    LaunchpadContainerMixin)
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -82,7 +89,8 @@ from canonical.launchpad.interfaces.translationgroup import (
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin, QuestionTargetMixin,
-              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin):
+              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin,
+              LaunchpadContainerMixin):
 
     """A Product."""
 
@@ -190,7 +198,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        return self.development_focus.series_branch
+        if self.name in get_allowed_default_stacking_names():
+            return self.development_focus.series_branch
+        return None
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
@@ -836,10 +846,28 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
 
+    def isWithin(self, context):
+        """See `ILaunchpadContainer`."""
+        return context == self or context == self.project
+
     def getCustomLanguageCode(self, language_code):
         """See `IProduct`."""
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
+
+    def userCanEdit(self, user):
+        """See `IProduct`."""
+        if user is None:
+            return False
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(celebs.registry_experts) or
+            user.inTeam(celebs.admin) or
+            user.inTeam(self.owner))
+
+def get_allowed_default_stacking_names():
+    """Return a list of names of `Product`s that allow default stacking."""
+    return config.codehosting.allow_default_stacking.split(',')
 
 
 class ProductSet:
