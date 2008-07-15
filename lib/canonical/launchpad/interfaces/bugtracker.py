@@ -21,10 +21,14 @@ from zope.component import getUtility
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, StrippedTextLine, URIField)
+from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+from canonical.lazr.fields import CollectionField
 
 
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
@@ -138,49 +142,66 @@ class BugTrackerType(DBEnumeratedType):
 
 class IBugTracker(Interface):
     """A remote bug system."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'))
-    bugtrackertype = Choice(
-        title=_('Bug Tracker Type'),
-        vocabulary=BugTrackerType,
-        default=BugTrackerType.BUGZILLA)
-    name = BugTrackerNameField(
-        title=_('Name'),
-        constraint=name_validator,
-        description=_('An URL-friendly name for the bug tracker, '
-        'such as "mozilla-bugs".'))
-    title = TextLine(
-        title=_('Title'),
-        description=_(
-            'A descriptive label for this tracker to show in listings.'))
-    summary = Text(
-        title=_('Summary'),
-        description=_(
-            'A brief introduction or overview of this bug tracker instance.'),
-        required=False)
-    baseurl = BugTrackerURL(
-        title=_('Location'),
-        allowed_schemes=LOCATION_SCHEMES_ALLOWED,
-        description=_(
-            'The top-level URL for the bug tracker, or an upstream email '
-            'address. This must be accurate so that Launchpad can link to '
-            'external bug reports.'))
-    aliases = List(
-        title=_('Location aliases'),
-        description=_(
-            'A list of URLs or email addresses that all lead to the same '
-            'bug tracker, or commonly seen typos, separated by whitespace.'),
-        value_type=BugTrackerURL(allowed_schemes=LOCATION_SCHEMES_ALLOWED),
-        required=False)
+    bugtrackertype = exported(
+        Choice(title=_('Bug Tracker Type'),
+               vocabulary=BugTrackerType,
+               default=BugTrackerType.BUGZILLA),
+        exported_as='bug_tracker_type')
+    name = exported(
+        BugTrackerNameField(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_('An URL-friendly name for the bug tracker, '
+                          'such as "mozilla-bugs".')))
+    title = exported(
+        TextLine(
+            title=_('Title'),
+            description=_('A descriptive label for this tracker to show '
+                          'in listings.')))
+    summary = exported(
+        Text(
+            title=_('Summary'),
+            description=_(
+                'A brief introduction or overview of this bug '
+                'tracker instance.'),
+            required=False))
+    baseurl = exported(
+        BugTrackerURL(
+            title=_('Location'),
+            allowed_schemes=LOCATION_SCHEMES_ALLOWED,
+            description=_(
+                'The top-level URL for the bug tracker, or an upstream email '
+                'address. This must be accurate so that Launchpad can link '
+                'to external bug reports.')),
+        exported_as='base_url')
+    aliases = exported(
+        List(
+            title=_('Location aliases'),
+            description=_(
+                'A list of URLs or email addresses that all lead to the '
+                'same bug tracker, or commonly seen typos, separated by '
+                'whitespace.'),
+            value_type=BugTrackerURL(
+                allowed_schemes=LOCATION_SCHEMES_ALLOWED),
+            required=False),
+        exported_as='base_url_aliases')
     owner = Int(title=_('Owner'))
-    contactdetails = Text(
-        title=_('Contact details'),
-        description=_(
-            'The contact details for the external bug tracker (so that, for '
-            'example, its administrators can be contacted about a security '
-            'breach).'),
-        required=False)
-    watches = Attribute('The remote watches on this bug tracker.')
+    contactdetails = exported(
+        Text(
+            title=_('Contact details'),
+            description=_(
+                'The contact details for the external bug tracker (so that, '
+                'for example, its administrators can be contacted about a '
+                'security breach).'),
+            required=False),
+        exported_as='contact_details')
+    watches = exported(
+        CollectionField(
+            title=_('The remote watches on this bug tracker.'),
+            value_type=Object(schema=IBugWatch)))
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
     latestwatches = Attribute('The last 10 watches created.')

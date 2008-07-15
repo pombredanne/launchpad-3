@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 import httplib
+import os
 import shutil
 import socket
 import sys
@@ -15,10 +16,7 @@ from bzrlib.errors import (
     BzrError, NotBranchError, ParamikoNotPresent,
     UnknownFormatError, UnsupportedFormatError)
 from bzrlib.progress import DummyProgress
-from bzrlib.transport import (
-    get_transport, register_transport, unregister_transport)
-from bzrlib.transport.http._urllib import HttpTransport_urllib
-from bzrlib.transport.nosmart import NoSmartTransportDecorator
+from bzrlib.transport import get_transport
 import bzrlib.ui
 
 from canonical.config import config
@@ -162,18 +160,13 @@ class PullerWorker:
             self.protocol.branch_id = branch_id
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
-        self._registerLaunchpadServer()
 
-    def _registerLaunchpadServer(self):
+    def _getLaunchpadServer(self):
+        """Return a LaunchpadInternalServer for fetching hosted branches."""
         authserver = BlockingProxy(ServerProxy(config.codehosting.authserver))
         branch_transport = get_chrooted_transport(
             config.codehosting.branches_root)
-        server = LaunchpadInternalServer(authserver, branch_transport)
-        server.setUp()
-
-    def _get_http_transport(self, url):
-        return NoSmartTransportDecorator(
-            'nosmart+' + url, HttpTransport_urllib(url))
+        return LaunchpadInternalServer(authserver, branch_transport)
 
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
@@ -291,7 +284,6 @@ class PullerWorker:
             else:
                 # The destination is in a different format to the source, so
                 # we'll delete it and mirror from scratch.
-                shutil.rmtree(self.dest)
                 branch = self._createDestBranch()
         self._dest_branch = branch
 
@@ -301,6 +293,8 @@ class PullerWorker:
         #    Bzrdir.sprout is *almost* what we want here, except that sprout
         #    creates a working tree that we don't need. Instead, we do some
         #    low-level operations.
+        if os.path.exists(self.dest):
+            shutil.rmtree(self.dest)
         ensure_base(get_transport(self.dest))
         bzrdir_format = self._source_branch.bzrdir._format
         bzrdir = bzrdir_format.initialize(self.dest)
@@ -339,16 +333,15 @@ class PullerWorker:
         particularly useful for tests that want to mirror a branch and be
         informed immediately of any errors.
         """
-        register_transport(
-            'http://', self._get_http_transport,
-            override=True)
+        server = self._getLaunchpadServer()
+        server.setUp()
         try:
             self._checkSourceUrl()
             self._checkBranchReference()
             self._openSourceBranch()
             self._mirrorToDestBranch()
         finally:
-            unregister_transport('http://', self._get_http_transport)
+            server.tearDown()
 
     def mirror(self):
         """Open source and destination branches and pull source into

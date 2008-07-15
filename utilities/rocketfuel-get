@@ -1,9 +1,11 @@
 #! /bin/bash
 
-SOURCEDEPS="~/canonical/lp-sourcedeps/sourcecode"
+# Update your copy of trunk and the necessary source dependencies, and make
+# sure all source dependencies are properly linked in to all the branches you
+# are working on.
 
-# Force tilde expansion
-SOURCEDEPS=$(eval echo ${SOURCEDEPS})
+utilities_dir="$(cd $(dirname $0) && pwd)"
+source "$utilities_dir/rocketfuel-env.sh"
 
 DEVPAD="devpad.canonical.com"
 ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"
@@ -15,31 +17,30 @@ ssh-add -l
 if [ $? -gt 0 ]; then ssh-add; fi
 
 # Pull from devpad trunk
-cd ~/canonical/lp-branches/trunk
+cd $LP_TRUNK_PATH
 INITIAL_REV=$(bzr revno)
 bzr pull
 FINAL_REV=$(bzr revno)
 
-# Exit if there are no new revisions
-if [ $FINAL_REV = $INITIAL_REV ]; then exit 0; fi
-
-
 # Update the source dependencies
-if [ ! -d $SOURCEDEPS ]; then mkdir -p $SOURCEDEPS; fi
+if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
 
 # Several (*) have tried, and failed, to get the --filter to fit neatly
 # into RSYNCOPTIONS, so we put it here. Bash arrays do not count.
 #   * elmo, sabdfl
-rsync --filter=". utilities/sourcedeps.filter" $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $SOURCEDEPS/
+rsync --filter=". utilities/sourcedeps.filter" $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $LP_SOURCEDEPS_PATH/
 
-cd ~/canonical/lp-branches
+cd $LP_PROJECT_PATH
 for branch in *; do
   if [ -d $branch/sourcecode ]
   then
     echo "Updating sourcecode dependencies for ${branch}"
-    trunk/utilities/link-external-sourcecode --target=$branch --parent=../lp-sourcedeps
+    $LP_TRUNK_NAME/utilities/link-external-sourcecode --target=$branch --parent=../$LP_SOURCEDEPS_DIR
   fi
 done
 
-cd trunk
+# Exit if there are no new revisions
+if [ $FINAL_REV = $INITIAL_REV ]; then exit 0; fi
+
+cd $LP_TRUNK_NAME
 make

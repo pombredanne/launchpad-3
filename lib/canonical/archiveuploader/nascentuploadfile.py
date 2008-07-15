@@ -851,6 +851,10 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # record. It will be check in slave-scanner procedure to
             # certify that the build was processed correctly.
             build.buildstate = BuildStatus.FULLYBUILT
+            # Also purge any previous failed upload_log stored, so its
+            # content can be garbage-collected since it's not useful
+            # anymore.
+            build.upload_log = None
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense (ie. is not for the right
