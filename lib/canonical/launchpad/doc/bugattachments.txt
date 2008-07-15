@@ -33,7 +33,7 @@ SQLObjectCreatedEvent in order to trigger email notifications:
     ...     IBugAttachment, ISQLObjectCreatedEvent, attachment_added)
 
     >>> filecontent = "Some useful information."
-    >>> file_ = StringIO(filecontent)
+    >>> data = StringIO(filecontent)
 
     >>> foobar = getUtility(IPersonSet).getByName("name16")
 
@@ -44,7 +44,7 @@ SQLObjectCreatedEvent in order to trigger email notifications:
 
     >>> bug_one.addAttachment(
     ...     owner=foobar,
-    ...     data=file_,
+    ...     data=data,
     ...     filename="foo.bar",
     ...     description="this fixes the bug",
     ...     comment=message,
@@ -61,25 +61,28 @@ SQLObjectCreatedEvent in order to trigger email notifications:
     >>> attachment.type.title
     'Unspecified'
 
-IBug.addAttachment's comment parameter can also be a string.
+IBug.addAttachment's comment parameter can also be a string. The data
+passed in is often a file-like object, but can be a string too.
 
-    >>> file_ = StringIO(filecontent)
-    >>> bug_one.addAttachment(
+    >>> data = filecontent
+    >>> attachment_from_strings = bug_one.addAttachment(
     ...     owner=foobar,
-    ...     data=file_,
+    ...     data=data,
     ...     filename="foo.baz",
     ...     description="this fixes the bug",
     ...     comment="a string comment",
     ...     is_patch=False)
     Attachment added: u'foo.baz'
-    <BugAttachment ...>
+
+    >>> attachment_from_strings.message.text_contents
+    u'a string comment'
 
 If no description is given, the title is set to the filename.
 
-    >>> file_ = StringIO(filecontent)
+    >>> data = StringIO(filecontent)
     >>> screenshot = bug_one.addAttachment(
     ...     owner=foobar,
-    ...     data=file_,
+    ...     data=data,
     ...     filename="screenshot.jpg",
     ...     comment="a string comment",
     ...     is_patch=False)
@@ -92,10 +95,10 @@ The content type is guessed based on the information provided.
     >>> screenshot.libraryfile.mimetype
     u'image/jpeg'
 
-    >>> file_ = StringIO('</something-htmlish>')
+    >>> data = StringIO('</something-htmlish>')
     >>> debdiff = bug_one.addAttachment(
     ...     owner=foobar,
-    ...     data=file_,
+    ...     data=data,
     ...     filename="something.debdiff",
     ...     comment="something debdiffish",
     ...     is_patch=False)
@@ -424,11 +427,11 @@ Let's make our attachment a patch and search again:
 
 It's also possible to delete attachments.
 
-    >>> file_ = StringIO(filecontent)
+    >>> data = StringIO(filecontent)
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> attachment = bug_two.addAttachment(
     ...     owner=foobar,
-    ...     data=file_,
+    ...     data=data,
     ...     filename="foo.baz",
     ...     description="Attachment to be deleted",
     ...     comment="a string comment",

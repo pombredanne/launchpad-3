@@ -384,12 +384,12 @@ class IBug(IMessageTarget, ICanBeMentored):
         comment=Text(), filename=TextLine(), is_patch=Bool(),
         content_type=TextLine(), description=Text())
     @export_factory_operation(IBugAttachment, [])
-    def addAttachment(owner, data, comment, filename=None, is_patch=False,
+    def addAttachment(owner, data, comment, filename, is_patch=False,
                       content_type=None, description=None):
         """Attach a file to this bug.
 
         :owner: An IPerson.
-        :file_: A file-like object.
+        :data: A file-like object, or a `str`.
         :description: A brief description of the attachment.
         :comment: An IMessage or string.
         :filename: A string.
