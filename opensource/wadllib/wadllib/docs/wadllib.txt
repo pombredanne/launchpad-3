@@ -228,6 +228,8 @@ including 'Location', which points the way to the newly created team.
    >>> location_parameter.get_value()
    'http://api.launchpad.dev/~newteam'
    >>> new_team = location_parameter.linked_resource
+   >>> new_team.url
+   'http://api.launchpad.dev/~newteam'
    >>> new_team.type_url
    'http://api.launchpad.dev/beta/#team'
 

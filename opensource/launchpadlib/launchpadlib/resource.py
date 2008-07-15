@@ -75,8 +75,8 @@ class Resource(LaunchpadBase):
         for suffix in ['_link', '_collection_link']:
             param = self._wadl_resource.get_parameter(param_name + suffix)
             if param is not None:
-                return self._wrap_resource(
-                    param.linked_resource, param_name=param.name)
+                return Resource._wrap_resource(
+                    self._root, param.linked_resource, param_name=param.name)
         param = self._wadl_resource.get_parameter(param_name)
         if param is None:
             raise KeyError("No such parameter: %s" % param_name)
@@ -97,7 +97,8 @@ class Resource(LaunchpadBase):
             raise KeyError("No operation with name: %s" % operation_name)
         return NamedOperation(self._root, method)
 
-    def _wrap_resource(self, resource, representation=None,
+    @classmethod
+    def _wrap_resource(cls, root, resource, representation=None,
                        representation_media_type='application/json',
                        representation_needs_processing=True, param_name=None):
         """Create a launchpadlib Resource from a wadllib Resource.
@@ -117,7 +118,7 @@ class Resource(LaunchpadBase):
         """
         if representation is None:
             # Get a representation of the linked resource.
-            representation = self._root._browser.get(resource)
+            representation = root._browser.get(resource)
             representation_media_type = 'application/json'
 
         # We happen to know that all Launchpad resource types are
@@ -133,7 +134,7 @@ class Resource(LaunchpadBase):
                 default = Collection
         r_class = RESOURCE_TYPE_CLASSES.get(resource_type, default)
         return r_class(
-            self._root, resource.bind(
+            root, resource.bind(
                 representation, representation_media_type,
                 representation_needs_processing))
 
@@ -187,11 +188,21 @@ class NamedOperation(LaunchpadBase):
             # the representation!!!
         response, content = self.root._browser._request(
             url, in_representation, http_method, extra_headers={})
+
         if response.status == 201:
             # The operation may have resulted in the creation of a new
             # resource. If so, fetch it.
-            return self.wadl_method.response.bind(
-                response).get_parameter('Location').value()
+            headers = {'Location' : response['location']}
+            wadl_response = self.wadl_method.response.bind(headers)
+            wadl_parameter = wadl_response.get_parameter('Location')
+            wadl_resource = wadl_parameter.linked_resource
+            # Fetch a representation of the new resource.
+            response, content = self.root._browser._request(
+                wadl_resource.url)
+            # Return an instance of the appropriate launchpadlib
+            # Resource subclass.
+            return Resource._wrap_resource(
+                self.root, wadl_resource, content, response['content-type'])
 
 
 class Entry(Resource):
@@ -287,8 +298,9 @@ class Collection(Resource):
                 resource = WadlResource(
                     self._wadl_resource.application, resource_url,
                     resource_type.tag)
-                yield self._wrap_resource(
-                    resource, entry_dict, 'application/json', False)
+                yield Resource._wrap_resource(
+                    self._root, resource, entry_dict, 'application/json',
+                    False)
             next_link = current_page.get('next_collection_link')
             if next_link is None:
                 break
@@ -328,8 +340,9 @@ class Collection(Resource):
         # in its representation.
         resource_type_link = representation['resource_type_link']
         resource = WadlResource(self._root._wadl, url, resource_type_link)
-        return self._wrap_resource(resource, representation=representation,
-                                   representation_needs_processing=False)
+        return Resource._wrap_resource(
+            self._root, resource, representation=representation,
+            representation_needs_processing=False)
 
     def _get_url_from_id(self, key):
         """Transform the unique ID of an object into its URL."""
@@ -342,34 +355,6 @@ class PersonSet(Collection):
     def _get_url_from_id(self, key):
         """Transform a username into the URL to a person resource."""
         return self._root.SERVICE_ROOT + '~' + str(key)
-
-    def newTeam2(self, name, display_name):
-        """Create a new team.
-
-        :param name: The name of the team
-        :type name: string
-        :param display_name: The 'display name' of the team
-        :type display_name: string
-        :return: the new team
-        :rtype: `Entry`
-        :raises ResponseError: when an unexpected response occurred.
-        """
-        # If the team got created, a 201 status will be returned.  When that
-        # happens, we dig the 'Location' header out of the response and create
-        # a new Person instance with that base url.
-        response, content = self._root._browser.post(
-            self._wadl_resource.url, 'newTeam', name=name,
-            display_name=display_name)
-        if response.status == 201:
-            # We know this has to be a person, so create and return the
-            # appropriate instance.
-            resource_url = response['location']
-            data = self._root._browser.get(URI(resource_url))
-            resource = WadlResource(
-                    self._wadl_resource.application, resource_url,
-                    "#team", data, 'application/json')
-            return Entry(self._root, resource)
-        raise UnexpectedResponseError(response, content)
 
 # A mapping of resource type IDs to the client-side classes that handle
 # those resource types.
