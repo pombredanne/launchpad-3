@@ -51,8 +51,7 @@ the builder actions.
 
 Celso sees the available actions in the 'Actions' portlet.
 
-    >>> print str(extract_text(find_portlet(cprov_browser.contents, "Actions")))
-    Actions
+    >>> print extract_text(find_tag_by_id(cprov_browser.contents, 'actions'))
     Show build history
     Change details
     Change mode
@@ -270,8 +269,7 @@ Normal users, such as No Privileges Person are not shown links, nor
 can he access the pages by directly via URL.
 
     >>> user_browser.open("http://localhost/+builds/bob")
-    >>> print extract_text(find_portlet(user_browser.contents, "Actions"))
-    Actions
+    >>> print extract_text(find_tag_by_id(user_browser.contents, 'actions'))
     Show build history
     Change details (disabled)
     Change mode (disabled)
@@ -301,8 +299,7 @@ can he access the pages by directly via URL.
 The same is true for the anonymous user:
 
     >>> anon_browser.open("http://localhost/+builds/bob")
-    >>> print extract_text(find_portlet(anon_browser.contents, "Actions"))
-    Actions
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'actions'))
     Show build history
     Change details (disabled)
     Change mode (disabled)

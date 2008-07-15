@@ -22,10 +22,11 @@ from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
     UnknownBranchTypeError)
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import login, login_person, logout, ANONYMOUS
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.database.sqlbase import clear_current_connection_cache
+from canonical.database.sqlbase import (
+    clear_current_connection_cache, reset_store)
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
@@ -47,6 +48,7 @@ def utf8(x):
 
 def read_only_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
+    @reset_store
     def transacted(*args, **kwargs):
         transaction.begin()
         clear_current_connection_cache()
@@ -61,9 +63,9 @@ def read_only_transaction(function):
 
 def writing_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
+    @reset_store
     def transacted(*args, **kwargs):
         transaction.begin()
-        clear_current_connection_cache()
         login(ANONYMOUS)
         try:
             ret = function(*args, **kwargs)
@@ -96,7 +98,7 @@ def run_as_requester(function):
             # and expect `function` to use `removeSecurityProxy` or similar.
             return function(self, LAUNCHPAD_SERVICES, *args, **kwargs)
         requester = self._getPerson(loginID)
-        login(requester.preferredemail.email)
+        login_person(requester)
         try:
             return function(self, requester, *args, **kwargs)
         finally:
@@ -113,9 +115,8 @@ class UserDetailsStorageMixin:
     def _getEmailAddresses(self, person):
         """Get the email addresses for a person"""
         emails = [person.preferredemail] + list(person.validatedemails)
-        return (
-            [person.preferredemail.email] +
-            [email.email for email in person.validatedemails])
+        # Bypass zope's security because IEmailAddress.email is not public.
+        return [removeSecurityProxy(email).email for email in emails]
 
     def getSSHKeys(self, loginID):
         """See `IUserDetailsStorage`."""

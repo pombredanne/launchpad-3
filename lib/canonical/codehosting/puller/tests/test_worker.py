@@ -8,6 +8,7 @@ from StringIO import StringIO
 import unittest
 
 import bzrlib.branch
+from bzrlib.errors import NotBranchError
 from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.transport import get_transport
@@ -47,13 +48,18 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
 
     def testCanMirrorWhenDestDirExists(self):
-        # We can mirror a branch even if the destination exists but contains
-        # nothing.
+        # We can mirror a branch even if the destination exists, and contains
+        # data but is not a branch.
         source_tree = self.make_branch_and_tree('source-branch')
         to_mirror = self.makePullerWorker(source_tree.branch.base)
         source_tree.commit('commit message')
         # Make the directory.
-        ensure_base(get_transport(to_mirror.dest))
+        dest = get_transport(to_mirror.dest)
+        ensure_base(dest)
+        dest.mkdir('.bzr')
+        # 'dest' is not a branch.
+        self.assertRaises(
+            NotBranchError, bzrlib.branch.Branch.open, to_mirror.dest)
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(

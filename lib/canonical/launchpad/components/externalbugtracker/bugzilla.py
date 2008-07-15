@@ -69,7 +69,12 @@ class Bugzilla(ExternalBugTracker):
             else:
                 raise
         except xmlrpclib.ProtocolError, error:
-            if error.errcode == 404:
+            # We catch 404s, which occur when xmlrpc.cgi doesn't exist
+            # on the remote server, and 500s, which sometimes occur when
+            # the Launchpad Plugin isn't installed. Everything else we
+            # can consider to be a problem, so we let it travel up the
+            # stack for the error log.
+            if error.errcode in (404, 500):
                 return self
             else:
                 raise

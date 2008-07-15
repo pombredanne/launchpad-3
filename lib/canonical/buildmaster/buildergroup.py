@@ -153,7 +153,8 @@ class BuilderGroup:
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
         return queueItem.builder.transferSlaveFileToLibrarian(
-            'buildlog', queueItem.getLogFileName())
+            'buildlog', queueItem.getLogFileName(),
+            queueItem.build.archive.private)
 
     def updateBuild(self, queueItem):
         """Verify the current build job status.
@@ -427,6 +428,9 @@ class BuilderGroup:
                     break
             else:
                 uploader_log_content = 'Could not find upload log file'
+            # Store the upload_log_contents in librarian so it can be
+            # accessed by anyone with permission to see the build.
+            queueItem.build.storeUploadLog(uploader_log_content)
             # Notify the build failure.
             queueItem.build.notify(extra_info=uploader_log_content)
         else:
