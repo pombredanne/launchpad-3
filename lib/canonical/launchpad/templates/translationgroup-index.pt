@@ -6,12 +6,13 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
+  metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad">
   <body>
-    <h1 metal:fill-slot="heading">Translation groups</h1>
-
     <div metal:fill-slot="main">
+      <div>
+        <a tal:attributes="href context/fmt:url">Translation groups</a>
+      </div>
       <h1>
         <tal:translation-group replace="context/title">
           Foo bar
@@ -32,13 +33,6 @@
           <img src="/@@/edit" alt="Reassign" title="Change Owner">
         </a>
       </p>
-      <div>
-        <strong>
-          <a tal:attributes="href view/translation_groups/fmt:url">
-            &laquo; Back to translation groups list
-          </a>
-        </strong>
-      </div>
 
       <div class="left">
         <div class="section">
