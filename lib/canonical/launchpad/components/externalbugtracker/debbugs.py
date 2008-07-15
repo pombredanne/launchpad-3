@@ -257,8 +257,12 @@ class DebBugs(ExternalBugTracker):
     def _getDateForComment(self, parsed_comment):
         """Return the correct date for a comment.
 
-        If a message is specified in a Received header that we can use,
-        return that. Otherwise, return the Date field of the message.
+        :param parsed_comment: An `email.Message.Message` instance
+            containing a parsed DebBugs comment.
+        :return: The correct date to use for the comment contained in
+            `parsed_comment`. If a date is specified in a Received
+            header on `parsed_comment` that we can use, return that.
+            Otherwise, return the Date field of `parsed_comment`.
         """
         # Check for a Received: header on the comment and use
         # that to get the date, if possible. We only use the
