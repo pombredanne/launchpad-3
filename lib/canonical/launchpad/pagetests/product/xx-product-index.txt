@@ -109,13 +109,6 @@ the homepage:
     External downloads http://download.url/
 
 
-= Bug subscriptions =
-
-    >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> user_browser.getLink('Subscribe to bug mail').click()
-    >>> print user_browser.url
-    http://launchpad.dev/firefox/+subscribe
-
 = Licensing alerts =
 
 Any user can see that the project's license has not been reviewed.
