@@ -327,9 +327,6 @@ class BranchMailer:
 
 class BzrSync:
     """Import version control metadata from a Bazaar branch into the database.
-
-    If the constructor succeeds, a read-lock for the underlying bzrlib branch
-    is held, and must be released by calling the `close` method.
     """
 
     def __init__(self, trans_manager, branch, logger=None):
@@ -345,10 +342,7 @@ class BzrSync:
         self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
 
     def syncBranchAndClose(self, bzr_branch=None):
-        """Synchronize the database with a Bazaar branch and close resources.
-
-        Convenience method that implements the proper idiom for the common
-        case of calling `syncBranch` and `close`.
+        """Synchronize the database with a Bazaar branch, handling locking.
         """
         if bzr_branch is None:
             bzr_branch = Branch.open(self.db_branch.warehouse_url)
@@ -360,6 +354,8 @@ class BzrSync:
 
     def syncBranch(self, bzr_branch):
         """Synchronize the database view of a branch with Bazaar data.
+
+        `bzr_branch` must be read locked.
 
         Several tables must be updated:
 
