@@ -57,6 +57,18 @@
             <input type="hidden" name="oauth_callback"
                    tal:condition="request/form/oauth_callback|nothing"
                    tal:attributes="value request/form/oauth_callback" />
+            <input type="hidden" name="lp.product"
+                   tal:condition="request/form/lp.product|nothing"
+                   tal:attributes="value request/form/lp.product" />
+            <input type="hidden" name="lp.project"
+                   tal:condition="request/form/lp.project|nothing"
+                   tal:attributes="value request/form/lp.project" />
+            <input type="hidden" name="lp.distribution"
+                   tal:condition="request/form/lp.distribution|nothing"
+                   tal:attributes="value request/form/lp.distribution" />
+            <input type="hidden" name="lp.sourcepackagename"
+                   tal:condition="request/form/lp.sourcepackagename|nothing"
+                   tal:attributes="value request/form/lp.sourcepackagename" />
           </div>
 
           <div metal:fill-slot="buttons" />
