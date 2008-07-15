@@ -82,6 +82,23 @@ class OAuthAuthorizeTokenView(LaunchpadFormView):
 
     def initialize(self):
         form = self.request.form
+        self.storeTokenContext(form)
+        # XXX: Just like in other OAuth requests, the parameters here may be
+        # in the Authorization header, so we must use
+        # get_oauth_authorization() here instead of getting the token from the
+        # request's form.  I'm not sure it'd make sense to have the context in
+        # the Authorization header, though.
+        key = form.get('oauth_token')
+        if key:
+            self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
+        super(OAuthAuthorizeTokenView, self).initialize()
+
+    def storeTokenContext(self, form):
+        """Store the context given by the consumer in this view.
+
+        Also store a dict with the key/value of the context to be passed to
+        OAuthRequestToken.review().
+        """
         product = form.get('lp.product')
         project = form.get('lp.project')
         distro = form.get('lp.distribution')
@@ -118,17 +135,6 @@ class OAuthAuthorizeTokenView(LaunchpadFormView):
             # No context specified.
             self.token_context = None
             self.token_context_params = {}
-
-        # XXX: Just like in other OAuth requests, the parameters here may be
-        # in the Authorization header, so we must use
-        # get_oauth_authorization() here instead of getting the token from the
-        # request's form.  I'm not sure it'd make sense to have the context in
-        # the Authorization header, though.
-        key = form.get('oauth_token')
-        if key:
-            self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
-        super(OAuthAuthorizeTokenView, self).initialize()
-
     def reviewToken(self, permission):
         self.token.review(self.user, permission, **self.token_context_params)
         callback = self.request.form.get('oauth_callback')
