@@ -45,16 +45,11 @@ class ExportedFolder:
     be ignored.  It is useful for having a different path for
     all resources being served, to ensure that we don't use cached
     files in browsers.
-
-    By default, subdirectories are not exported. Set export_subdirectories
-    to True to change this.
     """
 
     implements(IBrowserPublisher)
 
     rev_part_re = re.compile('rev\d+$')
-
-    export_subdirectories = False
 
     def __init__(self, context, request):
         """Initialize with context and request."""
@@ -71,17 +66,20 @@ class ExportedFolder:
         if not names:
             # Just the icing directory, so make this a 404.
             raise NotFound(self, '')
-        elif len(names) > 1 and not self.export_subdirectories:
+        elif len(names) > 1:
             # Too many path elements, so make this a 404.
             raise NotFound(self, self.names[-1])
         else:
             # Actually serve up the resource.
-            return self.prepareDataForServing(
-                os.path.join(self.folder, *names))
+            [name] = names
+            return self.prepareDataForServing(name)
 
-    def prepareDataForServing(self, filename):
+    def prepareDataForServing(self, name):
         """Set the response headers and return the data for this resource."""
-        name = os.path.basename(filename)
+        if os.path.sep in name:
+            raise ValueError(
+                'os.path.sep appeared in the resource name: %s' % name)
+        filename = os.path.join(self.folder, name)
         try:
             fileobj = File(filename, name)
         except IOError, ioerror:
@@ -106,10 +104,6 @@ class ExportedFolder:
 
     def publishTraverse(self, request, name):
         """Traverse to the given name."""
-        # The two following constraints are enforced by the publisher.
-        assert os.path.sep not in name, (
-            'traversed name contains os.path.sep: %s' % name)
-        assert name != '..', 'traversing to ..'
         self.names.append(name)
         return self
 
@@ -134,17 +128,17 @@ class ExportedImageFolder(ExportedFolder):
     # The extensions we consider.
     image_extensions = ('.png', '.gif')
 
-    def prepareDataForServing(self, filename):
+    def prepareDataForServing(self, name):
         """Serve files without their extension.
 
         If the requested name doesn't exist but a file exists which has
         the same base name and has an image extension, it will be served.
         """
-        root, ext = os.path.splitext(filename)
-        if ext == '' and not os.path.exists(root):
+        root, ext = os.path.splitext(name)
+        basename = os.path.join(self.folder, name)
+        if ext == '' and not os.path.exists(basename):
             for image_ext in self.image_extensions:
-                if os.path.exists(root + image_ext):
-                    filename = filename + image_ext
+                if os.path.exists(basename + image_ext):
+                    name = name + image_ext
                     break
-        return super(
-            ExportedImageFolder, self).prepareDataForServing(filename)
+        return super(ExportedImageFolder, self).prepareDataForServing(name)

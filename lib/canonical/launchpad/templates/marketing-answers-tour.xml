@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<tour>
+  <title>Answers</title>
+  <screen>
+    <title>Community support</title>
+    <summary>
+      <p>Mailing lists and web forums are traditionally where free
+        software projects answer user support questions. However, it can be
+        difficult to capture that knowledge and make it available to your
+        community.
+      </p>
+      <p>Launchpad's Answer Tracker makes it easy for users to ask questions
+        and stores your community's answers in a searchable knowledge-base.
+      </p>
+    </summary>
+    <screenshot>/+icing/answers-tour-screenshot1.png</screenshot>
+    <callout top="" left="">New users can find mailing lists and forums
+      intimidating. Launchpad uses a simple guided process to take the pain
+      out of asking a support question.
+    </callout>
+    <callout top="" left="">Launchpad turns previous support requests into a
+      knowledge-base for your project. Users can help themselves by searching
+      past support questions and answers.
+    </callout>
+    <callout top="" left="">Launchpad helps your community translate your
+      software into hundreds of languages. Localised versions of your
+      application are even more useful if users can find support in their own
+      language. Launchpad lets people request help and answer support requests
+      in their own language. It also filters knowledge-base searches according
+      to each user's preferred languages.
+    </callout>
+    <callout top="" left="">Launchpad helps support teams to organise
+      themselves and uses karma to reward people for answering support
+      requests. Any individual or team can ask Launchpad to tell them when
+      there is a new support request in their language.
+    </callout>
+  </screen>
+
+  <screen>
+    <title>Question detail</title>
+    <summary></summary>
+    <screenshot>/+icing/answers-tour-screenshot2.png</screenshot>
+    <callout top="" left="">Many support requests need discussion before a
+      good answer is found. Launchpad helps your community track the
+      conversation and offers both web and email interfaces to people who want
+      to take part.
+    </callout>
+    <callout top="" left="">If a long conversation develops around a user
+      support request and several possible solutions are suggested, the
+      original user can highlight the answer they found most useful.
+    </callout>
+    <callout top="" left="">Sometimes, a support request arises because of a
+      software bug. Your community's support team can generate bug reports
+      from support requests. So that everyone can follow the discussion,
+      Launchpad links the original support request to the new bug report.
+    </callout>
+    <transition>
+      <p>Thank you for joining us on our tour of Launchpad. If you'd
+        like to read more about how Launchpad works, follow our
+        <a href="https://help.launchpad.net/FeatureHighlights/">detailed
+          feature tour</a>. Or you can talk to us: email
+        <a href="mailto:info@launchpad.net">info@launchpad.net</a>.
+      </p>
+      <p>To try Launchpad for yourself, sign up for your account at <a
+        href="https://launchpad.net/+login">https://launchpad.net/+login</a>
+      </p>
+    </transition>
+  </screen>
+
+
+</tour>

@@ -4,135 +4,148 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- Marketing Microsite Home Page -->
+    <!-- Marketing template master macro. -->
     <browser:page
-        name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        class="canonical.launchpad.browser.launchpad.LaunchpadTourFolder"
-        attribute="__call__"
+        name="marketing_template"
+        permission="zope.Public"
+        template="../templates/marketing-main-template.pt"
+        />
+    <browser:view
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        name="marketing_breadcrumb_name"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.MarketingBreadcrumbNameView"
+        />
+    <browser:view
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        class="canonical.launchpad.browser.MarketingSubnavigationView"
+        name="marketing_subnavigation"
         permission="zope.Public"
         />
-    <browser:renamed-page
+    <browser:tour
+        name="+tour"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        tour="../templates/marketing-launchpad-tour.xml"
+        />
+
+    <!-- Marketing Microsite Home Page -->
+    <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         name="+about"
-        new_name="+tour/index.html"
-        rootsite="mainsite"
+        permission="zope.Public"
+        template="../templates/marketing-home.pt"
         />
 
     <!-- Marketing material for Answers. -->
-    <browser:renamed-page
+    <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.AnswersLayer"
+        permission="zope.Public"
         name="+about"
-        new_name="+tour/community-support.html"
-        rootsite="mainsite"
+        template="../templates/marketing-answers-about.pt"
         />
-    <browser:renamed-page
+    <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.AnswersLayer"
+        permission="zope.Public"
         name="+faq"
-        new_name="+tour/community-support.html"
-        rootsite="mainsite"
+        template="../templates/marketing-answers-faq.pt"
         />
-    <browser:renamed-page
+    <browser:tour
         name="+tour"
-        new_name="+tour/community-support.html"
-        rootsite="mainsite"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.AnswersLayer"
+        tour="../templates/marketing-answers-tour.xml"
         />
 
     <!-- Marketing material for Blueprints. -->
-    <browser:renamed-page
+    <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BlueprintsLayer"
+        permission="zope.Public"
         name="+about"
-        new_name="+tour/feature-tracking.html"
-        rootsite="mainsite"
+        template="../templates/marketing-blueprints-about.pt"
         />
-    <browser:renamed-page
+    <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BlueprintsLayer"
+        permission="zope.Public"
         name="+faq"
-        new_name="+tour/feature-tracking.html"
-        rootsite="mainsite"
+        template="../templates/marketing-blueprints-faq.pt"
         />
-    <browser:renamed-page
+    <browser:tour
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BlueprintsLayer"
-        new_name="+tour/feature-tracking.html"
-        rootsite="mainsite"
+        tour="../templates/marketing-blueprints-tour.xml"
         />
 
     <!-- Marketing material for Bugs. -->
-    <browser:renamed-page
+    <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BugsLayer"
+        permission="zope.Public"
         name="+about"
-        new_name="+tour/bugs.html"
-        rootsite="mainsite"
+        template="../templates/marketing-bugs-about.pt"
         />
-    <browser:renamed-page
+    <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BugsLayer"
+        permission="zope.Public"
         name="+faq"
-        new_name="+tour/bugs.html"
-        rootsite="mainsite"
+        template="../templates/marketing-bugs-faq.pt"
         />
-    <browser:renamed-page
+    <browser:tour
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BugsLayer"
-        new_name="+tour/bugs.html"
-        rootsite="mainsite"
+        tour="../templates/marketing-bugs-tour.xml"
         />
 
     <!-- Marketing material for Code. -->
-    <browser:renamed-page
+    <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.CodeLayer"
+        permission="zope.Public"
         name="+about"
-        new_name="+tour/branch-hosting-tracking.html"
-        rootsite="mainsite"
+        template="../templates/marketing-code-about.pt"
         />
-    <browser:renamed-page
+    <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.CodeLayer"
+        permission="zope.Public"
         name="+faq"
-        new_name="+tour/branch-hosting-tracking.html"
-        rootsite="mainsite"
+        template="../templates/marketing-code-faq.pt"
         />
-    <browser:renamed-page
+    <browser:tour
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.CodeLayer"
-        new_name="+tour/branch-hosting-tracking.html"
-        rootsite="mainsite"
+        tour="../templates/marketing-code-tour.xml"
         />
 
 
     <!-- Marketing material for Translations. -->
-    <browser:renamed-page
+    <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.TranslationsLayer"
+        permission="zope.Public"
         name="+about"
-        new_name="+tour/translation.html"
-        rootsite="mainsite"
+        template="../templates/marketing-translations-about.pt"
         />
-    <browser:renamed-page
+    <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.TranslationsLayer"
+        permission="zope.Public"
         name="+faq"
-        new_name="+tour/translation.html"
-        rootsite="mainsite"
+        template="../templates/marketing-translations-faq.pt"
         />
-    <browser:renamed-page
+    <browser:tour
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.TranslationsLayer"
-        new_name="+tour/translation.html"
-        rootsite="mainsite"
+        tour="../templates/marketing-translations-tour.xml"
         />
 
 </configure>

@@ -1,0 +1,95 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+<div id="faq" metal:fill-slot="contents">
+  <div id="primary">
+    <h2>Bugs</h2>
+    <h3 class="byline">FAQs</h3>
+
+    <img src="/+icing/app-bugs-wm.gif" alt="Bugs"/>
+
+    <blockquote>
+      <p>Launchpad's bug tracker allows you to track the status of the same
+        bug as it affects multiple different communities, both in Launchpad
+        and in external trackers.</p>
+    </blockquote>
+ </div>
+ <div id="secondary">
+    <h4>Track and solve bugs, whether they occur upstream, downstream or
+        directly in your code</h4>
+    <ul id="faqs">
+      <li><a href="#q1">Can I import data from my existing bug tracker?</a></li>
+      <li><a href="#q2">Can I define custom bug states?</a></li>
+      <li><a href="#q3">Why is it useful to link my bugs to those in external
+                        trackers?</a></li>
+      <li><a href="#q4">Does Launchpad's Bug Tracker offer a scriptable
+                        interface?</a></li>
+      <li><a href="#q5">Can I mark bugs as private?</a></li>
+      <li><a href="#q6">How does Launchpad help me deal effectively with
+                        security bugs?</a></li>
+    </ul>
+
+    <h5 id="q1">Can I import data from my existing bug tracker?</h5>
+    <p>Yes. We can already import data from ?BugZilla and Sourceforge and will
+       work with open source projects to help you import your bug data from
+       other bug trackers, free of charge.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q2">Can I define custom bug states?</h5>
+    <p>Launchpad mixes fixed bug states with ad-hoc bug tagging. Consistent
+       bug states make it easy for anyone to understand what at what stage a
+       particular bug is and make it easy for projects to collaborate. Bug
+       tagging allows you to create groups of bugs which share a common
+       property.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q3">Why is it useful to link my bugs to those in external
+                trackers?</h5>
+    <p>Bugs that appear in your software may not always be in your code.
+       Launchpad understands the connections between open source projects,
+       with software almost always relying on at least one other open source
+       project. Links to bugs in the trackers of other projects allow you to
+       combine their experience and solutions with your own.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q4">Does Launchpad's Bug Tracker offer a scriptable
+                interface?</h5>
+    <p>Yes. As well as an easy to use web interface, Launchpad's Bug Tracker
+       has an email interface, allowing to report, comment on and edit bugs.
+       We're also currently developing an XML-RPC API.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q5">Can I mark bugs as private?</h5>
+    <p>Yes. Launchpad makes it easy to mark bugs as private, allowing only
+       authorised subscribers to see the bug's details.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q6">How does Launchpad help me deal effectively with
+                security bugs?</h5>
+    <p>Launchpad is designed to handle security issues efficiently and with
+       the minimum risk possible. As well offering private bugs, Launchpad
+       will monitor relevant CVE security vulnerability registries and allow
+       you to designate an individual or team as security contact or your
+       project. As soon as a security issue is raised, Launchpad emails your
+       security contact, enabling you to take immediate action.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+  </div>
+</div>
+</body>
+</html>
