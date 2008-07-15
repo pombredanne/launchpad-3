@@ -376,13 +376,17 @@ class MessageSet:
             #   text/plain content is stored as a blob.
             content_disposition = part.get('Content-disposition', '').lower()
             no_attachment = not content_disposition.startswith('attachment')
-            if (mime_type == 'text/plain' and no_attachment 
+            if (mime_type == 'text/plain' and no_attachment
                 and part.get_filename() is None):
+
+                # Get the charset for the message part. If one isn't
+                # specified, default to latin-1 to prevent
+                # UnicodeDecodeErrors.
                 charset = part.get_content_charset()
-                if charset is not None:
-                    content = content.decode(charset, 'replace')
-                else:
-                    content = content.decode('latin-1', 'replace')
+                if charset is None:
+                    charset = 'latin-1'
+
+                content = content.decode(charset, 'replace')
 
                 if content.strip():
                     MessageChunk(
