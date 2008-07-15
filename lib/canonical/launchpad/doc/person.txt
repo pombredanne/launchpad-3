@@ -7,8 +7,8 @@ not Launchpad users.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IPerson, IEmailAddressSet, IHasStanding,
-    ...     IHasTranslationImports)
+    ...     IPersonSet, IPerson, IProductSet, IEmailAddressSet,
+    ...     IHasStanding, IHasTranslationImports)
 
 Any Person object (either a person or a team) implements IPerson...
 
@@ -653,6 +653,7 @@ spec to be reassigned.
     []
     >>> foobar.name
     u'name16'
+    >>> foobar_preferredemail = foobar.preferredemail
     >>> foobar.preferredemail.email
     u'foo.bar@canonical.com'
     >>> [coc.active for coc in foobar.signedcocs]
@@ -762,11 +763,43 @@ are now owned/driven by the registry admins team.
     >>> registry_teams.issuperset(foobar_teams)
     True
 
-    # We need to restore Foo Bar's name because some of our further tests rely
-    # on that name existing in the database and it'd be a lot more painful
-    # to update them. :/
-    >>> foobar.name = 'name16'
-    >>> flush_database_updates()
+
+== Reactivating user accounts ==
+
+Accounts can be reactivated. A comment is required to log why this
+was done. There are two preconditions before this method can be
+called on a Person: The person must have a password and must have
+a preferred email address.
+
+    >>> foobar.reactivateAccount('This will raise an error.')
+    Traceback (most recent call last):
+     ...
+    AssertionError: User name16-deactivatedaccount cannot be reactivate
+                    without first setting a password.
+
+    >>> foobar.password = 'test'
+    >>> foobar.reactivateAccount('This will raise an error.')
+    Traceback (most recent call last):
+     ...
+    AssertionError: User name16-deactivatedaccount cannot be reactivate
+                    without first setting a preferred email address.
+
+    >>> foobar.setPreferredEmail(foobar_preferredemail)
+
+The account can be reactivated after the password and preferred
+email address are set.
+
+    >>> foobar.reactivateAccount(
+    ...     'User reactivated the account using reset password.')
+    >>> foobar.account_status
+    <DBItem AccountStatus.ACTIVE...
+    >>> foobar.account_status_comment
+    u'User reactivated the account using reset password.'
+
+The account name is fixed if it was altered when it was deactivated.
+
+    >>> foobar.name
+    u'name16'
 
 
 == Searching ==
@@ -998,13 +1031,26 @@ projects.
 
 == Project owned by a person or team ==
 
-To obtain all projects owned by a person or team, we can use the
+To obtain active projects owned by a person or team, we can use the
 getOwnedProjects() method of IPerson.  This method returns
 projects ordered by displayname.
 
     >>> for project in sabdfl.getOwnedProjects():
     ...     print project.displayname
     Derby
+    Gnome Applets
+    Tomcat
+    a52dec
+    alsa-utils
+    gnomebaker
+
+The method does not return inactive projects.
+
+    >>> login('commercial-member@canonical.com')
+    >>> derby = getUtility(IProductSet).getByName('derby')
+    >>> derby.active = False
+    >>> for project in sabdfl.getOwnedProjects():
+    ...     print project.displayname
     Gnome Applets
     Tomcat
     a52dec

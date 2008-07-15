@@ -15,7 +15,7 @@ collection.
   >>> people_collection['resource_type_link']
   u'http://api.launchpad.dev/beta/#people'
   >>> people_collection['total_size']
-  57
+  59
   >>> people_collection['next_collection_link']
   u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
   >>> people_collection.get('prev_collection_link') is None
@@ -27,11 +27,11 @@ collection.
   >>> len(people_entries)
   5
   >>> people_entries[0]['display_name']
-  u'Bazaar Experts'
+  u'Brad Crittenden'
   >>> people_entries[0]['self_link']
-  u'http://api.launchpad.dev/beta/~bazaar-experts'
+  u'http://api.launchpad.dev/beta/~bac'
   >>> people_entries[-1]['display_name']
-  u'Celso Providelo'
+  u'Carlos Perell\xf3 Mar\xedn'
 
 You can get other pages of the collection by following links:
 
@@ -57,7 +57,7 @@ You can also get a larger batch than the default:
 
   >>> bigger_batch = webservice.get("/beta/people?ws.size=75").jsonBody()
   >>> len(bigger_batch['entries'])
-  57
+  59
   >>> bigger_batch.get('next_collection_link') is None
   True
 

@@ -93,14 +93,17 @@
                   error_class python:error and 'error' or None;
                   show_optional python:view.showOptionalMarker(field_name)">
     <tal:is-visible condition="widget/visible">
-      <tr tal:condition="python: view.isSingleLineLayout(field_name)">
+      <tr
+        tal:condition="python: view.isSingleLineLayout(field_name)"
+        tal:attributes="class error_class"
+      >
         <th tal:condition="display_label|widget/display_label|python:True">
           <label tal:attributes="for widget/name"
                  tal:content="string:${widget/label}:">Label</label><br />
           <span tal:condition="show_optional"
                 class="fieldRequired">(Optional)</span>
         </th>
-        <td tal:attributes="class error_class" width="100%">
+        <td>
           <div>
             <input tal:replace="structure widget" />
           </div>
@@ -113,21 +116,27 @@
         </td>
       </tr>
       <tal:block condition="python: view.isMultiLineLayout(field_name)">
-        <tr tal:condition="display_label|widget/display_label|python:True">
-          <th colspan="2" style="text-align: left"><label
+        <tr tal:attributes="class error_class">
+          <td colspan="2" style="text-align: left">
+            <tal:showlabel
+              condition="display_label|widget/display_label|python:True"
+            >
+
+            <label
               tal:attributes="for widget/name"
               tal:content="string:${widget/label}:">Label:</label>
             <span tal:condition="show_optional"
                   class="fieldRequired">(Optional)</span>
-          </th>
-        </tr>
-        <tr>
-          <td colspan="2" tal:attributes="class error_class">
+            
+            </tal:showlabel>
+            <div
+              tal:condition="error"
+              tal:content="structure error"
+              class="message"
+            >Error message</div>
             <div tal:content="structure widget">
               <input type="text" style="width: 100%" />
             </div>
-            <div class="message" tal:condition="error"
-                 tal:content="structure error">Error message</div>
             <p class="formHelp"
                tal:condition="widget/hint"
                tal:content="widget/hint">Some Help Text
@@ -141,8 +150,11 @@
           <input type="checkbox" tal:replace="structure widget" />
           <label tal:attributes="for widget/name"
                  tal:content="widget/label">Label</label>
-          <div class="message" tal:condition="error"
-               tal:content="structure error">Error message</div>
+          <div
+            tal:condition="error"
+            tal:content="structure error"
+            class="message"
+          >Error message</div>
           <p class="formHelp"
              tal:condition="widget/hint"
              tal:content="widget/hint">Some Help Text

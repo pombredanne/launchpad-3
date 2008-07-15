@@ -770,14 +770,14 @@ it. Different operations that use the same method are distinguished by
 XML id. Here that's not a problem; we have one custom POST method
 ('bug_task-transitionToStatus'), plus the standard GET, PATCH, and PUT.
 
-    >>> [method.attrib['name'] for method in methods]
-    ['GET', 'PUT', 'PATCH', 'POST', 'POST', 'POST']
-
-    >>> [method.attrib['id'] for method in methods]
-    ['bug_task-get', 'bug_task-put',
-     'bug_task-patch', 'bug_task-transitionToStatus',
-     'bug_task-transitionToImportance',
-     'bug_task-transitionToAssignee']
+    >>> sorted((method.attrib['name'], method.attrib['id'])
+    ...        for method in methods)
+    [('GET', 'bug_task-get'),
+     ('PATCH', 'bug_task-patch'),
+     ('POST', 'bug_task-transitionToAssignee'),
+     ('POST', 'bug_task-transitionToImportance'),
+     ('POST', 'bug_task-transitionToStatus'),
+     ('PUT', 'bug_task-put')]
 
 
 === Standard entry operations ===

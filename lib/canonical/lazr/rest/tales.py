@@ -397,6 +397,8 @@ class WadlFieldAPI(WadlAPI):
             schema = self.field.schema
         else:
             raise TypeError("Field is not of a supported type.")
+        assert schema is not IObject, (
+            "Null schema provided for %s" % self.field.__name__)
         return EntryAdapterUtility.forSchemaInterface(schema)
 
 

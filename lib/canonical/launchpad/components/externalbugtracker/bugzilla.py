@@ -414,7 +414,7 @@ class BugzillaLPPlugin(Bugzilla):
             'ids': bug_ids,
             'permissive': True,
             }
-        response_dict = self.xmlrpc_proxy.Bug.get_bugs(request_args)
+        response_dict = self.xmlrpc_proxy.Launchpad.get_bugs(request_args)
         remote_bugs = response_dict['bugs']
 
         # Now copy them into the local bugs dict.
@@ -485,9 +485,10 @@ class BugzillaLPPlugin(Bugzilla):
         # 'comments' field of the bug.
         request_params = {
             'bug_ids': [actual_bug_id],
-            'include': ['id'],
+            'include_fields': ['id'],
             }
-        bug_comments_dict = self.xmlrpc_proxy.Bug.comments(request_params)
+        bug_comments_dict = self.xmlrpc_proxy.Launchpad.comments(
+            request_params)
 
         bug_comments = bug_comments_dict['bugs'][actual_bug_id]
         return [comment['id'] for comment in bug_comments]
@@ -501,7 +502,8 @@ class BugzillaLPPlugin(Bugzilla):
             'bug_ids': [actual_bug_id],
             'ids': comment_ids,
             }
-        bug_comments_dict = self.xmlrpc_proxy.Bug.comments(request_params)
+        bug_comments_dict = self.xmlrpc_proxy.Launchpad.comments(
+            request_params)
         comment_list = bug_comments_dict['bugs'][actual_bug_id]
 
         # Transfer the comment list into a dict.
@@ -555,6 +557,6 @@ class BugzillaLPPlugin(Bugzilla):
             'id': actual_bug_id,
             'comment': comment_body,
             }
-        return_dict = self.xmlrpc_proxy.Bug.add_comment(request_params)
+        return_dict = self.xmlrpc_proxy.Launchpad.add_comment(request_params)
 
         return return_dict['comment_id']
