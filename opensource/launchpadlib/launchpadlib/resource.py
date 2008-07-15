@@ -204,12 +204,10 @@ class NamedOperation(LaunchpadBase):
             extra_headers = {}
         else:
             url = self.wadl_method.build_request_url()
-            in_representation = self.wadl_method.build_representation(
+            (media_type,
+             in_representation) = self.wadl_method.build_representation(
                 **kwargs)
-            # XXX This is not satisfying. build_representation should
-            # give me this information.
-            extra_headers = {
-                'Content-type' : 'application/x-www-form-urlencoded' }
+            extra_headers = { 'Content-type' : media_type }
         response, content = self.root._browser._request(
             url, in_representation, http_method, extra_headers=extra_headers)
 

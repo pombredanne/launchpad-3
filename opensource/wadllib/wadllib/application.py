@@ -434,7 +434,10 @@ class Method(WADLBase):
 
     def build_representation(self, media_type=None,
                              param_values=None, **kw_param_values):
-        """Build a representation to be sent when invoking this method."""
+        """Build a representation to be sent when invoking this method.
+
+        :returns: A 2-tuple of (media_type, representation).
+        """
         return self.request.representation(
             media_type, param_values, **kw_param_values)
 
@@ -528,12 +531,16 @@ class RequestDefinition(WADLBase, HasParametersMixin):
 
     def representation(self, media_type=None, param_values=None,
                        **kw_param_values):
-        """Build a representation to be sent along with this request."""
+        """Build a representation to be sent along with this request.
+
+        :returns: A 2-tuple of (media_type, representation).
+        """
         definition = self.representation_definition(media_type)
         if definition is None:
             raise TypeError("Cannot build representation of media type %s"
                             % media_type)
-        return definition.bind(param_values, **kw_param_values)
+        return (definition.media_type,
+                definition.bind(param_values, **kw_param_values))
 
     def build_url(self, param_values=None, **kw_param_values):
         """Return the request URL to use to invoke this method."""

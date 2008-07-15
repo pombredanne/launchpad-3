@@ -258,10 +258,10 @@ details of how a representation is put together.
 
    >>> create_team_method.build_representation(
    ...     display_name='Joe Bloggs', name='joebloggs')
-   'display_name=Joe+Bloggs&ws.op=newTeam&name=joebloggs'
+   ('application/x-www-form-urlencoded', 'display_name=Joe+Bloggs&ws.op=newTeam&name=joebloggs')
 
    >>> bound_limi.get_method('patch').build_representation(name='limi2')
-   '{"name": "limi2"}'
+   ('application/json', '{"name": "limi2"}')
 
 Representations may require values for certain parameters.
 
