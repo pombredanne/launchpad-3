@@ -466,7 +466,7 @@ Bug 1 has no attachments:
   >>> show(attachments)
   [(u'entries', []),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugAttachmentEntryAdapter-page-resource'),
+    u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'),
    (u'start', None),
    (u'total_size', 0)]
 
@@ -491,12 +491,12 @@ Now, bug 1 has one attachment:
     [{u'bug_link': u'http://api.launchpad.dev/beta/bugs/1',
       u'data_link': u'http://api.launchpad.dev/beta/bugs/1/attachments/1/data',
       u'message_link': u'http://api.launchpad.dev/beta/firefox/+bug/1/comments/2',
-      u'resource_type_link': u'http://api.launchpad.dev/beta/#BugAttachmentEntryAdapter',
+      u'resource_type_link': u'http://api.launchpad.dev/beta/#bug_attachment',
       u'self_link': u'http://api.launchpad.dev/beta/bugs/1/attachments/1',
       u'title': u'numbers.txt',
       u'type': u'Unspecified'}]),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugAttachmentEntryAdapter-page-resource'),
+    u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'),
    (u'start', 0),
    (u'total_size', 1)]
 
@@ -510,7 +510,7 @@ The attachment can be fetched directly:
    (u'message_link',
     u'http://api.launchpad.dev/beta/firefox/+bug/1/comments/2'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugAttachmentEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_attachment'),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/attachments/1'),
    (u'title', u'numbers.txt'),
    (u'type', u'Unspecified')]
