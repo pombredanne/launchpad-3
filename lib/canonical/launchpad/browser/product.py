@@ -310,7 +310,11 @@ class ProductNavigationMenu(NavigationMenu):
 
     usedfor = IProduct
     facet = 'overview'
-    links = ['details', 'announcements', 'downloads']
+    links = [
+      'details',
+      'announcements',
+      'downloads',
+      ]
 
     def details(self):
         text = 'Details'
@@ -330,10 +334,21 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'distributions', 'packages',
-        'series_add', 'announce', 'announcements', 'administer',
-        'review_license', 'rdf']
+        'edit',
+        'branding',
+        'driver',
+        'reassign',
+        'top_contributors',
+        'mentorship',
+        'distributions',
+        'packages',
+        'series_add',
+        'announce',
+        'announcements',
+        'administer',
+        'review_license',
+        'rdf',
+        ]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -462,8 +477,14 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', 'list_branches', 'active_reviews',
-             'approved_merges', 'code_import', 'branch_visibility', 'files']
+    links = [
+        'branch_add',
+        'list_branches',
+        'active_reviews',
+        'approved_merges',
+        'code_import',
+        'branch_visibility',
+        ]
 
     def branch_add(self):
         text = 'Register a branch'
@@ -498,10 +519,6 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
         text = 'Import your project'
         enabled = not self.context.official_codehosting
         return Link('/+code-imports/+new', text, icon='add', enabled=enabled)
-
-    def files(self):
-        text = 'Download project files'
-        return Link('+download', text, icon='info')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):

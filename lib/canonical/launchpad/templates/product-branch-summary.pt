@@ -102,11 +102,7 @@
   </tal:has-branches>
 
   <p tal:condition="view/latest_release_with_download_files">
-    <img src="/@@/download"/> There are
-    <a tal:define="link context/menu:branches/files"
-       tal:condition="link/enabled"
-       tal:attributes="href link/url"
-       >download files</a>
+    <img src="/@@/download"/> There are <a href="+download">download files</a>
     available for <tal:project-name replace="context/displayname"/>.
   </p>
 
