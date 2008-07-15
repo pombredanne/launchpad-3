@@ -447,10 +447,10 @@ correct state.
 
 The LaunchpadSearchFormView provides the minimum information to display
 the form, but cannot handled the submitted data. It appends a suffix
-('-secondary') to the id of the form and inputs to prevent them from
-conflicting with other forms. The search text is not the default value
-of the text field; 'bug' was submitted above, but is not present in the
-rendered form.
+('-secondary') to the id= and name= of the form and inputs, to prevent
+them from conflicting with the other form. The search text is not the
+default value of the text field; 'bug' was submitted above, but is not
+present in the rendered form.
 
     >>> search_form_view = getMultiAdapter(
     ...     (search_view, request), name='+search-form')
@@ -458,22 +458,21 @@ rendered form.
     >>> search_form_view.id_suffix
     '-secondary'
     >>> print search_form_view.render()
-    <form action="http://launchpad.dev/+search"
-      name="sitesearch" method="get" accept-charset="UTF-8"
-      id="sitesearch-secondary">
+    <form action="http://launchpad.dev/+search" method="get"
+      accept-charset="UTF-8" id="sitesearch-secondary"
+      name="sitesearch-secondary">
       <div>
-        <input class="textType" type="text" size="36" name="field.text"
-          id="field.text-secondary" />
-        <input name="field.actions.search" class="button"
-          type="submit" value="Search"
-          id="field.text-secondary" />
+        <input class="textType" type="text" size="36"
+          id="field.text-secondary" name="field.text-secondary" />
+        <input class="button" type="submit" value="Search"
+          id="field.text-secondary" name="field.actions.search-secondary" />
       </div>
     </form>
 
 LaunchpadPrimarySearchFormView can handle submitted form by deferring to
 its context (the LaunchpadSearchView) for the needed information. The
 view does not append a suffix to the form and input ids. The search
-field's value is 'bug', as was submitted above..
+field's value is 'bug', as was submitted above.
 
     >>> search_form_view = getMultiAdapter(
     ...     (search_view, request), name='+primary-search-form')
@@ -481,15 +480,14 @@ field's value is 'bug', as was submitted above..
     >>> search_form_view.id_suffix
     ''
     >>> print search_form_view.render()
-    <form action="http://launchpad.dev/+search"
-      name="sitesearch" method="get" accept-charset="UTF-8"
-      id="sitesearch">
+    <form action="http://launchpad.dev/+search" method="get"
+      accept-charset="UTF-8" id="sitesearch"
+      name="sitesearch">
       <div>
-        <input class="textType" type="text" size="36" name="field.text"
-          id="field.text" value="bug" />
-        <input name="field.actions.search" class="button"
-          type="submit" value="Search"
-          id="field.text" />
+        <input class="textType" type="text" size="36"
+          id="field.text" value="bug" name="field.text" />
+        <input class="button" type="submit" value="Search"
+          id="field.text" name="field.actions.search" />
       </div>
     </form>
 
