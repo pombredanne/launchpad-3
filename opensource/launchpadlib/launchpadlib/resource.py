@@ -34,6 +34,32 @@ from launchpadlib.errors import HTTPError, UnexpectedResponseError
 from wadllib.application import Resource as WadlResource
 
 
+class HeaderDictionary:
+    """A dictionary that bridges httplib2's and wadllib's expectations.
+
+    httplib2 expects all header dictionary access to give lowercase
+    header names. wadllib expects to access the header exactly as it's
+    specified in the WADL file, which means the official HTTP header name.
+
+    This class transforms keys to lowercase before doing a lookup
+    on the underlying dictionary.
+    """
+    def __init__(self, wrapped_dictionary):
+        self.wrapped_dictionary = wrapped_dictionary
+
+    def get(self, key, default=None):
+        """Retrieve a value, converting the key to lowercase."""
+        return self.wrapped_dictionary.get(key.lower())
+
+    def __getitem__(self, key):
+        """Retrieve a value, converting the key to lowercase."""
+        missing = object()
+        value = self.get(key, missing)
+        if value is missing:
+            raise KeyError(key)
+        return value
+
+
 class LaunchpadBase:
     """Base class for classes that know about Launchpad."""
 
@@ -192,8 +218,8 @@ class NamedOperation(LaunchpadBase):
         if response.status == 201:
             # The operation may have resulted in the creation of a new
             # resource. If so, fetch it.
-            headers = {'Location' : response['location']}
-            wadl_response = self.wadl_method.response.bind(headers)
+            wadl_response = self.wadl_method.response.bind(
+                HeaderDictionary(response))
             wadl_parameter = wadl_response.get_parameter('Location')
             wadl_resource = wadl_parameter.linked_resource
             # Fetch a representation of the new resource.
