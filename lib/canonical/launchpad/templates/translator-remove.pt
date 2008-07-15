@@ -9,10 +9,9 @@
   metal:use-macro="view/macro:page/applicationhome"
   i18n:domain="launchpad">
   <body>
-    <h1 metal:fill-slot="heading">Translation groups</h1>
-
     <div metal:fill-slot="main">
       <div>
+        <a href="/+groups">Translation groups:</a>
         <a tal:attributes="href context/translationgroup/fmt:url">
           <tal:translation-group replace="context/translationgroup/title">
             Foo bar

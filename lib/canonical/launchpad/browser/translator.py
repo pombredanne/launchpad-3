@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -6,12 +6,14 @@ import cgi
 
 from canonical.launchpad.interfaces import ITranslator
 from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadFormView, action, canonical_url)
+    GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
+    action, canonical_url)
 from canonical.launchpad.webapp.menu import structured
 
 __all__ = [
     'TranslatorEditView',
-    'TranslatorRemoveView'
+    'TranslatorRemoveView',
+    'TranslatorNavigation',
     ]
 
 class TranslatorEditView(LaunchpadEditFormView):
@@ -73,3 +75,9 @@ class TranslatorRemoveView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context.translationgroup)
+
+
+class TranslatorNavigation(GetitemNavigation):
+
+    usedfor = ITranslator
+

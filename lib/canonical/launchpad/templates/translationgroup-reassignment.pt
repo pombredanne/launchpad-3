@@ -13,10 +13,9 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
+  metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad">
   <body>
-    <h1 metal:fill-slot="heading">Translation groups</h1>
     <div metal:fill-slot="main">
       <div>
         <a tal:attributes="href context/fmt:url">
