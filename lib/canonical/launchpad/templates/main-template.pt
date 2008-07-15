@@ -165,7 +165,7 @@
             <td
               tal:define="
                 facetname CONTEXTS/menu:selectedfacetname;
-                facetname python:facetname == 'overview' and 'register' or facetname;
+                facetname python:facetname == 'overview' and 'people' or facetname;
                 facetname python:facetname == 'branches' and 'code' or facetname;
                 facetname python:facetname == 'specifications' and 'blueprints' or facetname"
               tal:content="structure context/@@+applicationbuttons/?facetname"
