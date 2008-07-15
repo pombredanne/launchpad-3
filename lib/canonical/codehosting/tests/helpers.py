@@ -223,11 +223,7 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
             self.installServer(self.getDefaultServer())
 
         self.server.setUp()
-
-    def tearDown(self):
-        deferred1 = self.server.tearDown()
-        deferred2 = defer.maybeDeferred(super(ServerTestCase, self).tearDown)
-        return defer.gatherResults([deferred1, deferred2])
+        self.addCleanup(self.server.tearDown)
 
     def __str__(self):
         return self.id()

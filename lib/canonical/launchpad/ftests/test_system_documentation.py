@@ -597,11 +597,32 @@ special = {
             tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
             ),
+    'checkwatches.txt':
+            LayeredDocFileSuite(
+                '../doc/checkwatches.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                stdout_logging_level=logging.WARNING,
+                layer=LaunchpadZopelessLayer
+                ),
     'checkwatches-cli-switches.txt':
             LayeredDocFileSuite(
                 '../doc/checkwatches-cli-switches.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
+    'bugwatch.txt':
+            LayeredDocFileSuite(
+                '../doc/bugwatch.txt',
+                setUp=setUp, tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker.txt',
+                setUp=setUp, tearDown=tearDown,
+                stdout_logging_level=logging.WARNING,
                 layer=LaunchpadZopelessLayer
                 ),
     'externalbugtracker-bug-imports.txt':
