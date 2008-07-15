@@ -31,7 +31,7 @@ a new password.
     ...     'no-priv@canonical.com', LoginTokenType.PASSWORDRECOVERY)
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='token/%s/+resetpassword' % login_token.token,
+    ...     PATH_INFO='/token/%s/+resetpassword' % login_token.token,
     ...     method='POST',
     ...     form={
     ...         'field.email': 'no-priv@canonical.com',
@@ -53,7 +53,7 @@ stored. The password is not reset.
     ...     'no-priv@canonical.com', LoginTokenType.PASSWORDRECOVERY)
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='token/%s/+resetpassword' % login_token.token,
+    ...     PATH_INFO='/token/%s/+resetpassword' % login_token.token,
     ...     method='POST',
     ...     form={
     ...         'field.email': 'wrong@canonical.com',
@@ -95,7 +95,7 @@ password is reset, and the account status is set ACTIVE.
 
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='token/%s/+resetpassword' % login_token.token,
+    ...     PATH_INFO='/token/%s/+resetpassword' % login_token.token,
     ...     method='POST',
     ...     form={
     ...         'field.email': 'former-user@canonical.com',
@@ -112,5 +112,140 @@ password is reset, and the account status is set ACTIVE.
     >>> former_user_account.status
     <DBItem AccountStatus.ACTIVE, ...>
     >>> former_user.is_valid_person
+    True
+
+
+== Claiming a profile ==
+
+The ClaimProfileView allows users to claim accounts created by Launchpad
+processes. The user profile for Alexander Limi was created during an
+import. The user profile does not have a preferred email address or a
+password.
+
+    >>> limi = person_set.getByEmail('limi@plone.org')
+    >>> limi.name
+    u'limi'
+    >>> limi.displayname
+    u'Alexander Limi'
+    >>> print limi.preferredemail
+    None
+
+    >>> limi_account = removeSecurityProxy(limi.account)
+    >>> limi_account.status
+    <DBItem AccountStatus.NOACCOUNT, ...>
+    >>> print limi_account.password
+    None
+    >>> limi.is_valid_person
+    False
+
+The user can claim his profile by providing the email address that
+is associated with the profile. If the correct address is provided,
+the user is sent an email with a link to a LoginToken.
+
+    >>> login_token = login_token_set.new(
+    ...     limi, 'limi@plone.org',
+    ...     'limi@plone.org', LoginTokenType.PROFILECLAIM)
+
+The user is asked to provide a display name and password, and to
+indicate if his email address can be shown to other Launchpad users.
+
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='/token/%s/+claimprofile' % login_token.token,
+    ...     method='POST',
+    ...     form={
+    ...         'field.displayname': 'A. Limi',
+    ...         'field.hide_email_addresses': 'on',
+    ...         'field.password': 'test4',
+    ...         'field.password_dupe': 'test4',
+    ...         'field.actions.confirm': 'Continue',
+    ...         })
+    >>> claimprofile_view = getMultiAdapter(
+    ...     (login_token, request), name="+claimprofile")
+    >>> claimprofile_view.initialize()
+    >>> claimprofile_view.errors
+    []
+
+The user's Person, EmailAddress, an Account objects are updated.
+
+    >>> limi.displayname
+    u'A. Limi'
+    >>> limi.hide_email_addresses
+    True
+    >>> removeSecurityProxy(limi.preferredemail).email
+    u'limi@plone.org'
+
+    >>> limi_account.status
+    <DBItem AccountStatus.ACTIVE, ...>
+    >>> limi_account.status_comment
+    u'Activated by claim profile.'
+    >>> limi.is_valid_person
+    True
+
+
+== Creating a new account from an existing profile ==
+
+If a user's email address matches the email address of an unclaimed
+account, the existing profile is activated and given to the user.
+David Miller (justdave) has an account created via an automated process.
+
+
+    >>> justdave = person_set.getByEmail('justdave@bugzilla.org')
+    >>> justdave.name
+    u'justdave'
+    >>> justdave.displayname
+    u'Dave Miller'
+    >>> print justdave.preferredemail
+    None
+
+    >>> justdave_account = removeSecurityProxy(justdave.account)
+    >>> justdave_account.status
+    <DBItem AccountStatus.NOACCOUNT, ...>
+    >>> print justdave_account.password
+    None
+    >>> justdave.is_valid_person
+    False
+
+Dave would normally create a new account by claiming a LoginToken
+that verifies he has access to the email address his provided.
+
+    >>> login_token = login_token_set.new(
+    ...     justdave, 'justdave@bugzilla.org',
+    ...     'justdave@bugzilla.org', LoginTokenType.NEWACCOUNT)
+
+The NewAccountView will activate the existing account and update
+the Person object.
+
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='/token/%s/+newaccount' % login_token.token,
+    ...     method='POST',
+    ...     form={
+    ...         'field.displayname': 'Dave (justdave) Miller',
+    ...         'field.hide_email_addresses.used': '',
+    ...         'field.password': 'test5',
+    ...         'field.password_dupe': 'test5',
+    ...         'field.actions.continue': 'Continue',
+    ...         })
+    >>> claimprofile_view = getMultiAdapter(
+    ...     (login_token, request), name="+newaccount")
+    >>> claimprofile_view.initialize()
+    >>> claimprofile_view.errors
+    []
+
+The existing Account, Person and EmailAddress are updated.
+
+    >>> justdave.displayname
+    u'Dave (justdave) Miller'
+    >>> justdave.hide_email_addresses
+    False
+    >>> removeSecurityProxy(justdave.preferredemail).email
+    u'justdave@bugzilla.org'
+
+    >>> justdave_account.status
+    <DBItem AccountStatus.ACTIVE, ...>
+    >>> justdave_account.status_comment
+    u'Activated by new account.'
+    >>> justdave.is_valid_person
     True
 

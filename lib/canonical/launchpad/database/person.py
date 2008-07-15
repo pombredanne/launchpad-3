@@ -1695,6 +1695,29 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    def activateAccount(self, comment, password, preferred_email):
+        """Activate the person's account.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password.
+        :param preferred_email: The `EmailAddress` to set as the user's
+            preferred email address.
+        :raise AssertionError: is the Person is a Team.
+        """
+        # XXX sinzui 2008-07-14 bug=248518:
+        # This method would assert the password is not None, but
+        # setPreferredEmail() passes the Person's current password.
+        if self.is_team:
+            raise AssertionError(
+                "Teams cannot be activated with this method.")
+        self.account.status = AccountStatus.ACTIVE
+        self.account.status_comment = comment
+        self.password = password
+        if preferred_email is not None:
+            self.validateAndEnsurePreferredEmail(preferred_email)
+        # sync so validpersoncache updates.
+        self.account.sync()
+
     def deactivateAccount(self, comment):
         """Deactivate this person's Launchpad account.
 
@@ -1786,19 +1809,30 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             count += 1
         return new_name
 
-    def reactivateAccount(self, comment):
+    def reactivateAccount(self, comment, password, preferred_email):
         """Reactivate the account.
 
         Set the account status to ACTIVE and possibly restore the user's
-        name.
+        name. The preferred email address is set when provided.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password, it cannot be None.
+        :param preferred_email: The `EmailAddress` to set as the user's
+            preferred email address.
+        :raise AssertionError: if the password is not valid.
+        :raise AssertionError: if the preferred email address is None.
+        :raise AssertionError: if this `Person` is a team.
         """
-        if self.password is None:
+        if self.is_team:
             raise AssertionError(
-                "User %s cannot be reactivate without first setting a "
+                "Teams cannot be reactivated with this method.")
+        if password in (None, ''):
+            raise AssertionError(
+                "User %s cannot be reactivated without a "
                 "password." % self.name)
-        if self.preferredemail is None:
+        if preferred_email is None:
             raise AssertionError(
-                "User %s cannot be reactivate without first setting a "
+                "User %s cannot be reactivated without a "
                 "preferred email address." % self.name)
         self.account.status = AccountStatus.ACTIVE
         self.account.status_comment = comment
@@ -1809,6 +1843,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             name_parts = self.name.split('-deactivatedaccount')
             base_new_name = name_parts[0]
             self.name = self._ensureNewName(base_new_name)
+        self.password = password
+        self.validateAndEnsurePreferredEmail(preferred_email)
 
     @property
     def visibility_consistency_warning(self):
@@ -2081,15 +2117,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setPreferredEmail(self, email):
         """See `IPerson`."""
         assert not self.is_team, "This method must not be used for teams."
-        if self.preferredemail is None:
-            # This is the first time we're confirming this person's email
-            # address, so we now assume this person has a Launchpad account.
-            # XXX: This is a hack! In the future we won't have this
-            # association between accounts and confirmed addresses, but this
-            # will do for now. -- Guilherme Salgado, 2007-07-03
-            self.account.status = AccountStatus.ACTIVE
-            self.account.status_comment = None
-            self.account.sync() # sync so validpersoncache updates.
+        if (self.preferredemail is None
+            and self.account_status != AccountStatus.ACTIVE):
+            # XXX sinzui 2008-07-14 bug=248518:
+            # This is a hack to preserve this function's behaviour before
+            # Account was split from Person. This can be removed when
+            # all the callsites ensure that the account is ACTIVE first.
+            self.activateAccount(
+                "Activated when the preferred email was set.",
+                password=self.password,
+                preferred_email=email)
         # Anonymous users may claim their profile; remove the proxy
         # to set the account.
         removeSecurityProxy(email).account = self.account

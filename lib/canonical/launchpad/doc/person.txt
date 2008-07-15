@@ -689,6 +689,59 @@ team list is actually sorted by date joined.
     2005-07-12 14:36:09.587753+00:00
 
 
+== Activating user accounts ==
+
+A user may acctivate their account that was created by an automated
+process. Alexander Limi's account was created during a code import.
+
+    >>> emailaddress = emailset.getByEmail('limi@plone.org')
+    >>> limi = emailaddress.person
+    >>> limi.is_valid_person
+    False
+    >>> limi.account_status
+    <DBItem AccountStatus.NOACCOUNT, ...>
+    >>> print limi.password
+    None
+    >>> print limi.preferredemail
+    None
+
+The account can only be activated by the user who is claming
+the profile. Mark cannot claim it.
+
+    >>> login('mark@hbd.com')
+    >>> limi.activateAccount(
+    ...     comment="test", password='ok', preferred_email=emailaddress)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...'launchpad.Special')
+
+Alexander Limi can. A password and a preferred email adress must be
+passed as arguments.
+
+    >>> login('limi@plone.org')
+    >>> limi.activateAccount(
+    ...     comment="test", password='ok', preferred_email=emailaddress)
+    >>> limi.is_valid_person
+    True
+    >>> limi.account_status
+    <DBItem AccountStatus.ACTIVE, ...>
+    >>> limi.account_status_comment
+    u'test'
+    >>> removeSecurityProxy(limi.preferredemail).email
+    u'limi@plone.org'
+
+An error is raised if activateAccount() is called on a team.
+
+    # It should not be possible to login as a team.
+    >>> login('support@ubuntu.com')
+    >>> ubuntu_team.activateAccount(
+    ...     comment="test", password='ok', preferred_email=emailaddress)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Teams cannot be activated with this method.
+
+    >>> login(ANONYMOUS)
+
 == Deactivating user accounts ==
 
 Any user can deactivate his own account, in case they don't want it
@@ -842,31 +895,31 @@ Bar are now owned/driven by the registry admins team.
 == Reactivating user accounts ==
 
 Accounts can be reactivated. A comment is required to log why this was
-done. There are two preconditions before this method can be called on a
-Person: The person must have a password and must have a preferred email
-address.
+done, and a password is required too. There are two preconditions before
+this method can be called on a Person: The password and the preferred
+email address cannot not be None.
 
-    >>> foobar.reactivateAccount('This will raise an error.', password=None)
+    >>> foobar.reactivateAccount(
+    ...     'This will raise an error.', password=None, preferred_email=None)
     Traceback (most recent call last):
      ...
-    AssertionError: User name16-deactivatedaccount cannot be reactivate
-                    without first setting a password.
+    AssertionError: User name16-deactivatedaccount cannot be reactivated
+                    without a password.
 
-    >>> foobar.password = 'test'
-    >>> foobar.reactivateAccount('This will raise an error.', password='ok')
+    >>> foobar.reactivateAccount(
+    ...     'This will raise an error.', password='ok', preferred_email=None)
     Traceback (most recent call last):
      ...
-    AssertionError: User name16-deactivatedaccount cannot be reactivate
-                    without first setting a preferred email address.
-
-    >>> foobar.setPreferredEmail(foobar_preferredemail)
+    AssertionError: User name16-deactivatedaccount cannot be reactivated
+                    without a preferred email address.
 
 The account can be reactivated after the password and preferred email
 address are set.
 
     >>> foobar.reactivateAccount(
     ...     'User reactivated the account using reset password.',
-    ...     password="ok")
+    ...     password="ok",
+    ...     preferred_email=foobar_preferredemail)
     >>> foobar.account_status
     <DBItem AccountStatus.ACTIVE...
 
@@ -877,6 +930,18 @@ The account name is fixed if it was altered when it was deactivated.
 
     >>> foobar.name
     u'name16'
+
+An error is raised if reactivateAccount() is called on a team.
+
+    # It should not be possible to login as a team.
+    >>> login('support@ubuntu.com')
+    >>> ubuntu_team.reactivateAccount(
+    ...     comment="test", password='ok', preferred_email=emailaddress)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Teams cannot be reactivated with this method.
+
+    >>> login(ANONYMOUS)
 
 
 == Searching ==
@@ -1516,5 +1581,4 @@ be raised.
     Traceback (most recent call last):
       ...
     InvalidName: ThisIsn'tValid is not a valid name for a person.
-
 
