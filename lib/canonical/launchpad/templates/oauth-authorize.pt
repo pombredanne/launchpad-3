@@ -28,8 +28,14 @@
           <div metal:fill-slot="extra_top">
             <p>The application identified as
               <strong tal:content="token/consumer/key">consumer</strong>
-            wants to access Launchpad on your behalf. What level of access
-            do you want to grant?</p>
+              wants to access
+              <tal:has-context condition="view/token_context">
+                things related to
+                <strong tal:content="view/token_context/title">Context</strong>
+                in
+              </tal:has-context>
+              Launchpad on your behalf. What level of access
+              do you want to grant?</p>
 
             <table>
               <tr tal:repeat="action view/actions">

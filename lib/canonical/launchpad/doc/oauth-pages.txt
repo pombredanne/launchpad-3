@@ -1,0 +1,99 @@
+= OAuth pages =
+
+The pages used in our implementation of the OAuth protocol.
+
+== +oauth-authorize ==
+
+This is the page where a user reviews (approving or declining) a
+consumer's request to access Launchpad on his behalf.
+
+    # Define some things we're going to use throughout this test.
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.interfaces.oauth import (
+    ...     IOAuthConsumerSet, OAuthPermission)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('launchpad-library')
+    >>> root = getUtility(ILaunchpadRoot)
+    >>> def get_view_with_fresh_token(form):
+    ...     token = consumer.newRequestToken()
+    ...     form.update({'oauth_token': token.key})
+    ...     request = LaunchpadTestRequest(form=form)
+    ...     view = getMultiAdapter((root, request), name="+oauth-authorize")
+    ...     view.initialize()
+    ...     return view, token
+
+When the consumer doesn't specify a context, the token will not have a
+context either.
+
+    >>> login('salgado@ubuntu.com')
+    >>> view, token = get_view_with_fresh_token({})
+    >>> print view.token_context
+    None
+
+    >>> view.reviewToken(OAuthPermission.READ_PRIVATE)
+    >>> token.person.name
+    u'salgado'
+    >>> print token.context
+    None
+    >>> token.permission
+    <DBItem OAuthPermission.READ_PRIVATE...
+    >>> print token.is_reviewed
+    True
+
+The context can be a product, and if it's specified it will be carried
+over to the token once it's reviewed.
+
+    >>> view, token = get_view_with_fresh_token({'lp.product': 'firefox'})
+    >>> view.token_context.name
+    u'firefox'
+    >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
+    >>> token.context.name
+    u'firefox'
+
+Likewise for a project.
+
+    >>> view, token = get_view_with_fresh_token({'lp.project': 'mozilla'})
+    >>> view.token_context.name
+    u'mozilla'
+    >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
+    >>> token.context.name
+    u'mozilla'
+
+And a distribution.
+
+    >>> view, token = get_view_with_fresh_token({'lp.distribution': 'ubuntu'})
+    >>> view.token_context.name
+    u'ubuntu'
+    >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
+    >>> token.context.name
+    u'ubuntu'
+
+If the consumer wants to access only things related to a distribution's
+package, it must specify the distribution and the package's name.
+
+    >>> view, token = get_view_with_fresh_token(
+    ...     {'lp.distribution': 'ubuntu',
+    ...      'lp.sourcepackagename': 'evolution'})
+    >>> view.token_context.title
+    u'...evolution... source package in Ubuntu'
+    >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
+    >>> token.context.title
+    u'...evolution... source package in Ubuntu'
+
+An error is raised if the package's distribution is not specified.
+
+    >>> view, token = get_view_with_fresh_token(
+    ...     {'lp.sourcepackagename': 'evolution'})
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: ...
+
+No more than one context can be specified by the consumer.
+
+    >>> view, token = get_view_with_fresh_token(
+    ...     {'lp.distribution': 'ubuntu', 'lp.product': 'firefox'})
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: ...

@@ -49,6 +49,30 @@ shown as one of the authorized ones.
     foobar123451432
         Authorized...to read non-private data
 
+Some tokens grant access only to a certain context in Launchpad.  If
+that's the case, the description of the authorization granted will
+include that.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from canonical.launchpad.interfaces import (
+    ...     IOAuthConsumerSet, IPersonSet, IProductSet)
+    >>> login('salgado@ubuntu.com')
+    >>> token = getUtility(IOAuthConsumerSet).getByKey(
+    ...     'launchpad-library').newRequestToken()
+    >>> token.review(getUtility(IPersonSet).getByName('salgado'),
+    ...              OAuthPermission.WRITE_PUBLIC,
+    ...              product=getUtility(IProductSet)['firefox'])
+    >>> access_token = token.createAccessToken()
+    >>> logout()
+    >>> my_browser.open('http://launchpad.dev/~salgado/+oauth-tokens')
+    >>> print extract_text(find_tag_by_id(my_browser.contents, 'maincontent'))
+    Authorized applications
+    ...
+    launchpad-library
+    ...
+    to change non-private data related to Mozilla Firefox
+
 That page is protected with the launchpad.Edit permission, for obvious
 reasons, so users can only access their own.
 
