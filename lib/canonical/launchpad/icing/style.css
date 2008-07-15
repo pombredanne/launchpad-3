@@ -982,7 +982,7 @@ partly (but not visibly) overlaps the rounded border of the main area. */
 /* Display the pillar image above mainarea, so the image does not appear
    cropped in wide windows on browsers that do not support transparent
    background. */
-#structuralobjectheading img { 
+#structuralobjectheading img {
   z-index: 2;
 }
 
@@ -1067,6 +1067,9 @@ aside {clear: right; float: right; width: 200px;}
 /* There is a margin between each section and the previous one: */
 .pillar div.portlet, .pillar div.section {clear: left; padding-top: 2em;}
 .pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
+/* The top-most portlet, Contact Details, is allowed to float up and beside
+the mugshot. */
+#contact-details {clear: none;}
 
 /* === Portlets === */
 /* The two-column layout includes a column of portlets: */
