@@ -535,15 +535,9 @@ class BzrSync:
         self.logger.info("Inserting or checking %d revisions.",
             len(revisions_to_insert_or_check))
         # Add new revisions to the database.
-        for revision_id in revisions_to_insert_or_check:
-            # If the revision is a ghost, it won't appear in the repository.
-            try:
-                revision = bzr_branch.repository.get_revision(
-                    revision_id)
-            except NoSuchRevision:
-                self.logger.debug("%d of %d: %s is a ghost",
-                                  self.curr, self.last, revision_id)
-                continue
+        revisions_to_insert_or_check = bzr_branch.repository.get_parent_map(revisions_to_insert_or_check).keys()
+        revisions = bzr_branch.repository.get_revisions(revisions_to_insert_or_check)
+        for revision in revisions:
             self.syncOneRevision(revision, branchrevisions_to_insert)
 
     def syncOneRevision(self, bzr_revision, branchrevisions_to_insert):
