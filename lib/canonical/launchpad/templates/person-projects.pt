@@ -20,11 +20,13 @@
 </metal:heading>
 
 <div metal:fill-slot="main">
-  <p tal:condition="view/tooManyRelatedProjectsFound"
-       class="informational message">
-      <span tal:replace="view/related_projects_count" /> projects are related
-        to <span tal:replace="context/displayname" />. Displaying only the
-        first <span tal:replace="view/max_results_to_display" />:
+  <p
+    tal:condition="view/tooManyRelatedProjectsFound"
+    class="informational message"
+    style="background-color: transparent">
+    <span tal:replace="view/related_projects_count" /> projects are related
+      to <span tal:replace="context/displayname" />. Displaying only the
+      first <span tal:replace="view/max_results_to_display" />:
   </p>
 
   <table tal:condition="view/relatedProjects"
