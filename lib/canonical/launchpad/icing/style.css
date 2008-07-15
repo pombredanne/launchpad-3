@@ -58,6 +58,7 @@ legend legend {font-weight: normal;}
   border-width: 0 0 1px 0;
   display: block;
 }
+section {display: block; margin-bottom: 1em;}
 table {border-collapse: collapse;}
 textarea {display: block;}
 thead {vertical-align: bottom;}
@@ -104,6 +105,7 @@ h1, h2, h3, h4, h5, h6 { margin-bottom: 0.5em; }
 /* H1 is only used at the top the maincontent, maybe below a short description
    of the displayed object. It must have zero margin-top. */
 h2, h3, h4, h5, h6 { margin-top: 1em; }
+ul{padding-left:0; list-style-position: inside;}
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
@@ -1077,14 +1079,16 @@ aside {margin-left: 20px;}
 a conditional comment in main-template.pt to work around the above rule. */
 /* Portlets look the same whether as <div class="portlet"> or <aside>: */
 #portlets .portlet, aside {
-  background-color: #ebebeb;
-  border: 1px solid;
-  border-color: #fff #ccc #ccc #fff;
+  background-color: #fafafa;
+  border:1px solid #d6d6d6;
   margin: 0 0 0.5em 0;
   color: #717171;
-  padding: 4px 8px;
+  padding: 8px;
   width: 182px; /* = 200px column - 2*1px vertical border - 2*8px padding */
   overflow: hidden;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
 }
 /* In the Actions menu, part of the horizontal padding is used for
 highlighting menu items, so padding is handled by the contents instead: */
@@ -1121,7 +1125,7 @@ highlighting menu items, so padding is handled by the contents instead: */
 /* The first portlet on many pages discloses whether the object is private: */
 #privacy {background: #fff;}
 #privacy.private {
-  background: #eee url(/@@/private-bg) top left repeat-x; /* 8px high */
+  background: url(/@@/private-bg) top left repeat-x; /* 8px high */
   padding-top: 12px; /* = 8px + the usual 4px top padding */
 }
 
