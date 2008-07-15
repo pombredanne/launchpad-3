@@ -209,11 +209,9 @@ class NamedOperation(LaunchpadBase):
             # XXX This is not satisfying. build_representation should
             # give me this information.
             extra_headers = {
-                'Content-type' : 'application/x-www-form-encoded' }
-            #XXX Specifying a content type makes launchpad not see
-            # the representation!!!
+                'Content-type' : 'application/x-www-form-urlencoded' }
         response, content = self.root._browser._request(
-            url, in_representation, http_method, extra_headers={})
+            url, in_representation, http_method, extra_headers=extra_headers)
 
         if response.status == 201:
             # The operation may have resulted in the creation of a new
