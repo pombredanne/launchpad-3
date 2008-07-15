@@ -8,7 +8,7 @@ restored.
 First, No Privileges Person will create a new team and its mailing list.
 
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
@@ -25,7 +25,7 @@ First, No Privileges Person will create a new team and its mailing list.
 
 Give the mailing list a welcome message.
 
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
+    >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
     >>> browser.getControl('Welcome message text').value = (
     ...     'Greetings team one members!')
 

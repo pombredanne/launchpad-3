@@ -24,7 +24,7 @@ The team administrator can deactivate the list through the web.
     >>> from canonical.launchpad.mailman.testing import logwatcher
     >>> serial_watcher = logwatcher.LogWatcher('serial')
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
+    >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
     >>> browser.getControl('Deactivate this Mailing List').click()
     >>> serial_watcher.wait()
 
