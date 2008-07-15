@@ -30,7 +30,7 @@
            tal:attributes="href context/owner/fmt:url"
            class="link" />
         <a tal:condition="context/required:launchpad.Edit" href="+reassign">
-          <img src="/@@/edit" alt="Reassign" title="Change Owner">
+          <img src="/@@/edit" alt="Reassign" title="Change Owner" />
         </a>
       </p>
 
@@ -57,7 +57,7 @@
                     </td>
                     <td><a tal:attributes="href translator/code"><img
                            src="/@@/edit" alt="Change"
-                           title="Change Translator"></a>
+                           title="Change Translator" /></a>
                     </td>
                     <td>
                       <span class="sortkey"
