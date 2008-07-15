@@ -1429,7 +1429,7 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonAdminWriteRestricted, IPersonSpecialRestricted,
               IHasStanding, ISetLocation):
     """A Person."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(plural_name='people')
 
 
 # Set the PublicPersonChoice schema to the newly defined interface.
@@ -1536,7 +1536,7 @@ class ITeam(IPerson, ITeamPublic):
 
     The teamowner should never be None.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry('team')
 
     # Logo, Mugshot and displayname are here so that they can have a
     # description on a Team which is different to the description they have on

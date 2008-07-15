@@ -24,7 +24,7 @@ The new product form contains an example of a normal text widget:
   <th>
   <label for="field.displayname">Display Name:</label><br />
   </th>
-  <td width="100%">
+  <td>
   <div>
   <input ... name="field.displayname" ... />
   </div>
@@ -43,7 +43,7 @@ If the text field is optional, then that is noted after the widget:
   <label for="field.homepageurl">Homepage URL:</label><br />
   <span class="fieldRequired">(Optional)</span>
   </th>
-  <td width="100%">
+  <td>
   <div>
   <input ... name="field.homepageurl" ... />
   </div>
@@ -55,36 +55,28 @@ If the text field is optional, then that is noted after the widget:
 
 == Multi-line Text Widgets ==
 
-A multi-line text widget is displayed in two table rows:
+A multi-line text widget is displayed with the label above it:
 
   >>> print content
   <...
   <tr>
-    <th colspan="2" style="text-align: left"><label
-       for="field.summary">Summary:</label>
-    </th>
-  </tr>
-  <tr>
-    <td colspan="2">
+    <td colspan="2" style="text-align: left">
+      <label for="field.summary">Summary:</label>
       <div><textarea ... name="field.summary" ...></textarea></div>
       <p class="formHelp">...</p>
     </td>
   </tr>
   ...
 
-If the multi-line text widget is optional, this is mentioned on the
-label row:
+If the multi-line text widget is optional, this is mentioned to the
+right of the label:
 
   >>> print content
   <...
   <tr>
-    <th colspan="2" style="text-align: left"><label
-       for="field.description">Description:</label>
-       <span class="fieldRequired">(Optional)</span>
-    </th>
-  </tr>
-  <tr>
-    <td colspan="2">
+    <td colspan="2" style="text-align: left">
+      <label for="field.description">Description:</label>
+      <span class="fieldRequired">(Optional)</span>
       <div><textarea ... name="field.description" ...></textarea></div>
       <p class="formHelp">...</p>
     </td>

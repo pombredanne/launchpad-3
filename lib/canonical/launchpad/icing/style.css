@@ -1,3 +1,10 @@
+/* = Launchpad style sheet = */
+/*
+Guidelines:
+ * Use absolute units (e.g. px, pt) only when image sizes or CSS limitations
+   demand it. Otherwise, use relative units (%, em).
+*/
+
 .demo {background-color: #fee;}
 
 /* === Stuff browsers should do but don't === */
@@ -51,6 +58,7 @@ legend legend {font-weight: normal;}
   border-width: 0 0 1px 0;
   display: block;
 }
+section {display: block; margin-bottom: 1em;}
 table {border-collapse: collapse;}
 textarea {display: block;}
 thead {vertical-align: bottom;}
@@ -97,6 +105,7 @@ h1, h2, h3, h4, h5, h6 { margin-bottom: 0.5em; }
 /* H1 is only used at the top the maincontent, maybe below a short description
    of the displayed object. It must have zero margin-top. */
 h2, h3, h4, h5, h6 { margin-top: 1em; }
+ul{padding-left:0; list-style-position: inside;}
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
@@ -104,47 +113,45 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 .unavailable {color: #999; background: none;}
 
-/* --- Error, warning, and info messages --- */
+/* === Error, warning, and informational messages === */
+/* Error, warning, and informational alerts are in a centered box: */
+.error.message, .warning.message, .informational.message {
+  border: solid #666;
+  border-width: 1px 2px 2px 1px;
+  color: black;
+  margin: 0 auto 10px auto;
+  padding: 0 10px 10px 20px;
+  width: 30em;
+}
+/* The alerts are preceded with an icon overlaying the top left corner: */
+.error.message::before, .warning.message::before,
+.informational.message::before {
+  display: block; margin: -15px 0 -6px -35px;
+}
+/* Error messages are pink, with alerts having an error icon: */
+.error         {background: #ffe4e4;}
+.error.message::before         {content: url(/@@/error-large);}
+/* Warning messages are orange, with alerts having a warning icon: */
+.warning       {background: #fff59c;}
+.warning.message::before       {content: url(/@@/warning-large);}
+/* Informational messages are blue-to-grey, with alerts having an info icon: */
+.informational {background: #d4e8ff url(/+icing/blue-fade-to-grey);}
+.informational.message::before {content: url(/@@/info-large);}
+/* Debugging messages are white on grey, with alerts having an info icon: */
+.debugging     {background: #666; color: white;}
+.debugging.message::before     {content: url(/@@/info-large);}
+/* Form errors override this background color, because the lack of space
+between the edge of fields and the edge of the color would look bad: */
+table.form .error {background: none;}
+/* And inside, the error message itself uses a smaller icon: */
+.error .message {
+  background: url(/@@/error) center left no-repeat;
+  margin-bottom: 0.25em;
+  padding-left: 18px;
+}
 
-.error, .warning, .informational {
-  padding: 0.5em;
-}
-.message {
-  background: 5px 0.5em no-repeat;
-  font-weight: bold;
-  margin: 1em 0 0.5em;
-  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
-}
-.error .message, .warning .message, .informational .message {
-  margin: 0.25em 0 0;
-  padding: 0 0 0 25px;
-  background: 0 0 no-repeat;
-}
-.error {color: #db1f22;}
-.error.message, .error .message {
-  background-image: url(/@@/error);
-}
-td.error {
-  border: 1px solid #db1f22;
-  background-color: #ffffff;
-}
-.warning {background-color: #fcdd99; color: black;}
-.warning.message, .warning .message {
-  background-image: url(/@@/warning);
-}
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
-}
-.helpwanted.message, .helpwanted .message {
-  background-image: url(/@@/helpwanted);
-}
-.informational {background-color: #fcfc99; color: black;}
-.informational.message, .informational .message {
-  background-image: url(/@@/info);
-}
-.debugging {background-color: #666; color: white;}
-.debugging.message, .debugging .message {
-  background-image: url(/@@/info);
 }
 .whiteboard {
   color: #666;
@@ -183,8 +190,9 @@ right side being clipped (bug 156202). This should be rechecked post-2.0. */
 textarea {width: 100%;}
 /* This is currently overridden for Internet Explorer in main-template.pt. */
 
-table.form {margin-top: 1em; width: 100%;}
-  /* http://launchpad.dev/firefox/+edit */
+/* Many forms are laid out using tables, with appropriate spacing: */
+table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
+table.form th, table.form td {padding-bottom: 1em;}
 
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
@@ -319,7 +327,7 @@ hr {
   width: 100%;
   height: 21px;
   overflow: hidden;
-  margin: 0;
+  margin: 0 0 1em;
   background-color: #EEE;
   background-image:  url(globalheader_bg.gif);
   background-repeat: repeat-x;
@@ -343,15 +351,6 @@ hr {
   display: inline;
   color: #FFF;
   font-size: 13px;
-}
-/* Thin line at the top, when we don't have a global header site message */
-#topline {
-  position: relative;
-  width: 100%;
-  height: 1px;
-  overflow: hidden;
-  margin: 0;
-  background-color: #6D6D6D;
 }
 
 /* Next is a location bar. */
@@ -634,7 +633,9 @@ ul#menuroot li.selected a.breadcrumb {
 .last-rounded {
   background: #ddd url(navigation-hierarchy-ne) no-repeat top right;
   min-height: 25px;
-  display: inline-block;
+  display: block;
+  width: 6px;
+  float: left;
 }
 
 /* === Location spine === */
@@ -658,20 +659,21 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps {
   position: relative;
   width: 100%;
-  margin: 0;
+  max-width: 72em;
   padding: 0;
   text-align: center;
+  margin: 0 auto;
 }
 /* The tabs have text separators for the benefit of those without CSS: */
 #lp-apps small {display: none;}
 /* The tabs are equal size, not too wide, and attached to the center bar: */
 #lp-apps span {
   position: relative;
-  display: inline-block;
-  top: -2px;
-  width: 16%; /* = (100% - 1%) / 6 */
+  float: left;
+  width: 16.3%; /* = (100% - 1%) / 6 */
   max-width: 12em;
   margin: 0;
+  margin-right: 0.2em;
   padding: 0;
   text-align: center;
   color: #333;
@@ -685,6 +687,8 @@ ul#menuroot li.selected a.breadcrumb {
   overflow: hidden;
   padding: 0 0 5px;
 }
+/* The active tab is darker, and looks contiguous with the spine above: */
+#lp-apps .active {border-top: 1px solid #ddd; font-weight: bold; top: -1px;}
 #lp-apps .overview {
   background: url(navigation-tabs-sw-overview) bottom right no-repeat;
 }
@@ -694,14 +698,11 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .overview a:hover {
   color: #8fb635;
 }
-#lp-apps .overview-active {
+#lp-apps .overview.active {
   background: url(navigation-tabs-sw-overview-active) bottom right no-repeat;
-  border-top: 1px solid #ddd;
 }
-#lp-apps .overview-active strong, #lp-apps .overview-active a {
+#lp-apps .overview.active strong, #lp-apps .overview.active a {
   background: url(navigation-tabs-se-overview-active) bottom left no-repeat;
-  font-weight: bold;
-  border-top: 1px solid #ddd;
 }
 #lp-apps .branches {
   background: url(navigation-tabs-sw-code) bottom right no-repeat;
@@ -712,14 +713,12 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .branches a:hover {
   color: #d18c3b;
 }
-#lp-apps .branches-active {
+#lp-apps .branches.active {
   background: url(navigation-tabs-sw-code-active) bottom right no-repeat;
   border-top: 1px solid #ddd;
 }
-#lp-apps .branches-active strong, #lp-apps .branches-active a {
+#lp-apps .branches.active strong, #lp-apps .branches.active a {
   background: url(navigation-tabs-se-code-active) bottom left no-repeat;
-  font-weight: bold;
-  border-top: 1px solid #ddd;
 }
 #lp-apps .bugs {
   background: url(navigation-tabs-sw-bugs) bottom right no-repeat;
@@ -730,14 +729,11 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .bugs a:hover {
   color: #a02c35;
 }
-#lp-apps .bugs-active {
+#lp-apps .bugs.active {
   background: url(navigation-tabs-sw-bugs-active) bottom right no-repeat;
-  border-top: 1px solid #ddd;
 }
-#lp-apps .bugs-active strong, #lp-apps .bugs-active a {
+#lp-apps .bugs.active strong, #lp-apps .bugs.active a {
   background: url(navigation-tabs-se-bugs-active) bottom left no-repeat;
-  font-weight: bold;
-  border-top: 1px solid #ddd;
 }
 #lp-apps .specifications {
   background: url(navigation-tabs-sw-blueprints) bottom right no-repeat;
@@ -748,14 +744,11 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .specifications a:hover {
   color: #3895bd;
 }
-#lp-apps .specifications-active {
+#lp-apps .specifications.active {
   background: url(navigation-tabs-sw-blueprints-active) bottom right no-repeat;
-  border-top: 1px solid #ddd;
 }
-#lp-apps .specifications-active strong, #lp-apps .specifications-active a {
+#lp-apps .specifications.active strong, #lp-apps .specifications.active a {
   background: url(navigation-tabs-se-blueprints-active) bottom left no-repeat;
-  font-weight: bold;
-  border-top: 1px solid #ddd;
 }
 #lp-apps .translations {
   background: url(navigation-tabs-sw-translations) bottom right no-repeat;
@@ -766,14 +759,11 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .translations a:hover {
   color: #bb3a84;
 }
-#lp-apps .translations-active {
+#lp-apps .translations.active {
   background: url(navigation-tabs-sw-translations-active) bottom right no-repeat;
-  border-top: 1px solid #ddd;
 }
-#lp-apps .translations-active strong, #lp-apps .translations-active a {
+#lp-apps .translations.active strong, #lp-apps .translations.active a {
   background: url(navigation-tabs-se-translations-active) bottom left no-repeat;
-  font-weight: bold;
-  border-top: 1px solid #ddd;
 }
 #lp-apps .answers {
   background: url(navigation-tabs-sw-answers) bottom right no-repeat;
@@ -784,14 +774,11 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps .answers a:hover {
   color: #3941bf;
 }
-#lp-apps .answers-active {
+#lp-apps .answers.active {
   background: url(navigation-tabs-sw-answers-active) bottom right no-repeat;
-  border-top: 1px solid #ddd;
 }
-#lp-apps .answers-active strong, #lp-apps .answers-active a {
+#lp-apps .answers.active strong, #lp-apps .answers.active a {
   background: url(navigation-tabs-se-answers-active) bottom left no-repeat;
-  font-weight: bold;
-  border-top: 1px solid #ddd;
 }
 /* After all has been said and done, we still want disabled ones to look disabled */
 #lp-apps .disabled-tab {
@@ -934,8 +921,18 @@ span.help {font-weight: normal;}
 }
 
 /* Immediately above the global footer, on most pages, is a search field: */
-#globalsearch {font-size: smaller; margin: 4em 0 2em; text-align: center;}
-#globalsearch input {display: block; margin: 0 auto;}
+#globalsearch {
+  font-size: small;
+  margin: 1em 0;
+  text-align: center;
+  padding: 0.5em 1em 1em;
+  background: #e7effc;
+  color: #000;
+  border: solid #c1c9d6;
+  border-width: 1px 0;
+}
+#globalsearch label {display: block; font-weight: normal;}
+#globalsearch input {display: block; margin: 0.5em auto 0;}
 /* The last element on every page is a standard footer. */
 #globalfooter {clear: both; margin: 0.5em 0;}
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
@@ -944,9 +941,9 @@ body.freeform #globalfooter {
   border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
   padding-top: 0.5em;
 }
-#colophon            {float: left;                     width: 49%;}
-#applications-footer {float: right; text-align: right; width: 49%;}
-#copyright           {float: right; text-align: right; width: 48%;}
+#colophon            {float: left;}
+#applications-footer {float: right;}
+#lp-arcana           {float: right;}
 
 /* === Specific page layouts === */
 
@@ -1023,13 +1020,7 @@ partly (but not visibly) overlaps the rounded border of the main area. */
 
 /* mainarea and three other divs supply the bottom (mainarea), top (x),
 top left (y), and top right (z) of the rounded border. */
-#mainarea {
-  clear: both;
-  background-image: url(mainarea_bottom.gif);
-  background-repeat: repeat-x;
-  background-position: bottom left;
-  position: relative;
-}
+#mainarea {clear: both; position: relative;}
 
 /* Inside those is a container for the main content, and the portlets if any. */
 #container {
@@ -1087,14 +1078,16 @@ aside {margin-left: 20px;}
 a conditional comment in main-template.pt to work around the above rule. */
 /* Portlets look the same whether as <div class="portlet"> or <aside>: */
 #portlets .portlet, aside {
-  background-color: #ebebeb;
-  border: 1px solid;
-  border-color: #fff #ccc #ccc #fff;
+  background-color: #fafafa;
+  border:1px solid #d6d6d6;
   margin: 0 0 0.5em 0;
   color: #717171;
-  padding: 4px 8px;
+  padding: 8px;
   width: 182px; /* = 200px column - 2*1px vertical border - 2*8px padding */
   overflow: hidden;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
 }
 /* In the Actions menu, part of the horizontal padding is used for
 highlighting menu items, so padding is handled by the contents instead: */
@@ -1131,7 +1124,7 @@ highlighting menu items, so padding is handled by the contents instead: */
 /* The first portlet on many pages discloses whether the object is private: */
 #privacy {background: #fff;}
 #privacy.private {
-  background: #eee url(/@@/private-bg) top left repeat-x; /* 8px high */
+  background: url(/@@/private-bg) top left repeat-x; /* 8px high */
   padding-top: 12px; /* = 8px + the usual 4px top padding */
 }
 
@@ -1642,7 +1635,6 @@ table.summary ul, table.summary ul li {
   margin: 0;
   padding: 0;
 }
-th, td {padding: 0.25em;}
 th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
 th.icon.left, td.icon.left {padding-right: 0;}
 th.icon.right, td.icon.right {padding-left: 0;}
