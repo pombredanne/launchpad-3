@@ -110,7 +110,7 @@ this requires only the new team's name, owner and display name.
     KeyError: 'bassists'
 
     >>> bassists = launchpad.people.newTeam(
-    ...     'bassists', 'Awesome Rock Bass Players')
+    ...     name='bassists', display_name='Awesome Rock Bass Players')
     >>> bassists.name
     u'bassists'
     >>> bassists.display_name
@@ -128,7 +128,7 @@ And of course, that team is now accessible directly.
 
 You cannot create the same team twice.
 
-    >>> launchpad.people.newTeam('bassists', 'Bass Gods')
+    >>> launchpad.people.newTeam(name='bassists', display_name='Bass Gods')
     Traceback (most recent call last):
     ...
     HTTPError: HTTP Error 400: Bad Request
@@ -137,7 +137,8 @@ Actually, the exception contains other useful information.
 
     >>> from launchpadlib.errors import HTTPError
     >>> try:
-    ...     launchpad.people.newTeam('bassists', 'Bass Gods')
+    ...     launchpad.people.newTeam(
+    ...         name='bassists', display_name='Bass Gods')
     ... except HTTPError, error:
     ...     pass
     >>> sorted(error.response.items())

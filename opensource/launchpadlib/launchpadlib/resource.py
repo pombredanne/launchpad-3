@@ -21,6 +21,8 @@ __metaclass__ = type
 __all__ = [
     'Collection',
     'Entry',
+    'NamedOperation',
+    'Resource',
     ]
 
 
@@ -31,7 +33,19 @@ from launchpadlib._utils.uri import URI
 from launchpadlib.errors import HTTPError, UnexpectedResponseError
 from wadllib.application import Resource as WadlResource
 
-class Resource:
+
+class LaunchpadBase:
+    """Base class for classes that know about Launchpad."""
+
+    def _transform_resources_to_links(self, dictionary):
+        new_dictionary = {}
+        for key, value in dictionary.items():
+            if isinstance(value, Resource):
+                value = value.self_link
+            new_dictionary[key] = value
+
+
+class Resource(LaunchpadBase):
     """Base class for Launchpad's HTTP resources."""
 
     def __init__(self, root, wadl_resource):
@@ -67,6 +81,21 @@ class Resource:
         if param is None:
             raise KeyError("No such parameter: %s" % param_name)
         return param.get_value()
+
+    def lp_get_named_operation(self, operation_name):
+        """Get a custom operation with the given name.
+
+        :return: A NamedOperation instance that can be called with
+                 appropriate arguments to invoke the operation.
+        """
+        params = { 'ws.op' : operation_name }
+        method = self._wadl_resource.get_method('get', query_params=params)
+        if method is None:
+            method = self._wadl_resource.get_method(
+                'post', representation_params=params)
+        if method is None:
+            raise KeyError("No operation with name: %s" % operation_name)
+        return NamedOperation(self._root, method)
 
     def _wrap_resource(self, resource, representation=None,
                        representation_media_type='application/json',
@@ -119,13 +148,59 @@ class Resource:
             representation, 'application/json')
 
     def __getattr__(self, attr):
-        """Try to retrive a parameter of the given name."""
+        """Try to retrive a named operation or parameter of the given name."""
         try:
             return self.lp_get_parameter(attr)
+        except KeyError:
+            pass
+        try:
+            return self.lp_get_named_operation(attr)
         except KeyError:
             raise AttributeError("'%s' object has no attribute '%s'"
                                  % (self.__class__.__name__, attr))
 
+
+class NamedOperation(LaunchpadBase):
+    """A class for a named operation to be invoked with GET or POST."""
+
+    def __init__(self, root, wadl_method):
+        """Initialize with respect to a WADL Method object"""
+        self.root = root
+        self.wadl_method = wadl_method
+
+    def __call__(self, **kwargs):
+        """Invoke the method and process the result."""
+        http_method = self.wadl_method.name
+        if http_method in ('get', 'head', 'delete'):
+            url = self.url.build_request_url(**kwargs)
+            in_representation = ''
+            extra_headers = {}
+        else:
+            url = self.wadl_method.build_request_url()
+            in_representation = self.wadl_method.build_representation(
+                **kwargs)
+            # XXX This is not satisfying. build_representation should
+            # give me this information.
+            extra_headers = {
+                'Content-type' : 'application/x-www-form-encoded' }
+            #XXX Specifying a content type makes launchpad not see
+            # the representation!!!
+        response, content = self.root._browser._request(
+            url, in_representation, http_method, extra_headers={})
+        if response.status == 201:
+            # The operation may have resulted in the creation of a new
+            # resource. If so, fetch it.
+            resource_url = response['location']
+            header_parameters = self.wadl_method.response.params("header")
+            header_parameter = [
+                parameter for parameter in header_parameters
+                if parameter.name == 'Location']
+            import pdb; pdb.set_trace()
+            data = self._root._browser.get(URI(resource_url))
+            resource = WadlResource(
+                self._wadl_resource.application, resource_url,
+                resource_type_url)
+            return self._wrap_resource(resource, data, 'application/json')
 
 class Entry(Resource):
     """A class for an entry-type resource that can be updated with PATCH."""
@@ -166,7 +241,12 @@ class Entry(Resource):
 
     def lp_save(self):
         """Save changes to the entry."""
-        representation = self._dirty_attributes
+        representation = {}
+        for attribute, value in self._dirty_attributes.items():
+            if isinstance(value, Resource):
+                value = value.self_link
+            representation[attribute] = value
+
         # PATCH the new representation to the 'self' link.  It's possible that
         # this will cause the object to be permanently moved.  Catch that
         # exception and refresh our representation.
@@ -271,7 +351,7 @@ class PersonSet(Collection):
         """Transform a username into the URL to a person resource."""
         return self._root.SERVICE_ROOT + '~' + str(key)
 
-    def newTeam(self, name, display_name):
+    def newTeam2(self, name, display_name):
         """Create a new team.
 
         :param name: The name of the team

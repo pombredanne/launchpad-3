@@ -145,7 +145,7 @@ To invoke the special GET request, the client sets the 'ws.op' query
 parameter to the fixed string 'find'.
 
    >>> find_method = personset_resource.get_method(
-   ...     'get', query_params={'ws.op' : 'findPerson'})
+   ...     query_params={'ws.op' : 'findPerson'})
    >>> find_method.id
    'people-findPerson'
 

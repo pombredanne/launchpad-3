@@ -307,7 +307,7 @@ class Resource(WADLResolvableDefinition):
         raise UnsupportedMediaTypeError("No definition for representation "
                                         "with media type %s." % media_type)
 
-    def get_method(self, http_method, media_type=None, query_params=None,
+    def get_method(self, http_method=None, media_type=None, query_params=None,
                    representation_params=None):
         """Look up one of this resource's methods by HTTP method.
 
@@ -334,7 +334,7 @@ class Resource(WADLResolvableDefinition):
         definition = self.resolve_definition().tag
         for method_tag in definition.findall(wadl_xpath('method')):
             name = method_tag.attrib.get('name', '').lower()
-            if name == http_method.lower():
+            if http_method is None or name == http_method.lower():
                 method = Method(self, method_tag)
                 if method.is_described_by(media_type, query_params,
                                           representation_params):
@@ -402,7 +402,7 @@ class Method(WADLBase):
         This is also the name of the HTTP method (GET, POST, etc.)
         that should be used to invoke the WADL method.
         """
-        return self.tag.attrib.get('name')
+        return self.tag.attrib.get('name').lower()
 
     def build_request_url(self,  param_values=None, **kw_param_values):
         """Return the request URL to use to invoke this method."""
@@ -465,9 +465,9 @@ class Method(WADLBase):
                 representation.validate_param_values(
                     representation.params(self.resource),
                     representation_values, False)
+                return True
             except ValueError:
                 pass
-            return True
         return False
 
 
@@ -525,7 +525,7 @@ class RequestDefinition(WADLBase, HasParametersMixin):
         return url
 
 
-class ResponseDefinition(WADLBase):
+class ResponseDefinition(HasParametersMixin):
     """A wrapper around the description of a response to a method."""
 
     # XXX leonardr 2008-05-29 it would be nice to have
