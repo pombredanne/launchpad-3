@@ -492,9 +492,7 @@ class BugzillaLPPlugin(Bugzilla):
 
         # We need to convert actual_bug_id to a string due to a quirk
         # with XML-RPC (see bug 248662).
-        actual_bug_id = str(actual_bug_id)
-
-        bug_comments = bug_comments_dict['bugs'][actual_bug_id]
+        bug_comments = bug_comments_dict['bugs'][str(actual_bug_id)]
         return [comment['id'] for comment in bug_comments]
 
     def fetchComments(self, bug_watch, comment_ids):
