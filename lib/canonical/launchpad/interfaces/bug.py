@@ -538,7 +538,6 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no such bugtask is found.
         """
 
-
 # We are forced to define this now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug

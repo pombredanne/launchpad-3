@@ -999,11 +999,11 @@ class Button:
             return self.renderInactive()
 
 
-class ProductsButton(Button):
+class PeopleButton(Button):
 
     def makeReplacementDict(self):
         return dict(
-            url='%sprojects/' % allvhosts.configs['mainsite'].rooturl,
+            url='%speople/' % allvhosts.configs['mainsite'].rooturl,
             buttonname=self.name,
             text=self.text)
 
@@ -1018,8 +1018,8 @@ class ApplicationButtons(LaunchpadView):
         self.name = None
 
     buttons = [
-        ProductsButton(register="Register your project to encourage "
-            "community collaboration."),
+        PeopleButton(people="Join thousands of people and teams collaborating"
+            " in software development."),
         Button(code="Publish your code for people to merge and branch from."),
         Button(bugs="Share bug reports and fixes."),
         Button(blueprints="Track blueprints through approval and "
