@@ -99,7 +99,8 @@ class UsesLaunchpadMixin:
             uses.append("<strong>Translations</strong>")
 
         if len(uses) == 0:
-            text = "%s does not use Launchpad." % self.context.title
+            text = ("%s does not use Launchpad for development."
+                    % self.context.title)
         else:
             apps = english_list(uses)
             text = "%s uses Launchpad for %s." % (self.context.title, apps)

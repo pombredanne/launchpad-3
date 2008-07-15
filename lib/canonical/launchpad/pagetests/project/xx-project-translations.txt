@@ -41,7 +41,7 @@ It's not using Launchpad Translations officially
 
   >>> uses = find_tag_by_id(anon_browser.contents, 'uses')
   >>> print extract_text(uses)
-  Network Applet does not use Launchpad.
+  Network Applet does not use Launchpad for development.
 
 Anonymous users don't see the translations
 
