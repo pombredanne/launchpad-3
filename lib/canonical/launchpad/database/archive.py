@@ -308,7 +308,12 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.pocket = %s
             """ % sqlvalues(pocket))
 
-        preJoins = ['sourcepackagerelease']
+        preJoins = [
+            'sourcepackagerelease.creator',
+            'sourcepackagerelease.dscsigningkey',
+            'distroseries',
+            'section',
+            ]
 
         sources = SourcePackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
