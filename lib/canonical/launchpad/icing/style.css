@@ -113,47 +113,45 @@ ul{padding-left:0; list-style-position: inside;}
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 .unavailable {color: #999; background: none;}
 
-/* --- Error, warning, and info messages --- */
+/* === Error, warning, and informational messages === */
+/* Error, warning, and informational alerts are in a centered box: */
+.error.message, .warning.message, .informational.message {
+  border: solid #666;
+  border-width: 1px 2px 2px 1px;
+  color: black;
+  margin: 0 auto 10px auto;
+  padding: 0 10px 10px 20px;
+  width: 30em;
+}
+/* The alerts are preceded with an icon overlaying the top left corner: */
+.error.message::before, .warning.message::before,
+.informational.message::before {
+  display: block; margin: -15px 0 -6px -35px;
+}
+/* Error messages are pink, with alerts having an error icon: */
+.error         {background: #ffe4e4;}
+.error.message::before         {content: url(/@@/error-large);}
+/* Warning messages are orange, with alerts having a warning icon: */
+.warning       {background: #fff59c;}
+.warning.message::before       {content: url(/@@/warning-large);}
+/* Informational messages are blue-to-grey, with alerts having an info icon: */
+.informational {background: #d4e8ff url(/+icing/blue-fade-to-grey);}
+.informational.message::before {content: url(/@@/info-large);}
+/* Debugging messages are white on grey, with alerts having an info icon: */
+.debugging     {background: #666; color: white;}
+.debugging.message::before     {content: url(/@@/info-large);}
+/* Form errors override this background color, because the lack of space
+between the edge of fields and the edge of the color would look bad: */
+table.form .error {background: none;}
+/* And inside, the error message itself uses a smaller icon: */
+.error .message {
+  background: url(/@@/error) center left no-repeat;
+  margin-bottom: 0.25em;
+  padding-left: 18px;
+}
 
-.error, .warning, .informational {
-  padding: 0.5em;
-}
-.message {
-  background: 5px 0.5em no-repeat;
-  font-weight: bold;
-  margin: 1em 0 0.5em;
-  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
-}
-.error .message, .warning .message, .informational .message {
-  margin: 0.25em 0 0;
-  padding: 0 0 0 25px;
-  background: 0 0 no-repeat;
-}
-.error {color: #db1f22;}
-.error.message, .error .message {
-  background-image: url(/@@/error);
-}
-td.error {
-  border: 1px solid #db1f22;
-  background-color: #ffffff;
-}
-.warning {background-color: #fcdd99; color: black;}
-.warning.message, .warning .message {
-  background-image: url(/@@/warning);
-}
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
-}
-.helpwanted.message, .helpwanted .message {
-  background-image: url(/@@/helpwanted);
-}
-.informational {background-color: #fcfc99; color: black;}
-.informational.message, .informational .message {
-  background-image: url(/@@/info);
-}
-.debugging {background-color: #666; color: white;}
-.debugging.message, .debugging .message {
-  background-image: url(/@@/info);
 }
 .whiteboard {
   color: #666;
@@ -192,8 +190,9 @@ right side being clipped (bug 156202). This should be rechecked post-2.0. */
 textarea {width: 100%;}
 /* This is currently overridden for Internet Explorer in main-template.pt. */
 
-table.form {margin-top: 1em; width: 100%;}
-  /* http://launchpad.dev/firefox/+edit */
+/* Many forms are laid out using tables, with appropriate spacing: */
+table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
+table.form th, table.form td {padding-bottom: 1em;}
 
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
@@ -1636,7 +1635,6 @@ table.summary ul, table.summary ul li {
   margin: 0;
   padding: 0;
 }
-th, td {padding: 0.25em;}
 th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
 th.icon.left, td.icon.left {padding-right: 0;}
 th.icon.right, td.icon.right {padding-left: 0;}
