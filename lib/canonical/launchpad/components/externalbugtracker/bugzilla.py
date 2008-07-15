@@ -490,7 +490,9 @@ class BugzillaLPPlugin(Bugzilla):
         bug_comments_dict = self.xmlrpc_proxy.Launchpad.comments(
             request_params)
 
-        bug_comments = bug_comments_dict['bugs'][actual_bug_id]
+        # We need to convert actual_bug_id to a string due to a quirk
+        # with XML-RPC (see bug 248662).
+        bug_comments = bug_comments_dict['bugs'][str(actual_bug_id)]
         return [comment['id'] for comment in bug_comments]
 
     def fetchComments(self, bug_watch, comment_ids):
@@ -504,7 +506,10 @@ class BugzillaLPPlugin(Bugzilla):
             }
         bug_comments_dict = self.xmlrpc_proxy.Launchpad.comments(
             request_params)
-        comment_list = bug_comments_dict['bugs'][actual_bug_id]
+
+        # We need to convert actual_bug_id to a string here due to a
+        # quirk with XML-RPC (see bug 248662).
+        comment_list = bug_comments_dict['bugs'][str(actual_bug_id)]
 
         # Transfer the comment list into a dict.
         bug_comments = dict(

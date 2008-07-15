@@ -626,7 +626,12 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
         for bug_id in bug_ids:
             comments_for_bug = self.bug_comments[bug_id].values()
-            comments_by_bug_id[bug_id] = [
+
+            # We stringify bug_id when using it as a dict key because
+            # all XML-RPC dict keys are strings (a key for an XML-RPC
+            # dict can have a value but no type; hence Python defaults
+            # to treating them as strings).
+            comments_by_bug_id[str(bug_id)] = [
                 copy_comment(comment) for comment in comments_for_bug
                 if comment_ids is None or comment['id'] in comment_ids]
 
