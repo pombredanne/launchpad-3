@@ -602,7 +602,7 @@ class BranchMergeProposalEditView(MergeProposalEditView):
     """The view to control the editing of merge proposals."""
     schema = IBranchMergeProposal
     label = "Edit branch merge proposal"
-    field_names = ["whiteboard"]
+    field_names = ["commit_message", "whiteboard"]
 
     @action('Update', name='update')
     def update_action(self, action, data):
