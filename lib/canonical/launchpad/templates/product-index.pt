@@ -48,9 +48,6 @@
     <span tal:define="link context/menu:overview/driver"
           tal:condition="link/enabled"
           tal:content="structure link/render" />
-    <span tal:define="link context/menu:overview/subscribe"
-          tal:condition="link/enabled"
-          tal:content="structure link/render" />
     <span tal:define="link context/menu:overview/branding"
           tal:condition="link/enabled"
           tal:content="structure link/render" />

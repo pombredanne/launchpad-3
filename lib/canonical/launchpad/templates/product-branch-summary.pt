@@ -103,7 +103,7 @@
 
   <p tal:condition="view/latest_release_with_download_files">
     <img src="/@@/download"/> There are
-    <a tal:define="link context/menu:overview/files"
+    <a tal:define="link context/menu:branches/files"
        tal:condition="link/enabled"
        tal:attributes="href link/url"
        >download files</a>

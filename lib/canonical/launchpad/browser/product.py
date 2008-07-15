@@ -331,9 +331,9 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'distributions', 'packages', 'files',
+        'mentorship', 'distributions', 'packages',
         'series_add', 'announce', 'announcements', 'administer',
-        'review_license', 'subscribe', 'rdf']
+        'review_license', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -372,10 +372,6 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
-    def files(self):
-        text = 'Download project files'
-        return Link('+download', text, icon='info')
-
     @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Register a series'
@@ -407,10 +403,6 @@ class ProductOverviewMenu(ApplicationMenu):
     def review_license(self):
         text = 'Review license'
         return Link('+review-license', text, icon='edit')
-
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):
@@ -444,7 +436,7 @@ class ProductBugsMenu(ApplicationMenu):
 
     def subscribe(self):
         text = 'Subscribe to bug mail'
-        return Link('+subscribe', text)
+        return Link('+subscribe', text, icon='edit')
 
 
 class ProductReviewCountMixin:
@@ -471,7 +463,7 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
     usedfor = IProduct
     facet = 'branches'
     links = ['branch_add', 'list_branches', 'active_reviews',
-             'approved_merges', 'code_import', 'branch_visibility']
+             'approved_merges', 'code_import', 'branch_visibility', 'files']
 
     def branch_add(self):
         text = 'Register a branch'
@@ -506,6 +498,10 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
         text = 'Import your project'
         enabled = not self.context.official_codehosting
         return Link('/+code-imports/+new', text, icon='add', enabled=enabled)
+
+    def files(self):
+        text = 'Download project files'
+        return Link('+download', text, icon='info')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
