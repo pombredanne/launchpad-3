@@ -166,7 +166,7 @@ indicate if his email address can be shown to other Launchpad users.
     >>> claimprofile_view.errors
     []
 
-The user's Person, EmailAddress, an Account objects are updated.
+The user's Person, EmailAddress, and Account objects are updated.
 
     >>> limi.displayname
     u'A. Limi'
@@ -189,7 +189,6 @@ If a user's email address matches the email address of an unclaimed
 account, the existing profile is activated and given to the user.
 David Miller (justdave) has an account created via an automated process.
 
-
     >>> justdave = person_set.getByEmail('justdave@bugzilla.org')
     >>> justdave.name
     u'justdave'
@@ -207,7 +206,7 @@ David Miller (justdave) has an account created via an automated process.
     False
 
 Dave would normally create a new account by claiming a LoginToken
-that verifies he has access to the email address his provided.
+that verifies his access to the email address his provided.
 
     >>> login_token = login_token_set.new(
     ...     justdave, 'justdave@bugzilla.org',

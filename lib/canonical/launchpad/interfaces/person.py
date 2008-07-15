@@ -1386,13 +1386,55 @@ class IPersonAdminWriteRestricted(Interface):
                default=PersonVisibility.PUBLIC))
 
 
+class IPersonSpecialRestricted(Interface):
+    """IPerson methods that require launchpad.Special permission to use."""
+
+    def activateAccount(comment, password, preferred_email):
+        """Activate this person's Launchpad account.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password.
+        :param preferred_email: The `EmailAddress` to set as the user's
+            preferred email address.
+        """
+
+    def deactivateAccount(comment):
+        """Deactivate this person's Launchpad account.
+
+        Deactivating an account means:
+            - Setting its password to NULL;
+            - Removing the user from all teams he's a member of;
+            - Changing all his email addresses' status to NEW;
+            - Revoking Code of Conduct signatures of that user;
+            - Reassigning bugs/specs assigned to him;
+            - Changing the ownership of products/projects/teams owned by him.
+
+        :param comment: An explanation of why the account status changed.
+        """
+
+    def reactivateAccount(comment, password, preferred_email):
+        """Reactivate this person's Launchpad account.
+
+        Set the account status to ACTIVE and possibly restore the user's
+        name. The preferred email address is set.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password, it cannot be None.
+        :param preferred_email: The `EmailAddress` to set as the user's
+            preferred email address. It cannot be None.
+        """
+
+
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IPersonAdminWriteRestricted, IHasStanding, ISetLocation):
+              IPersonAdminWriteRestricted, IPersonSpecialRestricted,
+              IHasStanding, ISetLocation):
     """A Person."""
     export_as_webservice_entry()
 
+
 # Set the PublicPersonChoice schema to the newly defined interface.
 PublicPersonChoice.schema = IPerson
+
 
 class INewPersonForm(IPerson):
     """Interface used to create new Launchpad accounts.

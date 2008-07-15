@@ -1696,13 +1696,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             orderBy=Person.sortingColumns)
 
     def activateAccount(self, comment, password, preferred_email):
-        """Activate the person's account.
+        """See `IPersonSpecialRestricted`.
 
-        :param comment: An explanation of why the account status changed.
-        :param password: The user's password.
-        :param preferred_email: The `EmailAddress` to set as the user's
-            preferred email address.
-        :raise AssertionError: is the Person is a Team.
+        :raise AssertionError: if the Person is a Team.
         """
         # XXX sinzui 2008-07-14 bug=248518:
         # This method would assert the password is not None, but
@@ -1719,16 +1715,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         self.account.sync()
 
     def deactivateAccount(self, comment):
-        """Deactivate this person's Launchpad account.
-
-        Deactivating an account means:
-            - Setting its password to NULL;
-            - Removing the user from all teams he's a member of;
-            - Changing all his email addresses' status to NEW;
-            - Revoking Code of Conduct signatures of that user;
-            - Reassigning bugs/specs assigned to him;
-            - Changing the ownership of products/projects/teams owned by him.
-        """
+        """See `IPersonSpecialRestricted`."""
         assert self.is_valid_person, (
             "You can only deactivate an account of a valid person.")
 
@@ -1810,15 +1797,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return new_name
 
     def reactivateAccount(self, comment, password, preferred_email):
-        """Reactivate the account.
+        """See `IPersonSpecialRestricted`.
 
-        Set the account status to ACTIVE and possibly restore the user's
-        name. The preferred email address is set when provided.
-
-        :param comment: An explanation of why the account status changed.
-        :param password: The user's password, it cannot be None.
-        :param preferred_email: The `EmailAddress` to set as the user's
-            preferred email address.
         :raise AssertionError: if the password is not valid.
         :raise AssertionError: if the preferred email address is None.
         :raise AssertionError: if this `Person` is a team.

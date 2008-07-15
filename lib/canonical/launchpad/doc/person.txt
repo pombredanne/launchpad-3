@@ -691,7 +691,7 @@ team list is actually sorted by date joined.
 
 == Activating user accounts ==
 
-A user may acctivate their account that was created by an automated
+A user may activate their account that was created by an automated
 process. Alexander Limi's account was created during a code import.
 
     >>> emailaddress = emailset.getByEmail('limi@plone.org')
@@ -705,7 +705,7 @@ process. Alexander Limi's account was created during a code import.
     >>> print limi.preferredemail
     None
 
-The account can only be activated by the user who is claming
+The account can only be activated by the user who is claiming
 the profile. Mark cannot claim it.
 
     >>> login('mark@hbd.com')
@@ -715,7 +715,7 @@ the profile. Mark cannot claim it.
     ...
     Unauthorized: ...'launchpad.Special')
 
-Alexander Limi can. A password and a preferred email adress must be
+Alexander Limi can. A password and a preferred email address must be
 passed as arguments.
 
     >>> login('limi@plone.org')
@@ -749,7 +749,7 @@ anymore or they don't want to be shown as Launchpad users.
 
 As seen below, Foo Bar has a bunch of stuff assigned/owned to/by him in
 Launchpad which we'll want to be reassigned/unassigned if his account is
-deactivated.  Unfortunatel, Foo Bar has no specifications assigned to
+deactivated.  Unfortunately, Foo Bar has no specifications assigned to
 him, so we'll assign one just to prove that deactivating his account
 will cause this spec to be reassigned.
 

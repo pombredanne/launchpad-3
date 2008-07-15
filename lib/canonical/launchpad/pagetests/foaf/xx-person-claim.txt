@@ -7,7 +7,7 @@ himself, even though he has never used Launchpad.
     >>> browser.url
     'http://launchpad.dev/~limi'
 
-He was wondering who created that when he saw a very proeminent link,
+He was wondering who created that when he saw a very prominent link,
 saying 'Are you Alexander Limi?'.  He promptly clicked on it.
 
     >>> import re
