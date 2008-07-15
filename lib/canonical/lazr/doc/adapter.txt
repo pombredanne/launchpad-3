@@ -119,3 +119,38 @@ objects to search.
 
     >>> print nearest_adapter(root, IFacetMenu)
     None
+
+
+=== Named lookups with nearest_adapter() ===
+
+nearest_adapter() also supports named adapter lookups.
+
+First we need a named adapter to use:
+
+    >>> from zope.component import queryAdapter
+
+    >>> class INamedFacetMenu(Interface):
+    ...     """ A thing that acts like a link."""
+
+    >>> class NamedFacetMenu:
+    ...     implements(INamedFacetMenu)
+    ...     def __init__(self, context):
+    ...         self.context = context
+
+    >>> provideAdapter(NamedFacetMenu, [IThingWithFacets], INamedFacetMenu,
+    ...     name='foo')
+    >>> print queryAdapter(street, INamedFacetMenu)
+    None
+    >>> queryAdapter(street, INamedFacetMenu, name='foo')
+    <...NamedFacetMenu instance ...>
+
+nearest_adapter() behaves as it would with a regular adapter:
+
+    >>> nearest_adapter(house, INamedFacetMenu, name='foo')
+    <...NamedFacetMenu instance ...>
+
+    >>> nearest_adapter(street, INamedFacetMenu, name='foo')
+    <...NamedFacetMenu instance ...>
+
+    >>> print nearest_adapter(root, INamedFacetMenu, name='foo')
+    None
