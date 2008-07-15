@@ -48,7 +48,7 @@ If we want to invoke this method, we send a GET request to the service
 root URL.
 
    >>> get_method.name
-   'GET'
+   'get'
    >>> get_method.build_request_url()
    'http://api.launchpad.dev/beta/'
 
@@ -217,6 +217,19 @@ representation to find the next link.
    5
    >>> bound_page_two.get_parameter("next_collection_link").get_value()
    u'http://api.launchpad.dev/beta/people?ws.start=10&ws.size=5'
+
+Let's say the browser makes a POST request that invokes the 'newTeam'
+named operation. The response will include a number of HTTP headers,
+including 'Location', which points the way to the newly created team.
+
+   >>> headers = { 'Location' : 'http://api.launchpad.dev/~newteam' }
+   >>> response = create_team_method.response.bind(headers)
+   >>> location_parameter = response.get_parameter('Location')
+   >>> location_parameter.get_value()
+   'http://api.launchpad.dev/~newteam'
+   >>> new_team = location_parameter.linked_resource
+   >>> new_team.type_url
+   'http://api.launchpad.dev/beta/#team'
 
 
 == Resource instantiation ==

@@ -190,17 +190,9 @@ class NamedOperation(LaunchpadBase):
         if response.status == 201:
             # The operation may have resulted in the creation of a new
             # resource. If so, fetch it.
-            resource_url = response['location']
-            header_parameters = self.wadl_method.response.params("header")
-            header_parameter = [
-                parameter for parameter in header_parameters
-                if parameter.name == 'Location']
-            import pdb; pdb.set_trace()
-            data = self._root._browser.get(URI(resource_url))
-            resource = WadlResource(
-                self._wadl_resource.application, resource_url,
-                resource_type_url)
-            return self._wrap_resource(resource, data, 'application/json')
+            return self.wadl_method.response.bind(
+                response).get_parameter('Location').value()
+
 
 class Entry(Resource):
     """A class for an entry-type resource that can be updated with PATCH."""

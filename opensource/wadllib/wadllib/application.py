@@ -353,6 +353,30 @@ class Resource(WADLResolvableDefinition):
                 return Parameter(self, param_tag)
         return None
 
+    def get_parameter_value(self, parameter):
+        """Find the value of a parameter, given the Parameter object."""
+
+        if self.representation is None:
+            raise NoBoundRepresentationError(
+                "Resource is not bound to any representation.")
+        if self.media_type == 'application/json':
+            # XXX leonardr 2008-05-28 A real JSONPath implementation
+            # should go here. It should execute tag.attrib['path']
+            # against the JSON representation.
+            #
+            # Right now the implementation assumes the JSON
+            # representation is a hash and treats tag.attrib['name'] as a
+            # key into the hash.
+            if parameter.style != 'plain':
+                raise NotImplementedError(
+                    "Don't know how to find value for a parameter of "
+                    "type %s." % parameter.style)
+            return self.representation[parameter.name]
+
+        raise NotImplementedError("Path traversal not implemented for "
+                                  "a representation of media type %s."
+                                  % self.media_type)
+
     def _definition_factory(self, id):
         """Given an ID, find a ResourceType for that ID."""
         return self.application.resource_types.get(id)
@@ -533,13 +557,15 @@ class ResponseDefinition(HasParametersMixin):
     # operations say what representations and/or status codes you get
     # back. Getting this to work with Launchpad requires work on the
     # Launchpad side.
-    def __init__(self, resource, response_tag):
+    def __init__(self, resource, response_tag, headers=None):
         """Initialize with a <response> tag.
 
         :param response_tag: An ElementTree <response> tag.
         """
+        self.application = resource.application
         self.resource = resource
         self.tag = response_tag
+        self.headers = headers
 
     def __iter__(self):
         """Get an iterator over the representation definitions.
@@ -552,6 +578,32 @@ class ResponseDefinition(HasParametersMixin):
             yield RepresentationDefinition(
                 self.resource.application, self.resource, representation_tag)
 
+    def bind(self, headers):
+        """Bind the response to a set of HTTP headers.
+
+        A WADL response can have associated header parameters, but no
+        other kind.
+        """
+        return ResponseDefinition(self.resource, self.tag, headers)
+
+    def get_parameter(self, param_name):
+        """Find a header parameter within the response."""
+        for param_tag in self.tag.findall(wadl_xpath('param')):
+            if (param_tag.attrib.get('name') == param_name
+                and param_tag.attrib.get('style') == 'header'):
+                return Parameter(self, param_tag)
+        return None
+
+    def get_parameter_value(self, parameter):
+        """Find the value of a parameter, given the Parameter object."""
+        if self.headers is None:
+            raise NoBoundRepresentationError(
+                "Response object is not bound to any headers.")
+        if parameter.style != 'header':
+            raise NotImplementedError(
+                "Don't know how to find value for a parameter of "
+                "type %s." % parameter.style)
+        return self.headers.get(parameter.name)
 
 class RepresentationDefinition(WADLResolvableDefinition, HasParametersMixin):
     """A definition of the structure of a representation."""
@@ -597,23 +649,29 @@ class RepresentationDefinition(WADLResolvableDefinition, HasParametersMixin):
 class Parameter(WADLBase):
     """One of the parameters of a representation definition."""
 
-    def __init__(self, resource_definition, tag):
-        """Initialize with respect to a resource definition.
+    def __init__(self, value_container, tag):
+        """Initialize with respect to a value container.
 
-        :param resource_definition: The resource whose representation
+        :param value_container: Usually the resource whose representation
             has this parameter. If the resource is bound to a representation,
             you'll be able to find the value of this parameter in the
-            representation.
+            representation. This may also be a server response whose headers
+            define a value for this parameter.
         :tag: The ElementTree <param> tag for this parameter.
         """
-        self.application = resource_definition.application
-        self.resource_definition = resource_definition
+        self.application = value_container.application
+        self.value_container = value_container
         self.tag = tag
 
     @property
     def name(self):
         """The name of this parameter."""
         return self.tag.attrib.get('name')
+
+    @property
+    def style(self):
+        """The style of this parameter."""
+        return self.tag.attrib.get('style')
 
     @property
     def fixed_value(self):
@@ -632,32 +690,13 @@ class Parameter(WADLBase):
         return self.tag.attrib.get('required', False).lower() in ['1', 'true']
 
     def get_value(self):
-        """The value of this parameter in the bound representation.
+        """The value of this parameter in the bound representation/headers.
 
-        :raise NoBoundRepresentationError: If this parameter's
-        resource is not bound to a representation.
+        :raise NoBoundRepresentationError: If this parameter's value
+               container is not bound to a representation or a set of
+               headers.
         """
-        if self.resource_definition.representation is None:
-            raise NoBoundRepresentationError(
-                "Resource is not bound to any representation.")
-        if self.resource_definition.media_type == 'application/json':
-            # XXX leonardr 2008-05-28 A real JSONPath implementation
-            # should go here. It should execute tag.attrib['path']
-            # against the JSON representation.
-            #
-            # Right now the implementation assumes the JSON
-            # representation is a hash and treats tag.attrib['name'] as a
-            # key into the hash.
-            if self.tag.attrib['style'] != 'plain':
-                raise NotImplementedError(
-                    "Don't know how to find value for a parameter of "
-                    "type %s." % self.tag.attrib['style'])
-            return self.resource_definition.representation[
-                self.tag.attrib['name']]
-
-        raise NotImplementedError("Path traversal not implemented for "
-                                  "a representation of media type %s."
-                                  % self.resource_definition.media_type)
+        return self.value_container.get_parameter_value(self)
 
     @property
     def linked_resource(self):
