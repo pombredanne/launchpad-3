@@ -74,6 +74,12 @@
         <div class="three column middle">
           <h2>What&#8217;s new here?</h2>
           <ul>
+            <li class="news">
+              <a href="http://news.launchpad.net/?p=99">
+                <strong>Launchpad's new look</strong><br />
+                We've given Launchpad an updated style to address user feedback.
+              </a>
+           </li>
            <li class="news">
               <a href="http://news.launchpad.net/?p=94">
                 <strong>More control over your code imports</strong><br />
