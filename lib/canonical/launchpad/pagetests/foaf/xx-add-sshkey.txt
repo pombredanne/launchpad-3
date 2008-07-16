@@ -75,7 +75,7 @@ menu:
     >>> admin_browser.getLink('Change details').click()
     >>> print_navigation_links(admin_browser.contents)
     Profile
-    Related Software: .../~salgado/+packages#projects
+    Related Software: .../~salgado/+related-software#projects
     Karma: .../~salgado/+karma
     Personal Package Archive: .../~salgado/+activate-ppa
     Personal

@@ -12,17 +12,17 @@ team.
     Ubuntu Test
     Tomcat
 
-The +packages page displays a table with links to open bugs,
+The +related-software page displays a table with links to open bugs,
 unimplemented specs and open questions.
 
     >>> anon_browser.getLink('List related projects')
     <Link
         text='List related projects'
-        url='http://launchpad.dev/~ubuntu-team/+packages#projects'>
+        url='http://launchpad.dev/~ubuntu-team/+related-software#projects'>
 
     # Visit the page directly to prevent the testbrowser from mucking with
     # the URL fragment.
-    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+packages')
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+related-software')
 
     >>> print anon_browser.title
     Software related to Ubuntu Team
@@ -51,13 +51,13 @@ through the main navigation menu.
     >>> anon_browser.getLink('Related Software')
     <Link
         text='Related Software'
-        url='http://launchpad.dev/~sabdfl/+packages#projects'>
+        url='http://launchpad.dev/~sabdfl/+related-software#projects'>
 
     # Visit the page directly to prevent the testbrowser from mucking with
     # the URL fragment.
-    >>> anon_browser.open('http://launchpad.dev/~sabdfl/+packages')
+    >>> anon_browser.open('http://launchpad.dev/~sabdfl/+related-software')
     >>> print anon_browser.url
-    http://launchpad.dev/~sabdfl/+packages
+    http://launchpad.dev/~sabdfl/+related-software
     >>> print anon_browser.title
     Software related to Mark Shuttleworth
 

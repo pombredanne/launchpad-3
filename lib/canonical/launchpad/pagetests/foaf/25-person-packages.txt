@@ -7,11 +7,11 @@ accessed by clicking on the 'Related Software' menu item.
     >>> anon_browser.getLink('Related Software')
     <Link
         text='Related Software'
-        url='http://launchpad.dev/~sabdfl/+packages#projects'>
+        url='http://launchpad.dev/~sabdfl/+related-software#projects'>
 
     # Visit the page directly to prevent the testbrowser from mucking with
     # the URL fragment.
-    >>> anon_browser.open('http://launchpad.dev/~sabdfl/+packages')
+    >>> anon_browser.open('http://launchpad.dev/~sabdfl/+related-software')
     >>> print_navigation_links(anon_browser.contents)
     Profile: ...
     Related Software
@@ -21,7 +21,7 @@ accessed by clicking on the 'Related Software' menu item.
     >>> print anon_browser.title
     Software related to Mark Shuttleworth
     >>> print anon_browser.url
-    http://launchpad.dev/~sabdfl/+packages
+    http://launchpad.dev/~sabdfl/+related-software
 
 That page displays a table, the with list of 'Maintained'packages as
 well as the list of 'Uploaded' packages. The table also shows the

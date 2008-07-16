@@ -971,13 +971,13 @@ class CommonMenuLinks:
         return Link(target, text, icon='edit')
 
     def common_packages(self):
-        target = '+packages'
+        target = '+related-software'
         text = 'List assigned packages'
         summary = 'Packages assigned to %s' % self.context.browsername
         return Link(target, text, summary, icon='packages')
 
     def related_projects(self):
-        target = '+packages#projects'
+        target = '+related-software#projects'
         text = 'List related projects'
         summary = 'Projects %s is involved with' % self.context.browsername
         return Link(target, text, summary, icon='packages')
@@ -1136,7 +1136,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         return Link(target, text, menu=IPersonEditMenu)
 
     def related_software(self):
-        target = '+packages#projects'
+        target = '+related-software#projects'
         text = 'Related Software'
         return Link(target, text, menu=IPersonRelatedSoftwareMenu)
 
@@ -4325,7 +4325,7 @@ class SourcePackageReleaseWithStats:
 
 
 class PersonPackagesView(LaunchpadView):
-    """View for +packages."""
+    """View for +related-software."""
 
     implements(IPersonRelatedSoftwareMenu)
 
