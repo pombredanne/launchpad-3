@@ -15,10 +15,17 @@ team.
 The +projects page displays a table with links to open bugs,
 unimplemented specs and open questions.
 
-    >>> anon_browser.getLink('List related projects').click()
+    >>> anon_browser.getLink('List related projects')
+    <Link
+        text='List related projects'
+        url='http://launchpad.dev/~ubuntu-team/+packages#projects'>
+
+    # Visit the page directly to prevent the testbrowser from mucking with
+    # the URL fragment.
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+packages')
 
     >>> print anon_browser.title
-    Projects Ubuntu Team is involved with
+    Packages maintained by Ubuntu Team
 
     >>> related_projects = find_tag_by_id(
     ...     anon_browser.contents, 'related-projects')
