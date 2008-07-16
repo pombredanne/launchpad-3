@@ -373,7 +373,7 @@ class TestBzrSync(BzrSyncTestCase):
     def test_get_revisions_empty(self):
         # An empty branch should have no revisions.
         bzrsync = self.makeBzrSync(self.db_branch)
-        last_revision, bzr_ancestry, bzr_history = (
+        bzr_ancestry, bzr_history = (
             bzrsync.retrieveBranchDetails(self.bzr_branch))
         self.assertEqual(
             [], list(bzrsync.getRevisions(bzr_history, bzr_ancestry)))
@@ -383,7 +383,7 @@ class TestBzrSync(BzrSyncTestCase):
         # each revision along with a sequence number, starting at 1.
         self.commitRevision(rev_id='rev-1')
         bzrsync = self.makeBzrSync(self.db_branch)
-        last_revision, bzr_ancestry, bzr_history = (
+        bzr_ancestry, bzr_history = (
             bzrsync.retrieveBranchDetails(self.bzr_branch))
         self.assertEqual(
             [('rev-1', 1)], 
@@ -395,7 +395,7 @@ class TestBzrSync(BzrSyncTestCase):
         (db_branch, bzr_tree), ignored = self.makeBranchWithMerge(
             'base', 'trunk', 'branch', 'merge')
         bzrsync = self.makeBzrSync(db_branch)
-        last_revision, bzr_ancestry, bzr_history = (
+        bzr_ancestry, bzr_history = (
             bzrsync.retrieveBranchDetails(bzr_tree.branch))
         expected = set(
             [('base', 1), ('trunk', 2), ('merge', 3), ('branch', None)])
@@ -446,9 +446,8 @@ class TestBzrSync(BzrSyncTestCase):
         (db_trunk, trunk_tree), ignored = self.makeBranchWithMerge(
             'base', 'trunk', 'branch', 'merge')
         bzrsync = self.makeBzrSync(db_trunk)
-        last_revision, bzr_ancestry, bzr_history = (
+        bzr_ancestry, bzr_history = (
             bzrsync.retrieveBranchDetails(trunk_tree.branch))
-        self.assertEqual('merge', last_revision)
         expected_ancestry = set(['base', 'trunk', 'branch', 'merge'])
         self.assertEqual(expected_ancestry, bzr_ancestry)
         self.assertEqual(['base', 'trunk', 'merge'], bzr_history)

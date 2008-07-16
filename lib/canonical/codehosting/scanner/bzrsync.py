@@ -374,7 +374,7 @@ class BzrSync:
         self.logger.info("    from %s", bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
-        last_revision, bzr_ancestry, bzr_history = (
+        bzr_ancestry, bzr_history = (
             self.retrieveBranchDetails(bzr_branch))
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
@@ -428,7 +428,7 @@ class BzrSync:
         assert first_ancestor is None, 'history horizons are not supported'
         bzr_ancestry = set(bzr_ancestry_ordered)
         bzr_history = bzr_branch.revision_history()
-        return last_revision, bzr_ancestry, bzr_history
+        return bzr_ancestry, bzr_history
 
     def setFormats(self, bzr_branch):
         """Record the stored formats in the database object.
