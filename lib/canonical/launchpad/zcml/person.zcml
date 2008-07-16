@@ -262,6 +262,18 @@
     template="../templates/person-related-software.pt"
     />
 
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+packages"
+    new_name="+related-software"
+    />
+
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+projects"
+    new_name="+related-software"
+    />
+
   <!-- The bounty system is kept maintained but not available for users.
   This is achieved by putting it on the PageTestLayer. -->
   <browser:page

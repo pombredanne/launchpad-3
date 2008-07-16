@@ -386,7 +386,9 @@ This is for a team:
 >>> check("/~name18/+teamhierarchy")
 >>> check("/~name18/+edit", auth=True)
 >>> check("/~name18/+members")
->>> check("/~name18/+packages")
+>>> check_redirect("/~name18/+projects", status=301)
+>>> check_redirect("/~name18/+packages", status=301)
+>>> check("/~name18/+related-software")
 >>> check("/~name18/+leave", auth=True)
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
@@ -415,7 +417,9 @@ And this is for a person:
 >>> check("/~name16/+reportedbugs")
 >>> check("/~name16/+assignedbugs")
 >>> check("/~name16/+packagebugs")
->>> check("/~name16/+packages")
+>>> check_redirect("/~name16/+packages", status=301)
+>>> check_redirect("/~name16/+projects", status=301)
+>>> check("/~name16/+related-software")
 >>> check("/~name16/+editsshkeys", auth=True)
 >>> check("/~name16/+editpgpkeys", auth=True)
 >>> check("/~name16/+editwikinames", auth=True)
@@ -432,7 +436,7 @@ And this is for a person:
 sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check("/~sabdfl/+packagebugs")
->>> check("/~sabdfl/+packages")
+>>> check("/~sabdfl/+related-software")
 
 >>> check("/+code")
 >>> check("/+code/series", auth=True)
