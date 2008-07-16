@@ -254,7 +254,7 @@
     </div>
   </tal:imported-branch>
 
-  <div condition="context/product" id="merge-summary">
+  <div tal:condition="context/product" id="merge-summary">
     <div id="landing-candidates">
       &laquo;
       <a href="+merges" tal:content="structure view/landing_candidate_count_text">
