@@ -15,16 +15,31 @@ First, we'll construct an example object hierarchy.
     >>> from zope.interface import implements, directlyProvides, Interface
     >>> from zope.security.management import endInteraction, newInteraction
 
-    >>> class ObjectThatHasUrl:
-    ...     implements(ICanonicalUrlData)
-    ...     def __init__(self, name, parent):
-    ...         self.name = name  # Used in examples later.
-    ...         self.path = name  # See ICanonicalUrlData.
-    ...         self.inside = parent  # See ICanonicalUrlData.
-    ...         self.rootsite = None  # See ICanonicalUrlData.
+    >>> from zope.interface import Interface
 
-    >>> class ExampleContentObject(ObjectThatHasUrl):
-    ...     pass
+    >>> class ICookbook(Interface):
+    ...     """An object with facets and menus."""
+
+    >>> class IRecipe(Interface):
+    ...     """An object with facets and menus."""
+
+    >>> class BaseContent:
+    ...     implements(ICanonicalUrlData)
+    ...
+    ...     def __init__(self, name, parent):
+    ...         self.name = name
+    ...         self.path = name
+    ...         self.inside = parent
+    ...         self.rootsite = None
+
+    >>> class Root(BaseContent):
+    ...     """The root of 'cookery', a vhost and facet."""
+
+    >>> class Cookbook(BaseContent):
+    ...     implements(ICookbook)
+
+    >>> class Recipe(BaseContent):
+    ...     implements(IRecipe)
 
 
     # nearest_adapter() uses canonical_url(), which in turn requires a
@@ -45,33 +60,28 @@ First, we'll construct an example object hierarchy.
 
 Here is the structure of our hierarchy:
 
-    >>> root = ExampleContentObject('', None)
-    >>> street = ExampleContentObject('sesamestreet', root)
-    >>> house = ExampleContentObject('number73', street)
-
-    >>> class IStreet(Interface):
-    ...     """An object that should be a street."""
-
-    >>> directlyProvides(street, IStreet)
+    >>> root = BaseContent('', None)
+    >>> cookbook = Cookbook('joy-of-cooking', root)
+    >>> recipe = Recipe('fried-spam', cookbook)
 
     >>> request = make_fake_request(
-    ...     'http://launchpad.dev/sesamestreet/number73')
+    ...     'http://launchpad.dev/joy-of-cooking/fried-spam')
 
-    >>> canonical_url(street)
-    u'http://launchpad.dev/sesamestreet'
-    >>> canonical_url(house)
-    u'http://launchpad.dev/sesamestreet/number73'
+    >>> canonical_url(cookbook)
+    u'http://launchpad.dev/joy-of-cooking'
+    >>> canonical_url(recipe)
+    u'http://launchpad.dev/joy-of-cooking/fried-spam'
 
 
 == Using nearest_adapter ==
 
-We'll try adapting our objects to a made-up interface, IPlace.
+We'll try adapting our objects to a made-up interface, IPrintable.
 
-    >>> class IPlace(Interface):
-    ...     """An object that is a place."""
+    >>> class IPrintable(Interface):
+    ...     """Something that is tasty."""
 
-    >>> class StreetToPlaceAdapter:
-    ...     implements(IPlace)
+    >>> class BookPrinter:
+    ...     implements(IPrintable)
     ...     def __init__(self, context):
     ...         self.context = context
 
@@ -80,44 +90,44 @@ Right now, none of our example objects can be turned into places.
     >>> from canonical.lazr.adapter import (nearest_adapter,
     ...     nearest_context_with_adapter)
 
-    >>> print nearest_adapter(root, IPlace)
+    >>> print nearest_adapter(root, IPrintable)
     None
-    >>> print nearest_adapter(street, IPlace)
+    >>> print nearest_adapter(cookbook, IPrintable)
     None
-    >>> print nearest_adapter(house, IPlace)
+    >>> print nearest_adapter(recipe, IPrintable)
     None
 
 The same holds true for nearest_context_with_adapter():
 
-    >>> nearest_context_with_adapter(root, IPlace)
+    >>> nearest_context_with_adapter(root, IPrintable)
     (None, None)
 
-We'll make the "street" object adaptable to IPlace.
+We'll make the "cookbook" object adaptable to IPrintable.
 
     >>> from zope.component import provideAdapter
-    >>> provideAdapter(StreetToPlaceAdapter, [IStreet], IPlace)
+    >>> provideAdapter(BookPrinter, [ICookbook], IPrintable)
 
-    >>> IPlace(street)
-    <...StreetToPlaceAdapter instance ...>
+    >>> IPrintable(cookbook)
+    <...BookPrinter instance ...>
 
 The nearest_adapter() function will look up the hierarchy for an object
 that has the requested adaptation.
 
-"house" does not provide IStreet, but "street" does, so street's
+"recipe" does not provide IPrintable, but "cookbook" does, so cookbook's
 adapter will be returned.
 
-    >>> print nearest_adapter(house, IPlace)
-    <...StreetToPlaceAdapter instance ...>
+    >>> print nearest_adapter(recipe, IPrintable)
+    <...BookPrinter instance ...>
 
-Calling nearest_adapter() on "street" itself will return the
-StreetToPlaceAdapter adapter:
+Calling nearest_adapter() on "cookbook" itself will return the
+BookPrinter:
 
-    >>> print nearest_adapter(street, IPlace)
-    <...StreetToPlaceAdapter instance ...>
+    >>> print nearest_adapter(cookbook, IPrintable)
+    <...BookPrinter instance ...>
 
 Calling nearest_adapter() on the hierarchy root returns nothing:
 the root does not have the requested adaptation, and there are no higher
 objects to search.
 
-    >>> print nearest_adapter(root, IPlace)
+    >>> print nearest_adapter(root, IPrintable)
     None
