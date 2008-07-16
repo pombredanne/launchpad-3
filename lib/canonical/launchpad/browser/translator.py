@@ -6,8 +6,7 @@ import cgi
 
 from canonical.launchpad.interfaces import ITranslator
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
-    action, canonical_url)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 
 __all__ = [
