@@ -27,9 +27,9 @@ First, we'll construct an example object hierarchy.
     >>> class ExampleContentObject(ObjectThatHasUrl):
     ...     pass
 
-    # Adapter testing requires a request object that provides the traversed
-    # objects. This function does most of the work, but views must be
-    # assigned to the _last_obj_traversed attribute.
+
+    # nearest_adapter() uses canonical_url(), which in turn requires a
+    # running interaction.
     >>> def make_fake_request(url, traversed_objects=None):
     ...     """Return a fake request object for menu testing."""
     ...     url_parts = urlsplit(url)
@@ -38,8 +38,6 @@ First, we'll construct an example object hierarchy.
     ...     request = LaunchpadTestRequest(
     ...         SERVER_URL=server_url,
     ...         PATH_INFO=path_info)
-    ...     request._traversed_names = path_info.split('/')[1:]
-    ...     request.traversed_objects = traversed_objects
     ...     # After making the request, setup a new interaction.
     ...     endInteraction()
     ...     newInteraction(request)
@@ -57,8 +55,7 @@ Here is the structure of our hierarchy:
     >>> directlyProvides(street, IThingWithFacets)
 
     >>> request = make_fake_request(
-    ...     'http://launchpad.dev/sesamestreet/number73',
-    ...     traversed_objects=[root, street])
+    ...     'http://launchpad.dev/sesamestreet/number73')
 
     >>> canonical_url(street)
     u'http://launchpad.dev/sesamestreet'
