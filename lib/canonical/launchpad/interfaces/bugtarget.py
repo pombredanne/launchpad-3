@@ -32,7 +32,7 @@ class IHasBugs(Interface):
         "A list of all BugTasks ever reported for this target.")
 
     def searchTasks(search_params):
-        """Search the IBugTasks reported on this entity.
+        """Search the IBugTasks related to this entity.
 
         :search_params: a BugTaskSearchParams object
 
@@ -40,6 +40,23 @@ class IHasBugs(Interface):
 
         Note: milestone is currently ignored for all IBugTargets
         except IProduct.
+        """
+
+    def searchBugTasks(self, user, order_by=None, search_text=None,
+                       status=None,
+                       importance=None,
+                       assignee=None, bug_reporter=None, bug_supervisor=None,
+                       bug_commenter=None, bug_subscriber=None, owner=None,
+                       has_patch=None, has_cve=None,
+                       tags=None, tags_combinator_all=None,
+                       omit_duplicates=True, omit_targeted=None,
+                       status_upstream=None, milestone_assignment=None,
+                       milestone=None, component=None,
+                       has_no_package=None):
+        """Search the IBugTasks related to this entity.
+
+        This method converts it sparameters to a `BugTaskSearchParams`
+        instance and uses it to call `searchTasks`.
         """
 
     def getUsedBugTags():

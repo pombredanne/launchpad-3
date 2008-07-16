@@ -57,6 +57,7 @@ from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
+from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.irc import IIrcID
 from canonical.launchpad.interfaces.jabber import IJabberID
@@ -376,7 +377,7 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
-class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
+class IPersonPublic(IHasBugs, IHasSpecifications, IHasMentoringOffers,
                     IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IObjectWithLocation):
     """Public attributes for a Person."""
