@@ -10,6 +10,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease)
 from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeriesSet)
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -66,6 +68,14 @@ class TestDistributionCurrentReleases(unittest.TestCase):
     def test_one_release(self):
         self.publish('0.9')
         self.assertCurrentVersion('0.9')
+
+    def test_return_value(self):
+        self.publish('0.9')
+        releases = self.distribution.getCurrentReleases(
+            [self.published_package.sourcepackagename])
+        self.assertTrue(self.published_package in releases)
+        self.assertTrue(IDistributionSourcePackageRelease.providedBy(
+            releases[self.published_package]))
 
     def test_latest_version(self):
         self.publish('0.9')

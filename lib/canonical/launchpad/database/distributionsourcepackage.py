@@ -160,14 +160,7 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IDistributionSourcePackage`."""
         releases = self.distribution.getCurrentReleases(
             [self.sourcepackagename])
-        spr = releases.get(self)
-
-        if spr is None:
-            return None
-        else:
-            return DistributionSourcePackageRelease(
-                distribution=self.distribution,
-                sourcepackagerelease=spr)
+        return releases.get(self)
 
     def bugtasks(self, quantity=None):
         """See `IDistributionSourcePackage`."""

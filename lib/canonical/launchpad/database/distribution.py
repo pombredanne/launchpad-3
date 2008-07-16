@@ -503,7 +503,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.id = (
-
                 SELECT max(spph.id)
                 FROM SourcePackagePublishingHistory spph,
                      SourcePackageRelease spr, SourcePackageName spn,
@@ -522,7 +521,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             clauseTables=[
                 'SourcePackageName','SourcePackagePublishingHistory'])
         return dict(
-            (self.getSourcePackage(release.sourcepackagename), release)
+            (self.getSourcePackage(release.sourcepackagename),
+             DistributionSourcePackageRelease(self, release))
             for release in releases)
 
     @property
