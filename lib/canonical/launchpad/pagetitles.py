@@ -950,8 +950,6 @@ person_packagebugs_search = person_packagebugs
 
 person_participation = ContextTitle("Team participation by %s")
 
-person_projects = ContextTitle("Projects %s is involved with")
-
 person_review = ContextDisplayName("Review %s")
 
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
