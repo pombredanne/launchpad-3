@@ -57,7 +57,7 @@ contact the product's registrant.
     >>> unprivileged.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(unprivileged.contents))
     Translation setup needed
-    This project&rsquo;s license has not been specified.
+    This project&lsquo;s license has not been reviewed.
     The gnomebaker project is not set up for translation in Launchpad.
     You might want to talk with Foo Bar, the project registrant, about
     using Launchpad for translations.
@@ -97,7 +97,7 @@ registrant, so the text reflects both possibilities.
     >>> anon_browser.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Translation setup needed
-    This project&rsquo;s license has not been specified.
+    This project&lsquo;s license has not been reviewed.
     The gnomebaker project is not set up for translation in Launchpad.
     If you are Foo Bar, log in to begin the setup process.
     Otherwise, you might want to talk with Foo Bar, the project registrant,

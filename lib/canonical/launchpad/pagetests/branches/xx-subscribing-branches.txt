@@ -72,7 +72,7 @@ should see a message that we are already subscribed.
 Now the subscription link should say "Edit subscription" in the actions
 menu.
 
-    >>> browser.getLink('Edit your subscription').click()
+    >>> browser.getLink('Edit subscription').click()
 
 Let's change our subscription to getting emails for modifications, and diffs,
 and limit our diffs to 5000 lines.
@@ -99,7 +99,7 @@ informational message for us to see.
 The page to edit a person's subscription also allows the user to
 unsubscribe.
 
-    >>> browser.getLink('Edit your subscription').click()
+    >>> browser.getLink('Edit subscription').click()
     >>> browser.getControl('Unsubscribe').click()
 
 The user is taken back to the branch details page, and a message is

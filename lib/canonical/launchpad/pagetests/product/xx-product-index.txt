@@ -120,61 +120,20 @@ the homepage:
     >>> print user_browser.url
     http://launchpad.dev/firefox/+subscribe
 
-
 = Licensing alerts =
-
-A project that has not set a license is marked as 'Unspecified'.
-
-    >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
-    '<...This project&rsquo;s license has not been specified...
-
-A project that includes a license of "Other/Open Source" that has not
-been reviewed by a Launchpad administrator will be displayed as
-'Unreviewed.'
-
-    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> owner_browser.open('http://launchpad.dev/thunderbird/+edit')
-    >>> owner_browser.getControl(name='field.licenses').value = [
-    ...     'OTHER_OPEN_SOURCE']
-    >>> owner_browser.getControl(name='field.license_info').value = 'foo'
-    >>> owner_browser.getControl('Change').click()
 
 Any user can see that the project's license has not been reviewed.
 
-    >>> user_browser.open('http://launchpad.dev/thunderbird')
+    >>> user_browser.open('http://launchpad.dev/firefox')
     >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
     '<...This project&lsquo;s license has not been reviewed...
-
-When the project's license is reviewed and approved the status changes
-to open source.
-
-    >>> admin_browser.open('http://launchpad.dev/thunderbird/+review-license')
-    >>> admin_browser.getControl(name='field.license_reviewed').value = True
-    >>> admin_browser.getControl(name='field.license_approved').value = True
-    >>> admin_browser.getControl('Change').click()
-
-    >>> user_browser.open('http://launchpad.dev/thunderbird')
-    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
-    '<...This project&lsquo;s license is open source...
-
-Changing the state to reviewed but not approved results in the project
-being shown as proprietary.
-
-    >>> admin_browser.open('http://launchpad.dev/thunderbird/+review-license')
-    >>> admin_browser.getControl(name='field.license_reviewed').value = True
-    >>> admin_browser.getControl(name='field.license_approved').value = False
-    >>> admin_browser.getControl('Change').click()
-
-    >>> user_browser.open('http://launchpad.dev/thunderbird')
-    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
-    '<...This project&lsquo;s license is proprietary...
 
 If the project doesn't have a license, a portlet is displayed
 to direct the owner to set a license.
 
     >>> from canonical.launchpad.interfaces import License
     >>> firefox = Product.selectOneBy(name="firefox")
+    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> owner_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-requires-subscription')

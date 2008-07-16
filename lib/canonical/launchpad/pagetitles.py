@@ -173,9 +173,6 @@ branch_edit_subscription = ContextDisplayName(smartquote(
 branch_index = ContextDisplayName(smartquote(
     '"%s" branch in Launchpad'))
 
-def branch_merges(context, view):
-    return 'Merges involving "%s" in Launchpad' % context.bzr_identity
-
 branch_link_to_bug = ContextDisplayName(smartquote(
     'Link branch "%s" to a bug report'))
 

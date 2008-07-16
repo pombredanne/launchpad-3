@@ -192,27 +192,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     license_info = StringCol(dbName='license_info', default=None,
                              storm_validator=_validate_license_info)
-
-    def _validate_license_approved(self, attr, value):
-        """Ensure license approved is only applied to the correct licenses."""
-        # XXX: BradCrittenden 2008-07-16 Is the check for _SO_creating still
-        # needed for storm?
-        if not self._SO_creating:
-            licenses = self.licenses
-            if value:
-                assert (
-                    License.OTHER_OPEN_SOURCE in licenses and
-                    License.OTHER_PROPRIETARY not in licenses), (
-                    "Only licenses of 'Other/Open Source' and not "
-                    "'Other/Proprietary' may be marked as license_approved.")
-                # Approving a license implies it has been reviewed.  Force
-                # `license_reviewed` to be True.
-                self.license_reviewed = True
-        return value
-
     license_approved = BoolCol(dbName='license_approved',
-                               notNull=True, default=False,
-                               storm_validator=_validate_license_approved)
+                               notNull=True, default=False)
 
     @property
     def default_stacked_on_branch(self):
@@ -343,10 +324,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         :return: A LicenseStatus enum value.
         """
-        # A project can only be marked 'license_approved' if it is
-        # OTHER_OPEN_SOURCE.  So, if it is 'license_approved' we return
-        # OPEN_SOURCE, which means one of our admins has determined it is good
-        # enough for us for the project to freely use Launchpad.
         if self.license_approved:
             return LicenseStatus.OPEN_SOURCE
         # Since accesses to the licenses property performs a query on
@@ -355,7 +332,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         licenses = self.licenses
         if len(licenses) == 0:
             # We don't know what the license is.
-            return LicenseStatus.UNSPECIFIED
+            return LicenseStatus.UNREVIEWED
         elif License.OTHER_PROPRIETARY in licenses:
             # Notice the difference between the License and LicenseStatus.
             return LicenseStatus.PROPRIETARY

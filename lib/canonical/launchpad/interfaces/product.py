@@ -60,9 +60,7 @@ class LicenseStatus(DBEnumeratedType):
     UNREVIEWED = DBItem(
         30, "Unreviewed",
         u"This project&lsquo;s license has not been reviewed.")
-    UNSPECIFIED = DBItem(
-        40, "Unspecified",
-        u"This project&rsquo;s license has not been specified.")
+
 
 class License(DBEnumeratedType):
     """Licenses under which a project's code can be released."""
@@ -380,10 +378,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     license_approved = Bool(
         title=_("License approved"),
-        description=_(
-            "Whether a license is manually approved for free "
-            "hosting after automatic approval fails.  May only "
-            "be applied to licenses of 'Other/Open Source'."))
+        description=_("Whether a license is manually approved for free "
+                      "hosting after automatic approval fails."))
 
     license_status = Attribute("""
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")

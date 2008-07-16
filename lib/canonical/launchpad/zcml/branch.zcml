@@ -102,10 +102,7 @@
         <browser:page
             name="+landing-candidates"
             template="../templates/branch-landing-candidates.pt" />
-        <browser:page
-            name="+merges"
-            template="../templates/branch-merges.pt" />
-   </browser:pages>
+    </browser:pages>
 
   <browser:pages
       for="canonical.launchpad.interfaces.IBranch"
