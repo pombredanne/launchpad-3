@@ -1023,24 +1023,21 @@ top left (y), and top right (z) of the rounded border. */
 #mainarea {clear: both; position: relative;}
 
 /* Inside those is a container for the main content, and the portlets if any. */
-#container {
-  margin-top: 30px;
-  padding: 0 0 40px;
-  position: relative;
-}
+#container {margin-top: 30px; padding: 0 0 40px;}
 * html #container {margin-top: 0; position: static;} /* fixes in IE6 */
 
-/*
-  To let the main content width = 100% - 220px for the portlets,
-  we apply a negative right margin so the portlets can float on the right:
-*/
-#maincontent, #maincontentsub {float: left; margin-right: -220px; width: 100%;}
-/* (maincontentsub is used for a two-column section in bugtask-index.pt.) */
-/* To avoid overlap, we need an extra container with positive right margin: */
+/* A two-column layout with portlets is achieved using floats: */
+#maincontent, #maincontentsub, #portlets {float: left;}
+/* ("maincontentsub" is used for a two-column section in bugtask-index.pt.) */
+/* The main column should take the full width available, minus 200px for the
+portlets. We achieve this using a negative right margin: */
+#maincontent, #maincontentsub {width: 100%; margin-right: -200px;}
+/* And the portlets use exactly this 200px: */
+#portlets {width: 200px; margin: 0;}
+/* Inside, the main column itself keeps 20px clear of the 200px column: */ 
 #nonportlets {margin-right: 220px;}
-#portlets .portlet {width: 200px;}
 /* Pages using the one-column layout can construct portlets using <aside>: */
-aside {clear: right; float: right; width: 200px;}
+aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 
 /* -- Pillar indexes -- */
 
@@ -1063,22 +1060,8 @@ the mugshot. */
 #contact-details {clear: none;}
 
 /* === Portlets === */
-/* The two-column layout includes a column of portlets: */
-#portlets {
-  display: inline;
-  float: right;
-  width: 200px;
-  overflow: hidden;
-  margin-left: -220px; /* negates -220px right margin of #maincontent */
-  padding-left: 20px; /* 20px margin between main content and portlets */
-  list-style: none;
-}
-/* Alternatively, individual portlets can be put in an <aside> element: */
-aside {margin-left: 20px;}
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
 * html #portlets {left: 20px;}
-/* IE7 gets the padding right but overcalculates the left margin, so we use
-a conditional comment in main-template.pt to work around the above rule. */
 /* Portlets look the same whether as <div class="portlet"> or <aside>: */
 #portlets .portlet, aside {
   background-color: #fafafa;
