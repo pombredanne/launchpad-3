@@ -169,6 +169,10 @@
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
         <div id="container">
           <!--[if IE 7]>&nbsp;<![endif]-->
+          <tal:XXX condition="nothing">
+            # XXX mpt 20080716 bug=249032: This conditional comment should
+            # not be necessary.
+          </tal:XXX>
 
                         <tal:noportlets
                           condition="not: view/macro:pagehas/portlets"
