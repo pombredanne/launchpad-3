@@ -41,8 +41,9 @@ class HeaderDictionary:
     header names. wadllib expects to access the header exactly as it's
     specified in the WADL file, which means the official HTTP header name.
 
-    This class transforms keys to lowercase before doing a lookup
-    on the underlying dictionary.
+    This class transforms keys to lowercase before doing a lookup on
+    the underlying dictionary. That way wadllib can pass in the
+    official header name and httplib2 will get the lowercased name.
     """
     def __init__(self, wrapped_dictionary):
         self.wrapped_dictionary = wrapped_dictionary
