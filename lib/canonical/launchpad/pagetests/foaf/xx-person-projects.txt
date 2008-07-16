@@ -12,7 +12,7 @@ team.
     Ubuntu Test
     Tomcat
 
-The +projects page displays a table with links to open bugs,
+The +packages page displays a table with links to open bugs,
 unimplemented specs and open questions.
 
     >>> anon_browser.getLink('List related projects')
