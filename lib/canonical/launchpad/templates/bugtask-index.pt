@@ -67,6 +67,7 @@
       <p
         tal:define="duplicateof context/bug/duplicateof"
         tal:condition="duplicateof"
+        id="duplicate-of"
       >
 
           This report is a duplicate of
@@ -78,7 +79,7 @@
 
       </p>
 
-      <p id="bug-is-question"
+      <p id="bug-is-question" class="informational message"
          tal:condition="context/bug/getQuestionCreatedFromBug"
          tal:define="question context/bug/getQuestionCreatedFromBug">
         This bug report was converted into a question:
@@ -86,6 +87,10 @@
         <a href=""
            tal:attributes="href question/fmt:url"
            tal:content="question/title">%s</a>.
+        <tal:XXX condition="nothing">
+          # XXX mpt 20080716 bug=249094: This should be an alert only when
+          # you have just now converted the report into a question.
+        </tal:XXX>
       </p>
       <form
           tal:condition="not:view/isReportedInContext"
