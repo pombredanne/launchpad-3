@@ -23,7 +23,8 @@ unimplemented specs and open questions.
     # XXX mars 2008-07-16
     # Visit the page directly to prevent the testbrowser from mucking with
     # the URL fragment.  See bug #98478.
-    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+related-software')
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/~ubuntu-team/+related-software')
 
     >>> print anon_browser.title
     Software related to Ubuntu Team

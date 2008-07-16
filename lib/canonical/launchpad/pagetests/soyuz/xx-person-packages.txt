@@ -1,7 +1,8 @@
 = Person Packages =
 
-All packages maintained or uploaded by a given person can be seen on that
-person's +related-software page, which is linked to from the person's home page.
+All packages maintained or uploaded by a given person can be seen on
+that person's +related-software page, which is linked to from the
+person's home page.
 
     >>> browser.open("http://launchpad.dev/~name16/+related-software")
     >>> browser.title
