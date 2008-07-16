@@ -1,7 +1,5 @@
 = A test which reproduces bug 249185 =
 
-XXX: salgado, 2008-07-16: Should be moved into a TestCase into test_teammembership.py.
-
 Create some teams.
 
     >>> factory = LaunchpadObjectFactory()
