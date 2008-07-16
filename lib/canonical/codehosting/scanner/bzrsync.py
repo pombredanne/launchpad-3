@@ -389,9 +389,13 @@ class BzrSync:
             branchrevisions_to_insert) = self.planDatabaseChanges(
             bzr_ancestry, bzr_history, db_ancestry, db_history, 
             db_branch_revision_map)
-        self.syncRevisions(
-            bzr_branch, revisions_to_insert_or_check,
-            branchrevisions_to_insert)
+        self.logger.info("Inserting or checking %d revisions.",
+            len(revisions_to_insert_or_check))
+        # Add new revisions to the database.
+        revisions = self.getNewBazaarRevisions(
+            bzr_branch, revisions_to_insert_or_check)
+        for revision in revisions:
+            self.syncOneRevision(revision, branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
@@ -528,17 +532,19 @@ class BzrSync:
 
         return (revisions_to_insert_or_check, branchrevisions_to_delete,
             branchrevisions_to_insert)
-
+            
+    def getNewBazaarRevisions(self, bzr_branch, revisions_to_insert_or_check):
+        """Return the new Bazaar revisions in `bzr_branch`.
+        
+        XXX -- explain revisions_to_i_o_c
+        """
+        # Add new revisions to the database.
+        revisions_to_insert_or_check = bzr_branch.repository.get_parent_map(revisions_to_insert_or_check).keys()
+        return bzr_branch.repository.get_revisions(revisions_to_insert_or_check)
+        
     def syncRevisions(self, bzr_branch, revisions_to_insert_or_check,
                       branchrevisions_to_insert):
         """Import all the revisions added to the ancestry of the branch."""
-        self.logger.info("Inserting or checking %d revisions.",
-            len(revisions_to_insert_or_check))
-        # Add new revisions to the database.
-        revisions_to_insert_or_check = bzr_branch.repository.get_parent_map(revisions_to_insert_or_check).keys()
-        revisions = bzr_branch.repository.get_revisions(revisions_to_insert_or_check)
-        for revision in revisions:
-            self.syncOneRevision(revision, branchrevisions_to_insert)
 
     def syncOneRevision(self, bzr_revision, branchrevisions_to_insert):
         """Import the revision with the given revision_id.
@@ -598,14 +604,11 @@ class BzrSync:
             if branchrevisions_to_insert[revision_id] is not None:
                 self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
 
-    def getRevisions(self, bzr_history, revision_subset=None):
+    def getRevisions(self, bzr_history, revision_subset):
         """Generate revision IDs that make up the branch's ancestry.
 
-        Generate a sequence of (sequence, revision-id) pairs to be inserted
+        Generate a sequence of (revision-id, sequence) pairs to be inserted
         into the branchrevision table.
-
-        :param limit: set of revision ids, only yield tuples whose revision-id
-            is in this set.
         """
         for (index, revision_id) in enumerate(bzr_history):
             if revision_id in revision_subset:
