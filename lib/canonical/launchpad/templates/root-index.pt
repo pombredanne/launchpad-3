@@ -55,7 +55,7 @@
             across multiple projects</strong>.
             <br />
             <center>
-              <a href="/+tour/index.html">
+              <a href="/+about">
                 <img
                   alt="Take a tour"
                   src="/+icing/but-lrg-takeatour.gif"
@@ -74,6 +74,12 @@
         <div class="three column middle">
           <h2>What&#8217;s new here?</h2>
           <ul>
+            <li class="news">
+              <a href="http://news.launchpad.net/?p=99">
+                <strong>Launchpad's new look</strong><br />
+                We've given Launchpad an updated style.
+              </a>
+           </li>
            <li class="news">
               <a href="http://news.launchpad.net/?p=94">
                 <strong>More control over your code imports</strong><br />
@@ -160,4 +166,3 @@
     </div>
   </body>
 </html>
-<!-- 1-0 done could use a team icon though -->

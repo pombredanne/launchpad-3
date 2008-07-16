@@ -122,3 +122,7 @@ You can use the following authorization lines:
 
   for Brad Crittenden (member of commercial-approvers)
     >>> browser = setupBrowser(auth='Basic bac@canonical.com:test')
+
+  for Commercial Member (member of commercial-admins)
+    >>> browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')
