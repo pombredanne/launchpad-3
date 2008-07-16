@@ -948,7 +948,7 @@ body.freeform #globalfooter {
 /* === Specific page layouts === */
 
 /*- App home pages and pillar indexes both have a heading and app buttons. -*/
-table#applications {margin-bottom: -0.5em;}
+table#applications {margin: 1em 0 -0.5em;}
 table#applications th, table#applications td {vertical-align: bottom;}
 table#applications th {padding-left: 60px; text-align: left;}
 table#applications th h1 {margin: 0; padding: 0;}
