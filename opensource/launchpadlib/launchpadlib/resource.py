@@ -217,7 +217,7 @@ class NamedOperation(LaunchpadBase):
         http_method = self.wadl_method.name
         args = self._transform_resources_to_links(kwargs)
         if http_method in ('get', 'head', 'delete'):
-            url = self.url.build_request_url(**args)
+            url = self.wadl_method.build_request_url(**args)
             in_representation = ''
             extra_headers = {}
         else:
@@ -243,7 +243,11 @@ class NamedOperation(LaunchpadBase):
             # Resource subclass.
             return Resource._wrap_resource(
                 self.root, wadl_resource, content, response['content-type'])
-
+        else:
+            # Process the returned content, assuming we know how.
+            if response['content-type'] == 'application/json':
+                return simplejson.loads(content)
+            return content
 
 class Entry(Resource):
     """A class for an entry-type resource that can be updated with PATCH."""
@@ -282,10 +286,8 @@ class Entry(Resource):
         super(Entry, self).lp_refresh(new_url)
         self._dirty_attributes.clear()
 
-    def lp_save(self, dobreak=False):
+    def lp_save(self):
         """Save changes to the entry."""
-        if dobreak:
-            import pdb; pdb.set_trace()
         representation = self._transform_resources_to_links(
             self._dirty_attributes)
 
