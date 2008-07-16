@@ -13,9 +13,6 @@
 <body>
 
 <div metal:fill-slot="main">
-
-  <h1>Package maintenance report</h1>
-
   <div id="packages">
 
   <tal:maintained-packages
