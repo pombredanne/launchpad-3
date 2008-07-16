@@ -1240,8 +1240,7 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     @profiled
     def setUp(cls):
         if cls.appserver is not None:
-            raise LayerInvariantError(
-                'setUp() called twice')
+            raise LayerInvariantError('setUp() called twice')
         cls.startAppServer()
         cls.waitUntilAppServerIsReady()
         # Make sure that the app server is killed even if tearDown() is
