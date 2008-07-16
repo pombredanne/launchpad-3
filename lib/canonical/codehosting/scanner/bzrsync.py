@@ -384,14 +384,17 @@ class BzrSync:
         self.setFormats(bzr_branch)
         db_ancestry, db_history, db_branch_revision_map = (
             self.retrieveDatabaseAncestry())
+
+        (revisions_to_insert_or_check, branchrevisions_to_delete,
+            branchrevisions_to_insert) = self.planDatabaseChanges(
+            bzr_ancestry, bzr_history, db_ancestry, db_history, 
+            db_branch_revision_map)
         self.last_revision = last_revision
         self.bzr_ancestry = bzr_ancestry
         self.bzr_history = bzr_history
         self.db_ancestry = db_ancestry
         self.db_history = db_history
         self.db_branch_revision_map = db_branch_revision_map
-        (revisions_to_insert_or_check, branchrevisions_to_delete,
-            branchrevisions_to_insert) = self.planDatabaseChanges()
         self.syncRevisions(
             bzr_branch, revisions_to_insert_or_check,
             branchrevisions_to_insert)
@@ -472,19 +475,14 @@ class BzrSync:
             RepositoryFormat, repository_string,
             RepositoryFormat.UNRECOGNIZED)
 
-    def planDatabaseChanges(self):
+    def planDatabaseChanges(self, bzr_ancestry, bzr_history, db_ancestry, 
+                            db_history, db_branch_revision_map):
         """Plan database changes to synchronize with bzrlib data.
 
         Use the data retrieved by `retrieveDatabaseAncestry` and
         `retrieveBranchDetails` to plan the changes to apply to the database.
         """
         self.logger.info("Planning changes.")
-        bzr_ancestry = self.bzr_ancestry
-        bzr_history = self.bzr_history
-        db_ancestry = self.db_ancestry
-        db_history = self.db_history
-        db_branch_revision_map = self.db_branch_revision_map
-
         # Find the length of the common history.
         common_len = min(len(bzr_history), len(db_history))
         while common_len > 0:
@@ -527,7 +525,7 @@ class BzrSync:
         # added to the ancestry or whose sequence value has changed.
         branchrevisions_to_insert = dict(
             self.getRevisions(
-                self.bzr_history, added_merged.union(added_history)))
+                bzr_history, added_merged.union(added_history)))
 
         # We must insert, or check for consistency, all revisions which were
         # added to the ancestry.
