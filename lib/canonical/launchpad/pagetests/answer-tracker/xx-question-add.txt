@@ -68,7 +68,7 @@ questions are displayed.
     How can I play MP3/Divx/DVDs/Quicktime/Realmedia files or view
         Flash/Java web pages
     >>> similar_faqs.a['href']
-    u'http://answers.launchpad.dev/ubuntu/+faq/6'
+    u'http://answers.launchpad.dev/ubuntu/+faq/...'
 
     >>> similar_questions = contents.find(id='similar-questions')
     >>> print extract_text(similar_questions).encode(
@@ -80,7 +80,7 @@ questions are displayed.
         posted on 2006-07-20 by Sample Person, answered by Foo Bar
         in ...mozilla-firefox... source package in Ubuntu
     >>> similar_questions.a['href']
-    u'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox/+question/8'
+    u'http://answers.../ubuntu/+source/mozilla-firefox/+question/...'
 
 The beginning of the description appears in a small pop-up when the
 mouse is left over the question's title.
