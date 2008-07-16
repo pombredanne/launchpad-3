@@ -11,6 +11,8 @@
 >
   <body>
     <div metal:fill-slot="main">
+      <h1>Change your personal details</h1>
+
       <div metal:use-macro="context/@@launchpad_form/form" />
 
       <h2 style="margin-top: 2em;">Other actions</h2>
