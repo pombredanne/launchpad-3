@@ -43,7 +43,7 @@ __all__ = [
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
     'PersonOwnedBranchesView',
-    'PersonPackagesView',
+    'PersonRelatedSoftwareView',
     'PersonRdfView',
     'PersonRdfContentsView',
     'PersonRegisteredBranchesView',
@@ -4324,7 +4324,7 @@ class SourcePackageReleaseWithStats:
         self.needs_building = needs_building
 
 
-class PersonPackagesView(LaunchpadView):
+class PersonRelatedSoftwareView(LaunchpadView):
     """View for +related-software."""
 
     implements(IPersonRelatedSoftwareMenu)
