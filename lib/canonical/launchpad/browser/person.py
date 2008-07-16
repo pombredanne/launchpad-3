@@ -1177,7 +1177,6 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     usedfor = IPersonEditMenu
     facet = 'overview'
-    title = 'Edit your profile'
     links = ('personal', 'email_settings',
              'sshkeys', 'gpgkeys', 'passwords')
 

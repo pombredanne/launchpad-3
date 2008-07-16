@@ -37,7 +37,7 @@ def print_indirect_subscribers(bug_page):
     print 'From duplicates:'
     print_subscribers(bug_page, 'subscribers-from-duplicates')
     print 'Also notified:'
-    print_subscribers(bug_page, 'subscribers-also-notified')
+    print_subscribers(bug_page, 'subscribers-indirect')
 
 
 def print_subscribers(bug_page, subscriber_list_id):
@@ -48,10 +48,10 @@ def print_subscribers(bug_page, subscriber_list_id):
         # no indirect subscribers), so just print an empty string.
         print ""
     else:
-        for li in subscriber_list.findAll('li'):
-            anchor = li.a
+        for subscriber in subscriber_list.findAll('div'):
+            anchor = subscriber.a
             if anchor is not None:
-                sub_display = anchor.renderContents()
+                sub_display = extract_text(anchor)
                 if anchor.has_key('title'):
                     sub_display += (' (%s)' % anchor['title'])
                 print sub_display
