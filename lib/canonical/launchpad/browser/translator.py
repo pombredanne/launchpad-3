@@ -13,8 +13,8 @@ from canonical.launchpad.webapp.menu import structured
 __all__ = [
     'TranslatorEditView',
     'TranslatorRemoveView',
-    'TranslatorNavigation',
     ]
+
 
 class TranslatorEditView(LaunchpadEditFormView):
     """View class to edit ITranslationGroup objects"""
@@ -75,9 +75,3 @@ class TranslatorRemoveView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context.translationgroup)
-
-
-class TranslatorNavigation(GetitemNavigation):
-
-    usedfor = ITranslator
-

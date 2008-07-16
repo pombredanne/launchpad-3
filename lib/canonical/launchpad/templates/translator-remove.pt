@@ -6,9 +6,9 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad">
-  <body>
+  <body tal:define="context_menu context/menu:context">
     <div metal:fill-slot="main">
       <div>
         <a href="/+groups">Translation groups:</a>
@@ -31,7 +31,6 @@
       <h2>Are you sure you want to remove this translator?</h2>
 
       <div metal:use-macro="context/@@launchpad_form/form" />
-
     </div> 
   </body>
 </html>
