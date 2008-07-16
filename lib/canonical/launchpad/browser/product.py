@@ -1164,10 +1164,10 @@ class ProductReviewLicenseView(ProductAdminView):
             if License.OTHER_PROPRIETARY in licenses:
                 self.setFieldError(
                     'license_approved',
-                    'Proprietary projects may not be administratively approved '
-                    'to use Launchpad.  Proprietary projects must use the '
-                    'commercial subscription voucher system to be allowed to '
-                    'use Launchpad.')
+                    'Proprietary projects may not be administratively '
+                    'approved to use Launchpad.  Proprietary projects '
+                    'must use the commercial subscription voucher system '
+                    'to be allowed to use Launchpad.')
             elif License.OTHER_OPEN_SOURCE not in licenses:
                 self.setFieldError(
                     'license_approved',
