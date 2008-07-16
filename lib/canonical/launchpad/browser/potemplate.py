@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Browser code for PO templates."""
 
@@ -189,6 +189,7 @@ class POTemplateAppMenus(ApplicationMenu):
         text = 'Show translation status'
         return Link('', text)
 
+    @enabled_with_permission('launchpad.Edit')
     def upload(self):
         text = 'Upload a file'
         return Link('+upload', text, icon='edit')

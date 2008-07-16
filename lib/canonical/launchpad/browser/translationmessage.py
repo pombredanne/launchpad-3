@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """View classes for ITranslationMessage interface."""
 
@@ -45,7 +45,8 @@ from canonical.launchpad.interfaces import (
     ITranslationMessageSet, ITranslationMessageSuggestions,
     TranslationConflict, TranslationConstants, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, LaunchpadView, Link, urlparse)
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, urlparse)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
@@ -318,6 +319,7 @@ class CurrentTranslationMessageAppMenus(ApplicationMenu):
         text = 'Translate many'
         return Link('../+translate', text, icon='languages')
 
+    #@enabled_with_permission('launchpad.Edit')
     def upload(self):
         text = 'Upload a file'
         return Link('../+upload', text, icon='edit')
