@@ -389,19 +389,14 @@ class BzrSync:
             branchrevisions_to_insert) = self.planDatabaseChanges(
             bzr_ancestry, bzr_history, db_ancestry, db_history, 
             db_branch_revision_map)
-        self.last_revision = last_revision
-        self.bzr_ancestry = bzr_ancestry
-        self.bzr_history = bzr_history
-        self.db_ancestry = db_ancestry
-        self.db_history = db_history
-        self.db_branch_revision_map = db_branch_revision_map
         self.syncRevisions(
             bzr_branch, revisions_to_insert_or_check,
             branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
-        self._branch_mailer.sendRevisionNotificationEmails(self.bzr_history)
+
+        self._branch_mailer.sendRevisionNotificationEmails(bzr_history)
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
         # timeouts in the webapp. This opens a small race window where the
@@ -410,7 +405,7 @@ class BzrSync:
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
-        self.updateBranchStatus()
+        self.updateBranchStatus(bzr_history)
         self.trans_manager.commit()
 
     def retrieveDatabaseAncestry(self):
@@ -667,18 +662,18 @@ class BzrSync:
                 self._branch_mailer.generateEmailForRevision(
                     bzr_branch, revision, sequence)
 
-    def updateBranchStatus(self):
+    def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
         # Record that the branch has been updated.
         self.logger.info("Updating branch scanner status.")
-        if len(self.bzr_history) > 0:
-            last_revision = self.bzr_history[-1]
+        if len(bzr_history) > 0:
+            last_revision = bzr_history[-1]
         else:
             last_revision = NULL_REVISION
 
         # FIXME: move that conditional logic down to updateScannedDetails.
         # -- DavidAllouche 2007-02-22
-        revision_count = len(self.bzr_history)
+        revision_count = len(bzr_history)
         if ((last_revision != self.db_branch.last_scanned_id)
                 or (revision_count != self.db_branch.revision_count)):
             self.db_branch.updateScannedDetails(
