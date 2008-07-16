@@ -75,13 +75,13 @@ Here is the structure of our hierarchy:
 
 == Using nearest_adapter ==
 
-We'll try adapting our objects to a made-up interface, IPrintable.
+We'll try adapting our objects to a made-up interface, ICookingDirections.
 
-    >>> class IPrintable(Interface):
+    >>> class ICookingDirections(Interface):
     ...     """Something that is tasty."""
 
-    >>> class BookPrinter:
-    ...     implements(IPrintable)
+    >>> class CookingDirections:
+    ...     implements(ICookingDirections)
     ...     def __init__(self, context):
     ...         self.context = context
 
@@ -90,44 +90,44 @@ Right now, none of our example objects can be turned into places.
     >>> from canonical.lazr.canonicalurl import (nearest_adapter,
     ...     nearest_context_with_adapter)
 
-    >>> print nearest_adapter(root, IPrintable)
+    >>> print nearest_adapter(root, ICookingDirections)
     None
-    >>> print nearest_adapter(cookbook, IPrintable)
+    >>> print nearest_adapter(cookbook, ICookingDirections)
     None
-    >>> print nearest_adapter(recipe, IPrintable)
+    >>> print nearest_adapter(recipe, ICookingDirections)
     None
 
 The same holds true for nearest_context_with_adapter():
 
-    >>> nearest_context_with_adapter(root, IPrintable)
+    >>> nearest_context_with_adapter(root, ICookingDirections)
     (None, None)
 
-We'll make the "cookbook" object adaptable to IPrintable.
+We'll make the "cookbook" object adaptable to ICookingDirections.
 
     >>> from zope.component import provideAdapter
-    >>> provideAdapter(BookPrinter, [ICookbook], IPrintable)
+    >>> provideAdapter(CookingDirections, [ICookbook], ICookingDirections)
 
-    >>> IPrintable(cookbook)
-    <...BookPrinter instance ...>
+    >>> ICookingDirections(cookbook)
+    <...CookingDirections instance ...>
 
 The nearest_adapter() function will look up the hierarchy for an object
 that has the requested adaptation.
 
-"recipe" does not provide IPrintable, but "cookbook" does, so cookbook's
+"recipe" does not provide ICookingDirections, but "cookbook" does, so cookbook's
 adapter will be returned.
 
-    >>> print nearest_adapter(recipe, IPrintable)
-    <...BookPrinter instance ...>
+    >>> print nearest_adapter(recipe, ICookingDirections)
+    <...CookingDirections instance ...>
 
 Calling nearest_adapter() on "cookbook" itself will return the
-BookPrinter:
+CookingDirections:
 
-    >>> print nearest_adapter(cookbook, IPrintable)
-    <...BookPrinter instance ...>
+    >>> print nearest_adapter(cookbook, ICookingDirections)
+    <...CookingDirections instance ...>
 
 Calling nearest_adapter() on the hierarchy root returns nothing:
 the root does not have the requested adaptation, and there are no higher
 objects to search.
 
-    >>> print nearest_adapter(root, IPrintable)
+    >>> print nearest_adapter(root, ICookingDirections)
     None
