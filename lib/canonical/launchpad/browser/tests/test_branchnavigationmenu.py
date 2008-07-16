@@ -41,11 +41,10 @@ class TestBranchNavigationMenu(TestCaseWithFactory):
 
     def test_review_comment(self):
         """Menu's branch for a review comment is the source branch"""
-        proposal = self.factory.makeBranchMergeProposal()
         comment = self.factory.makeCodeReviewComment()
-        naked_comment = removeSecurityProxy(comment)
-        menu = BranchNavigationMenu(naked_comment)
-        self.assertEqual(naked_comment.branch, menu.branch)
+        menu = BranchNavigationMenu(comment)
+        self.assertEqual(comment.branch_merge_proposal.source_branch,
+            menu.branch)
 
 
 def test_suite():

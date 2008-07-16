@@ -177,7 +177,7 @@ class BranchNavigationMenu(NavigationMenu):
         elif IBranchSubscription.providedBy(context):
             self.branch = context.branch
         elif ICodeReviewComment.providedBy(context):
-            self.branch = context.proposal.source_branch
+            self.branch = context.branch_merge_proposal.source_branch
         else:
             raise AssertionError(
                 'Bad context type for branch navigation menu.')
