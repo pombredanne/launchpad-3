@@ -103,7 +103,7 @@ Here is the message to the person who added the question.
     Received: by smtp2mbox
     <BLANKLINE>
     New question #... on Mozilla Firefox:
-    http://answers.launchpad.dev/firefox/+question/...
+    http://answers.launchpad.dev:8085/firefox/+question/...
     <BLANKLINE>
     More detail.
     <BLANKLINE>
@@ -142,7 +142,7 @@ Here is the message to Anne, a member of the mailing list.
     Received: by smtp2mbox
     <BLANKLINE>
     New question #... on Mozilla Firefox:
-    http://answers.launchpad.dev/firefox/+question/...
+    http://answers.launchpad.dev:8085/firefox/+question/...
     <BLANKLINE>
     More detail.
     <BLANKLINE>
@@ -282,7 +282,7 @@ This message goes to the submitter of the question.
     ...
     <BLANKLINE>
     New question #... on Mozilla Firefox:
-    http://answers.launchpad.dev/firefox/+question/...
+    http://answers.launchpad.dev:8085/firefox/+question/...
     <BLANKLINE>
     More detail.
     <BLANKLINE>
@@ -307,7 +307,7 @@ member.
     ...
     <BLANKLINE>
     New question #... on Mozilla Firefox:
-    http://answers.launchpad.dev/firefox/+question/...
+    http://answers.launchpad.dev:8085/firefox/+question/...
     <BLANKLINE>
     More detail.
     <BLANKLINE>
