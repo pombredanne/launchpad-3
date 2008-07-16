@@ -11,7 +11,7 @@
   <body>
     <div metal:fill-slot="main">
       <div>
-        <a tal:attributes="href context/fmt:url">Translation groups</a>
+        <a href="/+groups">Translation groups</a>
       </div>
       <h1>
         <tal:translation-group replace="context/title">
