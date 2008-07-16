@@ -49,6 +49,14 @@ class TestDistributionCurrentSourceReleases(unittest.TestCase):
     def publish(self, version, name=None,
                 status=PackagePublishingStatus.PUBLISHED, distroseries=None,
                 archive=None):
+        """Publish a new version.
+
+        If name isn't specified, the package we set up in setUp() is
+        used.
+
+        If distroseries, the development series we set up in
+        setUp() is used.
+        """
         if name is None:
             name = self.published_package.name
         if distroseries is None:
@@ -57,19 +65,29 @@ class TestDistributionCurrentSourceReleases(unittest.TestCase):
             sourcename=name, status=status,distroseries=distroseries,
             version=version, archive=archive)
 
-    def assertCurrentVersion(self, version, package_name=None):
+    def assertCurrentVersion(self, expected_version, package_name=None):
+        """Assert the the current version of a package is the expected one.
+
+        It uses getCurrentSourceReleases() to get the version.
+
+        If package_name isn't specified, self.published_package is used.
+        """
         if package_name is None:
             package_name = self.published_package.name
         package = self.distribution.getSourcePackage(package_name)
         releases = self.distribution.getCurrentSourceReleases(
             [package.sourcepackagename])
-        self.assertEqual(releases[package].version, version)
+        self.assertEqual(releases[package].version, expected_version)
 
     def test_one_release(self):
+        # If there is one published version, that one will be returned.
         self.publish('0.9')
         self.assertCurrentVersion('0.9')
 
     def test_return_value(self):
+        # getCurrentSourceReleases() returns a dict. The corresponding
+        # DistributionSourcePackage is used as the key, with
+        # DistributionSourcePackages as the values.
         self.publish('0.9')
         releases = self.distribution.getCurrentSourceReleases(
             [self.published_package.sourcepackagename])
@@ -78,11 +96,15 @@ class TestDistributionCurrentSourceReleases(unittest.TestCase):
             releases[self.published_package]))
 
     def test_latest_version(self):
+        # If more than one version is published, the latest one is
+        # returned.
         self.publish('0.9')
         self.publish('1.0')
         self.assertCurrentVersion('1.0')
 
     def test_active_publishing_status(self):
+        # Every status defined in active_publishing_status is considered
+        # when checking for the current release.
         self.publish('0.9')
         for minor_version, status in enumerate(active_publishing_status):
             latest_version = '1.%s' % minor_version
@@ -90,6 +112,8 @@ class TestDistributionCurrentSourceReleases(unittest.TestCase):
             self.assertCurrentVersion(latest_version)
 
     def test_not_active_publishing_status(self):
+        # Every status not defined in active_publishing_status is
+        # ignored when checking for the current release.
         self.publish('0.9')
         for minor_version, status in enumerate(PackagePublishingStatus.items):
             if status in active_publishing_status:
@@ -98,17 +122,24 @@ class TestDistributionCurrentSourceReleases(unittest.TestCase):
             self.assertCurrentVersion('0.9')
 
     def test_ignore_other_package_names(self):
+        # Packages with different names don't affect the returned
+        # version.
         self.publish('0.9', name='foo')
         self.publish('1.0', name='bar')
         self.assertCurrentVersion('0.9', package_name='foo')
 
     def ignore_other_distributions(self):
+        # Packages with the same name in other distributions don't
+        # affect the returned version.
         series_in_other_distribution = self.factory.makeDistroRelease()
         self.publish('0.9')
         self.publish('1.0', distroseries=series_in_other_distribution)
         self.assertCurrentVersion('0.9')
 
     def test_which_distroseries_does_not_matter(self):
+        # When checking for the current release, we only care about the
+        # version numbers. We don't care whether the version is
+        # published in a earlier or later release.
         self.publish('0.9', distroseries=self.current_series)
         self.publish('1.0', distroseries=self.development_series)
         self.assertCurrentVersion('1.0')
@@ -117,6 +148,8 @@ class TestDistributionCurrentSourceReleases(unittest.TestCase):
         self.assertCurrentVersion('1.1')
 
     def test_ignore_ppa(self):
+        # PPA packages having the same name don't affect the returned
+        # version.
         ppa_uploader = self.factory.makePerson()
         ppa_archive = getUtility(IArchiveSet).new(
             purpose=ArchivePurpose.PPA, owner=ppa_uploader,
@@ -126,6 +159,10 @@ class TestDistributionCurrentSourceReleases(unittest.TestCase):
         self.assertCurrentVersion('0.9')
 
     def test_get_multiple(self):
+        # getCurrentSourceReleases() allows you to get information about
+        # the current release for multiple packages at the same time.
+        # This is done using a single DB query, making it more efficient
+        # than using IDistributionSource.currentrelease.
         self.publish('0.9', name='foo')
         self.publish('1.0', name='bar')
         foo_package = self.distribution.getSourcePackage('foo')
