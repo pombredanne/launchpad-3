@@ -315,6 +315,12 @@ returned for each comment.
         author: Ford Prefect <ford.prefect@h2g2.com>
         id: 4
 
+It's worth noting that, due to a quirk in the XML-RPC spec, the bug IDs
+in the returned 'bugs' dict are strings, not integers:
+
+    >>> print sorted(bugs_dict)
+    ['1', '2']
+
 
 == Launchpad.add_comment() ==
 
