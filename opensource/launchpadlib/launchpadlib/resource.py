@@ -330,13 +330,6 @@ class Collection(Resource):
             current_page = simplejson.loads(
                 self._root._browser.get(URI(next_link)))
 
-    def lp_get(self, key, default=None):
-        """Look up a subordinate resource by unique ID."""
-        try:
-            return self[key]
-        except KeyError:
-            return default
-
     def __getitem__(self, key):
         """Look up a subordinate resource by unique ID."""
         try:

@@ -6,7 +6,7 @@ interface which is available through direct attribute access.
     >>> from launchpadlib.testing.helpers import salgado_with_full_permissions
     >>> launchpad = salgado_with_full_permissions.login()
 
-    >>> salgado = launchpad.people.lp_get('salgado')
+    >>> salgado = launchpad.people['salgado']
     >>> salgado.display_name
     u'Guilherme Salgado'
 
@@ -132,8 +132,11 @@ attribute.
 Once this is done, he can no longer access his data through the old name.  But
 Salgado's person is available through the new name.
 
-    >>> print launchpad.people.lp_get('salgado')
-    None
+    >>> launchpad.people['salgado']
+    Traceback (most recent call last):
+    ...
+    KeyError: 'salgado'
+
     >>> launchpad.people['guilherme'].display_name
     u'Guilherme Salgado'
 
@@ -149,8 +152,11 @@ It's just as easy to move Salgado back to the old name.
 
     >>> salgado.name = u'salgado'
     >>> salgado.lp_save()
-    >>> print launchpad.people.lp_get('guilherme')
-    None
+    >>> launchpad.people['guilherme']
+    Traceback (most recent call last):
+    ...
+    KeyError: 'guilherme'
+
     >>> launchpad.people['salgado'].display_name
     u'Salgado!'
 
