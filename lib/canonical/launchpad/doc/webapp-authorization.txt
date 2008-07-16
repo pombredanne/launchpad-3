@@ -106,6 +106,7 @@ access level specified will be valid only for things in that scope.
     ...     'foo.bar@canonical.com')
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> mozilla = getUtility(IProjectSet)['mozilla']
+    >>> private_bug = getUtility(IBugSet).get(14)
     >>> logout()
     >>> principal.access_level = AccessLevel.WRITE_PRIVATE
     >>> principal.scope = firefox
@@ -121,14 +122,27 @@ that scope, though.
     >>> check_permission('launchpad.View', mozilla)
     True
 
+But it won't be able to view private stuff that is not within its scope
+(firefox).
+
+    >>> private_bug.private
+    True
+    >>> check_permission('launchpad.View', private_bug)
+    False
+
 If the scope is a Project or Distribution, then the access level will
 be used for anything which is part of that Project/Distribution.
 
     >>> principal.scope = mozilla
     >>> setupInteraction(principal)
+    >>> check_permission('launchpad.Edit', mozilla)
+    True
     >>> check_permission('launchpad.Edit', firefox)
     True
-    >>> check_permission('launchpad.Edit', mozilla)
+    >>> from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
+    >>> bug_task = firefox.searchTasks(
+    ...     BugTaskSearchParams(user=personset.getByName('name16')))[0]
+    >>> check_permission('launchpad.Edit', bug_task)
     True
 
     >>> from canonical.launchpad.interfaces.distribution import (
