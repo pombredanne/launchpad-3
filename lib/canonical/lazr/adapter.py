@@ -11,14 +11,13 @@ from canonical.launchpad.webapp.publisher import canonical_url_iterator
 
 
 def nearest_context_with_adapter(obj, interface):
-    """Return the tuple (context, adapter) of the nearest object up the
-    canonical url chain that has an adapter of the type given.
+    """Find the nearest adapter in the url chain between obj and interface.
 
-    This might be an adapter for the object given as an argument.
+    The function looks upward though the canonical url chain and returns a
+    tuple of (object, adapter).
 
-    Return (None, None) if there is no object that has such an adapter
-    in the url chain.
-
+    :return (None, None): if there is no object that has such an adapter
+        in the url chain.
     """
     for current_obj in canonical_url_iterator(obj):
         adapter = interface(current_obj, None)
@@ -28,17 +27,16 @@ def nearest_context_with_adapter(obj, interface):
 
 
 def nearest_adapter(obj, interface):
-    """Return the adapter of the nearest object up the canonical url chain
-    that has an adapter of the type given.
+    """Find the nearest adapter in the url chain between obj and interface.
 
-    This might be an adapter for the object given as an argument.
-
-    :return None: if there is no object that has such an adapter in the url
-        chain.
+    The function looks upward though the canonical url chain and returns
+    the first adapter it finds.
 
     This will often be used with an interface of IFacetMenu, when looking up
     the facet menu for a particular context.
 
+    :return None: if there is no object that has such an adapter in the url
+        chain.
     """
     context, adapter = nearest_context_with_adapter(obj, interface)
     # Will be None, None if not found.
