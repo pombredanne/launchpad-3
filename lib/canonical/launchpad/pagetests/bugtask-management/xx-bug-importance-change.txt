@@ -35,9 +35,11 @@ product or distro, can edit Importance.
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> logout()
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> def user_sees_importance_widget(user, url):
     ...     browser = setupBrowser(
-    ...         "Basic %s:test" % user.preferredemail.email)
+    ...         "Basic %s:test"
+    ...         % removeSecurityProxy(user.preferredemail).email)
     ...     browser.open(url)
     ...     try:
     ...         browser.getControl("Importance")

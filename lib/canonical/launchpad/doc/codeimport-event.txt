@@ -467,3 +467,64 @@ event should be created to record that the job has been finished.
     >>> finish_event.items()
     []
 
+
+=== KILL ===
+
+When a job is killed from outside of the worker, a KILL event records
+that this was done.  The parameters are self-explanatory: code_import
+and machine
+
+    >>> fail_if_argument_is_none(
+    ...     event_set.newKill, None, machine)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newKill, svn_import, None)
+
+    >>> kill_event = event_set.newKill(svn_import, machine)
+    >>> verify_event(kill_event)
+    KILL
+
+    >>> print kill_event.code_import == svn_import
+    True
+    >>> print kill_event.person
+    None
+    >>> print kill_event.machine.hostname
+    bazaar-importer
+    >>> kill_event.items()
+    []
+
+
+=== RECLAIM ===
+
+The 'code import watchdog' is the name of the component that checks
+the supposedly-running code import jobs and deletes those which have
+not updated their heartbeat fields recently enough.  When it does
+this, a RECLAIM event records the details of what happened.  The
+'newReclaim' method takes as parameters the code import, the machine
+the job was running on and the id of the removed code import job row
+(to make finding the log files on the import slave easier).
+
+    >>> job_id = 42 # Arbitrary choice.
+
+    >>> fail_if_argument_is_none(
+    ...     event_set.newReclaim, None, machine, job_id)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newReclaim, svn_import, None, job_id)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newReclaim, svn_import, machine, None)
+
+    >>> reclaim_event = event_set.newReclaim(svn_import, machine, job_id)
+    >>> verify_event(reclaim_event)
+    RECLAIM
+
+    >>> print reclaim_event.code_import == svn_import
+    True
+    >>> print reclaim_event.person
+    None
+    >>> print reclaim_event.machine.hostname
+    bazaar-importer
+
+The job id is the only datum stored in the key-value data associated
+with a RECLAIM event.
+
+    >>> print_items(reclaim_event)
+    RECLAIMED_JOB_ID u'42'

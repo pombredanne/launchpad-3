@@ -22,6 +22,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 
+from canonical.launchpad.components.launchpadcontainer import (
+    LaunchpadContainerMixin)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
@@ -88,7 +90,8 @@ from canonical.launchpad.validators.name import sanitize_name, valid_name
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
-                   QuestionTargetMixin, StructuralSubscriptionTargetMixin):
+                   QuestionTargetMixin, StructuralSubscriptionTargetMixin,
+                   LaunchpadContainerMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
@@ -1106,6 +1109,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             'universe' : ArchivePurpose.PRIMARY,
             'multiverse' : ArchivePurpose.PRIMARY,
             'partner' : ArchivePurpose.PARTNER,
+            'contrib': ArchivePurpose.PRIMARY,
+            'non-free': ArchivePurpose.PRIMARY,
             }
 
         try:
@@ -1234,6 +1239,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
+
+    def userCanEdit(self, user):
+        """See `IDistribution`."""
+        if user is None:
+            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.owner) or user.inTeam(admins)
 
 
 class DistributionSet:

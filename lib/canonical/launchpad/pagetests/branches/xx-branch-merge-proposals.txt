@@ -66,13 +66,17 @@ The user is asked whether the code is ready for review or not.
 Here we create the proposal as work in progress.
 
     >>> nopriv_browser.getControl('Work in progress').click()
+
+There is a cancel link shown with the buttons.
+
+    >>> cancel = nopriv_browser.getLink('Cancel')
     >>> nopriv_browser.getControl('Register').click()
 
 Registering the merge proposal takes the user back to the
 main page for the source branch.
 
     >>> print nopriv_browser.url
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
 
 An email notification is emitted when the merge proposal is created.
 
@@ -100,6 +104,8 @@ merge proposal is considered a "landing target" with an optional
     ...         for mp in tag.findAll(attrs={'class': 'mergeproposal'}):
     ...             print extract_text(mp)
 
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
     This is the whiteboard
@@ -120,8 +126,11 @@ shown.
     ...         '~name12/gnome-terminal/main')
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'This is the whiteboard')
+    >>> cancel = sample_browser.getLink('Cancel')
     >>> sample_browser.getControl('Register').click()
 
+    >>> sample_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> printMergeProposals(sample_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
     This is the whiteboard
@@ -169,7 +178,10 @@ and merging, so we have to settle for the sample data.
     ...         '~name12/firefox/main')
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'This is the whiteboard')
+    >>> cancel = sample_browser.getLink('Cancel')
     >>> sample_browser.getControl('Register').click()
+    >>> sample_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9')
     >>> printMergeProposals(sample_browser, 'landing-targets')
     ~name12/firefox/main - view proposal details
       This is the whiteboard
@@ -297,6 +309,7 @@ When a merge proposal is deleted, the user is taken back to the main page
 for the source_branch.
 
     >>> sample_browser.getLink('Delete proposal to merge').click()
+    >>> cancel = sample_browser.getLink('Cancel')
     >>> sample_browser.getControl('Delete proposal').click()
     >>> print sample_browser.url
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9
@@ -319,7 +332,10 @@ the target branch.
     ...     '~sabdfl/firefox/release-0.8')
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'This is the whiteboard')
+    >>> cancel = sample_browser.getLink('Cancel')
     >>> sample_browser.getControl('Register').click()
+    >>> sample_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9')
     >>> printMergeProposals(sample_browser, 'landing-targets')
     ~name12/firefox/main - view proposal details
     This is the whiteboard
@@ -711,13 +727,13 @@ queue for merging branches that have been approved.
     >>> nopriv_browser.getControl(
     ...     name='field.target_branch.target_branch').value = (
     ...         '~name12/firefox/main')
+    >>> cancel = nopriv_browser.getLink('Cancel')
     >>> nopriv_browser.getControl('Register').click()
 
 Consume notification.
 
     >>> [_unused] = pop_notifications()
 
-    >>> nopriv_browser.getLink('view proposal details').click()
     >>> print_action_links(nopriv_browser.contents)
     Edit ...
     ...
@@ -1094,3 +1110,34 @@ they'll get a 404.
     Traceback (most recent call last):
     ...
     NotFound: ...
+
+
+== Approving proposals for remote branches ==
+
+Launchpad does not have any revision data for remote branches, so we
+cannot validate that the user has entered a valid revision number for
+the source branch when approving.  What we do instead is record the
+stringified revision number.
+
+    >>> # Create an interaction needed to create branches.
+    >>> login('test@canonical.com')
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> from canonical.launchpad.interfaces.branch import BranchType
+    >>> eric = factory.makePerson(email='eric@example.com', password='test')
+    >>> source_branch = factory.makeBranch(
+    ...     branch_type=BranchType.REMOTE, owner=eric)
+    >>> # In order to approve easily, make the owner of the branches the same.
+    >>> target_branch = factory.makeBranch(
+    ...     product=source_branch.product, owner=eric)
+    >>> proposal = source_branch.addLandingTarget(eric, target_branch)
+    >>> proposal_url = canonical_url(proposal)
+    >>> logout()
+
+Now use a browser with eric's credentials.
+
+    >>> browser = setupBrowser(auth='Basic eric@example.com:test')
+    >>> browser.open(proposal_url)
+    >>> browser.getLink('Review proposal').click()
+    >>> browser.getControl('Reviewed Revision').value = '1234'
+    >>> browser.getControl('Approve').click()

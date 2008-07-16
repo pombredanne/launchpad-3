@@ -135,7 +135,7 @@ def convert_python_status(status, resolution):
 
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
-    login('test@canonical.com')
+    login('foo.bar@canonical.com')
     bug_watch.remotestatus = None
     bug_watch.last_error_type = error_type
     bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
@@ -431,8 +431,13 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     # Map namespaces onto method names.
     methods = {
-        'Bug': ['add_comment', 'comments', 'get_bugs'],
-        'Launchpad': ['login', 'time'],
+        'Launchpad': [
+            'add_comment',
+            'comments',
+            'get_bugs',
+            'login',
+            'time',
+            ],
         'Test': ['login_required']
         }
 
@@ -451,7 +456,8 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get('example.com', {}).get('', {}).get('Bugzilla_logincookie')
+        return cookies.get(
+            'example.com', {}).get('', {}).get('Bugzilla_logincookie')
 
     @property
     def has_valid_auth_cookie(self):
@@ -604,7 +610,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
         bug_ids = arguments['bug_ids']
         comment_ids = arguments.get('ids')
-        fields_to_return = arguments.get('include')
+        fields_to_return = arguments.get('include_fields')
         comments_by_bug_id = {}
 
         def copy_comment(comment):
@@ -620,7 +626,12 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
         for bug_id in bug_ids:
             comments_for_bug = self.bug_comments[bug_id].values()
-            comments_by_bug_id[bug_id] = [
+
+            # We stringify bug_id when using it as a dict key because
+            # all XML-RPC dict keys are strings (a key for an XML-RPC
+            # dict can have a value but no type; hence Python defaults
+            # to treating them as strings).
+            comments_by_bug_id[str(bug_id)] = [
                 copy_comment(comment) for comment in comments_for_bug
                 if comment_ids is None or comment['id'] in comment_ids]
 

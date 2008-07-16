@@ -12,7 +12,7 @@ from storm.store import Store
 from zope.component import getUtility
 
 from canonical.codehosting.codeimport.publish import ensure_series_branch
-from canonical.codehosting.codeimport.tests.test_worker_monitor import (
+from canonical.codehosting.codeimport.tests.test_workermonitor import (
     nuke_codeimport_sample_data)
 from canonical.database.sqlbase import flush_database_updates
 from canonical.database.constants import DEFAULT

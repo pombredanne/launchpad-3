@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -6,13 +6,14 @@ import cgi
 
 from canonical.launchpad.interfaces import ITranslator
 from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadFormView, action, canonical_url)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 
 __all__ = [
     'TranslatorEditView',
-    'TranslatorRemoveView'
+    'TranslatorRemoveView',
     ]
+
 
 class TranslatorEditView(LaunchpadEditFormView):
     """View class to edit ITranslationGroup objects"""

@@ -299,9 +299,17 @@ class RequestPeopleMergeMultipleEmailsView:
                 emailaddress = emailaddrset.getByEmail(email)
                 assert emailaddress in self.dupeemails
                 token = logintokenset.new(
-                    user, login, emailaddress.email,
-                    LoginTokenType.ACCOUNTMERGE)
+                    user, login, email, LoginTokenType.ACCOUNTMERGE)
                 token.sendMergeRequestEmail()
-                self.notified_addresses.append(emailaddress.email)
+                self.notified_addresses.append(email)
 
-
+    # XXX: salgado, 2008-07-02: We need to somehow disclose the dupe person's
+    # email addresses so that the logged in user knows where to look for the
+    # message with instructions to finish the merge. Since people can choose
+    # to have their email addresses hidden, we need to remove the security
+    # proxy here to ensure they can be shown in this page.
+    @property
+    def naked_dupeemails(self):
+        """Non-security-proxied email addresses of the dupe person."""
+        from zope.security.proxy import removeSecurityProxy
+        return [removeSecurityProxy(email) for email in self.dupeemails]

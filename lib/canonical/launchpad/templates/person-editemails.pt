@@ -6,17 +6,14 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Change e-mail settings</h1>
-    </metal:heading>
-
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
     <metal:extra-info fill-slot="extra_info">
+      <h1>Change your e-mail settings</h1>
       <h2>Your e-mail addresses</h2>
       <tal:block condition="context/preferredemail">
         <p>Your preferred contact address for all Launchpad e-mail is:</p>

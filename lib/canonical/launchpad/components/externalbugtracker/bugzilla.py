@@ -69,7 +69,12 @@ class Bugzilla(ExternalBugTracker):
             else:
                 raise
         except xmlrpclib.ProtocolError, error:
-            if error.errcode == 404:
+            # We catch 404s, which occur when xmlrpc.cgi doesn't exist
+            # on the remote server, and 500s, which sometimes occur when
+            # the Launchpad Plugin isn't installed. Everything else we
+            # can consider to be a problem, so we let it travel up the
+            # stack for the error log.
+            if error.errcode in (404, 500):
                 return self
             else:
                 raise
@@ -409,7 +414,7 @@ class BugzillaLPPlugin(Bugzilla):
             'ids': bug_ids,
             'permissive': True,
             }
-        response_dict = self.xmlrpc_proxy.Bug.get_bugs(request_args)
+        response_dict = self.xmlrpc_proxy.Launchpad.get_bugs(request_args)
         remote_bugs = response_dict['bugs']
 
         # Now copy them into the local bugs dict.
@@ -480,24 +485,40 @@ class BugzillaLPPlugin(Bugzilla):
         # 'comments' field of the bug.
         request_params = {
             'bug_ids': [actual_bug_id],
-            'include': ['id'],
+            'include_fields': ['id'],
             }
-        bug_comments_dict = self.xmlrpc_proxy.Bug.comments(request_params)
+        bug_comments_dict = self.xmlrpc_proxy.Launchpad.comments(
+            request_params)
 
-        bug_comments = bug_comments_dict['bugs'][actual_bug_id]
-        return [comment['id'] for comment in bug_comments]
+        # We need to convert actual_bug_id to a string due to a quirk
+        # with XML-RPC (see bug 248662).
+        bug_comments = bug_comments_dict['bugs'][str(actual_bug_id)]
+
+        # We also need to convert each comment ID to a string, since
+        # that's what BugWatchUpdater.importBugComments() expects (see
+        # bug 248938).
+        return [str(comment['id']) for comment in bug_comments]
 
     def fetchComments(self, bug_watch, comment_ids):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # We need to cast comment_ids to integers, since
+        # BugWatchUpdater.importBugComments() will pass us a list of
+        # strings (see bug 248938).
+        comment_ids = [int(comment_id) for comment_id in comment_ids]
 
         # Fetch the comments we want.
         request_params = {
             'bug_ids': [actual_bug_id],
             'ids': comment_ids,
             }
-        bug_comments_dict = self.xmlrpc_proxy.Bug.comments(request_params)
-        comment_list = bug_comments_dict['bugs'][actual_bug_id]
+        bug_comments_dict = self.xmlrpc_proxy.Launchpad.comments(
+            request_params)
+
+        # We need to convert actual_bug_id to a string here due to a
+        # quirk with XML-RPC (see bug 248662).
+        comment_list = bug_comments_dict['bugs'][str(actual_bug_id)]
 
         # Transfer the comment list into a dict.
         bug_comments = dict(
@@ -508,6 +529,11 @@ class BugzillaLPPlugin(Bugzilla):
     def getPosterForComment(self, bug_watch, comment_id):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # We need to cast comment_id to integers, since
+        # BugWatchUpdater.importBugComments() will pass us a string (see
+        # bug 248938).
+        comment_id = int(comment_id)
 
         comment = self.bugs[actual_bug_id]['comments'][comment_id]
         display_name, email = parseaddr(comment['author'])
@@ -522,6 +548,11 @@ class BugzillaLPPlugin(Bugzilla):
     def getMessageForComment(self, bug_watch, comment_id, poster):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # We need to cast comment_id to integers, since
+        # BugWatchUpdater.importBugComments() will pass us a string (see
+        # bug 248938).
+        comment_id = int(comment_id)
         comment = self.bugs[actual_bug_id]['comments'][comment_id]
 
         # Turn the time in the comment, which is an XML-RPC datetime
@@ -550,6 +581,8 @@ class BugzillaLPPlugin(Bugzilla):
             'id': actual_bug_id,
             'comment': comment_body,
             }
-        return_dict = self.xmlrpc_proxy.Bug.add_comment(request_params)
+        return_dict = self.xmlrpc_proxy.Launchpad.add_comment(request_params)
 
-        return return_dict['comment_id']
+        # We cast the return value to string, since that's what
+        # BugWatchUpdater will expect (see bug 248938).
+        return str(return_dict['comment_id'])

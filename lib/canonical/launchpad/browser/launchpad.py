@@ -10,6 +10,7 @@ __all__ = [
     'ContribIcingFolder',
     'DefaultShortLink',
     'EdubuntuIcingFolder',
+    'Hierarchy',
     'IcingFolder',
     'KubuntuIcingFolder',
     'LaunchpadRootNavigation',
@@ -96,7 +97,6 @@ from canonical.launchpad.webapp.interfaces import (
     POSTToNonCanonicalURL, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -196,20 +196,17 @@ class NavigationMenuTabs(LaunchpadView):
     """
 
     def initialize(self):
-        requested_view = get_current_view(self.request)
-        facet = get_facet(requested_view)
-        menu = queryAdapter(self.context, INavigationMenu, name=facet)
-        if menu is None:
-            # There are no menu entries.
-            self.links = []
-            return
-        self.title = menu.title
-        # We are only interested on enabled links in non development mode.
-        menu.request = self.request
+        menuapi = MenuAPI(self.context)
         self.links = sorted([
-            link for link in menu.iterlinks() if (link.enabled or
-                                                  config.devmode)],
+            link for link in menuapi.navigation.values()
+            if (link.enabled or config.devmode)],
             key=operator.attrgetter('sort_key'))
+        self.title = None
+        if len(self.links) > 0:
+            facet = menuapi.selectedfacetname()
+            menu = queryAdapter(self.context, INavigationMenu, name=facet)
+            if menu is not None:
+                self.title = menu.title
 
     def render(self):
         if not self.links:
@@ -235,6 +232,75 @@ class LinkView(LaunchpadView):
             return self.template().strip()
         else:
             return ''
+
+
+class Hierarchy(LaunchpadView):
+    """The hierarchy part of the location bar on each page."""
+
+    def render(self):
+        """Render the hierarchy HTML.
+
+        The hierarchy elements are taken from the request.breadcrumbs list.
+        For each element, element.text is cgi escaped.
+        """
+        elements = list(self.request.breadcrumbs)
+
+        if len(elements) > 0:
+            # We're not on the home page.
+            prefix = '<div id="lp-hierarchy">'
+            suffix = ('</div><span class="last-rounded">&nbsp;</span>'
+                     '<div class="apps-separator"><!-- --></div>')
+
+            if len(elements) == 1:
+                first_class = 'before-last'
+            else:
+                first_class = 'first'
+
+            steps = []
+            steps.append(
+                '<span class="%s item">'
+                '<a href="/" class="breadcrumb container"'
+                ' id="homebreadcrumb">'
+                '<img alt="Launchpad"'
+                ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
+                '</a>&nbsp;</span>' % first_class)
+
+            last_element = elements[-1]
+            if len(elements) > 1:
+                before_last_element = elements[-2]
+            else:
+                before_last_element = None
+            for element in elements:
+                cssclass = 'item'
+                if element.has_menu:
+                    menudata = ' lpm:mid="%s/+menudata"' % element.url
+                    cssclass = ' '.join([cssclass, 'container'])
+                else:
+                    menudata = ''
+                if element is before_last_element:
+                    cssclass = ' '.join(['before-last', cssclass])
+                elif element is last_element:
+                    cssclass = ' '.join(['last', cssclass])
+                else:
+                    # No extra CSS class.
+                    pass
+                steps.append('<span class="%s"%s>'
+                         '<a href="%s">%s</a>'
+                         '</span>'
+                         % (cssclass, menudata, element.url,
+                            cgi.escape(element.text)))
+            hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
+        else:
+            # We're on the home page.
+            hierarchy = ('<div id="lp-hierarchy" class="home">'
+                        '<a href="/" class="breadcrumb">'
+                        '<img alt="Launchpad" '
+                        ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
+                        '</a></div>'
+                        '<span class="last-rounded">&nbsp;</span>'
+                        '<div class="apps-separator"><!-- --></div>')
+
+        return hierarchy
 
 
 class Breadcrumbs(LaunchpadView):
@@ -900,11 +966,11 @@ class Button:
             return self.renderInactive()
 
 
-class ProductsButton(Button):
+class PeopleButton(Button):
 
     def makeReplacementDict(self):
         return dict(
-            url='%sprojects/' % allvhosts.configs['mainsite'].rooturl,
+            url='%speople/' % allvhosts.configs['mainsite'].rooturl,
             buttonname=self.name,
             text=self.text)
 
@@ -919,8 +985,8 @@ class ApplicationButtons(LaunchpadView):
         self.name = None
 
     buttons = [
-        ProductsButton(register="Register your project to encourage "
-            "community collaboration."),
+        PeopleButton(people="Join thousands of people and teams collaborating"
+            " in software development."),
         Button(code="Publish your code for people to merge and branch from."),
         Button(bugs="Share bug reports and fixes."),
         Button(blueprints="Track blueprints through approval and "

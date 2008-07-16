@@ -16,11 +16,9 @@ import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
     LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
-from bzrlib.repofmt.weaverepo import RepositoryFormat7
-from bzrlib.repository import format_registry
 
 from bzrlib.urlutils import local_path_from_url
-from bzrlib.tests import default_transport, TestCaseWithTransport
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
 from twisted.python.util import mergeFunctionMetadata
@@ -630,22 +628,6 @@ def make_server_tests(base_suite, servers):
 
 
 def make_smoke_tests(base_suite):
-    """Make smoke tests that run against every supported repository type."""
-    # XXX: JonathanLange 2008-08-11: This is a temporary kludge to let us land
-    # this branch before we upgrade Bazaar. This should be removed once
-    # rocketfuel has bzr 1.6b2 or better.
-    from bzrlib.tests import repository_implementations
-    adapter = getattr(
-        repository_implementations, 'RepositoryTestProviderAdapter', None)
-    if adapter is not None:
-        return make_smoke_tests_old_bzr(base_suite)
-    else:
-        return make_smoke_tests_new_bzr(base_suite)
-
-
-def make_smoke_tests_new_bzr(base_suite):
-    # XXX: JonathanLange 2008-08-11: Once rocketfuel has bzr 1.6b2 or better,
-    # this should be renamed to 'make_smoke_tests'.
     from bzrlib import tests
     from bzrlib.tests import repository_implementations
     excluded_scenarios = [
@@ -664,28 +646,13 @@ def make_smoke_tests_new_bzr(base_suite):
     scenarios = repository_implementations.all_repository_format_scenarios()
     scenarios = [
         scenario for scenario in scenarios
-        if scenario[0] not in excluded_scenarios]
+        if scenario[0] not in excluded_scenarios
+        and not scenario[0].startswith('RemoteRepositoryFormat')]
     adapter = tests.TestScenarioApplier()
     adapter.scenarios = scenarios
     new_suite = unittest.TestSuite()
     tests.adapt_tests(base_suite, adapter, new_suite)
     return new_suite
-
-
-def make_smoke_tests_old_bzr(base_suite):
-    # XXX: JonathanLange 2008-08-11: Delete this once rocketfuel has bzr 1.6b2
-    # or better.
-    from bzrlib.tests.repository_implementations import (
-        RepositoryTestProviderAdapter)
-    # We specifically exclude RepositoryFormat7, which is not supported.
-    # See bug 173807 for details.
-    all_formats = [
-        format_registry.get(key) for key in format_registry.keys()
-        if not isinstance(format_registry.get(key), RepositoryFormat7)]
-    adapter = RepositoryTestProviderAdapter(
-        default_transport, None,
-        [(format, format._matchingbzrdir) for format in all_formats])
-    return adapt_suite(adapter, base_suite)
 
 
 def test_suite():
