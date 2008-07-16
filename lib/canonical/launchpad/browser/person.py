@@ -978,7 +978,7 @@ class CommonMenuLinks:
         return Link(target, text, summary, icon='packages')
 
     def related_projects(self):
-        target = '+projects'
+        target = '+packages#projects'
         text = 'List related projects'
         summary = 'Projects %s is involved with' % self.context.browsername
         return Link(target, text, summary, icon='packages')
