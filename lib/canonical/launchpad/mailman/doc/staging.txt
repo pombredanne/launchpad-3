@@ -28,14 +28,14 @@ informing them of their new list.  We can ignore these.
     >>> transaction.commit()
     >>> logout()
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> mailinglists_helper.apply_for_list(browser, 'itest-one')
-    >>> mailinglists_helper.apply_for_list(browser, 'itest-two')
 
     >>> from canonical.launchpad.mailman.testing import helpers
+    >>> helpers.apply_for_list(browser, 'itest-one')
+    >>> helpers.apply_for_list(browser, 'itest-two')
+
     >>> serial_watcher = LogWatcher('serial')
     >>> list_one = helpers.review_list('itest-one')
     >>> list_two = helpers.review_list('itest-two')
-    >>> smtpd.reset()
 
     >>> login('foo.bar@canonical.com')
     >>> helpers.subscribe('Anne', 'itest-one')
@@ -45,6 +45,7 @@ informing them of their new list.  We can ignore these.
     >>> transaction.commit()
     >>> logout()
     >>> serial_watcher.wait()
+    >>> smtpd.reset()
 
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
