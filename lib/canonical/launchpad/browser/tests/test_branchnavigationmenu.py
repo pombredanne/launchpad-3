@@ -6,8 +6,6 @@ __metaclass__ = type
 
 import unittest
 
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.launchpad.browser.branch import BranchNavigationMenu
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
