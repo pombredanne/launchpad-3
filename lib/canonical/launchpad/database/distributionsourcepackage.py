@@ -158,7 +158,7 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def currentrelease(self):
         """See `IDistributionSourcePackage`."""
-        releases = self.distribution.getCurrentReleases(
+        releases = self.distribution.getCurrentSourceReleases(
             [self.sourcepackagename])
         return releases.get(self)
 

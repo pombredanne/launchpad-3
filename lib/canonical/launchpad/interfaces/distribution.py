@@ -235,7 +235,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         Receives a sourcepackagerelease.
         """
 
-    def getCurrentReleases(source_package_names):
+    def getCurrentSourceReleases(source_package_names):
         """Get the current release of a list of source packages.
 
         :param source_package_names: a list of `ISourcePackageName`

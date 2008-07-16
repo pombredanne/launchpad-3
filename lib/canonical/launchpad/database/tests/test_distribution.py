@@ -24,8 +24,8 @@ from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import LaunchpadFunctionalLayer
 
 
-class TestDistributionCurrentReleases(unittest.TestCase):
-    """Test for Distribution.getCurrentReleases."""
+class TestDistributionCurrentSourceReleases(unittest.TestCase):
+    """Test for Distribution.getCurrentSourceReleases."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -61,7 +61,7 @@ class TestDistributionCurrentReleases(unittest.TestCase):
         if package_name is None:
             package_name = self.published_package.name
         package = self.distribution.getSourcePackage(package_name)
-        releases = self.distribution.getCurrentReleases(
+        releases = self.distribution.getCurrentSourceReleases(
             [package.sourcepackagename])
         self.assertEqual(releases[package].version, version)
 
@@ -71,7 +71,7 @@ class TestDistributionCurrentReleases(unittest.TestCase):
 
     def test_return_value(self):
         self.publish('0.9')
-        releases = self.distribution.getCurrentReleases(
+        releases = self.distribution.getCurrentSourceReleases(
             [self.published_package.sourcepackagename])
         self.assertTrue(self.published_package in releases)
         self.assertTrue(IDistributionSourcePackageRelease.providedBy(
@@ -130,7 +130,7 @@ class TestDistributionCurrentReleases(unittest.TestCase):
         self.publish('1.0', name='bar')
         foo_package = self.distribution.getSourcePackage('foo')
         bar_package = self.distribution.getSourcePackage('bar')
-        releases = self.distribution.getCurrentReleases(
+        releases = self.distribution.getCurrentSourceReleases(
             [foo_package.sourcepackagename, bar_package.sourcepackagename])
         self.assertEqual(releases[foo_package].version, '0.9')
         self.assertEqual(releases[bar_package].version, '1.0')
@@ -138,5 +138,5 @@ class TestDistributionCurrentReleases(unittest.TestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestDistributionCurrentReleases))
+    suite.addTest(unittest.makeSuite(TestDistributionCurrentSourceReleases))
     return suite

@@ -494,7 +494,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return DistributionSourcePackageRelease(self, sourcepackagerelease)
 
-    def getCurrentReleases(self, source_package_names):
+    def getCurrentSourceReleases(self, source_package_names):
         """See `IDistribution`."""
         source_package_ids = [
             package_name.id for package_name in source_package_names]
