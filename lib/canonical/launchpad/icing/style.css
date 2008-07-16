@@ -982,7 +982,7 @@ partly (but not visibly) overlaps the rounded border of the main area. */
 /* Display the pillar image above mainarea, so the image does not appear
    cropped in wide windows on browsers that do not support transparent
    background. */
-#structuralobjectheading img { 
+#structuralobjectheading img {
   z-index: 2;
 }
 
@@ -1265,6 +1265,8 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
 }
 
 .product.series, .project {margin-bottom: 1em;}
+#packages h1, #projects h1 {margin-top: 1.2em;}
+
 
 /* --- Code --- */
 
