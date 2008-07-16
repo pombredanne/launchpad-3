@@ -48,14 +48,7 @@ A person's projects are listed on the 'Related Software' page, accessible
 through the main navigation menu.
 
     >>> anon_browser.open('http://launchpad.dev/~sabdfl')
-    >>> anon_browser.getLink('Related Software')
-    <Link
-        text='Related Software'
-        url='http://launchpad.dev/~sabdfl/+related-software#projects'>
-
-    # Visit the page directly to prevent the testbrowser from mucking with
-    # the URL fragment.
-    >>> anon_browser.open('http://launchpad.dev/~sabdfl/+related-software')
+    >>> anon_browser.getLink('Related Software').click()
     >>> print anon_browser.url
     http://launchpad.dev/~sabdfl/+related-software
     >>> print anon_browser.title
