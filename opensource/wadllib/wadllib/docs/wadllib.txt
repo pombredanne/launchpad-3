@@ -96,10 +96,12 @@ let's try binding it to that JSON representation. We use test JSON
 data from a file to simulate the result of a GET request to the
 service root.
 
-   >>> def bind_to_testdata(resource, filename):
-   ...     data = pkg_resources.resource_string(
+   >>> def get_testdata(filename):
+   ...     return pkg_resources.resource_string(
    ...         'wadllib.docs.testdata', filename + '.json')
-   ...     return resource.bind(data, 'application/json')
+
+   >>> def bind_to_testdata(resource, filename):
+   ...     return resource.bind(get_testdata(filename), 'application/json')
 
 The return value is a new Resource object that's "bound" to that JSON
 test data.
@@ -232,6 +234,28 @@ by following links.
    >>> bound_limi = bind_to_testdata(limi_person, 'person-limi')
    >>> languages_link = bound_limi.get_parameter("languages_collection_link")
    >>> languages_link.get_value()
+   u'http://api.launchpad.dev/beta/~limi/languages'
+
+You can bind a Resource to a representation when you create it.
+
+   >>> limi_data = get_testdata('person-limi')
+   >>> bound_limi = Resource(wadl, "http://api.launchpad.dev/beta/~limi",
+   ...     "http://api.launchpad.dev/beta/#person", limi_data,
+   ...     "application/json")
+   >>> bound_limi.get_parameter("languages_collection_link").get_value()
+   u'http://api.launchpad.dev/beta/~limi/languages'
+
+By default the representation is treated as a string and processed
+according to the media type you pass into the Resource constructor. If
+you've already processed the representation, pass in False for the
+'representation_needs_processing' argument.
+
+   >>> import simplejson
+   >>> processed_limi_data = simplejson.loads(limi_data)
+   >>> bound_limi = Resource(wadl, "http://api.launchpad.dev/beta/~limi",
+   ...     "http://api.launchpad.dev/beta/#person", processed_limi_data,
+   ...     "application/json", False)
+   >>> bound_limi.get_parameter("languages_collection_link").get_value()
    u'http://api.launchpad.dev/beta/~limi/languages'
 
 
