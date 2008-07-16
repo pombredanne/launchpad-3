@@ -30,7 +30,7 @@ import simplejson
 from urlparse import urlparse
 
 from launchpadlib._utils.uri import URI
-from launchpadlib.errors import HTTPError, UnexpectedResponseError
+from launchpadlib.errors import HTTPError
 from wadllib.application import Resource as WadlResource
 
 
