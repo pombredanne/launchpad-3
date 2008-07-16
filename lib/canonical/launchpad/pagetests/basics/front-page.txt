@@ -8,16 +8,16 @@ The front page includes buttons for the main applications
 
   >>> print browser.contents
   <!DOCTYPE...
-  ...Register your project...
+  ...Join thousands of people...
   ...Publish your code...
-  ...
+  ...Is your project registered yet?...
 
-  >>> register_link = browser.getLink(url='/projects')
-  >>> register_link.url
-  'http://launchpad.dev/projects/'
+  >>> people_link = browser.getLink(url='/people')
+  >>> people_link.url
+  'http://launchpad.dev/people/'
 
-  >>> register_link.text
-  'register[IMG]'
+  >>> people_link.text
+  'people[IMG]'
 
   >>> code_link = browser.getLink(url='code')
   >>> code_link.url

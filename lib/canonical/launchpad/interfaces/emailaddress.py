@@ -79,7 +79,7 @@ class EmailAddressStatus(DBEnumeratedType):
 
 class IEmailAddress(IHasOwner):
     """The object that stores the `IPerson`'s emails."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(plural_name='email_addresses')
 
     id = Int(title=_('ID'), required=True, readonly=True)
     email = exported(

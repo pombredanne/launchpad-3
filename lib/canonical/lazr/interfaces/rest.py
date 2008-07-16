@@ -20,6 +20,8 @@ __all__ = [
     'IResourcePOSTOperation',
     'IScopedCollection',
     'IServiceRootResource',
+    'LAZR_WEBSERVICE_NAME',
+    'LAZR_WEBSERVICE_NS',
     'WebServiceLayer',
     ]
 
@@ -29,6 +31,14 @@ from zope.interface import Attribute, Interface
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+
+
+# The namespace prefix for LAZR web service-related tags.
+LAZR_WEBSERVICE_NS = 'lazr.webservice'
+
+# The namespace for LAZR web service tags having to do with the names
+# of things.
+LAZR_WEBSERVICE_NAME = '%s.name' % LAZR_WEBSERVICE_NS
 
 
 class IHTTPResource(Interface):
