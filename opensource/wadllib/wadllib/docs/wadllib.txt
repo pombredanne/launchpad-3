@@ -53,23 +53,21 @@ root URL.
 The WADL description of a resource knows which representations are
 available for that resource. In this case, the server root resource
 has a a JSON representation, and it defines parameters like
-'PersonSetCollectionAdapter_collection_link', a link to a list of
-people in Launchpad. We should be able to use the get_param() method
-to get the WADL definition of the
-'PersonSetCollectionAdapter_collection_link' parameter and find out
-more about it--for instance, is it a link to another resource?
+'people_collection_link', a link to a list of people in Launchpad. We
+should be able to use the get_parameter() method to get the WADL
+definition of the 'people_collection_link' parameter and find out more
+about it--for instance, is it a link to another resource?
 
-   >>> link_name = 'PersonSetCollectionAdapter_collection_link'
-   >>> link_param = service_root.get_param(link_name)
+   >>> link_name = 'people_collection_link'
+   >>> link_parameter = service_root.get_parameter(link_name)
    Traceback (most recent call last):
    ...
    NoBoundRepresentationError: Resource is not bound to any representation.
 
 Oops. In the absense of real data, there's no way to know whether
 we're talking about a JSON representation or some other kind of
-representation. There can be no
-'PersonSetCollectionAdapter_collection_link' parameter until there's
-real data to back it up.
+representation. There can be no 'people_collection_link' parameter
+until there's real data to back it up.
 
 The browser can use the description of the GET method to make an
 actual GET request, and bind the resulting representation to the WADL
@@ -107,14 +105,13 @@ test data.
    >>> bound_service_root = bind_to_testdata(service_root, 'root')
 
 Now the bound resource object has a JSON representation, and now
-'PersonSetCollectionAdapter_collection_link' makes sense. We can
-follow the 'PersonSetCollectionAdapter_collection_link' to a
-new Resource object.
+'people_collection_link' makes sense. We can follow the
+'people_collection_link' to a new Resource object.
 
-   >>> link_param = bound_service_root.get_param(link_name)
-   >>> link_param.get_value()
+   >>> link_parameter = bound_service_root.get_parameter(link_name)
+   >>> link_parameter.get_value()
    u'http://api.launchpad.dev/beta/people'
-   >>> personset_resource = link_param.linked_resource
+   >>> personset_resource = link_parameter.linked_resource
    >>> personset_resource.__class__
    <class 'wadllib.application.Resource'>
    >>> personset_resource.url
@@ -123,7 +120,7 @@ new Resource object.
 This new resource is a collection of people.
 
    >>> personset_resource.id
-   'PersonSetCollectionAdapter'
+   'people'
 
 The "collection of people" resource supports a standard GET request as
 well as a special GET and an overloaded POST. The get_method() method
@@ -133,20 +130,20 @@ request.
 
    >>> get_method = personset_resource.get_method('get')
    >>> get_method.id
-   'PersonSetCollectionAdapter-get'
+   'people-get'
 
 The method name passed into get_method() is treated case-insensitively.
 
    >>> personset_resource.get_method('GET').id
-   'PersonSetCollectionAdapter-get'
+   'people-get'
 
 To invoke the special GET request, the client sets the 'ws.op' query
 parameter to the fixed string 'find'.
 
    >>> find_method = personset_resource.get_method(
-   ...     'get', fixed_params={'ws.op' : 'findPerson'})
+   ...     'get', query_params={'ws.op' : 'findPerson'})
    >>> find_method.id
-   'PersonSetCollectionAdapter-findPerson'
+   'people-findPerson'
 
 Given an end-user's values for the non-fixed parameters, it's possible
 to get the URL that should be used to invoke the method.
@@ -163,23 +160,23 @@ parameter value, or omits a required parameter.
    >>> find_method.build_request_url()
    Traceback (most recent call last):
    ...
-   KeyError: "No value for required parameter 'text'"
+   ValueError: No value for required parameter 'text'
 
    >>> find_method.build_request_url(
    ...     {'ws.op' : 'findAPerson', 'text' : 'foo'})
    ... # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
    Traceback (most recent call last):
    ...
-   KeyError: "Value 'findAPerson' for parameter 'ws.op' conflicts
-   with fixed value 'findPerson'"
+   ValueError: Value 'findAPerson' for parameter 'ws.op' conflicts
+   with fixed value 'findPerson'
 
 To invoke the overloaded POST request, the client sets the 'ws.op'
 query variable to the fixed string 'newTeam':
 
    >>> create_team_method = personset_resource.get_method(
-   ...     'post', fixed_params={'ws.op' : 'newTeam'})
+   ...     'post', representation_params={'ws.op' : 'newTeam'})
    >>> create_team_method.id
-   'PersonSetCollectionAdapter-newTeam'
+   'people-newTeam'
 
 findMethod() returns None when there's no WADL method matching the
 name or the fixed parameters.
@@ -188,7 +185,7 @@ name or the fixed parameters.
    None
 
    >>> print personset_resource.get_method(
-   ...     'post', fixed_params={'ws_op' : 'nosuchparam'})
+   ...     'post', query_params={'ws_op' : 'nosuchparam'})
    None
 
 Let's say the browser makes a GET request to the person set resource
@@ -196,25 +193,25 @@ and gets back a representation. We can bind that representation to our
 description of the person set resource.
 
    >>> bound_personset = bind_to_testdata(personset_resource, 'personset')
-   >>> bound_personset.get_param("start").get_value()
+   >>> bound_personset.get_parameter("start").get_value()
    0
-   >>> bound_personset.get_param("total_size").get_value()
+   >>> bound_personset.get_parameter("total_size").get_value()
    63
 
 We can keep following links indefinitely, so long as we bind to a
 representation to each resource as we get it, and use the
 representation to find the next link.
 
-   >>> next_page_link = bound_personset.get_param("next_collection_link")
+   >>> next_page_link = bound_personset.get_parameter("next_collection_link")
    >>> next_page_link.get_value()
    u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
    >>> page_two = next_page_link.linked_resource
    >>> bound_page_two = bind_to_testdata(page_two, 'personset-page2')
    >>> bound_page_two.url
    u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
-   >>> bound_page_two.get_param("start").get_value()
+   >>> bound_page_two.get_parameter("start").get_value()
    5
-   >>> bound_page_two.get_param("next_collection_link").get_value()
+   >>> bound_page_two.get_parameter("next_collection_link").get_value()
    u'http://api.launchpad.dev/beta/people?ws.start=10&ws.size=5'
 
 
@@ -226,12 +223,38 @@ by following links.
 
    >>> from wadllib.application import Resource
    >>> limi_person = Resource(wadl, "http://api.launchpad.dev/beta/~limi",
-   ...     "http://api.launchpad.dev/beta/#PersonEntryAdapter")
+   ...     "http://api.launchpad.dev/beta/#person")
 
    >>> bound_limi = bind_to_testdata(limi_person, 'person-limi')
-   >>> languages_link = bound_limi.get_param("languages_collection_link")
+   >>> languages_link = bound_limi.get_parameter("languages_collection_link")
    >>> languages_link.get_value()
    u'http://api.launchpad.dev/beta/~limi/languages'
+
+
+== Representation creation ==
+
+You must provide a representation when invoking certain methods. The
+representation() method helps you build one without knowing the
+details of how a representation is put together.
+
+   >>> create_team_method.build_representation(
+   ...     display_name='Joe Bloggs', name='joebloggs')
+   'display_name=Joe+Bloggs&ws.op=newTeam&name=joebloggs'
+
+   >>> bound_limi.get_method('patch').build_representation(name='limi2')
+   '{"name": "limi2"}'
+
+Representations may require values for certain parameters.
+
+   >>> create_team_method.build_representation()
+   Traceback (most recent call last):
+   ...
+   ValueError: No value for required parameter 'display_name'
+
+   >>> bound_limi.get_method('put').build_representation(name='limi2')
+   Traceback (most recent call last):
+   ...
+   ValueError: No value for required parameter 'mugshot_link'
 
 
 == Error conditions ==

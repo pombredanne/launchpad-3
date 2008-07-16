@@ -27,6 +27,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.launchpad.components.launchpadcontainer import (
+    LaunchpadContainerMixin)
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -87,7 +89,8 @@ from canonical.launchpad.interfaces.translationgroup import (
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin, QuestionTargetMixin,
-              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin):
+              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin,
+              LaunchpadContainerMixin):
 
     """A Product."""
 
@@ -843,11 +846,24 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
 
+    def isWithin(self, context):
+        """See `ILaunchpadContainer`."""
+        return context == self or context == self.project
+
     def getCustomLanguageCode(self, language_code):
         """See `IProduct`."""
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
 
+    def userCanEdit(self, user):
+        """See `IProduct`."""
+        if user is None:
+            return False
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(celebs.registry_experts) or
+            user.inTeam(celebs.admin) or
+            user.inTeam(self.owner))
 
 def get_allowed_default_stacking_names():
     """Return a list of names of `Product`s that allow default stacking."""
