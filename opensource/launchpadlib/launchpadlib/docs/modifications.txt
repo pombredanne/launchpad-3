@@ -119,6 +119,24 @@ description.  Salgado also understand that anybody can achieve awesomeoness.
     >>> bassists.subscription_policy
     u'Open Team'
 
+Some of a resource's attributes may take other resources as values.
+
+    >>> bug_one = launchpad.bugs[1]
+    >>> task = [task for task in bug_one.bug_tasks][0]
+    >>> task.owner.display_name
+    u'Sample Person'
+    >>> task.owner = salgado
+    >>> task.lp_save()
+    >>> task.lp_refresh()
+    >>> task.owner.display_name
+    u'Guilherme Salgado'
+
+    >>> task.assignee
+    ''
+    >>> task.transitionToAssignee(assignee=salgado)
+    >>> task.assignee
+    ''
+
 
 == Moving an entry ==
 

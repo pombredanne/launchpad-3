@@ -69,7 +69,18 @@ class LaunchpadBase:
         for key, value in dictionary.items():
             if isinstance(value, Resource):
                 value = value.self_link
-            new_dictionary[key] = value
+            new_dictionary[self._external_param_name(key)] = value
+        return new_dictionary
+
+    def _external_param_name(self, param_name):
+        """Turn a launchpadlib name into something to be sent over HTTP.
+
+        For resources this may involve sticking '_link' or
+        '_collection_link' on the end of the parameter name. For
+        arguments to named operations, the parameter name is returned
+        as is.
+        """
+        return param_name
 
 
 class Resource(LaunchpadBase):
@@ -87,10 +98,7 @@ class Resource(LaunchpadBase):
 
     def lp_has_parameter(self, param_name):
         """Does this resource have a parameter with the given name?"""
-        for suffix in ['_link', '_collection_link', '']:
-            if self._wadl_resource.get_parameter(param_name + suffix):
-                return True
-        return False
+        return self._external_param_name(param_name) is not None
 
     def lp_get_parameter(self, param_name):
         """Get the value of one of the resource's parameters.
@@ -187,6 +195,14 @@ class Resource(LaunchpadBase):
             raise AttributeError("'%s' object has no attribute '%s'"
                                  % (self.__class__.__name__, attr))
 
+    def _external_param_name(self, param_name):
+        """What's this parameter's name in the underlying representation?"""
+        for suffix in ['_link', '_collection_link', '']:
+            name = param_name + suffix
+            if self._wadl_resource.get_parameter(name):
+                return name
+        return None
+
 
 class NamedOperation(LaunchpadBase):
     """A class for a named operation to be invoked with GET or POST."""
@@ -199,15 +215,16 @@ class NamedOperation(LaunchpadBase):
     def __call__(self, **kwargs):
         """Invoke the method and process the result."""
         http_method = self.wadl_method.name
+        args = self._transform_resources_to_links(kwargs)
         if http_method in ('get', 'head', 'delete'):
-            url = self.url.build_request_url(**kwargs)
+            url = self.url.build_request_url(**args)
             in_representation = ''
             extra_headers = {}
         else:
             url = self.wadl_method.build_request_url()
             (media_type,
              in_representation) = self.wadl_method.build_representation(
-                **kwargs)
+                **args)
             extra_headers = { 'Content-type' : media_type }
         response, content = self.root._browser._request(
             url, in_representation, http_method, extra_headers=extra_headers)
@@ -265,13 +282,12 @@ class Entry(Resource):
         super(Entry, self).lp_refresh(new_url)
         self._dirty_attributes.clear()
 
-    def lp_save(self):
+    def lp_save(self, dobreak=False):
         """Save changes to the entry."""
-        representation = {}
-        for attribute, value in self._dirty_attributes.items():
-            if isinstance(value, Resource):
-                value = value.self_link
-            representation[attribute] = value
+        if dobreak:
+            import pdb; pdb.set_trace()
+        representation = self._transform_resources_to_links(
+            self._dirty_attributes)
 
         # PATCH the new representation to the 'self' link.  It's possible that
         # this will cause the object to be permanently moved.  Catch that
@@ -372,6 +388,16 @@ class PersonSet(Collection):
         """Transform a username into the URL to a person resource."""
         return self._root.SERVICE_ROOT + '~' + str(key)
 
+
+class BugSet(Collection):
+    """A custom subclass capable of person lookup by bug ID."""
+
+    def _get_url_from_id(self, key):
+        """Transform a username into the URL to a person resource."""
+        return self._root.SERVICE_ROOT + '/bugs/' + str(key)
+
+
 # A mapping of resource type IDs to the client-side classes that handle
 # those resource types.
-RESOURCE_TYPE_CLASSES = { 'people' : PersonSet }
+RESOURCE_TYPE_CLASSES = { 'bugs' : BugSet,
+                          'people' : PersonSet }
