@@ -291,17 +291,9 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    name="+projects"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.PersonRelatedProjectsView"
-    template="../templates/person-projects.pt"
-    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
     name="+portlet-related-projects"
     permission="zope.Public"
-    class="canonical.launchpad.browser.PersonRelatedProjectsView"
+    class="canonical.launchpad.browser.PersonPackagesView"
     template="../templates/person-portlet-related-projects.pt"
     />
 
