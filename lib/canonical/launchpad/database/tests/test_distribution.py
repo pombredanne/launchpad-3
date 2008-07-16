@@ -8,12 +8,11 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
-from canonical.launchpad.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeriesSet)
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
@@ -25,11 +24,12 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestDistributionCurrentSourceReleases(unittest.TestCase):
-    """Test for Distribution.getCurrentSourceReleases."""
+    """Test for Distribution.getCurrentSourceReleases()."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        # Log in as an admin, so that we can create distributions.
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
         person_with_gpg_key = getUtility(IPersonSet).getByEmail(
@@ -45,11 +45,12 @@ class TestDistributionCurrentSourceReleases(unittest.TestCase):
         self.published_package = self.distribution.getSourcePackage(
             getUtility(ISourcePackageNameSet).getOrCreateByName(
                 'published-package'))
+        login(ANONYMOUS)
 
     def publish(self, version, name=None,
                 status=PackagePublishingStatus.PUBLISHED, distroseries=None,
                 archive=None):
-        """Publish a new version.
+        """Publish a new version of a source package.
 
         If name isn't specified, the package we set up in setUp() is
         used.
