@@ -201,7 +201,7 @@ This one gets sent to Anne...
     Objects.
     <BLANKLINE>
     --
-      http://blueprints.launchpad.dev/firefox/+spec/canvas
+      http://blueprints.launchpad.dev:8085/firefox/+spec/canvas
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
@@ -228,7 +228,7 @@ This one gets sent to Anne...
     Objects.
     <BLANKLINE>
     --
-      http://blueprints.launchpad.dev/firefox/+spec/canvas
+      http://blueprints.launchpad.dev:8085/firefox/+spec/canvas
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
