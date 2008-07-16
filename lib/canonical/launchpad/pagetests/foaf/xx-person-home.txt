@@ -237,15 +237,12 @@ The user's time zone is displayed next to their contact details:
 
 Teams don't have a time zone field.
 
-    # XXX mars 2007-07-15
-    # The "(What's this?)" string below comes from bug 248483.  It should be
-    # removed when the bug is fixed.
     >>> browser.open('http://launchpad.dev/~guadamen')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
     Email: No contact address ...
-    Wiki: .../Guadamen (What&rsquo;s this?)
+    Wiki: .../Guadamen
 
 
 == Table of contributions ==
