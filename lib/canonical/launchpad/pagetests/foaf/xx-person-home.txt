@@ -58,8 +58,8 @@ If you log in, however, you will:
     Email: mark@hbd.com
     ...
 
-As for Sample Person, he has chosen not to disclose his email address.
-Anonymous users can't see it:
+As for Sample Person, he has chosen not to disclose his email addresses.
+Anonymous users can't see them:
 
     >>> anon_browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
@@ -79,6 +79,7 @@ But good ole Foo Bar can:
     >>> admin_browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'contact-details'))
     Email: test@canonical.com
+           testing@canonical.com
     ...
 
 And so can the Commercial Admins team:
@@ -89,10 +90,11 @@ And so can the Commercial Admins team:
     >>> print extract_text(find_tag_by_id(commercial_browser.contents,
     ...                    'contact-details'))
     Email: test@canonical.com
+           testing@canonical.com
     ...
 
-In the case of teams, it works similarly. No email address is disclosed if
-you're not logged in:
+In the case of teams, it works similarly. No email address is disclosed
+if you're not logged in:
 
     >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))

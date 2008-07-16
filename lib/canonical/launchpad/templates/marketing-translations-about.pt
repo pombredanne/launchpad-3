@@ -1,0 +1,78 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+  <div id="about" metal:fill-slot="contents">
+    <div id="primary">
+      <h2>Translations</h2>
+      <h3 class="byline">Overview</h3>
+    </div>
+
+    <h2 class="headline">Cut the time it takes to translate your software</h2>
+
+    <table id="features">
+      <tbody>
+        <tr>
+          <th>Translations for everyone</th>
+          <th>Intelligent suggestions</th>
+          <th>Works with GetText</th>
+          <th>Uniquely flexible</th>
+        </tr>
+        <tr class="screenshots">
+          <td><img src="/+icing/translations-feature-everyone.png"
+                   alt="Translations for everyone mini screenshot" /></td>
+          <td><img src="/+icing/translations-feature-suggestions.png"
+                   alt="Translations suggestions mini screenshot" /></td>
+          <td><img src="/+icing/translations-feature-gettext.png"
+                   alt="Translations gettext mini screenshot" /></td>
+          <td><img src="/+icing/translations-feature-flexible.png"
+                   alt="Translations workflow mini screenshot" /></td>
+        </tr>
+        <tr>
+          <td>Launchpad simplifies software translation, making it easy for
+              anyone to translate into their language.
+          </td>
+          <td>Automatic suggestions from 750,000 translated strings.</td>
+          <td>Import .pot template files and export .po and .mo files of
+            your translations.
+          </td>
+          <td>Maintain independent translation efforts for different
+            releases and choose open, moderated or closed translation.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div id="content">
+      <div class="intro">
+        <h3>About Launchpad Translations</h3>
+
+        <p>Translators shouldn't have to be coders. Launchpad shields
+           translators from low-level complexities, whilst working with
+           standard .pot, .po and .mo files.
+        </p>
+
+        <p>Automatic suggestions, from a library of 750,000 translated
+           strings, and a community of 19,000 registered translators can
+           radically cut the time required to localise your project into many
+           languages.
+        </p>
+
+        <p>Launchpad keeps track of the translations for each major version of
+           a project separately, allowing translators to continue to improve
+           the translations of your stable releases while others start work on
+           newer versions that are still in development.
+        </p>
+      </div>
+    </div> <!-- content -->
+  </div>
+</body>
+</html>
