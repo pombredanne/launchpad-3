@@ -94,6 +94,9 @@
   </div>
 
   <div id="projects">
+    <a name="projects" />
+    <h2>Related projects</h2>
+
     <p tal:condition="view/tooManyRelatedProjectsFound"
       class="informational message">
       <span tal:replace="view/related_projects_count" /> projects are related
