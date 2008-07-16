@@ -30,8 +30,6 @@ from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, RevisionModifiedError, get_diff, get_revision_message)
 from canonical.codehosting.bzrutils import ensure_base
-from canonical.codehosting.codeimport.tests.helpers import (
-    instrument_method, InstrumentedMethodObserver)
 from canonical.testing import LaunchpadZopelessLayer
 
 
