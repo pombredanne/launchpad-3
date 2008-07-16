@@ -5,16 +5,22 @@ accessed by clicking on the 'Related Software' menu item, followed by the
 'Assigned Packages' sub-menu item.
 
     >>> anon_browser.open('http://launchpad.dev/~sabdfl')
-    >>> anon_browser.getLink('Related Software').click()
+    >>> anon_browser.getLink('Related Software')
+    <Link
+        text='Related Software'
+        url='http://launchpad.dev/~sabdfl/+packages#projects'>
+
+    # Visit the page directly to prevent the testbrowser from mucking with
+    # the URL fragment.
+    >>> anon_browser.open('http://launchpad.dev/~sabdfl/+packages')
     >>> print_navigation_links(anon_browser.contents)
     Profile: ...
     Related Software
     Karma: ...
     Personal Package Archive: ...
-    Participation
-    Assigned Packages: http://launchpad.dev/~sabdfl/+packages
+    Participation: ...
+    Assigned Packages
 
-    >>> anon_browser.getLink('Assigned Packages').click()
     >>> print anon_browser.title
     Packages maintained by Mark Shuttleworth
     >>> print anon_browser.url

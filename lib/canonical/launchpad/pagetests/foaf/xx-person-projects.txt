@@ -47,13 +47,19 @@ unimplemented specs and open questions.
 A person's projects are listed on the 'Related Software' page, accessible
 through the main navigation menu.
 
-   >>> anon_browser.open('http://launchpad.dev/~sabdfl')
-   >>> anon_browser.getLink(
-   ...     'Related Software').click()
-   >>> print anon_browser.url
-   http://launchpad.dev/~sabdfl/+projects
-   >>> print anon_browser.title
-   Projects Mark Shuttleworth is involved with
+    >>> anon_browser.open('http://launchpad.dev/~sabdfl')
+    >>> anon_browser.getLink('Related Software')
+    <Link
+        text='Related Software'
+        url='http://launchpad.dev/~sabdfl/+packages#projects'>
+
+    # Visit the page directly to prevent the testbrowser from mucking with
+    # the URL fragment.
+    >>> anon_browser.open('http://launchpad.dev/~sabdfl/+packages')
+    >>> print anon_browser.url
+    http://launchpad.dev/~sabdfl/+packages
+    >>> print anon_browser.title
+    Packages maintained by Mark Shuttleworth
 
 In the case of a person that owns/drives more than
 config.launchpad.default_batch_size, a message is displayed and the
