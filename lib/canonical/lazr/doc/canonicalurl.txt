@@ -9,11 +9,8 @@ adaptation.
 
 First, we'll construct an example object hierarchy.
 
-    >>> from canonical.launchpad.webapp import canonical_url, urlsplit
+    >>> from zope.interface import implements, Interface
     >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from zope.interface import implements, directlyProvides, Interface
-    >>> from zope.security.management import endInteraction, newInteraction
 
     >>> from zope.interface import Interface
 
@@ -45,6 +42,9 @@ First, we'll construct an example object hierarchy.
     # nearest_adapter() uses canonical_url(), which in turn requires a
     # running interaction.  We'll need to set up a test request to make it
     # work.
+    >>> from zope.security.management import endInteraction, newInteraction
+    >>> from canonical.launchpad.webapp import urlsplit
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> def make_fake_request(url, traversed_objects=None):
     ...     """Return a fake request object for menu testing."""
     ...     url_parts = urlsplit(url)
@@ -67,6 +67,7 @@ Here is the structure of our hierarchy:
     >>> request = make_fake_request(
     ...     'http://launchpad.dev/joy-of-cooking/fried-spam')
 
+    >>> from canonical.launchpad.webapp import canonical_url
     >>> canonical_url(cookbook)
     u'http://launchpad.dev/joy-of-cooking'
     >>> canonical_url(recipe)
@@ -78,7 +79,7 @@ Here is the structure of our hierarchy:
 We'll try adapting our objects to a made-up interface, ICookingDirections.
 
     >>> class ICookingDirections(Interface):
-    ...     """Something that is tasty."""
+    ...     """Something that tells us how to cook."""
 
     >>> class CookingDirections:
     ...     implements(ICookingDirections)
@@ -113,8 +114,8 @@ We'll make the "cookbook" object adaptable to ICookingDirections.
 The nearest_adapter() function will look up the hierarchy for an object
 that has the requested adaptation.
 
-"recipe" does not provide ICookingDirections, but "cookbook" does, so cookbook's
-adapter will be returned.
+"recipe" does not provide ICookingDirections, but "cookbook" does, so
+cookbook's adapter will be returned.
 
     >>> print nearest_adapter(recipe, ICookingDirections)
     <...CookingDirections instance ...>
