@@ -641,22 +641,23 @@ class BzrSync:
         self.logger.info("Inserting %d branchrevision records.",
             len(branchrevisions_to_insert))
         revision_set = getUtility(IRevisionSet)
+        mainline_revids = []
         for revision_id, sequence in branchrevisions_to_insert.iteritems():
             db_revision = revision_set.getByRevisionId(revision_id)
             self.db_branch.createBranchRevision(sequence, db_revision)
-
-            # Generate an email if the revision is in the revision_history
-            # for the branch.  If the sequence is None then the revision
-            # is just in the ancestry so no email is generated.
             if sequence is not None:
-                try:
-                    revision = bzr_branch.repository.get_revision(revision_id)
-                except NoSuchRevision:
-                    self.logger.debug("%d of %d: %s is a ghost",
-                                      self.curr, self.last, revision_id)
-                    continue
-                self._branch_mailer.generateEmailForRevision(
-                    bzr_branch, revision, sequence)
+                mainline_revids.append(revision_id)
+        # Generate emails for the revisions in the revision_history
+        # for the branch.
+        present_mainline_revids = set(
+            bzr_branch.repository.get_parent_map(mainline_revids))
+        present_mainline_revisions = bzr_branch.repository.get_revisions(
+            present_mainline_revids)
+        for revision in present_mainline_revisions:
+            sequence = branchrevisions_to_insert[revision.revision_id]
+            assert sequence is not None
+            self._branch_mailer.generateEmailForRevision(
+                bzr_branch, revision, sequence)
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
