@@ -101,7 +101,7 @@ the most awesome team in the world.
     ...     name='bassists', display_name='Awesome Rock Bass Players')
 
 Then Salgado realizes he wants to express the awesomeness of this team in its
-description.  Salgado also understands that anybody can achieve awesomeoness.
+description.  Salgado also understands that anybody can achieve awesomeness.
 
     >>> print bassists.team_description
     None
