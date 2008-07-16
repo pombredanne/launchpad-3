@@ -109,7 +109,7 @@ We'll make the "cookbook" object adaptable to ICookingDirections.
     >>> provideAdapter(CookingDirections, [ICookbook], ICookingDirections)
 
     >>> ICookingDirections(cookbook)
-    <...CookingDirections instance ...>
+    <...CookingDirections ...>
 
 The nearest_adapter() function will look up the hierarchy for an object
 that has the requested adaptation.
@@ -118,13 +118,13 @@ that has the requested adaptation.
 cookbook's adapter will be returned.
 
     >>> print nearest_adapter(recipe, ICookingDirections)
-    <...CookingDirections instance ...>
+    <...CookingDirections ...>
 
 Calling nearest_adapter() on "cookbook" itself will return the
 CookingDirections:
 
     >>> print nearest_adapter(cookbook, ICookingDirections)
-    <...CookingDirections instance ...>
+    <...CookingDirections ...>
 
 Calling nearest_adapter() on the hierarchy root returns nothing:
 the root does not have the requested adaptation, and there are no higher
