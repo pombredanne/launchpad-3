@@ -1900,6 +1900,15 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         data = {}
         self._validate(None, data)
 
+        searchtext = data.get("searchtext")
+        if searchtext and searchtext.isdigit():
+            try:
+                bug = getUtility(IBugSet).get(searchtext)
+            except NotFoundError:
+                pass
+            else:
+                self.request.response.redirect(canonical_url(bug))
+
         if extra_params:
             data.update(extra_params)
 

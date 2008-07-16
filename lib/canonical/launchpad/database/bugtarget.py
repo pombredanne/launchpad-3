@@ -56,7 +56,8 @@ class HasBugsBase:
                        tags=None, tags_combinator_all=True,
                        omit_duplicates=True, omit_targeted=None,
                        status_upstream=None, milestone_assignment=None,
-                       milestone=None, component=None,
+                       milestone=None, component=None, nominated_for=None,
+                       distribution=None, scope=None, sourcepackagename=None,
                        has_no_package=None):
         """See `IHasBugs`."""
 
@@ -101,8 +102,12 @@ class HasBugsBase:
                 search_params.has_no_upstream_bugtask = True
         search_params.milestone = anyfy(milestone)
         search_params.component = anyfy(component)
+        search_params.distribution = distribution
+        search_params.scope = scope
+        search_params.sourcepackagename = sourcepackagename
         if has_no_package:
             search_params.sourcepackagename = NULL
+        search_params.nominated_for = nominated_for
 
         return self.searchTasks(search_params)
 
