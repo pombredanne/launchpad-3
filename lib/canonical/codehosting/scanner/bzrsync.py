@@ -374,8 +374,7 @@ class BzrSync:
         self.logger.info("    from %s", bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
-        bzr_ancestry, bzr_history = (
-            self.retrieveBranchDetails(bzr_branch))
+        bzr_ancestry, bzr_history = self.retrieveBranchDetails(bzr_branch)
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
@@ -385,15 +384,15 @@ class BzrSync:
         db_ancestry, db_history, db_branch_revision_map = (
             self.retrieveDatabaseAncestry())
 
-        (revisions_to_insert_or_check, branchrevisions_to_delete,
+        (added_ancestry, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges(
             bzr_ancestry, bzr_history, db_ancestry, db_history, 
             db_branch_revision_map)
         self.logger.info("Inserting or checking %d revisions.",
-            len(revisions_to_insert_or_check))
+            len(added_ancestry))
         # Add new revisions to the database.
         revisions = self.getNewBazaarRevisions(
-            bzr_branch, revisions_to_insert_or_check)
+            bzr_branch, added_ancestry)
         for revision in revisions:
             self.syncOneRevision(revision, branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
@@ -526,26 +525,20 @@ class BzrSync:
             self.getRevisions(
                 bzr_history, added_merged.union(added_history)))
 
-        # We must insert, or check for consistency, all revisions which were
-        # added to the ancestry.
-        revisions_to_insert_or_check = added_ancestry
-
-        return (revisions_to_insert_or_check, branchrevisions_to_delete,
-            branchrevisions_to_insert)
+        return (added_ancestry, branchrevisions_to_delete, 
+                branchrevisions_to_insert)
             
-    def getNewBazaarRevisions(self, bzr_branch, revisions_to_insert_or_check):
+    def getNewBazaarRevisions(self, bzr_branch, added_ancestry):
         """Return the new Bazaar revisions in `bzr_branch`.
         
-        XXX -- explain revisions_to_i_o_c
+        :param added_ancestry: the set of Bazaar revision IDs that the 
+            scanner has found in the Bazaar branch but not in the database
+            branch.
         """
         # Add new revisions to the database.
-        revisions_to_insert_or_check = bzr_branch.repository.get_parent_map(revisions_to_insert_or_check).keys()
-        return bzr_branch.repository.get_revisions(revisions_to_insert_or_check)
+        added_ancestry = bzr_branch.repository.get_parent_map(added_ancestry)
+        return bzr_branch.repository.get_revisions(added_ancestry.keys())
         
-    def syncRevisions(self, bzr_branch, revisions_to_insert_or_check,
-                      branchrevisions_to_insert):
-        """Import all the revisions added to the ancestry of the branch."""
-
     def syncOneRevision(self, bzr_revision, branchrevisions_to_insert):
         """Import the revision with the given revision_id.
 
