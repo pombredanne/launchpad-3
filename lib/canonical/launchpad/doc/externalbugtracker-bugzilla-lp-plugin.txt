@@ -426,8 +426,8 @@ authorization cookie so that it gets regenerated.
     CALLED Launchpad.add_comment({'comment': 'This is a new remote comment.',
         'id': 1})
 
-    >>> print comment_id
-    5
+    >>> comment_id
+    '5'
 
 The comment will be stored on the remote server with the other comments.
 
