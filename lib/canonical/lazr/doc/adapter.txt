@@ -10,8 +10,7 @@ adaptation.
 First, we'll construct an example object hierarchy.
 
     >>> from canonical.launchpad.webapp import canonical_url, urlsplit
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     ICanonicalUrlData, IFacetMenu)
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from zope.interface import implements, directlyProvides, Interface
     >>> from zope.security.management import endInteraction, newInteraction
@@ -29,7 +28,8 @@ First, we'll construct an example object hierarchy.
 
 
     # nearest_adapter() uses canonical_url(), which in turn requires a
-    # running interaction.
+    # running interaction.  We'll need to set up a test request to make it
+    # work.
     >>> def make_fake_request(url, traversed_objects=None):
     ...     """Return a fake request object for menu testing."""
     ...     url_parts = urlsplit(url)
@@ -49,10 +49,10 @@ Here is the structure of our hierarchy:
     >>> street = ExampleContentObject('sesamestreet', root)
     >>> house = ExampleContentObject('number73', street)
 
-    >>> class IThingWithFacets(Interface):
-    ...     """An object with facets."""
+    >>> class IStreet(Interface):
+    ...     """An object that should be a street."""
 
-    >>> directlyProvides(street, IThingWithFacets)
+    >>> directlyProvides(street, IStreet)
 
     >>> request = make_fake_request(
     ...     'http://launchpad.dev/sesamestreet/number73')
@@ -65,54 +65,59 @@ Here is the structure of our hierarchy:
 
 == Using nearest_adapter ==
 
-Right now, none of our example objects have a facet menu.
+We'll try adapting our objects to a made-up interface, IPlace.
+
+    >>> class IPlace(Interface):
+    ...     """An object that is a place."""
+
+    >>> class StreetToPlaceAdapter:
+    ...     implements(IPlace)
+    ...     def __init__(self, context):
+    ...         self.context = context
+
+Right now, none of our example objects can be turned into places.
 
     >>> from canonical.lazr.adapter import (nearest_adapter,
     ...     nearest_context_with_adapter)
 
-    >>> print nearest_adapter(root, IFacetMenu)
+    >>> print nearest_adapter(root, IPlace)
     None
-    >>> print nearest_adapter(street, IFacetMenu)
+    >>> print nearest_adapter(street, IPlace)
     None
-    >>> print nearest_adapter(house, IFacetMenu)
+    >>> print nearest_adapter(house, IPlace)
     None
 
 The same holds true for nearest_context_with_adapter():
 
-    >>> nearest_context_with_adapter(root, IFacetMenu)
+    >>> nearest_context_with_adapter(root, IPlace)
     (None, None)
 
-We'll make the "street" object adaptable to IFactetMenu
-
-    >>> class FacetMenu:
-    ...     implements(IFacetMenu)
-    ...     def __init__(self, context):
-    ...         self.context = context
+We'll make the "street" object adaptable to IPlace.
 
     >>> from zope.component import provideAdapter
-    >>> provideAdapter(FacetMenu, [IThingWithFacets], IFacetMenu)
+    >>> provideAdapter(StreetToPlaceAdapter, [IStreet], IPlace)
 
-    >>> IFacetMenu(street)
-    <...FacetMenu instance ...>
+    >>> IPlace(street)
+    <...StreetToPlaceAdapter instance ...>
 
 The nearest_adapter() function will look up the hierarchy for an object
 that has the requested adaptation.
 
-"house" does not provide IThingWithFacets, but "street" does, so street's
+"house" does not provide IStreet, but "street" does, so street's
 adapter will be returned.
 
-    >>> print nearest_adapter(house, IFacetMenu)
-    <...FacetMenu instance ...>
+    >>> print nearest_adapter(house, IPlace)
+    <...StreetToPlaceAdapter instance ...>
 
-Calling nearest_adapter() on "street" itself will return the FacetMenu
-adapter:
+Calling nearest_adapter() on "street" itself will return the
+StreetToPlaceAdapter adapter:
 
-    >>> print nearest_adapter(street, IFacetMenu)
-    <...FacetMenu instance ...>
+    >>> print nearest_adapter(street, IPlace)
+    <...StreetToPlaceAdapter instance ...>
 
 Calling nearest_adapter() on the hierarchy root returns nothing:
 the root does not have the requested adaptation, and there are no higher
 objects to search.
 
-    >>> print nearest_adapter(root, IFacetMenu)
+    >>> print nearest_adapter(root, IPlace)
     None
