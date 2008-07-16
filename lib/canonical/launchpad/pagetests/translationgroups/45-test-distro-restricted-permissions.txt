@@ -41,14 +41,25 @@ suggestions.
     ...     else:
     ...         return tag.renderContents()
 
-    >>> def print_upload_option(contents):
-    ...     """Print items in navigation menu on given page."""
+    >>> def print_menu_option(contents, option):
+    ...     """Print given navigation menu on given page, if present."""
     ...     found = False
-    ...     for item in find_tags_by_class(contents, 'menu-link-upload'):
+    ...     for item in find_tags_by_class(contents, 'menu-link-%s' % option):
     ...         print item.renderContents()
     ...         found = True
     ...     if not found:
     ...         print "Not found."
+
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/evolution/'
+    ...     '+pots/evolution-2.2/')
+
+    >>> print_menu_option(browser.contents, 'edit')
+    Not found.
+
+    >>> print_menu_option(browser.contents, 'upload')
+    Not found.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
@@ -67,7 +78,7 @@ suggestions.
     There is nobody to manage translation into this particular language.  If
     you are interested in working on it, please contact the translation group.
 
-    >>> print_upload_option(browser.contents)
+    >>> print_menu_option(browser.contents, 'upload')
     Not found.
 
 The Polyglot translation group now assigns a Southern Sotho translation
@@ -98,7 +109,7 @@ will only accept suggestions.
 The ability to upload files is restricted to those with full edit
 privileges.
 
-    >>> print_upload_option(browser.contents)
+    >>> print_menu_option(browser.contents, 'upload')
     Not found.
 
 The translation-managers detail may use ", and" to separate items, but
@@ -126,7 +137,8 @@ as well as to upload files.
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/'
     ...     '+pots/evolution-2.2/cy/+translate')
-    >>> print_upload_option(browser.contents)
+
+    >>> print_menu_option(browser.contents, 'upload')
     <...Upload a file...
 
 No Privileges person is going to translate here.  Message number 137 is
