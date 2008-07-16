@@ -158,22 +158,9 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def currentrelease(self):
         """See `IDistributionSourcePackage`."""
-        order_const = "debversion_sort_key(SourcePackageRelease.version) DESC"
-        spr = SourcePackageRelease.selectFirst("""
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackageRelease.id =
-                SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(self.sourcepackagename,
-                            self.distribution,
-                            self.distribution.all_distro_archive_ids),
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
-            orderBy=[SQLConstant(order_const),
-                     "-SourcePackagePublishingHistory.datepublished"])
+        releases = self.distribution.getCurrentReleases(
+            [self.sourcepackagename])
+        spr = releases.get(self)
 
         if spr is None:
             return None

@@ -512,7 +512,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     spn.id = SourcePackageName.id AND
                     spr.sourcepackagename = spn.id AND
                     spph.sourcepackagerelease = spr.id AND
-                    spph.archive = %s AND
+                    spph.archive IN %s AND
                     spph.status IN %s AND
                     spph.distroseries = ds.id AND
                     ds.distribution = %s)
