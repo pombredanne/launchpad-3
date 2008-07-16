@@ -1208,24 +1208,6 @@ class PersonEditNavigationMenu(NavigationMenu):
         return Link(target, text)
 
 
-class PersonRelatedSoftwareNavigationMenu(NavigationMenu):
-
-    usedfor = IPersonRelatedSoftwareMenu
-    facet = 'overview'
-    title = 'Related Software'
-    links = ('participation', 'assigned_packages')
-
-    def participation(self):
-        target = '+projects'
-        text = 'Participation'
-        return Link(target, text)
-
-    def assigned_packages(self):
-        target = '+packages'
-        text = 'Assigned Packages'
-        return Link(target, text)
-
-
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
