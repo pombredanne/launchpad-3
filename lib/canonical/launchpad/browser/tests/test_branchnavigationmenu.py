@@ -32,7 +32,8 @@ class TestBranchNavigationMenu(TestCaseWithFactory):
         self.assertEqual(proposal.source_branch, menu.branch)
 
     def test_branch_subscription(self):
-        """Menu's branch for a subscription is the branch of the subscription."""
+        """Menu's branch for a subscription is the branch of the subscription.
+        """
         subscription = self.factory.makeBranchSubscription()
         menu = BranchNavigationMenu(subscription)
         self.assertEqual(subscription.branch, menu.branch)
