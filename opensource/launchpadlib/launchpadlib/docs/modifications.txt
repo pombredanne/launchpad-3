@@ -123,19 +123,25 @@ Some of a resource's attributes may take other resources as values.
 
     >>> bug_one = launchpad.bugs[1]
     >>> task = [task for task in bug_one.bug_tasks][0]
+    >>> task.owner
+    <launchpadlib.resource.Entry object ...>
     >>> task.owner.display_name
     u'Sample Person'
+
     >>> task.owner = salgado
     >>> task.lp_save()
     >>> task.lp_refresh()
     >>> task.owner.display_name
     u'Guilherme Salgado'
 
-    >>> task.assignee
-    ''
+Resources may also be used as arguments to named operations.
+
+    >>> task.assignee.display_name
+    u'Mark Shuttleworth'
     >>> task.transitionToAssignee(assignee=salgado)
-    >>> task.assignee
-    ''
+    >>> task.lp_refresh()
+    >>> task.assignee.display_name
+    u'Guilherme Salgado'
 
 
 == Moving an entry ==
