@@ -72,6 +72,7 @@ from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 
+from canonical import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
 from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
@@ -1241,11 +1242,25 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     def setUp(cls):
         if cls.appserver is not None:
             raise LayerInvariantError('setUp() called twice')
+        cls.cleanUpStaleAppServer()
         cls.startAppServer()
-        cls.waitUntilAppServerIsReady()
         # Make sure that the app server is killed even if tearDown() is
         # skipped.
         atexit.register(cls.tearDown)
+        cls.waitUntilAppServerIsReady()
+
+    @classmethod
+    def cleanUpStaleAppServer(cls):
+        """Kill any stale app server or pid file."""
+        pid = pidfile.get_pid('launchpad', cls.appserver_config)
+        if pid is not None:
+            # Don't worry if the process no longer exists.
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except OSError, error:
+                if error.errno != errno.ESRCH:
+                    raise
+            pidfile.remove_pidfile('launchpad', cls.appserver_config)
 
     @classmethod
     def startAppServer(cls):
@@ -1273,8 +1288,14 @@ class AppServerLayer(LaunchpadFunctionalLayer):
             try:
                 connection = urlopen(root_url)
                 connection.read()
-            except IOError, (error_message, error):
-                if error.args[0] != errno.ECONNREFUSED:
+            except IOError, error:
+                # We are interested in a wrapped socket.error.
+                # urlopen() really sucks here.
+                if len(error.args) <= 1:
+                    raise
+                if not isinstance(error.args[1], socket.error):
+                    raise
+                if error.args[1].args[0] != errno.ECONNREFUSED:
                     raise
                 returncode = cls.appserver.poll()
                 if returncode is not None:
