@@ -41,6 +41,15 @@ suggestions.
     ...     else:
     ...         return tag.renderContents()
 
+    >>> def print_upload_option(contents):
+    ...     """Print items in navigation menu on given page."""
+    ...     found = False
+    ...     for item in find_tags_by_class(contents, 'menu-link-upload'):
+    ...         print item.renderContents()
+    ...         found = True
+    ...     if not found:
+    ...         print "Not found."
+
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/'
@@ -57,6 +66,9 @@ suggestions.
     >>> print get_detail_tag(browser, 'translation-access')
     There is nobody to manage translation into this particular language.  If
     you are interested in working on it, please contact the translation group.
+
+    >>> print_upload_option(browser.contents)
+    Not found.
 
 The Polyglot translation group now assigns a Southern Sotho translation
 team, of which No Privileges however is not a member.
@@ -83,6 +95,12 @@ will only accept suggestions.
     This translation is managed by <...>...Hoary Gnome Team<...>, assigned
     by <...>polyglot<...>.
 
+The ability to upload files is restricted to those with full edit
+privileges.
+
+    >>> print_upload_option(browser.contents)
+    Not found.
+
 The translation-managers detail may use ", and" to separate items, but
 since there is only one item in this case, we don't see that.
 
@@ -93,7 +111,8 @@ since there is only one item in this case, we don't see that.
     >>> print get_detail_tag(browser, 'translation-access')
     Your suggestions will be held for review...
 
-In Welsh, No Privileges Person does have the ability to edit directly.
+In Welsh, No Privileges Person does have the ability to edit directly,
+as well as to upload files.
 
     >>> def find_no_translation_marker(contents):
     ...     """Find first "no translation yet" marker in contents."""
@@ -106,6 +125,16 @@ In Welsh, No Privileges Person does have the ability to edit directly.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/'
+    ...     '+pots/evolution-2.2/cy/+translate')
+    >>> print_upload_option(browser.contents)
+    <...Upload a file...
+
+No Privileges person is going to translate here.  Message number 137 is
+not yet translated.
+
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/evolution/'
     ...     '+pots/evolution-2.2/cy/8/+translate')
 
     >>> print get_detail_tag(browser, 'translation-managers')
@@ -114,8 +143,6 @@ In Welsh, No Privileges Person does have the ability to edit directly.
 
     >>> print get_detail_tag(browser, 'translation-access')
     You have full access to this translation.
-
-Message number 137 is not yet translated.
 
     >>> print find_no_translation_marker(browser.contents)
     (no translation yet)
@@ -133,8 +160,8 @@ POST and see that all goes well:
     >>> print browser.url
     http://.../ubuntu/.../+pots/evolution-2.2/cy/9/+translate
 
-And finally, let's take a look again, and we should have a translation
-added.
+And finally, let's take a look again, and we see that the translation
+has been added.
 
     >>> browser.getLink('Previous').click()
     >>> print find_no_translation_marker(browser.contents)

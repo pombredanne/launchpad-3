@@ -28,22 +28,8 @@ Neither any input widget:
     >>> for input in main_content.findAll('input'):
     ...     print 'Found input:\n%s' % input
 
-Nor an upload option:
-
-    >>> def print_upload_option(contents):
-    ...     """Print items in navigation menu on given page."""
-    ...     found = False
-    ...     for item in find_tags_by_class(contents, 'menu-link-upload'):
-    ...         print item.renderContents()
-    ...         found = True
-    ...     if not found:
-    ...         print "Not found."
-
-    >>> print_upload_option(browser.contents)
-    Not found.
-
 However, in Welsh, No Privileges Person does have the ability to edit
-directly.  The menu offers No Privileges an Upload option.
+directly.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
@@ -51,9 +37,6 @@ directly.  The menu offers No Privileges an Upload option.
     ...     '+pots/evolution-2.2/cy/19/+translate')
     >>> print browser.url
     http://.../ubuntu/.../evolution/+pots/evolution-2.2/cy/19/+translate
-
-    >>> print_upload_option(browser.contents)
-    Upload a file
 
 No Privileges is going to do some translation here.  Right now, message
 number 148 is not translated.

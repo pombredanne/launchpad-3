@@ -319,7 +319,7 @@ class CurrentTranslationMessageAppMenus(ApplicationMenu):
         text = 'Translate many'
         return Link('../+translate', text, icon='languages')
 
-    #@enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Edit')
     def upload(self):
         text = 'Upload a file'
         return Link('../+upload', text, icon='edit')
