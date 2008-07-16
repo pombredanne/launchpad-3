@@ -87,7 +87,7 @@ We'll try adapting our objects to a made-up interface, IPrintable.
 
 Right now, none of our example objects can be turned into places.
 
-    >>> from canonical.lazr.adapter import (nearest_adapter,
+    >>> from canonical.lazr.canonicalurl import (nearest_adapter,
     ...     nearest_context_with_adapter)
 
     >>> print nearest_adapter(root, IPrintable)
