@@ -5,44 +5,45 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductNavigation',
-    'ProductDynMenu',
-    'ProductShortLink',
-    'ProductSOP',
-    'ProductFacets',
-    'ProductNavigationMenu',
-    'ProductOverviewMenu',
-    'ProductBugsMenu',
-    'ProductSpecificationsMenu',
-    'ProductBountiesMenu',
-    'ProductBranchesMenu',
-    'ProductTranslationsMenu',
-    'ProductView',
-    'ProductDownloadFileMixin',
-    'ProductDownloadFilesView',
+    'PillarSearchItem',
     'ProductActiveReviewsView',
+    'ProductAddSeriesView',
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
     'ProductApprovedMergesView',
+    'ProductBountiesMenu',
     'ProductBranchListingView',
+    'ProductBranchOverviewView',
+    'ProductBranchesMenu',
+    'ProductBranchesView',
     'ProductBrandingView',
-    'ProductEditView',
+    'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductCodeIndexView',
-    'ProductReviewLicenseView',
-    'ProductAddSeriesView',
-    'ProductReassignmentView',
+    'ProductDownloadFileMixin',
+    'ProductDownloadFilesView',
+    'ProductDynMenu',
+    'ProductEditNavigationMenu',
+    'ProductEditPeopleView',
+    'ProductEditView',
+    'ProductFacets',
+    'ProductNavigation',
+    'ProductNavigationMenu',
+    'ProductOverviewMenu',
     'ProductRdfView',
+    'ProductReviewLicenseView',
+    'ProductSOP',
+    'ProductSetContextMenu',
     'ProductSetFacets',
+    'ProductSetNavigation',
     'ProductSetReviewLicensesView',
     'ProductSetSOP',
-    'ProductSetNavigation',
-    'ProductSetContextMenu',
     'ProductSetView',
-    'ProductBranchOverviewView',
-    'ProductBranchesView',
-    'PillarSearchItem',
+    'ProductShortLink',
+    'ProductSpecificationsMenu',
+    'ProductTranslationsMenu',
+    'ProductView',
     ]
 
 from operator import attrgetter
@@ -54,10 +55,12 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.interface import alsoProvides, implements
+from zope.interface import alsoProvides, implements, Interface
 
 from canonical.cachedproperty import cachedproperty
+
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_updates
 from canonical.lazr import decorates
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
@@ -98,6 +101,7 @@ from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.mail import format_address, simple_sendmail
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
@@ -306,6 +310,10 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
+class IProductEditMenu(Interface):
+    """A marker interface for the 'Change details' navigation menu."""
+
+
 class ProductNavigationMenu(NavigationMenu):
 
     usedfor = IProduct
@@ -329,14 +337,35 @@ class ProductNavigationMenu(NavigationMenu):
         return Link('+download', text)
 
 
+class ProductEditNavigationMenu(NavigationMenu):
+    """A sub-menu for different aspects of editing a Product's details."""
+
+    usedfor = IProductEditMenu
+    facet = 'overview'
+    title = 'Change project details'
+    links = ('details', 'branding', 'people')
+
+    def details(self):
+        target = '+edit'
+        text = 'Details'
+        return Link(target, text)
+
+    def branding(self):
+        text = 'Branding'
+        return Link('+branding', text)
+
+    def people(self):
+        text = 'People'
+        summary = 'Someone with permission to set goals for all series'
+        return Link('+edit-people', text, summary)
+
+
 class ProductOverviewMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'overview'
     links = [
         'edit',
-        'branding',
-        'driver',
         'reassign',
         'top_contributors',
         'mentorship',
@@ -354,17 +383,6 @@ class ProductOverviewMenu(ApplicationMenu):
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def branding(self):
-        text = 'Change branding'
-        return Link('+branding', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def driver(self):
-        text = 'Appoint driver'
-        summary = 'Someone with permission to set goals for all series'
-        return Link('+driver', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
@@ -1095,6 +1113,9 @@ class ProductDownloadFilesView(LaunchpadView,
 
 class ProductBrandingView(BrandingChangeView):
 
+    implements(IProductEditMenu)
+
+    label = None
     schema = IProduct
     field_names = ['icon', 'logo', 'mugshot']
 
@@ -1102,8 +1123,9 @@ class ProductBrandingView(BrandingChangeView):
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
+    implements(IProductEditMenu)
+
     schema = IProduct
-    label = "Change project details"
     field_names = [
         "displayname",
         "title",
@@ -1548,12 +1570,97 @@ class ProductAddView(ProductAddViewBase):
         notify(ObjectCreatedEvent(self.product))
 
 
-class ProductReassignmentView(ObjectReassignmentView):
-    """Reassign product to a new owner."""
+class ProductEditPeopleView(LaunchpadEditFormView):
+    """Enable editing of important people on the project."""
+
+    implements(IProductEditMenu)
+
+    schema = IProduct
+    field_names = [
+        'owner',
+        'driver',
+        ]
 
     def __init__(self, context, request):
-        ObjectReassignmentView.__init__(self, context, request)
-        self.callback = self._reassignProductDependencies
+        super(ProductEditPeopleView, self).__init__(context, request)
+
+    def existing_checked_value(self):
+        """Preserve form checkbox value across submits."""
+        if self.request.form.get('existing') == 'new':
+            return ''
+        else:
+            return 'checked'
+
+    def new_checked_value(self):
+        """Preserve form checkbox value across submits."""
+        if self.request.form.get('existing') == 'new':
+            return 'checked'
+        else:
+            return ''
+
+    def initialize(self):
+        """Process the form before initializing the object."""
+        if self.request.method == "POST":
+            self.processForm()
+        super(ProductEditPeopleView, self).initialize()
+
+    @property
+    def owner_widget(self):
+        return self.widgets['owner']
+
+    @property
+    def remaining_widgets(self):
+        """Return all widgets except the owner.
+
+        The owner is formatted differently in the template.
+        """
+        return (self.widgets[name] for name in self.field_names
+                if name != 'owner')
+
+    def processForm(self):
+        """Process the form before the widgets validate their input.
+
+        If necessary, create a new team and set form['owner'] to it.
+        """
+        if self.request.form.get('existing') == 'new':
+            person_set = getUtility(IPersonSet)
+            owner_name = self.request.form.get('field.owner')
+            if not owner_name:
+                self.setFieldError(
+                    'owner',
+                    "You have to specify the name of the person/team that's "
+                    "going to be the new owner.")
+            elif not valid_name(owner_name):
+                self.setFieldError(
+                    'owner',
+                    "'%s' is not a valid name for a team. Please make sure "
+                    "it contains only the allowed characters and no spaces."
+                    % owner_name)
+            elif person_set.getByName(owner_name):
+                self.setFieldError(
+                    'owner',
+                    "There's already a person/team with the name '%s' in "
+                    "Launchpad. Please choose a different name or select "
+                    "the option to make that person/team the new owner, "
+                    "if that's what you want." % owner_name)
+            else:
+                owner = person_set.newTeam(
+                    self.user, owner_name, owner_name.capitalize())
+                self.request.form['field.owner'] = owner.name
+                # Flush the owner to the database so that the ValidPerson
+                # vocabulary finds it there.
+                flush_database_updates()
+
+    @action(_('Save changes'), name='save')
+    def save_action(self, action, data):
+        old_owner = self.context.owner
+        self.updateContextFromData(data)
+        self._reassignProductDependencies(
+            self.context, old_owner, self.context.owner)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
     def _reassignProductDependencies(self, product, oldOwner, newOwner):
         """Reassign ownership of objects related to this product.

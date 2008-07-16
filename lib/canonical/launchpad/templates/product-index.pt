@@ -43,18 +43,6 @@
     <span tal:define="link context/menu:overview/edit"
           tal:condition="link/enabled"
           tal:content="structure link/render" />
-    <br/>
-    (Deprecated:
-    <span tal:define="link context/menu:overview/driver"
-          tal:condition="link/enabled"
-          tal:content="structure link/render" />
-    <span tal:define="link context/menu:overview/branding"
-          tal:condition="link/enabled"
-          tal:content="structure link/render" />
-    <span tal:define="link context/menu:overview/reassign"
-          tal:condition="link/enabled"
-          tal:content="structure link/render" />
-    )
   </div>
   <p>
     <strong tal:content="structure context/license_status/description">

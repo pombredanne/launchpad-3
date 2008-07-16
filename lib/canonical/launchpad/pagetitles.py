@@ -1033,6 +1033,8 @@ product_cvereport = ContextTitle('CVE reports for %s')
 product_edit = 'Change project details'
 # We don't mention its name here, because that might be what you're changing.
 
+product_edit_people = "Change the roles of people"
+
 product_index = ContextTitle('%s in Launchpad')
 
 def product_mergeproposals(context, view):

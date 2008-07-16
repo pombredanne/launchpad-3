@@ -1,0 +1,89 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+<body>
+
+<div metal:fill-slot="main">
+
+  <p class="error message"
+     tal:condition="view/errors"
+     tal:content="view/error_count" />
+
+  <p class="error message"
+     tal:repeat="form_wide_error view/form_wide_errors"
+     tal:content="structure form_wide_error">
+    Schema validation errors.
+  </p>
+
+  <form action="" method="POST">
+
+    <table width="100%">
+      <tr>
+        <th style="white-space: nowrap" align="right">
+          Current owner:
+        </th>
+        <td tal:content="structure context/owner/fmt:link" />
+      </tr>
+
+      <tal:block define="widget nocall:view/owner_widget">
+        <metal:block use-macro="context/@@launchpad_form/widget_row"/>
+      </tal:block>
+
+      <tr>
+        <th align="right">This is:</th>
+        <td>
+          <label for="existing">
+            <input type="radio" value="existing" id="existing" name="existing"
+              tal:attributes="checked view/existing_checked_value"
+              />An existing person or team
+          </label>
+          <br />
+
+          <label for="new">
+            <input type="radio" value="new" id="new" name="existing"
+                   tal:attributes="checked view/new_checked_value"
+                   />A new team I'm creating here
+          </label>
+          <br />
+          <p class="lesser discreet">
+            The new team's name must begin with a lower-case letter or
+            number, and contain only letters, numbers, dots, hyphens, or plus
+            signs.
+          </p>
+        </td>
+      </tr>
+      <tal:block define="widgets view/remaining_widgets"
+                 repeat="widget widgets">
+        <metal:block use-macro="context/@@launchpad_form/widget_row"/>
+      </tal:block>
+
+    </table>
+    <div class="actions">
+      <input tal:repeat="action view/actions"
+              tal:replace="structure action/render"
+        />
+      <tal:has-cancel-link condition="view/cancel_url">
+        or <a tal:attributes="href view/cancel_url">Cancel</a>
+      </tal:has-cancel-link>
+    </div>
+  </form>
+
+</div>
+
+</body>
+</html>
+</tal:root>

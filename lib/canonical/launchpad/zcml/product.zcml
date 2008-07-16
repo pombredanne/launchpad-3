@@ -132,7 +132,7 @@
         ProductBranchesMenu ProductSpecificationsMenu
         ProductTranslationsMenu ProductBugsMenu
         ProductSetFacets ProductSetContextMenu
-        ProductNavigationMenu
+        ProductNavigationMenu ProductEditNavigationMenu
         "
         />
 
@@ -409,10 +409,10 @@
     for="canonical.launchpad.interfaces.IProduct"
     permission="launchpad.Edit"
     facet="overview"
-    class="canonical.launchpad.browser.ProductReassignmentView">
+    class="canonical.launchpad.browser.ProductEditPeopleView">
     <browser:page
-      name="+reassign"
-      template="../templates/object-reassignment.pt"
+      name="+edit-people"
+      template="../templates/product-edit-people.pt"
       />
   </browser:pages>
 

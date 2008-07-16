@@ -43,7 +43,7 @@
   because he's not the owner of the product nor a member of admins.
 
   >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/firefox/+reassign')
+  >>> browser.open('http://launchpad.dev/firefox/+edit-people')
   Traceback (most recent call last):
   ...
   Unauthorized...
@@ -51,19 +51,22 @@
   Now we're logged in as FooBar and he's an LP admin, so he can do everything.
 
   >>> admin_browser.open('http://launchpad.dev/firefox')
-  >>> admin_browser.getLink('Change maintainer').click()
+  >>> admin_browser.getLink('Change details').click()
   >>> admin_browser.url
-  'http://launchpad.dev/firefox/+reassign'
+  'http://launchpad.dev/firefox/+edit'
+  >>> admin_browser.getLink('People').click()
+  >>> admin_browser.url
+  'http://launchpad.dev/firefox/+edit-people'
 
   >>> admin_browser.title
-  'Reassign Mozilla Firefox'
+  'Change the roles of people'
 
   Trying to change the owner to a new team with an invalid name is not
   allowed.
 
   >>> admin_browser.getControl(name='field.owner').value = 'foo bar'
   >>> admin_browser.getControl(name='existing').value = ['new']
-  >>> admin_browser.getControl('Change Registrant').click()
+  >>> admin_browser.getControl('Save changes').click()
 
   >>> message = ("'foo bar' is not a valid name for a team. Please make "
   ...            "sure it contains only the allowed characters and no spaces.")
@@ -74,10 +77,10 @@
 
   >>> admin_browser.getControl(name='field.owner').value = 'no-priv'
   >>> admin_browser.getControl(name='existing').value = ['existing']
-  >>> admin_browser.getControl('Change Registrant').click()
+  >>> admin_browser.getControl('Save changes').click()
 
   >>> admin_browser.url
-  'http://launchpad.dev/firefox/'
+  'http://launchpad.dev/firefox'
 
   >>> login('no-priv@canonical.com')
 
@@ -109,10 +112,13 @@
   to another person.
 
   >>> browser.open('http://launchpad.dev/firefox')
-  >>> browser.getLink('Change maintainer').click()
+  >>> browser.getLink('Change details').click()
   >>> browser.url
-  'http://launchpad.dev/firefox/+reassign'
+  'http://launchpad.dev/firefox/+edit'
+  >>> browser.getLink('People').click()
+  >>> browser.url
+  'http://launchpad.dev/firefox/+edit-people'
 
   >>> browser.getControl(name='field.owner').value = 'name12'
   >>> browser.getControl(name='existing').value = ['existing']
-  >>> browser.getControl('Change Registrant').click()
+  >>> browser.getControl('Save changes').click()
