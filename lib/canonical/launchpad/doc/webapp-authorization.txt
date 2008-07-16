@@ -139,11 +139,6 @@ be used for anything which is part of that Project/Distribution.
     True
     >>> check_permission('launchpad.Edit', firefox)
     True
-    >>> from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
-    >>> bug_task = firefox.searchTasks(
-    ...     BugTaskSearchParams(user=personset.getByName('name16')))[0]
-    >>> check_permission('launchpad.Edit', bug_task)
-    True
 
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
@@ -162,6 +157,18 @@ with Products/Projects.
 
     >>> check_permission('launchpad.Edit', firefox)
     False
+
+A bug task whose target is Firefox is said to be within firefox (which
+in turn is within Mozilla), so the user's access level will apply to
+that bug task as well.
+
+    >>> principal.scope = mozilla
+    >>> setupInteraction(principal)
+    >>> from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
+    >>> bug_task = firefox.searchTasks(
+    ...     BugTaskSearchParams(user=personset.getByName('name16')))[0]
+    >>> check_permission('launchpad.Edit', bug_task)
+    True
 
 If no scope is specified, the access level will be used for everything.
 
