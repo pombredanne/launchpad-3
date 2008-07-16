@@ -1,7 +1,12 @@
 <metal:page
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
-  define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+  define-macro="master"
+  tal:define="
+    revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+    version string:Launchpad 1.99 (r${revno});
+  "
+><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
@@ -17,12 +22,13 @@
                   dir view/dir|string:ltr"
   tal:define="
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-      revno modules/canonical.launchpad.versioninfo/revno;
       icingroot string:${rooturl}+icing/rev${revno};
       site_message modules/canonical.config/config/launchpad/site_message;
       devmode modules/canonical.config/config/devmode;
       is_demo modules/canonical.config/config/launchpad/is_demo;
-      is_edge modules/canonical.config/config/launchpad/is_edge"
+      is_edge modules/canonical.config/config/launchpad/is_edge;
+      is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
+  "
 >
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
@@ -116,6 +122,7 @@
       tal:condition="view/macro:pagehas/applicationtabs"
       tal:define="facetmenu CONTEXTS/menu:facet"
       id="lp-apps"
+      class="clearfix"
     >
       <tal:XXX replace="nothing">
         # XXX mpt 20080702: The HTML comment works around bug 229931.
@@ -123,7 +130,7 @@
       <!-- :-) --><tal:facet repeat="link facetmenu">
         <span
           tal:condition="link/selected"
-          tal:attributes="title link/summary; class string:${link/name}-active"
+          tal:attributes="title link/summary; class string:${link/name} active"
           ><strong
             tal:condition="not:link/linked"
             tal:content="structure link/escapedtext"
@@ -158,7 +165,7 @@
             <td
               tal:define="
                 facetname CONTEXTS/menu:selectedfacetname;
-                facetname python:facetname == 'overview' and 'register' or facetname;
+                facetname python:facetname == 'overview' and 'people' or facetname;
                 facetname python:facetname == 'branches' and 'code' or facetname;
                 facetname python:facetname == 'specifications' and 'blueprints' or facetname"
               tal:content="structure context/@@+applicationbuttons/?facetname"
@@ -167,12 +174,8 @@
         </tbody>
       </table>
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
+        <div id="container">
 
-                      <div
-                        id="container"
-                        tal:define="context_badges CONTEXTS/lp:context_badges"
-                        tal:attributes="class python: path('view/isPrivate | context_badges/isPrivateBadgeVisible') and 'private' or None"
-                      >
                         <tal:noportlets
                           condition="not: view/macro:pagehas/portlets"
                         >
@@ -210,10 +213,6 @@
                         >
                           <div id="nonportlets">
 
-                          <div id="big-badges" style="float: right">
-                            <tal:big-badges replace="structure context/badges:large"/>
-                          </div>
-
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
@@ -242,8 +241,8 @@
                           <div class="clear"></div><!-- needed for Safari -->
                         </div>
                         <div class="clear"></div>
-                      </div><!--id="container"-->
 
+         </div><!--id="container"-->
       </div><!--id="mainarea"-->
       <tal:noborder condition="not:view/macro:pagehas/applicationborder">
         <tal:notifications
@@ -274,34 +273,27 @@
         </label>
       </form>
      <div id="globalfooter" class="clearfix" xml:lang="en" lang="en" dir="ltr">
-        <div id="applications-footer"
-          tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
-          tal:replace="nothing">
-          <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
-          <a tal:attributes="href vhosts/code/rooturl">Code</a> |
-          <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
-          <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
-          <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
-          <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
-        </div>
         <div id="colophon">
-          <a href="/legal">Terms&nbsp;of&nbsp;Use</a> |
-          <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
-          <a href="/faq">FAQ</a> |
-          <a href="https://help.launchpad.net/">Documentation</a>
+          <a tal:condition="not:request/lp:person" href="/+tour"
+          >What is Launchpad?</a>
+          <a tal:condition="request/lp:person" href="/feedback"
+          >Help improve Launchpad</a>
         </div>
-        <div id="copyright">
+        <div id="lp-arcana">
             &copy;&nbsp;2004-2008&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-          <tal:block>
-              | <a href="https://help.launchpad.net/LaunchpadReleases">
-              Version 1.99</a> | build
-              <tal:block condition="revno" replace="revno" />
-              <tal:block condition="not: revno">unknown</tal:block>
-          </tal:block>
-          <tal:devmode condition="devmode">| DEVMODE</tal:devmode>
-          <tal:demo condition="is_demo">| DEMO</tal:demo>
-          <tal:edge condition="is_edge">| EDGE</tal:edge>
+          |
+          <a href="/legal">Terms of use</a>
+          <span tal:condition="not:is_lpnet" id="lp-version">
+            |
+            <a
+              href="https://help.launchpad.net/LaunchpadReleases"
+              tal:content="version"
+            />
+            <tal:devmode condition="devmode">devmode</tal:devmode>
+            <tal:demo condition="is_demo">demo site</tal:demo>
+            <tal:edge condition="is_edge">beta site</tal:edge>
+          </span>
         </div>
         <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
             <li>Facet name:
@@ -408,5 +400,6 @@
 <tal:requestlog
     define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
     replace="structure string:&lt;!-- at least ${log} --&gt;" />
+<tal:version replace="structure string:&lt;!-- ${version} -->" />
 </metal:page>
 <!-- 1-0 inprogress portlets wrong in IE/Mac -->

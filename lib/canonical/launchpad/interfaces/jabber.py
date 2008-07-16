@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 class IJabberID(IHasOwner):
     """Jabber specific user ID """
-    export_as_webservice_entry()
+    export_as_webservice_entry('jabber_id')
     id = Int(title=_("Database ID"), required=True, readonly=True)
     # schema=Interface will be overriden in person.py because of circular
     # dependencies.
