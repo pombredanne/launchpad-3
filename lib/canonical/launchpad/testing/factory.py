@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces import (
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
     CreateBugParams,
+    DistroSeriesStatus,
     EmailAddressStatus,
     IBranchSet,
     IBugSet,
@@ -42,6 +43,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportSet,
     ICountrySet,
     IDistributionSet,
+    IDistroSeriesSet,
     IEmailAddressSet,
     ILibraryFileAliasSet,
     IPersonSet,
@@ -650,3 +652,18 @@ class LaunchpadObjectFactory:
         return getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
             members, owner)
+
+    def makeDistroRelease(self, distribution=None, version=None,
+                          status=DistroSeriesStatus.DEVELOPMENT,
+                          parent_series=None):
+        """Make a new distro release."""
+        if distribution is None:
+            distribution = self.makeDistribution()
+        return getUtility(IDistroSeriesSet).new(
+            distribution=distribution,
+            version="%s.0" % self.getUniqueInteger(),
+            name=self.getUniqueString(),
+            displayname=self.getUniqueString(),
+            title=self.getUniqueString(), summary=self.getUniqueString(),
+            description=self.getUniqueString(),
+            parent_series=parent_series, owner=distribution.owner)
