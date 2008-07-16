@@ -374,14 +374,22 @@ class BzrSync:
         self.logger.info("    from %s", bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
-        self.retrieveBranchDetails(bzr_branch)
+        last_revision, bzr_ancestry, bzr_history = (
+            self.retrieveBranchDetails(bzr_branch))
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
         self.trans_manager.begin()
         self.setFormats(bzr_branch)
-        self.retrieveDatabaseAncestry()
+        db_ancestry, db_history, db_branch_revision_map = (
+            self.retrieveDatabaseAncestry())
+        self.last_revision = last_revision
+        self.bzr_ancestry = bzr_ancestry
+        self.bzr_history = bzr_history
+        self.db_ancestry = db_ancestry
+        self.db_history = db_history
+        self.db_branch_revision_map = db_branch_revision_map
         (revisions_to_insert_or_check, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges()
         self.syncRevisions(
@@ -405,22 +413,24 @@ class BzrSync:
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""
         self.logger.info("Retrieving ancestry from database.")
-        self.db_ancestry, self.db_history, self.db_branch_revision_map = (
+        db_ancestry, db_history, db_branch_revision_map = (
             self.db_branch.getScannerData())
-        initial_scan = (len(self.db_history) == 0)
+        initial_scan = (len(db_history) == 0)
         self._branch_mailer.initializeEmailQueue(initial_scan)
+        return db_ancestry, db_history, db_branch_revision_map
 
     def retrieveBranchDetails(self, bzr_branch):
         """Retrieve ancestry from the the bzr branch on disk."""
         self.logger.info("Retrieving ancestry from bzrlib.")
-        self.last_revision = bzr_branch.last_revision()
+        last_revision = bzr_branch.last_revision()
         # Make bzr_ancestry a set for consistency with db_ancestry.
         bzr_ancestry_ordered = (
-            bzr_branch.repository.get_ancestry(self.last_revision))
+            bzr_branch.repository.get_ancestry(last_revision))
         first_ancestor = bzr_ancestry_ordered.pop(0)
         assert first_ancestor is None, 'history horizons are not supported'
-        self.bzr_ancestry = set(bzr_ancestry_ordered)
-        self.bzr_history = bzr_branch.revision_history()
+        bzr_ancestry = set(bzr_ancestry_ordered)
+        bzr_history = bzr_branch.revision_history()
+        return last_revision, bzr_ancestry, bzr_history
 
     def setFormats(self, bzr_branch):
         """Record the stored formats in the database object.
@@ -516,7 +526,8 @@ class BzrSync:
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
         branchrevisions_to_insert = dict(
-            self.getRevisions(added_merged.union(added_history)))
+            self.getRevisions(
+                self.bzr_history, added_merged.union(added_history)))
 
         # We must insert, or check for consistency, all revisions which were
         # added to the ancestry.
@@ -594,22 +605,20 @@ class BzrSync:
             if branchrevisions_to_insert[revision_id] is not None:
                 self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
 
-    def getRevisions(self, limit=None):
+    def getRevisions(self, bzr_history, revision_subset=None):
         """Generate revision IDs that make up the branch's ancestry.
 
         Generate a sequence of (sequence, revision-id) pairs to be inserted
         into the branchrevision table.
 
         :param limit: set of revision ids, only yield tuples whose revision-id
-            is in this set. Defaults to the full ancestry of the branch.
+            is in this set.
         """
-        if limit is None:
-            limit = self.bzr_ancestry
-        for (index, revision_id) in enumerate(self.bzr_history):
-            if revision_id in limit:
+        for (index, revision_id) in enumerate(bzr_history):
+            if revision_id in revision_subset:
                 # sequence numbers start from 1
                 yield revision_id, index + 1
-        for revision_id in limit.difference(set(self.bzr_history)):
+        for revision_id in revision_subset.difference(set(bzr_history)):
             yield revision_id, None
 
     def _timestampToDatetime(self, timestamp):
