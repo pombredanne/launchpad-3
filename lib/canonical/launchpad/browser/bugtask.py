@@ -1914,12 +1914,19 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
 
         params = {}
 
-        param_names_map = {'searchtext': 'search_text',
-                           'tags_combinator': None,
-                           'omit_dupes': 'omit_duplicates',
-                           'subscriber': 'bug_subscriber',
-                           'tag': 'tags',
-                           'orderby': None}
+        # A mapping of parameters that appear in the destination
+        # with a different name, or are being dropped altogether
+        param_names_map = {
+            'searchtext': 'search_text',
+            # We're assigning the relevant value to tags_combinator_all
+            'tags_combinator': None,
+            'omit_dupes': 'omit_duplicates',
+            'subscriber': 'bug_subscriber',
+            'tag': 'tags',
+            # The correct value is being retrieved
+            # using get_sortorder_from_request()
+            'orderby': None,
+            }
 
         for key, value in data.items():
             if key in param_names_map:
