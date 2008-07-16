@@ -93,8 +93,10 @@ We define some utility functions for printing out bug subscriptions and
 the recipients for the notifications they generate.
 
     >>> def print_bug_subscribers(bug_subscribers):
-    ...     for subscriber in bug_subscribers:
-    ...         print subscriber.name
+    ...     subscriber_names = sorted(subscriber.name
+    ...                               for subscriber in bug_subscribers)
+    ...     for name in subscriber_names:
+    ...         print name
     >>> def print_bug_subscriptions(bug_subscriptions):
     ...     for subscription in bug_subscriptions:
     ...         print subscription.subscriber.name
@@ -188,7 +190,7 @@ Subscribers of one or more targets are retrieved by
 PersonSet.getSubscribersForTargets.
 
 XXX Abel Deuring 2008-07-11 We must remove the security proxy, because
-PersonSet.getSubscribersForTargets accesses the private attribute
+PersonSet.getSubscribersForTargets() accesses the private attribute
 firefox._targets_args. This attribute should be renamed. Bug #247525.
 
     >>> from zope.security.proxy import removeSecurityProxy
@@ -200,12 +202,12 @@ firefox._targets_args. This attribute should be renamed. Bug #247525.
     >>> print_bug_subscribers(firefox_subscribers)
     name12
 
-If the optional parameter level is passed to
-PersonSet.getSubscribersForTargets, only those structural subscribers
-are returned with a subscription level greater or equal to the
-parameter value. The subscription level of ff_sub, the only structural
-subscription to firefox, is NOTHING, hence we get an empty list if we
-pass any larger bug notification level.
+If PersonSet.getSubscribersForTargets() is passed a
+BugNotificationLevel in its `level` parameter, only structural
+subscribers with that notification level or higher will be returned.
+The subscription level of ff_sub, the only structural subscription
+to firefox, is NOTHING, hence we get an empty list if we pass any
+larger bug notification level.
 
     >>> firefox_subscribers = person_set.getSubscribersForTargets(
     ...     [firefox_no_proxy], level=BugNotificationLevel.LIFECYCLE)
@@ -213,7 +215,7 @@ pass any larger bug notification level.
     0
 
 If the bug notification level of ff_sub is increased, the subscription
-is included in the result of PersonSet.getSubscribersForTarget.
+is included in the result of PersonSet.getSubscribersForTarget().
 
     >>> ff_sub.level = BugNotificationLevel.LIFECYCLE
     >>> firefox_subscribers = person_set.getSubscribersForTargets(
@@ -226,7 +228,7 @@ is included in the result of PersonSet.getSubscribersForTarget.
     >>> print_bug_subscribers(firefox_subscribers)
     name12
 
-More than one target can be passed to PersonSet.getSubscribersForTargets.
+More than one target can be passed to PersonSet.getSubscribersForTargets().
 
     >>> ubuntu_no_proxy = removeSecurityProxy(ubuntu)
     >>> ubuntu_or_firefox_subscribers = person_set.getSubscribersForTargets(
@@ -234,5 +236,3 @@ More than one target can be passed to PersonSet.getSubscribersForTargets.
     >>> print_bug_subscribers(ubuntu_or_firefox_subscribers)
     name12
     name16
-
-
