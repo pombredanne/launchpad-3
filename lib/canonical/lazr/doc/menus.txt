@@ -945,6 +945,41 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
         linked: True
 
 
+== Lookups for the nearest navigation menu ==
+
+Sometimes the view will have an associated navigation menu, but the view's context will not.  In this case we want to search upwards through the navigation hierarchy for a context that *does* have a navigation menu.
+
+    >>> links_dict = test_tales(
+    ...     'context/menu:navigation', context=object(),
+    ...     request=request, view=recipe_journal_view)
+    >>> summarise_tal_links(links_dict)
+    link journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
+        menu: <...IRecipeJournalMenuMarker...>
+        linked: False
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam
+        enabled: True
+        menu: <...IRecipeEditMenuMarker...>
+        linked: True
+
+    >>> links_dict = test_tales(
+    ...     'view/menu:navigation', context=object(),
+    ...     request=request, view=recipe_journal_view)
+    >>> summarise_tal_links(links_dict)
+    link read_journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
+        enabled: True
+        menu: None
+        linked: False
+    link write_entry
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+write-entry
+        enabled: True
+        menu: None
+        linked: True
+
+
 == Rendering the menu in a template ==
 
 Menus are often rendered with a view controller class to ensure
