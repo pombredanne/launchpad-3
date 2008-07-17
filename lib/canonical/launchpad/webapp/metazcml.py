@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+import os
 import inspect
 
 import zope.app.form.browser.metaconfigure
@@ -18,6 +19,7 @@ from zope.app.publisher.browser.viewmeta import (
 from zope.app.security.metadirectives import IDefinePermissionDirective
 from zope.app.security.permission import Permission
 from zope.component import getUtility
+from zope.configuration.exceptions import ConfigurationError
 from zope.configuration.fields import (
     GlobalObject, MessageID, Path, PythonIdentifier, Tokens)
 from zope.interface import Interface, implements
@@ -25,7 +27,7 @@ from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.schema import TextLine
-from zope.security.checker import Checker, CheckerPublic
+from zope.security.checker import Checker, CheckerPublic, defineChecker
 from zope.security.interfaces import IPermission
 from zope.security.proxy import ProxyFactory
 
@@ -35,6 +37,7 @@ from canonical.launchpad.webapp.generalform import (
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IAuthorization, IBreadcrumbProvider,
     ICanonicalUrlData, IContextMenu, IFacetMenu, INavigationMenu)
+from canonical.launchpad.webapp.launchpadtour import LaunchpadTourView
 from canonical.launchpad.webapp.publisher import RenamedView
 
 
@@ -539,6 +542,69 @@ def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
         args = (
             'provideAdapter',
             (for_, layer), Interface, name, renamed_factory, _context.info))
+
+
+class ITourPageDirective(Interface):
+    """Schema for the browser:tour directive."""
+
+    for_ = GlobalObject(
+        title=u"Specification of the object that has the tour page",
+        required=True )
+
+    layer = LayerField(
+        title=u"The layer the tour page is in.",
+        description=u"""
+        A skin is composed of layers. It is common to put skin
+        specific views in a layer named after the skin. If the 'layer'
+        attribute is not supplied, it defaults to 'default'.""",
+        required=False,
+        )
+
+    name = zope.schema.TextLine(
+        title=u"The name of tour page.",
+        description=u"The name shows up in URLs/paths. For example 'foo'.",
+        required=True)
+
+    tour = Path(
+        title=u"Path to the tour XML description.",
+        description=u"The tour description is held in an XML file.",
+        required=True)
+
+
+def tour_page(_context, for_, name, tour, layer=IDefaultBrowserLayer):
+    """Register a new `LaunchpadTourView`.
+
+    This actually register a dynamically generated subclass that is protected
+    with the configured permission.
+    """
+    tour = os.path.abspath(str(_context.path(tour)))
+    if not os.path.isfile(tour):
+        raise ConfigurationError("No such file", tour)
+
+    cdict = {
+        '__name__' : name,
+        '__tour_file__' : tour,
+        '__init__' : (
+            lambda self, context, request: LaunchpadTourView.__init__(
+                self, context, request, self.__tour_file__))
+        }
+
+    new_class = type(
+        "SimpleLaunchpadTourView for %s" % tour, (LaunchpadTourView, ), cdict)
+
+    # Tours are always public.
+    required = {'__call__': CheckerPublic}
+    for n in IBrowserPublisher.names(all=True):
+        required[n] = CheckerPublic
+
+    defineChecker(new_class, Checker(required))
+
+    _context.action(
+        discriminator = ('view', for_, name, IBrowserRequest, layer),
+        callable = handler,
+        args = ('provideAdapter',
+                (for_, layer), Interface, name, new_class, _context.info),
+        )
 
 
 class IEditFormDirective(
