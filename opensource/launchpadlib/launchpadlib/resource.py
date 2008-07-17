@@ -135,7 +135,8 @@ class Resource(LaunchpadBase):
     @classmethod
     def _wrap_resource(cls, root, resource, representation=None,
                        representation_media_type='application/json',
-                       representation_needs_processing=True, param_name=None):
+                       representation_needs_processing=True,
+                       representation_definition=None, param_name=None):
         """Create a launchpadlib Resource from a wadllib Resource.
 
         :param resource: The wadllib Resource to wrap.
@@ -164,14 +165,16 @@ class Resource(LaunchpadBase):
         type_url = resource.type_url
         resource_type = urlparse(type_url)[-1]
         default = Entry
-        if param_name is not None:
-            if param_name.endswith('_collection_link'):
+        if (type_url.endswith('-page')
+            or (param_name is not None
+                and param_name.endswith('_collection_link'))):
                 default = Collection
         r_class = RESOURCE_TYPE_CLASSES.get(resource_type, default)
         return r_class(
             root, resource.bind(
                 representation, representation_media_type,
-                representation_needs_processing))
+                representation_needs_processing,
+                representation_definition=representation_definition))
 
     def lp_refresh(self, new_url=None):
         """Update this resource's representation."""
@@ -228,6 +231,7 @@ class NamedOperation(LaunchpadBase):
             extra_headers = { 'Content-type' : media_type }
         response, content = self.root._browser._request(
             url, in_representation, http_method, extra_headers=extra_headers)
+        content_type = response['content-type']
 
         if response.status == 201:
             # The operation may have resulted in the creation of a new
@@ -245,9 +249,29 @@ class NamedOperation(LaunchpadBase):
                 self.root, wadl_resource, content, response['content-type'])
         else:
             # Process the returned content, assuming we know how.
-            if response['content-type'] == 'application/json':
-                return simplejson.loads(content)
-            return content
+            response_definition = self.wadl_method.response
+            representation_definition = (
+                response_definition.get_representation_definition(
+                    content_type))
+
+            if representation_definition is None:
+                # The operation returned a document with nothing
+                # special about it.
+                if content_type == 'application/json':
+                    return simplejson.loads(content)
+                # We don't know how to process the content.
+                return content
+
+            # The operation returned a representation of some
+            # resource. Instantiate a Resource object for it.
+            representation_definition = (
+                representation_definition.resolve_definition())
+            wadl_resource = WadlResource(
+                self.root._wadl, url, representation_definition.tag)
+            return Resource._wrap_resource(
+                self.root, wadl_resource, content, content_type,
+                representation_definition=representation_definition)
+
 
 class Entry(Resource):
     """A class for an entry-type resource that can be updated with PATCH."""

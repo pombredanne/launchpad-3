@@ -91,6 +91,13 @@ You also access teams using the same interface.
     >>> team.is_team
     True
 
+You can find out about a person's relationship with a team.
+
+    >>> path = salgado.findPathToTeam(
+    ...     team=launchpad.people['mailing-list-experts'])
+    >>> [team.name for team in path]
+    [u'admins', u'mailing-list-experts']
+
 You can create a new team through the web interface.  The simplest case of
 this requires only the new team's name, owner and display name.
 

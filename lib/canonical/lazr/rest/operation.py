@@ -66,9 +66,7 @@ class ResourceOperation(BatchingResourceMixin):
             # batch of the collection.
             result = CollectionResource(
                 ICollection(result), self.request).batch()
-        elif not(zope_isinstance(result,
-                                 (basestring, set, types.TupleType,
-                                  types.ListType, types.DictionaryType))):
+        elif not zope_isinstance(result, (basestring, set, dict)):
             # If the result provides an iterator but isn't a list or
             # string, it's an object capable of batching a large
             # dataset. Serve only one batch of the dataset.

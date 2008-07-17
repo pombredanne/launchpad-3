@@ -210,7 +210,8 @@ class Resource(WADLResolvableDefinition):
 
     def __init__(self, application, url, resource_type,
                  representation=None, media_type=None,
-                 representation_needs_processing=True, _definition=None):
+                 representation_needs_processing=True,
+                 representation_definition=None):
         """
         :param application: A WADLApplication.
         :param url: The URL to this resource.
@@ -251,8 +252,11 @@ class Resource(WADLResolvableDefinition):
                     "media type %s" % media_type)
         self.media_type = media_type
         if representation is not None:
-            self.representation_definition = (
-                self.get_representation_definition(self.media_type))
+            if representation_definition is not None:
+                self.representation_definition = representation_definition
+            else:
+                self.representation_definition = (
+                    self.get_representation_definition(self.media_type))
 
     @property
     def url(self):
@@ -283,7 +287,8 @@ class Resource(WADLResolvableDefinition):
         return self.tag.attrib['id']
 
     def bind(self, representation, media_type='application/json',
-             representation_needs_processing=True):
+             representation_needs_processing=True,
+             representation_definition=None):
         """Bind the resource to a representation of that resource.
 
         :param representation: A string representation
@@ -295,7 +300,8 @@ class Resource(WADLResolvableDefinition):
         """
         return Resource(self.application, self.url, self.tag,
                         representation, media_type,
-                        representation_needs_processing, self._definition)
+                        representation_needs_processing,
+                        representation_definition)
 
     def get_representation_definition(self, media_type):
         """Get a description of one of this resource's representations."""
@@ -611,6 +617,16 @@ class ResponseDefinition(HasParametersMixin):
                 "Don't know how to find value for a parameter of "
                 "type %s." % parameter.style)
         return self.headers.get(parameter.name)
+
+    def get_representation_definition(self, media_type):
+        """Get one of the possible representations of the response."""
+        if self.tag is None:
+            return None
+        for representation in self:
+            if representation.media_type == media_type:
+                return representation
+        return None
+
 
 class RepresentationDefinition(WADLResolvableDefinition, HasParametersMixin):
     """A definition of the structure of a representation."""
