@@ -1654,9 +1654,23 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
         old_owner = self.context.owner
+        old_driver = self.context.driver
         self.updateContextFromData(data)
         self._reassignProductDependencies(
             self.context, old_owner, self.context.owner)
+        self.updateContextFromData(data)
+        if self.context.owner != old_owner:
+            self.request.response.addNotification(
+                "Successfully changed the owner to %s"
+                % self.context.owner.displayname)
+        if self.context.driver != old_driver:
+            if self.context.driver is not None:
+                self.request.response.addNotification(
+                    "Successfully changed the driver to %s"
+                    % self.context.driver.displayname)
+            else:
+                self.request.response.addNotification(
+                    "Successfully removed the driver")
 
     @property
     def next_url(self):
