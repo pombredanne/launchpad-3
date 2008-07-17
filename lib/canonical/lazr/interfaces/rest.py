@@ -116,6 +116,8 @@ class IResourceGETOperation(IResourceOperation):
 
     This might be a search or lookup operation.
     """
+    return_type = Attribute(
+        "The type of the resource returned by this operation, if any.")
 
 
 class IResourcePOSTOperation(IResourceOperation):

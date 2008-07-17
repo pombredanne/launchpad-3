@@ -16,6 +16,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.lazr.interfaces import (
     ICollection, IFieldMarshaller, IResourceGETOperation,
     IResourcePOSTOperation)
+from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
     BatchingResourceMixin, CollectionResource, ResourceJSONEncoder)
 
@@ -66,8 +67,16 @@ class ResourceOperation(BatchingResourceMixin):
             # batch of the collection.
             result = CollectionResource(
                 ICollection(result), self.request).batch()
-        elif not zope_isinstance(result, (basestring, set, dict)):
-            # If the result provides an iterator but isn't a list or
+        elif ((IResourceGETOperation.providedBy(self)
+               and ICollectionField.providedBy(self.return_type))
+              or not zope_isinstance(
+                    result, (basestring, dict, set, list, tuple))):
+            # If the method is supposed to return a list of entries,
+            # but it didn't get caught by the previous conditional,
+            # batch it here instead of creating a CollectionResource
+            # for it.
+            #
+            # If the result provides an iterator but isn't a dict or
             # string, it's an object capable of batching a large
             # dataset. Serve only one batch of the dataset.
             try:
