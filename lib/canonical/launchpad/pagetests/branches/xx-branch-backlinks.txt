@@ -45,7 +45,7 @@ In order to check the edit subscription page, we need to subscribe.
 
 The link appears on the edit subscription page.
 
-    >>> browser.getLink('Edit your subscription').click()
+    >>> browser.getLink('Edit subscription').click()
     >>> back_link = find_tag_by_id(browser.contents, 'branch-back-link')
     >>> print back_link.renderContents().strip()
     <img src="/@@/branch" alt="" />

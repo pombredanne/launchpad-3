@@ -92,6 +92,17 @@ active member of that team.
     >>> marilize in ubuntu_translators.activemembers
     True
 
+Marilize has used OpenID to Login. The OpenIDRPSummaries will be
+transferred to Sample Person.
+
+    >>> from canonical.launchpad.interfaces.openidserver import (
+    ...     IOpenIDRPSummarySet)
+    >>> openidrpsummaryset = getUtility(IOpenIDRPSummarySet)
+    >>> summaries = openidrpsummaryset.getByIdentifier(
+    ...     'http://openid.launchpad.dev/+id/marilize_oid')
+    >>> summaries[0].account.displayname
+    u'Marilize Coetzee'
+
 
 == Do the merge! ==
 
@@ -145,6 +156,13 @@ time the caches are rebuilt.
 
     >>> sample.karma == sampleperson_old_karma
     True
+
+Marilize's OpenIDRPSummaries were transferred to Sample Person.
+
+    >>> summaries = openidrpsummaryset.getByIdentifier(
+    ...     'http://openid.launchpad.dev/+id/marilize_oid')
+    >>> summaries[0].account.displayname
+    u'Sample Person'
 
 A merged account gets a -merged suffix on its name.
 

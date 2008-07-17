@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'BranchMergeCandidateView',
     'BranchMergeProposalSOP',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
@@ -103,25 +102,6 @@ class BranchMergeProposalSOP(StructuralObjectPresentation):
         return self.delegate.getMainHeading()
 
 
-class BranchMergeCandidateView(LaunchpadView):
-    """Provides a small fragment of landing targets"""
-
-    def friendly_text(self):
-        """Prints friendly text for a branch."""
-        friendly_texts = {
-            BranchMergeProposalStatus.WORK_IN_PROGRESS : 'On hold',
-            BranchMergeProposalStatus.NEEDS_REVIEW : 'Ready for review',
-            BranchMergeProposalStatus.CODE_APPROVED : 'Approved',
-            BranchMergeProposalStatus.REJECTED : 'Rejected',
-            BranchMergeProposalStatus.MERGED : 'Merged',
-            BranchMergeProposalStatus.MERGE_FAILED :
-                'Approved [Merge Failed]',
-            BranchMergeProposalStatus.QUEUED : 'Queued',
-            BranchMergeProposalStatus.SUPERSEDED : 'Superseded'
-            }
-        return friendly_texts[self.context.queue_status]
-
-
 class BranchMergeProposalContextMenu(ContextMenu):
     """Context menu for branches."""
 
@@ -144,7 +124,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
         text = 'Delete proposal to merge'
-        return Link('+delete', text, icon='remove')
+        return Link('+delete', text, icon='edit')
 
     def _enabledForStatus(self, next_state):
         """True if the next_state is a valid transition for the current user.
@@ -162,7 +142,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Work in progress'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        return Link('+work-in-progress', text, enabled=enabled)
+        return Link('+work-in-progress', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def request_review(self):
@@ -174,42 +154,42 @@ class BranchMergeProposalContextMenu(ContextMenu):
             enabled = True
             if (self.context.votes.count()) > 0:
                 text = 'Request another review'
-        return Link('+request-review', text, icon='add', enabled=enabled)
+        return Link('+request-review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def review(self):
         text = 'Review proposal'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.CODE_APPROVED)
-        return Link('+review', text, enabled=enabled)
+        return Link('+review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def merge(self):
         text = 'Mark as merged'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.MERGED)
-        return Link('+merged', text, enabled=enabled)
+        return Link('+merged', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def enqueue(self):
         text = 'Queue for merging'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.QUEUED)
-        return Link('+enqueue', text, enabled=enabled)
+        return Link('+enqueue', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def dequeue(self):
         text = 'Remove from queue'
         enabled = (self.context.queue_status ==
                    BranchMergeProposalStatus.QUEUED)
-        return Link('+dequeue', text, enabled=enabled)
+        return Link('+dequeue', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def resubmit(self):
         text = 'Resubmit proposal'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.SUPERSEDED)
-        return Link('+resubmit', text, enabled=enabled)
+        return Link('+resubmit', text, icon='edit', enabled=enabled)
 
 
 class UnmergedRevisionsMixin:

@@ -26,18 +26,16 @@
 
   <tal:superseded-proposal condition="context/supersedes">
     <p id="superseded-proposal">
-      This proposal supersedes a
+      This proposal supersedes an
       <a tal:attributes="href context/supersedes/fmt:url">
-        proposal from
-        <tal:when replace="context/supersedes/date_created/fmt:date" /></a>.
+        earlier proposal</a>.
     </p>
   </tal:superseded-proposal>
   <tal:superseded-by condition="context/superseded_by">
     <p id="superseded-by">
       This proposal has been superseded by a
       <a tal:attributes="href context/superseded_by/fmt:url">
-        proposal from
-        <tal:when replace="context/superseded_by/date_created/fmt:date" /></a>.
+        later proposal</a>.
     </p>
   </tal:superseded-by>
 
@@ -67,6 +65,7 @@
        tal:content="structure link/render">
        Add comment
   </div>
+
 
   <div id="source-revisions"
        tal:condition="not: context/queue_status/enumvalue:MERGED">

@@ -182,14 +182,6 @@
       permission="launchpad.Edit"
       template="../templates/branchmergeproposal-edit.pt" />
 
-  <browser:page
-    name="+link-summary"
-    for="canonical.launchpad.interfaces.IBranchMergeProposal"
-    class="canonical.launchpad.browser.BranchMergeCandidateView"
-    facet="branches"
-    permission="zope.Public"
-    template="../templates/branch-merge-link-summary.pt" />
-
   <browser:url
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       path_expression="string:+merge/${id}"
