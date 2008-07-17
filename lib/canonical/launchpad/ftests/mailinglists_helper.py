@@ -102,10 +102,15 @@ def print_info(info, full=False):
     clearer, we specifically suppress printing of the mail-archive recipient
     when `full` is False (the default).
     """
+    status_mapping = {
+        0: 'RECIPIENT',
+        2: 'X',
+        }
     for team_name in sorted(info):
         print team_name
         subscribees = info[team_name]
-        for address, realname, flags, status in subscribees:
+        for address, realname, flags, status_id in subscribees:
+            status = status_mapping.get(status_id, '??')
             if realname == '':
                 realname = '(n/a)'
             if (not full and
