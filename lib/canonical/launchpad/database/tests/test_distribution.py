@@ -63,7 +63,7 @@ class TestDistributionCurrentSourceReleases(unittest.TestCase):
         if distroseries is None:
             distroseries = self.development_series
         self.publisher.getPubSource(
-            sourcename=name, status=status,distroseries=distroseries,
+            sourcename=name, status=status, distroseries=distroseries,
             version=version, archive=archive)
 
     def assertCurrentVersion(self, expected_version, package_name=None):
