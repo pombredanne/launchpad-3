@@ -93,9 +93,14 @@ class BugNavigation(Navigation):
 
     @stepthrough('attachments')
     def traverse_attachments(self, name):
-        """Retrieve a BugAttachment by ID."""
+        """Retrieve a BugAttachment by ID.
+
+        Only return a attachment if it is related to this bug.
+        """
         if name.isdigit():
-            return getUtility(IBugAttachmentSet)[name]
+            attachment = getUtility(IBugAttachmentSet)[name]
+            if attachment is not None and attachment.bug == self.context:
+                return attachment
 
 
 class BugFacets(StandardLaunchpadFacets):
