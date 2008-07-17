@@ -1,0 +1,163 @@
+= Finding the nearest adapter =
+
+The nearest_adapter() and nearest_context_with_adapter() will search the
+navigation hierarchy for a content-type that supplies the requested
+adaptation.
+
+
+== A sample hierarchy ==
+
+First, we'll construct an example object hierarchy.
+
+    >>> from zope.interface import implements, Interface
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+    >>> from zope.interface import Interface
+
+    >>> class ICookbook(Interface):
+    ...     """An object with facets and menus."""
+
+    >>> class IRecipe(Interface):
+    ...     """An object with facets and menus."""
+
+    >>> class BaseContent:
+    ...     implements(ICanonicalUrlData)
+    ...
+    ...     def __init__(self, name, parent):
+    ...         self.name = name
+    ...         self.path = name
+    ...         self.inside = parent
+    ...         self.rootsite = None
+
+    >>> class Root(BaseContent):
+    ...     """The root of 'cookery', a vhost and facet."""
+
+    >>> class Cookbook(BaseContent):
+    ...     implements(ICookbook)
+
+    >>> class Recipe(BaseContent):
+    ...     implements(IRecipe)
+
+
+    # nearest_adapter() uses canonical_url(), which in turn requires a
+    # running interaction.  We'll need to set up a test request to make it
+    # work.
+    >>> from zope.security.management import endInteraction, newInteraction
+    >>> from canonical.launchpad.webapp import urlsplit
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> def make_fake_request(url, traversed_objects=None):
+    ...     """Return a fake request object for menu testing."""
+    ...     url_parts = urlsplit(url)
+    ...     server_url = '://'.join(url_parts[0:2])
+    ...     path_info = url_parts[2]
+    ...     request = LaunchpadTestRequest(
+    ...         SERVER_URL=server_url,
+    ...         PATH_INFO=path_info)
+    ...     # After making the request, setup a new interaction.
+    ...     endInteraction()
+    ...     newInteraction(request)
+    ...     return request
+
+Here is the structure of our hierarchy:
+
+    >>> root = BaseContent('', None)
+    >>> cookbook = Cookbook('joy-of-cooking', root)
+    >>> recipe = Recipe('fried-spam', cookbook)
+
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/fried-spam')
+
+
+== Using nearest_adapter ==
+
+We'll try adapting our objects to a made-up interface, ICookingDirections.
+
+    >>> class ICookingDirections(Interface):
+    ...     """Something that tells us how to cook."""
+
+    >>> class CookingDirections:
+    ...     implements(ICookingDirections)
+    ...     def __init__(self, context):
+    ...         self.context = context
+
+Right now, none of our example objects can be turned into places.
+
+    >>> from canonical.lazr.canonicalurl import (nearest_adapter,
+    ...     nearest_context_with_adapter)
+
+    >>> print nearest_adapter(root, ICookingDirections)
+    None
+    >>> print nearest_adapter(cookbook, ICookingDirections)
+    None
+    >>> print nearest_adapter(recipe, ICookingDirections)
+    None
+
+The same holds true for nearest_context_with_adapter():
+
+    >>> nearest_context_with_adapter(root, ICookingDirections)
+    (None, None)
+
+We'll make the "cookbook" object adaptable to ICookingDirections.
+
+    >>> from zope.component import provideAdapter
+    >>> provideAdapter(CookingDirections, [ICookbook], ICookingDirections)
+
+    >>> ICookingDirections(cookbook)
+    <...CookingDirections ...>
+
+The nearest_adapter() function will look up the hierarchy for an object
+that has the requested adaptation.
+
+"recipe" does not provide ICookingDirections, but "cookbook" does, so
+cookbook's adapter will be returned.
+
+    >>> print nearest_adapter(recipe, ICookingDirections)
+    <...CookingDirections ...>
+
+Calling nearest_adapter() on "cookbook" itself will return the
+CookingDirections:
+
+    >>> print nearest_adapter(cookbook, ICookingDirections)
+    <...CookingDirections ...>
+
+Calling nearest_adapter() on the hierarchy root returns nothing:
+the root does not have the requested adaptation, and there are no higher
+objects to search.
+
+    >>> print nearest_adapter(root, ICookingDirections)
+    None
+
+
+=== Named lookups with nearest_adapter() ===
+
+nearest_adapter() also supports named adapter lookups.
+
+First we need a named adapter to use:
+
+    >>> from zope.component import queryAdapter
+
+    >>> class INamedFacetMenu(Interface):
+    ...     """ A thing that acts like a link."""
+
+    >>> class NamedFacetMenu:
+    ...     implements(INamedFacetMenu)
+    ...     def __init__(self, context):
+    ...         self.context = context
+
+    >>> provideAdapter(NamedFacetMenu, [IThingWithFacets], INamedFacetMenu,
+    ...     name='foo')
+    >>> print queryAdapter(street, INamedFacetMenu)
+    None
+    >>> queryAdapter(street, INamedFacetMenu, name='foo')
+    <...NamedFacetMenu instance ...>
+
+nearest_adapter() behaves as it would with a regular adapter:
+
+    >>> nearest_adapter(house, INamedFacetMenu, name='foo')
+    <...NamedFacetMenu instance ...>
+
+    >>> nearest_adapter(street, INamedFacetMenu, name='foo')
+    <...NamedFacetMenu instance ...>
+
+    >>> print nearest_adapter(root, INamedFacetMenu, name='foo')
+    None

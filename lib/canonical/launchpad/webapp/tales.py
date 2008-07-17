@@ -63,7 +63,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
-from canonical.lazr.adapter import (nearest_adapter,
+from canonical.lazr.canonicalurl import (nearest_adapter,
     nearest_context_with_adapter)
 
 def escape(text, quote=True):
