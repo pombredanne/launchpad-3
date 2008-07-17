@@ -11,6 +11,7 @@ __all__ = [
     'PublicCodehostingAPI']
 
 import os
+import xmlrpclib
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
@@ -296,8 +297,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                     str(URI(host=host, scheme=scheme, path=path)))
             return result
 
-    def resolve_lp_path(self, path):
-        """See `IPublicCodehostingAPI`."""
+    def _resolve_lp_path(self, path):
         strip_path = path.strip('/')
         if strip_path == '':
             raise faults.InvalidBranchIdentifier(path)
@@ -322,3 +322,10 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return result
         else:
             return self._getResultDict(result, suffix)
+
+    def resolve_lp_path(self, path):
+        """See `IPublicCodehostingAPI`."""
+        try:
+            return self._resolve_lp_path(path)
+        except xmlrpclib.Fault, fault:
+            return fault
