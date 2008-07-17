@@ -949,7 +949,7 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
 
 Sometimes the view will have a navigation menu, but the view's context will not.  In this case we want to search upwards through the navigation hierarchy for a context that *does* have a navigation menu.
 
-In this example we will use recipe comments.  The comment view has a menu, but the comment object does not.  We want the call to 'context/menu:navigation' to return the navigation menu for the recipe that the comment refers to, and we want the call to 'view/menu:navigation' to return the menu for the comment's view.
+In this example we will use recipe comments.  The comment view has a menu, but the comment object does not.  We want the call to 'context/menu:navigation' to return the navigation menu for the recipe that the comment refers to.
 
     >>> class IComment(Interface):
     ...     """A comment on a recipe."""
@@ -957,38 +957,15 @@ In this example we will use recipe comments.  The comment view has a menu, but t
     >>> class Comment(BaseContent):
     ...     implements(IComment)
 
-    >>> class ICommentMenuMarker(INavigationMenu):
-    ...     """A sparse menu for navigating recipe comments."""
-
-    >>> class CommentMenu(NavigationMenu):
-    ...     usedfor = ICommentMenuMarker
-    ...     facet = 'cookery'
-    ...     title = 'Recipe comments'
-    ...     links = ('thecomment')
-    ...
-    ...     def thecomment(self):
-    ...         target = '+index'
-    ...         text = 'The comment'
-    ...         return Link(target, text)
-    ...
-    ...     def edit_comment(self):
-    ...         target = '+edit'
-    ...         text = 'Edit this comment'
-    ...         return Link(target, text)
-
-
     >>> class RecipeShowCommentView(LaunchpadView):
     ...     """View for looking at a recipe comment."""
     ...     __used_for__ = IComment
-    ...     implements(ICommentMenuMarker)
 
     # Monkey patch the interfaces and views into the cookingexample module.
     >>> cookingexample.IComment = IComment
     >>> cookingexample.RecipeShowCommentView = RecipeShowCommentView
 
     # Hook everything up
-    >>> provideAdapter(CommentMenu, [ICommentMenuMarker], INavigationMenu)
-
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns="http://namespaces.zope.org/zope"
     ...            xmlns:zope="http://namespaces.zope.org/zope"
@@ -1024,17 +1001,6 @@ We'll simulate the user viewing a comment.
     >>> recipe_comment_view = getMultiAdapter(
     ...     (comment, comment_request), name='+index')
     >>> comment_request._last_obj_traversed = recipe_comment_view
-
-The view's navigation menu is displayed if we call 'view/menu:navigation':
-
-    >>> queryAdapter(recipe_comment_view, INavigationMenu)
-    <CommentMenu ...>
-
-    >>> links_dict = test_tales(
-    ...     'context/menu:navigation', context=recipe_comment_view,
-    ...     request=comment_request)
-    >>> summarise_tal_links(links_dict)
-    Foo
 
 When we try to look up the menu for the view's context (the Comment
 object) the navigation menu for the next highest object in the URL
