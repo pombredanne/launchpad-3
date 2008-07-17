@@ -36,8 +36,6 @@ def anyfy(value):
         return value
 
 
-DEFAULT_BUGTASK_SEARCH_ORDER = ['-importance']
-
 class HasBugsBase:
     """Standard functionality for IHasBugs.
 
@@ -49,8 +47,7 @@ class HasBugsBase:
         raise NotImplementedError
 
     def searchBugTasks(self, user,
-                       order_by=DEFAULT_BUGTASK_SEARCH_ORDER,
-                       search_text=None,
+                       order_by=('-importance',), search_text=None,
                        status=list(UNRESOLVED_BUGTASK_STATUSES),
                        importance=None,
                        assignee=None, bug_reporter=None, bug_supervisor=None,
