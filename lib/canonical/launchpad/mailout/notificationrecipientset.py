@@ -44,6 +44,7 @@ class NotificationRecipientSet:
             self._personToRationale.keys(),  key=attrgetter('displayname'))
 
     def getRecipientPersons(self):
+        """See `INotificationRecipientSet`."""
         return self._receiving_people
 
     def __iter__(self):

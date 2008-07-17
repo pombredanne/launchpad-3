@@ -465,6 +465,12 @@ class INotificationRecipientSet(Interface):
         :return: An iterator of `IPerson`, sorted by display name.
         """
 
+    def getRecipientPersons():
+        """Return the set of individual Persons who will be notified.
+
+        :return: An iterator of `IPerson`, unsorted.
+        """
+
     def __iter__():
         """Return an iterator of the recipients."""
 
