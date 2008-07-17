@@ -92,8 +92,6 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin, ProductBranchesFeedLink)
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
-from canonical.launchpad.browser.objectreassignment import (
-    ObjectReassignmentView)
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
