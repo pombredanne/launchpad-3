@@ -44,7 +44,8 @@ class TestDistroSeriesCurrentSourceReleases(unittest.TestCase):
 
         It uses getCurrentSourceReleases() to get the version.
 
-        If package_name isn't specified, self.published_package is used.
+        If package_name isn't specified, the test publisher's default
+        name is used.
         """
         if package_name is None:
             package_name = self.publisher.default_package_name
