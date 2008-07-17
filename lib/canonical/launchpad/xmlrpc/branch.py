@@ -162,9 +162,8 @@ class IPublicCodehostingAPI(Interface):
 
         :return: A dict containing a single 'urls' key that maps to a list of
             URLs. Clients should use the first URL in the list that they can
-            support.
-        :raise Fault: Various Faults can be raised if the path does not
-            resolve to a branch.
+            support.  Returns a Fault if the path does not resolve to a
+            branch.
         """
 
 
@@ -298,6 +297,12 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return result
 
     def _resolve_lp_path(self, path):
+        """Do the work of `IPublicCodehostingAPI.resolve_lp_path`.
+
+        This only differs from the named method in that it raises rather than
+        returning Faults.  `resolve_lp_path` below translates these into
+        returned Faults.
+        """
         strip_path = path.strip('/')
         if strip_path == '':
             raise faults.InvalidBranchIdentifier(path)
@@ -324,7 +329,11 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return self._getResultDict(result, suffix)
 
     def resolve_lp_path(self, path):
-        """See `IPublicCodehostingAPI`."""
+        """See `IPublicCodehostingAPI`.
+
+        This just calls _resolve_lp_path to do the work and translates raised
+        Faults into returned Faults.
+        """
         try:
             return self._resolve_lp_path(path)
         except xmlrpclib.Fault, fault:
