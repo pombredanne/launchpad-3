@@ -8,8 +8,10 @@ __all__ = [
     ]
 
 
+import os
 import atexit
 
+from canonical.config import config
 from canonical.testing.layers import AppServerLayer
 from canonical.launchpad.mailman.runmailman import start_mailman, stop_mailman
 
@@ -19,7 +21,12 @@ class MailmanLayer(AppServerLayer):
 
     @classmethod
     def setUp(cls):
-        start_mailman(quiet=False, config=AppServerLayer.appserver_config)
+        # Stop Mailman if it's currently running.
+        pid_file = os.path.join(config.mailman.build_var_dir,
+                                'data', 'master-qrunner.pid')
+        if os.path.exists(pid_file):
+            stop_mailman(quiet=True, config=AppServerLayer.appserver_config)
+        start_mailman(quiet=True, config=AppServerLayer.appserver_config)
         # Make sure that mailman is killed even if tearDown() is skipped.
         atexit.register(cls.tearDown)
 
