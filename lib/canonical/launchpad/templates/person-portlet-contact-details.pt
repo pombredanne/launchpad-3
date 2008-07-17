@@ -6,7 +6,7 @@
 
 <div class="portlet" id="contact-details">
 
-  <h2>Contact details</h2>
+  <h2 tal:condition="context/is_team">Contact details</h2>
 
   <div class="portletContent portletBody">
 
@@ -28,7 +28,16 @@
                       <img src="/@@/private" alt="" />
                       <tal:email replace="context/preferredemail/email">foo@bar.com</tal:email>
                     </span>
-                    <br />
+                    <tal:validated-emails
+                      define="emails context/validatedemails"
+                      condition="emails"
+                      repeat="email emails">
+                     <span style="white-space: nowrap">
+                        <br />
+                        <img src="/@@/private" alt="" />
+                        <tal:email replace="email/email">foo2@bar.com</tal:email>
+                      </span>
+                    </tal:validated-emails>
                   </td>
                 </tal:can-view-hidden-emails>
 
@@ -138,16 +147,21 @@
             <td title="This URL is not disclosed to others.">
               <img src="/@@/private" alt="" />
               <tal:openid-login content="view/openid_identity_url" />
-            </td>
-          </tr>
-          <tr>
-            <td>&nbsp;</td>
-            <td><span class="help"
+              <span class="help"
                   ><a href="https://help.launchpad.net/OpenID"
                      >(What&rsquo;s&nbsp;this?)</a></span>
             </td>
           </tr>
         </tal:can-view-openid-login>
+
+        <tr tal:condition="not: context/is_team">
+          <th>Time zone:</th>
+          <td>
+            <tal:timezone replace="context/time_zone">UTC</tal:timezone>
+            <em tal:condition="not: context/time_zone">None given</em>
+          </td>
+        </tr>
+
       </tbody>
     </table>
 

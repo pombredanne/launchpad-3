@@ -34,10 +34,6 @@
         tal:attributes="href link/url"
         tal:content="context/karma">342</a><br />
 
-      <b>Timezone:</b>
-      <tal:timezone replace="context/time_zone">UTC</tal:timezone>
-      <i tal:condition="not: context/time_zone">None given</i><br />
-
       <tal:ubuntero condition="context/is_ubuntero"><b>Ubuntero:</b>
         <a
           id="ubuntero"
