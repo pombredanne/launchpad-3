@@ -10,17 +10,8 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>SSH keys</h1>
-    </metal:heading>
-
-  <metal:leftportlets fill-slot="portlets_one">
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-  </metal:rightportlets>
-
   <div metal:fill-slot="main">
+    <h1>Change your SSH keys</h1>
 
     <p>You need to register an SSH key with Launchpad to be able to publish
     your Bazaar code branches in the Bazaar supermirror. For more
