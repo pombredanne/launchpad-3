@@ -12,7 +12,6 @@ tailored for human reading (e.g. display in Web pages); and a bugtargetname
 attribute, which returns a value tailored for unique identification of the
 target (such as in filterable e-mail messages).
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IBugTarget, IDistributionSet, IProductSet)
