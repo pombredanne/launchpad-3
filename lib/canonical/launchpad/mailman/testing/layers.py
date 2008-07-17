@@ -22,8 +22,9 @@ class MailmanLayer(AppServerLayer):
     @classmethod
     def setUp(cls):
         # Stop Mailman if it's currently running.
-        pid_file = os.path.join(config.mailman.build_var_dir,
-                                'data', 'master-qrunner.pid')
+        pid_file = os.path.join(
+            AppServerLayer.appserver_config.mailman.build_var_dir,
+            'data', 'master-qrunner.pid')
         if os.path.exists(pid_file):
             stop_mailman(quiet=True, config=AppServerLayer.appserver_config)
         start_mailman(quiet=True, config=AppServerLayer.appserver_config)
