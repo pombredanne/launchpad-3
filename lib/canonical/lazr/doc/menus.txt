@@ -945,38 +945,117 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
         linked: True
 
 
-== Lookups for the nearest navigation menu ==
+== Looking up the nearest navigation menu ==
 
-Sometimes the view will have an associated navigation menu, but the view's context will not.  In this case we want to search upwards through the navigation hierarchy for a context that *does* have a navigation menu.
+Sometimes the view will have a navigation menu, but the view's context will not.  In this case we want to search upwards through the navigation hierarchy for a context that *does* have a navigation menu.
+
+In this example we will use recipe comments.  The comment view has a menu, but the comment object does not.  We want the call to 'context/menu:navigation' to return the navigation menu for the recipe that the comment refers to, and we want the call to 'view/menu:navigation' to return the menu for the comment's view.
+
+    >>> class IComment(Interface):
+    ...     """A comment on a recipe."""
+
+    >>> class Comment(BaseContent):
+    ...     implements(IComment)
+
+    >>> class ICommentMenuMarker(INavigationMenu):
+    ...     """A sparse menu for navigating recipe comments."""
+
+    >>> class CommentMenu(NavigationMenu):
+    ...     usedfor = ICommentMenuMarker
+    ...     facet = 'cookery'
+    ...     title = 'Recipe comments'
+    ...     links = ('thecomment')
+    ...
+    ...     def thecomment(self):
+    ...         target = '+index'
+    ...         text = 'The comment'
+    ...         return Link(target, text)
+    ...
+    ...     def edit_comment(self):
+    ...         target = '+edit'
+    ...         text = 'Edit this comment'
+    ...         return Link(target, text)
+
+
+    >>> class RecipeShowCommentView(LaunchpadView):
+    ...     """View for looking at a recipe comment."""
+    ...     __used_for__ = IComment
+    ...     implements(ICommentMenuMarker)
+
+    # Monkey patch the interfaces and views into the cookingexample module.
+    >>> cookingexample.IComment = IComment
+    >>> cookingexample.RecipeShowCommentView = RecipeShowCommentView
+
+    # Hook everything up
+    >>> provideAdapter(CommentMenu, [ICommentMenuMarker], INavigationMenu)
+
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns="http://namespaces.zope.org/zope"
+    ...            xmlns:zope="http://namespaces.zope.org/zope"
+    ...            xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include package="zope.app" file="meta.zcml" />
+    ...   <includeOverrides
+    ...     package="canonical.launchpad.webapp" file="meta-overrides.zcml" />
+    ...   <browser:defaultView
+    ...     for="canonical.lazr.cookingexample.IComment"
+    ...     name="+index"
+    ...     />
+    ...   <browser:page
+    ...     name="+index"
+    ...     for="canonical.lazr.cookingexample.IComment"
+    ...     facet="cookery"
+    ...     class="canonical.lazr.cookingexample.RecipeShowCommentView"
+    ...     permission="zope.Public"
+    ...     />
+    ... </configure>
+    ... """)
+
+We'll simulate the user viewing a comment.
+
+    >>> comment = Comment('a-comment', recipe)
+    >>> print canonical_url(comment)
+    http://launchpad.dev/joy-of-cooking/fried-spam/a-comment
+
+    # Create a special-case request object.
+    >>> comment_request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/a-comment/+index',
+    ...     traversed_objects=[cookbook, recipe, comment])
+
+    >>> recipe_comment_view = getMultiAdapter(
+    ...     (comment, comment_request), name='+index')
+    >>> comment_request._last_obj_traversed = recipe_comment_view
+
+The view's navigation menu is displayed if we call 'view/menu:navigation':
+
+    >>> queryAdapter(recipe_comment_view, INavigationMenu)
+    <CommentMenu ...>
 
     >>> links_dict = test_tales(
-    ...     'context/menu:navigation', context=object(),
-    ...     request=request, view=recipe_journal_view)
+    ...     'context/menu:navigation', context=recipe_comment_view,
+    ...     request=comment_request)
+    >>> summarise_tal_links(links_dict)
+    Foo
+
+When we try to look up the menu for the view's context (the Comment
+object) the navigation menu for the next highest object in the URL
+hierarchy, the Recipe, will be returned.
+
+    >>> print queryAdapter(comment, INavigationMenu)
+    None
+
+    >>> links_dict = test_tales(
+    ...     'context/menu:navigation', context=comment,
+    ...     request=comment_request)
     >>> summarise_tal_links(links_dict)
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
         menu: <...IRecipeJournalMenuMarker...>
-        linked: False
+        linked: True
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam
         enabled: True
         menu: <...IRecipeEditMenuMarker...>
-        linked: True
-
-    >>> links_dict = test_tales(
-    ...     'view/menu:navigation', context=object(),
-    ...     request=request, view=recipe_journal_view)
-    >>> summarise_tal_links(links_dict)
-    link read_journal
-        url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
-        enabled: True
-        menu: None
-        linked: False
-    link write_entry
-        url: http://launchpad.dev/joy-of-cooking/fried-spam/+write-entry
-        enabled: True
-        menu: None
         linked: True
 
 
@@ -998,6 +1077,8 @@ NavigationMenus used in the previous TALES section.
     ...     ViewPageTemplateFile)
     >>> from canonical.launchpad.webapp.menu import (
     ...     get_facet, get_current_view)
+
+
 
     >>> menu_fragement = """\
     ...  <div>
