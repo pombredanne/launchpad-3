@@ -67,12 +67,6 @@ Here is the structure of our hierarchy:
     >>> request = make_fake_request(
     ...     'http://launchpad.dev/joy-of-cooking/fried-spam')
 
-    >>> from canonical.launchpad.webapp import canonical_url
-    >>> canonical_url(cookbook)
-    u'http://launchpad.dev/joy-of-cooking'
-    >>> canonical_url(recipe)
-    u'http://launchpad.dev/joy-of-cooking/fried-spam'
-
 
 == Using nearest_adapter ==
 
