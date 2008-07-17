@@ -332,7 +332,9 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """See `IPublicCodehostingAPI`.
 
         This just calls _resolve_lp_path to do the work and translates raised
-        Faults into returned Faults.
+        Faults into returned Faults.  We do this because Zope considers raised
+        Faults to be errors and so we'd end up logging spurious OOPS reports
+        if we raised them from here.
         """
         try:
             return self._resolve_lp_path(path)
