@@ -1,6 +1,23 @@
 /* = Launchpad style sheet = */
+
+/* == Contents == */
 /*
-Guidelines:
+ * Guidelines
+ * Stuff browsers should do but don't
+ * Overall presentation
+...
+ * Application-specific styles
+  - Overview
+  - Code
+  - Bugs
+  - Blueprints
+  - Translations
+  - Answers
+...
+*/
+
+/* == Guidelines == */
+/*
  * Use absolute units (e.g. px, pt) only when image sizes or CSS limitations
    demand it. Otherwise, use relative units (%, em).
 */
@@ -185,10 +202,9 @@ table.listing div.field>label, table.listing div.field>div>label,
 table.listing div.actions {
   display: block; margin-top: 1em;
 }
-/* XXX 20080110 mpt: We make textareas slightly narrower in IE to avoid the
-right side being clipped (bug 156202). This should be rechecked post-2.0. */
-textarea {width: 100%;}
-/* This is currently overridden for Internet Explorer in main-template.pt. */
+/* Text fields occupy as much of the page width as possible, minus a safety
+margin for Internet Explorer, and up to a reasonable maximum: */
+textarea {width: 90%; max-width: 60em;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
 table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
@@ -1189,7 +1205,7 @@ ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
-/* === Application-specific styles === */
+/* == Application-specific styles == */
 
 #application-footer strong {font-weight: normal;}
 
@@ -1406,7 +1422,7 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 .specdeliveryIMPLEMENTED        {color: green;}
 .specdeliveryINFORMATIONAL      {color: green;}
 
-/* --- Translations --- */
+/* === Translations === */
 
 body.tab-translations #applications {
   background: url(app-translations-wm.gif) no-repeat;
@@ -1450,8 +1466,11 @@ body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
   padding: 0 4px; /* should be half the width of /@@/translation-space */
   white-space: pre; /* stops consecutive spaces from collapsing */
 }
+/* In translation forms, single-line text fields occupy nearly all of the
+available width, just like multi-line fields (see "textarea" above): */
+input.translate {width: 90%; max-width: 60em;}
 
-/* --- Answers --- */
+/* === Answers === */
 
 body.tab-answers #applications {background: url(app-answers-wm.gif) no-repeat;}
 body.tab-answers #mainarea #portlets .portlet.active h2 a,
