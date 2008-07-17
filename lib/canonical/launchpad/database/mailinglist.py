@@ -427,7 +427,7 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         # Import here to avoid circular imports.
         from canonical.launchpad.database.emailaddress import EmailAddress
-        return EmailAddress.select("""
+        team_members = EmailAddress.select("""
             TeamParticipation.team = %s AND
             TeamParticipation.person = EmailAddress.person AND
             EmailAddress.person = Person.id AND
@@ -439,6 +439,21 @@ class MailingList(SQLBase):
                              EmailAddressStatus.PREFERRED)),
             distinct=True, prejoins=['person'],
             clauseTables=['MailingList', 'TeamParticipation', 'Person'])
+        # In addition, anyone who's had a held message approved for the list
+        # gets to post to the list.
+        approved_posters = EmailAddress.select("""
+            MessageApproval.mailing_list = %s AND
+            MessageApproval.status IN %s AND
+            MessageApproval.posted_by = EmailAddress.person AND
+            EmailAddress.status IN %s
+            """ % sqlvalues(self,
+                            (PostedMessageStatus.APPROVED,
+                             PostedMessageStatus.APPROVAL_PENDING),
+                            (EmailAddressStatus.VALIDATED,
+                             EmailAddressStatus.PREFERRED)),
+            distinct=True, prejoins=['person'],
+            clauseTables=['MessageApproval'])
+        return team_members.union(approved_posters)
 
     def holdMessage(self, message):
         """See `IMailingList`."""
