@@ -108,6 +108,9 @@
       for="canonical.launchpad.interfaces.IBranch"
       permission="zope.Public">
     <browser:page
+        name="+portlet-privacy"
+        template="../templates/branch-portlet-privacy.pt" />
+    <browser:page
         name="+portlet-specifications"
         template="../templates/branch-portlet-specifications.pt" />
   </browser:pages>

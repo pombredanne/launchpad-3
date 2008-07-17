@@ -330,6 +330,14 @@
       attribute="__call__"
       permission="zope.Public"
       />
+  <!-- hierarchy -->
+  <browser:page
+      for="zope.interface.Interface"
+      name="+hierarchy"
+      class="canonical.launchpad.browser.launchpad.Hierarchy"
+      attribute="__call__"
+      permission="zope.Public"
+      />
 
   <!-- one-zero status page -->
   <browser:page
