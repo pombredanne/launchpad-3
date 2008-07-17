@@ -522,7 +522,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 source_package_ids, self.all_distro_archive_ids,
                 active_publishing_status, self),
             clauseTables=[
-                'SourcePackageName','SourcePackagePublishingHistory'])
+                'SourcePackageName', 'SourcePackagePublishingHistory'])
         return dict(
             (self.getSourcePackage(release.sourcepackagename),
              DistributionSourcePackageRelease(self, release))
