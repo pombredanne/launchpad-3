@@ -55,7 +55,9 @@ Registry Admins case which owns lots of projects and the page would
 become a performance nightmare. In 99% of the cases, people won't reach
 the config.launchpad.default_batch_size threshold.
 
-    >>> for tag in find_tags_by_class(anon_browser.contents, 'informational'):
+    >>> limits = find_tags_by_class(
+    ...     anon_browser.contents, 'limit-encountered')
+    >>> for tag in limits:
     ...     print tag.renderContents()
     10 projects are related to Mark Shuttleworth. Displaying only the first 5:
 

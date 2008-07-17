@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'apply_for_list',
     'collect_archive_message_ids',
     'create_list',
     'get_size',
@@ -191,3 +192,9 @@ def collect_archive_message_ids(team_name):
                 message_ids.append(mo.group('id'))
                 break
     return sorted(message_ids)
+
+
+def apply_for_list(browser, team_name):
+    """Like mailinglists_helper.apply_for_list() but with the right rooturl."""
+    mailinglists_helper.apply_for_list(
+        browser, team_name, 'http://launchpad.dev:8085/')

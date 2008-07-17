@@ -98,7 +98,7 @@ class IMessageSet(Interface):
         """Construct a Message from a text string and return it."""
 
     def fromEmail(email_message, owner=None, filealias=None,
-            parsed_message=None, fallback_parent=None):
+            parsed_message=None, fallback_parent=None, date_created=None):
         """Construct a Message from an email message and return it.
 
         `email_message` should be the original email as a string.
@@ -120,6 +120,12 @@ class IMessageSet(Interface):
 
         'fallback_parent' can be specified if you want a parent to be
         set, if no parent could be identified.
+
+        `date_created` may be a datetime, and can be specified if you
+        wish to force the created date for a message. This is
+        particularly useful when the email_message being passed might
+        not contain a Date field. Any Date field in the passed message
+        will be ignored in favour of the value of `date_created`.
 
         Callers may want to explicitly handle the following exceptions:
             * UnknownSender

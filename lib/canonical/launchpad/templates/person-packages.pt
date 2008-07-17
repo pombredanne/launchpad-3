@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Package maintenance report</h1>
+  <h1>Package maintenance</h1>
 
   <div id="packages">
 
