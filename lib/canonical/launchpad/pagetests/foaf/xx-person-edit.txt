@@ -6,7 +6,6 @@ Launchpad.
     >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name16')
     >>> browser.getLink('Change details').click()
-
     >>> browser.getControl('Display Name').value
     'Foo Bar'
     >>> browser.getControl('Name', index=1).value
@@ -17,10 +16,9 @@ Launchpad.
     ...     'Hide my email addresses from other Launchpad users').selected
     False
 
-
 He noticed that his information is out of date and will update it.
 (If he leaves leading or trailing whitespace in the displayname it'll
-be stripped) 
+be stripped)
 
     >>> browser.getControl('Name', index=1).value = 'foobar'
     >>> browser.getControl('Display Name').value = '  Foo Bar2  '
@@ -73,8 +71,15 @@ He will also change his timezone:
 
     >>> browser.url
     'http://launchpad.dev/~foobar'
-
     >>> browser.getLink('Change details').click()
     >>> browser.getControl('Time zone').value
     ['Africa/Dakar']
+
+If he decides that he doesn't want to change anything, he can click 'Cancel'
+to return to the index page.
+
+    >>> browser.getLink('Cancel').click()
+    >>> browser.url
+    'http://launchpad.dev/~foobar'
+
 

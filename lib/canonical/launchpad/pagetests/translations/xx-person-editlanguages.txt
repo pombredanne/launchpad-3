@@ -168,6 +168,7 @@ Person's page to do it himself.
     >>> admin_browser.title
     'No Privileges Person in Launchpad'
 
+    >>> admin_browser.getLink('Change details').click()
     >>> admin_browser.getLink('Set preferred languages').click()
     >>> print extract_text(
     ...     find_main_content(admin_browser.contents).find('h1'))
@@ -177,4 +178,4 @@ Person's page to do it himself.
     >>> admin_browser.getControl('Save').click()
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print extract_text(message)
-    Added Esperanto to No Privileges Person's preferred languages.    
+    Added Esperanto to No Privileges Person's preferred languages.

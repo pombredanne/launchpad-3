@@ -41,15 +41,18 @@ license.
     >>> commercial_browser.getControl(name='field.licenses').value
     ['OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE']
 
-If there are no products with Other/Open-Source or Other/Proprietary
-licenses, a warning message will be displayed.
+If there are no products that match the search conditions, a warning
+message will be displayed.
 
+    >>> commercial_browser.getControl(name='field.active').value = ['False']
+    >>> commercial_browser.getControl(name='search').click()
     >>> find_tags_by_class(commercial_browser.contents, 'warning message')
     [<div...No items found with these search options...
 
 If enough projects are found, the results are paginated. A link
 is provided for each product pointint to its +review-license page.
 
+    >>> commercial_browser.getControl(name='field.active').value = ['True']
     >>> commercial_browser.getControl(name='field.licenses').value = []
     >>> commercial_browser.getControl(
     ...     name='field.license_info_is_empty').value = ['Empty']
@@ -124,11 +127,11 @@ First, add a product with a proprietary license.
     ...     print '     ', pillar.get('title')
     &nbsp;Proprietary Product (Proprietary)
           This project&lsquo;s license is proprietary.
+    &nbsp;Mega Money Maker (Proprietary)
+          This project&lsquo;s license is proprietary.
     &nbsp;Derby
           None
     &nbsp;Redfish (Unreviewed)
           This project&lsquo;s license has not been reviewed.
     &nbsp;Bazaar (Unreviewed)
-          This project&lsquo;s license has not been reviewed.
-    &nbsp;Jokosher (Unreviewed)
           This project&lsquo;s license has not been reviewed.

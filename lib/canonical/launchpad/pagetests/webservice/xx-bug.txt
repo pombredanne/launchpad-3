@@ -42,8 +42,7 @@ At the top level we provide a collection of bugs.
    (u'owner_link', u'http://api.launchpad.dev/beta/~name16'),
    (u'permits_expiration', False),
    (u'private', False),
-   (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugEntryAdapter'),
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#bug'),
    (u'security_related', False),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/11'),
    (u'subscriptions_collection_link',
@@ -90,7 +89,7 @@ Each bug has a collection of messages.
    (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
    (u'parent_link', None),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#MessageEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#message'),
    (u'self_link',
     u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/0'),
    (u'subject', u'Firefox install instructions should be complete')]
@@ -147,7 +146,7 @@ data in a bug task is derived from the bug.
    (u'related_tasks_collection_link',
     u'http://api.../debian/+source/mozilla-firefox/+bug/1/related_tasks'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugTaskEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_task'),
    (u'self_link',
     u'http://api.../debian/+source/mozilla-firefox/+bug/1'),
    (u'status', u'Confirmed'),
@@ -219,14 +218,14 @@ We can get the the collection of subscriptions to a bug.
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'person_link', u'http://api.launchpad.dev/beta/~name12'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_subscription'),
    (u'self_link',
     u'http://api.launchpad.dev/beta/bugs/1/+subscription/name12'),
    (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'person_link', u'http://api.launchpad.dev/beta/~stevea'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_subscription'),
    (u'self_link',
     u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea'),
    (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
@@ -238,7 +237,7 @@ Each subscription can be accessed individually.
   >>> show(subscription)
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'person_link', u'http://api.launchpad.dev/beta/~stevea'),
-   (u'resource_type_link', u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#bug_subscription'),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea'),
    (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
 
@@ -291,7 +290,7 @@ report described by the bugwatch.
    (u'remote_importance', None),
    (u'remote_status', u''),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugWatchEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_watch'),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+watch/2'),
    (u'title', u'The Mozilla.org Bug Tracker #2000'),
    (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000')]
@@ -365,7 +364,7 @@ Following the redirect, we can see the new bug watch:
    (u'remote_importance', None),
    (u'remote_status', None),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugWatchEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_watch'),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+watch/13'),
    (u'title', u'The Mozilla.org Bug Tracker #9876'),
    (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876')]
@@ -382,8 +381,9 @@ Following the redirect, we can see the new bug watch:
    (u'bug_tracker_type', u'Bugzilla'),
    (u'contact_details', u'Carrier pigeon only'),
    (u'name', u'mozilla.org'),
+   (u'registrant_link', u'http://api.launchpad.dev/beta/~name12'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugTrackerEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_tracker'),
    (u'self_link',
     u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org'),
    (u'summary',
@@ -443,10 +443,12 @@ renamed bug tracker.
    (u'bug_tracker_type', u'Bugzilla'),
    (u'contact_details', u'bob@example.com'),
    (u'name', u'bob'),
+   (u'registrant_link', u'http://api.launchpad.dev/beta/~name12'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugTrackerEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_tracker'),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/bugtrackers/bob'),
    (u'summary', u'Where Bob files his bugs.'),
    (u'title', u"Bob's Tracker"),
    (u'watches_collection_link',
     u'http://api.launchpad.dev/beta/bugs/bugtrackers/bob/watches')]
+
