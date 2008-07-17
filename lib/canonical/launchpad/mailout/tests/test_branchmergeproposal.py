@@ -143,6 +143,11 @@ new commit message
         emails = pop_notifications()
         self.assertEqual([], emails)
 
+    def assertRecipientsMatches(self, recipients, mailer):
+        """Assert that `mailer` will send to the people in `recipients`."""
+        self.assertEqual(
+            set(recipients), set(mailer._recipients.getRecipientPersons()))
+
     def test_forReviewRequest(self):
         """Test creating a mailer for a review request."""
         merge_proposal, subscriber_ = self.makeProposalWithSubscriber()
@@ -158,8 +163,7 @@ new commit message
             request, merge_proposal, requester)
         self.assertEqual(
             'Requester <requester@example.com>', mailer.from_address)
-        self.assertEqual(
-            set([candidate]), set(mailer._recipients.getRecipientPersons()))
+        self.assertRecipientsMatches([candidate], mailer)
 
 
 class TestRecipientReason(TestCaseWithFactory):
