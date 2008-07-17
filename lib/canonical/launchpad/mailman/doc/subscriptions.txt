@@ -4,9 +4,8 @@ Both direct and indirect members of a team may subscribe to a team's mailing
 list.  First, create the mailing list, which will send a notification messages
 to all the members of the mailing list.  We can ignore these messages.
 
-    >>> import itest_helper
-    >>> list_one = itest_helper.create_list('itest-one')
-    >>> smtpd.reset()
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> list_one = helpers.create_list('itest-one')
 
 Anne registers with Launchpad and decides to subscribe to the mailing list.
 
@@ -30,9 +29,11 @@ Anne registers with Launchpad and decides to subscribe to the mailing list.
     >>> bart = new_person('Bart')
     >>> bart.join(team_one)
     >>> list_one.subscribe(bart, get_alternative_email(bart))
-    >>> from canonical.database.sqlbase import commit
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
-    >>> commit()
+
+    >>> import transaction
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> serial_watcher = logwatcher.LogWatcher('serial')
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
 Both Anne and Bart are now members of the mailing list.  Both have two
@@ -52,7 +53,7 @@ of them is enabled.
     >>> print_members(mailing_list)
     Anne Person <anne.person@example.com> True
     Anne Person <aperson@example.org> False
-     <archive@mail-archive.com> True
+     <archive@mail-archive.dev> True
     Bart Person <bart.person@example.com> False
     Bart Person <bperson@example.org> True
 
@@ -81,7 +82,7 @@ preferred email address, and Bart unsubscribes from the mailing list.
     >>> anne.setPreferredEmail(get_alternative_email(anne))
     >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
 
 Anne is now subscribed with her alternate email address, and Cris and Dirk are
@@ -92,7 +93,7 @@ the only other members.
     >>> print_members(mailing_list)
     Anne Person <anne.person@example.com> False
     Anne Person <aperson@example.org> True
-     <archive@mail-archive.com> True
+     <archive@mail-archive.dev> True
     Cris Person <cperson@example.org> False
     Cris Person <cris.person@example.com> True
     Dirk Person <dirk.person@example.com> True
@@ -110,9 +111,8 @@ the membership list, either as an enabled or disabled address.
     >>> login('foo.bar@canonical.com')    
     >>> email_set = getUtility(IEmailAddressSet)
     >>> email = email_set.new('anne.x.person@example.net', anne)
-    >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
 
     # This will time out because no changes have been propagated to Mailman.
     >>> serial_watcher.wait()
@@ -123,7 +123,7 @@ the membership list, either as an enabled or disabled address.
     >>> print_members(mailing_list)
     Anne Person <anne.person@example.com> False
     Anne Person <aperson@example.org> True
-     <archive@mail-archive.com> True
+     <archive@mail-archive.dev> True
     Cris Person <cperson@example.org> False
     Cris Person <cris.person@example.com> True
     Dirk Person <dirk.person@example.com> True
@@ -134,7 +134,8 @@ Once Anne validates her address though, she may post from it.
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
+    >>> logout()
     >>> serial_watcher.wait()
 
     >>> mailing_list.Load()
@@ -142,7 +143,7 @@ Once Anne validates her address though, she may post from it.
     Anne Person <anne.person@example.com> False
     Anne Person <anne.x.person@example.net> False
     Anne Person <aperson@example.org> True
-     <archive@mail-archive.com> True
+     <archive@mail-archive.dev> True
     Cris Person <cperson@example.org> False
     Cris Person <cris.person@example.com> True
     Dirk Person <dirk.person@example.com> True
@@ -171,11 +172,11 @@ subscription information for this mailing list.  This ensures that
 everyone is properly handling case-preservation without error.  See LP
 bug #218628.
 
-    >>> error_watcher = itest_helper.LogWatcher('error')
+    >>> error_watcher = logwatcher.LogWatcher('error')
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
-    >>> xmlrpc_watcher = itest_helper.LogWatcher('xmlrpc')
+    >>> xmlrpc_watcher = logwatcher.LogWatcher('xmlrpc')
     >>> xmlrpc_watcher.wait()
     >>> xmlrpc_watcher.wait()
     >>> error_watcher.wait()
@@ -189,7 +190,7 @@ address.
     Anne Person <anne.person@example.com> False
     Anne Person <anne.x.person@example.net> False
     Anne Person <aperson@example.org> True
-     <archive@mail-archive.com> True
+     <archive@mail-archive.dev> True
     Cris Person <cperson@example.org> False
     Cris Person <cris.person@example.com> True
     Dirk Person <dirk.person@example.com> True

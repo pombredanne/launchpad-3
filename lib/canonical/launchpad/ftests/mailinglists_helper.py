@@ -186,13 +186,15 @@ def new_list_for_team(team):
     return team_list
 
 
-def apply_for_list(browser, team_name):
+def apply_for_list(browser, team_name, rooturl=None):
     """Create a team and apply for its mailing list.
 
     This should only be used in page tests.
     """
     displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
-    browser.open('http://launchpad.dev/people/+newteam')
+    if rooturl is None:
+        rooturl = 'http://launchpad.dev/'
+    browser.open(rooturl + 'people/+newteam')
     browser.getControl(name='field.name').value = team_name
     browser.getControl('Display Name').value = displayname
     # Use an open team for simplicity.
@@ -200,7 +202,7 @@ def apply_for_list(browser, team_name):
         name='field.subscriptionpolicy').displayValue = ['Open Team']
     browser.getControl('Create').click()
     # Apply for the team's mailing list'
-    browser.open('http://launchpad.dev/~%s' % team_name)
+    browser.open(rooturl + '~%s' % team_name)
     browser.getLink('Configure mailing list').click()
     browser.getControl('Apply for Mailing List').click()
 
@@ -273,6 +275,7 @@ def review_list(list_name, status=None):
     list_set = getUtility(IMailingListSet)
     mailing_list = list_set.get(list_name)
     mailing_list.review(lpadmin, status)
+    return mailing_list
 
 
 class MailmanStub:
