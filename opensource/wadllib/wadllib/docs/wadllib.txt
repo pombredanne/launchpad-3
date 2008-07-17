@@ -239,7 +239,8 @@ by following links.
 You can bind a Resource to a representation when you create it.
 
    >>> limi_data = get_testdata('person-limi')
-   >>> bound_limi = Resource(wadl, "http://api.launchpad.dev/beta/~limi",
+   >>> bound_limi = Resource(
+   ...     wadl, "http://api.launchpad.dev/beta/~limi",
    ...     "http://api.launchpad.dev/beta/#person", limi_data,
    ...     "application/json")
    >>> bound_limi.get_parameter("languages_collection_link").get_value()
