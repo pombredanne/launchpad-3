@@ -46,6 +46,8 @@ from canonical.launchpad.interfaces import (
     IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, LoginTokenType,
     PersonCreationRationale, ShipItConstants, UBUNTU_WIKI_URL,
     UnexpectedFormData)
+from canonical.launchpad.interfaces.account import AccountStatus
+
 
 UTC = pytz.timezone('UTC')
 
@@ -189,9 +191,11 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
         naked_person = removeSecurityProxy(email.person)
         naked_person.displayname = data['displayname']
         naked_person.hide_email_addresses = data['hide_email_addresses']
-        naked_person.password = data['password']
 
-        email.person.validateAndEnsurePreferredEmail(email)
+        naked_person.activateAccount(
+            comment="Activated by claim profile.",
+            password=data['password'],
+            preferred_email=email)
         self.context.consume()
         self.logInPersonByEmail(removeSecurityProxy(email).email)
         self.request.response.addInfoNotification(_(
@@ -300,18 +304,28 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         naked_person = removeSecurityProxy(person)
         #      end of evil code.
 
+        # Reset password can be used to reactivate a deactivated account.
+        if naked_person.account.status == AccountStatus.DEACTIVATED:
+            naked_person.reactivateAccount(
+                comment="User reactivated the account using reset password.",
+                password=data['password'],
+                preferred_email=emailaddress)
+            self.request.response.addInfoNotification(
+                _('Welcome back to Launchpad.'))
+        else:
+            naked_person.password = data.get('password')
+
         # Make sure this person has a preferred email address.
         if naked_person.preferredemail != emailaddress:
             naked_person.validateAndEnsurePreferredEmail(emailaddress)
 
-        naked_person.password = data.get('password')
         self.context.consume()
 
         self.logInPersonByEmail(self.context.email)
 
         self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
-            _('Your password has been reset successfully'))
+            _('Your password has been reset successfully.'))
 
         return self.maybeCompleteOpenIDRequest()
 
@@ -712,16 +726,20 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             naked_person = removeSecurityProxy(person)
             naked_person.displayname = data['displayname']
             naked_person.hide_email_addresses = data['hide_email_addresses']
-            naked_person.password = data['password']
+            naked_person.activateAccount(
+                "Activated by new account.",
+                password=data['password'],
+                preferred_email=self.email)
             naked_person.creation_rationale = self._getCreationRationale()
             naked_person.creation_comment = None
         else:
             person, email = self._createPersonAndEmail(
                 data['displayname'], data['hide_email_addresses'],
                 data['password'])
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+            person.validateAndEnsurePreferredEmail(email)
 
         self.created_person = person
-        person.validateAndEnsurePreferredEmail(email)
         self.context.consume()
         self.logInPersonByEmail(removeSecurityProxy(email).email)
         self.request.response.addInfoNotification(_(

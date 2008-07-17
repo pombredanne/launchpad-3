@@ -315,8 +315,8 @@ class TestCopyPackage(unittest.TestCase):
 
         [copy] = copied
         self.assertEqual(copy.displayname, 'foo 1.0 in hoary')
-        self.assertEqual(copy.getPublishedBinaries().count(), 0)
-        self.assertEqual(copy.getBuilds().count(), 1)
+        self.assertEqual(len(copy.getPublishedBinaries()), 0)
+        self.assertEqual(len(copy.getBuilds()), 1)
 
     def testCopySourceAndBinariesFromPPA(self):
         """Check the copy operation from PPA to PRIMARY Archive.
@@ -355,8 +355,8 @@ class TestCopyPackage(unittest.TestCase):
         [copied_source] = ubuntu.main_archive.getPublishedSources(
             name='boing')
         self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
-        self.assertEqual(copied_source.getPublishedBinaries().count(), 2)
-        self.assertEqual(copied_source.getBuilds().count(), 0)
+        self.assertEqual(len(copied_source.getPublishedBinaries()), 2)
+        self.assertEqual(len(copied_source.getBuilds()), 0)
 
     def testCopyAcrossPPAs(self):
         """Check the copy operation across PPAs.

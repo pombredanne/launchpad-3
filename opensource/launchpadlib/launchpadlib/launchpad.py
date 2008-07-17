@@ -58,10 +58,8 @@ class Launchpad:
         # Get the root resource.
         self._browser = Browser(self.credentials)
         response = self._browser.get(self._root)
-        person_set_link = response.get(
-            'PersonSetCollectionAdapter_collection_link')
-        bug_set_link = response.get(
-            'MaloneApplicationCollectionAdapter_collection_link')
+        person_set_link = response.get('people_collection_link')
+        bug_set_link = response.get('bugs_collection_link')
         self._people = People(self._browser, URI(person_set_link))
         self._bugs = _FakeBugCollection(self._browser, URI(bug_set_link))
 

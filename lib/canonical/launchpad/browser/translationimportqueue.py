@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 import os
+from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IContextSourceBinder
@@ -23,10 +24,10 @@ from canonical.launchpad.browser.hastranslationimports import (
 from canonical.launchpad.interfaces import (
     IDistroSeries, IEditTranslationImportQueueEntry, ILanguageSet, IPOFileSet,
     IPOTemplateSet, ITranslationImportQueue, ITranslationImportQueueEntry,
-    NotFoundError, RosettaImportStatus)
+    NotFoundError, RosettaImportStatus, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, canonical_url, LaunchpadFormView, action
-    )
+    action, canonical_url, GetitemNavigation, LaunchpadFormView)
+
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 
@@ -215,6 +216,9 @@ class TranslationImportQueueView(HasTranslationImportsView):
         """Useful initialization for this view class."""
         self._initial_values = {}
         LaunchpadFormView.initialize(self)
+        target_filter = self.widgets['filter_target']
+        if target_filter.hasInput() and not target_filter.hasValidInput():
+            raise UnexpectedFormData("Unknown target.")
 
     @property
     def entries(self):
@@ -265,7 +269,10 @@ class TranslationImportTargetVocabularyFactory:
         # factory.
         status_widget = self.view.widgets['filter_status']
         if status_widget.hasInput():
-            status_filter = status_widget.getInputValue()
+            try:
+                status_filter = status_widget.getInputValue()
+            except ConversionError:
+                raise UnexpectedFormData("Invalid status parameter.")
             if status_filter != 'all':
                 try:
                     status = RosettaImportStatus.items[status_filter]
