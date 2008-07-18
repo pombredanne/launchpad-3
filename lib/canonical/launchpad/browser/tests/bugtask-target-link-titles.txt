@@ -1,17 +1,31 @@
+= Titles for bug task target links =
+
+Some links to targets in the affects table have a title, which contains
+some information about the target. There is a method,
+getTargetLinkTitle() on BugTasksAndNominationsView, which generates the
+title.
+
     >>> from canonical.launchpad.browser.bugtask import (
     ...     BugTasksAndNominationsView)
-
     >>> from canonical.launchpad.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> publisher = SoyuzTestPublisher()
     >>> factory = publisher.factory
-    >>> unpublished_distro = factory.makeDistribution(
-    ...     displayname='Unpublished Distro')
     >>> view = BugTasksAndNominationsView(factory.makeBug(), None)
 
 == Distributions ==
 
+For normal distribution, there is information about source packages, but
+not for the distribution itself.
+
+
 === Unpublished ===
+
+If the distribution doesn't have any published source packages, no
+information is displayed for the source package.
+
+    >>> unpublished_distro = factory.makeDistribution(
+    ...     displayname='Unpublished Distro')
 
     >>> print view.getTargetLinkTitle(unpublished_distro)
     None
@@ -23,6 +37,9 @@
 
 
 === Published ===
+
+If there are published source packages in the distribution, information
+about the current release is displayed.
 
     >>> import pytz
     >>> from datetime import datetime
@@ -51,9 +68,14 @@
 
 == Distro series ==
 
+The link titles for distribution series are similar to the distribution
+ones. Only published source packages have link titles.
 
 
 === Unpublished ===
+
+If the distribution series doesn't have any published source packages,
+no information is displayed for the source package.
 
     >>> unpublished_distro_series = factory.makeDistroRelease(
     ...     distribution=unpublished_distro)
@@ -67,6 +89,9 @@
 
 
 === Published ===
+
+If there are published source packages in the series, information
+about the current release is displayed.
 
     >>> published_distro_series = publisher.distroseries
     >>> print view.getTargetLinkTitle(published_distro_series)
@@ -95,6 +120,8 @@
 
 
 == Products and product series ==
+
+Products and product series don't have any link titles.
 
     >>> product = factory.makeProduct()
     >>> print view.getTargetLinkTitle(product)
