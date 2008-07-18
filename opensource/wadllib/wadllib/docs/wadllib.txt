@@ -273,6 +273,59 @@ you've already processed the representation, pass in False for the
    >>> bound_limi.get_parameter("languages_collection_link").get_value()
    u'http://api.launchpad.dev/beta/~limi/languages'
 
+Most of the time, the representation of a resource is of the type
+you'd get by sending a standard GET to that resource. If that's not
+the case, you can specify a RepresentationDefinition as the
+'representation_definition' argument to bind() or the Resource
+constructor, to show what the representation really looks like. Here's
+an example.
+
+There's a method on a person resource such as bound_limi that's
+identified by a distinctive query argument: ws.op=findPathToTeam.
+
+   >>> method = bound_limi.get_method(
+   ...     query_params={'ws.op' : 'findPathToTeam'})
+
+Invoke this method with a GET request and you'll get back a page from
+a list of people.
+
+   >>> people_page_repr_definition = (
+   ...     method.response.get_representation_definition('application/json'))
+   >>> people_page_repr_definition.tag.attrib['href']
+   'http://api.launchpad.dev/beta/#person-page'
+
+We have a page from a list of people to use as test data.
+
+   >>> people_page = get_testdata('personset')
+
+If we bind the resource to the result of the method invocation as
+happened above, we don't be able to access any of the parameters we'd
+expect. wadllib will think the representation is of type
+'person-full', the default GET type for bound_limi.
+
+   >>> bad_people_page = bound_limi.bind(people_page_repr)
+   >>> print bad_people_page.get_parameter('total_size')
+   None
+
+Since we don't actually have a 'person-full' representation, we won't
+be able to get values for the parameters of that kind of
+representation.
+
+   >>> bad_people_page.get_parameter('name').get_value()
+   Traceback (most recent call last):
+   ...
+   KeyError: 'name'
+
+So that's a dead end. *But*, if we pass the correct representation
+type into bind(), we can access the parameters associated with a
+'person-page' representation.
+
+   >>> people_page = bound_limi.bind(
+   ...     people_page_repr,
+   ...     representation_definition=people_page_repr_definition)
+   >>> people_page.get_parameter('total_size').get_value()
+   63
+
 
 == Representation creation ==
 
