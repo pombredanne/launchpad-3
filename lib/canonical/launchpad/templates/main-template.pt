@@ -67,13 +67,6 @@
       </style>
     <![endif]-->
 
-    <!--[if IE 7]>
-      <style type="text/css">
-        #container {margin-top: 28px; position: static;}
-        #portlets {left: 20px;}
-      </style>
-    <![endif]-->
-
     <tal:comment condition="nothing">
       This CSS collapses the contents of collapsible fieldsets,
       without the flashing that would result from doing it in JavaScript.
@@ -122,6 +115,7 @@
       tal:condition="view/macro:pagehas/applicationtabs"
       tal:define="facetmenu CONTEXTS/menu:facet"
       id="lp-apps"
+      class="clearfix"
     >
       <tal:XXX replace="nothing">
         # XXX mpt 20080702: The HTML comment works around bug 229931.
@@ -129,7 +123,7 @@
       <!-- :-) --><tal:facet repeat="link facetmenu">
         <span
           tal:condition="link/selected"
-          tal:attributes="title link/summary; class string:${link/name}-active"
+          tal:attributes="title link/summary; class string:${link/name} active"
           ><strong
             tal:condition="not:link/linked"
             tal:content="structure link/escapedtext"
@@ -164,7 +158,7 @@
             <td
               tal:define="
                 facetname CONTEXTS/menu:selectedfacetname;
-                facetname python:facetname == 'overview' and 'register' or facetname;
+                facetname python:facetname == 'overview' and 'people' or facetname;
                 facetname python:facetname == 'branches' and 'code' or facetname;
                 facetname python:facetname == 'specifications' and 'blueprints' or facetname"
               tal:content="structure context/@@+applicationbuttons/?facetname"
@@ -174,6 +168,11 @@
       </table>
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
         <div id="container">
+          <!--[if IE 7]>&nbsp;<![endif]-->
+          <tal:XXX condition="nothing">
+            # XXX mpt 20080716 bug=249032: This conditional comment should
+            # not be necessary.
+          </tal:XXX>
 
                         <tal:noportlets
                           condition="not: view/macro:pagehas/portlets"
@@ -237,7 +236,6 @@
                           <metal:portlets define-slot="portlets" />
                           <metal:portlets define-slot="portlets_two" />
                           <metal:portlets define-slot="portlets_one" />
-                          <div class="clear"></div><!-- needed for Safari -->
                         </div>
                         <div class="clear"></div>
 
@@ -285,7 +283,10 @@
           <a href="/legal">Terms of use</a>
           <span tal:condition="not:is_lpnet" id="lp-version">
             |
-            <tal:version replace="version" />
+            <a
+              href="https://help.launchpad.net/LaunchpadReleases"
+              tal:content="version"
+            />
             <tal:devmode condition="devmode">devmode</tal:devmode>
             <tal:demo condition="is_demo">demo site</tal:demo>
             <tal:edge condition="is_edge">beta site</tal:edge>

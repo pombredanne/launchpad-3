@@ -6,11 +6,11 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
+  metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad">
   <body>
-    <h1 metal:fill-slot="heading">Translation groups</h1>
     <div metal:fill-slot="main">
+      <h1>Translation groups</h1>
       <p>
         A <dfn>translation group</dfn> is a set of teams
         chosen by the owner of a distribution, project group, or project
