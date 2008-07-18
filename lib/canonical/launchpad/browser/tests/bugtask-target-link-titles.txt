@@ -13,6 +13,21 @@ title.
     >>> factory = publisher.factory
     >>> view = BugTasksAndNominationsView(factory.makeBug(), None)
 
+The _getTableRowView() method uses the result from getTargetLinkTitle()
+to set the target_link_title attribute.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> class TestBugTasksAndNominationsView(BugTasksAndNominationsView):
+    ...     def getTargetLinkTitle(self, target):
+    ...         return target
+    >>> bug = factory.makeBug(product=factory.makeProduct('bug-target'))
+    >>> bugtask = bug.bugtasks[0]
+    >>> view = TestBugTasksAndNominationsView(bug, LaunchpadTestRequest())
+    >>> returned_view = view._getTableRowView(bugtask, False, False)
+    >>> returned_view.target_link_title.name
+    u'bug-target'
+
+
 == Distributions ==
 
 For normal distribution, there is information about source packages, but
@@ -24,6 +39,7 @@ not for the distribution itself.
 If the distribution doesn't have any published source packages, no
 information is displayed for the source package.
 
+    >>> view = BugTasksAndNominationsView(factory.makeBug(), None)
     >>> unpublished_distro = factory.makeDistribution(
     ...     displayname='Unpublished Distro')
 
