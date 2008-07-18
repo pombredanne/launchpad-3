@@ -380,7 +380,8 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self, product=None, owner=None, bug_watch_url=None):
+    def makeBug(self, product=None, owner=None, bug_watch_url=None,
+                private=False):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -398,7 +399,7 @@ class LaunchpadObjectFactory:
             owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
-            owner, title, comment=self.getUniqueString())
+            owner, title, comment=self.getUniqueString(), private=private)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
