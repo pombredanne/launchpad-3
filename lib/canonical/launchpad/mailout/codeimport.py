@@ -35,7 +35,7 @@ def new_import(code_import, event):
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name,
                'X-Launchpad-Message-Rationale':
-                   'Herder @%s' % vcs_imports.name}
+                   'Operator @%s' % vcs_imports.name}
     for address in contactEmailAddresses(vcs_imports):
         simple_sendmail(from_address, address, subject, body, headers)
 
@@ -48,7 +48,7 @@ def code_import_status_updated(code_import, user):
     recipients = branch.getNotificationRecipients()
     # Add in the vcs-imports user.
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    herder_rationale = 'Herder @%s' % vcs_imports.name
+    herder_rationale = 'Operator @%s' % vcs_imports.name
     recipients.add(vcs_imports, None, herder_rationale)
 
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name}
