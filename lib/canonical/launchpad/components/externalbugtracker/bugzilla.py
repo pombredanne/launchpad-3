@@ -78,6 +78,9 @@ class Bugzilla(ExternalBugTracker):
                 return self
             else:
                 raise
+        except xmlrpclib.ResponseError:
+            # The server returned an unparsable response.
+            return self
         else:
             return plugin
 
