@@ -64,76 +64,32 @@ class HeaderDictionary:
 class LaunchpadBase:
     """Base class for classes that know about Launchpad."""
 
+    def __init__(self, root):
+        """Initialize with respect to a Launchpad object.
+
+        :param root: A Launchpad object.
+        """
+        self._root = root
+
     def _transform_resources_to_links(self, dictionary):
+        """Replace Resource objects with their URLs.
+
+        In a web service, resources are identified by their
+        URLs. Sending URLs over the wire avoids the need for any
+        custom way of identifying objects.
+        """
         new_dictionary = {}
         for key, value in dictionary.items():
             if isinstance(value, Resource):
                 value = value.self_link
-            new_dictionary[self._external_param_name(key)] = value
+            new_dictionary[self._get_external_param_name(key)] = value
         return new_dictionary
 
-    def _external_param_name(self, param_name):
-        """Turn a launchpadlib name into something to be sent over HTTP.
+    def _get_external_param_name(self, param_name):
+        """Turn a launchpadlib name into something to be sent over HTTP."""
+        raise NotImplementedError
 
-        For resources this may involve sticking '_link' or
-        '_collection_link' on the end of the parameter name. For
-        arguments to named operations, the parameter name is returned
-        as is.
-        """
-        return param_name
-
-
-class Resource(LaunchpadBase):
-    """Base class for Launchpad's HTTP resources."""
-
-    def __init__(self, root, wadl_resource):
-        """Initialize with respect to a wadllib Resource object."""
-        if root is None:
-            # This _is_ the root.
-            root = self
-        # These values need to be put directly into __dict__ to avoid
-        # calling __setattr__, which would cause an infinite recursion.
-        self.__dict__['_root'] = root
-        self.__dict__['_wadl_resource'] = wadl_resource
-
-    def lp_has_parameter(self, param_name):
-        """Does this resource have a parameter with the given name?"""
-        return self._external_param_name(param_name) is not None
-
-    def lp_get_parameter(self, param_name):
-        """Get the value of one of the resource's parameters.
-
-        :return: A scalar value if the parameter is not a link. A new
-                 Resource object, whose resource is bound to a
-                 representation, if the parameter is a link.
-        """
-        for suffix in ['_link', '_collection_link']:
-            param = self._wadl_resource.get_parameter(param_name + suffix)
-            if param is not None:
-                return Resource._wrap_resource(
-                    self._root, param.linked_resource, param_name=param.name)
-        param = self._wadl_resource.get_parameter(param_name)
-        if param is None:
-            raise KeyError("No such parameter: %s" % param_name)
-        return param.get_value()
-
-    def lp_get_named_operation(self, operation_name):
-        """Get a custom operation with the given name.
-
-        :return: A NamedOperation instance that can be called with
-                 appropriate arguments to invoke the operation.
-        """
-        params = { 'ws.op' : operation_name }
-        method = self._wadl_resource.get_method('get', query_params=params)
-        if method is None:
-            method = self._wadl_resource.get_method(
-                'post', representation_params=params)
-        if method is None:
-            raise KeyError("No operation with name: %s" % operation_name)
-        return NamedOperation(self._root, method)
-
-    @classmethod
-    def _wrap_resource(cls, root, resource, representation=None,
+    def _wrap_resource(self, resource, representation=None,
                        representation_media_type='application/json',
                        representation_needs_processing=True, param_name=None):
         """Create a launchpadlib Resource from a wadllib Resource.
@@ -153,7 +109,7 @@ class Resource(LaunchpadBase):
         """
         if representation is None:
             # Get a representation of the linked resource.
-            representation = root._browser.get(resource)
+            representation = self._root._browser.get(resource)
             representation_media_type = 'application/json'
 
         # We happen to know that all Launchpad resource types are
@@ -169,9 +125,59 @@ class Resource(LaunchpadBase):
                 default = Collection
         r_class = RESOURCE_TYPE_CLASSES.get(resource_type, default)
         return r_class(
-            root, resource.bind(
+            self._root, resource.bind(
                 representation, representation_media_type,
                 representation_needs_processing))
+
+
+class Resource(LaunchpadBase):
+    """Base class for Launchpad's HTTP resources."""
+
+    def __init__(self, root, wadl_resource):
+        """Initialize with respect to a wadllib Resource object."""
+        if root is None:
+            # This _is_ the root.
+            root = self
+        # These values need to be put directly into __dict__ to avoid
+        # calling __setattr__, which would cause an infinite recursion.
+        self.__dict__['_root'] = root
+        self.__dict__['_wadl_resource'] = wadl_resource
+
+    def lp_has_parameter(self, param_name):
+        """Does this resource have a parameter with the given name?"""
+        return self._get_external_param_name(param_name) is not None
+
+    def lp_get_parameter(self, param_name):
+        """Get the value of one of the resource's parameters.
+
+        :return: A scalar value if the parameter is not a link. A new
+                 Resource object, whose resource is bound to a
+                 representation, if the parameter is a link.
+        """
+        for suffix in ['_link', '_collection_link']:
+            param = self._wadl_resource.get_parameter(param_name + suffix)
+            if param is not None:
+                return self._wrap_resource(
+                    param.linked_resource, param_name=param.name)
+        param = self._wadl_resource.get_parameter(param_name)
+        if param is None:
+            raise KeyError("No such parameter: %s" % param_name)
+        return param.get_value()
+
+    def lp_get_named_operation(self, operation_name):
+        """Get a custom operation with the given name.
+
+        :return: A NamedOperation instance that can be called with
+                 appropriate arguments to invoke the operation.
+        """
+        params = { 'ws.op' : operation_name }
+        method = self._wadl_resource.get_method('get', query_params=params)
+        if method is None:
+            method = self._wadl_resource.get_method(
+                'post', representation_params=params)
+        if method is None:
+            raise KeyError("No operation with name: %s" % operation_name)
+        return NamedOperation(self._root, self, method)
 
     def lp_refresh(self, new_url=None):
         """Update this resource's representation."""
@@ -195,7 +201,7 @@ class Resource(LaunchpadBase):
             raise AttributeError("'%s' object has no attribute '%s'"
                                  % (self.__class__.__name__, attr))
 
-    def _external_param_name(self, param_name):
+    def _get_external_param_name(self, param_name):
         """What's this parameter's name in the underlying representation?"""
         for suffix in ['_link', '_collection_link', '']:
             name = param_name + suffix
@@ -207,9 +213,10 @@ class Resource(LaunchpadBase):
 class NamedOperation(LaunchpadBase):
     """A class for a named operation to be invoked with GET or POST."""
 
-    def __init__(self, root, wadl_method):
+    def __init__(self, root, resource, wadl_method):
         """Initialize with respect to a WADL Method object"""
-        self.root = root
+        super(NamedOperation, self).__init__(root)
+        self.resource = resource
         self.wadl_method = wadl_method
 
     def __call__(self, **kwargs):
@@ -226,7 +233,7 @@ class NamedOperation(LaunchpadBase):
              in_representation) = self.wadl_method.build_representation(
                 **args)
             extra_headers = { 'Content-type' : media_type }
-        response, content = self.root._browser._request(
+        response, content = self._root._browser._request(
             url, in_representation, http_method, extra_headers=extra_headers)
 
         if response.status == 201:
@@ -237,17 +244,26 @@ class NamedOperation(LaunchpadBase):
             wadl_parameter = wadl_response.get_parameter('Location')
             wadl_resource = wadl_parameter.linked_resource
             # Fetch a representation of the new resource.
-            response, content = self.root._browser._request(
+            response, content = self._root._browser._request(
                 wadl_resource.url)
             # Return an instance of the appropriate launchpadlib
             # Resource subclass.
-            return Resource._wrap_resource(
-                self.root, wadl_resource, content, response['content-type'])
+            return self._wrap_resource(
+                wadl_resource, content, response['content-type'])
         else:
+            if http_method == 'post':
+                # The method call probably modified this resource in
+                # an unknown way. Refresh its representation.
+                self.resource.lp_refresh()
             # Process the returned content, assuming we know how.
             if response['content-type'] == 'application/json':
                 return simplejson.loads(content)
             return content
+
+    def _get_external_param_name(self, param_name):
+        """Named operation parameter names are sent as is."""
+        return param_name
+
 
 class Entry(Resource):
     """A class for an entry-type resource that can be updated with PATCH."""
@@ -266,6 +282,9 @@ class Entry(Resource):
         # breaking the cycle.
         self.__dict__['_dirty_attributes'] = {}
         super(Entry, self).__init__(root, wadl_resource)
+
+    def __str__(self):
+        return '%s at %s' % (self.resource_type_link, self.self_link)
 
     def __getattr__(self, name):
         """Try to retrive a parameter of the given name."""
@@ -302,6 +321,7 @@ class Entry(Resource):
             else:
                 raise
         self._dirty_attributes.clear()
+        self.lp_refresh()
 
 
 class Collection(Resource):
@@ -339,9 +359,8 @@ class Collection(Resource):
                 resource = WadlResource(
                     self._wadl_resource.application, resource_url,
                     resource_type.tag)
-                yield Resource._wrap_resource(
-                    self._root, resource, entry_dict, 'application/json',
-                    False)
+                yield self._wrap_resource(
+                    resource, entry_dict, 'application/json', False)
             next_link = current_page.get('next_collection_link')
             if next_link is None:
                 break
