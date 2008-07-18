@@ -68,16 +68,6 @@
         fieldset.collapsible div, fieldset div.collapsed {display: block;}
       </style>
     </noscript>
-    <tal:comment condition="nothing">
-      Internet Explorer doesn't style elements it doesn't recognize, such as
-      the new sectioning elements in HTML 5, unless they're declared first:
-    </tal:comment>
-    <!--[if lte IE 7]>
-      <script type="text/javascript">
-        document.createElement('aside');
-        document.createElement('section');
-      </script>
-    <![endif]-->
 
     <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
