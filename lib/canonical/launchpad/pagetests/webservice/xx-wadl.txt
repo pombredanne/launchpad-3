@@ -664,7 +664,7 @@ look up the element called "bug_link".
 A parameter may also have human-readable documentation: an optional
 name for the parameter and an optional short description.
 
-    >>> doc = full_params[0][0]
+    >>> doc = full_params[2][0]
     >>> doc.tag
     '...doc'
     >>> print doc.text
@@ -714,6 +714,14 @@ define a second representation for use with PATCH requests.
     >>> diff_rep_names = sorted([param.attrib['name']
     ...                          for param in diff_params])
 
+    >>> 'self_link' in full_rep_names
+    True
+    >>> 'self_link' in diff_rep_names
+    False
+    >>> 'resource_type_link' in full_rep_names
+    True
+    >>> 'resource_type_link' in diff_rep_names
+    False
     >>> 'related_tasks_collection_link' in full_rep_names
     True
     >>> 'related_tasks_collection_link' in diff_rep_names
@@ -762,14 +770,14 @@ it. Different operations that use the same method are distinguished by
 XML id. Here that's not a problem; we have one custom POST method
 ('bug_task-transitionToStatus'), plus the standard GET, PATCH, and PUT.
 
-    >>> [method.attrib['name'] for method in methods]
-    ['GET', 'PUT', 'PATCH', 'POST', 'POST', 'POST']
-
-    >>> [method.attrib['id'] for method in methods]
-    ['bug_task-get', 'bug_task-put',
-     'bug_task-patch', 'bug_task-transitionToStatus',
-     'bug_task-transitionToImportance',
-     'bug_task-transitionToAssignee']
+    >>> sorted((method.attrib['name'], method.attrib['id'])
+    ...        for method in methods)
+    [('GET', 'bug_task-get'),
+     ('PATCH', 'bug_task-patch'),
+     ('POST', 'bug_task-transitionToAssignee'),
+     ('POST', 'bug_task-transitionToImportance'),
+     ('POST', 'bug_task-transitionToStatus'),
+     ('PUT', 'bug_task-put')]
 
 
 === Standard entry operations ===
@@ -957,9 +965,10 @@ collection).
 All collection representations have the same five <param> tags.
 
     >>> [param.attrib['name'] for param in collection_rep]
-    ['total_size', 'start', 'next_collection_link', 'prev_collection_link',
-     'entries', 'entry_links']
-    >>> size, start, next, prev, entries, entry_links = collection_rep
+    ['resource_type_link', 'total_size', 'start', 'next_collection_link',
+     'prev_collection_link', 'entries', 'entry_links']
+    >>> (type_link, size, start, next, prev, entries,
+    ...  entry_links) = collection_rep
 
 So what's the difference between a collection of people and a
 collection of bug tasks? Well, the ID is different, but that's just a
