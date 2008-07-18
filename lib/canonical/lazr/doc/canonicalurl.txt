@@ -15,10 +15,10 @@ First, we'll construct an example object hierarchy.
     >>> from zope.interface import Interface
 
     >>> class ICookbook(Interface):
-    ...     """An object with facets and menus."""
+    ...     pass
 
     >>> class IRecipe(Interface):
-    ...     """An object with facets and menus."""
+    ...     pass
 
     >>> class BaseContent:
     ...     implements(ICanonicalUrlData)
@@ -30,7 +30,7 @@ First, we'll construct an example object hierarchy.
     ...         self.rootsite = None
 
     >>> class Root(BaseContent):
-    ...     """The root of 'cookery', a vhost and facet."""
+    ...     pass
 
     >>> class Cookbook(BaseContent):
     ...     implements(ICookbook)
@@ -38,34 +38,11 @@ First, we'll construct an example object hierarchy.
     >>> class Recipe(BaseContent):
     ...     implements(IRecipe)
 
-
-    # nearest_adapter() uses canonical_url(), which in turn requires a
-    # running interaction.  We'll need to set up a test request to make it
-    # work.
-    >>> from zope.security.management import endInteraction, newInteraction
-    >>> from canonical.launchpad.webapp import urlsplit
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> def make_fake_request(url, traversed_objects=None):
-    ...     """Return a fake request object for menu testing."""
-    ...     url_parts = urlsplit(url)
-    ...     server_url = '://'.join(url_parts[0:2])
-    ...     path_info = url_parts[2]
-    ...     request = LaunchpadTestRequest(
-    ...         SERVER_URL=server_url,
-    ...         PATH_INFO=path_info)
-    ...     # After making the request, setup a new interaction.
-    ...     endInteraction()
-    ...     newInteraction(request)
-    ...     return request
-
 Here is the structure of our hierarchy:
 
     >>> root = BaseContent('', None)
     >>> cookbook = Cookbook('joy-of-cooking', root)
     >>> recipe = Recipe('fried-spam', cookbook)
-
-    >>> request = make_fake_request(
-    ...     'http://launchpad.dev/joy-of-cooking/fried-spam')
 
 
 == Using nearest_adapter ==
@@ -80,7 +57,7 @@ We'll try adapting our objects to a made-up interface, ICookingDirections.
     ...     def __init__(self, context):
     ...         self.context = context
 
-Right now, none of our example objects can be turned into places.
+Right now, none of our example objects can be turned into cooking directions.
 
     >>> from canonical.lazr.canonicalurl import (nearest_adapter,
     ...     nearest_context_with_adapter)
@@ -113,6 +90,12 @@ cookbook's adapter will be returned.
 
     >>> print nearest_adapter(recipe, ICookingDirections)
     <...CookingDirections ...>
+
+We can verify that the adapter is actually for the Cookbook using
+nearest_adapter_with_context().
+
+    >>> print nearest_context_with_adapter(recipe, ICookingDirections)
+    (<...Cookbook ...>, <...CookingDirections ...>)
 
 Calling nearest_adapter() on "cookbook" itself will return the
 CookingDirections:
