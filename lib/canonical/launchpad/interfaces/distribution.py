@@ -236,6 +236,16 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         Receives a sourcepackagerelease.
         """
 
+    def getCurrentSourceReleases(source_package_names):
+        """Get the current release of a list of source packages.
+
+        :param source_package_names: a list of `ISourcePackageName`
+            instances.
+
+        :return: a dict where the key is a `IDistributionSourcePackage`
+            and the value is a `IDistributionSourcePackageRelease`.
+        """
+
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this distribution. Return
         None.

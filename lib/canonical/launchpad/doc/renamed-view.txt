@@ -36,19 +36,6 @@ update bookmarks.
     >>> print request.response.getHeader('Location')
     http://launchpad.dev/ubuntu/+questions
 
-The view can also work for names registered on the root, and the
-new_name can be a relative path.
-
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-    >>> root = getUtility(ILaunchpadRoot)
-    >>> view = RenamedView(root, LaunchpadTestRequest(), '+tour/index.html')
-    >>> view()
-    u''
-    >>> request.response.getStatus()
-    301
-    >>> print view.request.response.getHeader('Location')
-    http://launchpad.dev/+tour/index.html
-
 
 == Handling GET parameters ==
 
