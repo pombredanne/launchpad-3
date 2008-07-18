@@ -2487,7 +2487,8 @@ class BugTasksAndNominationsView(LaunchpadView):
 
     def initialize(self):
         foo = {}
-        for bugtask in self.context.bugtasks:
+        self.bugtasks = list(self.context.bugtasks)
+        for bugtask in self.bugtasks:
             target = bugtask.target
             if IDistributionSourcePackage.providedBy(target):
                 foo.setdefault(target.distribution, [])
@@ -2553,7 +2554,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         included in the returned results.
         """
         bug = self.context
-        bugtasks = list(bug.bugtasks)
+        bugtasks = self.bugtasks
 
         upstream_tasks = [
             bugtask for bugtask in bugtasks
