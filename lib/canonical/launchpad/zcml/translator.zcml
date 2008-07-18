@@ -4,7 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-<facet facet="translations">
+  <facet facet="translations">
 
     <!-- TranslatorSet -->
     <securedutility
@@ -45,5 +45,5 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
-</facet>
+  </facet>
 </configure>
