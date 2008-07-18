@@ -104,6 +104,16 @@ Some Bugzillas respond to an invalid XML-RPC method call by returning a
     ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
     True
 
+Some other Bugzillas generate an unparsable response, causing
+ResponseError to be raised.
+
+    >>> test_transport.error = xmlrpclib.ResponseError()
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+
+    >>> (isinstance(bugzilla_to_use, Bugzilla) and
+    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    True
+
 
 == Status Conversion ==
 

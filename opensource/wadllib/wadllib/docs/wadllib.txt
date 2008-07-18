@@ -31,6 +31,8 @@ retrieves the definition of the root resource.
    >>> service_root = wadl.get_resource_by_path('')
    >>> service_root.url
    'http://api.launchpad.dev/beta/'
+   >>> service_root.type_url
+   '#service-root'
 
 The service root resource supports GET.
 
@@ -53,13 +55,12 @@ root URL.
 The WADL description of a resource knows which representations are
 available for that resource. In this case, the server root resource
 has a a JSON representation, and it defines parameters like
-'PersonSetCollectionAdapter_collection_link', a link to a list of
-people in Launchpad. We should be able to use the get_parameter()
-method to get the WADL definition of the
-'PersonSetCollectionAdapter_collection_link' parameter and find out
-more about it--for instance, is it a link to another resource?
+'people_collection_link', a link to a list of people in Launchpad. We
+should be able to use the get_parameter() method to get the WADL
+definition of the 'people_collection_link' parameter and find out more
+about it--for instance, is it a link to another resource?
 
-   >>> link_name = 'PersonSetCollectionAdapter_collection_link'
+   >>> link_name = 'people_collection_link'
    >>> link_parameter = service_root.get_parameter(link_name)
    Traceback (most recent call last):
    ...
@@ -67,9 +68,8 @@ more about it--for instance, is it a link to another resource?
 
 Oops. In the absense of real data, there's no way to know whether
 we're talking about a JSON representation or some other kind of
-representation. There can be no
-'PersonSetCollectionAdapter_collection_link' parameter until there's
-real data to back it up.
+representation. There can be no 'people_collection_link' parameter
+until there's real data to back it up.
 
 The browser can use the description of the GET method to make an
 actual GET request, and bind the resulting representation to the WADL
@@ -96,10 +96,12 @@ let's try binding it to that JSON representation. We use test JSON
 data from a file to simulate the result of a GET request to the
 service root.
 
-   >>> def bind_to_testdata(resource, filename):
-   ...     data = pkg_resources.resource_string(
+   >>> def get_testdata(filename):
+   ...     return pkg_resources.resource_string(
    ...         'wadllib.docs.testdata', filename + '.json')
-   ...     return resource.bind(data, 'application/json')
+
+   >>> def bind_to_testdata(resource, filename):
+   ...     return resource.bind(get_testdata(filename), 'application/json')
 
 The return value is a new Resource object that's "bound" to that JSON
 test data.
@@ -107,9 +109,8 @@ test data.
    >>> bound_service_root = bind_to_testdata(service_root, 'root')
 
 Now the bound resource object has a JSON representation, and now
-'PersonSetCollectionAdapter_collection_link' makes sense. We can
-follow the 'PersonSetCollectionAdapter_collection_link' to a
-new Resource object.
+'people_collection_link' makes sense. We can follow the
+'people_collection_link' to a new Resource object.
 
    >>> link_parameter = bound_service_root.get_parameter(link_name)
    >>> link_parameter.get_value()
@@ -119,11 +120,13 @@ new Resource object.
    <class 'wadllib.application.Resource'>
    >>> personset_resource.url
    u'http://api.launchpad.dev/beta/people'
+   >>> personset_resource.type_url
+   'http://api.launchpad.dev/beta/#people'
 
 This new resource is a collection of people.
 
    >>> personset_resource.id
-   'PersonSetCollectionAdapter'
+   'people'
 
 The "collection of people" resource supports a standard GET request as
 well as a special GET and an overloaded POST. The get_method() method
@@ -133,12 +136,12 @@ request.
 
    >>> get_method = personset_resource.get_method('get')
    >>> get_method.id
-   'PersonSetCollectionAdapter-get'
+   'people-get'
 
 The method name passed into get_method() is treated case-insensitively.
 
    >>> personset_resource.get_method('GET').id
-   'PersonSetCollectionAdapter-get'
+   'people-get'
 
 To invoke the special GET request, the client sets the 'ws.op' query
 parameter to the fixed string 'find'.
@@ -146,7 +149,7 @@ parameter to the fixed string 'find'.
    >>> find_method = personset_resource.get_method(
    ...     'get', query_params={'ws.op' : 'findPerson'})
    >>> find_method.id
-   'PersonSetCollectionAdapter-findPerson'
+   'people-findPerson'
 
 Given an end-user's values for the non-fixed parameters, it's possible
 to get the URL that should be used to invoke the method.
@@ -179,7 +182,7 @@ query variable to the fixed string 'newTeam':
    >>> create_team_method = personset_resource.get_method(
    ...     'post', representation_params={'ws.op' : 'newTeam'})
    >>> create_team_method.id
-   'PersonSetCollectionAdapter-newTeam'
+   'people-newTeam'
 
 findMethod() returns None when there's no WADL method matching the
 name or the fixed parameters.
@@ -226,11 +229,34 @@ by following links.
 
    >>> from wadllib.application import Resource
    >>> limi_person = Resource(wadl, "http://api.launchpad.dev/beta/~limi",
-   ...     "http://api.launchpad.dev/beta/#PersonEntryAdapter")
+   ...     "http://api.launchpad.dev/beta/#person")
 
    >>> bound_limi = bind_to_testdata(limi_person, 'person-limi')
    >>> languages_link = bound_limi.get_parameter("languages_collection_link")
    >>> languages_link.get_value()
+   u'http://api.launchpad.dev/beta/~limi/languages'
+
+You can bind a Resource to a representation when you create it.
+
+   >>> limi_data = get_testdata('person-limi')
+   >>> bound_limi = Resource(
+   ...     wadl, "http://api.launchpad.dev/beta/~limi",
+   ...     "http://api.launchpad.dev/beta/#person", limi_data,
+   ...     "application/json")
+   >>> bound_limi.get_parameter("languages_collection_link").get_value()
+   u'http://api.launchpad.dev/beta/~limi/languages'
+
+By default the representation is treated as a string and processed
+according to the media type you pass into the Resource constructor. If
+you've already processed the representation, pass in False for the
+'representation_needs_processing' argument.
+
+   >>> import simplejson
+   >>> processed_limi_data = simplejson.loads(limi_data)
+   >>> bound_limi = Resource(wadl, "http://api.launchpad.dev/beta/~limi",
+   ...     "http://api.launchpad.dev/beta/#person", processed_limi_data,
+   ...     "application/json", False)
+   >>> bound_limi.get_parameter("languages_collection_link").get_value()
    u'http://api.launchpad.dev/beta/~limi/languages'
 
 
