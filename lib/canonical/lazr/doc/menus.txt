@@ -1024,6 +1024,9 @@ hierarchy, the Recipe, will be returned.
         menu: <...IRecipeEditMenuMarker...>
         linked: True
 
+
+=== Menus for objects without canonical URLs ===
+
 The navigation menu lookup will also work if the view's context object does
 not have a canonical URL, but it does have a INavigationMenu adaptation.
 
@@ -1043,21 +1046,27 @@ that does *not* implement the canonical_url() interface.
     ...     usedfor = IRootlessCommentMenuMarker
     ...     title = 'Rootless comment menu'
     ...     facet = 'cookery'
-    ...     links = ('nocomment')
+    ...     links = ('nocomment',)
     ...
     ...     def nocomment(self):
     ...         text = 'No comment'
     ...         target = '+nocomment'
     ...         return Link(target, text)
 
+    >>> class RootlessCommentView(LaunchpadView):
+    ...     implements(IRootlessCommentMenuMarker)
+    ...     __used_for__ = IRootlessComment
+
     # Monkey patch the interfaces and views into the cookingexample module.
     >>> cookingexample.IRootlessComment = IRootlessComment
+    >>> cookingexample.RootlessCommentView = RootlessCommentView
 
     # Hook everything up
     >>> provideAdapter(
     ...     RootlessCommentMenu,
     ...     [IRootlessComment],
-    ...     INavigationMenu)
+    ...     INavigationMenu,
+    ...     name='cookery')
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns="http://namespaces.zope.org/zope"
@@ -1074,7 +1083,7 @@ that does *not* implement the canonical_url() interface.
     ...     name="+nocomment"
     ...     for="canonical.lazr.cookingexample.IRootlessComment"
     ...     facet="cookery"
-    ...     class="canonical.lazr.cookingexample.RecipeShowCommentView"
+    ...     class="canonical.lazr.cookingexample.RootlessCommentView"
     ...     permission="zope.Public"
     ...     />
     ... </configure>
@@ -1097,7 +1106,7 @@ Once again, we simulate the user viewing a comment:
     ...     (nocomment, request), name='+nocomment')
     >>> request._last_obj_traversed = recipe_nocomment_view
 
-If we look at rootless object view we will see the IRootlessCommentMenu.
+The menu lookup for IRootlessComment will return the views's menu.
 
     >>> queryAdapter(nocomment, INavigationMenu)
     <RootlessCommentMenu ...>
@@ -1106,6 +1115,11 @@ If we look at rootless object view we will see the IRootlessCommentMenu.
     ...     'context/menu:navigation', context=nocomment,
     ...     request=request)
     >>> summarise_tal_links(links_dict)
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+nocomment
+        enabled: True
+        menu: <...IRootlessCommentMenuMarker...>
+        linked: False
 
 
 == Rendering the menu in a template ==
