@@ -2480,14 +2480,14 @@ class BugTasksAndNominationsView(LaunchpadView):
     def __init__(self, context, request):
         """Ensure we always have a bug context."""
         LaunchpadView.__init__(self, IBug(context), request)
-        # Cache some values, so that we don't have to recalculate them
-        # for each bug task.
-        self.cached_milestone_source = CachedMilestoneSourceFactory()
-        self.user_is_subscribed = self.context.isSubscribed(self.user)
 
     def initialize(self):
         """Cache the list of bugtasks and set up the release mapping."""
+        # Cache some values, so that we don't have to recalculate them
+        # for each bug task.
         self.bugtasks = list(self.context.bugtasks)
+        self.cached_milestone_source = CachedMilestoneSourceFactory()
+        self.user_is_subscribed = self.context.isSubscribed(self.user)
         distro_packages = {}
         for bugtask in self.bugtasks:
             target = bugtask.target
