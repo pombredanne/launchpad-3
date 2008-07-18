@@ -28,7 +28,6 @@ __all__ = [
     ]
 
 import urllib
-from urlparse import urlparse
 import simplejson
 try:
     import xml.etree.cElementTree as ET
@@ -210,7 +209,8 @@ class Resource(WADLResolvableDefinition):
     """A resource, possibly bound to a representation."""
 
     def __init__(self, application, url, resource_type,
-                 representation=None, media_type=None, _definition=None):
+                 representation=None, media_type=None,
+                 representation_needs_processing=True, _definition=None):
         """
         :param application: A WADLApplication.
         :param url: The URL to this resource.
@@ -221,6 +221,11 @@ class Resource(WADLResolvableDefinition):
             avoid dereferencing a bound resource definition; instead,
             we reuse the work done when dereferencing the unbound
             resource.
+        :param representation_needs_processing: Set to False if the
+            'representation' parameter should be used as
+            is. Otherwise, it will be transformed from a string into
+            an appropriate Python data structure, depending on its
+            media type.
         """
         super(Resource, self).__init__(application)
         self._url = url
@@ -236,7 +241,10 @@ class Resource(WADLResolvableDefinition):
         self.representation = None
         if representation is not None:
             if media_type == 'application/json':
-                self.representation = simplejson.loads(representation)
+                if representation_needs_processing:
+                    self.representation = simplejson.loads(representation)
+                else:
+                    self.representation = representation
             else:
                 raise UnsupportedMediaTypeError(
                     "This resource doesn't define a representation for "
@@ -252,20 +260,42 @@ class Resource(WADLResolvableDefinition):
         return self._url
 
     @property
+    def type_url(self):
+        """Return the URL to the type definition for this resource, if any."""
+        if self.tag is None:
+            return None
+        url = self.tag.attrib.get('type')
+        if url is not None:
+            # This resource is defined in the WADL file.
+            return url
+        type_id = self.tag.attrib.get('id')
+        if type_id is not None:
+            # This resource was obtained by following a link.
+            base = uri.URI(self.application.markup_url).ensureSlash()
+            return str(base) + '#' + type_id
+
+        # This resource does not have any associated resource type.
+        return None
+
+    @property
     def id(self):
         """Return the ID of this resource."""
         return self.tag.attrib['id']
 
-    def bind(self, representation, media_type='application/json'):
+    def bind(self, representation, media_type='application/json',
+             representation_needs_processing=True):
         """Bind the resource to a representation of that resource.
 
         :param representation: A string representation
         :param media_type: The media type of the representation.
+        :param representation_needs_processing: Set to False if the
+            'representation' parameter should be used as
+            is.
         :returns: A Resource bound to a particular representation.
         """
         return Resource(self.application, self.url, self.tag,
                         representation, media_type,
-                        self._definition)
+                        representation_needs_processing, self._definition)
 
     def get_representation_definition(self, media_type):
         """Get a description of one of this resource's representations."""
@@ -730,13 +760,22 @@ class Application(WADLBase):
         WADL document.
         :returns: The XML ID corresponding to the anchor.
         """
-        parts = urlparse(url)
-        all_but_anchor = parts[:5]
-        if (all_but_anchor == (('',) * 5)
-            or all_but_anchor == urlparse(self.markup_url)[:5]):
+        markup_uri = uri.URI(self.markup_url).ensureNoSlash()
+        markup_uri.fragment = None
+
+        if url.startswith('http'):
+            # It's an absolute URI.
+            this_uri = uri.URI(url).ensureNoSlash()
+        else:
+            # It's a relative URI.
+            this_uri = markup_uri.resolve(url)
+        possible_xml_id = this_uri.fragment
+        this_uri.fragment = None
+
+        if this_uri == markup_uri:
             # The URL pointed elsewhere within the same WADL document.
-            # Return the anchor within the document.
-            return parts[-1]
+            # Return its fragment.
+            return possible_xml_id
 
         # XXX leonardr 2008-05-28:
         # This needs to be implemented eventually for Launchpad so
