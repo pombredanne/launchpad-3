@@ -947,9 +947,14 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
 
 == Looking up the nearest navigation menu ==
 
-Sometimes the view will have a navigation menu, but the view's context will not.  In this case we want to search upwards through the navigation hierarchy for a context that *does* have a navigation menu.
+Sometimes the view will have a navigation menu, but the view's context
+will not.  In this case we want to search upwards through the navigation
+hierarchy for a context that *does* have a navigation menu.
 
-In this example we will use recipe comments.  The comment view has a menu, but the comment object does not.  We want the call to 'context/menu:navigation' to return the navigation menu for the recipe that the comment refers to.
+In this example we will use recipe comments.  The comment view has a
+menu, but the comment object does not.  We want the call to
+'context/menu:navigation' to return the navigation menu for the recipe
+that the comment refers to.
 
     >>> class IComment(Interface):
     ...     """A comment on a recipe."""
@@ -970,9 +975,9 @@ We'll simulate the user viewing a comment.
     >>> print canonical_url(comment)
     http://launchpad.dev/joy-of-cooking/fried-spam/a-comment
 
-When we try to look up the menu for the view's context (the Comment
-object) the navigation menu for the next highest object in the URL
-hierarchy, the Recipe, will be returned.
+When we try to look up the menu for the comment, the navigation menu for
+the next highest object in the URL hierarchy, the Recipe, will be
+returned.
 
     >>> print queryAdapter(comment, INavigationMenu)
     None
