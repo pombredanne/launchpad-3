@@ -994,12 +994,11 @@ hierarchy, the Recipe, will be returned.
 
 === Menus for objects without canonical URLs ===
 
-The navigation menu lookup will also work if the view's context object
-does not have a canonical URL, but it does have a INavigationMenu
-adaptation.
+The navigation menu lookup will also work for objects without a canonical
+URL, but that do have a INavigationMenu adaptation.
 
 In this example, we'll look up an adaptation on the RecipeReadJournalView.
-It has a menu, but the view doesn't have a canonical URL.
+It has a menu, but the view itself doesn't have a canonical URL.
 
     >>> print queryAdapter(recipe_journal_view, ICanonicalUrlData)
     None
@@ -1087,13 +1086,6 @@ NavigationMenus used in the previous TALES section.
     # This approximates what is done by the code:
     >>> classImplements(FacetMenuView, IPathAdapter)
     >>> classImplements(NavigationMenuView, IPathAdapter)
-
-We'll start by looking at the recipe journal:
-
-    >>> request = make_fake_request(
-    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal',
-    ...     traversed_objects=[cookbook, recipe])
-    >>> request._last_obj_traversed = recipe_journal_view
 
 The Summary in the facet menu is selected because the current facet
 is 'cookery'.
