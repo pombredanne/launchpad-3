@@ -2486,8 +2486,9 @@ class BugTasksAndNominationsView(LaunchpadView):
         self.user_is_subscribed = self.context.isSubscribed(self.user)
 
     def initialize(self):
-        foo = {}
+        """Cache the list of bugtasks and set up the target release mapping."""
         self.bugtasks = list(self.context.bugtasks)
+        foo = {}
         for bugtask in self.bugtasks:
             target = bugtask.target
             if IDistributionSourcePackage.providedBy(target):
@@ -2496,6 +2497,10 @@ class BugTasksAndNominationsView(LaunchpadView):
             if ISourcePackage.providedBy(target):
                 foo.setdefault(target.distroseries, [])
                 foo[target.distroseries].append(target.sourcepackagename)
+        # Set up a mapping from a target to its current release, using
+        # only a few DB queries. It would be easier to use the packages'
+        # currentrelease attributes, but that causes many DB queries to
+        # be issued.
         self.target_releases = {}
         for distro_or_series, package_names in foo.items():
             releases = distro_or_series.getCurrentSourceReleases(

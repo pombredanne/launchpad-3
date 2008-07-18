@@ -426,6 +426,16 @@ class LaunchpadObjectFactory:
         return bug
 
     def makeBugTask(self, bug=None, target=None):
+        """Create and return a bug task.
+
+        If the bug is already targeted to the given target, the existing
+        bug task is returned.
+
+        :param bug: The `IBug` the bug tasks should be part of. If None,
+            one will be created.
+        :param target: The `IBugTarget`, to which the bug will be
+            targeted to.
+        """
         if bug is None:
             bug = self.makeBug()
         if target is None:
@@ -438,6 +448,8 @@ class LaunchpadObjectFactory:
         if IProduct.providedBy(target):
             target_params = {'product': target}
         elif IProductSeries.providedBy(target):
+            # We can't have a series task without a distribution task.
+            self.makeBugTask(bug, target.product)
             target_params = {'productseries': target}
         elif IDistribution.providedBy(target):
             target_params = {'distribution': target}
@@ -447,11 +459,13 @@ class LaunchpadObjectFactory:
                 'sourcepackagename': target.sourcepackagename,
                 }
         elif IDistroSeries.providedBy(target):
+            # We can't have a series task without a distribution task.
             self.makeBugTask(bug, target.distribution)
             target_params = {'distroseries': target}
         elif ISourcePackage.providedBy(target):
             distribution_package = target.distribution.getSourcePackage(
                 target.sourcepackagename)
+            # We can't have a series task without a distribution task.
             self.makeBugTask(bug, distribution_package)
             target_params = {
                 'distroseries': target.distroseries,

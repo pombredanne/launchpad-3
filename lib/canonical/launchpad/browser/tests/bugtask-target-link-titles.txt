@@ -168,6 +168,10 @@ Products and product series don't have any link titles.
 
 == Initializing ==
 
+Before the BugTasksAndNominationsView is usable, it needs to be
+initialized. When calling initialized(), the mapping from each of the
+bug's target to its current release is set up.
+
     >>> bug = factory.makeBug(product=product)
     >>> bug_targets = [
     ...     product,
