@@ -1024,11 +1024,88 @@ hierarchy, the Recipe, will be returned.
         menu: <...IRecipeEditMenuMarker...>
         linked: True
 
-    # Restore our request object.
+The navigation menu lookup will also work if the view's context object does
+not have a canonical URL, but it does have a INavigationMenu adaptation.
+
+In this example, we'll reuse the Comment view, but provide it with an object
+that does *not* implement the canonical_url() interface.
+
+    >>> class IRootlessComment(Interface):
+    ...     """A class that is not supposed to have a URL."""
+
+    >>> class RootlessComment(object):
+    ...     implements(IRootlessComment)
+
+    >>> class IRootlessCommentMenuMarker(Interface):
+    ...     """A view that shows the menu for rootless comments."""
+
+    >>> class RootlessCommentMenu(NavigationMenu):
+    ...     usedfor = IRootlessCommentMenuMarker
+    ...     title = 'Rootless comment menu'
+    ...     facet = 'cookery'
+    ...     links = ('nocomment')
+    ...
+    ...     def nocomment(self):
+    ...         text = 'No comment'
+    ...         target = '+nocomment'
+    ...         return Link(target, text)
+
+    # Monkey patch the interfaces and views into the cookingexample module.
+    >>> cookingexample.IRootlessComment = IRootlessComment
+
+    # Hook everything up
+    >>> provideAdapter(
+    ...     RootlessCommentMenu,
+    ...     [IRootlessComment],
+    ...     INavigationMenu)
+
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns="http://namespaces.zope.org/zope"
+    ...            xmlns:zope="http://namespaces.zope.org/zope"
+    ...            xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include package="zope.app" file="meta.zcml" />
+    ...   <includeOverrides
+    ...     package="canonical.launchpad.webapp" file="meta-overrides.zcml" />
+    ...   <browser:defaultView
+    ...     for="canonical.lazr.cookingexample.IRootlessComment"
+    ...     name="+nocomment"
+    ...     />
+    ...   <browser:page
+    ...     name="+nocomment"
+    ...     for="canonical.lazr.cookingexample.IRootlessComment"
+    ...     facet="cookery"
+    ...     class="canonical.lazr.cookingexample.RecipeShowCommentView"
+    ...     permission="zope.Public"
+    ...     />
+    ... </configure>
+    ... """)
+
+Once again, we simulate the user viewing a comment:
+
+    >>> nocomment = RootlessComment()
+    >>> print canonical_url(nocomment)
+    Traceback (most recent call last):
+    ...
+    NoCanonicalUrl: ...
+
+    # Create a special-case request object.
     >>> request = make_fake_request(
-    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal',
-    ...     traversed_objects=[cookbook, recipe])
-    >>> request._last_obj_traversed = recipe_journal_view
+    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+nocomment',
+    ...     traversed_objects=[cookbook, recipe, nocomment])
+
+    >>> recipe_nocomment_view = getMultiAdapter(
+    ...     (nocomment, request), name='+nocomment')
+    >>> request._last_obj_traversed = recipe_nocomment_view
+
+If we look at rootless object view we will see the IRootlessCommentMenu.
+
+    >>> queryAdapter(nocomment, INavigationMenu)
+    <RootlessCommentMenu ...>
+
+    >>> links_dict = test_tales(
+    ...     'context/menu:navigation', context=nocomment,
+    ...     request=request)
+    >>> summarise_tal_links(links_dict)
 
 
 == Rendering the menu in a template ==
@@ -1099,6 +1176,13 @@ NavigationMenus used in the previous TALES section.
     # This approximates what is done by the code:
     >>> classImplements(FacetMenuView, IPathAdapter)
     >>> classImplements(NavigationMenuView, IPathAdapter)
+
+We'll start by looking at the recipe journal:
+
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal',
+    ...     traversed_objects=[cookbook, recipe])
+    >>> request._last_obj_traversed = recipe_journal_view
 
 The Summary in the facet menu is selected because the current facet
 is 'cookery'.
