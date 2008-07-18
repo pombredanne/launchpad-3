@@ -527,6 +527,8 @@ we must follow to download the data.
   <BLANKLINE>
 
   >>> from urllib2 import urlopen
+
+  >>> data = None
   >>> conn = urlopen(data_response.getHeader('Location'))
   >>> try:
   ...     data = conn.read()
