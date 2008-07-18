@@ -957,50 +957,18 @@ In this example we will use recipe comments.  The comment view has a menu, but t
     >>> class Comment(BaseContent):
     ...     implements(IComment)
 
-    >>> class RecipeShowCommentView(LaunchpadView):
-    ...     """View for looking at a recipe comment."""
-    ...     __used_for__ = IComment
-
-    # Monkey patch the interfaces and views into the cookingexample module.
-    >>> cookingexample.IComment = IComment
-    >>> cookingexample.RecipeShowCommentView = RecipeShowCommentView
-
-    # Hook everything up
-    >>> zcmlcontext = xmlconfig.string("""
-    ... <configure xmlns="http://namespaces.zope.org/zope"
-    ...            xmlns:zope="http://namespaces.zope.org/zope"
-    ...            xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include package="zope.app" file="meta.zcml" />
-    ...   <includeOverrides
-    ...     package="canonical.launchpad.webapp" file="meta-overrides.zcml" />
-    ...   <browser:defaultView
-    ...     for="canonical.lazr.cookingexample.IComment"
-    ...     name="+index"
-    ...     />
-    ...   <browser:page
-    ...     name="+index"
-    ...     for="canonical.lazr.cookingexample.IComment"
-    ...     facet="cookery"
-    ...     class="canonical.lazr.cookingexample.RecipeShowCommentView"
-    ...     permission="zope.Public"
-    ...     />
-    ... </configure>
-    ... """)
+    >>> from zope.component.bbb.interfaces import IDefaultViewName
+    >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+    >>> provideAdapter(
+    ...     '+index',
+    ...     [IComment, IDefaultBrowserLayer],
+    ...     IDefaultViewName)
 
 We'll simulate the user viewing a comment.
 
     >>> comment = Comment('a-comment', recipe)
     >>> print canonical_url(comment)
     http://launchpad.dev/joy-of-cooking/fried-spam/a-comment
-
-    # Create a special-case request object.
-    >>> request = make_fake_request(
-    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/a-comment/+index',
-    ...     traversed_objects=[cookbook, recipe, comment])
-
-    >>> recipe_comment_view = getMultiAdapter(
-    ...     (comment, request), name='+index')
-    >>> request._last_obj_traversed = recipe_comment_view
 
 When we try to look up the menu for the view's context (the Comment
 object) the navigation menu for the next highest object in the URL
@@ -1010,14 +978,13 @@ hierarchy, the Recipe, will be returned.
     None
 
     >>> links_dict = test_tales(
-    ...     'context/menu:navigation', context=comment,
-    ...     request=request)
+    ...     'context/menu:navigation', context=comment)
     >>> summarise_tal_links(links_dict)
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
         menu: <...IRecipeJournalMenuMarker...>
-        linked: True
+        linked: False
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam
         enabled: True
@@ -1032,6 +999,20 @@ not have a canonical URL, but it does have a INavigationMenu adaptation.
 
 In this example, we'll reuse the Comment view, but provide it with an object
 that does *not* implement the canonical_url() interface.
+
+    >>> class RecipeShowCommentView(LaunchpadView):
+    ...     """View for looking at a recipe comment."""
+    ...     __used_for__ = IComment
+    ...     __launchpad_facetname__ = 'cookery'
+
+    # Hook everything up
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IBasicLaunchpadRequest)
+    >>> provideAdapter(
+    ...     RecipeShowCommentView,
+    ...     [IComment, IBasicLaunchpadRequest],
+    ...     Interface,
+    ...     name='+index')
 
     >>> class IRootlessComment(Interface):
     ...     """A class that is not supposed to have a URL."""
@@ -1063,7 +1044,7 @@ that does *not* implement the canonical_url() interface.
 
     # Hook everything up
     >>> provideAdapter(
-    ...     RootlessCommentMenu,
+    ...     RecipeMenu,
     ...     [IRootlessComment],
     ...     INavigationMenu,
     ...     name='cookery')
