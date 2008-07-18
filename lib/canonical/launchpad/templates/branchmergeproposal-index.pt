@@ -18,7 +18,8 @@
   }
 </style>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="context_menu context/menu:context">
 
   <tal:summary replace="structure context/@@+pagelet-summary" />
 
@@ -38,6 +39,62 @@
         later proposal</a>.
     </p>
   </tal:superseded-by>
+
+  <div id="proposal-actions" class="actions">
+    <div style="float:right">
+      <tal:action define="link context_menu/delete"
+                  condition="link/enabled"
+                  content="structure link/render">
+        Delete
+      </tal:action>
+    </div>
+    <tal:action define="link context_menu/set_work_in_progress"
+                condition="link/enabled"
+                content="structure link/render">
+      Set WIP
+    </tal:action>
+    <tal:action define="link context_menu/review"
+                condition="link/enabled"
+                content="structure link/render">
+      Review
+    </tal:action>
+    <tal:action define="link context_menu/merge"
+                condition="link/enabled"
+                content="structure link/render">
+      Mark as merged
+    </tal:action>
+    <tal:action define="link context_menu/dequeue"
+                condition="link/enabled"
+                content="structure link/render">
+      Dequeue
+    </tal:action>
+    <tal:action define="link context_menu/resubmit"
+                condition="link/enabled"
+                content="structure link/render">
+      Resubmit
+    </tal:action>
+
+  </div>
+
+  <div>
+    <div style="float: right">
+      <a tal:define="link context_menu/edit"
+         tal:condition="link/enabled"
+         tal:attributes="href link/url"
+         ><img tal:attributes="alt link/text;title link/text"
+         src="/@@/edit" /></a>
+    </div>
+    <h2>Proposed commit message</h2>
+  </div>
+  <div id="commit-message">
+    <p tal:content="structure context/commit_message/fmt:text-to-html">
+      Commit message
+    </p>
+    <p tal:condition="not: context/commit_message">
+      No commit message specified.
+    </p>
+  </div>
+
 
   <tal:whiteboard condition="context/whiteboard">
     <h2>Whiteboard</h2>
