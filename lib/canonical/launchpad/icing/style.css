@@ -273,7 +273,10 @@ img {
 }
 img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
 .collapsible legend a span {text-decoration: underline;}
-.collapsible {padding: 0; margin: 0;}
+.collapsible {
+  margin: 0;
+  padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
+}
 .collapsed {border: none; margin-bottom: 0;}
 fieldset .collapsed {display: none;}
 fieldset .expanded {display: block;}
@@ -353,19 +356,6 @@ hr {
   font-size: 13px;
 }
 
-/* Next is a location bar. */
-
-#locationbar {
-  width: 100%;
-  height: 26px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  background-color: #AFDB1F;
-  font-size: 11px;
-  font-weight: bold;
-  color: #FFF;
-}
 ul#menuroot a#homebreadcrumb span {
   background: url(home-low-high.gif) left top no-repeat;
   padding-left: 16px; /* space between home icon and the word "Home" */
@@ -573,6 +563,11 @@ ul#menuroot li.selected a.breadcrumb {
   margin: 0px 0px 0px 0px;
   white-space: pre;
 }
+
+/* === Location bar === */
+/* The location bar consists of three element: the login control, the location
+hierarchy, and the application tabs. */
+#locationbar {margin-bottom: 30px;}
 
 /* === Login control === */
 /* At the top right of the page is a link to log in or a button to log out: */
@@ -1023,7 +1018,7 @@ top left (y), and top right (z) of the rounded border. */
 #mainarea {clear: both; position: relative;}
 
 /* Inside those is a container for the main content, and the portlets if any. */
-#container {margin-top: 30px; padding: 0 0 40px;}
+#container {margin: 0 0 40px;}
 * html #container {margin-top: 0; position: static;} /* fixes in IE6 */
 
 /* A two-column layout with portlets is achieved using floats: */

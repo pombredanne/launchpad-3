@@ -109,8 +109,10 @@
       tal:condition="site_message">
       <div class="sitemessage" tal:content="structure site_message"/>
     </div>
-    <tal:login replace="structure context/@@login_status" />
-    <tal:hierarchy replace="structure context/@@+hierarchy" />
+    <div id="locationbar">
+      <tal:login replace="structure context/@@login_status" />
+      <tal:hierarchy replace="structure context/@@+hierarchy" />
+
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
       tal:define="facetmenu CONTEXTS/menu:facet"
@@ -146,6 +148,8 @@
         /></span><small tal:condition="not:repeat/link/end"
         > / </small></tal:facet>
     </div>
+
+    </div><!--id="locationbar"-->
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
