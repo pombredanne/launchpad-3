@@ -398,7 +398,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def overview(self):
         target = ''
-        text = 'Overview'
+        text = 'Launchpad Home'
         return Link(target, text)
 
     def translations(self):
