@@ -22,10 +22,13 @@ __all__ = [
     'Launchpad',
     ]
 
+import os
+import sys
 
 from launchpadlib._browser import Browser
 from launchpadlib._utils.uri import URI
-from launchpadlib.resource import Resource, Collection, Entry
+from launchpadlib.errors import BrowserNotFoundError
+from launchpadlib.resource import Resource
 from launchpadlib.credentials import AccessToken, Consumer, Credentials
 
 
@@ -36,7 +39,7 @@ class Launchpad(Resource):
     :type credentials: `Credentials`
     """
 
-    SERVICE_ROOT = 'http://api.launchpad.net/beta/'
+    SERVICE_ROOT = 'https://api.launchpad.net/beta/'
 
     def __init__(self, credentials):
         """Root access to the Launchpad API.
@@ -80,3 +83,45 @@ class Launchpad(Resource):
         access_token = AccessToken(token_string, access_secret)
         credentials = Credentials(consumer, access_token)
         return cls(credentials)
+
+    @classmethod
+    def get_token_and_login(cls, consumer_name):
+        """Get credentials from Launchpad and log into the service root.
+
+        This method will negotiate an OAuth access token with the service
+        provider, but to complete it we will need the user to log into
+        Launchpad and authorize us, so we'll open the authorization page in
+        a web browser and ask the user to come back here and tell us when they
+        finished the authorization process.
+        """
+        credentials = Credentials(Consumer(consumer_name))
+        request_token, authorization_url = credentials.get_request_token()
+        try:
+            open_url_in_browser(authorization_url)
+            print ("The authorization page (%s) should be opening in your "
+                   "browser. After you have authorized this program to "
+                   "access Launchpad on your behalf you should come back "
+                   "here and press <Enter> to finish the authentication "
+                   "process." % authorization_url)
+        except BrowserNotFoundError:
+            print ("Please open %s in your browser to authorize this program "
+                   "to access Launchpad on your behalf. Once that is done "
+                   "you should press <Enter> here to finish the "
+                   "authentication process." % authorization_url)
+        sys.stdin.readline()
+        credentials.exchange_request_token_for_access_token()
+        return cls(credentials)
+
+
+def open_url_in_browser(url):
+    """Open the given URL in a web browser."""
+    if os.environ.get('DISPLAY'):
+        # Use x-www-browser if it exists, falling back to firefox.
+        browsers = ['x-www-browser', 'firefox']
+    else:
+        # Use www-browser if it exists, falling back to links.
+        browsers = ['www-browser', 'links']
+    for browser in browsers:
+        if not os.system('%s "%s" &' % (browser, url)):
+            return
+    raise BrowserNotFoundError("Could not find browser to open %s" % url)

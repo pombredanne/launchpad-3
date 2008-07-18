@@ -161,6 +161,48 @@ function call.
     >>> sorted(launchpad.people)
     [...]
 
+If that is not the case the application should obtain authorization from
+the user and get the credentials directly from Launchpad.
+
+First we must get a request token.
+
+    >>> import launchpadlib.credentials
+    >>> launchpadlib.credentials.WEB_ROOT = 'http://launchpad.dev/'
+    >>> credentials = Credentials('consumer')
+    >>> request_token, authorization_url = credentials.get_request_token()
+    >>> authorization_url
+    'http://launchpad.dev/+authorize-token?oauth_token=...
+
+Now the user must authorize that token, so we'll hand-craft a request
+to pretend the user is authorizing it.
+
+    >>> import httplib2
+    >>> from urllib import urlencode
+    >>> params = {'field.actions.WRITE_PRIVATE': 1,
+    ...           'oauth_token': request_token.key}
+    >>> headers = {
+    ...     'Authorization': 'Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q='}
+    >>> response, content = httplib2.Http().request(
+    ...     authorization_url, method='POST', body=urlencode(params),
+    ...     headers=headers)
+    >>> response['status']
+    '200'
+
+After that we can exchange that request token for an access token.
+
+    >>> token = credentials.exchange_request_token_for_access_token()
+
+Once that's done, our credentials will be complete and ready to use.
+
+    >>> credentials.consumer
+    'consumer'
+    >>> credentials.access_token
+    <launchpadlib._oauth.oauth.OAuthToken...
+    >>> credentials.access_token.key is not None
+    True
+    >>> credentials.access_token.secret is not None
+    True
+
 
 == Credentials file errors ==
 
