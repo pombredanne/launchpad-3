@@ -57,7 +57,8 @@ We'll try adapting our objects to a made-up interface, ICookingDirections.
     ...     def __init__(self, context):
     ...         self.context = context
 
-Right now, none of our example objects can be turned into cooking directions.
+Right now, none of our example objects can be turned into cooking
+directions.
 
     >>> from canonical.lazr.canonicalurl import (nearest_adapter,
     ...     nearest_context_with_adapter)
