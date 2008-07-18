@@ -994,13 +994,13 @@ We'll simulate the user viewing a comment.
     http://launchpad.dev/joy-of-cooking/fried-spam/a-comment
 
     # Create a special-case request object.
-    >>> comment_request = make_fake_request(
+    >>> request = make_fake_request(
     ...     'http://launchpad.dev/joy-of-cooking/fried-spam/a-comment/+index',
     ...     traversed_objects=[cookbook, recipe, comment])
 
     >>> recipe_comment_view = getMultiAdapter(
-    ...     (comment, comment_request), name='+index')
-    >>> comment_request._last_obj_traversed = recipe_comment_view
+    ...     (comment, request), name='+index')
+    >>> request._last_obj_traversed = recipe_comment_view
 
 When we try to look up the menu for the view's context (the Comment
 object) the navigation menu for the next highest object in the URL
@@ -1011,7 +1011,7 @@ hierarchy, the Recipe, will be returned.
 
     >>> links_dict = test_tales(
     ...     'context/menu:navigation', context=comment,
-    ...     request=comment_request)
+    ...     request=request)
     >>> summarise_tal_links(links_dict)
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
@@ -1023,6 +1023,12 @@ hierarchy, the Recipe, will be returned.
         enabled: True
         menu: <...IRecipeEditMenuMarker...>
         linked: True
+
+    # Restore our request object.
+    >>> request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal',
+    ...     traversed_objects=[cookbook, recipe])
+    >>> request._last_obj_traversed = recipe_journal_view
 
 
 == Rendering the menu in a template ==
