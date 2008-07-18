@@ -18,7 +18,7 @@ import pytz
 from zope.component import getUtility
 from bzrlib.branch import Branch, BzrBranchFormat4
 from bzrlib.diff import show_diff_trees
-from bzrlib.errors import UnstackableBranchFormat
+from bzrlib.errors import NotStacked, UnstackableBranchFormat
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
@@ -673,7 +673,7 @@ class BzrSync:
         """Return the branch that the branch being scanned is stacked on."""
         try:
             branch_url = bzr_branch.get_stacked_on()
-        except UnstackableBranchFormat:
+        except (UnstackableBranchFormat, NotStacked):
             return None
         else:
             return getUtility(IBranchSet).getByUrl(branch_url.rstrip('/'))

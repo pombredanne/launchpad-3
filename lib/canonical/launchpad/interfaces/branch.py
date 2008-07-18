@@ -46,7 +46,7 @@ import re
 import canonical.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6)
+    BzrBranchFormat6, BzrBranchFormat7)
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
 from bzrlib.plugins.loom.branch import (
@@ -194,6 +194,8 @@ class BranchFormat(DBEnumeratedType):
     BZR_BRANCH_5 = _format_enum(5, BzrBranchFormat5)
 
     BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
+
+    BZR_BRANCH_7 = _format_enum(7, BzrBranchFormat7)
 
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 

@@ -963,6 +963,20 @@ class TestScanFormatKnit(BzrSyncTestCase):
                          BranchFormat.BZR_BRANCH_5)
 
 
+class TestScanBranchFormat7(BzrSyncTestCase):
+    """Test scanning of development format branchs."""
+
+    def makeBzrBranchAndTree(self, db_branch):
+        return BzrSyncTestCase.makeBzrBranchAndTree(
+            self, db_branch, 'development1')
+
+    def testRecognizeDevelopment(self):
+        """Ensure scanner records correct format for development branches."""
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(
+            self.db_branch.branch_format, BranchFormat.BZR_BRANCH_7)
+
+
 class TestScanFormatWeave(BzrSyncTestCase):
     """Test scanning of weave-format branches.
 
