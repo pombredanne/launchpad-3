@@ -71,7 +71,6 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
-from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
@@ -735,7 +734,7 @@ class LaunchpadObjectFactory:
         if distribution is None:
             distribution = self.makeDistribution()
         if name is None:
-            name=self.getUniqueString()
+            name = self.getUniqueString()
 
         return getUtility(IDistroSeriesSet).new(
             distribution=distribution,
