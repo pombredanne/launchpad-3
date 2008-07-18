@@ -3,10 +3,12 @@
 A quick helper function to list the subscribed people.
 
     >>> def print_subscribers(contents):
-    ...     portlet = find_tags_by_class(contents, 'person')[0]
-    ...     people = portlet.fetch('a')
-    ...     for person in people:
-    ...         print person.renderContents()
+    ...     subscriptions = find_tag_by_id(contents, 'subscriptions')
+    ...     if subscriptions == None:
+    ...         print subscriptions
+    ...         return
+    ...     for subscriber in subscriptions.fetch('dt'):
+    ...         print extract_text(subscriber.renderContents())
 
 Another to print the informational message.
 
@@ -36,6 +38,7 @@ link "Subscribe" from a branch's page.
 Initially there should be no subscribers.
 
     >>> print_subscribers(browser.contents)
+    None
     >>> browser.getLink('Subscribe').click()
 
 At this stage the defaults that are set for subscriptions
@@ -108,6 +111,7 @@ shown to the user.
     >>> print_informational_message(browser.contents)
     You have unsubscribed from this branch.
     >>> print_subscribers(browser.contents)
+    None
 
 Clicking the back button and then clicking on either Change or
 Unsubscribe will give a message that we are not subscribed.
@@ -218,8 +222,8 @@ Launchpad administrators can edit anyones branch subsription.
     >>> admin_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> print_subscribers(admin_browser.contents)
-    Landscape Developers <img src="/@@/edit" alt="Edit subscription" />
-    Mark Shuttleworth <img src="/@@/edit" alt="Edit subscription" />
+    Landscape Developers
+    Mark Shuttleworth
 
 == Editing a team subscription ==
 
@@ -236,7 +240,7 @@ the branch itself.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> print_subscribers(browser.contents)
-    Landscape Developers  <img src="/@@/edit" alt="Edit subscription" />
+    Landscape Developers
     Mark Shuttleworth
 
     >>> browser.getLink(url='+subscription/landscape').click()

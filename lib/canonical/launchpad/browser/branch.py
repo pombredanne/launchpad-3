@@ -947,6 +947,9 @@ class BranchSubscriptionsView(LaunchpadView):
                     subscription, self.isEditable(subscription))
                 for subscription in sorted_subscriptions]
 
+    def owner_is_registrant(self):
+        """Return whether or not owner is the same as the registrant"""
+        return self.context.owner == self.context.registrant
 
 class BranchMergeQueueView(LaunchpadView):
     """The view used to render the merge queue for a branch."""
