@@ -456,6 +456,9 @@ class TestBzrSync(BzrSyncTestCase):
         bzr_base_tree = self.makeBzrBranchAndTree(
             db_base_branch, format=stacked_format)
 
+        # db_base_branch needs to have a URL that can be opened and is a valid
+        # branch URL. This means that we register a fake HTTP transport so
+        # that the URL can *look* valid and still be opened.
         register_transport('http://', HttpAsLocalTransport)
         self.addCleanup(
             lambda: unregister_transport('http://', HttpAsLocalTransport))
