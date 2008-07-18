@@ -2486,7 +2486,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         self.user_is_subscribed = self.context.isSubscribed(self.user)
 
     def initialize(self):
-        """Cache the list of bugtasks and set up the target release mapping."""
+        """Cache the list of bugtasks and set up the release mapping."""
         self.bugtasks = list(self.context.bugtasks)
         distro_packages = {}
         for bugtask in self.bugtasks:
