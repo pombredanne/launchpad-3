@@ -143,7 +143,6 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
@@ -1123,7 +1122,7 @@ class IPersonRelatedSoftwareMenu(Interface):
 class PersonOverviewNavigationMenu(NavigationMenu):
     """The top-level menu of actions a Person may take."""
 
-    usedfor = IHasPersonNavigationMenu
+    usedfor = IPerson
     facet = 'overview'
     links = ('profile', 'related_software', 'karma', 'show_ppa')
 
