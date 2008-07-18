@@ -89,7 +89,7 @@ Each bug has a collection of messages.
     u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/0/bug_attachments'),
    (u'content',
     u'All ways of downloading firefox should provide...'),
-   (u'datecreated', u'2005-01-14T17:27:03.702622+00:00'),
+   (u'date_created', u'2005-01-14T17:27:03.702622+00:00'),
    (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
    (u'parent_link', None),
    (u'resource_type_link',
@@ -541,3 +541,31 @@ we must follow to download the data.
 
   >>> data
   '12345'
+
+We can see that a message was created and linked to our
+attachment. This is where our comment is recorded.
+
+  >>> message = webservice.get(attachment['message_link']).jsonBody()
+  >>> show(message)
+  [(u'bug_attachments_collection_link',
+    u'http://api.launchpad.dev/beta/firefox/+bug/1/comments/2/bug_attachments'),
+   (u'content', u'The numbers you asked for.'),
+   (u'date_created', u'...'),
+   (u'owner_link', u'http://api.launchpad.dev/beta/~salgado'),
+   (u'parent_link', None),
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#message'),
+   (u'self_link',
+    u'http://api.launchpad.dev/beta/firefox/+bug/1/comments/2'),
+   (u'subject', None)]
+
+The message also links back to the attachments that were uploaded at
+the same time.
+
+  >>> attachments = webservice.get(
+  ...     message['bug_attachments_collection_link']).jsonBody()
+  >>> show(attachments)
+  [(u'entries', [...]),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'),
+   (u'start', 0),
+   (u'total_size', 1)]

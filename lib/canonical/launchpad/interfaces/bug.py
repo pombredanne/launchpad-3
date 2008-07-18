@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.person import IPerson
@@ -538,9 +539,10 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no such bugtask is found.
         """
 
-# We are forced to define this now to avoid circular import problems.
+# We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug
+IMessage['bugs'].value_type.schema = IBug
 
 # In order to avoid circular dependencies, we only import
 # IBugSubscription (which itself imports IBug) here, and assign it as
