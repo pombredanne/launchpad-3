@@ -141,16 +141,20 @@ class Resource(LaunchpadBase):
 
         :param resource: The wadllib Resource to wrap.
         :param representation: A previously fetched representation of
-                               this resource, to be reused.
+            this resource, to be reused.
         :param representation_media_type: The media type of the previously
-                                          fetched representation.
-        :param param_name: The name of the link that was followed to get
-                           to this resource.
+            fetched representation.
         :param representation_needs_processing: Set to False if the
             'representation' parameter should be used as
             is.
+        :param representation_definition: A wadllib
+            RepresentationDefinition object describing the structure
+            of this representation. Used in cases when the representation
+            isn't the result of sending a standard GET to the resource.
+        :param param_name: The name of the link that was followed to get
+            to this resource.
         :return: An instance of the appropriate launchpadlib Resource
-        subclass.
+            subclass.
         """
         if representation is None:
             # Get a representation of the linked resource.

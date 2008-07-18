@@ -218,15 +218,16 @@ class Resource(WADLResolvableDefinition):
         :param resource_type: An ElementTree <resource> or <resource_type> tag.
         :param representation: A string representation.
         :param media_type: The media type of the representation.
-        :param _definition: A precached value for _definition. Used to
-            avoid dereferencing a bound resource definition; instead,
-            we reuse the work done when dereferencing the unbound
-            resource.
         :param representation_needs_processing: Set to False if the
             'representation' parameter should be used as
             is. Otherwise, it will be transformed from a string into
             an appropriate Python data structure, depending on its
             media type.
+        :param representation_definition: A RepresentationDefinition
+            object describing the structure of this
+            representation. Used in cases when the representation
+            isn't the result of sending a standard GET to the
+            resource.
         """
         super(Resource, self).__init__(application)
         self._url = url
@@ -296,6 +297,11 @@ class Resource(WADLResolvableDefinition):
         :param representation_needs_processing: Set to False if the
             'representation' parameter should be used as
             is.
+        :param representation_definition: A RepresentationDefinition
+            object describing the structure of this
+            representation. Used in cases when the representation
+            isn't the result of sending a standard GET to the
+            resource.
         :returns: A Resource bound to a particular representation.
         """
         return Resource(self.application, self.url, self.tag,

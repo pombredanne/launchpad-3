@@ -91,7 +91,7 @@ You also access teams using the same interface.
     >>> team.is_team
     True
 
-You can find out about a person's relationship with a team.
+You can find out how a person has membership in a team.
 
     >>> path = salgado.findPathToTeam(
     ...     team=launchpad.people['mailing-list-experts'])
