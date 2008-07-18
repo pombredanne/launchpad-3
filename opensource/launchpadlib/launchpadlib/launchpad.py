@@ -25,27 +25,18 @@ __all__ = [
 
 from launchpadlib._browser import Browser
 from launchpadlib._utils.uri import URI
-from launchpadlib.collection import Collection, Entry
+from launchpadlib.resource import Resource, Collection, Entry
 from launchpadlib.credentials import AccessToken, Consumer, Credentials
-from launchpadlib.person import People
 
 
-# XXX BarryWarsaw 05-Jun-2008 this is a placeholder to satisfy the interface
-# required by the Launchpad.bugs property below.  It is temporary and will go
-# away when we flesh out the bugs interface.
-class _FakeBugCollection(Collection):
-    def _entry(self, entry_dict):
-        return Entry(entry_dict)
-
-
-class Launchpad:
+class Launchpad(Resource):
     """Root Launchpad API class.
 
     :ivar credentials: The credentials instance used to access Launchpad.
     :type credentials: `Credentials`
     """
 
-    SERVICE_ROOT = 'http://api.launchpad.net/beta'
+    SERVICE_ROOT = 'http://api.launchpad.net/beta/'
 
     def __init__(self, credentials):
         """Root access to the Launchpad API.
@@ -55,13 +46,15 @@ class Launchpad:
         """
         self._root = URI(self.SERVICE_ROOT)
         self.credentials = credentials
-        # Get the root resource.
+        # Get the WADL definition.
         self._browser = Browser(self.credentials)
-        response = self._browser.get(self._root)
-        person_set_link = response.get('people_collection_link')
-        bug_set_link = response.get('bugs_collection_link')
-        self._people = People(self._browser, URI(person_set_link))
-        self._bugs = _FakeBugCollection(self._browser, URI(bug_set_link))
+        self._wadl = self._browser.get_wadl_application(self._root)
+
+        # Get the root resource.
+        root_resource = self._wadl.get_resource_by_path('')
+        bound_root = root_resource.bind(
+            self._browser.get(root_resource), 'application/json')
+        super(Launchpad, self).__init__(None, bound_root)
 
     @classmethod
     def login(cls, consumer_name, token_string, access_secret):
@@ -87,11 +80,3 @@ class Launchpad:
         access_token = AccessToken(token_string, access_secret)
         credentials = Credentials(consumer, access_token)
         return cls(credentials)
-
-    @property
-    def people(self):
-        return self._people
-
-    @property
-    def bugs(self):
-        return self._bugs
