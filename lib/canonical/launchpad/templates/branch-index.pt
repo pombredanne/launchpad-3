@@ -74,6 +74,17 @@
         </tr>
       </tal:not-junk-branch>
       <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
+
+      <tr>
+        <th>Status:</th>
+        <td>
+          <span id="branch-details-status-value"
+            tal:content="context/lifecycle_status/title"
+            tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
+            >Experimental</span>
+        </td>
+      </tr>
+
         <tr><th>Location:</th><td tal:content="view/mirror_location" /></tr>
         <tal:mirror-failures tal:replace="structure context/@@+mirror-status" />
       </tal:mirrored-branch>

@@ -193,6 +193,7 @@ been mirrored:
     >>> browser.open(
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirrored')
     >>> print extract_text(get_branch_details_table())
+    Status: New
     Location: http://example.com/mirrored
     Last mirrored: 2007-10-01
     Next mirror: Disabled
@@ -205,6 +206,7 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> print extract_text(get_branch_details_table())
     Project: GNOME Terminal (Unreviewed)
+    Status: Development
     Location: http://example.com/gnome-terminal/main
     Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
@@ -229,6 +231,7 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirror-disabled')
     >>> print extract_text(get_branch_details_table())
+    Status: New
     Location: http://example.com/disabled
     Last mirrored: Not mirrored yet
     Next mirror: Disabled
