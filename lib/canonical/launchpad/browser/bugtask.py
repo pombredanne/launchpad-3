@@ -2475,6 +2475,8 @@ class CachedMilestoneSourceFactory:
 class BugTasksAndNominationsView(LaunchpadView):
     """Browser class for rendering the bugtasks and nominations table."""
 
+    target_releases = None
+
     def __init__(self, context, request):
         """Ensure we always have a bug context."""
         LaunchpadView.__init__(self, IBug(context), request)
@@ -2483,12 +2485,28 @@ class BugTasksAndNominationsView(LaunchpadView):
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
 
+    def initialize(self):
+        foo = {}
+        for bugtask in self.context.bugtasks:
+            target = bugtask.target
+            if IDistributionSourcePackage.providedBy(target):
+                foo.setdefault(target.distribution, [])
+                foo[target.distribution].append(target.sourcepackagename)
+            if ISourcePackage.providedBy(target):
+                foo.setdefault(target.distroseries, [])
+                foo[target.distroseries].append(target.sourcepackagename)
+        self.target_releases = {}
+        for distro_or_series, package_names in foo.items():
+            releases = distro_or_series.getCurrentSourceReleases(
+                package_names)
+            self.target_releases.update(releases)
+
     def getTargetLinkTitle(self, target):
         """Return text to put as the title for the link to the target."""
         if not (IDistributionSourcePackage.providedBy(target) or
                 ISourcePackage.providedBy(target)):
             return None
-        current_release = target.currentrelease
+        current_release = self.target_releases.get(target)
         if current_release is None:
             return "No current release for this source package in %s" % (
                 target.distribution.displayname)

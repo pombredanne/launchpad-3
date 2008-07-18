@@ -6,7 +6,7 @@
     >>> publisher = SoyuzTestPublisher()
     >>> factory = publisher.factory
     >>> unpublished_distro = factory.makeDistribution(
-    ...     displayname='Unpublished Distro')
+    ...     name='unpublished-distro', displayname='Unpublished Distro')
     >>> view = BugTasksAndNominationsView(factory.makeBug(), None)
 
 == Distributions ==
@@ -28,9 +28,10 @@
     >>> from datetime import datetime
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> published_distro = factory.makeDistribution(
-    ...     displayname='Published Distro')
-    >>> publisher.setUpDefaultDistroSeries(
-    ...     factory.makeDistroRelease(published_distro))
+    ...     name='published-distro', displayname='Published Distro')
+    >>> published_distro_series = factory.makeDistroRelease(
+    ...     published_distro, name='published-distro-series')
+    >>> publisher.setUpDefaultDistroSeries(published_distro_series)
     <DistroSeries at ...>
     >>> print publisher.person.unique_displayname
     Foo Bar (name16)
@@ -56,7 +57,7 @@
 === Unpublished ===
 
     >>> unpublished_distro_series = factory.makeDistroRelease(
-    ...     distribution=unpublished_distro)
+    ...     distribution=unpublished_distro, name='unpublished-distro-series')
     >>> print view.getTargetLinkTitle(unpublished_distro_series)
     None
 
@@ -96,10 +97,50 @@
 
 == Products and product series ==
 
-    >>> product = factory.makeProduct()
+    >>> product = factory.makeProduct(name='product')
     >>> print view.getTargetLinkTitle(product)
     None
 
-    >>> product_series = factory.makeProductSeries()
+    >>> product_series = factory.makeProductSeries(
+    ...     product=product, name='product-series')
     >>> print view.getTargetLinkTitle(product_series)
     None
+
+
+== Initializing ==
+
+    >>> bug = factory.makeBug(product=product)
+    >>> bug_targets = [
+    ...     product,
+    ...     product_series,
+    ...     published_distro,
+    ...     published_evolution,
+    ...     published_distro_series,
+    ...     published_series_evolution,
+    ...     unpublished_distro,
+    ...     unpublished_evolution,
+    ...     unpublished_distro_series,
+    ...     unpublished_series_evolution,
+    ...     ]
+    >>> for bug_target in bug_targets:
+    ...     bugtask = factory.makeBugTask(bug=bug, target=bug_target)
+    >>> view = BugTasksAndNominationsView(bug, None)
+    >>> view.initialize()
+    >>> for bug_target in bug_targets:
+    ...     release = view.target_releases.get(bug_target)
+    ...     if release is None:
+    ...         version = 'No releases'
+    ...     else:
+    ...         version = release.version
+    ...     print "%s: %s" % (bug_target.bugtargetname, version)
+    product: No releases
+    product/product-series: No releases
+    published-distro: No releases
+    evolution (Published Distro): 2.0
+    Published-distro Published-distro-series: No releases
+    evolution (Published-distro Published-distro-series): 1.0
+    unpublished-distro: No releases
+    evolution (Unpublished Distro): No releases
+    Unpublished-distro Unpublished-distro-series: No releases
+    evolution (Unpublished-distro Unpublished-distro-series): No releases
+
