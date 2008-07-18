@@ -118,7 +118,7 @@ class SoyuzTestPublisher:
                      dsc_binaries='foo-bin', build_conflicts=None,
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
-                     maintainer=None):
+                     maintainer=None, date_uploaded=UTC_NOW):
         """Return a mock source publishing record."""
         if sourcename is None:
             sourcename = self.default_package_name
@@ -155,7 +155,7 @@ class SoyuzTestPublisher:
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
-            archive=archive)
+            archive=archive, dateuploaded=date_uploaded)
 
         if filename is None:
             filename = "%s.dsc" % sourcename
@@ -169,7 +169,7 @@ class SoyuzTestPublisher:
             component=spr.component,
             section=spr.section,
             status=status,
-            datecreated=UTC_NOW,
+            datecreated=date_uploaded,
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,

@@ -2483,6 +2483,28 @@ class BugTasksAndNominationsView(LaunchpadView):
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
 
+    def getTargetLinkTitle(self, target):
+        """Return text to put as the title for the link to the target."""
+        if not (IDistributionSourcePackage.providedBy(target) or
+                ISourcePackage.providedBy(target)):
+            return None
+        current_release = target.currentrelease
+        if current_release is None:
+            return "No current release for this source package in %s" % (
+                target.distribution.displayname)
+        uploader = current_release.creator
+        maintainer = current_release.maintainer
+        return (
+            "Latest release: %(version)s, uploaded to %(component)s"
+            " on %(date_uploaded)s by %(uploader)s,"
+            " maintained by %(maintainer)s" % dict(
+                version=current_release.version,
+                component=current_release.component.name,
+                date_uploaded=current_release.dateuploaded,
+                uploader=uploader.unique_displayname,
+                maintainer=maintainer.unique_displayname,
+                ))
+
     def _getTableRowView(self, context, is_converted_to_question,
                          is_conjoined_slave):
         """Get the view for the context, and initialize it.
@@ -2495,6 +2517,9 @@ class BugTasksAndNominationsView(LaunchpadView):
             name='+bugtasks-and-nominations-table-row')
         view.is_converted_to_question = is_converted_to_question
         view.is_conjoined_slave = is_conjoined_slave
+        if IBugTask.providedBy(context):
+            view.target_link_title = self.getTargetLinkTitle(context.target)
+
         view.edit_view = getMultiAdapter(
             (context, self.request), name='+edit-form')
         view.edit_view.milestone_source = self.cached_milestone_source
@@ -2592,6 +2617,7 @@ class BugTaskTableRowView(LaunchpadView):
 
     is_conjoined_slave = None
     is_converted_to_question = None
+    target_link_title = None
 
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.

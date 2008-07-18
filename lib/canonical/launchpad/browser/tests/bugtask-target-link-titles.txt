@@ -1,0 +1,105 @@
+    >>> from canonical.launchpad.browser.bugtask import (
+    ...     BugTasksAndNominationsView)
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> publisher = SoyuzTestPublisher()
+    >>> factory = publisher.factory
+    >>> unpublished_distro = factory.makeDistribution(
+    ...     displayname='Unpublished Distro')
+    >>> view = BugTasksAndNominationsView(factory.makeBug(), None)
+
+== Distributions ==
+
+=== Unpublished ===
+
+    >>> print view.getTargetLinkTitle(unpublished_distro)
+    None
+
+    >>> unpublished_evolution = unpublished_distro.getSourcePackage(
+    ...     'evolution')
+    >>> print view.getTargetLinkTitle(unpublished_evolution)
+    No current release for this source package in Unpublished Distro
+
+
+=== Published ===
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> published_distro = factory.makeDistribution(
+    ...     displayname='Published Distro')
+    >>> publisher.setUpDefaultDistroSeries(
+    ...     factory.makeDistroRelease(published_distro))
+    <DistroSeries at ...>
+    >>> print publisher.person.unique_displayname
+    Foo Bar (name16)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> UTC = pytz.timezone('UTC')
+    >>> publisher.getPubSource(
+    ...     sourcename='evolution', version='1.0', component='universe',
+    ...     date_uploaded=datetime(2008, 7, 18, 9, 30, 15, tzinfo=UTC),
+    ...     maintainer=no_priv)
+    <SourcePackagePublishingHistory at ...>
+    >>> published_evolution = published_distro.getSourcePackage('evolution')
+    >>> print view.getTargetLinkTitle(published_distro)
+    None
+    >>> print view.getTargetLinkTitle(published_evolution)
+    Latest release: 1.0, uploaded to universe on 2008-07-18 09:30:15+00:00
+    by Foo Bar (name16), maintained by No Privileges Person (no-priv)
+
+
+== Distro series ==
+
+
+
+=== Unpublished ===
+
+    >>> unpublished_distro_series = factory.makeDistroRelease(
+    ...     distribution=unpublished_distro)
+    >>> print view.getTargetLinkTitle(unpublished_distro_series)
+    None
+
+    >>> unpublished_series_evolution = (
+    ...     unpublished_distro_series.getSourcePackage('evolution'))
+    >>> print view.getTargetLinkTitle(unpublished_series_evolution)
+    No current release for this source package in Unpublished Distro
+
+
+=== Published ===
+
+    >>> published_distro_series = publisher.distroseries
+    >>> print view.getTargetLinkTitle(published_distro_series)
+    None
+
+    >>> published_series_evolution = published_distro_series.getSourcePackage(
+    ...     'evolution')
+
+    >>> other_published_series = factory.makeDistroRelease(
+    ...     distribution=published_distro)
+    >>> publisher.getPubSource(
+    ...     sourcename='evolution', version='2.0', component='universe',
+    ...     date_uploaded=datetime(2008, 7, 18, 10, 20, 30, tzinfo=UTC),
+    ...     maintainer=no_priv, distroseries=other_published_series)
+    <SourcePackagePublishingHistory at ...>
+    >>> other_published_series_evolution = (
+    ...     other_published_series.getSourcePackage('evolution'))
+
+    >>> print view.getTargetLinkTitle(published_series_evolution)
+    Latest release: 1.0, uploaded to universe on 2008-07-18 09:30:15+00:00
+    by Foo Bar (name16), maintained by No Privileges Person (no-priv)
+
+    >>> print view.getTargetLinkTitle(other_published_series_evolution)
+    Latest release: 2.0, uploaded to universe on 2008-07-18 10:20:30+00:00
+    by Foo Bar (name16), maintained by No Privileges Person (no-priv)
+
+
+== Products and product series ==
+
+    >>> product = factory.makeProduct()
+    >>> print view.getTargetLinkTitle(product)
+    None
+
+    >>> product_series = factory.makeProductSeries()
+    >>> print view.getTargetLinkTitle(product_series)
+    None

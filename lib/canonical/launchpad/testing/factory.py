@@ -236,6 +236,14 @@ class LaunchpadObjectFactory:
             licenses=licenses,
             project=project)
 
+    def makeProductSeries(self):
+        """Create and return a new ProductSeries."""
+        product = self.makeProduct()
+        owner = self.makePerson()
+        name = self.getUniqueString()
+        summary = self.getUniqueString()
+        return product.newSeries(owner=owner, name=name, summary=summary)
+
     def makeProject(self, name=None, displayname=None):
         """Create and return a new, arbitrary Project."""
         owner = self.makePerson()
@@ -640,10 +648,11 @@ class LaunchpadObjectFactory:
             filename, len(log_data), StringIO(log_data), 'text/plain')
         return getUtility(ILibraryFileAliasSet)[log_alias_id]
 
-    def makeDistribution(self):
+    def makeDistribution(self, displayname=None):
         """Make a new distribution."""
         name = self.getUniqueString()
-        displayname = self.getUniqueString()
+        if displayname is None:
+            displayname = self.getUniqueString()
         title = self.getUniqueString()
         description = self.getUniqueString()
         summary = self.getUniqueString()
