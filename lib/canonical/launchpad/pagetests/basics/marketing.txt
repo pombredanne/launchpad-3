@@ -1,6 +1,6 @@
-= Launchpad Marketing Microsite =
+= Launchpad tour =
 
-From Launchpad's front page, you can access a "marketing microsite"
+From Launchpad's front page, you can access the tour.
 
     >>> browser.open('http://launchpad.dev/')
     >>> browser.getLink('Take a tour').click()

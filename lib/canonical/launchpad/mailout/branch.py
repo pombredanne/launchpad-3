@@ -27,6 +27,8 @@ def email_branch_modified_notifications(branch, to_addresses,
     if subject is None:
         subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
     headers = {'X-Launchpad-Branch': branch.unique_name}
+    if branch.product is not None:
+        headers['X-Launchpad-Project'] = branch.product.name
 
     template = get_email_template('branch-modified.txt')
     for address in to_addresses:

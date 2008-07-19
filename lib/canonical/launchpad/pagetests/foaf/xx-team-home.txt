@@ -15,14 +15,13 @@ details about the team.
     Warty Gnome Team (warty-gnome)
     Daniel Silverstone (kinnison)
     Celso Providelo (cprov)
-    Jeff Waugh (jdub)
-    Colin Watson (kamion)
+    Steve Alexander (stevea)
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
     Recently applied
     Sample Person (name12)
-    My name (spiv)
+    Andrew Bennetts (spiv)
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'portlet-details'))
@@ -59,6 +58,22 @@ that, though.
     Your involvement
     You are a member of this team.
 
+He can also see the contact email address.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'contact-details'))
+    Contact details
+    Email: support@ubuntu.com
+    Wiki: https://wiki.ubuntu.com/UbuntuTeam
+
+As teams do not have OpenID Logins, there is not link in the Contact
+details section for help.
+
+    >>> browser.getLink(u"What&#8217;s\xa0this?")
+    Traceback (most recent call last):
+     ...
+    LinkNotFoundError
+
 If the logged in user is an indirect member of the team, we'll say that and
 will even show the path from the user to the team.
 
@@ -69,7 +84,6 @@ will even show the path from the user to the team.
     Your involvement
     You are an indirect member of this team:
     Sample Person &rarr; Warty Security Team &rarr; Ubuntu Gnome Team
-
 
 It is also possible to view the set of mugshots of the people in the team.
 

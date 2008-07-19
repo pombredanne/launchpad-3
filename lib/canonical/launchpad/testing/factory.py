@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces import (
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
     CreateBugParams,
+    DistroSeriesStatus,
     EmailAddressStatus,
     IBranchSet,
     IBugSet,
@@ -42,6 +43,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportSet,
     ICountrySet,
     IDistributionSet,
+    IDistroSeriesSet,
     IEmailAddressSet,
     ILibraryFileAliasSet,
     IPersonSet,
@@ -211,9 +213,10 @@ class LaunchpadObjectFactory:
             name, title, summary, owner)
 
     def makeProduct(self, name=None, project=None, displayname=None,
-                    licenses=None):
+                    licenses=None, owner=None):
         """Create and return a new, arbitrary Product."""
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
@@ -377,7 +380,8 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self, product=None, owner=None, bug_watch_url=None):
+    def makeBug(self, product=None, owner=None, bug_watch_url=None,
+                private=False):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -395,13 +399,45 @@ class LaunchpadObjectFactory:
             owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
-            owner, title, comment=self.getUniqueString())
+            owner, title, comment=self.getUniqueString(), private=private)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
             getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
         return bug
+
+    def makeBugAttachment(self, bug=None, owner=None, data=None,
+                          comment=None, filename=None, content_type=None):
+        """Create and return a new bug attachment.
+
+        :param bug: An `IBug` or a bug ID or name, or None, in which
+            case a new bug is created.
+        :param owner: An `IPerson`, or None, in which case a new
+            person is created.
+        :param data: A file-like object or a string, or None, in which
+            case a unique string will be used.
+        :param comment: An `IMessage` or a string, or None, in which
+            case a new message will be generated.
+        :param filename: A string, or None, in which case a unique
+            string will be used.
+        :param content_type: The MIME-type of this file.
+        :return: An `IBugAttachment`.
+        """
+        if bug is None:
+            bug = self.makeBug()
+        elif isinstance(bug, (int, long, basestring)):
+            bug = getUtility(IBugSet).getByNameOrID(str(bug))
+        if owner is None:
+            owner = self.makePerson()
+        if data is None:
+            data = self.getUniqueString()
+        if comment is None:
+            comment = self.getUniqueString()
+        if filename is None:
+            filename = self.getUniqueString()
+        return bug.addAttachment(
+            owner, data, comment, filename, content_type=content_type)
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None):
         mail = SignedMessage()
@@ -650,3 +686,18 @@ class LaunchpadObjectFactory:
         return getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
             members, owner)
+
+    def makeDistroRelease(self, distribution=None, version=None,
+                          status=DistroSeriesStatus.DEVELOPMENT,
+                          parent_series=None):
+        """Make a new distro release."""
+        if distribution is None:
+            distribution = self.makeDistribution()
+        return getUtility(IDistroSeriesSet).new(
+            distribution=distribution,
+            version="%s.0" % self.getUniqueInteger(),
+            name=self.getUniqueString(),
+            displayname=self.getUniqueString(),
+            title=self.getUniqueString(), summary=self.getUniqueString(),
+            description=self.getUniqueString(),
+            parent_series=parent_series, owner=distribution.owner)

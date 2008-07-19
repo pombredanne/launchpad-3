@@ -84,25 +84,25 @@ This text is not shown if the user cannot set the branch.
     10 branches ... commits in the last month
     0 active reviews, 0 approved merges
 
-If a development focus branch is set, the user is shown with a link to
-browse the code, and shown a simple command line to get the branch.
+If a development focus branch is set and browseable, the user is shown
+a link to browse the code and a simple command line to get the branch.
+If the branch is not browseable (in this case, it has no revisions but
+it could be private or remote), only the command to get the branch is
+shown.
 
     >>> browser.open('http://code.launchpad.dev/evolution')
     >>> summary = get_summary(browser)
     >>> print extract_text(get_summary(browser))
     3 branches ...
     0 active reviews, 0 approved merges
-    You can browse the source code for development focus branch,
-    or get a copy of the branch using the command:
+    You can get a copy of the development focus branch using the
+    command:
        bzr branch lp://dev/evolution
 
     >>> links = summary.findAll('a')
 
-Both active reviews and approved merges allow the user to go to listing
-views.  The third link is the browse code link.
-
-    >>> print links[2]['href']
-    http://bazaar.launchpad.dev/~vcs-imports/evolution/main
+Both active reviews and approved merges are links allowing the user to
+go to listing views.
 
 
 == Initial branch listing ==
