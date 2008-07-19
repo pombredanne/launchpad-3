@@ -314,6 +314,10 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
     layer = LaunchpadZopelessLayer
     dbuser = config.archivepublisher.dbuser
 
+    def __init__(self, methodName='runTest'):
+        unittest.TestCase.__init__(self, methodName=methodName)
+        SoyuzTestPublisher.__init__(self)
+
     def setUp(self):
         """Setup a pool dir, the librarian, and instantiate the DiskPool."""
         self.layer.switchDbUser(config.archivepublisher.dbuser)
