@@ -23,6 +23,7 @@ to set the target_link_title attribute.
     >>> bug = factory.makeBug(product=factory.makeProduct('bug-target'))
     >>> bugtask = bug.bugtasks[0]
     >>> view = TestBugTasksAndNominationsView(bug, LaunchpadTestRequest())
+    >>> view.initialize()
     >>> returned_view = view._getTableRowView(bugtask, False, False)
     >>> returned_view.target_link_title.name
     u'bug-target'
