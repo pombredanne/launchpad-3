@@ -15,7 +15,7 @@ news feed.
     ...     """The contents of the latest news portlet."""
     ...     return extract_text(find_portlet(content, 'Announcements'))
     >>> def count_show_links(content):
-    ...     """Determine whether the "Show announcements" link is shown."""
+    ...     """Determine whether the "More announcements" link is shown."""
     ...     return len(find_tags_by_class(
     ...         content, 'menu-link-announcements'))
     >>> def no_announcements(content):
@@ -85,7 +85,7 @@ announcement so there is a "Latest news" portlet:
     >>> print latest_news(priv_browser.contents)
     Announcements
     Apache announcement headline
-    Show announcements
+    More announcements
     Make announcement
     >>> priv_browser.getLink('Make announcement').click()
     >>> priv_browser.getControl('Headline').value = (
@@ -103,7 +103,7 @@ announcement so there is a "Latest news" portlet:
     Announcements
     Apache announcement headline
     Tomcat announcement headline
-    Show announcements
+    More announcements
     Make announcement
 
 Let's make sure that the announcement is presented as a link.

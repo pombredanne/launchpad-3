@@ -388,7 +388,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+reassign', text, icon='edit')
 
     def top_contributors(self):
-        text = 'List top contributors'
+        text = 'More contributors'
         return Link('+topcontributors', text, icon='info')
 
     def distributions(self):
@@ -415,7 +415,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'Show announcements'
+        text = 'More announcements'
         enabled = bool(self.context.announcements())
         return Link('+announcements', text, enabled=enabled)
 

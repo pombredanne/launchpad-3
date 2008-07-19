@@ -41,7 +41,7 @@ It's not using Launchpad Translations officially
 
   >>> uses = find_tag_by_id(anon_browser.contents, 'uses')
   >>> print extract_text(uses)
-  Network Applet does not use Launchpad for development.
+  Does not use Launchpad for development.
 
 Anonymous users don't see the translations
 
@@ -66,7 +66,7 @@ but administrators see translations disabled.
   NetApplet Series: trunk
 
 alsa-utils is a product that doesn't belong to GNOME project. It has
-translations and is using Launchpad Translations officially, and it 
+translations and is using Launchpad Translations officially, and it
 shouldn't appear in GNOME project translations page.
 
   >>> browser.open('http://translations.launchpad.dev/gnome')
@@ -95,7 +95,7 @@ It's using Launchpad Translations officially.
   http://launchpad.dev/alsa-utils
   >>> uses = find_tag_by_id(browser.contents, 'uses')
   >>> print extract_text(uses)
-  ALSA utilities uses Launchpad for Code and Translations.
+  Uses Launchpad for: Code and Translations.
 
 And it has translations.
 
@@ -116,4 +116,3 @@ whether a product is registered in Launchpad.
   >>> browser.getLink('registered with Launchpad').click()
   >>> print browser.url
   http://translations.launchpad.dev/projects
-

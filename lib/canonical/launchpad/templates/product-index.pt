@@ -105,9 +105,17 @@
     <strong>Part of:</strong> <tal:link replace="structure context/project/fmt:link" />
   </p>
 
-  <p id="uses">
-    <tal:uses content="structure view/uses_launchpad_for" />
-  </p>
+  <tal:launchpad_usage define="uses_launchpad view/uses_launchpad_for">
+    <p id="uses">
+      <tal:uses_launchpad condition="uses_launchpad">
+        <strong>Uses Launchpad for: </strong>
+        <tal:uses content="structure uses_launchpad" />.
+      </tal:uses_launchpad>
+      <tal:no_launchpad condition="not: uses_launchpad">
+        <strong>Does not use Launchpad for development.</strong>
+      </tal:no_launchpad>
+    </p>
+  </tal:launchpad_usage>
 
   <p id="product-languages" tal:condition="context/programminglang">
     <strong>Languages:</strong> <span tal:content="context/programminglang">Python</span>
@@ -201,9 +209,9 @@
         tal:content="structure context/@@+portlet-top-contributors"
       />
       <div class="actions"
-           tal:define="link context/menu:overview/top_contributors"
-           tal:content="structure link/render" />
-
+        tal:define="link context/menu:overview/top_contributors"
+        tal:content="structure link/render"
+      />
       <div
         class="section"
         tal:content="structure context/@@+portlet-packages"

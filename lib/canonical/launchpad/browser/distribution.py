@@ -86,24 +86,28 @@ class UsesLaunchpadMixin:
     def uses_launchpad_for(self):
         """Return a string of LP apps (comma-separated) this distro uses."""
         uses = []
+        href_template = "<a href=%s><strong>%s</strong></a>"
         if self.context.official_answers:
-            uses.append("<strong>Answers</strong>")
-        if self.context.official_malone:
-            uses.append("<strong>Bug Tracking</strong>")
+            url = canonical_url(self.context, rootsite='answers')
+            uses.append(href_template % (url, 'Answers'))
         if self.context.official_blueprints:
-            uses.append("<strong>Blueprints</strong>")
+            url = canonical_url(self.context, rootsite='blueprints')
+            uses.append(href_template % (url, 'Blueprints'))
+        if self.context.official_malone:
+            url = canonical_url(self.context, rootsite='bugs')
+            uses.append(href_template % (url, 'Bug Tracking'))
         if IProduct.providedBy(self.context):
             if self.context.official_rosetta:
-                uses.append("<strong>Code</strong>")
+                url = canonical_url(self.context, rootsite='code')
+                uses.append(href_template % (url, 'Code'))
         if self.context.official_rosetta:
-            uses.append("<strong>Translations</strong>")
+            url = canonical_url(self.context, rootsite='translations')
+            uses.append(href_template % (url, 'Translations'))
 
         if len(uses) == 0:
-            text = ("%s does not use Launchpad for development."
-                    % self.context.title)
+            text = None
         else:
-            apps = english_list(uses)
-            text = "%s uses Launchpad for %s." % (self.context.title, apps)
+            text = english_list(uses)
 
         return text
 
@@ -370,7 +374,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def top_contributors(self):
-        text = 'List top contributors'
+        text = 'More contributors'
         return Link('+topcontributors', text, icon='info')
 
     def mentorship(self):
@@ -441,7 +445,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'Show announcements'
+        text = 'More announcements'
         enabled = bool(self.context.announcements().count())
         return Link('+announcements', text, enabled=enabled)
 

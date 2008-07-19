@@ -1,7 +1,7 @@
 = Product Launchpad usage =
 
 The launchpad usage flags (whether the product uses Bugs, Answers or
-Translations officially) are found on the +edit page. 
+Translations officially) are found on the +edit page.
 
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print anon_browser.title
@@ -10,13 +10,13 @@ Translations officially) are found on the +edit page.
     >>> content = find_main_content(anon_browser.contents)
     >>> uses = content.find('p', id='uses')
     >>> print extract_text(uses)
-    Mozilla Firefox uses Launchpad for Answers and Bug Tracking.
+    Uses Launchpad for: Answers and Bug Tracking.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'bugtracker'))
     Bug tracker: Launchpad
 
-Only the product registrant and the admins have access to this page. 
+Only the product registrant and the admins have access to this page.
 
     >>> anon_browser.getLink('Change details')
     Traceback (most recent call last):
@@ -67,7 +67,7 @@ tracker, not even Launchpad.
     >>> content = find_main_content(registrant_browser.contents)
     >>> uses = content.find('p', id='uses')
     >>> print extract_text(uses)
-    Mozilla Firefox uses Launchpad for Answers.
+    Uses Launchpad for: Answers.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> print extract_text(
@@ -88,7 +88,7 @@ Now let's go back and choose to use a specific bug tracker.
     >>> content = find_main_content(registrant_browser.contents)
     >>> uses = content.find('p', id='uses')
     >>> print extract_text(uses)
-    Mozilla Firefox uses Launchpad for Answers.
+    Uses Launchpad for: Answers.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> print extract_text(
@@ -111,7 +111,7 @@ Let's reset it to the way it was before.
     >>> content = find_main_content(registrant_browser.contents)
     >>> uses = content.find('p', id='uses')
     >>> print extract_text(uses)
-    Mozilla Firefox uses Launchpad for Answers and Bug Tracking.
+    Uses Launchpad for: Answers and Bug Tracking.
 
 
 == Tracking bugs by email ==
