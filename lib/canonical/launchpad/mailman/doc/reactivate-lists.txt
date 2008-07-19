@@ -7,9 +7,8 @@ restored.
 
 First, No Privileges Person will create a new team and its mailing list.
 
-    >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
@@ -18,17 +17,20 @@ First, No Privileges Person will create a new team and its mailing list.
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
-    >>> list_one = itest_helper.review_list('itest-one')
+    >>> from canonical.launchpad.mailman.testing import helpers
     >>> from Mailman.Utils import list_names
+    >>> list_one = helpers.review_list('itest-one')
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
 
 Give the mailing list a welcome message.
 
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
+    >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
     >>> browser.getControl('Welcome message text').value = (
     ...     'Greetings team one members!')
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
+
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> serial_watcher = logwatcher.LogWatcher('serial')
     >>> browser.getControl('Save').click()
     >>> serial_watcher.wait()
 
@@ -41,6 +43,7 @@ Subscribe Anne to the mailing list so that she can post to after
 re-activation.
 
     # For convenience, don't do this through the web.
+    >>> import transaction
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
@@ -52,15 +55,14 @@ re-activation.
     >>> from canonical.launchpad.ftests import sync
     >>> sync(list_one)
     >>> list_one.subscribe(anne)
-    >>> from canonical.database.sqlbase import commit
     >>> logout()
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
     >>> mlist.Load()
     >>> sorted(mlist.getMembers())
     ['anne.person@example.com', 'aperson@example.org',
-     'archive@mail-archive.com']
+     'archive@mail-archive.dev']
 
 Now the team owner deactivates the list.
 
@@ -106,4 +108,4 @@ list was deactivated.
 
     >>> sorted(mlist.getMembers())
     ['anne.person@example.com', 'aperson@example.org',
-     'archive@mail-archive.com']
+     'archive@mail-archive.dev']

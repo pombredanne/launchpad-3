@@ -211,7 +211,7 @@ clean:
 	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
-	rm -rf lib/mailman
+	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
 
 realclean: clean

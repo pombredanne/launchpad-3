@@ -11,9 +11,8 @@ message, but again the reportStatus() call fails.  In both these cases,
 Mailman and Launchpad should eventually resynchronize their state
 automatically.
 
-    >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
@@ -21,8 +20,11 @@ automatically.
     >>> browser.getControl('Create').click()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
-    >>> list_one = itest_helper.review_list('itest-one')
+
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> serial_watcher = logwatcher.LogWatcher('serial')
+    >>> list_one = helpers.review_list('itest-one')
     >>> serial_watcher.wait()
 
 
@@ -33,9 +35,9 @@ failed.  The mailing list would be in the CONSTRUCTING state.  We
 simulate that here by manually tweaking the list back to that transitory
 state.
 
+    >>> import transaction
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingListSet, MailingListStatus)
     >>> from canonical.launchpad.ftests import login, logout
@@ -44,7 +46,7 @@ state.
     >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))
     >>> itest_one.status = MailingListStatus.CONSTRUCTING
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
 
 Now we just wait for Mailman to resynchronize its state with Launchpad.
 
@@ -56,7 +58,7 @@ Now we just wait for Mailman to resynchronize its state with Launchpad.
 However, if the list status on Launchpad is CONSTRUCTING, but the mailing list
 does not actually exist in Mailman, then Mailman will create it.
 
-    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-two'
     >>> browser.getControl('Display Name').value = 'ITest Two'
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
@@ -78,7 +80,7 @@ does not actually exist in Mailman, then Mailman will create it.
     >>> raw_itest_two.date_reviewed = UTC_NOW
 
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
     >>> sorted(list_names())
     ['itest-one', 'itest-two', 'unused_mailman_site_list']
@@ -98,8 +100,10 @@ say by giving it a welcome message.
     <DBItem MailingListStatus.ACTIVE, (5) Active>
     >>> itest_one.status = MailingListStatus.UPDATING
     >>> serial_watcher.resync()
-    >>> commit()
+    >>> transaction.commit()
     >>> serial_watcher.wait()
     >>> itest_one = mailing_list_set.get('itest-one')
     >>> itest_one.status
     <DBItem MailingListStatus.ACTIVE, (5) Active>
+
+    >>> logout()

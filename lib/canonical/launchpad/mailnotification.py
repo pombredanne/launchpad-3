@@ -994,7 +994,7 @@ def notify_bug_attachment_removed(bugattachment, event):
 
 
 @block_implicit_flushes
-def notify_bug_subscripiton_added(bug_subscription, event):
+def notify_bug_subscription_added(bug_subscription, event):
     """Notify that a new bug subscription was added."""
     # When a user is subscribed to a bug by someone other
     # than themselves, we send them a notification email.
