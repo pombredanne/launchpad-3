@@ -65,7 +65,7 @@ in getBugCommentsForDisplay...
     >>> import StringIO
     >>> login("test@canonical.com")
     >>> attachment = bug_11.addAttachment(
-    ...     owner=None, file_=StringIO.StringIO('whatever'),
+    ...     owner=None, data=StringIO.StringIO('whatever'),
     ...     comment=bug_11.initial_message, filename='test.txt',
     ...     is_patch=False, content_type='text/plain',
     ...     description='sample data')
@@ -75,7 +75,7 @@ in getBugCommentsForDisplay...
     >>> rendered_comments = bug_11_view.getBugCommentsForDisplay()
     >>> [bug_comment.index for bug_comment in rendered_comments]
     [0, 1, 2, 3, 4, 5, 6]
-    >>> 
+    >>>
 
 ...but the attribute text_for_display of the first comment is empty.
 This allows us to display the attachments of the initial message
@@ -182,8 +182,8 @@ displayed.
 Comment omission
 ----------------
 
-If a comment made by the same user is strictly identical to its previous 
-comment in sequence, it will be omitted. Let's add some comments and 
+If a comment made by the same user is strictly identical to its previous
+comment in sequence, it will be omitted. Let's add some comments and
 attachments to a bug to see this in action:
 
     >>> from canonical.launchpad.interfaces import ILaunchBag, IPersonSet
@@ -198,7 +198,7 @@ attachments to a bug to see this in action:
     >>> m3 = bug_three.newMessage(owner=user, subject="Ho", content="Hello there")
     >>> m4 = bug_three.newMessage(owner=user, subject="Ho", content="Hello there")
     >>> file_ = StringIO.StringIO("Bogus content makes the world go round")
-    >>> a1 = bug_three.addAttachment(owner=user, file_=file_, description="Ho",
+    >>> a1 = bug_three.addAttachment(owner=user, data=file_, description="Ho",
     ...                              filename="munchy", comment="Hello there")
     >>> m6 = bug_three.newMessage(owner=user, subject="Ho", content="Hello there")
     >>> m7 = bug_three.newMessage(owner=different_user, subject="Ho", content="Hello there")
@@ -207,14 +207,14 @@ attachments to a bug to see this in action:
 
 Now checking what gets displayed. m2 and m4 should be omitted, as they are
 identical to the comment that precedes them in order; Although m7 is identical
-to its preceding comment, it was made by a different user so it shouldn't be 
+to its preceding comment, it was made by a different user so it shouldn't be
 hidden.
 
     >>> bug_three_bugtask = bug_three.bugtasks[0]
     >>> bug_view = getMultiAdapter(
     ...     (bug_three_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_view.initialize()
-    >>> [(c.index, c.title, c.text_for_display) 
+    >>> [(c.index, c.title, c.text_for_display)
     ...  for c in bug_view.getBugCommentsForDisplay()]
     [(1, u'Hi', u'Hello there'),
      (3, u'Ho', u'Hello there'),
