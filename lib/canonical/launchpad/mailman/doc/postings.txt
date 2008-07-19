@@ -344,10 +344,10 @@ This time, her message is on topic and is accepted.
     <BLANKLINE>
 
 
-== Verified and registered member postings ==
+== Unsubscribed team member ==
 
-Anne now joins the team and subscribes to the mailing list.  She can now post
-to the mailing list.
+Once Anne joins the team, she may post to it, though until she subscribes to
+the mailing list, she will not get a copy of the message.
 
     # Subscribe Anne with her preferred address.
     >>> from zope.component import getUtility
@@ -355,14 +355,69 @@ to the mailing list.
     >>> login('foo.bar@canonical.com')
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.join(team_one)
+
+    >>> serial_watcher.resync()
+    >>> transaction.commit()
+    >>> serial_watcher.wait()
+    >>> archive_watcher = logwatcher.LogWatcher('mhonarc')
+
+    >>> print anne.preferredemail.email, anne.preferredemail.status.title
+    anne.person@example.com Preferred Email Address
+
+    >>> inject('itest-one', """\
+    ... From: anne.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A member post
+    ... Message-ID: <otter>
+    ...
+    ... Hi, I have just joined this team.
+    ... """)
+    >>> smtp_watcher.wait()
+
+Only the archiver gets the message delivery.
+
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    1
+    >>> print messages[0].as_string()
+    From: anne.person@example.com
+    To: itest-one@lists.launchpad.dev
+    Message-ID: <otter>
+    Subject: [Itest-one] A member post
+    ...
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    ...
+    Hi, I have just joined this team.
+    _______________________________________________
+    Mailing list: http://launchpad.dev/~itest-one
+    Post to     : itest-one@lists.launchpad.dev
+    Unsubscribe : http://launchpad.dev/~itest-one
+    More help   : http://help.launchpad.dev/ListHelp
+    <BLANKLINE>
+    <BLANKLINE>
+
+In addition, the in-house MHonArc archiver has archived this message.
+
+    # There might have been messages already in the archive queue waiting to
+    # be processed when the watcher was create.  Wait twice, the second of
+    # which should time out.  We actually don't care though.
+    >>> ignore = archive_watcher.wait()
+    >>> ignore = archive_watcher.wait()
+    >>> helpers.collect_archive_message_ids('itest-one')
+    ['elephant', 'otter']
+
+
+== Verified and registered member postings ==
+
+Anne now subscribes to the team's mailing list.  She gets a copy of each
+message posted to the mailing list.
+
     >>> list_one.subscribe(anne)
     >>> serial_watcher.resync()
     >>> transaction.commit()
     >>> serial_watcher.wait()
 
-    >>> print anne.preferredemail.email, anne.preferredemail.status.title
-    anne.person@example.com Preferred Email Address
-    >>> archive_watcher = logwatcher.LogWatcher('mhonarc')
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -435,7 +490,7 @@ In addition, the in-house MHonArc archiver has archived this message.
     >>> ignore = archive_watcher.wait()
     >>> ignore = archive_watcher.wait()
     >>> helpers.collect_archive_message_ids('itest-one')
-    ['elephant', 'falcon']
+    ['elephant', 'falcon', 'otter']
 
 Anne cannot post from her alternative email address because it has not been
 validated yet.
