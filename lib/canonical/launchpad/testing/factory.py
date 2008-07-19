@@ -63,6 +63,14 @@ from canonical.launchpad.interfaces import (
     TeamSubscriptionPolicy,
     UnknownBranchTypeError,
     )
+from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
@@ -236,6 +244,16 @@ class LaunchpadObjectFactory:
             licenses=licenses,
             project=project)
 
+    def makeProductSeries(self, product=None, name=None):
+        """Create and return a new ProductSeries."""
+        if product is None:
+            product = self.makeProduct()
+        owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString()
+        summary = self.getUniqueString()
+        return product.newSeries(owner=owner, name=name, summary=summary)
+
     def makeProject(self, name=None, displayname=None):
         """Create and return a new, arbitrary Project."""
         owner = self.makePerson()
@@ -406,6 +424,58 @@ class LaunchpadObjectFactory:
             # fromText() creates a bug watch associated with the bug.
             getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
         return bug
+
+    def makeBugTask(self, bug=None, target=None):
+        """Create and return a bug task.
+
+        If the bug is already targeted to the given target, the existing
+        bug task is returned.
+
+        :param bug: The `IBug` the bug tasks should be part of. If None,
+            one will be created.
+        :param target: The `IBugTarget`, to which the bug will be
+            targeted to.
+        """
+        if bug is None:
+            bug = self.makeBug()
+        if target is None:
+            target = self.makeProduct()
+        existing_bugtask = bug.getBugTask(target)
+        if existing_bugtask is not None:
+            return existing_bugtask
+        owner = self.makePerson()
+
+        if IProduct.providedBy(target):
+            target_params = {'product': target}
+        elif IProductSeries.providedBy(target):
+            # We can't have a series task without a distribution task.
+            self.makeBugTask(bug, target.product)
+            target_params = {'productseries': target}
+        elif IDistribution.providedBy(target):
+            target_params = {'distribution': target}
+        elif IDistributionSourcePackage.providedBy(target):
+            target_params = {
+                'distribution': target.distribution,
+                'sourcepackagename': target.sourcepackagename,
+                }
+        elif IDistroSeries.providedBy(target):
+            # We can't have a series task without a distribution task.
+            self.makeBugTask(bug, target.distribution)
+            target_params = {'distroseries': target}
+        elif ISourcePackage.providedBy(target):
+            distribution_package = target.distribution.getSourcePackage(
+                target.sourcepackagename)
+            # We can't have a series task without a distribution task.
+            self.makeBugTask(bug, distribution_package)
+            target_params = {
+                'distroseries': target.distroseries,
+                'sourcepackagename': target.sourcepackagename,
+                }
+        else:
+            raise AssertionError('Unknown IBugTarget: %r' % target)
+
+        return getUtility(IBugTaskSet).createTask(
+            bug=bug, owner=owner, **target_params)
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None):
@@ -673,10 +743,12 @@ class LaunchpadObjectFactory:
             filename, len(log_data), StringIO(log_data), 'text/plain')
         return getUtility(ILibraryFileAliasSet)[log_alias_id]
 
-    def makeDistribution(self):
+    def makeDistribution(self, name=None, displayname=None):
         """Make a new distribution."""
-        name = self.getUniqueString()
-        displayname = self.getUniqueString()
+        if name is None:
+            name = self.getUniqueString()
+        if displayname is None:
+            displayname = self.getUniqueString()
         title = self.getUniqueString()
         description = self.getUniqueString()
         summary = self.getUniqueString()
@@ -689,14 +761,17 @@ class LaunchpadObjectFactory:
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=DistroSeriesStatus.DEVELOPMENT,
-                          parent_series=None):
+                          parent_series=None, name=None):
         """Make a new distro release."""
         if distribution is None:
             distribution = self.makeDistribution()
+        if name is None:
+            name = self.getUniqueString()
+
         return getUtility(IDistroSeriesSet).new(
             distribution=distribution,
             version="%s.0" % self.getUniqueInteger(),
-            name=self.getUniqueString(),
+            name=name,
             displayname=self.getUniqueString(),
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
