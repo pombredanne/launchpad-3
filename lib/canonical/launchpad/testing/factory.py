@@ -398,7 +398,8 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self, product=None, owner=None, bug_watch_url=None):
+    def makeBug(self, product=None, owner=None, bug_watch_url=None,
+                private=False):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -416,7 +417,7 @@ class LaunchpadObjectFactory:
             owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
-            owner, title, comment=self.getUniqueString())
+            owner, title, comment=self.getUniqueString(), private=private)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -476,6 +477,37 @@ class LaunchpadObjectFactory:
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
 
+    def makeBugAttachment(self, bug=None, owner=None, data=None,
+                          comment=None, filename=None, content_type=None):
+        """Create and return a new bug attachment.
+
+        :param bug: An `IBug` or a bug ID or name, or None, in which
+            case a new bug is created.
+        :param owner: An `IPerson`, or None, in which case a new
+            person is created.
+        :param data: A file-like object or a string, or None, in which
+            case a unique string will be used.
+        :param comment: An `IMessage` or a string, or None, in which
+            case a new message will be generated.
+        :param filename: A string, or None, in which case a unique
+            string will be used.
+        :param content_type: The MIME-type of this file.
+        :return: An `IBugAttachment`.
+        """
+        if bug is None:
+            bug = self.makeBug()
+        elif isinstance(bug, (int, long, basestring)):
+            bug = getUtility(IBugSet).getByNameOrID(str(bug))
+        if owner is None:
+            owner = self.makePerson()
+        if data is None:
+            data = self.getUniqueString()
+        if comment is None:
+            comment = self.getUniqueString()
+        if filename is None:
+            filename = self.getUniqueString()
+        return bug.addAttachment(
+            owner, data, comment, filename, content_type=content_type)
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None):
         mail = SignedMessage()
