@@ -130,6 +130,7 @@ If a project has a series with no releases associated with it, that
 series should not show up in the list.
 
     >>> # Create an empty series.
+    >>> firefox_owner.open('http://launchpad.dev/firefox')
     >>> firefox_owner.getLink('Register a series').click()
     >>> firefox_owner.getControl('Name').value="3.0"
     >>> firefox_owner.getControl('Summary').value="pi series"
