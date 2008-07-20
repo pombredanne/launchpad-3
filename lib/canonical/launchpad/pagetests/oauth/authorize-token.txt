@@ -75,7 +75,7 @@ An application, when asking to access Launchpad on a user's behalf may
 also specify a certain context, so that the access granted by the user
 is restricted to things related to that context.
 
-    >>> params_with_context = {'lp.product': 'firefox'}
+    >>> params_with_context = {'lp.context': 'firefox'}
     >>> params_with_context.update(params)
     >>> browser.open(
     ...     "http://launchpad.dev/+oauth-authorize?%s"

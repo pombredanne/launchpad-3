@@ -62,7 +62,7 @@ include that.
     ...     'launchpad-library').newRequestToken()
     >>> token.review(getUtility(IPersonSet).getByName('salgado'),
     ...              OAuthPermission.WRITE_PUBLIC,
-    ...              product=getUtility(IProductSet)['firefox'])
+    ...              context=getUtility(IProductSet)['firefox'])
     >>> access_token = token.createAccessToken()
     >>> logout()
     >>> my_browser.open('http://launchpad.dev/~salgado/+oauth-tokens')

@@ -58,7 +58,7 @@ context either.
 The context can be a product, and if it's specified it will be carried
 over to the token once it's reviewed.
 
-    >>> view, token = get_view_with_fresh_token({'lp.product': 'firefox'})
+    >>> view, token = get_view_with_fresh_token({'lp.context': 'firefox'})
     >>> view.token_context.name
     u'firefox'
 
@@ -67,7 +67,7 @@ over to the token once it's reviewed.
     >>> print_hidden_fields(view())
     loggingout...
     oauth_token...
-    lp.product firefox
+    lp.context firefox
 
     >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
     >>> token.context.name
@@ -75,7 +75,7 @@ over to the token once it's reviewed.
 
 Likewise for a project.
 
-    >>> view, token = get_view_with_fresh_token({'lp.project': 'mozilla'})
+    >>> view, token = get_view_with_fresh_token({'lp.context': 'mozilla'})
     >>> view.token_context.name
     u'mozilla'
 
@@ -84,7 +84,7 @@ Likewise for a project.
     >>> print_hidden_fields(view())
     loggingout...
     oauth_token...
-    lp.project mozilla
+    lp.context mozilla
 
     >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
     >>> token.context.name
@@ -92,7 +92,7 @@ Likewise for a project.
 
 And a distribution.
 
-    >>> view, token = get_view_with_fresh_token({'lp.distribution': 'ubuntu'})
+    >>> view, token = get_view_with_fresh_token({'lp.context': 'ubuntu'})
     >>> view.token_context.name
     u'ubuntu'
 
@@ -101,7 +101,7 @@ And a distribution.
     >>> print_hidden_fields(view())
     loggingout...
     oauth_token...
-    lp.distribution ubuntu
+    lp.context ubuntu
 
     >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
     >>> token.context.name
@@ -111,8 +111,7 @@ If the consumer wants to access only things related to a distribution's
 package, it must specify the distribution and the package's name.
 
     >>> view, token = get_view_with_fresh_token(
-    ...     {'lp.distribution': 'ubuntu',
-    ...      'lp.sourcepackagename': 'evolution'})
+    ...     {'lp.context': 'ubuntu/evolution'})
     >>> view.token_context.title
     u'...evolution... source package in Ubuntu'
 
@@ -121,25 +120,23 @@ package, it must specify the distribution and the package's name.
     >>> print_hidden_fields(view())
     loggingout...
     oauth_token...
-    lp.distribution ubuntu
-    lp.sourcepackagename evolution
+    lp.context ubuntu/evolution
 
     >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
     >>> token.context.title
     u'...evolution... source package in Ubuntu'
 
-An error is raised if the package's distribution is not specified.
+An error is raised if the context is not found.
 
-    >>> view, token = get_view_with_fresh_token(
-    ...     {'lp.sourcepackagename': 'evolution'})
+    >>> view, token = get_view_with_fresh_token({'lp.context': 'fooooo'})
     Traceback (most recent call last):
     ...
     UnexpectedFormData: ...
 
-No more than one context can be specified by the consumer.
+Or if the user gives us a package in a non-existing distribution.
 
     >>> view, token = get_view_with_fresh_token(
-    ...     {'lp.distribution': 'ubuntu', 'lp.product': 'firefox'})
+    ...     {'lp.context': 'firefox/evolution'})
     Traceback (most recent call last):
     ...
     UnexpectedFormData: ...
