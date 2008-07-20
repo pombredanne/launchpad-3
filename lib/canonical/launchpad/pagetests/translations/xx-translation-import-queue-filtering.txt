@@ -1,3 +1,5 @@
+= Translation Import Queue Filtering =
+
 With this test we are going to test the entries filtering on the
 translation import queue form.
 
@@ -56,6 +58,9 @@ already included in the sample data.
       text='Next'
       url='http://.../+imports/+index?start=5&batch=5'>
 
+
+== Target filter ==
+
 The queue contains import requests for only one target: Evolution.  This
 is shown in a view filter dropdown, as well as an option to display all
 targets.
@@ -63,6 +68,9 @@ targets.
     >>> print_targets(browser)
     All targets
     Evolution
+
+
+== Status filter ==
 
 Another dropdown offers the option to filter by status.
 
@@ -100,6 +108,9 @@ now shows up in the target dropdown with an asterisk.
     All targets
     Evolution*
 
+
+== File type filter ==
+
 Now Carlos selects only the .po files, and only 96 of the entries are
 shown.
 
@@ -124,6 +135,9 @@ When filtering for .pot files, the other 6 entries show up instead.
     ['pot']
     >>> print_batch_heading(browser)
     1 ... 5 of 6 results
+
+
+== Status changes ==
 
 Next Carlos filters for Approved entries.
 
@@ -213,6 +227,21 @@ Thus only 98 entries remain in the Needs Review filter.
     >>> print_batch_heading(browser)
     1 ... 5 of 98 results
 
+
+== Status filter validation ==
+
+An attempt to filter for an undefined status is an UnexpectedFormData. 
+
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/+imports?'
+    ...     'field.filter_status=boguscode')
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: Invalid status parameter.
+
+
+== Target changes ==
+
 It's also possible to filter by target. In this case, Evolution.
 
     >>> browser.open(
@@ -261,3 +290,17 @@ The only entry that shows up now is the one Carlos just uploaded.
     >>> print extract_text(first_entry).encode('ascii', 'backslashreplace')
     foo.pot in evolution in Ubuntu Hoary
     Needs Review
+
+
+=== Target filter validation ===
+
+If Carlos attempts to filter for a nonexistent target, e.g. through a
+mistyped URL, an UnexpectedFormData is raised.
+
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/+imports?'
+    ...     'field.filter_target=bogus/target')
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: Unknown target.
+

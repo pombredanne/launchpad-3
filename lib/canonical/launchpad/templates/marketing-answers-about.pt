@@ -1,0 +1,81 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+  <div id="about" metal:fill-slot="contents">
+    <div id="primary">
+      <h2>Answers</h2>
+      <h3 class="byline">Overview</h3>
+    </div>
+
+    <h2 class="headline">Build a community support team</h2>
+
+    <table id="features">
+      <tbody>
+        <tr>
+          <th>Structured support</th>
+          <th>Community support</th>
+          <th>Multi-lingual</th>
+          <th>Knowledge base</th>
+        </tr>
+        <tr class="screenshots">
+          <td><img src="/+icing/answers-feature-structured.png"
+                   alt="Answers structured support mini screenshot" /></td>
+          <td><img src="/+icing/answers-feature-contact.png"
+                   alt="Answers contact mini screenshot" /></td>
+          <td><img src="/+icing/answers-feature-language.png"
+                   alt="Answers language mini screenshot" /></td>
+          <td><img src="/+icing/answers-feature-knowledge-base.png"
+                    alt="Answers knowledge base mini screenshot" /></td>
+        </tr>
+        <tr>
+          <td>Track the status of support requests from question to answer.</td>
+          <td>Community members can volunteer as support contacts, while
+            any Launchpad user can suggest an answer to support requests.
+          </td>
+          <td>Support volunteers and users requesting help can choose
+            their preferred languages.
+          </td>
+          <td>Answers to previous questions form a searchable
+            knowledge-base for other users.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div id="content">
+      <div class="intro">
+        <h3>About the Answer Tracker</h3>
+
+        <p>A helpful community surrounds every successful open source project.
+           Launchpad's Answer Tracker gives you a structured way to help your
+           users, whilst encouraging community participation and building your
+           knowledge-base.
+        </p>
+
+        <p>Unlike forums and mailing lists, the Answer Tracker has features to
+           track the progress of a support request and rewards participants
+           with karma. All previous answers are searchable and Launchpad will
+           even suggest relevant answers, when a user asks a new question.
+           Members of your community can volunteer to receive automatic
+           notifications when new questions are asked in their preferred
+           languages.
+         </p>
+
+         <p>You get a quick overview of top issues, can track the progress of
+           support requests and can easily create bug reports from support
+           requests.
+         </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

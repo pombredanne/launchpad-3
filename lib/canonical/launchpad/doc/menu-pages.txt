@@ -97,7 +97,7 @@ URL.
       linked: True
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/+upload
       name: upload
-      enabled: True
+      enabled: False
       linked: True
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/+export
       name: download
@@ -127,7 +127,7 @@ is requested.
       linked: True
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/+upload
       name: upload
-      enabled: True
+      enabled: False
       linked: True
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/+export
       name: download
