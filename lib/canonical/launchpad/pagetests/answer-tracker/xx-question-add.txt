@@ -63,17 +63,24 @@ questions are displayed.
     ...     'Visiting a web page requiring java crashes firefox')
     >>> user_browser.getControl('Continue').click()
     >>> contents = find_main_content(user_browser.contents)
-    >>> print extract_text(contents.find(id='similar-faqs'))
+    >>> similar_faqs = contents.find(id='similar-faqs')
+    >>> print extract_text(similar_faqs)
     How can I play MP3/Divx/DVDs/Quicktime/Realmedia files or view
         Flash/Java web pages
-    >>> print extract_text(contents.find(id='similar-questions')).encode(
+    >>> similar_faqs.a['href']
+    u'http://answers.launchpad.dev/ubuntu/+faq/...'
+
+    >>> similar_questions = contents.find(id='similar-questions')
+    >>> print extract_text(similar_questions).encode(
     ...     'ascii', 'backslashreplace')
     Installation of Java Runtime Environment for Mozilla  (Answered)
         posted on 2006-07-20 by  Sample Person
-        in ...mozilla-firefox... source package in Ubuntu 
+        in ...mozilla-firefox... source package in Ubuntu
     mailto: problem in webpage (Solved)
         posted on 2006-07-20 by Sample Person, answered by Foo Bar
-        in ...mozilla-firefox... source package in Ubuntu 
+        in ...mozilla-firefox... source package in Ubuntu
+    >>> similar_questions.a['href']
+    u'http://answers.../ubuntu/+source/mozilla-firefox/+question/...'
 
 The beginning of the description appears in a small pop-up when the
 mouse is left over the question's title.

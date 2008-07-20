@@ -36,7 +36,7 @@ distroseries).
     >>> from canonical.launchpad.interfaces import (
     ...     PackagePublishingPocket)
     >>> alsa_hoary = hoary.getSourcePackage('alsa-utils')
-    >>> alsa_spr = alsa_hoary.currentrelease.sourcepackagerelease
+    >>> alsa_spr = alsa_hoary['1.0.9a-4'].sourcepackagerelease
     >>> print alsa_spr.title
     alsa-utils - 1.0.9a-4
 

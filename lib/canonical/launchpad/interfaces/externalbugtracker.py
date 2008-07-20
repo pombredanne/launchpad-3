@@ -76,13 +76,31 @@ class ISupportsCommentImport(IExternalBugTracker):
         """
 
     def getCommentIds(bug_watch):
-        """Return all the comment IDs for a given remote bug."""
+        """Return all the comment IDs for a given remote bug.
+
+        :param bug_watch: An `IBugWatch` pointing to the remote bug from
+            which comments should be imported.
+        :return: A list of strings, each of which is the ID of one
+            comment on the remote bug.
+        """
 
     def getPosterForComment(bug_watch, comment_id):
-        """Return a tuple of (name, emailaddress) for a comment's poster."""
+        """Return a tuple of (name, emailaddress) for a comment's poster.
+
+        :param bug_watch: An `IBugWatch` pointing to the remote bug from
+            which comments should be imported.
+        :param comment_id: A string representing the remote comment ID
+            from which the poster's details should be extracted.
+        """
 
     def getMessageForComment(bug_watch, comment_id, poster):
-        """Return an `IMessage` instance for a comment."""
+        """Return an `IMessage` instance for a comment.
+
+        :param bug_watch: An `IBugWatch` pointing to the remote bug from
+            which comments should be imported.
+        :param comment_id: A string representing the remote comment ID
+            from which the returned `IMessage` should be created.
+        """
 
 
 class ISupportsBugImport(IExternalBugTracker):
@@ -116,6 +134,6 @@ class ISupportsCommentPushing(IExternalBugTracker):
         :param comment_body: The body of the comment to push.
         :param rfc822msgid: The RFC-822 message ID of the comment in
             Launchpad.
-
-        Return the ID assigned to the comment by the remote bugtracker.
+        :return: The ID assigned to the comment by the remote bugtracker
+            as a string.
         """

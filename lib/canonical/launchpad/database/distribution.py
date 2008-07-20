@@ -81,6 +81,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.publishing import active_publishing_status
 
 from canonical.archivepublisher.debversion import Version
 
@@ -495,6 +496,37 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getSourcePackageRelease(self, sourcepackagerelease):
         """See `IDistribution`."""
         return DistributionSourcePackageRelease(self, sourcepackagerelease)
+
+    def getCurrentSourceReleases(self, source_package_names):
+        """See `IDistribution`."""
+        source_package_ids = [
+            package_name.id for package_name in source_package_names]
+        releases = SourcePackageRelease.select("""
+            SourcePackageName.id IN %s AND
+            SourcePackageRelease.id =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.id = (
+                SELECT max(spph.id)
+                FROM SourcePackagePublishingHistory spph,
+                     SourcePackageRelease spr, SourcePackageName spn,
+                     DistroSeries ds
+                WHERE
+                    spn.id = SourcePackageName.id AND
+                    spr.sourcepackagename = spn.id AND
+                    spph.sourcepackagerelease = spr.id AND
+                    spph.archive IN %s AND
+                    spph.status IN %s AND
+                    spph.distroseries = ds.id AND
+                    ds.distribution = %s)
+            """ % sqlvalues(
+                source_package_ids, self.all_distro_archive_ids,
+                active_publishing_status, self),
+            clauseTables=[
+                'SourcePackageName', 'SourcePackagePublishingHistory'])
+        return dict(
+            (self.getSourcePackage(release.sourcepackagename),
+             DistributionSourcePackageRelease(self, release))
+            for release in releases)
 
     @property
     def has_any_specifications(self):
