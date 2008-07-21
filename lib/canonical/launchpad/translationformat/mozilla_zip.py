@@ -70,8 +70,7 @@ class MozillaZipFile:
                 self.header = XpiHeader(rdf_content)
 
         # Strip trailing newline to avoid doubling it.
-        if xpi_path.endswith('/'):
-            xpi_path = xpi_path[:-1]
+        xpi_path.rstrip('/')
 
         self._begin()
 
@@ -123,7 +122,7 @@ class MozillaZipFile:
             entry, locale_code, xpi_path, chrome_path)
 
     def _begin(self):
-        """Overridable hook: pre-traversal actions."""
+        """Overridable hook: optional pre-traversal actions."""
 
     def _processTranslatableFile(self, entry, locale_code, xpi_path,
                                  chrome_path):
@@ -144,15 +143,21 @@ class MozillaZipFile:
             directory hierarchy.  The zip archive's actual layout (which
             the XPI paths describe) may be different.
         """
+        raise NotImplementedError(
+            "XPI traversal class provides no _processTranslatableFile().")
 
-    def _procesesNestedJar(self, zip_instance):
+    def _processNestedJar(self, zip_instance):
         """Overridable hook: handle a nested jar file.
 
         :param zip_instance: An instance of the same class as self, which
             has just parsed the nested jar file.
         """
+        raise NotImplementedError(
+            "XPI traversal class provides no _processNestedJar().")
 
     def _finish(self):
         """Overridable hook: post-traversal actions."""
+        raise NotImplementedError(
+            "XPI traversal class provides no _finish().")
 
 
