@@ -672,7 +672,7 @@ class BzrSync:
     def _getStackedOnBranch(self, bzr_branch):
         """Return the branch that the branch being scanned is stacked on."""
         try:
-            branch_url = bzr_branch.get_stacked_on()
+            branch_url = bzr_branch.get_stacked_on_url()
         except (UnstackableBranchFormat, NotStacked):
             return None
         else:

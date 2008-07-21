@@ -95,8 +95,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         worker.mirror()
         mirrored_branch = Branch.open(worker.dest)
         self.assertMirrored(stacked_branch, mirrored_branch)
-        orig = stacked_branch.get_stacked_on()
-        mirrored = mirrored_branch.get_stacked_on()
+        orig = stacked_branch.get_stacked_on_url()
+        mirrored = mirrored_branch.get_stacked_on_url()
         self.assertEqual(orig, mirrored)
 
     def test_loomBranch(self):

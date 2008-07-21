@@ -474,7 +474,7 @@ class TestBzrSync(BzrSyncTestCase):
         bzr_stacked_tree = self.makeBzrBranchAndTree(
             db_stacked_branch, format=stacked_format)
 
-        bzr_stacked_tree.branch.set_stacked_on(db_base_branch.url)
+        bzr_stacked_tree.branch.set_stacked_on_url(db_base_branch.url)
 
         self.makeBzrSync(db_stacked_branch).syncBranchAndClose()
         self.assertEqual(db_stacked_branch.stacked_on.id, db_base_branch.id)
