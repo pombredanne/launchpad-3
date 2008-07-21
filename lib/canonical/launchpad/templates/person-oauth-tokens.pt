@@ -27,6 +27,9 @@
                 content="token/date_created/fmt:approximatedate" />,
             to
             <tal:permission content="token/permission/title/lower" />
+            <tal:has-context condition="token/context">
+              related to <strong tal:content="token/context/title" />
+            </tal:has-context>
             <tal:expires condition="token/date_expires">
               until <tal:date content="token/date_expires/fmt:date" />
             </tal:expires>
