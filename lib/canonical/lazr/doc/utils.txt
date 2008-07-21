@@ -1,6 +1,26 @@
 = Various utility functions =
 
 
+== camelcase_to_underscore_separated ==
+
+LAZR provides a way of converting TextThatIsWordSeparatedWithInterCaps
+to text_that_is_word_separated_with_underscores.
+
+    >>> from canonical.lazr.utils import camelcase_to_underscore_separated
+    >>> camelcase_to_underscore_separated('lowercase')
+    'lowercase'
+    >>> camelcase_to_underscore_separated('TwoWords')
+    'two_words'
+    >>> camelcase_to_underscore_separated('twoWords')
+    'two_words'
+    >>> camelcase_to_underscore_separated('ThreeLittleWords')
+    'three_little_words'
+    >>> camelcase_to_underscore_separated('UNCLE')
+    'u_n_c_l_e'
+    >>> camelcase_to_underscore_separated('_StartsWithUnderscore')
+    '__starts_with_underscore'
+
+
 == safe_hasattr() ==
 
 LAZR provides a safe_hasattr() that doesn't hide exception from the

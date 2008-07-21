@@ -1,11 +1,20 @@
 == Package Maintenance Report ==
 
-From the main person page, the 'Packages' link will display the person's
-Package Maintenance Report.
-
+From the main person page, the user's Package Maintenance Report can be
+accessed by clicking on the 'Related Software' menu item, followed by the
+'Assigned Packages' sub-menu item.
 
     >>> anon_browser.open('http://launchpad.dev/~sabdfl')
-    >>> anon_browser.getLink('List assigned packages').click()
+    >>> anon_browser.getLink('Related Software').click()
+    >>> print_navigation_links(anon_browser.contents)
+    Profile: ...
+    Related Software
+    Karma: ...
+    Personal Package Archive: ...
+    Participation
+    Assigned Packages: http://launchpad.dev/~sabdfl/+packages
+
+    >>> anon_browser.getLink('Assigned Packages').click()
     >>> print anon_browser.title
     Packages maintained by Mark Shuttleworth
     >>> print anon_browser.url
