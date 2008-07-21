@@ -9,11 +9,33 @@
   metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
+  <body>
+    <div metal:fill-slot="main" class="pillar">
+      <div class="section">
+        <div style="float:right">
+          <span tal:define="link context/menu:overview/review_license"
+                tal:condition="link/enabled"
+                tal:content="structure link/render" />
+          <span tal:define="link context/menu:overview/administer"
+                tal:condition="link/enabled"
+                tal:content="structure link/render" />
+          <span tal:define="link context/menu:overview/edit"
+                tal:condition="link/enabled"
+                tal:content="structure link/render" />
+        </div>
+        <tal:mugshot replace="structure context/image:mugshot" />
+        <h1 tal:content="context/title">Name of project</h1>
+        <p id="project-admin-whiteboard" class="whiteboard"
+         tal:condition="context/required:launchpad.Commercial">
+          <span tal:content="context/reviewer_whiteboard" />
+          (<a href="+review-license">edit reviewer whiteboard</a>)
+        </p>
+        <p
+          tal:condition="not: context/active"
+          class="warning message"
+          id="project-inactive"
+        >
 
-<body>
-<div metal:fill-slot="main" class="pillar">
-
-  <p id="project-inactive" tal:condition="not: context/active" class="warning message">
     This project is currently inactive
     <tal:comment condition="nothing">
       This page links to the +review-license form to reactivate the product
@@ -23,29 +45,6 @@
     <a href="+review-license">(change this)</a>
   </p>
 
-  <p id="project-admin-whiteboard" class="whiteboard"
-   tal:condition="context/required:launchpad.Commercial">
-    <span tal:content="context/reviewer_whiteboard" />
-    (<a href="+review-license">edit reviewer whiteboard</a>)
-  </p>
-
-    <div class="section">
-
-  <tal:mugshot replace="structure context/image:mugshot" />
-
-  <h1 tal:content="context/title">Name of project</h1>
-
-  <div style="float:right">
-    <span tal:define="link context/menu:overview/review_license"
-          tal:condition="link/enabled"
-          tal:content="structure link/render" />
-    <span tal:define="link context/menu:overview/administer"
-          tal:condition="link/enabled"
-          tal:content="structure link/render" />
-    <span tal:define="link context/menu:overview/edit"
-          tal:condition="link/enabled"
-          tal:content="structure link/render" />
-  </div>
   <p>
     <strong tal:content="structure context/license_status/description">
       This project's license is open source.
@@ -211,18 +210,19 @@
         <a href="+milestones">Milestone history</a>
       </div>
 
-      <div
-        class="section"
-        tal:content="structure context/@@+portlet-top-contributors"
-      />
-      <div class="actions"
-        tal:define="link context/menu:overview/top_contributors"
-        tal:content="structure link/render"
-      />
-      <div
-        class="section"
-        tal:content="structure context/@@+portlet-packages"
-      />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-top-contributors"
+        />
+        <div class="actions"
+          tal:define="link context/menu:overview/top_contributors"
+          tal:content="structure link/render"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-packages"
+        />
+
       <div class="section">
         <h2>Registered</h2>
         <tal:created replace="context/datecreated/fmt:approximatedate" />
