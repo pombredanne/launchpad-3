@@ -979,9 +979,6 @@ When we try to look up the menu for the comment, the navigation menu for
 the next highest object in the URL hierarchy, the Recipe, will be
 returned.
 
-    >>> print queryAdapter(comment, INavigationMenu)
-    None
-
     >>> links_dict = test_tales(
     ...     'context/menu:navigation', context=comment)
     >>> summarise_tal_links(links_dict)
@@ -999,14 +996,16 @@ returned.
 
 === Menus for objects without canonical URLs ===
 
-The navigation menu lookup will also work for objects without a canonical
-URL, but that do have a INavigationMenu adaptation.
+The navigation menu lookup will also work for objects that have an
+INavigationMenu adaptation while lacking a canonical URL.
 
 In this example, we'll look up an adaptation on the RecipeReadJournalView.
 It has a menu, but the view itself doesn't have a canonical URL.
 
     >>> print queryAdapter(recipe_journal_view, ICanonicalUrlData)
     None
+
+We can still see the view's navigation menu:
 
     >>> links_dict = test_tales(
     ...     'view/menu:navigation', view=recipe_journal_view)
@@ -1041,8 +1040,6 @@ NavigationMenus used in the previous TALES section.
     ...     ViewPageTemplateFile)
     >>> from canonical.launchpad.webapp.menu import (
     ...     get_facet, get_current_view)
-
-
 
     >>> menu_fragement = """\
     ...  <div>
