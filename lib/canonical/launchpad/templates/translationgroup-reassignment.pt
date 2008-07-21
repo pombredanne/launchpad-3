@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<tal:do-this-first: tal:condition="view/processForm" />
+<tal:do-this-first tal:condition="view/processForm" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
@@ -13,10 +13,9 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
+  metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad">
   <body>
-    <h1 metal:fill-slot="heading">Translation groups</h1>
     <div metal:fill-slot="main">
       <div>
         <a tal:attributes="href context/fmt:url">
