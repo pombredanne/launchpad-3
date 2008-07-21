@@ -113,6 +113,9 @@
     <browser:page
         name="+portlet-specifications"
         template="../templates/branch-portlet-specifications.pt" />
+    <browser:page
+        name="+heading"
+        template="../templates/branch-heading.pt" />
   </browser:pages>
 
   <browser:page

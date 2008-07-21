@@ -187,6 +187,7 @@
                             />
                           </tal:notifications>
                         </tal:noportlets>
+                        <metal:block define-slot="before_nav_menu"/>
                         <div id="navigation-tabs"
                              tal:condition="view/macro:pagehas/navigationtabs">
                           <div id="context-navigation-tabs"
