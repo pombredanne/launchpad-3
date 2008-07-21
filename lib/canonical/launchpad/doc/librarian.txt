@@ -363,10 +363,10 @@ But on the restricted server, this will work:
     >>> result = result.splitlines()
     >>> print result[0]
     3
-    >>> sorted(result[1:])
-    ['.../private.txt',
-     '.../another-private.txt',
-     '.../yet-another-private.txt']
+    >>> sorted(file_path.split('/')[1] for file_path in result[1:])
+    ['another-private.txt',
+     'private.txt',
+     'yet-another-private.txt']
 
 
 == Odds and Sods ==

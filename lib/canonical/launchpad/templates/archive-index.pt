@@ -12,7 +12,8 @@
 <body>
 
     <metal:portlets fill-slot="portlets">
-       <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
+      <tal:privacy replace="structure context/@@+portlet-privacy" />
+      <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
     </metal:portlets>
 
     <div metal:fill-slot="main"
@@ -69,22 +70,10 @@
 
       <tal:active_ppa condition="ppa_active">
 
-      <div>
-        <ul id="package_counters">
-          <li id="source_counter">
-             <tal:source_count_text replace="view/source_count_text" />
-             (<tal:sources_size
-                replace="context/sources_size/fmt:bytes" />)</li>
-          <li id="binary_counter">
-             <tal:binary_count_text replace="view/binary_count_text" />
-             (<tal:binaries_size
-                replace="context/binaries_size/fmt:bytes" />)</li>
-          <li id="total_size">
-             Estimated archive size:
-             <tal:estimated_size
-               replace="context/estimated_size/fmt:bytes" /></li>
-        </ul>
-      </div>
+      <tal:contents tal:define="archive context">
+        <metal:package-counters
+          use-macro="context/@@+macros/package-counters" />
+      </tal:contents>
 
       <div>
         <form name="package_search" action="" method="GET">

@@ -53,6 +53,12 @@ status is returned.
 ...     if output:
 ...         print output
 
+>>> login('test@canonical.com')
+>>> from canonical.launchpad.testing import factory
+>>> factory.LaunchpadObjectFactory().makeBugAttachment(1)
+<BugAttachment at ...>
+>>> logout()
+
 >>> check("/")
 >>> check("/rdf")
 >>> check_redirect("/legal", status=301)
@@ -285,6 +291,19 @@ Viewing a bug comment.
 >>> check("/firefox/+bug/1/comments/1", auth=True)
 >>> check_not_found("/firefox/+bug/1/comments/42")
 
+Bug attachments in the context of a bug task.
+
+>>> check_not_found("/firefox/+bug/1/attachments")
+>>> check_redirect("/firefox/+bug/1/attachments/1")
+>>> check("/firefox/+bug/1/attachments/1", auth=True)
+
+Bug attachments in the context of a bug. Required by the web-services
+API, and will soon become the home for attachments in the web UI.
+
+>>> check_redirect("/bugs/1/attachments/1")
+>>> check("/bugs/1/attachments/1", auth=True)
+>>> check_not_found("/bugs/2/attachments/1")
+
 Viewing a bug in the context of an upstream where the bug has not yet
 been reported.
 
@@ -447,10 +466,10 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/sprints")
 >>> check("/sprints/ubz")
 
->>> check("/++resource++error")
+>>> check_not_found("/++resource++error")
 
->>> check("/@@")
->>> check("//@@")
+>>> check_not_found("/@@")
+>>> check_not_found("//@@")
 >>> check_redirect("/translations/groups/", status=301)
 >>> check_redirect("/translations/imports/", status=301)
 
@@ -479,3 +498,16 @@ Icing resources.
 >>> from canonical.launchpad.versioninfo import revno
 >>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
 >>> check("/+icing-contrib/rev%s/json2.js" % revno)
+>>> check("/+icing-kubuntu/rev%s/kubuntu-masthead2.css" % revno,
+...       host="shipit.kubuntu.dev")
+>>> check("/+icing-edubuntu/rev%s/edubuntu.css" % revno,
+...       host="shipit.edubuntu.dev")
+
+
+Image resources are available from all the virtual hosts.
+
+>>> check('/@@/add', host='launchpad.dev')
+>>> check('/@@/add', host='bugs.launchpad.dev')
+>>> check('/@@/add', host='answers.launchpad.dev')
+>>> check('/@@/add', host='code.launchpad.dev')
+

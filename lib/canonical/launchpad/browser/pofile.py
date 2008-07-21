@@ -34,8 +34,8 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation,
-    NavigationMenu)
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, Navigation, NavigationMenu)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
@@ -104,18 +104,15 @@ class POFileSOP(POTemplateSOP):
 class POFileMenuMixin:
     """Mixin class to share code between navigation and action menus."""
 
-    # XXX Julian 2008-06-25
-    # The navigation to the description page should not use '+index' here
-    # but if the code is changed to use '' instead then the tab
-    # highlighting/disabling breaks.  See bug 242860.
     def description(self):
         text = 'Description'
-        return Link('+index', text)
+        return Link('', text)
 
     def translate(self):
         text = 'Translate'
         return Link('+translate', text, icon='languages')
 
+    @enabled_with_permission('launchpad.Edit')
     def upload(self):
         text = 'Upload a file'
         return Link('+upload', text, icon='edit')

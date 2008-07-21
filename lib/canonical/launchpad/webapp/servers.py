@@ -46,7 +46,8 @@ import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication, IPerson,
     IPersonSet, IShipItApplication, IWebServiceApplication,
-    IOAuthConsumerSet, OAuthPermission, NonceAlreadyUsed)
+    IOAuthConsumerSet, NonceAlreadyUsed)
+import canonical.launchpad.versioninfo
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -56,7 +57,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
     INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData,
-    IPlacelessLoginSource)
+    IPlacelessLoginSource, OAuthPermission)
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
@@ -853,11 +854,34 @@ class ShipItPublication(LaunchpadBrowserPublication):
 class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.ShipItUbuntuLayer)
 
+    @property
+    def icing_url(self):
+        """The URL to the directory containing resources for this request."""
+        return "%s+icing-ubuntu/rev%d" % (
+            allvhosts.configs['shipitubuntu'].rooturl,
+            canonical.launchpad.versioninfo.revno)
+
+
 class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
 
+    @property
+    def icing_url(self):
+        """The URL to the directory containing resources for this request."""
+        return "%s+icing-kubuntu/rev%d" % (
+            allvhosts.configs['shipitkubuntu'].rooturl,
+            canonical.launchpad.versioninfo.revno)
+
+
 class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
+
+    @property
+    def icing_url(self):
+        """The URL to the directory containing resources for this request."""
+        return "%s+icing-edubuntu/rev%d" % (
+            allvhosts.configs['shipitedubuntu'].rooturl,
+            canonical.launchpad.versioninfo.revno)
 
 # ---- feeds
 

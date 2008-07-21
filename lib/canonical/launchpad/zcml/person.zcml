@@ -74,7 +74,7 @@
       />
     <require
       permission="launchpad.Special"
-      attributes="deactivateAccount"
+      interface="canonical.launchpad.interfaces.person.IPersonSpecialRestricted"
       />
     <require
       permission="launchpad.Edit"
@@ -234,6 +234,18 @@
     <browser:page
       name="+portlet-contact-details"
       template="../templates/person-portlet-contact-details.pt"
+      />
+    <browser:page
+      name="+portlet-contributions"
+      template="../templates/person-portlet-contributions.pt"
+      />
+    <browser:page
+      name="+portlet-currentfocus"
+      template="../templates/person-portlet-currentfocus.pt"
+      />
+    <browser:page
+      name="+portlet-memberships"
+      template="../templates/person-portlet-memberships.pt"
       />
     <!-- this should be on IPerson because we don't always know if it is a
     team or a person -->
@@ -624,6 +636,14 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
+    class="canonical.launchpad.browser.PersonIndexView"
+    name="+index"
+    template="../templates/team-index.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
     class="canonical.launchpad.browser.PersonView"
     name="+teamhierarchy"
     template="../templates/person-teamhierarchy.pt"
@@ -641,6 +661,7 @@
     permission="zope.Public"
     name="+mugshots"
     template="../templates/team-mugshots.pt"
+    class="canonical.launchpad.browser.TeamMugshotView"
     />
 
   <browser:page

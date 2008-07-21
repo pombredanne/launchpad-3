@@ -43,7 +43,7 @@ whatever the language they are written in are displayed. Doing so,
 the anonymous user will see a Spanish question.
 
     >>> anon_browser.getControl('English (en)').selected = False
-    >>> anon_browser.getControl('Search').click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> table = find_tag_by_id(anon_browser.contents, 'question-listing')
     >>> for question in table.findAll('td', 'question'):
     ...     question.first('a').renderContents()
@@ -193,7 +193,7 @@ By unchecking a checkbox, Carlos can exclude English questions from
 the search results.
 
     >>> browser.getControl('English (en)').selected = False
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
     >>> content = find_main_content(browser.contents)
     >>> for question in content.fetch('td', 'question'):
     ...     question.first('a').renderContents()
@@ -234,7 +234,7 @@ English, and can use it to locate English questions.
     ['en']
 
     >>> daf_browser.getControl('English (en)').selected = True
-    >>> daf_browser.getControl('Search').click()
+    >>> daf_browser.getControl('Search', index=0).click()
     >>> content = find_main_content(daf_browser.contents)
     >>> for question in content.fetch('td', 'question'):
     ...     question.first('a').renderContents()
@@ -245,26 +245,10 @@ English, and can use it to locate English questions.
     'Slow system'
 
 
-== Multiple Request Languages in Latest Questions ==
-
-The portlet that lists the latest questions involving a person displays
-all the questions, whatever the user preferred languages. (Since this
-portlet is there to give an idea of activity, it also advertise
-multi-language activity. Besides this avoids misleading the user by
-showing no questions when there could be in other languages.)
-
-    >>> browser.open('http://launchpad.dev/~carlos')
-    >>> portlet = find_portlet(
-    ...    browser.contents, 'Latest questions')
-    >>> for link in portlet.fetch('a'):
-    ...    link.renderContents()
-    'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
-
-
 == Questions by language ==
 
 When open questions are in languages that no answer contacts
-speak, the project questions page displays links to see those 
+speak, the project questions page displays links to see those
 questions. Each link is to a page that displays the questions
 for a specific language. No Privileges Person is looking for a
 project that needs help. He visits Kubuntu and does not see a need,

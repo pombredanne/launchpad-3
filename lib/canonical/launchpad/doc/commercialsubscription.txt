@@ -254,7 +254,7 @@ convenient for searching for projects with at least one license.
     bzr
     derby
 
-You can search for products whose license_info field is emtpy or not empty.
+You can search for products whose license_info field is empty or not empty.
 This OR the licenses search field must match.
 
     >>> for product in product_set.forReview(license_info_is_empty=True):
@@ -284,10 +284,12 @@ This OR the licenses search field must match.
     unassigned
     >>> for product in product_set.forReview(license_info_is_empty=False):
     ...     print product.name
+    mega-money-maker
     >>> for product in product_set.forReview(license_info_is_empty=False,
     ...                                      licenses=[License.GNU_GPL_V2]):
     ...     print product.name
     bzr
+    mega-money-maker
 
 You can search for products based on a date range in which the product
 was created.

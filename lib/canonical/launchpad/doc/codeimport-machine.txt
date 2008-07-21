@@ -75,7 +75,8 @@ the creation of CodeImportEvent objects.
 
     >>> from canonical.launchpad.interfaces import (
     ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
-    >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
+    >>> from canonical.launchpad.database.tests.test_codeimportjob import (
+    ...     NewEvents)
 
     >>> new_events = NewEvents()
     >>> new_machine2 = machine_set.new(

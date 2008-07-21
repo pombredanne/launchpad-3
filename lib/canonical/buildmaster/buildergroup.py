@@ -153,7 +153,8 @@ class BuilderGroup:
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
         return queueItem.builder.transferSlaveFileToLibrarian(
-            'buildlog', queueItem.getLogFileName())
+            'buildlog', queueItem.getLogFileName(),
+            queueItem.build.archive.private)
 
     def updateBuild(self, queueItem):
         """Verify the current build job status.
@@ -409,7 +410,7 @@ class BuilderGroup:
             build.binarypackages.count() == 0):
             self.logger.debug("Build %s upload failed." % build.id)
             # update builder
-            queueItem.build.forceState(BuildStatus.FAILEDTOUPLOAD)
+            queueItem.build.buildstate = BuildStatus.FAILEDTOUPLOAD
             # Retrieve log file content.
             possible_locations = (
                 'failed', 'failed-to-move', 'rejected', 'accepted')
@@ -427,6 +428,9 @@ class BuilderGroup:
                     break
             else:
                 uploader_log_content = 'Could not find upload log file'
+            # Store the upload_log_contents in librarian so it can be
+            # accessed by anyone with permission to see the build.
+            queueItem.build.storeUploadLog(uploader_log_content)
             # Notify the build failure.
             queueItem.build.notify(extra_info=uploader_log_content)
         else:
@@ -448,7 +452,7 @@ class BuilderGroup:
         set the job status as FAILEDTOBUILD, store available info and
         remove Buildqueue entry.
         """
-        queueItem.build.forceState(BuildStatus.FAILEDTOBUILD)
+        queueItem.build.buildstate = BuildStatus.FAILEDTOBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder.cleanSlave()
         queueItem.build.notify()
@@ -462,7 +466,7 @@ class BuilderGroup:
         MANUALDEPWAIT, store available information, remove BuildQueue
         entry and release builder slave for another job.
         """
-        queueItem.build.forceState(BuildStatus.MANUALDEPWAIT)
+        queueItem.build.buildstate = BuildStatus.MANUALDEPWAIT
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         self.logger.critical("***** %s is MANUALDEPWAIT *****"
                              % queueItem.builder.name)
@@ -477,7 +481,7 @@ class BuilderGroup:
         job as CHROOTFAIL, store available information, remove BuildQueue
         and release the builder.
         """
-        queueItem.build.forceState(BuildStatus.CHROOTWAIT)
+        queueItem.build.buildstate = BuildStatus.CHROOTWAIT
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         self.logger.critical("***** %s is CHROOTWAIT *****" %
                              queueItem.builder.name)
@@ -499,7 +503,7 @@ class BuilderGroup:
                          ("Builder returned BUILDERFAIL when asked "
                           "for its status"))
         # simply reset job
-        queueItem.build.forceState(BuildStatus.NEEDSBUILD)
+        queueItem.build.buildstate = BuildStatus.NEEDSBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder = None
         queueItem.buildstart = None
@@ -514,7 +518,7 @@ class BuilderGroup:
         """
         self.logger.warning("***** %s is GIVENBACK by %s *****"
                             % (buildid, queueItem.builder.name))
-        queueItem.build.forceState(BuildStatus.NEEDSBUILD)
+        queueItem.build.buildstate = BuildStatus.NEEDSBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         # XXX cprov 2006-05-30: Currently this information is not
         # properly presented in the Web UI. We will discuss it in

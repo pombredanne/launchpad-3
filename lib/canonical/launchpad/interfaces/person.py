@@ -22,6 +22,7 @@ __all__ = [
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
+    'IHasPersonNavigationMenu',
     'JoinNotAllowed',
     'NameAlreadyTaken',
     'PersonCreationRationale',
@@ -419,6 +420,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "that can be used to identify this team. The icon will be "
             "displayed whenever the team name is listed - for example "
             "in listings of bugs or on a person's membership table."))
+    iconID = Int(title=_('Icon ID'), required=True, readonly=True)
+
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
         default_image_resource='/@@/person-logo',
@@ -427,6 +430,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "the heading of all pages related to you. Traditionally this "
             "is a logo, a small picture or a personal mascot. It should be "
             "no bigger than 50kb in size."))
+    logoID = Int(title=_('Logo ID'), required=True, readonly=True)
+
     mugshot = exported(MugshotImageUpload(
         title=_("Mugshot"), required=False,
         default_image_resource='/@@/person-mugshot',
@@ -435,6 +440,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "on your home page in Launchpad. Traditionally this is a great "
             "big picture of your grinning face. Make the most of it! It "
             "should be no bigger than 100kb in size. ")))
+    mugshotID = Int(title=_('Mugshot ID'), required=True, readonly=True)
+
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
             description=_('Your address (Line 1)')
@@ -1379,10 +1386,54 @@ class IPersonAdminWriteRestricted(Interface):
                default=PersonVisibility.PUBLIC))
 
 
+class IPersonSpecialRestricted(Interface):
+    """IPerson methods that require launchpad.Special permission to use."""
+
+    def activateAccount(comment, password, preferred_email):
+        """Activate this person's Launchpad account.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password.
+        :param preferred_email: The `EmailAddress` to set as the user's
+            preferred email address.
+        """
+
+    def deactivateAccount(comment):
+        """Deactivate this person's Launchpad account.
+
+        Deactivating an account means:
+            - Setting its password to NULL;
+            - Removing the user from all teams he's a member of;
+            - Changing all his email addresses' status to NEW;
+            - Revoking Code of Conduct signatures of that user;
+            - Reassigning bugs/specs assigned to him;
+            - Changing the ownership of products/projects/teams owned by him.
+
+        :param comment: An explanation of why the account status changed.
+        """
+
+    def reactivateAccount(comment, password, preferred_email):
+        """Reactivate this person's Launchpad account.
+
+        Set the account status to ACTIVE and possibly restore the user's
+        name. The preferred email address is set.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password, it cannot be None.
+        :param preferred_email: The `EmailAddress` to set as the user's
+            preferred email address. It cannot be None.
+        """
+
+
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IPersonAdminWriteRestricted, IHasStanding, ISetLocation):
+              IPersonAdminWriteRestricted, IPersonSpecialRestricted,
+              IHasStanding, ISetLocation):
     """A Person."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(plural_name='people')
+
+
+# Set the PublicPersonChoice schema to the newly defined interface.
+PublicPersonChoice.schema = IPerson
 
 
 class INewPersonForm(IPerson):
@@ -1393,6 +1444,14 @@ class INewPersonForm(IPerson):
 
     password = PasswordField(
         title=_('Create password'), required=True, readonly=False)
+
+
+class IHasPersonNavigationMenu(Interface):
+    """A marker interface for objects that use the Person navigation menus.
+
+    An object providing this interface will use the Person navigation menu
+    for its pages.
+    """
 
 
 class ITeamPublic(Interface):
@@ -1477,7 +1536,7 @@ class ITeam(IPerson, ITeamPublic):
 
     The teamowner should never be None.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry('team')
 
     # Logo, Mugshot and displayname are here so that they can have a
     # description on a Team which is different to the description they have on
@@ -1653,6 +1712,10 @@ class IPersonSet(Interface):
         default ordering specified in Person._defaultOrder.
         """
 
+    @collection_default_content()
+    def getAllValidPersonsAndTeams():
+        """Return all valid persons and teams."""
+
     def updateStatistics(ztm):
         """Update statistics caches and commit."""
 
@@ -1666,7 +1729,6 @@ class IPersonSet(Interface):
            statistics update.
         """
 
-    @collection_default_content()
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @export_read_operation()
@@ -1814,6 +1876,9 @@ class IPersonSet(Interface):
         If a person's standing is already Good, or Poor or Excellent, no
         change to standing is made.
         """
+
+    def cacheBrandingForPeople(people):
+        """Prefetch Librarian aliases and content for personal images."""
 
 
 class IRequestPeopleMerge(Interface):

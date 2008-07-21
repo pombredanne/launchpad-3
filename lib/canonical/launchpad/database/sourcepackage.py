@@ -190,7 +190,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             order_by = '-datepublished'
 
         return SourcePackagePublishingHistory.select(
-            query, orderBy=order_by, clauseTables=['SourcePackageRelease'])
+            query, orderBy=order_by, clauseTables=['SourcePackageRelease'],
+            prejoinClauseTables=['SourcePackageRelease'])
 
     def _getFirstPublishingHistory(self, version=None, include_status=None,
                                    exclude_status=None, order_by=None):
@@ -205,11 +206,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def currentrelease(self):
-        latest_package = self._getFirstPublishingHistory()
-        if latest_package:
-            return DistroSeriesSourcePackageRelease(
-                    self.distroseries, latest_package.sourcepackagerelease)
-        return None
+        releases = self.distroseries.getCurrentSourceReleases(
+            [self.sourcepackagename])
+        return releases.get(self)
 
     def __getitem__(self, version):
         """See `ISourcePackage`."""

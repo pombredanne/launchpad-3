@@ -93,7 +93,7 @@ class BugMessageAddFormView(LaunchpadFormView):
 
             # Process the attachment.
             bug.addAttachment(
-                owner=self.user, file_=StringIO(data['filecontent']),
+                owner=self.user, data=StringIO(data['filecontent']),
                 filename=filename, description=file_description,
                 comment=message, is_patch=data['patch'])
 

@@ -10,6 +10,7 @@ __all__ = [
     'get_bug_tags_open_count']
 
 
+import mimetypes
 import operator
 import re
 from cStringIO import StringIO
@@ -61,6 +62,15 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.snapshot import Snapshot
+
+
+# XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
+# for Intrepid, to add .debdiff to /etc/mime.types, so we may be able
+# to remove this setting once a new /etc/mime.types has been installed
+# on the app servers. Additionally, Firefox does not display content
+# of type text/x-diff inline, so making this text/plain because
+# viewing .debdiff inline is the most common use-case.
+mimetypes.add_type('text/plain', '.debdiff')
 
 
 _bug_tag_query_template = """
@@ -414,7 +424,7 @@ class Bug(SQLBase):
             BugSubscription.select("""
                 BugSubscription.bug = Bug.id AND
                 Bug.duplicateof = %d""" % self.id,
-                clauseTables=["Bug"]))
+                prejoins=["person"], clauseTables=["Bug"]))
 
         # Direct and "also notified" subscribers take precedence
         # over subscribers from duplicates.
@@ -628,10 +638,13 @@ class Bug(SQLBase):
             Store.of(bug_watch).flush()
         return bug_watch
 
-    def addAttachment(self, owner, file_, comment, filename,
-                      is_patch=False, content_type=None, description=None):
+    def addAttachment(self, owner, data, comment, filename, is_patch=False,
+                      content_type=None, description=None):
         """See `IBug`."""
-        filecontent = file_.read()
+        if isinstance(data, str):
+            filecontent = data
+        else:
+            filecontent = data.read()
 
         if is_patch:
             attach_type = BugAttachmentType.PATCH

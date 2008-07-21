@@ -12,9 +12,11 @@ import time
 import urlparse
 import xmlrpclib
 
-from cStringIO import StringIO
-from datetime import datetime
+from StringIO import StringIO
+from cgi import escape
+from datetime import datetime, timedelta
 from httplib import HTTPMessage
+from urllib2 import BaseHandler, HTTPError, Request
 
 from zope.component import getUtility
 
@@ -23,12 +25,12 @@ from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
     ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
-    Trac, TracXMLRPCTransport)
-from canonical.launchpad.components.externalbugtracker.bugzilla import (
-    BugzillaXMLRPCTransport)
+    Trac)
 from canonical.launchpad.components.externalbugtracker.trac import (
     LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
     LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
+from canonical.launchpad.components.externalbugtracker.xmlrpc import (
+    UrlLib2Transport)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
@@ -133,7 +135,7 @@ def convert_python_status(status, resolution):
 
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
-    login('test@canonical.com')
+    login('foo.bar@canonical.com')
     bug_watch.remotestatus = None
     bug_watch.last_error_type = error_type
     bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
@@ -346,10 +348,10 @@ class FakeHTTPConnection:
         print "%s: %s" % (header, value)
 
 
-class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
+class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     """A test implementation of the Bugzilla XML-RPC interface."""
 
-    seconds_since_epoch = None
+    local_datetime = None
     timezone = 'UTC'
     utc_offset = 0
     print_method_calls = False
@@ -429,8 +431,13 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
     # Map namespaces onto method names.
     methods = {
-        'Bug': ['add_comment', 'comments', 'get_bugs'],
-        'Launchpad': ['login', 'time'],
+        'Launchpad': [
+            'add_comment',
+            'comments',
+            'get_bugs',
+            'login',
+            'time',
+            ],
         'Test': ['login_required']
         }
 
@@ -445,6 +452,17 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
     def expireCookie(self, cookie):
         """Mark the cookie as expired."""
         self.expired_cookie = cookie
+
+    @property
+    def auth_cookie(self):
+        cookies = self.cookie_processor.cookiejar._cookies
+        return cookies.get(
+            'example.com', {}).get('', {}).get('Bugzilla_logincookie')
+
+    @property
+    def has_valid_auth_cookie(self):
+        return (self.auth_cookie is not None and
+                self.auth_cookie is not self.expired_cookie)
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
@@ -467,8 +485,7 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
         # If the method requires authentication and we have no auth
         # cookie, throw a Fault.
         if (method_name in self.auth_required_methods and
-            (self.auth_cookie is None or
-             self.auth_cookie == self.expired_cookie)):
+            not self.has_valid_auth_cookie):
             raise xmlrpclib.Fault(410, 'Login Required')
 
         if self.print_method_calls:
@@ -484,15 +501,16 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
     def time(self):
         """Return a dict of the local time, UTC time and the timezone."""
-        seconds_since_epoch = self.seconds_since_epoch
-        if seconds_since_epoch is None:
-            remote_datetime = datetime(2008, 5, 1, 1, 1, 1)
-            seconds_since_epoch = time.mktime(remote_datetime.timetuple())
+        local_datetime = self.local_datetime
+        if local_datetime is None:
+            local_datetime = datetime(2008, 5, 1, 1, 1, 1)
 
         # We return xmlrpc dateTimes rather than doubles since that's
         # what BugZilla will return.
-        local_time = xmlrpclib.DateTime(seconds_since_epoch)
-        utc_time = xmlrpclib.DateTime(seconds_since_epoch - self.utc_offset)
+        local_time = xmlrpclib.DateTime(local_datetime.timetuple())
+
+        utc_date_time = local_datetime - timedelta(seconds=self.utc_offset)
+        utc_time = xmlrpclib.DateTime(utc_date_time.timetuple())
         return {
             'local_time': local_time,
             'utc_time': utc_time,
@@ -592,7 +610,7 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
         bug_ids = arguments['bug_ids']
         comment_ids = arguments.get('ids')
-        fields_to_return = arguments.get('include')
+        fields_to_return = arguments.get('include_fields')
         comments_by_bug_id = {}
 
         def copy_comment(comment):
@@ -608,7 +626,12 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
         for bug_id in bug_ids:
             comments_for_bug = self.bug_comments[bug_id].values()
-            comments_by_bug_id[bug_id] = [
+
+            # We stringify bug_id when using it as a dict key because
+            # all XML-RPC dict keys are strings (a key for an XML-RPC
+            # dict can have a value but no type; hence Python defaults
+            # to treating them as strings).
+            comments_by_bug_id[str(bug_id)] = [
                 copy_comment(comment) for comment in comments_for_bug
                 if comment_ids is None or comment['id'] in comment_ids]
 
@@ -790,7 +813,7 @@ def strip_trac_comment(comment):
     return comment
 
 
-class TestTracXMLRPCTransport(TracXMLRPCTransport):
+class TestTracXMLRPCTransport(UrlLib2Transport):
     """An XML-RPC transport to be used when testing Trac."""
 
     remote_bugs = {}
@@ -802,6 +825,16 @@ class TestTracXMLRPCTransport(TracXMLRPCTransport):
     def expireCookie(self, cookie):
         """Mark the cookie as expired."""
         self.expired_cookie = cookie
+
+    @property
+    def auth_cookie(self):
+        cookies = self.cookie_processor.cookiejar._cookies
+        return cookies.get('example.com', {}).get('', {}).get('trac_auth')
+
+    @property
+    def has_valid_auth_cookie(self):
+        return (self.auth_cookie is not None and
+                self.auth_cookie is not self.expired_cookie)
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
@@ -1142,3 +1175,53 @@ class TestDebBugs(DebBugs):
         self.debbugs_db.load_log(bug)
         return bug
 
+
+class Urlib2TransportTestInfo:
+    """A url info object for use in the test, returning
+    a hard-coded cookie header.
+    """
+    cookies = 'foo=bar'
+    def getheaders(self, header):
+        """Return the hard-coded cookie header."""
+        if header.lower() in ('cookie', 'set-cookie', 'set-cookie2'):
+            return [self.cookies]
+
+
+class Urlib2TransportTestHandler(BaseHandler):
+    """A test urllib2 handler returning a hard-coded response."""
+    def default_open(self, req):
+        """Catch all requests and return a hard-coded response.
+
+        The response body is an XMLRPC response. In addition we set the
+        info of the response to contain a cookie.
+        """
+        assert (
+            isinstance(req, Request),
+            'Expected a urllib2.Request, got %s' % req)
+
+        if 'testError' in req.data:
+            raise HTTPError(
+                req.get_full_url(), 500, 'Internal Error', {}, None)
+
+        response = StringIO("""<?xml version="1.0"?>
+        <methodResponse>
+          <params>
+            <param>
+              <value>%s</value>
+            </param>
+          </params>
+        </methodResponse>
+        """ % escape(req.get_full_url()))
+        info = Urlib2TransportTestInfo()
+        response.info = lambda: info
+        response.geturl = lambda: req.get_full_url()
+        response.code = 200
+        response.msg = ''
+        return response
+
+
+def patch_transport_opener(transport):
+    """Patch the transport's opener to use a test handler
+    returning a hard-coded response.
+    """
+    transport.opener.add_handler(Urlib2TransportTestHandler())

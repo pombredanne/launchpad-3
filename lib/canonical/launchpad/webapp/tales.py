@@ -54,8 +54,7 @@ from canonical.launchpad.webapp.interfaces import (
     NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import (
-    canonical_url, nearest_context_with_adapter, nearest_adapter)
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
@@ -64,6 +63,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
+from canonical.lazr.canonicalurl import (nearest_adapter,
+    nearest_context_with_adapter)
 
 def escape(text, quote=True):
     """Escape text for insertion into HTML.
@@ -966,10 +967,11 @@ class PillarFormatterAPI(CustomizableFormatter):
     def link(self, extra_path):
         html = super(PillarFormatterAPI, self).link(extra_path)
         if IProduct.providedBy(self._context):
-            if self._context.license_status != LicenseStatus.OPEN_SOURCE:
-                html += ' <span title="%s">(%s)</span>' % (
-                    escape(self._context.license_status.description),
-                    escape(self._context.license_status.title))
+            license_status = self._context.license_status
+            if license_status != LicenseStatus.OPEN_SOURCE:
+                html = '<span title="%s">%s (%s)</span>' % (
+                    license_status.description, html,
+                    license_status.title)
         return html
 
 
@@ -2405,7 +2407,6 @@ class PageMacroDispatcher:
         view/macro:pagehas/heading
         view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
-        view/macro:pagehas/structuralheaderobject
 
         view/macro:pagetype
 
@@ -2468,7 +2469,6 @@ class PageMacroDispatcher:
             heading=False,
             pageheading=True,
             portlets=False,
-            structuralheaderobject=False,
             pagetypewasset=True,
             actionsmenu=True,
             navigationtabs=False
@@ -2485,15 +2485,13 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
-                structuralheaderobject=True,
                 pagetypewasset=False),
         'default':
             LayoutElements(
                 applicationborder=True,
                 applicationtabs=True,
                 globalsearch=True,
-                portlets=True,
-                structuralheaderobject=True),
+                portlets=True),
         'default2.0':
             LayoutElements(
                 actionsmenu=False,
@@ -2501,7 +2499,6 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
-                structuralheaderobject=True,
                 navigationtabs=True),
         'onecolumn':
             # XXX 20080130 mpt: Should eventually become the new 'default'.
@@ -2511,20 +2508,20 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 navigationtabs=True,
-                portlets=False,
-                structuralheaderobject=True),
+                portlets=False),
         'applicationhome':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                applicationtabs=True,
+                globalsearch=True,
                 pageheading=False,
-                globalsearch=False,
                 heading=True),
         'pillarindex':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
-                globalsearch=False,
+                globalsearch=True,
                 heading=True,
                 pageheading=False,
                 portlets=True),
@@ -2536,8 +2533,7 @@ class PageMacroDispatcher:
                 globalsearch=False,
                 heading=False,
                 pageheading=False,
-                portlets=False,
-                structuralheaderobject=False),
+                portlets=False),
        'freeform':
             LayoutElements(),
         }

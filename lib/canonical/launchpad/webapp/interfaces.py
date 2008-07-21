@@ -9,7 +9,6 @@ import zope.app.publication.interfaces
 from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
@@ -596,31 +595,6 @@ class ILaunchpadPrincipal(IPrincipal):
 
     person = Attribute("The IPerson the principal represents.")
 
-
-class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
-    """The Launchpad customized database adapter"""
-    def readonly():
-        """Set the connection to read only.
-
-        This should only be called at the start of the transaction to
-        avoid confusing code that defers making database changes until
-        transaction commit time.
-        """
-
-    def switchUser(self, dbuser=None):
-        """Change the PostgreSQL user we are connected as.
-
-        This involves closing the existing connection and reopening it;
-        uncommitted changes will be lost. The new connection will also open
-        in read/write mode so calls to readonly() will need to be made
-        after switchUser.
-        """
-
-    def getUser(self):
-        """Return the current PostgreSQL user we are connected as.
-
-        The default user comes from config.launchpad.dbuser.
-        """
 
 #
 # Browser notifications
