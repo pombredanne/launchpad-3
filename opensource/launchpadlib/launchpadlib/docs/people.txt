@@ -36,22 +36,12 @@ You can iterate through all the people in the set.
      ...
      u'ubuntu-translators', u'vcs-imports', u'warty-gnome']
 
-But if no person by that name is registered, you get the expected KeyError...
+But if no person by that name is registered, you get the expected KeyError.
 
     >>> launchpad.people['not-a-registered-person']
     Traceback (most recent call last):
     ...
     KeyError: 'not-a-registered-person'
-
-...unless of course, you use the `get()` interface, which acts just like
-`dict.get()`.
-
-    >>> launchpad.people.get('salgado').display_name
-    u'Guilherme Salgado'
-    >>> print launchpad.people.get('not-a-registered-person')
-    None
-    >>> launchpad.people.get('not-a-registered-person', 'missing')
-    'missing'
 
 Besides a name and a display name, a person has many other attributes that you
 can read.

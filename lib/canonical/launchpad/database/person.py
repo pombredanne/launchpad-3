@@ -3410,6 +3410,13 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_person, team_id))
 
+        # Transfer the OpenIDRPSummaries to the new account.
+        cur.execute("""
+            UPDATE OpenIDRPSummary
+            SET account = %s
+            WHERE account = %s
+            """ % sqlvalues(to_person.account, from_person.account))
+
         # Flag the account as merged
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
@@ -3482,7 +3489,7 @@ class PersonSet:
             Person.id in (%s)
             ''' % branch_clause)
 
-    def getSubscribersForTargets(self, targets, recipients=None):
+    def getSubscribersForTargets(self, targets, recipients=None, level=None):
         """See `IPersonSet`. """
         if len(targets) == 0:
             return set()
@@ -3499,6 +3506,10 @@ class PersonSet:
                 else:
                     target_criteria_clauses.append(
                         '%s IS NULL' % key)
+            if level is not None:
+                target_criteria_clauses.append('bug_notification_level >= %s'
+                    % quote(level.value))
+
             target_criteria.append(
                 '(%s)' % ' AND '.join(target_criteria_clauses))
 

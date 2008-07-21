@@ -214,11 +214,10 @@ previous example.)
     >>> stevea_browser.getLink('Unsubscribe').click()
     >>> stevea_browser.getControl("Continue").click()
 
-  >>> for tag in find_tags_by_class(
-  ...     stevea_browser.contents, 'informational message'):
-  ...   print tag.renderContents()
-  You have been unsubscribed from this bug and 2 duplicates (<a...#1</a>, <a...#2</a>)...
-  This bug has 2 duplicates
+    >>> for tag in find_tags_by_class(
+    ...     stevea_browser.contents, 'informational message'):
+    ...   print tag.renderContents()
+    You have been unsubscribed from this bug and 2 duplicates (<a...#1</a>, <a...#2</a>)...
 
 (Let's undupe bug #1 from bug #3, since it's unneeded for the examples
 that follow.)
@@ -261,11 +260,10 @@ up in the indirect subscriptions.
   >>> subscription_field.value = ["ubuntu-team"]
   >>> foobar_browser.getControl("Continue").click()
 
-  >>> for tag in find_tags_by_class(
-  ...     foobar_browser.contents, 'informational message'):
-  ...   print tag.renderContents()
-  Ubuntu Team has been unsubscribed from this bug and 1 duplicate (<a...#2</a>)...
-  This bug has 1 duplicate
+    >>> for tag in find_tags_by_class(
+    ...     foobar_browser.contents, 'informational message'):
+    ...   print tag.renderContents()
+    Ubuntu Team has been unsubscribed from this bug and 1 duplicate (<a...#2</a>)...
 
 (ubuntu-team is no longer an indirect subscriber.)
 

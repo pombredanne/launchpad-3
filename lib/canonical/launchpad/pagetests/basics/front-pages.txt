@@ -1,0 +1,68 @@
+= Launchpad front pages =
+
+Launchpad's main front page includes, instead of application tabs,
+buttons for each of the main applications.
+
+  >>> browser.open('http://launchpad.dev/')
+  >>> browser.url
+  'http://launchpad.dev/'
+
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Join thousands of people...
+  ...Publish your code...
+  ...Is your project registered yet?...
+
+  >>> people_link = browser.getLink(url='/people')
+  >>> people_link.url
+  'http://launchpad.dev/people/'
+
+  >>> people_link.text
+  'people[IMG]'
+
+  >>> code_link = browser.getLink(url='code')
+  >>> code_link.url
+  'http://code.launchpad.dev/'
+
+  >>> code_link.text
+  'code[IMG]'
+
+It also includes a search form...
+
+  >>> '<input type="submit" value="Search"' in browser.contents
+  True
+
+...and lists of featured projects and marketing material.
+
+  >>> for tag in find_tags_by_class(browser.contents, 'three column right'):
+  ...     print extract_text(tag.renderContents())
+  Featured projects
+  ...
+  Ubuntu
+
+  >>> for tag in find_tags_by_class(browser.contents, 'three column left'):
+  ...     print extract_text(tag.renderContents())
+  What is Launchpad?
+  ...
+
+The front pages for the other applications, however, do have
+application tabs. On these pages, the tab normally named "Overview"
+is labelled "Launchpad Home" to make clear where it goes.
+
+    >>> anon_browser.open('http://code.launchpad.dev/')
+    >>> print_location_apps(anon_browser.contents)
+    * Launchpad Home (http://launchpad.dev/)
+    * Code (http://code.launchpad.dev/)
+    * Bugs (http://bugs.launchpad.dev/)
+    * Blueprints (http://blueprints.launchpad.dev/)
+    * Translations (http://translations.launchpad.dev/)
+    * Answers (http://answers.launchpad.dev/)
+
+    >>> user_browser.open('http://answers.launchpad.dev/')
+    >>> print_location_apps(user_browser.contents)
+    * Launchpad Home (http://launchpad.dev/)
+    * Code (http://code.launchpad.dev/)
+    * Bugs (http://bugs.launchpad.dev/)
+    * Blueprints (http://blueprints.launchpad.dev/)
+    * Translations (http://translations.launchpad.dev/)
+    * Answers (http://answers.launchpad.dev/)
