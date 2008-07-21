@@ -217,7 +217,8 @@ an error.
     <div...class="error message"...
     This project does not require a commercial subscription to be purchased...
 
-Any user can see that the project's license is open source.
+If the project's license is open source, the license status is not displayed
+on the index page, since most projects fall into this category.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents, 'license-status')
