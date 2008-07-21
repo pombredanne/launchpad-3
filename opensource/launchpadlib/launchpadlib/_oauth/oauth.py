@@ -511,7 +511,6 @@ class OAuthSignatureMethod_HMAC_SHA1(OAuthSignatureMethod):
 
 class OAuthSignatureMethod_PLAINTEXT(OAuthSignatureMethod):
 
-    @classmethod
     def get_name(self):
         return 'PLAINTEXT'
 

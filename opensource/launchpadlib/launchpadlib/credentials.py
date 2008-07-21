@@ -29,8 +29,7 @@ from urllib import urlencode
 
 from ConfigParser import SafeConfigParser
 from launchpadlib.errors import CredentialsFileError, HTTPError
-from launchpadlib._oauth.oauth import (
-    OAuthConsumer, OAuthSignatureMethod_PLAINTEXT, OAuthToken)
+from launchpadlib._oauth.oauth import OAuthConsumer, OAuthToken
 
 
 CREDENTIALS_FILE_VERSION = '1'
@@ -122,14 +121,16 @@ class Credentials:
         Also store the token in self._request_token. 
 
         This method must not be called on an object with no consumer
-        specified.
+        specified or if an access token has already been obtained.
 
-        :return: The `OAuthToken` provided by Launchpad.
+        :return: The URL for the user to authorize the `OAuthToken` provided
+            by Launchpad.
         """
         assert self.consumer is not None, "Consumer not specified."
+        assert self.access_token is None, "Access token already obtained."
         params = dict(
             oauth_consumer_key=self.consumer.key,
-            oauth_signature_method=OAuthSignatureMethod_PLAINTEXT.get_name(),
+            oauth_signature_method='PLAINTEXT',
             oauth_signature='&')
         url = WEB_ROOT + request_token_page
         response, content = httplib2.Http().request(
@@ -139,7 +140,7 @@ class Credentials:
         self._request_token = OAuthToken.from_string(content)
         url = '%s%s?oauth_token=%s' % (WEB_ROOT, authorize_token_page,
                                        self._request_token.key)
-        return self._request_token, url
+        return url
 
     def exchange_request_token_for_access_token(self):
         """Exchange the previously obtained request token for an access token.
@@ -153,7 +154,7 @@ class Credentials:
             "get_request_token() doesn't seem to have been called.")
         params = dict(
             oauth_consumer_key=self.consumer.key,
-            oauth_signature_method=OAuthSignatureMethod_PLAINTEXT.get_name(),
+            oauth_signature_method='PLAINTEXT',
             oauth_token=self._request_token.key,
             oauth_signature='&%s' % self._request_token.secret)
         url = WEB_ROOT + access_token_page
@@ -162,7 +163,6 @@ class Credentials:
         if response.status != 200:
             raise HTTPError(response, content)
         self.access_token = OAuthToken.from_string(content)
-        return self.access_token
 
 
 # These two classes are provided for convenience (so applications don't need

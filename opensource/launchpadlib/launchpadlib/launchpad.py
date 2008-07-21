@@ -120,7 +120,7 @@ def open_url_in_browser(url):
         browsers = ['x-www-browser', 'firefox']
     else:
         # Use www-browser if it exists, falling back to links.
-        browsers = ['www-browser', 'links']
+        browsers = ['www-browser', 'w3m', 'links', 'lynx']
     for browser in browsers:
         if not os.system('%s "%s" &' % (browser, url)):
             return
