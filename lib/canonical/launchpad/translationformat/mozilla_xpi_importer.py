@@ -8,7 +8,9 @@ __all__ = [
 
 import re
 import textwrap
+
 from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -48,7 +50,7 @@ class MozillaZipImportParser(MozillaZipFile):
         """Overridable hook for `MozillaZipFile`."""
         self.messages = []
 
-    def _complete(self):
+    def _finish(self):
         """Overridable hook for `MozillaZipFile`."""
         # Eliminate duplicate messages.
         seen_messages = set()
@@ -126,23 +128,23 @@ class MozillaZipImportParser(MozillaZipFile):
             # the value as a source comment.
             if self._isCommandKeyMessage(message):
                 comment = u'\n'.join(textwrap.wrap(
-                    u"Select the shortcut key that you want to use. It should"
-                    u" be translated, but often shortcut keys (for example"
-                    u" Ctrl + KEY) are not changed from the original. If a"
-                    u" translation already exists, please don't change it if"
-                    u" you are not sure about it. Please find the context of"
-                    u" the key from the end of the 'Located in' text below."))
+                    u"""Select the shortcut key that you want to use. It
+                    should be translated, but often shortcut keys (for
+                    example Ctrl + KEY) are not changed from the original. If
+                    a translation already exists, please don't change it if
+                    you are not sure about it. Please find the context of
+                    the key from the end of the 'Located in' text below."""))
                 add_source_comment(message, comment)
             elif self._isAccessKeyMessage(message):
                 comment = u'\n'.join(textwrap.wrap(
-                    u"Select the access key that you want to use. These have"
-                    u" to be translated in a way that the selected"
-                    u" character is present in the translated string of the"
-                    u" label being referred to, for example 'i' in 'Edit'"
-                    u" menu item in English. If a translation already"
-                    u" exists, please don't change it if you are not sure"
-                    u" about it. Please find the context of the key from the"
-                    u" end of the 'Located in' text below."))
+                    u"""Select the access key that you want to use. These have
+                    to be translated in a way that the selected character is
+                    present in the translated string of the label being
+                    referred to, for example 'i' in 'Edit' menu item in
+                    English. If a translation already exists, please don't
+                    change it if you are not sure about it. Please find the
+                    context of the key from the end of the 'Located in' text
+                    below."""))
                 add_source_comment(message, comment)
             self.messages.append(message)
 
@@ -442,7 +444,6 @@ class MozillaXpiImporter:
         self.distroseries = None
         self.sourcepackagename = None
         self.is_published = False
-        self.content = None
         self._translation_file = None
 
     def getFormat(self, file_contents):
@@ -471,11 +472,8 @@ class MozillaXpiImporter:
         self.is_published = translation_import_queue_entry.is_published
 
         librarian_client = getUtility(ILibrarianClient)
-        self.content = librarian_client.getFileByAlias(
-            translation_import_queue_entry.content.id)
-
-        # Before going into MozillaZipFile, extract metadata.
-        content = self.content.read()
+        content = librarian_client.getFileByAlias(
+            translation_import_queue_entry.content.id).read()
 
         parser = MozillaZipImportParser(self.basepath, content)
         if parser.header is None:

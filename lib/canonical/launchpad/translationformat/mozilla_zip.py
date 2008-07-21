@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 from os.path import splitext
-from StringIO import StringIO
+from cStringIO import StringIO
 from zipfile import ZipFile
 
 from canonical.launchpad.translationformat.xpi_header import XpiHeader
@@ -82,7 +82,7 @@ class MozillaZipFile:
         for entry in sorted(self.archive.namelist()):
             self._processEntry(entry, xpi_path)
 
-        self._complete()
+        self._finish()
 
     def _processEntry(self, entry, xpi_path):
         """Read one zip archive entry, figure out what to do with it."""
@@ -152,7 +152,7 @@ class MozillaZipFile:
             has just parsed the nested jar file.
         """
 
-    def _complete(self):
+    def _finish(self):
         """Overridable hook: post-traversal actions."""
 
 

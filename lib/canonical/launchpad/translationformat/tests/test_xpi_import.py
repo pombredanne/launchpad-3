@@ -3,6 +3,7 @@
 """Functional tests for XPI file format"""
 __metaclass__ = type
 
+import re
 import unittest
 
 from zope.component import getUtility
@@ -20,6 +21,11 @@ from canonical.launchpad.translationformat.tests.xpi_helpers import (
     command_key_source_comment,
     get_en_US_xpi_file_to_import,
     )
+
+
+def unwrap(text):
+    """Remove line breaks and any other wrapping artefacts from text."""
+    return re.sub('\s+', ' ', text.strip())
 
 
 class XpiTestCase(unittest.TestCase):
@@ -155,7 +161,8 @@ class XpiTestCase(unittest.TestCase):
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
                 self.assertEquals(
-                    message.sourcecomment.strip(), access_key_source_comment)
+                    unwrap(message.sourcecomment),
+                    unwrap(access_key_source_comment))
             elif message.msgid_singular.msgid == u'foozilla.menu.commandkey':
                 # command key is a special notation that is supposed to be
                 # translated with a key shortcut.
@@ -168,7 +175,8 @@ class XpiTestCase(unittest.TestCase):
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
                 self.assertEquals(
-                    message.sourcecomment.strip(), command_key_source_comment)
+                    unwrap(message.sourcecomment),
+                    unwrap(command_key_source_comment))
 
         # Check that we got all messages.
         self.assertEquals(
@@ -258,7 +266,8 @@ class XpiTestCase(unittest.TestCase):
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            potmsgset.sourcecomment.strip(), access_key_source_comment)
+            unwrap(potmsgset.sourcecomment),
+            unwrap(access_key_source_comment))
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(
@@ -274,7 +283,8 @@ class XpiTestCase(unittest.TestCase):
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            potmsgset.sourcecomment.strip(), command_key_source_comment)
+            unwrap(potmsgset.sourcecomment),
+            unwrap(command_key_source_comment))
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(
