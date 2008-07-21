@@ -1156,7 +1156,7 @@ class ProductReviewLicenseView(ProductAdminView):
         """Validate approval.
 
         A project can only be approved if it has OTHER_OPEN_SOURCE as one of
-        it's licenses and not OTHER_PROPRIETARY.
+        its licenses and not OTHER_PROPRIETARY.
         """
         licenses = self.context.licenses
         license_approved = data.get('license_approved', False)
@@ -1164,7 +1164,7 @@ class ProductReviewLicenseView(ProductAdminView):
             if License.OTHER_PROPRIETARY in licenses:
                 self.setFieldError(
                     'license_approved',
-                    'Proprietary projects may not be administratively '
+                    'Proprietary projects may not be manually '
                     'approved to use Launchpad.  Proprietary projects '
                     'must use the commercial subscription voucher system '
                     'to be allowed to use Launchpad.')
@@ -1172,7 +1172,11 @@ class ProductReviewLicenseView(ProductAdminView):
                 self.setFieldError(
                     'license_approved',
                     'Only "Other/Open Source" licenses may be '
-                    'administratively approved to use Launchpad.')
+                    'manually approved to use Launchpad.')
+            else:
+                # An Other/Open Source license was specified so it may be
+                # approved.
+                pass
 
     @property
     def next_url(self):

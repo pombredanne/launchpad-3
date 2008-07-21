@@ -195,9 +195,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _validate_license_approved(self, attr, value):
         """Ensure license approved is only applied to the correct licenses."""
+        # XXX: BradCrittenden 2008-07-16 Is the check for _SO_creating still
+        # needed for storm?
         if not self._SO_creating:
             licenses = self.licenses
-            if value is True:
+            if value:
                 assert (
                     License.OTHER_OPEN_SOURCE in licenses and
                     License.OTHER_PROPRIETARY not in licenses), (

@@ -120,6 +120,7 @@ the homepage:
     >>> print user_browser.url
     http://launchpad.dev/firefox/+subscribe
 
+
 = Licensing alerts =
 
 A project that has not set a license is marked as 'Unspecified'.
@@ -168,7 +169,6 @@ being shown as proprietary.
     >>> user_browser.open('http://launchpad.dev/thunderbird')
     >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
     '<...This project&lsquo;s license is proprietary...
-
 
 If the project doesn't have a license, a portlet is displayed
 to direct the owner to set a license.

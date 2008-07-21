@@ -136,3 +136,28 @@ First, add a product with a Other/Open Source license.
           This project&rsquo;s license has not been specified.
     &nbsp;Bazaar (Unspecified)
           This project&rsquo;s license has not been specified.
+
+If an open source project adds a proprietary license then the project
+will be displayed as proprietary.
+
+    >>> user_browser.open('http://launchpad.dev/other-open-source')
+    >>> user_browser.getLink('Change details').click()
+    >>> user_browser.getControl(name='field.licenses').value = [
+    ...     'OTHER_OPEN_SOURCE', 'OTHER_PROPRIETARY']
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.open('http://launchpad.dev/projects/+all')
+    >>> div = find_tag_by_id(user_browser.contents, 'product-listing')
+    >>> for subdiv in div.next.findNextSiblings('div'):
+    ...     pillar = subdiv.find()
+    ...     print ''.join(pillar.findAll(text=True))
+    ...     print '     ', pillar.get('title')
+    &nbsp;Other-Open-Source Product (Proprietary)
+          This project&lsquo;s license is proprietary.
+    &nbsp;Mega Money Maker (Proprietary)
+          This project&lsquo;s license is proprietary.
+    &nbsp;Derby
+          None
+    &nbsp;Redfish (Unspecified)
+          This project&rsquo;s license has not been specified.
+    &nbsp;Bazaar (Unspecified)
+          This project&rsquo;s license has not been specified.

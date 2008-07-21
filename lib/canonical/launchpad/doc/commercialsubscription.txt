@@ -140,13 +140,16 @@ if the product has License.OTHER_PROPRIETARY.
     >>> bzr.qualifies_for_free_hosting
     True
 
-The license_approved attribute is used to administratively approve an
+The license_approved attribute is used to manually approve an
 OTHER_OPEN_SOURCE license as being "good enough" to use Launchpad.  In
-other words, the license used is not one of our pre-approved open source
-licenses but an admin has reviewed it and determined it to be sufficient.
-The license_approved property can only be set on a product that has
-OTHER_OPEN_SOURCE as one of it's licenses and does not have
-OTHER_PROPRIETARY.
+other words, the license used is not one of our pre-approved open
+source licenses but an admin has reviewed it and determined it to be
+sufficient.  The license_approved property can only be set on a
+product that has OTHER_OPEN_SOURCE as one of its licenses and does not
+have OTHER_PROPRIETARY included as one of the licenses.  Note that the
+licenses specified are a set.  Including OTHER_PROPRIETARY makes the
+project *proprietary* from our perspective because it is not purely
+open source.
 
     >>> bzr.license_reviewed = True
     >>> bzr.license_approved = True
