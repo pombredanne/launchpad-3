@@ -130,6 +130,7 @@ First we need a named adapter to use:
 
     >>> provideAdapter(LabelledCookbook, [ICookbook], ILabelledCookbook,
     ...     name='foo')
+
     >>> print queryAdapter(cookbook, ILabelledCookbook)
     None
     >>> queryAdapter(cookbook, ILabelledCookbook, name='foo')
