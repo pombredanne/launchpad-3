@@ -297,7 +297,7 @@ class Branch(SQLBase):
     @property
     def warehouse_url(self):
         """See `IBranch`."""
-        return 'lp-internal:///%s' % self.unique_name
+        return 'lp-mirrored:///%s' % self.unique_name
 
     @property
     def product_name(self):

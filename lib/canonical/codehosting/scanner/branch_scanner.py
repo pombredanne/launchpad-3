@@ -40,7 +40,7 @@ class BranchScanner:
         branch_transport = get_chrooted_transport(
             config.supermirror.warehouse_root_url)
         return LaunchpadInternalServer(
-            'lp-internal:///', authserver, branch_transport)
+            'lp-mirrored:///', authserver, branch_transport)
 
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
