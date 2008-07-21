@@ -11,6 +11,8 @@
 >
   <body>
     <div metal:fill-slot="main" class="pillar">
+      <div class="section">
+
       <tal:mugshot replace="structure context/image:mugshot" />
       <div
         style="float:right"
@@ -53,6 +55,7 @@
         </p>
       </tal:launchpad_usage>
 
+      </div>
       <div class="section">
         <h2>Packages</h2>
 

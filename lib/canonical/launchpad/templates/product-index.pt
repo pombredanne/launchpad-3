@@ -29,6 +29,8 @@
     (<a href="+review-license">edit reviewer whiteboard</a>)
   </p>
 
+    <div class="section">
+
   <tal:mugshot replace="structure context/image:mugshot" />
 
   <h1 tal:content="context/title">Name of project</h1>
@@ -152,6 +154,8 @@
                     replace="structure link/render"/>
   </div>
 
+    </div>
+
       <tal:activate-feature
         tal:define="config modules/canonical.config/config"
         condition="config/commercial/is_subscription_feature_active">
@@ -177,8 +181,9 @@
         </tal:warning-for-owner>
       </tal:activate-feature>
       <div
-        class="section"
+        tal:condition="context/coming_sprints"
         tal:content="structure context/@@+portlet-coming-sprints"
+        class="section"
       />
       <div
         class="section"
