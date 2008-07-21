@@ -17,6 +17,7 @@ On the Code site, registered branches are reached by
 /<owner>/<product>/<branch-name>.
 
     >>> user_browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
+    >>> assert find_tag_by_id(user_browser.contents, 'merge-summary') is None
     >>> revisions = find_tag_by_id(user_browser.contents, 'recent-revisions')
 
 
