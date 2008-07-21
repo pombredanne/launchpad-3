@@ -126,12 +126,12 @@ First, add a product with a proprietary license.
     ...     print ''.join(pillar.findAll(text=True))
     ...     print '     ', pillar.get('title')
     &nbsp;Proprietary Product (Proprietary)
-          This project&lsquo;s license is proprietary.
+          This project&rsquo;s license is proprietary.
     &nbsp;Mega Money Maker (Proprietary)
-          This project&lsquo;s license is proprietary.
+          This project&rsquo;s license is proprietary.
     &nbsp;Derby
           None
     &nbsp;Redfish (Unreviewed)
-          This project&lsquo;s license has not been reviewed.
+          This project&rsquo;s license has not been reviewed.
     &nbsp;Bazaar (Unreviewed)
-          This project&lsquo;s license has not been reviewed.
+          This project&rsquo;s license has not been reviewed.

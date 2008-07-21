@@ -126,7 +126,7 @@ Any user can see that the project's license has not been reviewed.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
-    '<...This project&lsquo;s license has not been reviewed...
+    '<...This project&rsquo;s license has not been reviewed...
 
 If the project doesn't have a license, a portlet is displayed
 to direct the owner to set a license.
@@ -136,7 +136,7 @@ to direct the owner to set a license.
     >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> owner_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents, 'license-status')
-    <...This project&lsquo;s license has not been reviewed...
+    <...This project&rsquo;s license has not been reviewed...
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-requires-subscription')
     None
@@ -161,7 +161,7 @@ is displayed to direct the owner to purchase a subscription.
     >>> transaction.commit()
     >>> owner_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents, 'license-status')
-    <...This project&lsquo;s license is proprietary...
+    <...This project&rsquo;s license is proprietary...
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-requires-subscription')
     <div...Purchasing a subscription is required...</div>
@@ -182,7 +182,7 @@ Any user can see that the project's license is proprietary.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
-    '<...This project&lsquo;s license is proprietary...
+    '<...This project&rsquo;s license is proprietary...
 
 A non-owner does not see that a commercial subscription is due,
 and the +purchase-subscription page will display an error. A user would
