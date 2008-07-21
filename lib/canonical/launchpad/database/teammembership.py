@@ -627,6 +627,10 @@ def _cleanTeamParticipation(member, team):
             )
         )"""
     for superteam in superteams:
+        if member in superteam.activemembers:
+            # The member is a direct member of this superteam, so
+            # don't even attempt to kick the member from the superteam.
+            continue
         replacements.update(dict(superteam_id=superteam.id))
         cur.execute(query % replacements)
 
