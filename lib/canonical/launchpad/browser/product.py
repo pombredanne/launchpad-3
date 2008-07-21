@@ -1579,9 +1579,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         'driver',
         ]
 
-    def __init__(self, context, request):
-        super(ProductEditPeopleView, self).__init__(context, request)
-
     def existing_checked_value(self):
         """Preserve form checkbox value across submits."""
         if self.request.form.get('existing') == 'new':
