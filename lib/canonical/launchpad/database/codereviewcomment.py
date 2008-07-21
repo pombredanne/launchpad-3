@@ -18,12 +18,14 @@ from canonical.launchpad.interfaces import (
     ICodeReviewComment,
     ICodeReviewCommentDeletion,
     )
+from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 
 
 class CodeReviewComment(SQLBase):
     """A table linking branch merge proposals and messages."""
 
-    implements(ICodeReviewComment, ICodeReviewCommentDeletion)
+    implements(IBranchNavigationMenu, ICodeReviewComment,
+        ICodeReviewCommentDeletion)
 
     _table = 'CodeReviewMessage'
 

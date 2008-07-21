@@ -65,7 +65,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser"
-        classes="BranchContextMenu" />
+        classes="BranchContextMenu BranchNavigationMenu" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBranch"
