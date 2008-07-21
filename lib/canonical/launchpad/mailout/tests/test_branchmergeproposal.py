@@ -61,6 +61,7 @@ Baz Qux has proposed merging foo into bar.
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
+             'X-Launchpad-Project': bmp.source_branch.product.name,
              'Reply-To': bmp.address},
             headers)
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)

@@ -196,13 +196,13 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
         self.assertNoJobSelected()
 
 
-class ReclaimableJobTestMixin:
+class ReclaimableJobTests(TestCaseWithFactory):
     """Helpers for tests that need to create reclaimable jobs."""
 
     LIMIT = config.codeimportworker.maximum_heartbeat_interval
 
     def setUp(self):
-        super(ReclaimableJobTestMixin, self).setUp()
+        super(ReclaimableJobTests, self).setUp()
         login_for_code_imports()
         for job in CodeImportJob.select():
             job.destroySelf()
@@ -222,7 +222,7 @@ class ReclaimableJobTestMixin:
             set(getUtility(ICodeImportJobSet).getReclaimableJobs()))
 
 
-class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTestMixin):
+class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTests):
     """Tests for the CodeImportJobSet.getReclaimableJobs method."""
 
     layer = LaunchpadFunctionalLayer
@@ -255,7 +255,7 @@ class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTestMixin):
         self.assertReclaimableJobs([stale_job])
 
 
-class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTestMixin):
+class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTests):
     """Test that getJobForMachine gardens stale code import jobs."""
 
     layer = LaunchpadFunctionalLayer
@@ -266,8 +266,11 @@ class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTestMixin):
         stale_job = self.makeJobWithHeartbeatInPast(self.LIMIT*2)
         # We assume that this is the only reclaimable job.
         self.assertReclaimableJobs([stale_job])
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        login(ANONYMOUS)
         job = getUtility(ICodeImportJobSet).getJobForMachine(
-            self.machine.hostname)
+            machine.hostname)
+        login_for_code_imports()
         # Now there are no reclaimable jobs.
         self.assertReclaimableJobs([])
 
