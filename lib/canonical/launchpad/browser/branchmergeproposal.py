@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchMergeCandidateView',
     'BranchMergeProposalSOP',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
@@ -103,6 +104,24 @@ class BranchMergeProposalSOP(StructuralObjectPresentation):
     def getMainHeading(self):
         """See `IStructuralHeaderPresentation`."""
         return self.delegate.getMainHeading()
+
+
+class BranchMergeCandidateView(LaunchpadView):
+    """Provides a small fragment of landing targets"""
+
+    def friendly_text(self):
+        """Prints friendly text for a branch."""
+        friendly_texts = {
+            BranchMergeProposalStatus.WORK_IN_PROGRESS : 'On hold',
+            BranchMergeProposalStatus.NEEDS_REVIEW : 'Ready for review',
+            BranchMergeProposalStatus.CODE_APPROVED : 'Approved',
+            BranchMergeProposalStatus.REJECTED : 'Rejected',
+            BranchMergeProposalStatus.MERGED : 'Merged',
+            BranchMergeProposalStatus.MERGE_FAILED : 'Approved [Merge Failed]',
+            BranchMergeProposalStatus.QUEUED : 'Queued',
+            BranchMergeProposalStatus.SUPERSEDED : 'Superseded'
+            }
+        return friendly_texts[self.context.queue_status]
 
 
 class BranchMergeProposalContextMenu(ContextMenu):
