@@ -715,14 +715,15 @@ class LaunchpadServer(Server):
 
 class LaunchpadInternalServer(LaunchpadServer):
 
-    def __init__(self, authserver, branch_transport):
+    def __init__(self, scheme, authserver, branch_transport):
         super(LaunchpadInternalServer, self).__init__(
             authserver, LAUNCHPAD_SERVICES, branch_transport,
             branch_transport)
         self._backing_transport = self._mirror_transport
+        self._scheme = scheme
 
     def get_url(self):
-        return 'lp-internal:///'
+        return self._scheme
 
 
 class VirtualTransport(Transport):

@@ -260,7 +260,8 @@ class TestLaunchpadInternalServer(TestLaunchpadServer):
         self.authserver = FakeLaunchpad()
         self.branch_transport = MemoryTransport()
         self.server = LaunchpadInternalServer(
-            BlockingProxy(self.authserver), self.branch_transport)
+            'lp-internal:///', BlockingProxy(self.authserver),
+            self.branch_transport)
 
     def test_get_url(self):
         # Rather than the magic per-instance URL of the standard
