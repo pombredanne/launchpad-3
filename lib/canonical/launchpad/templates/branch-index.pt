@@ -14,6 +14,9 @@
   .logtail {
     padding-left: 2em;
   }
+  #merge-summary {
+    margin: 1em 0;
+  }
 </style>
 
 <body>
@@ -44,6 +47,12 @@
           <td><tal:link replace="structure context/product/fmt:link" /></td>
         </tr>
       </tal:not-junk-branch>
+      <tr>
+        <th>Status:</th>
+        <td
+          tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
+          tal:content="context/lifecycle_status/title" />
+      </tr>
       <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
         <tr><th>Location:</th><td tal:content="view/mirror_location" /></tr>
         <tal:mirror-failures tal:replace="structure context/@@+mirror-status" />
@@ -245,60 +254,55 @@
     </div>
   </tal:imported-branch>
 
-  <tal:whiteboard condition="context/whiteboard">
+  <div condition="context/product" id="merge-summary">
+    <div id="landing-candidates">
+      &laquo;
+      <a href="+merges" tal:content="structure view/landing_candidate_count_text">
+        1 branch
+      </a>
+      proposed for merging into this one.
+    </div>
+
+    <div id="dependent-branches" tal:condition="context/dependent_branches">
+      &laquo;
+      <a href="+merges" tal:content="structure view/dependent_branch_count_text">
+        1 branch
+      </a>
+      dependent on this one.
+    </div>
+
+    <div id="landing-targets" tal:condition="view/landing_targets">
+      <tal:landing-candidates repeat="mergeproposal view/landing_targets">
+        <tal:merge-fragment tal:replace="structure mergeproposal/@@+link-summary" />
+      </tal:landing-candidates>
+    </div>
+    <div tal:condition="not:view/landing_targets">
+      &raquo;
+      Not proposed for merging
+    </div>
+
+
+    <div
+      tal:define="link context/menu:context/register_merge"
+      tal:condition="link/enabled"
+      tal:replace="structure link/render"
+    />
+  </div>
+
+  <div id="whiteboard">
     <h2>Whiteboard</h2>
     <div id="branch-whiteboard-value"
+      tal:condition="context/whiteboard"
       tal:content="structure context/whiteboard/fmt:text-to-html">
       Whiteboard text goes here.
     </div>
-  </tal:whiteboard>
-
-  <div id="dependent-branches" tal:condition="context/dependent_branches">
-    <h2>Dependent branches</h2>
-
-    <tal:proposals repeat="mergeproposal context/dependent_branches">
-      <tal:dependent-branch
-          define="branch mergeproposal/source_branch;
-                  show_status python:True;
-                  show_whiteboard python:True;
-                  ">
-        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
-      </tal:dependent-branch>
-    </tal:proposals>
   </div>
 
-  <div id="landing-targets" tal:condition="view/landing_targets">
-    <h2>This branch is proposed for merging into</h2>
-
-    <tal:proposals repeat="mergeproposal view/landing_targets">
-      <tal:landing-target
-          define="branch mergeproposal/target_branch;
-                  dependent_branch mergeproposal/dependent_branch;
-                  show_status python:True;
-                  show_whiteboard python:True;
-                  ">
-        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
-      </tal:landing-target>
-    </tal:proposals>
-  </div>
-
-  <div id="landing-candidates" tal:condition="view/latest_landing_candidates">
-    <h2>Branches proposed to be merged into this one</h2>
-
-    <tal:proposals repeat="mergeproposal view/latest_landing_candidates">
-      <tal:landing-candidate
-          define="branch mergeproposal/source_branch;
-                  show_whiteboard python:True;
-                  show_status python:True;
-                  show_associations python:True;
-                  show_lifecycle python:True;
-                  ">
-        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
-      </tal:landing-candidate>
-    </tal:proposals>
-    <tal:show-link condition="view/show_candidate_more_link">
-      <a href="+landing-candidates">more&#8230;</a>
-    </tal:show-link>
+  <div
+    tal:define="link context/menu:context/whiteboard"
+    tal:condition="link/enabled"
+    tal:content="structure link/render">
+    Edit whiteboard
   </div>
 
   <div id="related-bugs-and-blueprints">
