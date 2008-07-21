@@ -127,12 +127,14 @@
 
   <div>
     <strong>Licenses:</strong>
-    <ul tal:repeat="license context/licenses">
-      <li tal:content="license/title">GPL</li>
-    </ul>
+    <tal:licenses repeat="license context/licenses">
+      <tal:license replace="license/title">GPL</tal:license><tal:comma
+      condition="not:repeat/license/end">,</tal:comma>
+    </tal:licenses>
     <tal:none condition="not:context/licenses">None specified</tal:none>
-    <div class="description"
-         tal:content="structure context/license_info/fmt:text-to-html" />
+    <tal:has_description condition="context/license_info">
+      (<tal:description replace="context/license_info" />)
+    </tal:has_description>
   </div>
 
   <div class="actions">
