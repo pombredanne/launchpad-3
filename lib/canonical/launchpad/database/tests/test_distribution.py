@@ -34,11 +34,14 @@ class TestDistributionCurrentSourceReleases(
         # published in a earlier or later series.
         self.current_series = self.factory.makeDistroRelease(
             self.distribution, '1.0', status=DistroSeriesStatus.CURRENT)
-        self.publish('0.9', distroseries=self.current_series)
-        self.publish('1.0', distroseries=self.development_series)
+        self.publisher.getPubSource(
+            version='0.9', distroseries=self.current_series)
+        self.publisher.getPubSource(
+            version='1.0', distroseries=self.development_series)
         self.assertCurrentVersion('1.0')
 
-        self.publish('1.1', distroseries=self.current_series)
+        self.publisher.getPubSource(
+            version='1.1', distroseries=self.current_series)
         self.assertCurrentVersion('1.1')
 
 
