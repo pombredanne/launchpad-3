@@ -26,11 +26,41 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, PackagePublishingPocket, PackagePublishingPriority,
     PackagePublishingStatus, SourcePackageUrgency)
 from canonical.launchpad.scripts import FakeLogger
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
 class SoyuzTestPublisher:
     """Helper class able to publish coherent source and binaries in Soyuz."""
+
+    def __init__(self):
+        self.factory = LaunchpadObjectFactory()
+        self.default_package_name = 'foo'
+
+    def setUpDefaultDistroSeries(self, distroseries=None):
+        """Set up a distroseries that will be used by default.
+
+        This distro series is used to publish packages in, if you don't
+        specify any when using the publishing methods.
+
+        It also sets up a person that can act as the default uploader,
+        and makes sure that the default package name exists in the
+        database.
+
+        :param distroseries: The `IDistroSeries` to use as default. If
+            it's None, one will be created.
+        :return: The `IDistroSeries` that got set as default.
+        """
+        if distroseries is None:
+            distroseries = self.factory.makeDistroRelease()
+        self.distroseries = distroseries
+        # Set up a person that has a GPG key.
+        self.person = getUtility(IPersonSet).getByName('name16')
+        # Make sure the name exists in the database, to make it easier
+        # to get packages from distributions and distro series.
+        name_set = getUtility(ISourcePackageNameSet)
+        name_set.getOrCreateByName(self.default_package_name)
+        return self.distroseries
 
     def prepareBreezyAutotest(self):
         """Prepare ubuntutest/breezy-autotest for publications.
@@ -39,7 +69,7 @@ class SoyuzTestPublisher:
         """
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
-        self.person = getUtility(IPersonSet).getByName('name16')
+        self.setUpDefaultDistroSeries(self.breezy_autotest)
         self.breezy_autotest_i386 = self.breezy_autotest.newArch(
             'i386', ProcessorFamily.get(1), False, self.person,
             supports_virtualized=True)
@@ -53,7 +83,7 @@ class SoyuzTestPublisher:
     def addFakeChroots(self, distroseries=None):
         """Add fake chroots for all the architectures in distroseries."""
         if distroseries is None:
-            distroseries = self.breezy_autotest
+            distroseries = self.distroseries
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         for arch in distroseries.architectures:
             arch.addOrUpdateChroot(fake_chroot)
@@ -75,7 +105,7 @@ class SoyuzTestPublisher:
             'application/text', restricted=restricted)
         return library_file
 
-    def getPubSource(self, sourcename='foo', version='666', component='main',
+    def getPubSource(self, sourcename=None, version='666', component='main',
                      filename=None, section='base',
                      filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
@@ -88,15 +118,17 @@ class SoyuzTestPublisher:
                      dsc_binaries='foo-bin', build_conflicts=None,
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
-                     maintainer=None):
+                     maintainer=None, date_uploaded=UTC_NOW):
         """Return a mock source publishing record."""
+        if sourcename is None:
+            sourcename = self.default_package_name
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
 
         component = getUtility(IComponentSet)[component]
         section = getUtility(ISectionSet)[section]
 
         if distroseries is None:
-            distroseries = self.breezy_autotest
+            distroseries = self.distroseries
         if archive is None:
             archive = distroseries.main_archive
         if maintainer is None:
@@ -123,7 +155,7 @@ class SoyuzTestPublisher:
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
-            archive=archive)
+            archive=archive, dateuploaded=date_uploaded)
 
         if filename is None:
             filename = "%s.dsc" % sourcename
@@ -137,7 +169,7 @@ class SoyuzTestPublisher:
             component=spr.component,
             section=spr.section,
             status=status,
-            datecreated=UTC_NOW,
+            datecreated=date_uploaded,
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
@@ -162,7 +194,7 @@ class SoyuzTestPublisher:
                        pub_source=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
-            distroseries = self.breezy_autotest
+            distroseries = self.distroseries
 
         if archive is None:
             archive = distroseries.main_archive
@@ -281,6 +313,10 @@ class SoyuzTestPublisher:
 class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
     layer = LaunchpadZopelessLayer
     dbuser = config.archivepublisher.dbuser
+
+    def __init__(self, methodName='runTest'):
+        unittest.TestCase.__init__(self, methodName=methodName)
+        SoyuzTestPublisher.__init__(self)
 
     def setUp(self):
         """Setup a pool dir, the librarian, and instantiate the DiskPool."""

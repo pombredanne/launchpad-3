@@ -20,6 +20,8 @@ from canonical.launchpad.interfaces.person import (
 from canonical.launchpad.interfaces.teammembership import (
     CyclicalTeamMembershipError, ITeamMembershipSet, TeamMembershipStatus)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.testing.systemdocs import (
+    default_optionflags, LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -468,5 +470,9 @@ class TestCheckTeamParticipationScript(unittest.TestCase):
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
+    suite = unittest.TestLoader().loadTestsFromName(__name__)
+    bug_249185 = LayeredDocFileSuite(
+        'bug-249185.txt', optionflags=default_optionflags,
+        layer=LaunchpadFunctionalLayer, setUp=setUp, tearDown=tearDown)
+    suite.addTest(bug_249185)
+    return suite

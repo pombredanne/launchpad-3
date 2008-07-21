@@ -25,10 +25,12 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
+from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.person import IPerson
@@ -206,21 +208,25 @@ class IBug(IMessageTarget, ICanBeMentored):
         exported_as='bug_watches')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
-    subscriptions = exported(CollectionField(
-        title=_('Subscriptions.'),
-        value_type=Reference(schema=Interface),
-        readonly=True))
+    subscriptions = exported(
+        CollectionField(
+            title=_('Subscriptions.'),
+            value_type=Reference(schema=Interface),
+            readonly=True))
     duplicates = exported(
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
             value_type=BugField(), readonly=True))
-    attachments = Attribute("List of bug attachments.")
+    attachments = exported(
+        CollectionField(
+            title=_("List of bug attachments."),
+            value_type=Reference(schema=IBugAttachment),
+            readonly=True))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     bug_branches = Attribute(
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
-
     tags = exported(
         List(title=_("Tags"), description=_("Separated by whitespace."),
              value_type=Tag(), required=False))
@@ -373,12 +379,18 @@ class IBug(IMessageTarget, ICanBeMentored):
         Returns an IBugBranch.
         """
 
-    def addAttachment(owner, file_, description, comment, filename,
-                      is_patch=False):
+    @call_with(owner=REQUEST_USER)
+    @operation_parameters(
+        data=Bytes(constraint=bug_attachment_size_constraint),
+        comment=Text(), filename=TextLine(), is_patch=Bool(),
+        content_type=TextLine(), description=Text())
+    @export_factory_operation(IBugAttachment, [])
+    def addAttachment(owner, data, comment, filename, is_patch=False,
+                      content_type=None, description=None):
         """Attach a file to this bug.
 
         :owner: An IPerson.
-        :file_: A file-like object.
+        :data: A file-like object, or a `str`.
         :description: A brief description of the attachment.
         :comment: An IMessage or string.
         :filename: A string.
@@ -527,9 +539,10 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no such bugtask is found.
         """
 
-
-# We are forced to define this now to avoid circular import problems.
+# We are forced to define these now to avoid circular import problems.
+IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug
+IMessage['bugs'].value_type.schema = IBug
 
 # In order to avoid circular dependencies, we only import
 # IBugSubscription (which itself imports IBug) here, and assign it as

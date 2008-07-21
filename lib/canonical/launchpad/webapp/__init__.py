@@ -29,8 +29,6 @@ __all__ = [
     'Navigation',
     'NavigationMenu',
     'nearest',
-    'nearest_adapter',
-    'nearest_context_with_adapter',
     'redirection',
     'safe_action',
     'sorted_dotted_numbers',
@@ -56,8 +54,7 @@ from canonical.launchpad.webapp.launchpadform import (
     safe_action)
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, ContextMenu, FacetMenu, Link, NavigationMenu,
-    enabled_with_permission, nearest_adapter, nearest_context_with_adapter,
-    structured)
+    enabled_with_permission, structured)
 from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
     canonical_name, canonical_url, nearest, LaunchpadView, Navigation,

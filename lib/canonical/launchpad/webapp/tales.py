@@ -54,8 +54,7 @@ from canonical.launchpad.webapp.interfaces import (
     NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import (
-    canonical_url, nearest_context_with_adapter, nearest_adapter)
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
@@ -64,6 +63,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
+from canonical.lazr.canonicalurl import (nearest_adapter,
+    nearest_context_with_adapter)
 
 def escape(text, quote=True):
     """Escape text for insertion into HTML.
@@ -2522,6 +2523,7 @@ class PageMacroDispatcher:
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                applicationtabs=True,
                 globalsearch=True,
                 pageheading=False,
                 heading=True),
