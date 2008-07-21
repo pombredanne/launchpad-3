@@ -212,12 +212,14 @@
 
         <div
           class="section"
-          tal:content="structure context/@@+portlet-top-contributors"
-        />
-        <div class="actions"
-          tal:define="link context/menu:overview/top_contributors"
-          tal:content="structure link/render"
-        />
+          tal:condition="view/getTopFiveContributors"
+        >
+          <tal:list replace="structure context/@@+portlet-top-contributors" />
+          <div class="actions"
+            tal:define="link context/menu:overview/top_contributors"
+            tal:content="structure link/render"
+          />
+        </div>
         <div
           class="section"
           tal:content="structure context/@@+portlet-packages"
