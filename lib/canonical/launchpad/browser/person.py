@@ -43,11 +43,11 @@ __all__ = [
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
     'PersonOwnedBranchesView',
-    'PersonRelatedSoftwareView',
     'PersonRdfView',
     'PersonRdfContentsView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
+    'PersonRelatedSoftwareView',
     'PersonSearchQuestionsView',
     'PersonSetContextMenu',
     'PersonSetFacets',
@@ -4337,6 +4337,9 @@ class PersonRelatedSoftwareView(LaunchpadView):
     def relatedProjects(self):
         """Return projects owned or driven by this person up to the maximum
         configured."""
+        # XXX mars 2008-07-21
+        # This should return a dictionary.  We are doing a lot of unnecessary
+        # work.  See bug #250612.
         return list(self._related_projects()[:self.max_results_to_display])
 
     @cachedproperty

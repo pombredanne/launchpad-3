@@ -15,10 +15,8 @@ team.
 The +related-software page displays a table with links to open bugs,
 unimplemented specs and open questions.
 
-    >>> anon_browser.getLink('List related projects')
-    <Link
-        text='List related projects'
-        url='http://launchpad.dev/~ubuntu-team/+related-software#projects'>
+    >>> print anon_browser.getLink('List related projects').url
+    http://launchpad.dev/~ubuntu-team/+related-software#projects
 
     # XXX mars 2008-07-16
     # Visit the page directly to prevent the testbrowser from mucking with

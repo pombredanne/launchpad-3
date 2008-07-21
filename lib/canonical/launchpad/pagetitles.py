@@ -940,8 +940,6 @@ def person_mergeproposals(context, view):
 
 person_oauth_tokens = "Applications you authorized to access Launchpad"
 
-person_related_software = ContextDisplayName('Software related to %s')
-
 person_packagebugs = ContextDisplayName("%s's package bug reports")
 
 person_packagebugs_overview = person_packagebugs
@@ -949,6 +947,8 @@ person_packagebugs_overview = person_packagebugs
 person_packagebugs_search = person_packagebugs
 
 person_participation = ContextTitle("Team participation by %s")
+
+person_related_software = ContextDisplayName('Software related to %s')
 
 person_review = ContextDisplayName("Review %s")
 

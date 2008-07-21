@@ -96,9 +96,9 @@
 
     <p tal:condition="view/tooManyRelatedProjectsFound"
       class="limit-encountered">
-      <span tal:replace="view/related_projects_count" /> projects are related
-      to <span tal:replace="context/displayname" />. Displaying only the first
-      <span tal:replace="view/max_results_to_display" />:
+      <tal:project-count replace="view/related_projects_count" /> projects are
+      related to <tal:name replace="context/displayname" />. Displaying only
+      the first <tal:max-results replace="view/max_results_to_display" />:
     </p>
 
     <table tal:condition="view/relatedProjects"
