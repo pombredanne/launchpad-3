@@ -2528,6 +2528,7 @@ class PageMacroDispatcher:
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                applicationtabs=True,
                 globalsearch=True,
                 pageheading=False,
                 heading=True),

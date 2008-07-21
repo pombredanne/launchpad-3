@@ -16,14 +16,8 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>OpenPGP keys</h1>
-    </metal:heading>
-
-  <metal:leftportlets fill-slot="portlets_two">
-  </metal:leftportlets>
-
   <div metal:fill-slot="main">
+    <h1>Change your OpenPGP keys</h1>
 
     <p tal:condition="view/error_message"
        tal:content="structure view/error_message" class="error message"

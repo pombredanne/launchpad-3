@@ -259,9 +259,6 @@ def canonical_urldata_iterator(obj):
 
     Raises NoCanonicalUrl if canonical url data is not available.
     """
-    # XXX mars 2008-07-17
-    # This function should be moved into lazr.canonicalurl.
-    # See bug #185958.
     current_object = obj
     urldata = None
     # The while loop is to proceed the first time around because we're
@@ -280,9 +277,6 @@ def canonical_url_iterator(obj):
 
     Raises NoCanonicalUrl if a canonical url is not available.
     """
-    # XXX mars 2008-07-17
-    # This function should be moved into lazr.canonicalurl.
-    # See bug #185958.
     yield obj
     for urldata in canonical_urldata_iterator(obj):
         if urldata.inside is not None:
@@ -318,9 +312,6 @@ def canonical_url(
         rather than the default view.
     :raises: NoCanonicalUrl if a canonical url is not available.
     """
-    # XXX mars 2008-07-17
-    # This function should be moved into lazr.canonicalurl.
-    # See bug #185958.
     urlparts = [urldata.path
                 for urldata in canonical_urldata_iterator(obj)
                 if urldata.path]
@@ -451,9 +442,6 @@ def nearest(obj, *interfaces):
 
     Return None is no suitable object is found.
     """
-    # XXX mars 2008-07-17
-    # This function should be moved into lazr.canonicalurl.
-    # See bug #185958.
     for current_obj in canonical_url_iterator(obj):
         for interface in interfaces:
             if interface.providedBy(current_obj):
@@ -727,12 +715,9 @@ class RenamedView:
         self.rootsite = rootsite
 
     def __call__(self):
-        context_url = canonical_url(self.context, rootsite=self.rootsite)
-        # Prevents double slashes on the root object.
-        if context_url.endswith('/'):
-            target_url = "%s%s" % (context_url, self.new_name)
-        else:
-            target_url = "%s/%s" % (context_url, self.new_name)
+        target_url = "%s/%s" % (
+            canonical_url(self.context, rootsite=self.rootsite),
+            self.new_name)
 
         query_string = self.request.get('QUERY_STRING', '')
         if query_string:

@@ -7,6 +7,10 @@ __metaclass__ = type
 __all__ = ['nearest_adapter', 'nearest_context_with_adapter']
 
 from zope.component import queryAdapter
+
+# XXX mars 2008-07-17
+# This function should be moved into lazr.canonicalurl.
+# See bug #185958.
 from canonical.launchpad.webapp.publisher import canonical_url_iterator
 
 
@@ -31,9 +35,6 @@ def nearest_adapter(obj, interface, name=u''):
 
     The function looks upward though the canonical url chain and returns
     the first adapter it finds.
-
-    This will often be used with an interface of IFacetMenu, when looking up
-    the facet menu for a particular context.
 
     :return None: if there is no object that has such an adapter in the url
         chain.
