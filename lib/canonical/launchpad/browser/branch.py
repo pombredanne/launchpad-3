@@ -195,22 +195,22 @@ class BranchContextMenu(ContextMenu):
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
-        text = 'Browse revisions'
+        text = 'Older revisions'
         enabled = self.context.code_is_browseable
         url = (config.codehosting.codebrowse_root
                + self.context.unique_name
                + '/changes')
-        return Link(url, text, icon='info', enabled=enabled)
+        return Link(url, text, enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
     def subscription(self):
         if self.context.hasSubscription(self.user):
             url = '+edit-subscription'
-            text = 'Edit subscription'
+            text = 'Edit your subscription'
             icon = 'edit'
         else:
             url = '+subscribe'
-            text = 'Subscribe'
+            text = 'Subscribe yourself'
             icon = 'add'
         return Link(url, text, icon=icon)
 
@@ -225,10 +225,10 @@ class BranchContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
-        text = 'Propose for merging'
+        text = 'Propose for merging into another branch'
         # It is not valid to propose a junk branch for merging.
         enabled = self.context.product is not None
-        return Link('+register-merge', text, icon='edit', enabled=enabled)
+        return Link('+register-merge', text, icon='add', enabled=enabled)
 
     def landing_candidates(self):
         text = 'View landing candidates'
@@ -360,6 +360,25 @@ class BranchView(LaunchpadView, FeedsMixin):
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
         return [DecoratedMergeProposal(proposal) for proposal in candidates]
+
+    def _getBranchCountText(self, count):
+        """Help to show user friendly text."""
+        if count == 0:
+            return 'No branches'
+        elif count == 1:
+            return '1 branch'
+        else:
+            return '%s branches' % count
+
+    @cachedproperty
+    def dependent_branch_count_text(self):
+        branch_count = self.context.dependent_branches.count()
+        return self._getBranchCountText(branch_count)
+
+    @cachedproperty
+    def landing_candidate_count_text(self):
+        branch_count = self.context.landing_candidates.count()
+        return self._getBranchCountText(branch_count)
 
     @property
     def show_candidate_more_link(self):
@@ -950,6 +969,7 @@ class BranchSubscriptionsView(LaunchpadView):
     def owner_is_registrant(self):
         """Return whether or not owner is the same as the registrant"""
         return self.context.owner == self.context.registrant
+
 
 class BranchMergeQueueView(LaunchpadView):
     """The view used to render the merge queue for a branch."""

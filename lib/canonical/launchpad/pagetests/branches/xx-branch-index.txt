@@ -17,6 +17,7 @@ On the Code site, registered branches are reached by
 /<owner>/<product>/<branch-name>.
 
     >>> user_browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
+    >>> assert find_tag_by_id(user_browser.contents, 'merge-summary') is None
     >>> revisions = find_tag_by_id(user_browser.contents, 'recent-revisions')
 
 
@@ -166,6 +167,7 @@ for the branch's canonical location.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(get_branch_details_table())
     Project: GNOME Terminal (Unreviewed)
+    Status: New
     Upload URL: Only Sample Person can upload to this branch.
       If you are Sample Person please log in for upload directions.
     Branch format: Not recorded
@@ -268,7 +270,7 @@ link is shown.
 In addition, there is a "Browse revisions" link that links to the
 changelog view in codebrowse.
 
-    >>> print browser.getLink('Browse revisions').url
+    >>> print browser.getLink('Older revisions').url
     http://bazaar.launchpad.dev/~name12/+junk/junk.dev/changes
 
 If the branch is private, the browse code link is not shown.
@@ -310,6 +312,7 @@ So we need to fake that here.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
     Project: The Landscape Project (Unreviewed)
+    Status: New
     Get this branch:
       bzr branch lp://dev/~landscape-developers/landscape/trunk
     ...
@@ -321,6 +324,7 @@ Public branches use the lp spec bzr lookup name.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
     Project: GNOME Terminal (Unreviewed)
+    Status: New
     Get this branch: bzr branch lp://dev/~name12/gnome-terminal/scanned
     ...
 
