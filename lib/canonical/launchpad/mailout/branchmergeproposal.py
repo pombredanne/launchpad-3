@@ -150,17 +150,18 @@ class BMPMailer(BaseMailer):
         """Return the address to use for the reply-to header."""
         return self.merge_proposal.address
 
-    def _getHeaders(self, recipient):
+    def _getHeaders(self, recipient, email=None):
         """Return the mail headers to use."""
-        headers = BaseMailer._getHeaders(self, recipient)
-        reason, rationale = self._recipients.getReason(
-            recipient.preferredemail.email)
+        if email is None:
+            email = recipient.preferredemail.email
+        headers = BaseMailer._getHeaders(self, recipient, email)
+        reason, rationale = self._recipients.getReason(email)
         headers['X-Launchpad-Branch'] = reason.branch.unique_name
         return headers
 
-    def _getTemplateParams(self, recipient):
+    def _getTemplateParams(self, recipient, email=None):
         """Return a dict of values to use in the body and subject."""
-        params = BaseMailer._getTemplateParams(self, recipient)
+        params = BaseMailer._getTemplateParams(self, recipient, email=email)
         params.update({
             'proposal_registrant': self.merge_proposal.registrant.displayname,
             'source_branch': self.merge_proposal.source_branch.displayname,

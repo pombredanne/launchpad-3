@@ -7,8 +7,11 @@ __metaclass__ = type
 from datetime import timedelta
 import unittest
 
+from canonical.launchpad.ftests import login_person, logout
+
 from canonical.launchpad.browser.branchmergeproposal import (
-    BranchMergeProposalMergedView, BranchMergeProposalVoteView)
+    BranchMergeProposalMergedView, BranchMergeProposalRequestReviewView,
+    BranchMergeProposalVoteView)
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.testing import TestCaseWithFactory, time_counter
@@ -36,6 +39,35 @@ class TestBranchMergeProposalMergedView(TestCaseWithFactory):
         self.assertEqual(
             {'merged_revno': self.bmp.target_branch.revision_count},
             view.initial_values)
+
+
+class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
+    """Tests for `BranchMergeProposalRequestReviewView`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.owner = self.factory.makePerson()
+        login_person(self.owner)
+        self.bmp = self.factory.makeBranchMergeProposal(registrant=self.owner)
+
+    def makePersonWithHiddenEmail(self):
+        """Make an arbitrary person with hidden email addresses."""
+        person = self.factory.makePerson()
+        login_person(person)
+        person.hide_email_addresses = True
+        logout()
+        login_person(self.owner)
+        return person
+
+    def test_requestReviewWithPrivateEmail(self):
+        # We can request a review, even when one of the parties involved has a
+        # private email address.
+        view = BranchMergeProposalRequestReviewView(
+            self.bmp, LaunchpadTestRequest())
+        reviewer = self.makePersonWithHiddenEmail()
+        view.requestReview(reviewer, None)
 
 
 class TestBranchMergeProposalVoteView(TestCaseWithFactory):

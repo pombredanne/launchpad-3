@@ -55,8 +55,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
 
     def assertRecipientsMatches(self, recipients, mailer):
         """Assert that `mailer` will send to the people in `recipients`."""
-        self.assertEqual(
-            set(recipients), set(mailer._recipients.getRecipientPersons()))
+        persons = zip(*(mailer._recipients.getRecipientPersons()))[1]
+        self.assertEqual(set(recipients), set(persons))
 
     def test_forCreation(self):
         """Ensure that forCreation produces a mailer with expected values."""
