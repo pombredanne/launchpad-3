@@ -135,6 +135,8 @@ to direct the owner to set a license.
     >>> firefox = Product.selectOneBy(name="firefox")
     >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(owner_browser.contents, 'license-status')
+    <...This project&lsquo;s license has not been reviewed...
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-requires-subscription')
     None
@@ -158,6 +160,8 @@ is displayed to direct the owner to purchase a subscription.
     >>> flush_database_updates()
     >>> transaction.commit()
     >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(owner_browser.contents, 'license-status')
+    <...This project&lsquo;s license is proprietary...
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-requires-subscription')
     <div...Purchasing a subscription is required...</div>
@@ -216,8 +220,8 @@ an error.
 Any user can see that the project's license is open source.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
-    '<...This project&lsquo;s license is open source...
+    >>> print find_tag_by_id(owner_browser.contents, 'license-status')
+    None
 
 If the is_subscription_feature_active config variable is false,
 then the owner will not get a warning that the subscription is due.
