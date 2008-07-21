@@ -23,7 +23,6 @@ def new_import(code_import, event):
         # test.
         return
 
-    headers = {'X-Launchpad-Branch': code_import.branch.unique_name}
     subject = 'New code import: %s/%s' % (
         code_import.product.name, code_import.branch.name)
     body = get_email_template('new-code-import.txt') % {
@@ -34,6 +33,9 @@ def new_import(code_import, event):
         event.user.displayname, event.user.preferredemail.email)
 
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    headers = {'X-Launchpad-Branch': code_import.branch.unique_name,
+               'X-Launchpad-Message-Rationale':
+                   'Operator @%s' % vcs_imports.name}
     for address in contactEmailAddresses(vcs_imports):
         simple_sendmail(from_address, address, subject, body, headers)
 
@@ -46,10 +48,8 @@ def code_import_status_updated(code_import, user):
     recipients = branch.getNotificationRecipients()
     # Add in the vcs-imports user.
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    recipients.add(
-        vcs_imports, None,
-        'You are getting this email because you are a member of the '
-        'vcs-imports team.')
+    herder_rationale = 'Operator @%s' % vcs_imports.name
+    recipients.add(vcs_imports, None, herder_rationale)
 
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name}
 
@@ -84,7 +84,12 @@ def code_import_status_updated(code_import, user):
         subscription, rationale = recipients.getReason(email_address)
 
         if subscription is None:
-            template_params['rationale'] = rationale
+            if rationale == herder_rationale:
+                template_params['rationale'] = (
+                    'You are getting this email because you are a member of'
+                    ' the vcs-imports team.')
+            else:
+                template_params['rationale'] = rationale
             template_params['unsubscribe'] = ''
         else:
             if subscription.notification_level in interested_levels:
