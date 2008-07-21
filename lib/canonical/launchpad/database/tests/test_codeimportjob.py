@@ -33,11 +33,10 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import, make_running_import)
-from canonical.launchpad.testing.pages import (
-    get_feedback_messages, setupBrowser)
+from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing import LaunchpadFunctionalLayer, PageTestLayer
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 def login_for_code_imports():
@@ -197,13 +196,13 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
         self.assertNoJobSelected()
 
 
-class ReclaimableJobTestMixin:
+class ReclaimableJobTests(TestCaseWithFactory):
     """Helpers for tests that need to create reclaimable jobs."""
 
     LIMIT = config.codeimportworker.maximum_heartbeat_interval
 
     def setUp(self):
-        super(ReclaimableJobTestMixin, self).setUp()
+        super(ReclaimableJobTests, self).setUp()
         login_for_code_imports()
         for job in CodeImportJob.select():
             job.destroySelf()
@@ -223,7 +222,7 @@ class ReclaimableJobTestMixin:
             set(getUtility(ICodeImportJobSet).getReclaimableJobs()))
 
 
-class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTestMixin):
+class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTests):
     """Tests for the CodeImportJobSet.getReclaimableJobs method."""
 
     layer = LaunchpadFunctionalLayer
@@ -256,7 +255,7 @@ class TestCodeImportJobSetGetReclaimableJobs(ReclaimableJobTestMixin):
         self.assertReclaimableJobs([stale_job])
 
 
-class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTestMixin):
+class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTests):
     """Test that getJobForMachine gardens stale code import jobs."""
 
     layer = LaunchpadFunctionalLayer
@@ -267,8 +266,11 @@ class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTestMixin):
         stale_job = self.makeJobWithHeartbeatInPast(self.LIMIT*2)
         # We assume that this is the only reclaimable job.
         self.assertReclaimableJobs([stale_job])
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        login(ANONYMOUS)
         job = getUtility(ICodeImportJobSet).getJobForMachine(
-            self.machine.hostname)
+            machine.hostname)
+        login_for_code_imports()
         # Now there are no reclaimable jobs.
         self.assertReclaimableJobs([])
 
@@ -950,16 +952,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
     the button and check that appropriate notifications are displayed.
     """
 
-    layer = PageTestLayer
-
-    def getUserBrowserAtPage(self, url):
-        """Return a Browser object for a logged in user opened at `url`."""
-        user = logged_in_as(ANONYMOUS)(self.factory.makePerson)(
-            password='test')
-        email = removeSecurityProxy(user.preferredemail).email
-        user_browser = setupBrowser(auth="Basic %s:test" % str(email))
-        user_browser.open(url)
-        return user_browser
+    layer = LaunchpadFunctionalLayer
 
     @logged_in_for_code_imports
     def getNewCodeImportIDAndBranchURL(self):
@@ -996,7 +989,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         # If the import has been requested by another user, we display a
         # notification saying who it was.
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
-        user_browser = self.getUserBrowserAtPage(branch_url)
+        user_browser = self.getUserBrowser(branch_url)
         self.requestJobByUserWithDisplayName(code_import_id, "New User")
         user_browser.getControl('Import Now').click()
         self.assertEqual(
@@ -1007,7 +1000,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         # If the import job has been deleled, for example because the code
         # import has been suspended, we display a notification saying this.
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
-        user_browser = self.getUserBrowserAtPage(branch_url)
+        user_browser = self.getUserBrowser(branch_url)
         self.deleteJob(code_import_id)
         user_browser.getControl('Import Now').click()
         self.assertEqual(
@@ -1017,7 +1010,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
     def test_pressButtonJobStarted(self):
         # If the job has started, we display a notification saying so.
         code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
-        user_browser = self.getUserBrowserAtPage(branch_url)
+        user_browser = self.getUserBrowser(branch_url)
         self.startJob(code_import_id)
         user_browser.getControl('Import Now').click()
         self.assertEqual(

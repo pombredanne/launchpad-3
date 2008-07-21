@@ -1,7 +1,7 @@
 The POTemplate edit page lets us to edit basic aspect of that object. Only
 product owners, Rosetta Experts or a Launchpad admin are able to use it.
 
-Check to be sure that an unpriviledged user cannot reach this page
+An unpriviledged user cannot reach this page.
 
   >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
   >>> browser.open(
@@ -11,13 +11,25 @@ Check to be sure that an unpriviledged user cannot reach this page
   ...
   Unauthorized:...
 
-Check to be sure that a Rosetta expert (Jordi) can reach the POTemplate edit
+In fact, the "Change details" option won't even appear for them.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-2.2/')
+  >>> browser.getLink('Change details').click()
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+  
+
+On the other hand, Rosetta expert (Jordi) can reach the POTemplate edit
 page.
 
   >>> browser = setupBrowser(auth='Basic jordi@ubuntu.com:test')
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
-  ...     'evolution-2.2/+edit')
+  ...     'evolution-2.2/')
+  >>> browser.getLink('Change details').click()
   >>> print browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+edit
 

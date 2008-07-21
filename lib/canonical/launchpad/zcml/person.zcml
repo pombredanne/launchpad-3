@@ -74,7 +74,7 @@
       />
     <require
       permission="launchpad.Special"
-      attributes="deactivateAccount"
+      interface="canonical.launchpad.interfaces.person.IPersonSpecialRestricted"
       />
     <require
       permission="launchpad.Edit"
