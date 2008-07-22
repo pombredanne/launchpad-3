@@ -24,7 +24,7 @@
 <div metal:fill-slot="main"
      tal:define="context_menu context/menu:context">
 
-  <tal:proposal-heading tal:replace="structure context/@@+heading"/>
+  <tal:proposal-heading tal:replace="structure context/@@+heading-links"/>
 
   <div id="actions" class="actions aside"
        tal:condition="context/required:launchpad.Edit">
@@ -60,7 +60,6 @@
     </tal:action>
 
   </div>
-
 
   <div class="aside">
     <aside tal:content="structure context/@@+pagelet-subscribers" />

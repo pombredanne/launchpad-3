@@ -423,11 +423,15 @@ class BranchView(LaunchpadView, FeedsMixin):
         return self._getBranchCountText(branch_count)
 
     @cachedproperty
+    def dependent_branches(self):
+        return list(self.context.dependent_branches)
+
+    @cachedproperty
     def no_merges(self):
         """Return true if there are no pending merges"""
         return (len(self.landing_targets) +
-            len(self.landing_candidates) +
-            len(list(self.dependent_branches)) > 0)
+                len(self.landing_candidates) +
+                len(self.dependent_branches) == 0)
 
     @property
     def show_candidate_more_link(self):
