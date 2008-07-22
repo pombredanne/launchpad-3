@@ -334,7 +334,7 @@ the field `owner` is updated.
 === Submission Records without an email address ===
 
 A submission does not necessarily have an email address (anonymous
-submission). Such submissions can be created too.
+submission). In this case the owner is always None.
 
     >>> submission = hw_submission_set.createSubmission(
     ...     date_created=date_created,
@@ -349,4 +349,6 @@ submission). Such submissions can be created too.
     ...     filesize=len(submission_data),
     ...     system_fingerprint=u'Dell Inspiron 1234')
     >>> print submission.raw_emailaddress
+    None
+    >>> print submission.owner
     None
