@@ -14,7 +14,7 @@ from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
-from zope.interface import implements, alsoProvides
+from zope.interface import implements
 
 
 from canonical.archivepublisher.config import Config as PubConfig
