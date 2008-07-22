@@ -63,6 +63,11 @@
                 content="structure link/render">
       Mark as merged
     </tal:action>
+    <tal:action define="link context_menu/enqueue"
+                condition="link/enabled"
+                content="structure link/render">
+      Enqueue
+    </tal:action>
     <tal:action define="link context_menu/dequeue"
                 condition="link/enabled"
                 content="structure link/render">

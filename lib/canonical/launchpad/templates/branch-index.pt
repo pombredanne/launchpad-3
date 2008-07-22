@@ -189,7 +189,7 @@
       <tal:has-codeimport condition="branch/code_import"
                           define="code_import branch/code_import">
 
-        <p><strong>Status:</strong>
+        <p><strong>Import Status:</strong>
         <tal:status replace="code_import/review_status/title"/>
         </p>
 
@@ -276,7 +276,13 @@
       <a href="+merges" tal:content="structure view/landing_candidate_count_text">
         1 branch
       </a>
-      proposed for merging into this one.
+      proposed for merging into this one. -
+      <div
+        tal:define="link context_menu/merge_queue"
+        tal:condition="link/enabled"
+        tal:replace="structure link/render"
+      />
+
     </div>
 
     <div id="dependent-branches" tal:condition="context/dependent_branches">
@@ -298,12 +304,12 @@
     </div>
 
 
-    <div
-      tal:define="link context/menu:context/register_merge"
-      tal:condition="link/enabled"
-      tal:replace="structure link/render"
-    />
   </div>
+  <div
+    tal:define="link context_menu/register_merge"
+    tal:condition="link/enabled"
+    tal:replace="structure link/render"
+  />
 
   <div id="whiteboard">
     <h2>Whiteboard</h2>

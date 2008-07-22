@@ -124,6 +124,13 @@ class BranchMergeCandidateView(LaunchpadView):
             }
         return friendly_texts[self.context.queue_status]
 
+    @property
+    def queue_location(self):
+        """The location of the queue view."""
+        # Will point to the target_branch queue, or the queue
+        # with multiple targets if specified.
+        return canonical_url(self.context.target_branch) + '/+merge-queue'
+
 
 class BranchMergeProposalContextMenu(ContextMenu):
     """Context menu for branches."""

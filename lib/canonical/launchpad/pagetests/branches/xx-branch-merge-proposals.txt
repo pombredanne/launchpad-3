@@ -224,6 +224,7 @@ target branches or the registrant of the merge proposal.
     >>> print_proposal_actions(sample_browser.contents)
     Review proposal
     Mark as merged
+    Queue for merging
     Resubmit proposal
 
 Someone who is not logged in, or not the one of those that can alter the
@@ -656,8 +657,7 @@ recorded as the reviewer of the proposal.
 
     >>> print_summary(sample_browser)
     Proposed ...
-    On hold for merging into
-    lp://dev/~name12/firefox/main
+    Queued for merging into lp://dev/~name12/firefox/main (view queue)
 
 
 An email notification is also generated.
