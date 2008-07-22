@@ -592,16 +592,6 @@ class _BaseLaunchpadServer(Server):
         return deferred.addCallback(
             lambda transport: (transport, urlutils.escape(path)))
 
-    def _getTransportForPermissions(self, permissions, branch):
-        """Get the appropriate transport for `permissions` on `branch`."""
-        if permissions == READ_ONLY:
-            return self._mirror_transport
-        else:
-            transport = self._branch_transport
-            deferred = branch.ensureUnderlyingPath(transport)
-            deferred.addCallback(lambda ignored: transport)
-            return deferred
-
     def translateVirtualPath(self, virtual_url_fragment):
         """Translate 'virtual_url_fragment' into a transport and sub-fragment.
 
@@ -681,6 +671,16 @@ class LaunchpadServer(_BaseLaunchpadServer):
         assert url.startswith(self.get_url())
         return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
 
+    def _getTransportForPermissions(self, permissions, branch):
+        """Get the appropriate transport for `permissions` on `branch`."""
+        if permissions == READ_ONLY:
+            return self._mirror_transport
+        else:
+            transport = self._branch_transport
+            deferred = branch.ensureUnderlyingPath(transport)
+            deferred.addCallback(lambda ignored: transport)
+            return deferred
+
     def createBranch(self, virtual_url_fragment):
         """Make a new directory for the given virtual URL fragment.
 
@@ -726,6 +726,10 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         super(LaunchpadInternalServer, self).__init__(
             scheme, authserver, LAUNCHPAD_SERVICES, branch_transport,
             branch_transport)
+
+    def _getTransportForPermissions(self, permissions, branch):
+        """Get the appropriate transport for `permissions` on `branch`."""
+        return self._branch_transport
 
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
