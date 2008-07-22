@@ -527,10 +527,11 @@ class LaunchpadBranch:
 class _BaseLaunchpadServer(Server):
     """Bazaar Server for Launchpad branches."""
 
-    def __init__(self, authserver, user_id, hosting_transport,
+    def __init__(self, scheme, authserver, user_id, hosting_transport,
                  mirror_transport):
         """Construct a LaunchpadServer.
 
+        :param scheme: The URL scheme to use.
         :param authserver: An XML-RPC client that implements callRemote.
         :param user_id: The database ID for the user who is accessing
             branches.
@@ -542,6 +543,7 @@ class _BaseLaunchpadServer(Server):
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
         # pylint: disable-msg=W0231
+        self._scheme = scheme
         self._authserver = CachingAuthserverClient(authserver, user_id)
         self._backing_transport = hosting_transport
         self._mirror_transport = mirror_transport
@@ -649,22 +651,9 @@ class _BaseLaunchpadServer(Server):
 
         return virtual_path_deferred.addCallback(get_transport)
 
-    def _factory(self, url):
-        """Construct a transport for the given URL. Used by the registry."""
-        assert url.startswith(self.get_url())
-        return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
-
     def get_url(self):
-        """Return the URL of this server.
-
-        The URL is of the form 'lp-<object_id>:///', where 'object_id' is
-        id(self). This ensures that we can have LaunchpadServer objects for
-        different users, different backing transports and, theoretically,
-        different authservers.
-
-        See Server.get_url.
-        """
-        return 'lp-%d:///' % id(self)
+        """Return the URL of this server."""
+        return self._scheme
 
     def setUp(self):
         """See Server.setUp."""
@@ -683,10 +672,16 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
     def __init__(self, authserver, user_id, hosting_transport,
                  mirror_transport):
+        scheme = 'lp-%d:///' % id(self)
         mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
         super(LaunchpadServer, self).__init__(
-            authserver, user_id, hosting_transport, mirror_transport)
+            scheme, authserver, user_id, hosting_transport, mirror_transport)
+
+    def _factory(self, url):
+        """Construct a transport for the given URL. Used by the registry."""
+        assert url.startswith(self.get_url())
+        return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
 
     def createBranch(self, virtual_url_fragment):
         """Make a new directory for the given virtual URL fragment.
@@ -731,12 +726,13 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         branch_transport = get_transport(
             'readonly+' + branch_transport.base)
         super(LaunchpadInternalServer, self).__init__(
-            authserver, LAUNCHPAD_SERVICES, branch_transport,
+            scheme, authserver, LAUNCHPAD_SERVICES, branch_transport,
             branch_transport)
-        self._scheme = scheme
 
-    def get_url(self):
-        return self._scheme
+    def _factory(self, url):
+        """Construct a transport for the given URL. Used by the registry."""
+        assert url.startswith(self.get_url())
+        return SynchronousAdapter(VirtualTransport(self, url))
 
 
 class VirtualTransport(Transport):
