@@ -190,6 +190,9 @@ class POBasicTestCase(unittest.TestCase):
             self.fail("The SquareBracketAndPlural test failed")
 
     def testDoubleHeader(self):
+        # DEFAULT_HEADER already contains a msgid and one msgstr
+        # declaring ASCII encoding.  Adding a second msgstr with a
+        # different text is an error.
         self.assertRaises(TranslationFormatSyntaxError, self.parser.parse,
             '''
                 %s
