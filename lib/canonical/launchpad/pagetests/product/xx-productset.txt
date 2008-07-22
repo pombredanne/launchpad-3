@@ -101,23 +101,24 @@ will take us back to the page we came from.
 = Project list shows license status =
 
 The project list will show (Proprietary) next to projects with a
-proprietary license and show (Unreviewed) next to projects without
-any license or with an unreviewed Other/OpenSource license.
+proprietary license, (Unspecified) next to projects without
+any license and (Unreviewed) next to projects with an unreviewed
+Other/OpenSource license.
 
-First, add a product with a proprietary license.
+First, add a product with a Other/Open Source license.
 
     >>> user_browser.open('http://launchpad.dev/products/+new')
-    >>> user_browser.getControl('Name', index=0).value = 'proprietary'
-    >>> user_browser.getControl('Display Name').value = 'Proprietary Product'
+    >>> user_browser.getControl('Name', index=0).value = 'other-open-source'
+    >>> user_browser.getControl('Display Name').value = 'Other-Open-Source Product'
     >>> user_browser.getControl('Title').value = 'title'
     >>> user_browser.getControl('Summary').value = 'summary'
     >>> user_browser.getControl(name='field.description').value = 'description'
     >>> user_browser.getControl(name='field.licenses').value = [
-    ...     'OTHER_PROPRIETARY']
+    ...     'OTHER_OPEN_SOURCE']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
     >>> user_browser.getControl('Add').click()
     >>> print user_browser.url
-    http://launchpad.dev/proprietary
+    http://launchpad.dev/other-open-source
 
     >>> user_browser.open('http://launchpad.dev/projects/+all')
     >>> div = find_tag_by_id(user_browser.contents, 'product-listing')
@@ -125,13 +126,38 @@ First, add a product with a proprietary license.
     ...     pillar = subdiv.find()
     ...     print ''.join(pillar.findAll(text=True))
     ...     print '     ', pillar.get('title')
-    &nbsp;Proprietary Product (Proprietary)
+    &nbsp;Other-Open-Source Product (Unreviewed)
+          This project&rsquo;s license has not been reviewed.
+    &nbsp;Mega Money Maker (Proprietary)
+          This project&rsquo;s license is proprietary.
+    &nbsp;Derby
+          None
+    &nbsp;Redfish (Unspecified)
+          This project&rsquo;s license has not been specified.
+    &nbsp;Bazaar (Unspecified)
+          This project&rsquo;s license has not been specified.
+
+If an open source project adds a proprietary license then the project
+will be displayed as proprietary.
+
+    >>> user_browser.open('http://launchpad.dev/other-open-source')
+    >>> user_browser.getLink('Change details').click()
+    >>> user_browser.getControl(name='field.licenses').value = [
+    ...     'OTHER_OPEN_SOURCE', 'OTHER_PROPRIETARY']
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.open('http://launchpad.dev/projects/+all')
+    >>> div = find_tag_by_id(user_browser.contents, 'product-listing')
+    >>> for subdiv in div.next.findNextSiblings('div'):
+    ...     pillar = subdiv.find()
+    ...     print ''.join(pillar.findAll(text=True))
+    ...     print '     ', pillar.get('title')
+    &nbsp;Other-Open-Source Product (Proprietary)
           This project&rsquo;s license is proprietary.
     &nbsp;Mega Money Maker (Proprietary)
           This project&rsquo;s license is proprietary.
     &nbsp;Derby
           None
-    &nbsp;Redfish (Unreviewed)
-          This project&rsquo;s license has not been reviewed.
-    &nbsp;Bazaar (Unreviewed)
-          This project&rsquo;s license has not been reviewed.
+    &nbsp;Redfish (Unspecified)
+          This project&rsquo;s license has not been specified.
+    &nbsp;Bazaar (Unspecified)
+          This project&rsquo;s license has not been specified.
