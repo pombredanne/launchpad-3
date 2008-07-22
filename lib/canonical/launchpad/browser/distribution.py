@@ -86,7 +86,7 @@ class UsesLaunchpadMixin:
     def uses_launchpad_for(self):
         """Return a string of LP apps (comma-separated) this distro uses."""
         uses = []
-        href_template = "<a href=%s><strong>%s</strong></a>"
+        href_template = """<a href="%s"><strong>%s</strong></a>"""
         if self.context.official_answers:
             url = canonical_url(self.context, rootsite='answers')
             uses.append(href_template % (url, 'Answers'))
