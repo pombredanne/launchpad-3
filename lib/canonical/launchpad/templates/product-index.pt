@@ -154,8 +154,6 @@
                     replace="structure link/render"/>
   </div>
 
-    </div>
-
       <tal:activate-feature
         tal:define="config modules/canonical.config/config"
         condition="config/commercial/is_subscription_feature_active">

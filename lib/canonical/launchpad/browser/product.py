@@ -60,7 +60,6 @@ from zope.interface import alsoProvides, implements, Interface
 from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
 from canonical.lazr import decorates
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
@@ -99,7 +98,6 @@ from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.mail import format_address, simple_sendmail
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
