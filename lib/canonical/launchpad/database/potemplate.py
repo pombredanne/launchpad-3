@@ -935,6 +935,7 @@ class POTemplateSet:
         """See `IPOTemplateSet`."""
         if productseries is not None:
             return POTemplate.selectOne('''
+                    POTemplate.iscurrent IS TRUE AND
                     POTemplate.productseries = %s AND
                     POTemplate.path = %s''' % sqlvalues(
                         productseries.id,
@@ -945,6 +946,7 @@ class POTemplateSet:
             # another package that the one it's linked at the moment so we
             # first check to find it at IPOTemplate.from_sourcepackagename
             potemplate = POTemplate.selectOne('''
+                    POTemplate.iscurrent IS TRUE AND
                     POTemplate.distroseries = %s AND
                     POTemplate.from_sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
@@ -959,6 +961,7 @@ class POTemplateSet:
                 return potemplate
 
             return POTemplate.selectOne('''
+                    POTemplate.iscurrent IS TRUE AND
                     POTemplate.distroseries = %s AND
                     POTemplate.sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(

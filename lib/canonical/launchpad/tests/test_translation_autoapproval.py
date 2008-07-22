@@ -10,13 +10,14 @@ through the possibilities should go here.
 import unittest
 
 from canonical.launchpad.database import (
-    CustomLanguageCode, Distribution, Language, POTemplateSubset,
-    SourcePackageName, TranslationImportQueue)
+    CustomLanguageCode, Distribution, Language, POTemplateSet,
+    POTemplateSubset, SourcePackageName, TranslationImportQueue)
 from canonical.launchpad.interfaces import (
     ICustomLanguageCode, RosettaImportStatus)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
+from storm.exceptions import NotOneError
 
 
 class TestCustomLanguageCode(unittest.TestCase):
@@ -241,6 +242,36 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
         self.assertEqual(zh_CN_entry.getGuessedPOFile(), zh_TW_file)
         self.assertEqual(zh_TW_entry.getGuessedPOFile(), zh_CN_file)
+
+
+class TestTemplateGuess(unittest.TestCase):
+    """Test auto-approval's attempts to find the right template."""
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.factory = LaunchpadObjectFactory()
+        self.templateset = POTemplateSet()
+        self.product = self.factory.makeProduct()
+        self.series = self.factory.makeSeries(product=self.product)
+        self.template1 = POTemplateSubset(productseries=self.series).new(
+            'test1', 'test1', 'test.pot', self.product.owner)
+        self.template2 = POTemplateSubset(productseries=self.series).new(
+            'test2', 'test2', 'test.pot', self.product.owner)
+
+    def test_ByPathAndOriginDuplicate(self):
+        # Two current templates for the same product series can't have
+        # the same path.
+        self.assertRaises(NotOneError,
+            self.templateset.getPOTemplateByPathAndOrigin, 'test.pot',
+            productseries=self.series)
+
+    def test_ByPathAndOriginNonCurrentDuplicate(self):
+        # If two templates for the same product series have the same
+        # path, but only one is current, that one is returned.
+        self.template1.iscurrent = False
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', productseries=self.series)
+        self.assertEqual(guessed_template, self.template2)
 
 
 def test_suite():
