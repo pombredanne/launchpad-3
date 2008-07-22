@@ -295,7 +295,7 @@ a list of people.
    >>> people_page_repr_definition.tag.attrib['href']
    'http://api.launchpad.dev/beta/#person-page'
 
-We have a page from a list of people to use as test data.
+As it happens, we have a page from a list of people to use as test data.
 
    >>> people_page_repr = get_testdata('personset')
 
@@ -326,6 +326,12 @@ type into bind(), we can access the parameters associated with a
    ...     representation_definition=people_page_repr_definition)
    >>> people_page.get_parameter('total_size').get_value()
    63
+
+If you invoke the method and ask for a media type other than JSON, you
+won't get anything.
+
+   >>> print method.response.get_representation_definition('text/html')
+   None
 
 
 == Representation creation ==
