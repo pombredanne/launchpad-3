@@ -219,8 +219,11 @@ The branch merge poposal can be edited by the owner of the source or
 target branches or the registrant of the merge proposal.
 
     >>> def print_proposal_actions(contents):
-    ...     actions = find_tag_by_id(contents, 'proposal-actions')
-    ...     print extract_text(actions)
+    ...     actions = find_tag_by_id(contents, 'actions')
+    ...     if actions:
+    ...         print extract_text(actions)
+    ...     else:
+    ...         print "No actions shown"
     >>> print_proposal_actions(sample_browser.contents)
     Review proposal
     Mark as merged
@@ -232,9 +235,11 @@ proposal to merge get no actions.
 
     >>> browser.open(firefox_merge_url)
     >>> print_proposal_actions(browser.contents)
+    No actions shown
 
     >>> anon_browser.open(firefox_merge_url)
     >>> print_proposal_actions(anon_browser.contents)
+    No actions shown
 
 When editing the proposal, the whiteboard can be altered, and the
 button options are:
