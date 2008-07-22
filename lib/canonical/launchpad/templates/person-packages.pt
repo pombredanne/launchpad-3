@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -14,11 +14,11 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Package maintenance report</h1>
+  <h1>Package maintenance</h1>
 
   <div id="packages">
 
-  <tal:maintained-packages 
+  <tal:maintained-packages
     define="sourcepackagereleases view/getLatestMaintainedPackagesWithStats"
     condition="sourcepackagereleases">
 

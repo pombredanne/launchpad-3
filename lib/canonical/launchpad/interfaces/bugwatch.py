@@ -20,11 +20,12 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.bugtracker import IBugTracker
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 
 
 class BugWatchErrorType(DBEnumeratedType):
@@ -100,9 +101,10 @@ class IBugWatch(IHasBug):
         Reference(title=_('Bug'), schema=Interface, # Redefined in bug.py
                   required=True, readonly=True))
     bugtracker = exported(
-        Choice(
+        ReferenceChoice(
             title=_('Bug System'), required=True,
-            vocabulary='BugTracker', description=_(
+            schema=IBugTracker, vocabulary='BugTracker',
+            description=_(
                 "You can register new bug trackers from the Launchpad "
                 "Bugs home page.")),
         exported_as='bug_tracker')
@@ -191,6 +193,10 @@ class IBugWatch(IHasBug):
 
         :param message: The imported comment as a Launchpad Message object.
         """
+
+
+# Defined here because of circular imports.
+IBugTracker['watches'].value_type.schema = IBugWatch
 
 
 class IBugWatchSet(Interface):

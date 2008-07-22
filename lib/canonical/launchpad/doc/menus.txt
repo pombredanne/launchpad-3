@@ -4,8 +4,7 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
 
 === Construct an example url hierarchy ===
 
-    >>> from canonical.launchpad.webapp import (
-    ...     nearest_adapter, nearest_context_with_adapter, canonical_url)
+    >>> from canonical.launchpad.webapp import canonical_url
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IApplicationMenu, ICanonicalUrlData, IContextMenu, IFacetLink,
     ...     IFacetMenu, ILink, ILinkData)
@@ -50,50 +49,6 @@ Let's make three objects that together make a url hierarchy:
     >>> canonical_url(street)
     u'http://launchpad.dev/sesamestreet'
 
-
-=== Test nearest_adapter ===
-
-Right now, none of our example objects have a facet menu.
-
-    >>> nearest_adapter(root, IFacetMenu) is None
-    True
-    >>> nearest_adapter(street, IFacetMenu) is None
-    True
-    >>> nearest_adapter(house, IFacetMenu) is None
-    True
-
-We can see that this is true for nearest_context_with_adapter too.
-
-    >>> nearest_context_with_adapter(root, IFacetMenu)
-    (None, None)
-
-We'll make the 'street' object be conformable to IFacetMenu.  Making an object
-be conformable to IFacetMenu is one way of making the object adaptable to
-IFacetMenu.  Another way would be to provide an adapter.
-
-    >>> class ExampleFacetMenu(list):
-    ...     implements(IFacetMenu)
-    ...     def __init__(self, context):
-    ...         list.__init__(self, ['foo', 'bar', 'baz'])
-    ...         self.context = context
-
-    >>> street.setAdapter(IFacetMenu, ExampleFacetMenu)
-    >>> IFacetMenu(street).__class__ is ExampleFacetMenu
-    True
-    >>> nearest_adapter(root, IFacetMenu) is None
-    True
-    >>> nearest_adapter(street, IFacetMenu).__class__ is ExampleFacetMenu
-    True
-    >>> nearest_adapter(house, IFacetMenu).__class__ is ExampleFacetMenu
-    True
-
-We can also see this work with nearest_context_with_adapter.
-
-    >>> context, adapter = nearest_context_with_adapter(house, IFacetMenu)
-    >>> adapter.__class__ is ExampleFacetMenu
-    True
-    >>> context is street
-    True
 
 == The Link class ==
 

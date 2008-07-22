@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # _valid_nick() in generate_nick causes E1101
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,E1101,W0612
@@ -361,8 +361,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
-
-    commercial_vouchers = None
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -1070,6 +1068,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             FROM Product, TeamParticipation
             WHERE TeamParticipation.person = %(person)s
             AND owner = TeamParticipation.team
+            AND Product.active IS TRUE
             """ % sqlvalues(person=self)]
 
         # We only want to use the extra query if match_name is not None and it
@@ -1090,21 +1089,20 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def getCommercialSubscriptionVouchers(self):
         """See `IPerson`."""
-        if self.commercial_vouchers is None:
-            voucher_proxy = getUtility(ISalesforceVoucherProxy)
-            self.commercial_vouchers = voucher_proxy.getAllVouchers(self)
-            self.unredeemed_commercial_vouchers = []
-            self.redeemed_commercial_vouchers = []
-            for voucher in self.commercial_vouchers:
-                assert voucher.status in VOUCHER_STATUSES, (
-                    "Voucher %s has unrecoginzed status %s" %
-                    (voucher.voucher_id, voucher.status))
-                if voucher.status == 'Redeemed':
-                    self.redeemed_commercial_vouchers.append(voucher)
-                else:
-                    self.unredeemed_commercial_vouchers.append(voucher)
-        return (self.unredeemed_commercial_vouchers,
-                self.redeemed_commercial_vouchers)
+        voucher_proxy = getUtility(ISalesforceVoucherProxy)
+        commercial_vouchers = voucher_proxy.getAllVouchers(self)
+        unredeemed_commercial_vouchers = []
+        redeemed_commercial_vouchers = []
+        for voucher in commercial_vouchers:
+            assert voucher.status in VOUCHER_STATUSES, (
+                "Voucher %s has unrecognized status %s" %
+                (voucher.voucher_id, voucher.status))
+            if voucher.status == 'Redeemed':
+                redeemed_commercial_vouchers.append(voucher)
+            else:
+                unredeemed_commercial_vouchers.append(voucher)
+        return (unredeemed_commercial_vouchers,
+                redeemed_commercial_vouchers)
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -1698,17 +1696,27 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    def deactivateAccount(self, comment):
-        """Deactivate this person's Launchpad account.
+    def activateAccount(self, comment, password, preferred_email):
+        """See `IPersonSpecialRestricted`.
 
-        Deactivating an account means:
-            - Setting its password to NULL;
-            - Removing the user from all teams he's a member of;
-            - Changing all his email addresses' status to NEW;
-            - Revoking Code of Conduct signatures of that user;
-            - Reassigning bugs/specs assigned to him;
-            - Changing the ownership of products/projects/teams owned by him.
+        :raise AssertionError: if the Person is a Team.
         """
+        # XXX sinzui 2008-07-14 bug=248518:
+        # This method would assert the password is not None, but
+        # setPreferredEmail() passes the Person's current password.
+        if self.is_team:
+            raise AssertionError(
+                "Teams cannot be activated with this method.")
+        self.account.status = AccountStatus.ACTIVE
+        self.account.status_comment = comment
+        self.password = password
+        if preferred_email is not None:
+            self.validateAndEnsurePreferredEmail(preferred_email)
+        # sync so validpersoncache updates.
+        self.account.sync()
+
+    def deactivateAccount(self, comment):
+        """See `IPersonSpecialRestricted`."""
         assert self.is_valid_person, (
             "You can only deactivate an account of a valid person.")
 
@@ -1778,12 +1786,46 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         self.preferredemail.status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'
+        self.name = self._ensureNewName(base_new_name)
+
+    def _ensureNewName(self, base_new_name):
+        """Return a unique name."""
         new_name = base_new_name
         count = 1
         while Person.selectOneBy(name=new_name) is not None:
             new_name = base_new_name + str(count)
             count += 1
-        self.name = new_name
+        return new_name
+
+    def reactivateAccount(self, comment, password, preferred_email):
+        """See `IPersonSpecialRestricted`.
+
+        :raise AssertionError: if the password is not valid.
+        :raise AssertionError: if the preferred email address is None.
+        :raise AssertionError: if this `Person` is a team.
+        """
+        if self.is_team:
+            raise AssertionError(
+                "Teams cannot be reactivated with this method.")
+        if password in (None, ''):
+            raise AssertionError(
+                "User %s cannot be reactivated without a "
+                "password." % self.name)
+        if preferred_email is None:
+            raise AssertionError(
+                "User %s cannot be reactivated without a "
+                "preferred email address." % self.name)
+        self.account.status = AccountStatus.ACTIVE
+        self.account.status_comment = comment
+        if '-deactivatedaccount' in self.name:
+            # The name was changed by deactivateAccount(). Restore the
+            # name, but we must ensure it does not conflict with a current
+            # user.
+            name_parts = self.name.split('-deactivatedaccount')
+            base_new_name = name_parts[0]
+            self.name = self._ensureNewName(base_new_name)
+        self.password = password
+        self.validateAndEnsurePreferredEmail(preferred_email)
 
     @property
     def visibility_consistency_warning(self):
@@ -2056,15 +2098,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setPreferredEmail(self, email):
         """See `IPerson`."""
         assert not self.is_team, "This method must not be used for teams."
-        if self.preferredemail is None:
-            # This is the first time we're confirming this person's email
-            # address, so we now assume this person has a Launchpad account.
-            # XXX: This is a hack! In the future we won't have this
-            # association between accounts and confirmed addresses, but this
-            # will do for now. -- Guilherme Salgado, 2007-07-03
-            self.account.status = AccountStatus.ACTIVE
-            self.account.status_comment = None
-            self.account.sync() # sync so validpersoncache updates.
+        if (self.preferredemail is None
+            and self.account_status != AccountStatus.ACTIVE):
+            # XXX sinzui 2008-07-14 bug=248518:
+            # This is a hack to preserve this function's behaviour before
+            # Account was split from Person. This can be removed when
+            # all the callsites ensure that the account is ACTIVE first.
+            self.activateAccount(
+                "Activated when the preferred email was set.",
+                password=self.password,
+                preferred_email=email)
         # Anonymous users may claim their profile; remove the proxy
         # to set the account.
         removeSecurityProxy(email).account = self.account
@@ -3367,6 +3410,13 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_person, team_id))
 
+        # Transfer the OpenIDRPSummaries to the new account.
+        cur.execute("""
+            UPDATE OpenIDRPSummary
+            SET account = %s
+            WHERE account = %s
+            """ % sqlvalues(to_person.account, from_person.account))
+
         # Flag the account as merged
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
@@ -3439,7 +3489,7 @@ class PersonSet:
             Person.id in (%s)
             ''' % branch_clause)
 
-    def getSubscribersForTargets(self, targets, recipients=None):
+    def getSubscribersForTargets(self, targets, recipients=None, level=None):
         """See `IPersonSet`. """
         if len(targets) == 0:
             return set()
@@ -3456,6 +3506,10 @@ class PersonSet:
                 else:
                     target_criteria_clauses.append(
                         '%s IS NULL' % key)
+            if level is not None:
+                target_criteria_clauses.append('bug_notification_level >= %s'
+                    % quote(level.value))
+
             target_criteria.append(
                 '(%s)' % ' AND '.join(target_criteria_clauses))
 
@@ -3660,4 +3714,3 @@ class IrcIDSet:
     def new(self, person, network, nickname):
         """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)
-

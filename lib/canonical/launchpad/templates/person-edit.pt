@@ -6,30 +6,44 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
-  <metal:heading fill-slot="pageheading">
-    <h1 tal:condition="not: view/label">Change account details</h1>
-  </metal:heading>
+    <div metal:fill-slot="main">
+      <h1>Change your personal details</h1>
 
-  <metal:leftportlets fill-slot="portlets_one">
-  </metal:leftportlets>
+      <div metal:use-macro="context/@@launchpad_form/form" />
 
-  <metal:rightportlets fill-slot="portlets_two">
-  </metal:rightportlets>
-
-  <div metal:fill-slot="main">
-
-    <div metal:use-macro="context/@@launchpad_form/form">
-      <p metal:fill-slot="extra_bottom">
-        <a tal:attributes="href string:${context/fmt:url}/+deactivate-account"
-          >Deactivate your account</a>
+      <h2 style="margin-top: 2em;">Other actions</h2>
+      <ul style="list-style-type:none; padding-left:1.5em;">
+        <li
+          tal:content="
+          structure context/menu:overview/editlanguages/render">
+          Set your preferred language
+        </li>
+        <li
+          tal:content="
+          structure context/menu:overview/editwikinames/render">
+          Edit your wiki names
+        </li>
+        <li
+          tal:content="
+          structure context/menu:overview/editircnicknames/render">
+          Edit your IRC contact names
+        </li>
+        <li
+          tal:content="
+          structure context/menu:overview/editjabberids/render">
+          Edit your Jabber contact names
+        </li>
+      </ul>
+      <p style="margin-top: 4em;">
+        Never going to use Launchpad again?
+        <a
+        tal:attributes="href string:${context/fmt:url}/+deactivate-account"
+          >Deactivate your account</a>.
       </p>
     </div>
-
-  </div>
-
   </body>
 </html>

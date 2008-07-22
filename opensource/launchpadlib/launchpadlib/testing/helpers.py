@@ -34,7 +34,7 @@ class TestableLaunchpad(Launchpad):
     """A base class for talking to the testing root service."""
 
     # Use our test service root.
-    SERVICE_ROOT = 'http://api.launchpad.dev:8085/beta'
+    SERVICE_ROOT = 'http://api.launchpad.dev:8085/beta/'
 
 
 class KnownTokens:

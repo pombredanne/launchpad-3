@@ -156,6 +156,8 @@ class BMPMailer(BaseMailer):
         reason, rationale = self._recipients.getReason(
             recipient.preferredemail.email)
         headers['X-Launchpad-Branch'] = reason.branch.unique_name
+        if reason.branch.product is not None:
+            headers['X-Launchpad-Project'] = reason.branch.product.name
         return headers
 
     def _getTemplateParams(self, recipient):

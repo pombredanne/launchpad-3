@@ -2475,13 +2475,61 @@ class CachedMilestoneSourceFactory:
 class BugTasksAndNominationsView(LaunchpadView):
     """Browser class for rendering the bugtasks and nominations table."""
 
+    target_releases = None
+
     def __init__(self, context, request):
         """Ensure we always have a bug context."""
         LaunchpadView.__init__(self, IBug(context), request)
+
+    def initialize(self):
+        """Cache the list of bugtasks and set up the release mapping."""
         # Cache some values, so that we don't have to recalculate them
         # for each bug task.
+        self.bugtasks = list(self.context.bugtasks)
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
+        distro_packages = {}
+        for bugtask in self.bugtasks:
+            target = bugtask.target
+            if IDistributionSourcePackage.providedBy(target):
+                distro_packages.setdefault(target.distribution, [])
+                distro_packages[target.distribution].append(
+                    target.sourcepackagename)
+            if ISourcePackage.providedBy(target):
+                distro_packages.setdefault(target.distroseries, [])
+                distro_packages[target.distroseries].append(
+                    target.sourcepackagename)
+        # Set up a mapping from a target to its current release, using
+        # only a few DB queries. It would be easier to use the packages'
+        # currentrelease attributes, but that causes many DB queries to
+        # be issued.
+        self.target_releases = {}
+        for distro_or_series, package_names in distro_packages.items():
+            releases = distro_or_series.getCurrentSourceReleases(
+                package_names)
+            self.target_releases.update(releases)
+
+    def getTargetLinkTitle(self, target):
+        """Return text to put as the title for the link to the target."""
+        if not (IDistributionSourcePackage.providedBy(target) or
+                ISourcePackage.providedBy(target)):
+            return None
+        current_release = self.target_releases.get(target)
+        if current_release is None:
+            return "No current release for this source package in %s" % (
+                target.distribution.displayname)
+        uploader = current_release.creator
+        maintainer = current_release.maintainer
+        return (
+            "Latest release: %(version)s, uploaded to %(component)s"
+            " on %(date_uploaded)s by %(uploader)s,"
+            " maintained by %(maintainer)s" % dict(
+                version=current_release.version,
+                component=current_release.component.name,
+                date_uploaded=current_release.dateuploaded,
+                uploader=uploader.unique_displayname,
+                maintainer=maintainer.unique_displayname,
+                ))
 
     def _getTableRowView(self, context, is_converted_to_question,
                          is_conjoined_slave):
@@ -2495,6 +2543,9 @@ class BugTasksAndNominationsView(LaunchpadView):
             name='+bugtasks-and-nominations-table-row')
         view.is_converted_to_question = is_converted_to_question
         view.is_conjoined_slave = is_conjoined_slave
+        if IBugTask.providedBy(context):
+            view.target_link_title = self.getTargetLinkTitle(context.target)
+
         view.edit_view = getMultiAdapter(
             (context, self.request), name='+edit-form')
         view.edit_view.milestone_source = self.cached_milestone_source
@@ -2510,7 +2561,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         included in the returned results.
         """
         bug = self.context
-        bugtasks = list(bug.bugtasks)
+        bugtasks = self.bugtasks
 
         upstream_tasks = [
             bugtask for bugtask in bugtasks
@@ -2592,6 +2643,7 @@ class BugTaskTableRowView(LaunchpadView):
 
     is_conjoined_slave = None
     is_converted_to_question = None
+    target_link_title = None
 
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
