@@ -209,7 +209,7 @@ branches, and the current status.
     ...         browser.contents, 'proposal-heading'))
     >>> print_summary(sample_browser)
     Proposed ...
-    On hold for merging into lp://dev/~name12/firefox/main
+    Ready for review for merging into lp://dev/~name12/firefox/main
 
 The summary of the revisions that are in the source branch but not
 yet in the target branch are also shown.
@@ -238,6 +238,7 @@ target branches or the registrant of the merge proposal.
     ...     else:
     ...         print "No actions shown"
     >>> print_proposal_actions(sample_browser.contents)
+    Work in progress
     Review proposal
     Mark as merged
     Queue for merging
@@ -575,7 +576,7 @@ a link back to the superseded proposal.
 
     >>> print_summary(sample_browser)
     Proposed ...
-    On hold for merging into lp://dev/~name12/gnome-terminal/main
+    Ready for review for merging into lp://dev/~name12/gnome-terminal/main
 
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'superseded-proposal'))
@@ -724,6 +725,7 @@ Consume notification.
     ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2/+merges')
     >>> nopriv_browser.getLink('view proposal details').click()
     >>> print_proposal_actions(nopriv_browser.contents)
+    Work in progress
     Mark as merged
     Resubmit proposal
 
