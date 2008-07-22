@@ -1579,46 +1579,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         'driver',
         ]
 
-    def initialize(self):
-        """Process the form before initializing the object."""
-        if self.request.method == "POST":
-            self.processForm()
-        super(ProductEditPeopleView, self).initialize()
-
-    def processForm(self):
-        """Process the form before the widgets validate their input.
-
-        If necessary, create a new team and set form['owner'] to it.
-        """
-        if self.request.form.get('existing') == 'new':
-            person_set = getUtility(IPersonSet)
-            owner_name = self.request.form.get('field.owner')
-            if not owner_name:
-                self.setFieldError(
-                    'owner',
-                    "You have to specify the name of the person/team that's "
-                    "going to be the new owner.")
-            elif not valid_name(owner_name):
-                self.setFieldError(
-                    'owner',
-                    "'%s' is not a valid name for a team. Please make sure "
-                    "it contains only the allowed characters and no spaces."
-                    % owner_name)
-            elif person_set.getByName(owner_name):
-                self.setFieldError(
-                    'owner',
-                    "There's already a person/team with the name '%s' in "
-                    "Launchpad. Please choose a different name or select "
-                    "the option to make that person/team the new owner, "
-                    "if that's what you want." % owner_name)
-            else:
-                owner = person_set.newTeam(
-                    self.user, owner_name, owner_name.capitalize())
-                self.request.form['field.owner'] = owner.name
-                # Flush the owner to the database so that the ValidPerson
-                # vocabulary finds it there.
-                flush_database_updates()
-
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
         old_owner = self.context.owner
@@ -1626,7 +1586,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         self.updateContextFromData(data)
         self._reassignProductDependencies(
             self.context, old_owner, self.context.owner)
-        self.updateContextFromData(data)
         if self.context.owner != old_owner:
             self.request.response.addNotification(
                 "Successfully changed the owner to %s"
