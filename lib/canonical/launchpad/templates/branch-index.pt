@@ -138,12 +138,12 @@
       </tal:hosted-branch>
       <tr id="branch-format" tal:condition="context/branch_format">
         <th>Branch format:</th>
-        <td tal:content="view/branch_format/description" />
+        <td tal:content="context/branch_format/description" />
       </tr>
       <tr id="repository-format"
         tal:condition="context/repository_format">
         <th>Repository format:</th>
-        <td tal:content="view/repository_format/description" />
+        <td tal:content="context/repository_format/description" />
       </tr>
       </tbody>
   </table>
