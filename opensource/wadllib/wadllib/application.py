@@ -302,7 +302,7 @@ class Resource(WADLResolvableDefinition):
             representation. Used in cases when the representation
             isn't the result of sending a standard GET to the
             resource.
-        :returns: A Resource bound to a particular representation.
+        :return: A Resource bound to a particular representation.
         """
         return Resource(self.application, self.url, self.tag,
                         representation, media_type,
@@ -324,7 +324,7 @@ class Resource(WADLResolvableDefinition):
         """Look up one of this resource's methods by HTTP method.
 
         :param http_method: The HTTP method used to invoke the desired
-                            method. Case-insensitive.
+                            method. Case-insensitive and optional.
 
         :param media_type: The media type of the representation
                            accepted by the method. Optional.
@@ -340,7 +340,7 @@ class Resource(WADLResolvableDefinition):
                              the same HTTP method and have the same
                              media type. Optional.
 
-        :returns: A MethodDefinition, or None if there's no definition
+        :return: A MethodDefinition, or None if there's no definition
                   that fits the given constraints.
         """
         definition = self.resolve_definition().tag
@@ -354,7 +354,12 @@ class Resource(WADLResolvableDefinition):
         return None
 
     def get_parameter(self, param_name):
-        """Find the value of a parameter within the representation."""
+        """Find the value of a parameter within the representation.
+
+        :raise NoBoundRepresentationError: If this parameter's value
+               container is not bound to a representation or a set of
+               headers.
+        """
         if self.representation is None:
             raise NoBoundRepresentationError(
                 "Resource is not bound to any representation.")
@@ -440,7 +445,7 @@ class Method(WADLBase):
         """
         return self.tag.attrib.get('name').lower()
 
-    def build_request_url(self,  param_values=None, **kw_param_values):
+    def build_request_url(self, param_values=None, **kw_param_values):
         """Return the request URL to use to invoke this method."""
         return self.request.build_url(param_values, **kw_param_values)
 
@@ -448,7 +453,7 @@ class Method(WADLBase):
                              param_values=None, **kw_param_values):
         """Build a representation to be sent when invoking this method.
 
-        :returns: A 2-tuple of (media_type, representation).
+        :return: A 2-tuple of (media_type, representation).
         """
         return self.request.representation(
             media_type, param_values, **kw_param_values)
@@ -545,7 +550,7 @@ class RequestDefinition(WADLBase, HasParametersMixin):
                        **kw_param_values):
         """Build a representation to be sent along with this request.
 
-        :returns: A 2-tuple of (media_type, representation).
+        :return: A 2-tuple of (media_type, representation).
         """
         definition = self.representation_definition(media_type)
         if definition is None:
@@ -827,7 +832,7 @@ class Application(WADLBase):
 
         :param url: The URL (with anchor) of the desired part of the
         WADL document.
-        :returns: The XML ID corresponding to the anchor.
+        :return: The XML ID corresponding to the anchor.
         """
         markup_uri = uri.URI(self.markup_url).ensureNoSlash()
         markup_uri.fragment = None

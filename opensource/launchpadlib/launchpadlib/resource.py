@@ -69,10 +69,10 @@ class LaunchpadBase:
         for key, value in dictionary.items():
             if isinstance(value, Resource):
                 value = value.self_link
-            new_dictionary[self._external_param_name(key)] = value
+            new_dictionary[self._get_external_param_name(key)] = value
         return new_dictionary
 
-    def _external_param_name(self, param_name):
+    def _get_external_param_name(self, param_name):
         """Turn a launchpadlib name into something to be sent over HTTP.
 
         For resources this may involve sticking '_link' or
@@ -98,7 +98,7 @@ class Resource(LaunchpadBase):
 
     def lp_has_parameter(self, param_name):
         """Does this resource have a parameter with the given name?"""
-        return self._external_param_name(param_name) is not None
+        return self._get_external_param_name(param_name) is not None
 
     def lp_get_parameter(self, param_name):
         """Get the value of one of the resource's parameters.
@@ -130,7 +130,7 @@ class Resource(LaunchpadBase):
                 'post', representation_params=params)
         if method is None:
             raise KeyError("No operation with name: %s" % operation_name)
-        return NamedOperation(self._root, method)
+        return NamedOperation(self._root, self, method)
 
     @classmethod
     def _wrap_resource(cls, root, resource, representation=None,
@@ -172,7 +172,7 @@ class Resource(LaunchpadBase):
         if (type_url.endswith('-page')
             or (param_name is not None
                 and param_name.endswith('_collection_link'))):
-                default = Collection
+            default = Collection
         r_class = RESOURCE_TYPE_CLASSES.get(resource_type, default)
         return r_class(
             root, resource.bind(
@@ -202,7 +202,7 @@ class Resource(LaunchpadBase):
             raise AttributeError("'%s' object has no attribute '%s'"
                                  % (self.__class__.__name__, attr))
 
-    def _external_param_name(self, param_name):
+    def _get_external_param_name(self, param_name):
         """What's this parameter's name in the underlying representation?"""
         for suffix in ['_link', '_collection_link', '']:
             name = param_name + suffix
@@ -214,9 +214,10 @@ class Resource(LaunchpadBase):
 class NamedOperation(LaunchpadBase):
     """A class for a named operation to be invoked with GET or POST."""
 
-    def __init__(self, root, wadl_method):
+    def __init__(self, root, resource, wadl_method):
         """Initialize with respect to a WADL Method object"""
         self.root = root
+        self.resource = resource
         self.wadl_method = wadl_method
 
     def __call__(self, **kwargs):
@@ -239,6 +240,10 @@ class NamedOperation(LaunchpadBase):
         if response.status == 201:
             return self._handle_201_response(url, response, content)
         else:
+            if http_method == 'post':
+                # The method call probably modified this resource in
+                # an unknown way. Refresh its representation.
+                self.resource.lp_refresh()
             return self._handle_200_response(url, response, content)
 
     def _handle_201_response(self, url, response, content):
@@ -301,6 +306,10 @@ class NamedOperation(LaunchpadBase):
             representation_needs_processing=False,
             representation_definition=representation_definition)
 
+    def _get_external_param_name(self, param_name):
+        """Named operation parameter names are sent as is."""
+        return param_name
+
 
 class Entry(Resource):
     """A class for an entry-type resource that can be updated with PATCH."""
@@ -319,6 +328,15 @@ class Entry(Resource):
         # breaking the cycle.
         self.__dict__['_dirty_attributes'] = {}
         super(Entry, self).__init__(root, wadl_resource)
+
+    def __repr__(self):
+        """Return the WADL resource type and the URL to the resource."""
+        return '<%s at %s>' % (
+            URI(self.resource_type_link).fragment, self.self_link)
+
+    def __str__(self):
+        """Return the URL to the resource."""
+        return self.self_link
 
     def __getattr__(self, name):
         """Try to retrive a parameter of the given name."""
@@ -355,6 +373,7 @@ class Entry(Resource):
             else:
                 raise
         self._dirty_attributes.clear()
+        self.lp_refresh()
 
 
 class Collection(Resource):

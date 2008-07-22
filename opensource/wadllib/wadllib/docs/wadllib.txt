@@ -113,6 +113,8 @@ Now the bound resource object has a JSON representation, and now
 'people_collection_link' to a new Resource object.
 
    >>> link_parameter = bound_service_root.get_parameter(link_name)
+   >>> link_parameter.style
+   'plain'
    >>> link_parameter.get_value()
    u'http://api.launchpad.dev/beta/people'
    >>> personset_resource = link_parameter.linked_resource
@@ -344,6 +346,11 @@ details of how a representation is put together.
    ...     display_name='Joe Bloggs', name='joebloggs')
    ('application/x-www-form-urlencoded', 'display_name=Joe+Bloggs&ws.op=newTeam&name=joebloggs')
 
+The return value of build_representation is a 2-tuple containing the
+media type of the built representation, and the string representation
+itself. Along with the resource's URL, this is all you need to send
+the representation to a web server.
+
    >>> bound_limi.get_method('patch').build_representation(name='limi2')
    ('application/json', '{"name": "limi2"}')
 
@@ -373,3 +380,10 @@ type.
    >>> print wadl.get_resource_type('#nosuchtype')
    Traceback (most recent call last):
    KeyError: 'No such XML ID: "#nosuchtype"'
+
+You'll get None if you try to look up a method whose parameters don't
+match any defined method.
+
+   >>> print bound_limi.get_method(
+   ...     'post', representation_params={ 'foo' : 'bar' })
+   None
