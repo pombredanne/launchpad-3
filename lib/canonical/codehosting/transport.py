@@ -50,8 +50,9 @@ __all__ = [
     'get_chrooted_transport',
     'LaunchpadInternalServer',
     'LaunchpadServer',
-    'LaunchpadTransport',
     'set_up_logging',
+    'SynchronousAdapter',
+    'VirtualTransport',
     ]
 
 import logging
