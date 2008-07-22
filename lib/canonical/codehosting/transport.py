@@ -629,6 +629,16 @@ class LaunchpadServer(Server):
         branch, ignored = self._getBranch(virtual_url_fragment)
         return branch.requestMirror()
 
+    def _getTransportForPermissions(self, permissions, branch):
+        """Get the appropriate transport for `permissions` on `branch`."""
+        if permissions == READ_ONLY:
+            return self._mirror_transport
+        else:
+            transport = self._backing_transport
+            deferred = branch.ensureUnderlyingPath(transport)
+            deferred.addCallback(lambda ignored: transport)
+            return deferred
+
     def translateVirtualPath(self, virtual_url_fragment):
         """Translate 'virtual_url_fragment' into a transport and sub-fragment.
 
@@ -669,18 +679,10 @@ class LaunchpadServer(Server):
 
         def get_transport(real_path):
             permissions_deferred = branch.getPermissions()
-            def got_permissions(permissions):
-                if permissions == READ_ONLY:
-                    return self._mirror_transport
-                else:
-                    transport = self._backing_transport
-                    deferred = branch.ensureUnderlyingPath(transport)
-                    deferred.addCallback(lambda ignored: transport)
-                    return deferred
-            permissions_deferred.addCallback(got_permissions)
             permissions_deferred.addCallback(
+                self._getTransportForPermissions, branch)
+            return permissions_deferred.addCallback(
                 lambda transport: (transport, real_path))
-            return permissions_deferred
 
         return virtual_path_deferred.addCallback(get_transport)
 
