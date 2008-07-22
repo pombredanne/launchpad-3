@@ -47,6 +47,7 @@ from canonical.launchpad.interfaces import (
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
     IProduct, IProject, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
     NotFoundError, RepositoryFormat)
+from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -61,7 +62,7 @@ from canonical.launchpad.webapp import urlappend
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranch)
+    implements(IBranch, IBranchNavigationMenu)
     _table = 'Branch'
     _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
 
