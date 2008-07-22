@@ -330,3 +330,23 @@ the field `owner` is updated.
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
+
+=== Submission Records without an email address ===
+
+A submission does not necessarily have an email address (anonymous
+submission). Such submissions can be created too.
+
+    >>> submission = hw_submission_set.createSubmission(
+    ...     date_created=date_created,
+    ...     format=HWSubmissionFormat.VERSION_1,
+    ...     private=False,
+    ...     contactable=False,
+    ...     submission_key=u'unique-id-5',
+    ...     emailaddress=None,
+    ...     distroarchseries=None,
+    ...     raw_submission=StringIO(submission_data),
+    ...     filename=u'hwinfo.txt',
+    ...     filesize=len(submission_data),
+    ...     system_fingerprint=u'Dell Inspiron 1234')
+    >>> print submission.raw_emailaddress
+    None
