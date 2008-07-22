@@ -335,10 +335,3 @@ The data that we specified is shown on the web page.
     ...     browser.contents, 'repository-format'))
     Repository format: Packs containing knits without subtree support
 
-For branches that haven't been scanned, suitable messages are printed.
-
-    >>> browser.open(unscanned_url)
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'branch-format'))
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'repository-format'))
