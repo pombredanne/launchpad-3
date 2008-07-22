@@ -39,7 +39,7 @@ class Launchpad(Resource):
     :type credentials: `Credentials`
     """
 
-    SERVICE_ROOT = 'https://api.launchpad.net/beta/'
+    SERVICE_ROOT = 'https://api.edge.launchpad.net/beta/'
 
     def __init__(self, credentials):
         """Root access to the Launchpad API.
@@ -95,7 +95,7 @@ class Launchpad(Resource):
         finished the authorization process.
         """
         credentials = Credentials(consumer_name)
-        request_token, authorization_url = credentials.get_request_token()
+        authorization_url = credentials.get_request_token()
         try:
             open_url_in_browser(authorization_url)
             print ("The authorization page (%s) should be opening in your "

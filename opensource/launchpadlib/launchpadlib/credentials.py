@@ -34,7 +34,7 @@ from launchpadlib._oauth.oauth import OAuthConsumer, OAuthToken
 
 
 CREDENTIALS_FILE_VERSION = '1'
-WEB_ROOT = 'https://launchpad.net/'
+WEB_ROOT = 'https://edge.launchpad.net/'
 request_token_page = '+request-token'
 access_token_page = '+access-token'
 authorize_token_page = '+authorize-token'

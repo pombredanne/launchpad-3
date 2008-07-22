@@ -168,11 +168,11 @@ the user and get the credentials directly from Launchpad.
 First we must get a request token.
 
     >>> import launchpadlib.credentials
-    >>> launchpadlib.credentials.WEB_ROOT = 'http://launchpad.dev/'
+    >>> launchpadlib.credentials.WEB_ROOT = 'http://launchpad.dev:8085/'
     >>> credentials = Credentials('consumer')
     >>> authorization_url = credentials.get_request_token(context='firefox')
     >>> authorization_url
-    'http://launchpad.dev/+authorize-token?oauth_token=...&lp.context=firefox'
+    'http://launchpad.dev:8085/+authorize-token?oauth_token=...&lp.context=firefox'
 
 Now the user must authorize that token, so we'll hand-craft a request
 to pretend the user is authorizing it.
