@@ -3489,7 +3489,7 @@ class PersonSet:
             Person.id in (%s)
             ''' % branch_clause)
 
-    def getSubscribersForTargets(self, targets, recipients=None):
+    def getSubscribersForTargets(self, targets, recipients=None, level=None):
         """See `IPersonSet`. """
         if len(targets) == 0:
             return set()
@@ -3506,6 +3506,10 @@ class PersonSet:
                 else:
                     target_criteria_clauses.append(
                         '%s IS NULL' % key)
+            if level is not None:
+                target_criteria_clauses.append('bug_notification_level >= %s'
+                    % quote(level.value))
+
             target_criteria.append(
                 '(%s)' % ' AND '.join(target_criteria_clauses))
 
