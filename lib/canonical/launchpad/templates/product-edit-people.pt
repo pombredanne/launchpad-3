@@ -39,37 +39,32 @@
         <td tal:content="structure context/owner/fmt:link" />
       </tr>
 
-      <tal:block define="widget nocall:view/owner_widget">
-        <metal:block use-macro="context/@@launchpad_form/widget_row"/>
-      </tal:block>
-
-      <tr>
-        <th align="right">This is:</th>
-        <td>
-          <label for="existing">
-            <input type="radio" value="existing" id="existing" name="existing"
-              tal:attributes="checked view/existing_checked_value"
-              />An existing person or team
-          </label>
-          <br />
-
-          <label for="new">
-            <input type="radio" value="new" id="new" name="existing"
-                   tal:attributes="checked view/new_checked_value"
-                   />A new team I'm creating here
-          </label>
-          <br />
-          <p class="lesser discreet">
-            The new team's name must begin with a lower-case letter or
-            number, and contain only letters, numbers, dots, hyphens, or plus
-            signs.
-          </p>
-        </td>
+      <tr tal:repeat="widget view/widgets">
+        <tal:vars
+          tal:define="field_name widget/context/__name__;
+                      error python:view.getFieldError(field_name);
+                      error_class python:error and 'error' or None;
+                      show_optional python:view.showOptionalMarker(field_name)">
+          <th>
+            <label tal:attributes="for widget/name"
+                  tal:content="string:${widget/label}:">Label</label><br />
+            <span tal:condition="show_optional"
+                  class="fieldRequired">(Optional)</span>
+          </th>
+          <td tal:attributes="class error_class" width="100%">
+            <div>
+              <input tal:replace="structure widget" />
+              or (<a href="/people/+newteam">Create a new team...</a>)
+            </div>
+            <div class="message" tal:condition="error"
+                tal:content="structure error">Error message</div>
+            <p class="formHelp"
+              tal:condition="widget/hint"
+              tal:content="widget/hint">Some Help Text
+            </p>
+          </td>
+        </tal:vars>
       </tr>
-      <tal:block define="widgets view/remaining_widgets"
-                 repeat="widget widgets">
-        <metal:block use-macro="context/@@launchpad_form/widget_row"/>
-      </tal:block>
 
     </table>
     <div class="actions">

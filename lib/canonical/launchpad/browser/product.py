@@ -1579,38 +1579,11 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         'driver',
         ]
 
-    def existing_checked_value(self):
-        """Preserve form checkbox value across submits."""
-        if self.request.form.get('existing') == 'new':
-            return ''
-        else:
-            return 'checked'
-
-    def new_checked_value(self):
-        """Preserve form checkbox value across submits."""
-        if self.request.form.get('existing') == 'new':
-            return 'checked'
-        else:
-            return ''
-
     def initialize(self):
         """Process the form before initializing the object."""
         if self.request.method == "POST":
             self.processForm()
         super(ProductEditPeopleView, self).initialize()
-
-    @property
-    def owner_widget(self):
-        return self.widgets['owner']
-
-    @property
-    def remaining_widgets(self):
-        """Return all widgets except the owner.
-
-        The owner is formatted differently in the template.
-        """
-        return (self.widgets[name] for name in self.field_names
-                if name != 'owner')
 
     def processForm(self):
         """Process the form before the widgets validate their input.
