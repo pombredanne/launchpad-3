@@ -39,10 +39,9 @@ Branch URLs are not valid for hosted branches.
     ...         print extract_text(row)
     >>> print_details_table(browser)
     Project: Redfish (Unspecified)
+    Status: New
     Update this branch:
         bzr push lp://dev/~name12/redfish/hosted-branch
-    Branch format: Not recorded
-    Repository format: Not recorded
 
 
 == Creating a mirrored branch ==
@@ -74,11 +73,10 @@ Branch URLs are required for mirrored branches.
 
     >>> print_details_table(browser)
     Project: Redfish (Unspecified)
+    Status: New
     Location: http://example.com/mirrored-branch
     Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
-    Branch format: Not recorded
-    Repository format: Not recorded
 
 
 == Creating a remote branch ==
@@ -98,9 +96,8 @@ A remote branch may have a URL, but doesn't have to.
     >>> browser.getControl('Register Branch').click()
     >>> print_details_table(browser)
     Project: Redfish (Unspecified)
+    Status: New
     Location: http://example.com/remote-branch
-    Branch format: Not recorded
-    Repository format: Not recorded
 
 
 == Finding product/+addbranch ==
@@ -153,15 +150,12 @@ matching for the angle brackets of an enclosing tag.
     'http://code.launchpad.dev/~no-priv/applets/main'
 
     >>> print extract_text(find_main_content(user_browser.contents))
+    Last modified
+    ...
+    This branch is public
+    ...
     Gnome Panel Applets Mainline
     ...http://example.com/applets/main...
-
-    >>> print extract_text(find_portlet(
-    ...     user_browser.contents, 'Current details'))
-    Current details
-    Type: Mirrored
-    ...
-    Status: Development
 
 
 This page includes a link to other branches associated
