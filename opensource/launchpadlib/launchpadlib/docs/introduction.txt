@@ -29,7 +29,7 @@ this since it's not really a secret anyway.
 
 The access token cannot be provided directly.  Instead, the application
 generates an unauthenticated request token, exchanging this for an access
-token and a secret after obtaining approval to so from the user.  This
+token and a secret after obtaining approval to do so from the user.  This
 permission is typically gained by redirecting the user through their trusted
 web browser, then back to the application.
 
@@ -58,7 +58,9 @@ And now these credentials are used to access the root service on Salgado's
 behalf.
 
     >>> from launchpadlib.credentials import Credentials
-    >>> credentials = Credentials(consumer, access_token)
+    >>> credentials = Credentials(
+    ...     consumer_name=consumer.key, consumer_secret=consumer.secret,
+    ...     access_token=access_token)
 
     >>> from launchpadlib.testing.helpers import (
     ...     TestableLaunchpad as Launchpad)
@@ -69,14 +71,13 @@ behalf.
     [...]
 
 For convenience, the application may store the credentials on the file system,
-so that the next time the Salgado interacts with the application, he won't
-have to go through the whole OAuth request dance.
+so that the next time Salgado interacts with the application, he won't have
+to go through the whole OAuth request dance.
 
     >>> import os
     >>> import tempfile
     >>> fd, path = tempfile.mkstemp('.credentials')
     >>> os.close(fd)
-    >>> credentials_file = open(path)
 
 Once Salgado's credentials are obtained for the first time, just set the
 appropriate instance variables and use the save() method.
@@ -169,9 +170,9 @@ First we must get a request token.
     >>> import launchpadlib.credentials
     >>> launchpadlib.credentials.WEB_ROOT = 'http://launchpad.dev/'
     >>> credentials = Credentials('consumer')
-    >>> authorization_url = credentials.get_request_token()
+    >>> authorization_url = credentials.get_request_token(context='firefox')
     >>> authorization_url
-    'http://launchpad.dev/+authorize-token?oauth_token=...
+    'http://launchpad.dev/+authorize-token?oauth_token=...&lp.context=firefox'
 
 Now the user must authorize that token, so we'll hand-craft a request
 to pretend the user is authorizing it.
@@ -179,7 +180,8 @@ to pretend the user is authorizing it.
     >>> import httplib2
     >>> from urllib import urlencode
     >>> params = {'field.actions.WRITE_PRIVATE': 1,
-    ...           'oauth_token': request_token.key}
+    ...           'oauth_token': credentials._request_token.key,
+    ...           'lp.context': 'firefox'}
     >>> foo_bar_auth = 'Basic %s' % (
     ...     'foo.bar@canonical.com:test'.encode('base64'))
     >>> headers = {'Authorization': foo_bar_auth}
@@ -195,14 +197,16 @@ After that we can exchange that request token for an access token.
 
 Once that's done, our credentials will be complete and ready to use.
 
-    >>> credentials.consumer
+    >>> credentials.consumer.key
     'consumer'
     >>> credentials.access_token
-    <launchpadlib._oauth.oauth.OAuthToken...
+    <launchpadlib.credentials.AccessToken...
     >>> credentials.access_token.key is not None
     True
     >>> credentials.access_token.secret is not None
     True
+    >>> credentials.access_token.context
+    'firefox'
 
 There's also a convenience method which does the access token
 negotiation and logs into the web service.  It uses the methods
@@ -311,7 +315,9 @@ credentials.
 The application is not allowed to access Launchpad with a bad access token.
 
     >>> access_token = AccessToken('bad', 'no-secret')
-    >>> credentials = Credentials(consumer, access_token)
+    >>> credentials = Credentials(
+    ...     consumer_name=consumer.key, consumer_secret=consumer.secret,
+    ...     access_token=access_token)
     >>> launchpad = Launchpad(credentials=credentials)
     Traceback (most recent call last):
     ...
@@ -320,7 +326,9 @@ The application is not allowed to access Launchpad with a bad access token.
 The application is not allowed to access Launchpad with a bad access secret.
 
     >>> access_token = AccessToken('hgm2VK35vXD6rLg5pxWw', 'bad-secret')
-    >>> credentials = Credentials(consumer, access_token)
+    >>> credentials = Credentials(
+    ...     consumer_name=consumer.key, consumer_secret=consumer.secret,
+    ...     access_token=access_token)
     >>> launchpad = Launchpad(credentials=credentials)
     Traceback (most recent call last):
     ...

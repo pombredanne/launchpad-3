@@ -78,7 +78,7 @@ is restricted to things related to that context.
     >>> params_with_context = {'lp.context': 'firefox'}
     >>> params_with_context.update(params)
     >>> browser.open(
-    ...     "http://launchpad.dev/+oauth-authorize?%s"
+    ...     "http://launchpad.dev/+authorize-token?%s"
     ...     % urlencode(params_with_context))
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
@@ -90,7 +90,7 @@ behalf, we issue a redirect to the given oauth_callback (if it was
 specified by the application).
 
     >>> browser.open(
-    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+    ...     "http://launchpad.dev/+authorize-token?%s" % urlencode(params))
     >>> browser.getControl('Read Non-Private Data').click()
 
     # This is the URL given to Launchpad in oauth_callback.

@@ -29,7 +29,7 @@ from launchpadlib._browser import Browser
 from launchpadlib._utils.uri import URI
 from launchpadlib.errors import BrowserNotFoundError
 from launchpadlib.resource import Resource
-from launchpadlib.credentials import AccessToken, Consumer, Credentials
+from launchpadlib.credentials import AccessToken, Credentials
 
 
 class Launchpad(Resource):
@@ -79,9 +79,9 @@ class Launchpad(Resource):
         :return: The web service root
         :rtype: `Launchpad`
         """
-        consumer = Consumer(consumer_name)
         access_token = AccessToken(token_string, access_secret)
-        credentials = Credentials(consumer, access_token)
+        credentials = Credentials(
+            consumer_name=consumer_name, access_token=access_token)
         return cls(credentials)
 
     @classmethod
@@ -94,7 +94,7 @@ class Launchpad(Resource):
         a web browser and ask the user to come back here and tell us when they
         finished the authorization process.
         """
-        credentials = Credentials(Consumer(consumer_name))
+        credentials = Credentials(consumer_name)
         request_token, authorization_url = credentials.get_request_token()
         try:
             open_url_in_browser(authorization_url)
