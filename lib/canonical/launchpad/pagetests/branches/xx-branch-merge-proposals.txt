@@ -185,7 +185,6 @@ and merging, so we have to settle for the sample data.
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merges')
     >>> printMergeProposals(sample_browser, 'landing-targets')
-    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9')
     ~name12/firefox/main - view proposal details
       This is the whiteboard
       Merge proposed by Sample Person
