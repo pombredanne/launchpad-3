@@ -757,9 +757,11 @@ is kept in the <resource_type> tag.
     >>> entry_type.tag
     '...resource_type'
 
-    >>> methods = list(entry_type)
-    >>> (get, put, patch, transitionToStatus,
-    ...     transitionToImportance, transitionToAssignee) = methods
+    >>> def sort_by_id(method):
+    ...     return method.attrib['id']
+    >>> methods = sorted(list(entry_type), key=sort_by_id)
+    >>> (get, patch, put, transitionToAssignee,
+    ...     transitionToImportance, transitionToStatus) = methods
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
