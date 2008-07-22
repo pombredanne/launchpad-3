@@ -21,6 +21,7 @@ from canonical.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.database.archivepermission import ArchivePermission
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -36,6 +37,12 @@ from canonical.launchpad.interfaces import (
     IDistroSeriesSet, ILibraryFileAliasSet, NonBuildableSourceUploadError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
     QueueInconsistentStateError)
+from canonical.launchpad.interfaces.archivepermission import (
+    ArchivePermissionType)
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.mail_helpers import pop_notifications
@@ -945,6 +952,69 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(
             str(error),
             "Cannot build any of the architectures requested: m68k")
+
+    def testPackageUploadPermissions(self):
+        """Test package-specific upload permissions.
+        
+        Someone who has upload permissions to a component, but also
+        has permission to a specific package in a different component
+        should be able to upload that package.
+        """
+        self.setupBreezy()
+        # Rempve our favourite uploader from the team that has
+        # permissions to all components at upload time.
+        uploader = getUtility(IPersonSet).getByName('name16')
+        distro_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        uploader.leave(distro_team)
+
+        # Now give name16 specific permissions to "restricted" only.
+        restricted = getUtility(IComponentSet)["restricted"]
+        ArchivePermission(
+            archive=self.ubuntu.main_archive,
+            permission=ArchivePermissionType.UPLOAD, person=uploader,
+            component=restricted)
+        self.layer.txn.commit()
+
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the first version and accept it to make it known in
+        # Ubuntu.  The uploader is has rights to upload NEW packages to
+        # components that he does not have direct rights to.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        bar_source_pub = self._publishPackage('bar', '1.0-1')
+        # Clear out emails generated during upload.
+        ignore = pop_notifications()
+
+        # Now upload the next version.
+        upload_dir = self.queueUpload("bar_1.0-2")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Make sure it failed.
+        [message] = pop_notifications()
+        text = message.get_payload()
+        self.assertTrue(
+            "Signer is not permitted to upload to the component 'universe' of"
+                " file 'bar_=" in text,
+            "Expected failure email, got:\n%s" % text)
+
+        # Now add permission to upload "bar" for name16.
+        bar = getUtility(ISourcePackageNameSet).queryByName("bar")
+        ArchivePermission(
+            archive=self.ubuntu.main_archive,
+            permission=ArchivePermissionType.UPLOAD, person=uploader,
+            sourcepackagename=bar)
+
+        # Upload the package again.
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that it worked,
+        [announcement, message] = pop_notifications()
+        text = message.get_payload()
+        self.assertTrue(
+            "rejected" not in text,
+            "Expected acceptance email, got:\n%s" % text)
 
 
 def test_suite():
