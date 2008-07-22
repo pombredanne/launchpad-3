@@ -629,7 +629,9 @@ ul#menuroot li.selected a.breadcrumb {
 }
 /* The last segment is dark, and has a rounded top right corner: */
 #lp-hierarchy .last a {font-weight: bold; padding-right: 10px;}
-#lp-hierarchy .last {background: #ddd url(navigation-hierarchy-ne) top right no-repeat;}
+#lp-hierarchy .last {
+  background: #ddd url(navigation-hierarchy-ne) top right no-repeat;
+}
 
 /* === Location spine === */
 /*
