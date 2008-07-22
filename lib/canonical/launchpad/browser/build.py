@@ -8,6 +8,7 @@ __all__ = [
     'BuildContextMenu',
     'BuildNavigation',
     'BuildRecordsView',
+    'BuildRescoringView',
     'BuildUrl',
     'BuildView',
     'build_to_structuralheading',
@@ -16,12 +17,17 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBuild, IBuildQueueSet, IHasBuildRecords,
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords)
+from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
+from canonical.launchpad.interfaces.launchpad import (
     IStructuralHeaderPresentation, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    canonical_url, enabled_with_permission, ContextMenu, GetitemNavigation,
-    Link, LaunchpadView, StandardLaunchpadFacets)
+    action, canonical_url, enabled_with_permission, ContextMenu,
+    GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
+    StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -133,29 +139,6 @@ class BuildView(LaunchpadView):
         self.context.retry()
         return 'Build record active'
 
-    def rescore_build(self):
-        """Check user confirmation and perform the build record rescore."""
-        if not self.context.can_be_rescored:
-            self.error = 'Build can not be rescored'
-            return
-
-        # retrieve user score
-        self.score = self.request.form.get('SCORE', '')
-        action = self.request.form.get('RESCORE', '')
-
-        if not action:
-            return
-
-        try:
-            score = int(self.score)
-        except ValueError:
-            self.error = 'priority must be an integer not "%s"' % self.score
-            return
-
-        # invoke context method to rescore the build record
-        self.context.buildqueue_record.manualScore(score)
-        return 'Build Record rescored to %s' % self.score
-
     @property
     def user_can_retry_build(self):
         """Return True if the user is permitted to Retry Build.
@@ -164,6 +147,36 @@ class BuildView(LaunchpadView):
         """
         return (check_permission('launchpad.Edit', self.context)
             and self.context.can_be_retried)
+
+
+class BuildRescoringView(LaunchpadFormView):
+    """View class for build rescoring"""
+
+    schema = IBuildRescoreForm
+
+    def initialize(self):
+        """See `ILaunchpadFormView`.
+
+        Additionally, it redirects attempts to rescore builds that cannot
+        be rescored to the build context page.
+        """
+        LaunchpadFormView.initialize(self)
+        if not self.context.can_be_rescored:
+            self.request.response.redirect(canonical_url(self.context))
+
+    @action(_("Rescore"), name="rescore")
+    def action_rescore(self, action, data):
+        """Set the new score value and redirects to the build page."""
+        score = data.get('priority')
+        self.context.buildqueue_record.manualScore(score)
+        self.request.response.addNotification(
+            "Build rescored to %s." % score)
+        self.next_url = canonical_url(self.context)
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        """Simply redirects to the build page."""
+        self.next_url = canonical_url(self.context)
 
 
 class CompleteBuild:
