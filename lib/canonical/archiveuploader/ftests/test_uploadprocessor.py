@@ -1000,11 +1000,11 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected failure email, got:\n%s" % text)
 
         # Now add permission to upload "bar" for name16.
-        bar = getUtility(ISourcePackageNameSet).queryByName("bar")
+        bar_package = getUtility(ISourcePackageNameSet).queryByName("bar")
         ArchivePermission(
             archive=self.ubuntu.main_archive,
             permission=ArchivePermissionType.UPLOAD, person=uploader,
-            sourcepackagename=bar)
+            sourcepackagename=bar_package)
 
         # Upload the package again.
         self.processUpload(uploadprocessor, upload_dir)
