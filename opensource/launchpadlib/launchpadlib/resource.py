@@ -302,18 +302,6 @@ class NamedOperation(LaunchpadBase):
             representation_definition=representation_definition)
 
 
-        # It's possible that the URL defined in the representation
-        # differs from the URL used to fetch the object. For instance,
-        # the object may have been obtained via a named operation that
-        # performs a lookup. Its URL will be the URL of the named
-        # operation, not the self_link for the operation's
-        # result. Re-home the resource so that named operations on it
-        # will succeed in the future.
-        #if (resource.lp_has_parameter('self_link')
-        #    and resource.self_link != resource._wadl_resource.url):
-        #    resource._wadl_resource._url = resource.self_link
-
-
 class Entry(Resource):
     """A class for an entry-type resource that can be updated with PATCH."""
 
