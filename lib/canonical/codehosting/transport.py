@@ -1060,17 +1060,3 @@ class AsyncLaunchpadTransport(VirtualTransport):
             return self._extractResult(defer.fail(
                 failure.Failure(PermissionDenied(virtual_url_fragment))))
         return VirtualTransport.rmdir(self, relpath)
-
-
-class LaunchpadTransport(AsyncLaunchpadTransport):
-
-    def _extractResult(self, deferred):
-        failures = []
-        successes = []
-        deferred.addCallbacks(successes.append, failures.append)
-        if len(failures) == 1:
-            failures[0].raiseException()
-        elif len(successes) == 1:
-            return successes[0]
-        else:
-            raise AssertionError("%r has not fired yet." % (deferred,))
