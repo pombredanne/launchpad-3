@@ -1375,18 +1375,18 @@ class TeamOverviewNavigationMenu(
 
     def profile(self):
         target = ''
-        text = 'Profile'
+        text = 'Overview'
         return Link(target, text)
 
     def polls(self):
         target = '+polls'
-        text = 'Show polls'
+        text = 'Polls'
         return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.View')
     def members(self):
         target = '+members'
-        text = 'Show all members'
+        text = 'Members'
         return Link(target, text, icon='people')
 
 
