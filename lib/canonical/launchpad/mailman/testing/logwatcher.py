@@ -13,7 +13,6 @@ import time
 import datetime
 
 from Mailman.mm_cfg import LOG_DIR
-from canonical.launchpad.mailman.testing.helpers import get_size
 
 
 LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=5)
@@ -21,27 +20,33 @@ SECONDS_TO_SNOOZE = 0.1
 
 
 class LogWatcher:
-    """Watch a log file and wait until it has grown in size."""
-    def __init__(self, log_file):
+    """Watch logs/xmlrpc and wait until a pattern has been seen."""
+    def __init__(self, filename='xmlrpc'):
         # Import this here since sys.path isn't set up properly when this
         # module is imported.
         # pylint: disable-msg=F0401
-        self._log_path = os.path.join(LOG_DIR, log_file)
-        self._last_size = get_size(self._log_path)
+        self._log_path = os.path.join(LOG_DIR, filename)
+        self._log_file = open(self._log_path)
 
-    def wait(self):
-        """Wait for a while, or until the file has grown."""
+    def _wait_for_string(self, landmark):
+        """Wait until the landmark string has been seen.
+
+        'landmark' must appear on a single line.  Comparison is done with 'in'
+        on each line of the file.
+        """
         until = datetime.datetime.now() + LOG_GROWTH_WAIT_INTERVAL
         while True:
-            size = get_size(self._log_path)
-            if size > self._last_size:
+            line = self._log_file.readline()
+            if landmark in line:
                 # Return None on success for doctest convenience.
-                self._last_size = size
                 return None
             if datetime.datetime.now() > until:
                 return 'Timed out'
             time.sleep(SECONDS_TO_SNOOZE)
 
-    def resync(self):
-        """Re-sync the file size so that we can watch it again."""
-        self._last_size = get_size(self._log_path)
+    def wait_for_create(self, team_name):
+        """Wait for the list creation message."""
+        self._wait_for_string('[%s] create/reactivate: success' % team_name)
+
+    def wait_for_resynchronization(self, team_name):
+        self._wait_for_string('[%s] resynchronize: success' % team_name)
