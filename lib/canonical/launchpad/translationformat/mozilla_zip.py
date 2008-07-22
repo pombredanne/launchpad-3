@@ -73,8 +73,11 @@ class MozillaZipTraversal:
     def _processEntry(self, entry, xpi_path):
         """Read one zip archive entry, figure out what to do with it."""
         rootname, suffix = splitext(entry)
+        if basename(rootname) == '':
+            # If filename starts with a dot, that's not really a suffix.
+            suffix = ''
 
-        if suffix == '.jar' and basename(rootname) != '':
+        if suffix == '.jar':
             jarpath = make_jarpath(xpi_path, entry)
             if not self.manifest or self.manifest.containsLocales(jarpath):
                 # If this is a jar file that may contain localizable
