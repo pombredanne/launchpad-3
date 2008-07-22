@@ -283,8 +283,14 @@ class Entry(Resource):
         self.__dict__['_dirty_attributes'] = {}
         super(Entry, self).__init__(root, wadl_resource)
 
+    def __repr__(self):
+        """Return the WADL resource type and the URL to the resource."""
+        return '<%s at %s>' % (
+            URI(self.resource_type_link).fragment, self.self_link)
+
     def __str__(self):
-        return '%s at %s' % (self.resource_type_link, self.self_link)
+        """Return the URL to the resource."""
+        return self.self_link
 
     def __getattr__(self, name):
         """Try to retrive a parameter of the given name."""

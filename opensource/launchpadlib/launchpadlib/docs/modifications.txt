@@ -111,16 +111,22 @@ description.  Salgado also understands that anybody can achieve awesomeness.
     >>> bassists.team_description = (
     ...     u'The most important instrument in the world')
     >>> bassists.subscription_policy = u'Open Team'
+    >>> bassists_copy = launchpad.people['bassists']
     >>> bassists.lp_save()
 
-A resource is automatically refreshed after saving.
+A resource object is automatically refreshed after saving.
 
     >>> print bassists.team_description
     The most important instrument in the world
 
-But you can also refresh it manually.
+Any other version of that resource will still have the old data.
 
-    >>> bassists.lp_refresh()
+    >>> print bassists_copy.team_description
+    None
+
+But you can also refresh a resource object manually.
+
+    >>> bassists_copy.lp_refresh()
     >>> print bassists.team_description
     The most important instrument in the world
     >>> bassists.subscription_policy
@@ -130,15 +136,15 @@ Some of a resource's attributes may take other resources as values.
 
     >>> bug_one = launchpad.bugs[1]
     >>> task = [task for task in bug_one.bug_tasks][0]
+    >>> print repr(task.owner)
+    <person at http://api.launchpad.dev:8085/beta/~name12>
     >>> print task.owner
-    http://api.launchpad.dev:8085/beta/#person
-    at http://api.launchpad.dev:8085/beta/~name12
+    http://api.launchpad.dev:8085/beta/~name12
 
     >>> task.owner = salgado
     >>> task.lp_save()
     >>> print task.owner
-    http://api.launchpad.dev:8085/beta/#person
-    at http://api.launchpad.dev:8085/beta/~salgado
+    http://api.launchpad.dev:8085/beta/~salgado
 
 Resources may also be used as arguments to named operations.
 
