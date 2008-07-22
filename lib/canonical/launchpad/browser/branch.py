@@ -422,6 +422,13 @@ class BranchView(LaunchpadView, FeedsMixin):
         branch_count = self.context.landing_candidates.count()
         return self._getBranchCountText(branch_count)
 
+    @cachedproperty
+    def no_merges(self):
+        """Return true if there are no pending merges"""
+        return (len(self.landing_targets) +
+            len(self.landing_candidates) +
+            len(list(self.dependent_branches)) > 0)
+
     @property
     def show_candidate_more_link(self):
         """Only show the link if there are more than five."""
@@ -485,33 +492,6 @@ class DecoratedMergeProposal:
     def show_registrant(self):
         """Show the registrant if it was not the branch owner."""
         return self.context.registrant != self.source_branch.owner
-
-    @cachedproperty
-    def landing_targets(self):
-        """Return a decorated filtered list of landing targets."""
-        targets = []
-        targets_added = set()
-        for proposal in self.context.landing_targets:
-            # Only show the must recent proposal for any given target.
-            target_id = proposal.target_branch.id
-            if target_id in targets_added:
-                continue
-            targets.append(DecoratedMergeProposal(proposal))
-            targets_added.add(target_id)
-        return targets
-
-    @cachedproperty
-    def latest_landing_candidates(self):
-        """Return a decorated filtered list of landing candidates."""
-        # Only show the most recent 5 landing_candidates
-        candidates = self.context.landing_candidates[:5]
-        return [DecoratedMergeProposal(proposal) for proposal in candidates]
-
-    @cachedproperty
-    def landing_candidates(self):
-        """Return a decorated list of landing candidates."""
-        candidates = self.context.landing_candidates
-        return [DecoratedMergeProposal(proposal) for proposal in candidates]
 
 
 class BranchInPersonView(BranchView):

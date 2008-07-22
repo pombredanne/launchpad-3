@@ -17,10 +17,6 @@
 
   <div metal:fill-slot="main">
 
-    <h1>
-      Proposed merges related to <tal:branch replace="context/displayname" />
-    </h1>
-
     <div id="dependent-branches" tal:condition="context/dependent_branches">
       <h2>Dependent branches</h2>
 
@@ -71,6 +67,9 @@
         tal:condition="link/enabled"
         tal:replace="structure link/render"
       />
+    </div>
+    <div tal:condition="view/no_merges">
+      There are no merges involving this branch.
     </div>
 
   </div>

@@ -26,28 +26,8 @@
 
   <tal:proposal-heading tal:replace="structure context/@@+heading"/>
 
-  <div class="aside">
-    <aside tal:content="structure context/@@+pagelet-subscribers" />
-  </div>
-
-  <tal:superseded-proposal condition="context/supersedes">
-    <p id="superseded-proposal">
-      This proposal supersedes a
-      <a tal:attributes="href context/supersedes/fmt:url">
-        proposal from
-        <tal:when replace="context/supersedes/date_created/fmt:date" /></a>.
-    </p>
-  </tal:superseded-proposal>
-  <tal:superseded-by condition="context/superseded_by">
-    <p id="superseded-by">
-      This proposal has been superseded by a
-      <a tal:attributes="href context/superseded_by/fmt:url">
-        proposal from
-        <tal:when replace="context/superseded_by/date_created/fmt:date" /></a>.
-    </p>
-  </tal:superseded-by>
-
-  <div id="proposal-actions" class="actions">
+  <div id="actions" class="actions aside"
+       tal:condition="context/required:launchpad.Edit">
     <tal:action define="link context_menu/set_work_in_progress"
                 condition="link/enabled"
                 content="structure link/render">
@@ -80,6 +60,28 @@
     </tal:action>
 
   </div>
+
+
+  <div class="aside">
+    <aside tal:content="structure context/@@+pagelet-subscribers" />
+  </div>
+
+  <tal:superseded-proposal condition="context/supersedes">
+    <p id="superseded-proposal">
+      This proposal supersedes a
+      <a tal:attributes="href context/supersedes/fmt:url">
+        proposal from
+        <tal:when replace="context/supersedes/date_created/fmt:date" /></a>.
+    </p>
+  </tal:superseded-proposal>
+  <tal:superseded-by condition="context/superseded_by">
+    <p id="superseded-by">
+      This proposal has been superseded by a
+      <a tal:attributes="href context/superseded_by/fmt:url">
+        proposal from
+        <tal:when replace="context/superseded_by/date_created/fmt:date" /></a>.
+    </p>
+  </tal:superseded-by>
 
   <div>
 

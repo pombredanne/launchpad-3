@@ -4,7 +4,11 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n">
     &raquo;
       <a tal:attributes="href context/fmt:url"
-         tal:content="view/friendly_text">Approved</a> for merging into
+         tal:content="view/friendly_text">Approved</a>
+      <tal:for-merging condition="not: context/queue_status/enumvalue:MERGED">
+        for merging
+      </tal:for-merging>
+      into
     <tal:source-branch
       tal:define="branch context/target_branch">
       <a
