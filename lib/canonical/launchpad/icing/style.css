@@ -615,7 +615,7 @@ hierarchy, and the application tabs. */
 }
 /* The first segment has a rounded top left corner:*/
 .first-rounded {
-  background: url(navigation-hierarchy-nw) no-repeat top left;
+  background: url(navigation-hierarchy-nw) top left no-repeat;
   min-height: 25px;
   display: block;
   width: 6px;
@@ -624,7 +624,7 @@ hierarchy, and the application tabs. */
 /* The segments have '>' separators for the benefit of those without CSS: */
 #lp-hierarchy small {display: none;}
 /* The last segment is darker (on the front page, this is the only item): */
-#lp-hierarchy.home {background: #ddd;}
+#lp-hierarchy.home {background: url(navigation-hierarchy-home-bg) no-repeat; width:110px;}
 /* Each segment appears as a clickable button: */
 #lp-hierarchy a {color: #000; float:left; display: block; padding: 6px 22px 0 8px;}
 /* The segments have chevrons to convey their parent-child relationship: */
