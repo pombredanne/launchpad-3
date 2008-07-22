@@ -1,18 +1,18 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
-"""`MozillaZipFile` tests."""
+"""`MozillaZipTraversal` tests."""
 
 __metaclass__ = type
 
 import unittest
 
 from canonical.launchpad.translationformat.mozilla_zip import (
-    get_file_suffix, MozillaZipFile)
+    MozillaZipTraversal)
 from canonical.launchpad.translationformat.tests.xpi_helpers import (
     get_en_US_xpi_file_to_import)
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TraversalRecorder(MozillaZipFile):
+class TraversalRecorder(MozillaZipTraversal):
     """XPI "parser": records traversal of an XPI or jar file.
 
     Does nothing but keep track of the structure of nested zip files it
@@ -29,8 +29,8 @@ class TraversalRecorder(MozillaZipFile):
         self.traversal = []
 
     def _processTranslatableFile(self, entry, locale_code, xpi_path,
-                                 chrome_path):
-        record = (entry, locale_code, xpi_path, chrome_path)
+                                 chrome_path, filename_suffix):
+        record = (entry, locale_code, xpi_path, chrome_path, filename_suffix)
         self.traversal.append(record)
 
     def _processNestedJar(self, nested_recorder):
@@ -40,7 +40,7 @@ class TraversalRecorder(MozillaZipFile):
         self.traversal.append('.')
 
 
-class MozillaZipFileTestCase(unittest.TestCase):
+class MozillaZipTraversalTestCase(unittest.TestCase):
     """Test Mozilla XPI/jar traversal."""
 
     layer = LaunchpadZopelessLayer
@@ -53,27 +53,27 @@ class MozillaZipFileTestCase(unittest.TestCase):
                 [
                     ('copyover1.foo', 'en-US',
                         'jar:chrome/en-US.jar!/copyover1.foo',
-                        'main/copyover1.foo'
+                        'main/copyover1.foo', '.foo'
                     ),
                     ('subdir/copyover2.foo', 'en-US',
                         'jar:chrome/en-US.jar!/subdir/copyover2.foo',
-                        'main/subdir/copyover2.foo'
+                        'main/subdir/copyover2.foo', '.foo'
                     ),
                     ('subdir/test2.dtd', 'en-US',
                         'jar:chrome/en-US.jar!/subdir/test2.dtd',
-                        'main/subdir/test2.dtd'
+                        'main/subdir/test2.dtd', '.dtd'
                     ),
                     ('subdir/test2.properties', 'en-US',
                         'jar:chrome/en-US.jar!/subdir/test2.properties',
-                        'main/subdir/test2.properties'
+                        'main/subdir/test2.properties', '.properties'
                     ),
                     ('test1.dtd', 'en-US',
                         'jar:chrome/en-US.jar!/test1.dtd',
-                        'main/test1.dtd'
+                        'main/test1.dtd', '.dtd'
                     ),
                     ('test1.properties', 'en-US',
                         'jar:chrome/en-US.jar!/test1.properties',
-                        'main/test1.properties'
+                        'main/test1.properties', '.properties'
                     ),
                     '.'
                 ],
@@ -89,21 +89,15 @@ class MozillaZipFileTestCase(unittest.TestCase):
         self.assertEqual(record.traversal, [
                 [
                     ('file.txt', None,
-                        'jar:chrome/en-US.jar!/file.txt', None
+                        'jar:chrome/en-US.jar!/file.txt', None, '.txt'
                     ),
                     '.'
                 ],
                 ('no-jar.txt', None,
-                    'no-jar.txt', None
+                    'no-jar.txt', None, '.txt'
                 ),
                 '.'
             ])
-
-    def test_GetFileSuffix(self):
-        """Test `get_file_suffix`."""
-        self.assertEqual(get_file_suffix('plainname'), '')
-        self.assertEqual(get_file_suffix('a.b'), '.b')
-        self.assertEqual(get_file_suffix('a.b.c'), '.c')
 
 
 def test_suite():

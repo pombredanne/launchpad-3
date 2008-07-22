@@ -3,8 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_file_suffix',
-    'MozillaZipFile',
+    'MozillaZipTraversal',
     ]
 
 from os.path import splitext
@@ -16,19 +15,7 @@ from canonical.launchpad.translationformat.xpi_manifest import (
     make_jarpath, XpiManifest)
 
 
-def get_file_suffix(path_in_zip):
-    """Given a full file path inside a zip archive, return filename suffix.
-
-    :param path_in_zip: Full file path inside a zip archive, e.g.
-        "foo/bar.dtd".
-    :return: Filename suffix, or empty string if none found.  For example,
-        "foo/bar.dtd" results in ".dtd".
-    """
-    root, ext = splitext(path_in_zip)
-    return ext
-
-
-class MozillaZipFile:
+class MozillaZipTraversal:
     """Traversal of an XPI file, or a jar file inside an XPI file.
 
     To traverse and process an XPI file, derive a class from this one
@@ -70,7 +57,7 @@ class MozillaZipFile:
                 self.header = XpiHeader(rdf_content)
 
         # Strip trailing newline to avoid doubling it.
-        xpi_path.rstrip('/')
+        xpi_path = xpi_path.rstrip('/')
 
         self._begin()
 
@@ -85,9 +72,9 @@ class MozillaZipFile:
 
     def _processEntry(self, entry, xpi_path):
         """Read one zip archive entry, figure out what to do with it."""
-        is_jar = entry.endswith('.jar')
+        rootname, suffix = splitext(entry)
 
-        if is_jar:
+        if suffix == '.jar':
             jarpath = make_jarpath(xpi_path, entry)
             if not self.manifest or self.manifest.containsLocales(jarpath):
                 # If this is a jar file that may contain localizable
@@ -119,13 +106,13 @@ class MozillaZipFile:
                 return
 
         self._processTranslatableFile(
-            entry, locale_code, xpi_path, chrome_path)
+            entry, locale_code, xpi_path, chrome_path, suffix)
 
     def _begin(self):
         """Overridable hook: optional pre-traversal actions."""
 
     def _processTranslatableFile(self, entry, locale_code, xpi_path,
-                                 chrome_path):
+                                 chrome_path, filename_suffix):
         """Overridable hook: process a file entry.
 
         Called only for files that may be localizable.  If there is a
@@ -142,6 +129,9 @@ class MozillaZipFile:
             "normalized" path used in XPI to describe a virtual
             directory hierarchy.  The zip archive's actual layout (which
             the XPI paths describe) may be different.
+        :param filename_suffix: File name suffix or "extension" of the
+            translatable file.  This may be e.g. ".dtd" or ".xhtml," or
+            the empty string if the filename does not contain a dot.
         """
         raise NotImplementedError(
             "XPI traversal class provides no _processTranslatableFile().")

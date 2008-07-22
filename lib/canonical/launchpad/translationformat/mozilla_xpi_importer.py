@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
 from canonical.launchpad.translationformat.mozilla_zip import (
-    get_file_suffix, MozillaZipFile)
+    MozillaZipTraversal)
 from canonical.launchpad.translationformat.xpi_header import XpiHeader
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -36,7 +36,7 @@ def add_source_comment(message, comment):
         message.source_comment += '\n'
 
 
-class MozillaZipImportParser(MozillaZipFile):
+class MozillaZipImportParser(MozillaZipTraversal):
     """XPI and jar parser for import purposes.
 
     Looks for DTD and properties files, and parses them for messages.
@@ -47,11 +47,11 @@ class MozillaZipImportParser(MozillaZipFile):
     messages = None
 
     def _begin(self):
-        """Overridable hook for `MozillaZipFile`."""
+        """Overridable hook for `MozillaZipTraversal`."""
         self.messages = []
 
     def _finish(self):
-        """Overridable hook for `MozillaZipFile`."""
+        """Overridable hook for `MozillaZipTraversal`."""
         # Eliminate duplicate messages.
         seen_messages = set()
         deletions = []
@@ -69,16 +69,15 @@ class MozillaZipImportParser(MozillaZipFile):
             message.file_references = ', '.join(message.file_references_list)
 
     def _processTranslatableFile(self, entry, locale_code, xpi_path,
-                                 chrome_path):
-        """Overridable hook for `MozillaZipFile`.
+                                 chrome_path, filename_suffix):
+        """Overridable hook for `MozillaZipTraversal`.
         
         This implementation is only interested in DTD and properties
         files.
         """
-        suffix = get_file_suffix(entry)
-        if suffix == '.dtd':
+        if filename_suffix == '.dtd':
             parser = DtdFile
-        elif suffix == '.properties':
+        elif filename_suffix == '.properties':
             parser = PropertyFile
         else:
             # We're not interested in other file types here.
@@ -92,7 +91,7 @@ class MozillaZipImportParser(MozillaZipFile):
             self.extend(parsed_file.messages)
 
     def _processNestedJar(self, zip_instance):
-        """Overridable hook for `MozillaZipFile`.
+        """Overridable hook for `MozillaZipTraversal`.
 
         This implementation complements `self.messages` with those found in
         the jar file we just parsed.
