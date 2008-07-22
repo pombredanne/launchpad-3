@@ -18,7 +18,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
-from storm.exceptions import NotOneError
 
 
 class TestCustomLanguageCode(unittest.TestCase):
