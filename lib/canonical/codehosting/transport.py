@@ -686,7 +686,7 @@ class LaunchpadServer(Server):
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
         assert url.startswith(self.get_url())
-        return LaunchpadTransport(self, url)
+        return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
 
     def get_url(self):
         """Return the URL of this server.
@@ -904,9 +904,6 @@ class SynchronousAdapter(Transport):
         cloned_async = self._async_transport.clone(offset)
         return SynchronousAdapter(cloned_async)
 
-    def ensure_base(self):
-        return self._async_transport.ensure_base()
-
     def external_url(self):
         raise InProcessTransport()
 
@@ -1034,10 +1031,10 @@ class AsyncLaunchpadTransport(VirtualTransport):
             exc_object = failure.value
             raise PermissionDenied(
                 exc_object.virtual_url_fragment, exc_object.reason)
-        def mkdir((transport, path)):
+        def real_mkdir((transport, path)):
             return getattr(transport, 'mkdir')(path, mode)
 
-        deferred.addCallback(mkdir)
+        deferred.addCallback(real_mkdir)
         deferred.addErrback(maybe_make_branch_in_db)
         deferred.addErrback(check_permission_denied)
         return self._extractResult(deferred)
