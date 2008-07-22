@@ -46,11 +46,12 @@
       <tal:launchpad_usage define="uses_launchpad view/uses_launchpad_for">
         <p id="uses">
           <tal:uses_launchpad condition="uses_launchpad">
-            <tal:distro_name content="string:${context/title} uses Launchpad for " />
+            <tal:distro_name content="context/title" /> uses Launchpad for
             <tal:uses content="structure uses_launchpad" />.
           </tal:uses_launchpad>
           <tal:no_launchpad condition="not: uses_launchpad">
-            <tal:distro_name content="string:${context/title} does not use Launchpad for development." />
+            <tal:distro_name content="context/title" /> does not use 
+              Launchpad for development.
           </tal:no_launchpad>
         </p>
       </tal:launchpad_usage>
