@@ -121,8 +121,7 @@ representation of the field parameter.
     >>> print view.field
     "field.product'\/alert(\"xss rules\")\/alert(document.cookie)\/"
 
-    >>> print view()
-    <html>
-    ...
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(view())
+    >>> soup.find('script')
     <script language="Javascript" type="text/javascript">field = "field.product'\/alert(\"xss rules\")\/alert(document.cookie)\/";</script>
-    ...
