@@ -47,7 +47,7 @@ class MozillaZipTraversalTestCase(unittest.TestCase):
 
     def test_XpiTraversal(self):
         """Test a typical traversal of XPI file, with nested jar file."""
-        xpi_archive = get_en_US_xpi_file_to_import('en-US').read()
+        xpi_archive = get_en_US_xpi_file_to_import('en-US')
         record = TraversalRecorder('', xpi_archive)
         self.assertEqual(record.traversal, [
                 [
@@ -82,7 +82,7 @@ class MozillaZipTraversalTestCase(unittest.TestCase):
 
     def test_XpiTraversalWithoutManifest(self):
         """Test traversal of an XPI file without manifest."""
-        xpi_archive = get_en_US_xpi_file_to_import('no-manifest').read()
+        xpi_archive = get_en_US_xpi_file_to_import('no-manifest')
         record = TraversalRecorder('', xpi_archive)
         # Without manifest, there is no knowledge of locale or chrome
         # paths, so those are None.

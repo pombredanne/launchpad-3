@@ -7,6 +7,7 @@ __all__ = [
     ]
 
 import re
+from cStringIO import StringIO
 import textwrap
 
 from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
@@ -90,6 +91,11 @@ class MozillaZipImportParser(MozillaZipTraversal):
         if parsed_file is not None:
             self.extend(parsed_file.messages)
 
+    def _isTemplate(self):
+        """Is this a template?"""
+        name = self.filename
+        return name is not None and name.startswith('en-US.xpi')
+
     def _processNestedJar(self, zip_instance):
         """Overridable hook for `MozillaZipTraversal`.
 
@@ -101,8 +107,7 @@ class MozillaZipImportParser(MozillaZipTraversal):
     def _isCommandKeyMessage(self, message):
         """Whether the message represents a command key shortcut."""
         return (
-            self.filename is not None and
-            self.filename.startswith('en-US.xpi') and
+            self._isTemplate() and
             message.translations and (
                 message.msgid_singular.endswith('.commandkey') or
                 message.msgid_singular.endswith('.key')))
@@ -110,8 +115,7 @@ class MozillaZipImportParser(MozillaZipTraversal):
     def _isAccessKeyMessage(self, message):
         """Whether the message represents an access key shortcut."""
         return (
-            self.filename is not None and
-            self.filename.startswith('en-US.xpi') and
+            self._isTemplate() and
             message.translations and (
                 message.msgid_singular.endswith('.accesskey')))
 
@@ -474,7 +478,7 @@ class MozillaXpiImporter:
         content = librarian_client.getFileByAlias(
             translation_import_queue_entry.content.id).read()
 
-        parser = MozillaZipImportParser(self.basepath, content)
+        parser = MozillaZipImportParser(self.basepath, StringIO(content))
         if parser.header is None:
             raise TranslationFormatInvalidInputError("No install.rdf found")
 

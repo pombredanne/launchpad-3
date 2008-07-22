@@ -6,7 +6,7 @@ __all__ = [
     'MozillaZipTraversal',
     ]
 
-from os.path import splitext
+from os.path import splitext, basename
 from cStringIO import StringIO
 from zipfile import ZipFile
 
@@ -25,13 +25,13 @@ class MozillaZipTraversal:
     directories it lists as containing localizable resources.
     """
 
-    def __init__(self, filename, content, xpi_path=None, manifest=None):
+    def __init__(self, filename, archive, xpi_path=None, manifest=None):
         """Open zip (or XPI, or jar) file and scan its contents.
 
-        :param filename: Name of this zip (XPI/jar) file.
-        :param content: The data making up this zip file.
+        :param filename: Name of this zip (XPI/jar) archive.
+        :param archive: File-like object containing this zip archive.
         :param xpi_path: Full path of this file inside the XPI archive.
-            Leave out for the XPI file itself.
+            Leave out for the XPI archive itself.
         :param manifest: `XpiManifest` representing the XPI archive's
             manifest file, if any.
         """
@@ -39,7 +39,7 @@ class MozillaZipTraversal:
         self.header = None
         self.last_translator = None
         self.manifest = manifest
-        self.archive = ZipFile(StringIO(content), 'r')
+        self.archive = ZipFile(archive, 'r')
 
         if xpi_path is None:
             # This is the main XPI file.
@@ -74,7 +74,7 @@ class MozillaZipTraversal:
         """Read one zip archive entry, figure out what to do with it."""
         rootname, suffix = splitext(entry)
 
-        if suffix == '.jar':
+        if suffix == '.jar' and basename(rootname) != '':
             jarpath = make_jarpath(xpi_path, entry)
             if not self.manifest or self.manifest.containsLocales(jarpath):
                 # If this is a jar file that may contain localizable
@@ -82,16 +82,16 @@ class MozillaZipTraversal:
                 # by creating another parser instance.
                 content = self.archive.read(entry)
                 nested_instance = self.__class__(
-                    filename=entry, xpi_path=jarpath, content=content,
-                    manifest=self.manifest)
+                    filename=entry, archive=StringIO(content),
+                    xpi_path=jarpath, manifest=self.manifest)
 
                 self._processNestedJar(nested_instance)
                 return
 
-        if xpi_path == '':
-            xpi_path = entry
-        else:
-            xpi_path = "%s/%s" % (xpi_path, entry)
+        # Construct XPI path; identical to "entry" if previous xpi_path
+        # was empty.  XPI paths use slashes as separators, regardless of
+        # what the native filesystem uses.
+        xpi_path = '/'.join([xpi_path, entry]).lstrip('/')
 
         if self.manifest is None:
             # No manifest, so we don't have chrome paths.  Process
