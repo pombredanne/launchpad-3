@@ -70,7 +70,7 @@ from canonical.launchpad.interfaces import (
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad.interfaces.product import (
-    IProduct, IProductSet)
+    IProduct, IProductSet, LicenseStatus)
 from canonical.launchpad.interfaces.productrelease import (
     IProductRelease, IProductReleaseSet)
 from canonical.launchpad.interfaces.productseries import (
@@ -929,6 +929,10 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         self._fetchProductData()
 
     @property
+    def show_license_status(self):
+        return self.context.license_status != LicenseStatus.OPEN_SOURCE
+
+    @property
     def freshmeat_url(self):
         if self.context.freshmeatproject:
             return ("http://freshmeat.net/projects/%s"
@@ -1215,9 +1219,39 @@ class ProductAdminView(ProductEditView):
 
 class ProductReviewLicenseView(ProductAdminView):
     label = "Review project licensing"
-    field_names = ["active", "private_bugs",
-                   "license_reviewed", "license_approved",
-                   "reviewer_whiteboard"]
+    field_names = [
+        "active",
+        "private_bugs",
+        "license_reviewed",
+        "license_approved",
+        "reviewer_whiteboard",
+        ]
+
+    def validate(self, data):
+        """Validate approval.
+
+        A project can only be approved if it has OTHER_OPEN_SOURCE as one of
+        its licenses and not OTHER_PROPRIETARY.
+        """
+        licenses = self.context.licenses
+        license_approved = data.get('license_approved', False)
+        if license_approved:
+            if License.OTHER_PROPRIETARY in licenses:
+                self.setFieldError(
+                    'license_approved',
+                    'Proprietary projects may not be manually '
+                    'approved to use Launchpad.  Proprietary projects '
+                    'must use the commercial subscription voucher system '
+                    'to be allowed to use Launchpad.')
+            elif License.OTHER_OPEN_SOURCE not in licenses:
+                self.setFieldError(
+                    'license_approved',
+                    'Only "Other/Open Source" licenses may be '
+                    'manually approved to use Launchpad.')
+            else:
+                # An Other/Open Source license was specified so it may be
+                # approved.
+                pass
 
     @property
     def next_url(self):
@@ -1579,76 +1613,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         'driver',
         ]
 
-    def __init__(self, context, request):
-        super(ProductEditPeopleView, self).__init__(context, request)
-
-    def existing_checked_value(self):
-        """Preserve form checkbox value across submits."""
-        if self.request.form.get('existing') == 'new':
-            return ''
-        else:
-            return 'checked'
-
-    def new_checked_value(self):
-        """Preserve form checkbox value across submits."""
-        if self.request.form.get('existing') == 'new':
-            return 'checked'
-        else:
-            return ''
-
-    def initialize(self):
-        """Process the form before initializing the object."""
-        if self.request.method == "POST":
-            self.processForm()
-        super(ProductEditPeopleView, self).initialize()
-
-    @property
-    def owner_widget(self):
-        return self.widgets['owner']
-
-    @property
-    def remaining_widgets(self):
-        """Return all widgets except the owner.
-
-        The owner is formatted differently in the template.
-        """
-        return (self.widgets[name] for name in self.field_names
-                if name != 'owner')
-
-    def processForm(self):
-        """Process the form before the widgets validate their input.
-
-        If necessary, create a new team and set form['owner'] to it.
-        """
-        if self.request.form.get('existing') == 'new':
-            person_set = getUtility(IPersonSet)
-            owner_name = self.request.form.get('field.owner')
-            if not owner_name:
-                self.setFieldError(
-                    'owner',
-                    "You have to specify the name of the person/team that's "
-                    "going to be the new owner.")
-            elif not valid_name(owner_name):
-                self.setFieldError(
-                    'owner',
-                    "'%s' is not a valid name for a team. Please make sure "
-                    "it contains only the allowed characters and no spaces."
-                    % owner_name)
-            elif person_set.getByName(owner_name):
-                self.setFieldError(
-                    'owner',
-                    "There's already a person/team with the name '%s' in "
-                    "Launchpad. Please choose a different name or select "
-                    "the option to make that person/team the new owner, "
-                    "if that's what you want." % owner_name)
-            else:
-                owner = person_set.newTeam(
-                    self.user, owner_name, owner_name.capitalize())
-                self.request.form['field.owner'] = owner.name
-                # Flush the owner to the database so that the ValidPerson
-                # vocabulary finds it there.
-                flush_database_updates()
-
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
         old_owner = self.context.owner
@@ -1656,7 +1620,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         self.updateContextFromData(data)
         self._reassignProductDependencies(
             self.context, old_owner, self.context.owner)
-        self.updateContextFromData(data)
         if self.context.owner != old_owner:
             self.request.response.addNotification(
                 "Successfully changed the owner to %s"
