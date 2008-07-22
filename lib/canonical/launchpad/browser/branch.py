@@ -967,6 +967,10 @@ class ProductBranchAddView(BranchAddView):
                 'branch_type': UICreatableBranchType.MIRRORED,
                 'product': self.context}
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class DecoratedSubscription:
     """Adds the editable attribute to a `BranchSubscription`."""
