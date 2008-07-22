@@ -127,9 +127,9 @@ First, add a product with a Other/Open Source license.
     ...     print ''.join(pillar.findAll(text=True))
     ...     print '     ', pillar.get('title')
     &nbsp;Other-Open-Source Product (Unreviewed)
-          This project&lsquo;s license has not been reviewed.
+          This project&rsquo;s license has not been reviewed.
     &nbsp;Mega Money Maker (Proprietary)
-          This project&lsquo;s license is proprietary.
+          This project&rsquo;s license is proprietary.
     &nbsp;Derby
           None
     &nbsp;Redfish (Unspecified)
@@ -152,6 +152,7 @@ will be displayed as proprietary.
     ...     print ''.join(pillar.findAll(text=True))
     ...     print '     ', pillar.get('title')
     &nbsp;Other-Open-Source Product (Proprietary)
+          This project&rsquo;s license is proprietary.
     &nbsp;Mega Money Maker (Proprietary)
           This project&rsquo;s license is proprietary.
     &nbsp;Derby
