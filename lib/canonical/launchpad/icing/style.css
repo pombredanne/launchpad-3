@@ -1051,7 +1051,10 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 
 /* Distributions, projects, and people have two-column main pages. */
 /* The main heading and most of the information is in the second column: */
-.pillar {margin-left: 212px;}
+.pillar {
+  margin-left: 212px;
+  zoom: 1; /* sets hasLayout in IE, ensuring correct mugshot/heading layout */
+}
 .pillar h1 {clear: none;}
 /* But the mugshot and the subheadings are in the first column: */
 .pillar h2, .pillar .mugshot {
