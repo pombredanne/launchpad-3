@@ -63,12 +63,12 @@ def review_list(list_name, status='approve'):
     # Circular import.
     from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
     # Watch Mailman's logs/serial file.
-    serial_watcher = LogWatcher('serial')
+    log_watcher = LogWatcher()
     browser = Browser('foo.bar@canonical.com:test')
     browser.open('http://launchpad.dev:8085/+mailinglists')
     browser.getControl(name='field.' + list_name).value = [status]
     browser.getControl('Submit').click()
-    serial_watcher.wait()
+    log_watcher.wait_for_create(list_name)
     login('foo.bar@canonical.com')
     mailing_list = getUtility(IMailingListSet).get(list_name)
     logout()
