@@ -26,6 +26,13 @@ You can find a person by name.
     >>> salgado.is_team
     False
 
+You can find a person by email.
+
+    >>> email = salgado.preferred_email_address.email
+    >>> salgado = launchpad.people.getByEmail(email=email)
+    >>> salgado.name
+    u'salgado'
+
 You can iterate through all the people in the set.
 
     >>> names = sorted(person.name for person in launchpad.people)

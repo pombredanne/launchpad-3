@@ -50,9 +50,10 @@ whose account is inactive) or all the teams.
 It's possible to get a list of teams by virtue of which a person
 belongs to a particular team.
 
-    >>> response = webservice.get(
-    ...     '/beta/~salgado?ws.op=findPathToTeam'
-    ...     '&team=http%3A%2F%2Fapi.launchpad.dev%2Fbeta%2F%7Emailing-list-experts')
+    >>> response = webservice.named_get(
+    ...     '/beta/~salgado', 'findPathToTeam',
+    ...     team='http://api.launchpad.dev/beta/~mailing-list-experts')
+
     >>> path = response.jsonBody()
     >>> path['total_size']
     2

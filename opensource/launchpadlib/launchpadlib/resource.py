@@ -174,11 +174,23 @@ class Resource(LaunchpadBase):
                 and param_name.endswith('_collection_link'))):
                 default = Collection
         r_class = RESOURCE_TYPE_CLASSES.get(resource_type, default)
-        return r_class(
+        resource = r_class(
             root, resource.bind(
                 representation, representation_media_type,
                 representation_needs_processing,
                 representation_definition=representation_definition))
+
+        # It's possible that the URL defined in the representation
+        # differs from the URL used to fetch the object. For instance,
+        # the object may have been obtained via a named operation that
+        # performs a lookup. Its URL will be the URL of the named
+        # operation, not the self_link for the operation's
+        # result. Re-home the resource so that named operations on it
+        # will succeed in the future.
+        if (resource.lp_has_parameter('self_link')
+            and resource.self_link != resource._wadl_resource.url):
+            resource._wadl_resource._url = resource.self_link
+        return resource
 
     def lp_refresh(self, new_url=None):
         """Update this resource's representation."""
@@ -235,46 +247,52 @@ class NamedOperation(LaunchpadBase):
             extra_headers = { 'Content-type' : media_type }
         response, content = self.root._browser._request(
             url, in_representation, http_method, extra_headers=extra_headers)
-        content_type = response['content-type']
 
         if response.status == 201:
-            # The operation may have resulted in the creation of a new
-            # resource. If so, fetch it.
-            wadl_response = self.wadl_method.response.bind(
-                HeaderDictionary(response))
-            wadl_parameter = wadl_response.get_parameter('Location')
-            wadl_resource = wadl_parameter.linked_resource
-            # Fetch a representation of the new resource.
-            response, content = self.root._browser._request(
-                wadl_resource.url)
-            # Return an instance of the appropriate launchpadlib
-            # Resource subclass.
-            return Resource._wrap_resource(
-                self.root, wadl_resource, content, response['content-type'])
+            return self._handle_201_response(url, response, content)
         else:
-            # Process the returned content, assuming we know how.
-            response_definition = self.wadl_method.response
-            representation_definition = (
-                response_definition.get_representation_definition(
-                    content_type))
+            return self._handle_200_response(url, response, content)
 
-            if representation_definition is None:
-                # The operation returned a document with nothing
-                # special about it.
-                if content_type == 'application/json':
-                    return simplejson.loads(content)
-                # We don't know how to process the content.
-                return content
+    def _handle_201_response(self, url, response, content):
+        """Handle the creation of a new resource by fetching it."""
+        wadl_response = self.wadl_method.response.bind(
+            HeaderDictionary(response))
+        wadl_parameter = wadl_response.get_parameter('Location')
+        wadl_resource = wadl_parameter.linked_resource
+            # Fetch a representation of the new resource.
+        response, content = self.root._browser._request(
+            wadl_resource.url)
+        # Return an instance of the appropriate launchpadlib
+        # Resource subclass.
+        return Resource._wrap_resource(
+            self.root, wadl_resource, content, response['content-type'])
 
-            # The operation returned a representation of some
-            # resource. Instantiate a Resource object for it.
-            representation_definition = (
-                representation_definition.resolve_definition())
-            wadl_resource = WadlResource(
-                self.root._wadl, url, representation_definition.tag)
-            return Resource._wrap_resource(
-                self.root, wadl_resource, content, content_type,
-                representation_definition=representation_definition)
+    def _handle_200_response(self, url, response, content):
+        """Process the return value of an operation."""
+        content_type = response['content-type']
+        # Process the returned content, assuming we know how.
+        response_definition = self.wadl_method.response
+        representation_definition = (
+            response_definition.get_representation_definition(
+                content_type))
+
+        if representation_definition is None:
+            # The operation returned a document with nothing
+            # special about it.
+            if content_type == 'application/json':
+                return simplejson.loads(content)
+            # We don't know how to process the content.
+            return content
+
+        # The operation returned a representation of some
+        # resource. Instantiate a Resource object for it.
+        representation_definition = (
+            representation_definition.resolve_definition())
+        wadl_resource = WadlResource(
+            self.root._wadl, url, representation_definition.tag)
+        return Resource._wrap_resource(
+            self.root, wadl_resource, content, content_type,
+            representation_definition=representation_definition)
 
 
 class Entry(Resource):

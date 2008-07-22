@@ -48,7 +48,8 @@ from canonical.lazr.rest.declarations import (
    export_as_webservice_entry, export_factory_operation,
    export_read_operation, export_write_operation, exported,
    operation_parameters, operation_returns_collection_of,
-   rename_parameters_as, REQUEST_USER, webservice_error)
+   operation_returns_entry, rename_parameters_as, REQUEST_USER,
+   webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
 from canonical.launchpad import _
@@ -1666,6 +1667,7 @@ class IPersonSet(Interface):
     @operation_parameters(
         email=TextLine(required=True, constraint=email_validator))
     @export_read_operation()
+    @operation_returns_entry(IPerson)
     def getByEmail(email):
         """Return the person with the given email address.
 
