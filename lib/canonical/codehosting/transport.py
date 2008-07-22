@@ -876,6 +876,107 @@ class VirtualTransport(Transport):
         return self._call('writeChunk', relpath, offset, data)
 
 
+class SynchronousAdapter:
+    """Converts an asynchronous transport to a synchronous one."""
+
+    def __init__(self, async_transport):
+        self._async_transport = async_transport
+
+    def _extractResult(self, deferred):
+        failures = []
+        successes = []
+        deferred.addCallbacks(successes.append, failures.append)
+        if len(failures) == 1:
+            failures[0].raiseException()
+        elif len(successes) == 1:
+            return successes[0]
+        else:
+            raise AssertionError("%r has not fired yet." % (deferred,))
+
+    def clone(self, offset=None):
+        cloned_async = self._async_transport.clone(offset)
+        return SynchronousAdapter(cloned_async)
+
+    def ensure_base(self):
+        return self._extractResult(self._async_transport.ensure_base())
+
+    def external_url(self):
+        raise InProcessTransport()
+
+    def abspath(self, relpath):
+        return self._async_transport.abspath(relpath)
+
+    def append_file(self, relpath, f, mode=None):
+        return self._extractResult(
+            self._async_transport.append_file(relpath, f, mode))
+
+    def delete(self, relpath):
+        return self._extractResult(self._async_transport.delete(relpath))
+
+    def delete_tree(self, relpath):
+        return self._extractResult(self._async_transport.delete_tree(relpath))
+
+    def get(self, relpath):
+        return self._extractResult(self._async_transport.get(relpath))
+
+    def get_bytes(self, relpath):
+        return self._extractResult(self._async_transport.get_bytes(relpath))
+
+    def has(self, relpath):
+        return self._extractResult(self._async_transport.has(relpath))
+
+    def iter_files_recursive(self):
+        return self._extractResult(
+            self._async_transport.iter_files_recursive())
+
+    def listable(self):
+        return self._extractResult(self._async_transport.listable())
+
+    def list_dir(self, relpath):
+        return self._extractResult(self._async_transport.list_dir(relpath))
+
+    def lock_read(self, relpath):
+        return self._extractResult(self._async_transport.lock_read(relpath))
+
+    def lock_write(self, relpath):
+        return self._extractResult(self._async_transport.lock_write(relpath))
+
+    def mkdir(self, relpath, mode=None):
+        return self._extractResult(self._async_transport.mkdir(relpath, mode))
+
+    def open_write_stream(self, relpath, mode=None):
+        return self._extractResult(
+            self._async_transport.open_write_stream(relpath, mode))
+
+    def put_file(self, relpath, f, mode=None):
+        return self._extractResult(
+            self._async_transport.put_file(relpath, f, mode))
+
+    def local_realPath(self, relpath):
+        return self._extractResult(
+            self._async_transport.local_realPath(relpath))
+
+    def readv(self, relpath, offsets, adjust_for_latency=False,
+              upper_limit=None):
+        return self._extractResult(
+            self._async_transport.readv(
+                relpath, offsets, adjust_for_latency, upper_limit))
+
+    def rename(self, rel_from, rel_to):
+        return self._extractResult(
+            self._async_transport.rename(rel_from, rel_to))
+
+    def rmdir(self, relpath):
+        return self._extractResult(self._async_transport.rmdir(relpath))
+
+    def stat(self, relpath):
+        return self._extractResult(self._async_transport.stat(relpath))
+
+    def writeChunk(self, relpath, offset, data):
+        return self._extractResult(
+            self._async_transport.writeChunk(relpath, offset, data)
+
+
 class AsyncLaunchpadTransport(VirtualTransport):
     """Virtual transport to implement the Launchpad VFS for branches.
 
