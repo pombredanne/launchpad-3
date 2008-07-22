@@ -66,7 +66,7 @@ from canonical.launchpad.interfaces import (
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad.interfaces.product import (
-    IProduct, IProductSet)
+    IProduct, IProductSet, LicenseStatus)
 from canonical.launchpad.interfaces.productrelease import (
     IProductRelease, IProductReleaseSet)
 from canonical.launchpad.interfaces.productseries import (
@@ -860,6 +860,10 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin,
     def initialize(self):
         self.status_message = None
         self._fetchProductData()
+
+    @property
+    def show_license_status(self):
+        return self.context.license_status != LicenseStatus.OPEN_SOURCE
 
     @property
     def freshmeat_url(self):

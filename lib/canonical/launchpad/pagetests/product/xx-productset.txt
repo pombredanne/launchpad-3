@@ -152,9 +152,8 @@ will be displayed as proprietary.
     ...     print ''.join(pillar.findAll(text=True))
     ...     print '     ', pillar.get('title')
     &nbsp;Other-Open-Source Product (Proprietary)
-          This project&lsquo;s license is proprietary.
     &nbsp;Mega Money Maker (Proprietary)
-          This project&lsquo;s license is proprietary.
+          This project&rsquo;s license is proprietary.
     &nbsp;Derby
           None
     &nbsp;Redfish (Unspecified)
