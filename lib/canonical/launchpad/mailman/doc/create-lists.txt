@@ -19,16 +19,11 @@ First, No Privileges Person creates a new team.
 To request a mailing list, No Privileges Person navigates to the 'Configure
 mailing list' page and registers their application for a mailing list.
 
-    >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
-    >>> serial_watcher = LogWatcher('serial')
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
 At this point, Mailman has still not created the mailing list.
 
-    # This will time out because no changes have been propagated to Mailman.
-    >>> serial_watcher.wait()
-    'Timed out'
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     []

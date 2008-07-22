@@ -21,12 +21,13 @@ Because the mailing list is active, there is no archived backup file.
 
 The team administrator can deactivate the list through the web.
 
-    >>> from canonical.launchpad.mailman.testing import logwatcher
-    >>> serial_watcher = logwatcher.LogWatcher('serial')
     >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
     >>> browser.getControl('Deactivate this Mailing List').click()
-    >>> serial_watcher.wait()
+
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> log_watcher = logwatcher.LogWatcher()
+    >>> log_watcher.wait_for_deactivation('itest-one')
 
 As far as Mailman is concerned, the mailing list no longer exists.
 

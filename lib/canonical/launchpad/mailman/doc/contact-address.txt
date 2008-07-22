@@ -19,27 +19,7 @@ ignore these (there's only one, currently).
 Subscribe someone to the team and mailing list so that these messages can get
 delivered.
 
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
-    >>> person_set = getUtility(IPersonSet)
-    >>> team_one = person_set.getByName('itest-one')
-
-    # Subscribe Anne with her preferred address.
-    >>> anne = new_person('Anne')
-    >>> anne.join(team_one)
-    >>> from canonical.launchpad.ftests import sync
-    >>> sync(list_one)
-    >>> list_one.subscribe(anne)
-
-    >>> logout()
-    >>> from canonical.launchpad.mailman.testing import logwatcher
-    >>> log_watcher = logwatcher.LogWatcher()
-    >>> import transaction
-    >>> transaction.commit()
-    >>> #serial_watcher.wait()
+    >>> helpers.subscribe('Anne', 'itest-one')
 
 It's possible to set the team as a project's answer contact.
 
@@ -61,8 +41,6 @@ It's possible to set the team as a project's answer contact.
 When the contact address for the team is its mailing list, creating new
 questions will email the mailing list.
 
-    >>> smtp_watcher = logwatcher.LogWatcher('smtp')
-
     >>> browser.open('http://answers.launchpad.dev:8085/firefox/+addquestion')
     >>> browser.getControl('Summary').value = 'A new question'
     >>> browser.getControl('Continue').click()
@@ -77,7 +55,8 @@ message marked with headers to track bounces).  One copy goes to Anne and the
 other goes to the archive submission address.  The way to distinguish and sort
 these messages is by the Sender header, which will be unique in all cases.
 
-    >>> smtp_watcher.wait_for_create()
+    >>> smtp_watcher = logwatcher.LogWatcher('smtp')
+    >>> smtp_watcher.wait_for_list_traffic('itest-one')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     3
@@ -177,7 +156,7 @@ sent to Anne and to the archive via the mailing list.
     >>> browser.getControl('Subscriber').value = 'itest-one'
     >>> browser.getControl('Continue').click()
 
-    >>> smtp_watcher.wait_for_create()
+    >>> smtp_watcher.wait_for_list_traffic('itest-one')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     2
@@ -255,7 +234,7 @@ mailing list, they'll be sent to the team members individually.
     >>> browser.getControl('Description').value = 'More detail.'
     >>> browser.getControl('Add').click()
 
-    >>> smtp_watcher.wait_for_create()
+    >>> smtp_watcher.wait_for_list_traffic('itest-one')
     'Timed out'
 
 There are now two messages in the mailbox.  One message goes to
@@ -333,7 +312,7 @@ delivered since the mailing list is still active.
     ... Hi, I am a member of Launchpad.
     ... """ % anne.preferredemail.email)
     >>> logout()
-    >>> smtp_watcher.wait_for_create()
+    >>> smtp_watcher.wait_for_list_traffic('itest-one')
     >>> messages = smtpd.getMessages()
 
 Anne (as the only member of the mailing list) and the archive submission

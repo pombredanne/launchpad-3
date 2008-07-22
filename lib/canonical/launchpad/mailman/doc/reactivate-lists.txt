@@ -7,32 +7,20 @@ restored.
 
 First, No Privileges Person will create a new team and its mailing list.
 
-    >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
-    >>> browser.getControl(name='field.name').value = 'itest-one'
-    >>> browser.getControl('Display Name').value = 'ITest One'
-    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
-    ...     'Open Team']
-    >>> browser.getControl('Create').click()
-    >>> browser.getLink('Configure mailing list').click()
-    >>> browser.getControl('Apply for Mailing List').click()
-
     >>> from canonical.launchpad.mailman.testing import helpers
-    >>> from Mailman.Utils import list_names
-    >>> list_one = helpers.review_list('itest-one')
-    >>> sorted(name for name in list_names() if name.startswith('itest-'))
-    ['itest-one']
+    >>> mailing_list = helpers.create_list('itest-one')
 
 Give the mailing list a welcome message.
 
+    >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
     >>> browser.getControl('Welcome message text').value = (
     ...     'Greetings team one members!')
+    >>> browser.getControl('Save').click()
 
     >>> from canonical.launchpad.mailman.testing import logwatcher
-    >>> serial_watcher = logwatcher.LogWatcher('serial')
-    >>> browser.getControl('Save').click()
-    >>> serial_watcher.wait()
+    >>> log_watcher = logwatcher.LogWatcher()
+    >>> log_watcher.wait_for_modification('itest-one')
 
     >>> from Mailman.MailList import MailList
     >>> mlist = MailList('itest-one', lock=False)
@@ -42,23 +30,7 @@ Give the mailing list a welcome message.
 Subscribe Anne to the mailing list so that she can post to after
 re-activation.
 
-    # For convenience, don't do this through the web.
-    >>> import transaction
-    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
-    >>> anne = new_person('Anne')
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from zope.component import getUtility
-    >>> team_one = getUtility(IPersonSet).getByName('itest-one')
-    >>> anne.join(team_one)
-    >>> from canonical.launchpad.ftests import sync
-    >>> sync(list_one)
-    >>> list_one.subscribe(anne)
-    >>> logout()
-    >>> serial_watcher.resync()
-    >>> transaction.commit()
-    >>> serial_watcher.wait()
+    >>> helpers.subscribe('Anne', 'itest-one')
     >>> mlist.Load()
     >>> sorted(mlist.getMembers())
     ['anne.person@example.com', 'aperson@example.org',
@@ -66,22 +38,21 @@ re-activation.
 
 Now the team owner deactivates the list.
 
-    >>> serial_watcher.resync()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Deactivate this Mailing List').click()
-    >>> serial_watcher.wait()
+    >>> log_watcher.wait_for_deactivation('itest-one')
 
 As far as Mailman is concerned, the mailing list no longer exists.
 
+    >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     []
 
 Now the team owner reactivates the list.
 
     >>> browser.getLink('Configure mailing list').click()
-    >>> serial_watcher.resync()
     >>> browser.getControl('Reactivate this Mailing List').click()
-    >>> serial_watcher.wait()
+    >>> log_watcher.wait_for_reactivation('itest-one')
 
 Mailman reports that the mailing list exists again.
 

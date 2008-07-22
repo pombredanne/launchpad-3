@@ -93,7 +93,8 @@ def create_list(team_name):
     mailing_list = review_list(team_name)
     # pylint: disable-msg=F0401
     assert team_name in list_names(), (
-        'Mailing list was not created: %s' % list_names())
+        'Mailing list was not created: %s (found: %s)' %
+        (team_name, list_names()))
     return mailing_list
 
 
@@ -111,6 +112,7 @@ def subscribe(first_name, team_name):
     from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
     # Create the person if she does not already exist, and join her to the
     # team.
+    login('foo.bar@canonical.com')
     person_set = getUtility(IPersonSet)
     person = person_set.getByName(first_name.lower())
     if person is None:
@@ -120,9 +122,10 @@ def subscribe(first_name, team_name):
     # Subscribe her to the list.
     mailing_list = getUtility(IMailingListSet).get(team_name)
     mailing_list.subscribe(person)
-    serial_watcher = LogWatcher('serial')
     transaction.commit()
-    serial_watcher.wait()
+    logout()
+    log_watcher = LogWatcher()
+    log_watcher.wait_for_membership_changes(team_name)
 
 
 def pending_hold_ids(list_name):

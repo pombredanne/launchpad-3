@@ -35,13 +35,12 @@ feature is exposed.
     >>> lpadmin = list(experts.allmembers)[0]
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
     >>> logout()
-
-    >>> from canonical.launchpad.mailman.testing import logwatcher
-    >>> serial_watcher = logwatcher.LogWatcher('serial')
-
     >>> import transaction
     >>> transaction.commit()
-    >>> serial_watcher.wait()
+
+    >>> from canonical.launchpad.mailman.testing import logwatcher
+    >>> log_watcher = logwatcher.LogWatcher()
+    >>> log_watcher.wait_for_create('itest-one')
 
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
@@ -61,9 +60,8 @@ through the web.
     >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
     >>> browser.getControl('Welcome message text').value = (
     ...     'Salutations team members!')
-    >>> serial_watcher.resync()
     >>> browser.getControl('Save').click()
-    >>> serial_watcher.wait()
+    >>> log_watcher.wait_for_modification('itest-one')
 
     # Reload the MailList object so that Mailman gets the updated data.
     >>> mailing_list.Load()

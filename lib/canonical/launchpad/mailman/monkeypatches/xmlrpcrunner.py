@@ -74,6 +74,8 @@ class XMLRPCRunner(Runner):
         self._kids = {}
         self._stop = False
         self._proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
+        # Ensure that the log file exists, mostly for the test suite.
+        syslog('xmlrpc', 'XMLRPC runner starting')
 
     def _oneloop(self):
         """Check to see if there's anything for Mailman to do.
@@ -186,6 +188,8 @@ class XMLRPCRunner(Runner):
                 adds = future_members - current_members
                 deletes = current_members - future_members
                 updates = current_members & future_members
+                if adds or deletes:
+                    syslog('xmlrpc', 'Membership changes for: %s', list_name)
                 # Handle additions first.
                 for address in adds:
                     realname, flags, status = member_map[address]
@@ -196,13 +200,18 @@ class XMLRPCRunner(Runner):
                     mlist.removeMember(address)
                 # The members who are sticking around may have updates to
                 # their real names or statuses.
+                found_updates = False
                 for address in updates:
                     # flags are ignored for now.
                     realname, flags, status = member_map[address]
                     if realname <> mlist.getMemberName(address):
                         mlist.setMemberName(address, realname)
+                        found_updates = True
                     if status <> mlist.getDeliveryStatus(address):
                         mlist.setDeliveryStatus(address, status)
+                        found_updates = True
+                if found_updates:
+                    syslog('xmlrpc', 'Membership updates for: %s', list_name)
                 # We're done, so flush the changes for this mailing list.
                 mlist.Save()
             finally:
