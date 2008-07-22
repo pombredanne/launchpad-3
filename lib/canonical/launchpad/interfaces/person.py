@@ -1243,6 +1243,7 @@ class IPersonViewRestricted(Interface):
         """
 
     @operation_parameters(status=copy_field(ITeamMembership['status']))
+    @operation_returns_collection_of(Interface) # Really IPerson
     @export_read_operation()
     def getMembersByStatus(status, orderby=None):
         """Return the people whose membership on this team match :status:.
@@ -1685,6 +1686,7 @@ class IPersonSet(Interface):
         """Return the person with the given OpenID identifier, or None."""
 
     @export_read_operation()
+    @operation_returns_collection_of(IPerson)
     def getAllTeams(orderBy=None):
         """Return all Teams, ignoring the merged ones.
 
@@ -1705,6 +1707,7 @@ class IPersonSet(Interface):
         """
 
     @export_read_operation()
+    @operation_returns_collection_of(IPerson)
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
 
@@ -1751,6 +1754,7 @@ class IPersonSet(Interface):
 
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
+    @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def findPerson(text="", orderBy=None, exclude_inactive_accounts=True,
                    must_have_email=False):
@@ -1779,6 +1783,7 @@ class IPersonSet(Interface):
 
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
+    @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def findTeam(text="", orderBy=None):
         """Return all Teams whose name, displayname or email address
@@ -2025,6 +2030,8 @@ for method, name in params_to_fix:
 
 # Fix schema of operation return values.
 IPersonPublic['findPathToTeam'].queryTaggedValue(
+    'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
+IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
