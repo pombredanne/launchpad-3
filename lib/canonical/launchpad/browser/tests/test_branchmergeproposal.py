@@ -57,7 +57,6 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         person = self.factory.makePerson()
         login_person(person)
         person.hide_email_addresses = True
-        logout()
         login_person(self.owner)
         return person
 

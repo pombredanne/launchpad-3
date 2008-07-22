@@ -451,6 +451,7 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
     cancel_url = next_url
 
     def requestReview(self, candidate, review_type):
+        """Request a `review_type` review from `candidate` and email them."""
         vote_reference = self.context.nominateReviewer(
             candidate, self.user, review_type)
         reason = RecipientReason.forReviewer(vote_reference, candidate)
