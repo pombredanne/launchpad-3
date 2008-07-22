@@ -63,8 +63,9 @@ Registering the merge proposal takes the user back to the
 main page for the source branch.
 
     >>> print nopriv_browser.url
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon
-    >>> nopriv_browser.getLink(url="+merges").click()
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merges')
 
 An email notification is emitted when the merge proposal is created.
 
@@ -93,7 +94,7 @@ merge proposal is considered a "landing target" with an optional
     ...             print extract_text(mp)
 
     >>> nopriv_browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merges')
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
     This is the whiteboard
@@ -192,11 +193,10 @@ branches, and the current status.
 
     >>> def print_summary(browser):
     ...     print extract_text(find_tag_by_id(
-    ...         browser.contents, 'proposal-summary'))
+    ...         browser.contents, 'proposal-heading'))
     >>> print_summary(sample_browser)
-    Source branch: ~sabdfl/firefox/release-0.9
-    Target branch: ~name12/firefox/main
-           Status: Work in progress
+    Proposed ...
+    On hold for merging into lp://dev/~name12/firefox/main
 
 The summary of the revisions that are in the source branch but not
 yet in the target branch are also shown.
@@ -218,46 +218,22 @@ Consume notification.
 The branch merge poposal can be edited by the owner of the source or
 target branches or the registrant of the merge proposal.
 
-    >>> print_action_links(sample_browser.contents)
-    Edit details: .../+merge/.../+edit
-    Delete proposal to merge: .../+merge/.../+delete
-    Work in progress (disabled)
-    Request a review: .../+merge/.../+request-review
-    Add a comment/review: .../+merge/.../+comment
-    Review proposal: .../+merge/.../+review
-    Mark as merged: .../+merge/.../+merged
-    Queue for merging: .../+merge/.../+enqueue
-    Remove from queue (disabled)
-    Resubmit proposal: .../+merge/.../+resubmit
+    >>> def print_proposal_actions(contents):
+    ...     actions = find_tag_by_id(contents, 'proposal-actions')
+    ...     print extract_text(actions)
+    >>> print_proposal_actions(sample_browser.contents)
+    Review proposal
+    Mark as merged
+    Resubmit proposal
 
 Someone who is not logged in, or not the one of those that can alter the
 proposal to merge get no actions.
 
     >>> browser.open(firefox_merge_url)
-    >>> print_action_links(browser.contents)
-    Edit details (disabled)
-    Delete proposal to merge (disabled)
-    Work in progress (disabled)
-    Request a review (disabled)
-    Add a comment/review (disabled)
-    Review proposal (disabled)
-    Mark as merged (disabled)
-    Queue for merging (disabled)
-    Remove from queue (disabled)
-    Resubmit proposal (disabled)
+    >>> print_proposal_actions(browser.contents)
 
     >>> anon_browser.open(firefox_merge_url)
-    >>> print_action_links(anon_browser.contents)
-    Edit details (disabled)
-    Delete proposal to merge (disabled)
-    Work in progress (disabled)
-    Request a review (disabled)
-    Add a comment/review (disabled)
-    Review proposal (disabled)
-    Mark as merged (disabled)
-    Queue for merging (disabled)
-    Remove from queue (disabled)
-    Resubmit proposal (disabled)
+    >>> print_proposal_actions(anon_browser.contents)
 
 When editing the proposal, the whiteboard can be altered, and the
 button options are:
@@ -389,6 +365,10 @@ The second notifies the requested reviewer.
 The status of the merge proposal is updated to "Needs review".
 
     >>> print_summary(sample_browser)
+    Proposed ...
+    Ready for review for merging into
+    lp://dev/~name12/gnome-terminal/main
+
     Source branch: ~name12/gnome-terminal/klingon
     Target branch: ~name12/gnome-terminal/main
            Status: Needs review
@@ -504,7 +484,7 @@ An email notification is also created.
 The user is then taken to the branch page.  The source branch is shown on the
 branch's merges page.
 
-    >>> nopriv_browser.getLink('~name12/gnome-terminal/klingon').click()
+    >>> nopriv_browser.getLink(url='~name12/gnome-terminal/klingon').click()
     >>> nopriv_browser.getLink(url="+merges").click()
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
@@ -576,9 +556,8 @@ The new merge proposal is created as work in progress, and there is
 a link back to the superseded proposal.
 
     >>> print_summary(sample_browser)
-    Source branch: ~name12/gnome-terminal/scanned
-    Target branch: ~name12/gnome-terminal/main
-           Status: Work in progress
+    Proposed ...
+    On hold for merging into lp://dev/~name12/gnome-terminal/main
 
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'superseded-proposal'))
@@ -588,9 +567,9 @@ a link back to the superseded proposal.
     >>> sample_browser.getLink(
     ...     re.compile('proposal from .*')).click()
     >>> print_summary(sample_browser)
-    Source branch: ~name12/gnome-terminal/scanned
-    Target branch: ~name12/gnome-terminal/main
-           Status: Superseded
+    Proposed ...
+    Superseded for merging into
+    lp://dev/~name12/gnome-terminal/main
 
     >>> print extract_text(find_tag_by_id(
     ...      sample_browser.contents, 'branch-whiteboard-value'))
@@ -676,13 +655,10 @@ The status of the branch is now Queued, and Sample Person is also
 recorded as the reviewer of the proposal.
 
     >>> print_summary(sample_browser)
-    Source branch: ...
-    ...
-    Status: Queued (view queue)
-    Reviewed by: Sample Person
-    Reviewed revision: 1
-    Queued by: Sample Person
-    Queued revision: 1
+    Proposed ...
+    On hold for merging into
+    lp://dev/~name12/firefox/main
+
 
 An email notification is also generated.
 
@@ -730,11 +706,10 @@ Consume notification.
     >>> nopriv_browser.open(
     ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2/+merges')
     >>> nopriv_browser.getLink('view proposal details').click()
-    >>> print_action_links(nopriv_browser.contents)
-    Edit ...
-    ...
-    Queue for merging (disabled)
-    ...
+    >>> print_proposal_actions(nopriv_browser.contents)
+    Mark as merged
+    Resubmit proposal
+
 
 Have Sample Person approve the branch.
 
@@ -762,11 +737,10 @@ No Privileges Person can now queue the branch.
 
     >>> nopriv_browser.reload()
     >>> print_summary(nopriv_browser)
-    Source branch: ~sabdfl/firefox/release-0.9.2
-    Target branch: ~name12/firefox/main
-    Status: Code approved
-    Reviewed by: Sample Person
-    Reviewed revision: 1
+    Proposed ...
+    Approved for merging into lp://dev/~name12/firefox/main
+
+
 
     >>> nopriv_browser.getLink('Queue for merging').click()
 
@@ -901,22 +875,17 @@ The user is taken to a form where they can update the whiteboard.
 Once out of the queue, the proposal goes back to "Code approved" status.
 
     >>> print_summary(sample_browser)
-    Source branch: ~sabdfl/firefox/release-0.9
-    Target branch: ~name12/firefox/main
-    Status: Code approved
-    Reviewed by: Sample Person
-    Reviewed revision: 1
+    Proposed ...
+    Approved for merging into lp://dev/~name12/firefox/main
+
 
 It can then be reset as Work in progress.
 
     >>> sample_browser.getLink('Work in progress').click()
     >>> sample_browser.getControl('Set as work in progress').click()
     >>> print_summary(sample_browser)
-    Source branch: ~sabdfl/firefox/release-0.9
-    Target branch: ~name12/firefox/main
-    Status: Work in progress
-    Reviewed by: Sample Person
-    Reviewed revision: 1
+    Proposed ...
+    On hold for merging into lp://dev/~name12/firefox/main
 
 An email notification is generated.
 
@@ -952,11 +921,9 @@ The branch can be rejected.
 The status is now set to rejected.
 
     >>> print_summary(sample_browser)
-    Source branch: ~sabdfl/firefox/release-0.9
-    Target branch: ~name12/firefox/main
-    Status: Rejected
-    Reviewed by: Sample Person
-    Reviewed revision: 1
+    Proposed ...
+    Rejected for merging into lp://dev/~name12/firefox/main
+
 
 Remove the proposal created by No Privileges Person.
 
