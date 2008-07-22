@@ -25,8 +25,8 @@
      tal:define="context_menu context/menu:context">
 
   <tal:proposal-heading tal:replace="structure context/@@+heading"/>
-  
-  <div class="asides">
+
+  <div class="aside">
     <aside tal:content="structure context/@@+pagelet-subscribers" />
   </div>
 
@@ -48,13 +48,6 @@
   </tal:superseded-by>
 
   <div id="proposal-actions" class="actions">
-    <div style="float:right">
-      <tal:action define="link context_menu/delete"
-                  condition="link/enabled"
-                  content="structure link/render">
-        Delete
-      </tal:action>
-    </div>
     <tal:action define="link context_menu/set_work_in_progress"
                 condition="link/enabled"
                 content="structure link/render">
@@ -84,14 +77,18 @@
   </div>
 
   <div>
-    <div style="float: right">
+
+    <h2>Proposed commit message
+      <a tal:define="link context_menu/delete"
+         tal:condition="link/enabled"
+         tal:attributes="href link/url"
+         ><img tal:attributes="alt link/text;title link/text" src="/@@/remove" /></a>
       <a tal:define="link context_menu/edit"
          tal:condition="link/enabled"
          tal:attributes="href link/url"
-         ><img tal:attributes="alt link/text;title link/text"
-         src="/@@/edit" /></a>
-    </div>
-    <h2>Proposed commit message</h2>
+         ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
+    </h2>
+
   </div>
   <div id="commit-message">
     <p tal:content="structure context/commit_message/fmt:text-to-html">
