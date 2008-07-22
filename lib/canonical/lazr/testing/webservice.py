@@ -50,6 +50,7 @@ class FakeRequest(object):
         return "http://api.example.org"
 
     def get(self, key, default=None):
+        """Simulate an empty set of request parameters."""
         return default
 
 
