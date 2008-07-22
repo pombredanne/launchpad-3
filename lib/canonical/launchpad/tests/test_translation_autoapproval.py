@@ -11,7 +11,8 @@ import unittest
 
 from canonical.launchpad.database import (
     CustomLanguageCode, Distribution, Language, POTemplateSet,
-    POTemplateSubset, SourcePackageName, TranslationImportQueue)
+    POTemplateSubset, SourcePackageName, SourcePackageNameSet,
+    TranslationImportQueue)
 from canonical.launchpad.interfaces import (
     ICustomLanguageCode, RosettaImportStatus)
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -251,27 +252,92 @@ class TestTemplateGuess(unittest.TestCase):
     def setUp(self):
         self.factory = LaunchpadObjectFactory()
         self.templateset = POTemplateSet()
+
         self.product = self.factory.makeProduct()
-        self.series = self.factory.makeSeries(product=self.product)
-        self.template1 = POTemplateSubset(productseries=self.series).new(
+        self.productseries = self.factory.makeSeries(product=self.product)
+        product_subset = POTemplateSubset(productseries=self.productseries)
+        self.producttemplate1 = product_subset.new(
             'test1', 'test1', 'test.pot', self.product.owner)
-        self.template2 = POTemplateSubset(productseries=self.series).new(
+        self.producttemplate2 = product_subset.new(
             'test2', 'test2', 'test.pot', self.product.owner)
 
-    def test_ByPathAndOriginDuplicate(self):
-        # Two current templates for the same product series can't have
-        # the same path.
-        self.assertRaises(NotOneError,
-            self.templateset.getPOTemplateByPathAndOrigin, 'test.pot',
-            productseries=self.series)
+        self.distro = self.factory.makeDistribution()
+        self.distroseries = self.factory.makeDistroRelease(
+            distribution=self.distro)
+        self.packagename = SourcePackageNameSet().new('package')
+        self.from_packagename = SourcePackageNameSet().new('from')
+        distro_subset = POTemplateSubset(
+            distroseries=self.distroseries,
+            sourcepackagename=self.packagename)
+        self.distrotemplate1 = distro_subset.new(
+            'test1', 'test1', 'test.pot', self.distro.owner)
+        self.distrotemplate2 = distro_subset.new(
+            'test2', 'test2', 'test.pot', self.distro.owner)
 
-    def test_ByPathAndOriginNonCurrentDuplicate(self):
+    def test_ByPathAndOriginProductNonCurrentDuplicate(self):
         # If two templates for the same product series have the same
         # path, but only one is current, that one is returned.
-        self.template1.iscurrent = False
+        self.producttemplate1.iscurrent = False
+        self.producttemplate2.iscurrent = True
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
-            'test.pot', productseries=self.series)
-        self.assertEqual(guessed_template, self.template2)
+            'test.pot', productseries=self.productseries)
+        self.assertEqual(guessed_template, self.producttemplate2)
+
+    def test_ByPathAndOriginProductNoCurrentTemplate(self):
+        # Non-current templates in product series are ignored.
+        self.producttemplate1.iscurrent = False
+        self.producttemplate2.iscurrent = False
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', productseries=self.productseries)
+        self.assertEqual(guessed_template, None)
+
+    def test_ByPathAndOriginDistroNonCurrentDuplicate(self):
+        # If two templates for the same distroseries and source package
+        # have the same  path, but only one is current, the current one
+        # is returned.
+        self.distrotemplate1.iscurrent = False
+        self.distrotemplate2.iscurrent = True
+        self.distrotemplate1.from_sourcepackagename = None
+        self.distrotemplate2.from_sourcepackagename = None
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', distroseries=self.distroseries,
+            sourcepackagename=self.packagename)
+        self.assertEqual(guessed_template, self.distrotemplate2)
+
+    def test_ByPathAndOriginDistroNoCurrentTemplate(self):
+        # Non-current templates in distroseries are ignored.
+        self.distrotemplate1.iscurrent = False
+        self.distrotemplate2.iscurrent = False
+        self.distrotemplate1.from_sourcepackagename = None
+        self.distrotemplate2.from_sourcepackagename = None
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', distroseries=self.distroseries,
+            sourcepackagename=self.packagename)
+        self.assertEqual(guessed_template, None)
+
+    def test_ByPathAndOriginDistroFromSourcePackageNonCurrentDuplicate(self):
+        # If two templates for the same distroseries and original source
+        # package have the same path, but only one is current, that one is
+        # returned.
+        self.distrotemplate1.iscurrent = False
+        self.distrotemplate2.iscurrent = True
+        self.distrotemplate1.from_sourcepackagename = self.from_packagename
+        self.distrotemplate2.from_sourcepackagename = self.from_packagename
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', distroseries=self.distroseries,
+            sourcepackagename=self.from_packagename)
+        self.assertEqual(guessed_template, self.distrotemplate2)
+
+    def test_ByPathAndOriginDistroFromSourcePackageNoCurrentTemplate(self):
+        # Non-current templates in distroseries are ignored.
+        self.distrotemplate1.iscurrent = False
+        self.distrotemplate2.iscurrent = False
+        self.distrotemplate1.from_sourcepackagename = self.from_packagename
+        self.distrotemplate2.from_sourcepackagename = self.from_packagename
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', distroseries=self.distroseries,
+            sourcepackagename=self.from_packagename)
+        self.assertEqual(guessed_template, None)
 
 
 def test_suite():
