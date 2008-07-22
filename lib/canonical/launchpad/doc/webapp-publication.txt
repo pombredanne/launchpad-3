@@ -1125,7 +1125,7 @@ token.
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
     >>> firefox = getUtility(IProductSet)['firefox']
-    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC, product=firefox)
+    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC, context=firefox)
     >>> access_token = token.createAccessToken()
     >>> form = dict(
     ...     oauth_consumer_key='foobar123451432',
