@@ -1667,8 +1667,8 @@ class IPersonSet(Interface):
 
     @operation_parameters(
         email=TextLine(required=True, constraint=email_validator))
-    @export_read_operation()
     @operation_returns_entry(IPerson)
+    @export_read_operation()
     def getByEmail(email):
         """Return the person with the given email address.
 
@@ -1685,8 +1685,8 @@ class IPersonSet(Interface):
     def getByOpenIdIdentifier(openid_identity):
         """Return the person with the given OpenID identifier, or None."""
 
-    @export_read_operation()
     @operation_returns_collection_of(IPerson)
+    @export_read_operation()
     def getAllTeams(orderBy=None):
         """Return all Teams, ignoring the merged ones.
 
@@ -1706,8 +1706,8 @@ class IPersonSet(Interface):
         current will not appear in the returned list.
         """
 
-    @export_read_operation()
     @operation_returns_collection_of(IPerson)
+    @export_read_operation()
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
 
@@ -1736,8 +1736,8 @@ class IPersonSet(Interface):
 
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
-    @export_read_operation()
     @operation_returns_collection_of(IPerson)
+    @export_read_operation()
     def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
