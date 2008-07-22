@@ -16,7 +16,7 @@
   <div id="packages">
 
   <tal:maintained-packages
-    define="sourcepackagereleases view/getLatestMaintainedPackagesWithStats"
+    define="sourcepackagereleases view/get_latest_maintained_packages_with_stats"
     condition="sourcepackagereleases">
 
   <h1>Maintained packages</h1>
@@ -41,7 +41,7 @@
   </tal:maintained-packages>
 
   <tal:uploaded-packages
-    define="sourcepackagereleases view/getLatestUploadedButNotMaintainedPackagesWithStats"
+    define="sourcepackagereleases view/get_latest_uploaded_but_not_maintained_packages_with_stats"
     condition="sourcepackagereleases">
 
   <h1>Uploaded packages</h1>
@@ -65,7 +65,7 @@
   </tal:uploaded-packages>
 
   <tal:ppa-packages
-    define="sourcepackagereleases view/getLatestUploadedPPAPackagesWithStats"
+    define="sourcepackagereleases view/get_latest_uploaded_ppa_packages_with_stats"
     condition="sourcepackagereleases">
 
   <h1>PPA packages</h1>
@@ -94,15 +94,15 @@
     <a name="projects" />
     <h1>Related projects</h1>
 
-    <p tal:condition="view/tooManyRelatedProjectsFound"
+    <p tal:condition="view/too_many_related_projects_found"
       class="limit-encountered">
       <tal:project-count replace="view/related_projects_count" /> projects are
       related to <tal:name replace="context/displayname" />. Displaying only
       the first <tal:max-results replace="view/max_results_to_display" />:
     </p>
 
-    <table tal:condition="view/relatedProjects"
-           tal:define="pillarnames view/relatedProjects"
+    <table tal:define="projects view/related_projects"
+           tal:condition="projects"
            class="listing"
            id="related-projects">
       <thead>
@@ -113,32 +113,33 @@
           <th>Questions</th>
         </tr>
       </thead>
+
       <tbody>
-        <tr tal:repeat="pillarname pillarnames">
+        <tr tal:repeat="project projects">
           <td>
-            <a tal:attributes="href pillarname/pillar/fmt:url"
-               tal:content="pillarname/pillar/title">
+            <a tal:attributes="href project/url"
+               tal:content="project/title">
             </a>
           </td>
           <td style="text-align: right">
-            <a tal:attributes="href string:${pillarname/pillar/fmt:url}/+bugs"
-               tal:content="python: pillarname.pillar.open_bugtasks.count()">
+            <a tal:attributes="href string:${project/url}/+bugs"
+               tal:content="project/bug_count">
             </a>
           </td>
           <td style="text-align: right">
-            <a tal:attributes="href string:${pillarname/pillar/fmt:url}/+specs"
-               tal:content="python: pillarname.pillar.specifications().count()">
+            <a tal:attributes="href string:${project/url}/+specs"
+               tal:content="project/spec_count">
             </a>
           </td>
           <td style="text-align: right">
-            <a tal:attributes="href string:${pillarname/pillar/fmt:url}/+questions"
-               tal:content="python: pillarname.pillar.searchQuestions().count()">
+            <a tal:attributes="href string:${project/url}/+questions"
+               tal:content="project/question_count">
             </a>
           </td>
         </tr>
       </tbody>
     </table>
-    <p tal:condition="not: view/relatedProjects">
+    <p tal:condition="not: view/related_projects">
       <span tal:replace="context/title">Foo Bar</span>
       doesn't own or drive any projects.
     </p>

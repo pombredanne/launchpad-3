@@ -4334,31 +4334,47 @@ class PersonRelatedSoftwareView(LaunchpadView):
     max_results_to_display = config.launchpad.default_batch_size
 
     @cachedproperty
-    def relatedProjects(self):
-        """Return projects owned or driven by this person up to the maximum
-        configured."""
-        # XXX mars 2008-07-21
-        # This should return a dictionary.  We are doing a lot of unnecessary
-        # work.  See bug #250612.
-        return list(self._related_projects()[:self.max_results_to_display])
+    def related_projects(self):
+        """Return a list of project dicts owned or driven by this person.
+
+        The number of projects returned is limited by max_results_to_display.
+        A project dict has the following keys: title, url, bug_count,
+        spec_count, and question_count.
+        """
+        projects = []
+        max_projects = self.max_results_to_display
+        for pillarname in self._related_projects()[:max_projects]:
+            project = {}
+            project['title'] = pillarname.pillar.title
+            project['url'] = canonical_url(pillarname.pillar)
+            project['bug_count'] = pillarname.pillar.open_bugtasks.count()
+            project['spec_count'] = pillarname.pillar.specifications().count()
+            project['question_count'] = (
+                pillarname.pillar.searchQuestions().count())
+            projects.append(project)
+        return projects
 
     @cachedproperty
-    def firstFiveRelatedProjects(self):
+    def first_five_related_projects(self):
         """Return first five projects owned or driven by this person."""
         return list(self._related_projects()[:5])
 
     @cachedproperty
     def related_projects_count(self):
+        """The number of project owned or driven by this person."""
         return self._related_projects().count()
 
-    def tooManyRelatedProjectsFound(self):
+    @property
+    def too_many_related_projects_found(self):
+        """Does the user have more related projects than can be displayed?"""
         return self.related_projects_count > self.max_results_to_display
 
     def _related_projects(self):
         """Return all projects owned or driven by this person."""
         return self.context.getOwnedOrDrivenPillars()
 
-    def getLatestUploadedPPAPackagesWithStats(self):
+    @property
+    def get_latest_uploaded_ppa_packages_with_stats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
         Results are filtered according to the permission of the requesting
@@ -4385,12 +4401,14 @@ class PersonRelatedSoftwareView(LaunchpadView):
                     break
         return self._addStatsToPackages(results)
 
-    def getLatestMaintainedPackagesWithStats(self):
+    @property
+    def get_latest_maintained_packages_with_stats(self):
         """Return the latest maintained packages, including stats."""
         packages = self.context.getLatestMaintainedPackages()
         return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
-    def getLatestUploadedButNotMaintainedPackagesWithStats(self):
+    @property
+    def get_latest_uploaded_but_not_maintained_packages_with_stats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
