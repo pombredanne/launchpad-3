@@ -396,22 +396,6 @@ class BranchView(LaunchpadView, FeedsMixin):
 
         return branch.url
 
-    @property
-    def branch_format_description(self):
-        """Return branch's format, or 'Not recorded' if None."""
-        if self.context.branch_format is None:
-            return False
-        else:
-            return self.context.branch_format.description
-
-    @property
-    def repository_format_description(self):
-        """Return repository's format, or 'Not recorded' if None."""
-        if self.context.repository_format is None:
-            return False
-        else:
-            return self.context.repository_format.description
-
 
 class DecoratedMergeProposal:
     """Provide some additional attributes to a normal branch merge proposal.
