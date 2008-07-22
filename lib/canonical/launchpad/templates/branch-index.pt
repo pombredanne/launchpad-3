@@ -276,12 +276,7 @@
       <a href="+merges" tal:content="structure view/landing_candidate_count_text">
         1 branch
       </a>
-      proposed for merging into this one. -
-      <div
-        tal:define="link context_menu/merge_queue"
-        tal:condition="link/enabled"
-        tal:replace="structure link/render"
-      />
+      proposed for merging into this one.
 
     </div>
 

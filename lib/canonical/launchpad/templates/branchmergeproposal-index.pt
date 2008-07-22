@@ -84,14 +84,6 @@
   <div>
 
     <h2>Proposed commit message
-      <a tal:define="link context_menu/delete"
-         tal:condition="link/enabled"
-         tal:attributes="href link/url"
-         ><img tal:attributes="alt link/text;title link/text" src="/@@/remove" /></a>
-      <a tal:define="link context_menu/edit"
-         tal:condition="link/enabled"
-         tal:attributes="href link/url"
-         ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
     </h2>
 
   </div>

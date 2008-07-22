@@ -66,6 +66,11 @@
           <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
         </tal:landing-candidate>
       </tal:proposals>
+      <div
+        tal:define="link context/menu:context/merge_queue"
+        tal:condition="link/enabled"
+        tal:replace="structure link/render"
+      />
     </div>
 
   </div>

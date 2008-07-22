@@ -11,6 +11,8 @@
 >
 
 <body>
+<metal:heading fill-slot="before_nav_menu"
+               tal:content="structure context/source_branch/@@+heading"/>
 <div metal:fill-slot="main">
 
   <h1>Code review comment</h1>

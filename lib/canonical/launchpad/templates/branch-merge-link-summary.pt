@@ -13,6 +13,14 @@
       <tal:queued condition="context/queue_status/enumvalue:QUEUED">
         (<a tal:attributes="href view/queue_location">view queue</a>)
       </tal:queued>
+      <a tal:define="link context/menu:context/delete"
+         tal:condition="link/enabled"
+         tal:attributes="href link/url"
+         ><img tal:attributes="alt link/text;title link/text" src="/@@/remove" /></a>
+      <a tal:define="link context/menu:context/edit"
+         tal:condition="link/enabled"
+         tal:attributes="href link/url"
+         ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
 
     </tal:source-branch>
 

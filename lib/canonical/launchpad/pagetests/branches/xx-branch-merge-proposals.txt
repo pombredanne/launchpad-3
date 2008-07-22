@@ -624,7 +624,7 @@ the branch is ready to be merged with the target branch.
     Work in progress
 
     >>> sample_browser.open(
-    ...     'http://launchpad.dev/~name12/firefox/main')
+    ...     'http://launchpad.dev/~name12/firefox/main/+merges')
     >>> sample_browser.getLink('View merge queue').click()
     >>> def print_merge_queue(browser):
     ...     print extract_text(find_tag_by_id(browser.contents, 'merge-queue'))

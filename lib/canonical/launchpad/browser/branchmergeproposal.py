@@ -636,10 +636,6 @@ class BranchMergeProposalEditView(MergeProposalEditView):
         """Update the whiteboard and go back to the source branch."""
         self.updateContextFromData(data)
 
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the source branch."""
-
 
 class BranchMergeProposalDeleteView(MergeProposalEditView):
     """The view to control the deletion of merge proposals."""
@@ -762,10 +758,6 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
         else:
             revision_id = self.context.reviewed_revision_id
         self.context.enqueue(self.user, revision_id)
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the merge proposal."""
 
     def validate(self, data):
         """Make sure that the proposal has been reviewed.
