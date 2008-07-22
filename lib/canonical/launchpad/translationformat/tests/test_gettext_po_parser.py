@@ -155,6 +155,28 @@ class POBasicTestCase(unittest.TestCase):
                 msgstr "bar2"
                 ''' % DEFAULT_HEADER)
 
+    def testRedundantMsgstr(self):
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse,
+            '''
+                %s
+                msgid "foo"
+                msgstr "bar1"
+                msgstr "bar2"
+            ''' % DEFAULT_HEADER)
+
+    def testRedundantPlural(self):
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse,
+            '''
+                %s
+                msgid "%%d foo"
+                msgid_plural "%%d foos"
+                msgstr[0] "bar %%d"
+                msgstr[1] "bars %%d"
+                msgstr[1] "bars %%d!"
+            ''' % DEFAULT_HEADER)
+
     def testSquareBracketAndPlural(self):
         try:
             self.parser.parse('''
@@ -166,6 +188,13 @@ class POBasicTestCase(unittest.TestCase):
                 ''' % DEFAULT_HEADER)
         except ValueError:
             self.fail("The SquareBracketAndPlural test failed")
+
+    def testDoubleHeader(self):
+        self.assertRaises(TranslationFormatSyntaxError, self.parser.parse,
+            '''
+                %s
+                msgstr "Content-Type: text/plain; charset=UTF-8\\n
+            ''' % DEFAULT_HEADER)
 
     def testUpdateHeader(self):
         translation_file = self.parser.parse(
