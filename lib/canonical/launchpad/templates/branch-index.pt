@@ -136,11 +136,12 @@
             </tal:can-upload>
           </tal:logged-in>
       </tal:hosted-branch>
-      <tr id='branch-format'>
+      <tr id="branch-format" tal:condition="view/branch_format_description">
         <th>Branch format:</th>
         <td tal:content="view/branch_format_description" />
       </tr>
-      <tr id='repository-format'>
+      <tr id="repository-format"
+        tal:condition="view/repository_format_description">
         <th>Repository format:</th>
         <td tal:content="view/repository_format_description" />
       </tr>
