@@ -972,6 +972,10 @@ class BranchMergeQueueView(LaunchpadView):
 class RegisterProposalStatus(EnumeratedType):
     """A restricted status enum for the register proposal form."""
 
+    # The text in this enum is different from the general proposal status
+    # enum as we want the help text that is shown in the form to be more
+    # relevant to the registration of the proposal.
+
     NEEDS_REVIEW = Item("""
         Needs review
 
@@ -1032,11 +1036,11 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             dependent_branch = None
 
         try:
+            needs_review = status == RegisterProposalStatus.NEEDS_REVIEW
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                dependent_branch=dependent_branch, whiteboard=whiteboard)
-            if status == RegisterProposalStatus.NEEDS_REVIEW:
-                proposal.requestReview()
+                dependent_branch=dependent_branch, whiteboard=whiteboard,
+                needs_review=needs_review)
             self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
