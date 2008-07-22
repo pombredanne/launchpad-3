@@ -328,7 +328,8 @@ class TestTemplateGuess(unittest.TestCase):
         self.assertEqual(guessed_template, self.distrotemplate2)
 
     def test_ByPathAndOriginDistroFromSourcePackageNoCurrentTemplate(self):
-        # Non-current templates in distroseries are ignored.
+        # Non-current templates in distroseries are ignored by the
+        # "from_sourcepackagename" match.
         self.distrotemplate1.iscurrent = False
         self.distrotemplate2.iscurrent = False
         self.distrotemplate1.from_sourcepackagename = self.from_packagename
