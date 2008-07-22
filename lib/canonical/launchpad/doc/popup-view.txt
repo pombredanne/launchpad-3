@@ -105,3 +105,24 @@ implement IHugeVocabulary.
     ...
     UnexpectedFormData: No vocabulary specified
 
+
+== Sanitation ==
+
+The `field` parameter provided as one of the GET parameters for the popup
+view is passed into javascript code in the page, so we must make sure that
+it's sanitised.
+
+    >>> form = dict(vocabulary='Product', field='field.product\'/alert("xss rules")/alert(document.cookie)/')
+    >>> view = create_view(bugtask, 'popup-window', form=form)
+
+The field attribute used by the view provides a javascript encoded
+representation of the field parameter.
+
+    >>> print view.field
+    "field.product'\/alert(\"xss rules\")\/alert(document.cookie)\/"
+
+    >>> print view()
+    <html>
+    ...
+    <script language="Javascript" type="text/javascript">field = "field.product'\/alert(\"xss rules\")\/alert(document.cookie)\/";</script>
+    ...
