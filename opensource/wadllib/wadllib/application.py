@@ -716,7 +716,8 @@ class Parameter(WADLBase):
     @property
     def is_required(self):
         """Whether or not a value for this parameter is required."""
-        return self.tag.attrib.get('required', False).lower() in ['1', 'true']
+        return (self.tag.attrib.get('required', 'false').lower()
+                in ['1', 'true'])
 
     def get_value(self):
         """The value of this parameter in the bound representation/headers.

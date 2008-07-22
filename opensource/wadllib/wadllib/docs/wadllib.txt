@@ -297,7 +297,7 @@ a list of people.
 
 We have a page from a list of people to use as test data.
 
-   >>> people_page = get_testdata('personset')
+   >>> people_page_repr = get_testdata('personset')
 
 If we bind the resource to the result of the method invocation as
 happened above, we don't be able to access any of the parameters we'd

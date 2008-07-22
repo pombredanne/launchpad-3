@@ -174,23 +174,11 @@ class Resource(LaunchpadBase):
                 and param_name.endswith('_collection_link'))):
                 default = Collection
         r_class = RESOURCE_TYPE_CLASSES.get(resource_type, default)
-        resource = r_class(
+        return r_class(
             root, resource.bind(
                 representation, representation_media_type,
                 representation_needs_processing,
                 representation_definition=representation_definition))
-
-        # It's possible that the URL defined in the representation
-        # differs from the URL used to fetch the object. For instance,
-        # the object may have been obtained via a named operation that
-        # performs a lookup. Its URL will be the URL of the named
-        # operation, not the self_link for the operation's
-        # result. Re-home the resource so that named operations on it
-        # will succeed in the future.
-        if (resource.lp_has_parameter('self_link')
-            and resource.self_link != resource._wadl_resource.url):
-            resource._wadl_resource._url = resource.self_link
-        return resource
 
     def lp_refresh(self, new_url=None):
         """Update this resource's representation."""
@@ -286,13 +274,44 @@ class NamedOperation(LaunchpadBase):
 
         # The operation returned a representation of some
         # resource. Instantiate a Resource object for it.
-        representation_definition = (
-            representation_definition.resolve_definition())
-        wadl_resource = WadlResource(
-            self.root._wadl, url, representation_definition.tag)
+        document = simplejson.loads(content)
+        if "self_link" in document and "resource_type_link" in document:
+            # The operation returned an entry. Use the self_link and
+            # resource_type_link of the entry representation to build
+            # a Resource object of the appropriate type. That way this
+            # object will support all of the right named operations.
+            url = document["self_link"]
+            resource_type = self.root._wadl.get_resource_type(
+                document["resource_type_link"])
+            wadl_resource = WadlResource(self.root._wadl, url,
+                                         resource_type.tag)
+        else:
+            # The operation returned a collection. It's probably an ad
+            # hoc collection that doesn't correspond to any resource
+            # type.  Instantiate it as a resource backed by the
+            # representation type defined in the return value, instead
+            # of a resource type tag.
+            representation_definition = (
+                representation_definition.resolve_definition())
+            wadl_resource = WadlResource(
+                self.root._wadl, url, representation_definition.tag)
+
         return Resource._wrap_resource(
-            self.root, wadl_resource, content, content_type,
+            self.root, wadl_resource, document, content_type,
+            representation_needs_processing=False,
             representation_definition=representation_definition)
+
+
+        # It's possible that the URL defined in the representation
+        # differs from the URL used to fetch the object. For instance,
+        # the object may have been obtained via a named operation that
+        # performs a lookup. Its URL will be the URL of the named
+        # operation, not the self_link for the operation's
+        # result. Re-home the resource so that named operations on it
+        # will succeed in the future.
+        #if (resource.lp_has_parameter('self_link')
+        #    and resource.self_link != resource._wadl_resource.url):
+        #    resource._wadl_resource._url = resource.self_link
 
 
 class Entry(Resource):
