@@ -35,23 +35,21 @@
           class="warning message"
           id="project-inactive"
         >
+	  This project is currently inactive
+	  <tal:comment condition="nothing">
+	    This page links to the +review-license form to reactivate
+	    the product since both the admins and commercial-admins
+	    have access to this form unlike the product/+admin form.
+	  </tal:comment>
+	  <a href="+review-license">(change this)</a>
+	</p>
 
-    This project is currently inactive
-    <tal:comment condition="nothing">
-      This page links to the +review-license form to reactivate the product
-      since both the admins and commercial-admins have access to this form
-      unlike the product/+admin form.
-    </tal:comment>
-    <a href="+review-license">(change this)</a>
-  </p>
-
-  <p>
-  <p id="license-status" tal:condition="view/show_license_status">
-    <strong tal:content="structure context/license_status/description">
-      This project's license is proprietary.
-    </strong>
-  </p>
-
+	<p id="license-status" tal:condition="view/show_license_status">
+	  <strong tal:content="structure context/license_status/description">
+	    This project's license is proprietary.
+	  </strong>
+	</p>
+      </div>
   <div class="description" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
     just a single paragraph of text really, giving the project
