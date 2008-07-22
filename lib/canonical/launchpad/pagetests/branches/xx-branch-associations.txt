@@ -18,10 +18,10 @@ lists all the links or associations the branch has.
     ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2')
     >>> anon_browser.getLink('View branch associations').click()
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Mozilla Firefox 0.9.2 for the Mozilla Firefox (Unreviewed) project
+    Mozilla Firefox 0.9.2 for the Mozilla Firefox (Unspecified) project
     Branch associations
     Project
-      Mozilla Firefox (Unreviewed)
+      Mozilla Firefox (Unspecified)
     Bugs
       Reflow problems with complex page layouts
     Blueprints
@@ -92,4 +92,3 @@ The listed subscribers link to the code listing pages for the people or teams.
       <a href="http://code.launchpad.dev/~name12"><img alt=""
       width="14" height="14" src="/@@/person" />&nbsp;Sample Person</a>
     </div>
-
