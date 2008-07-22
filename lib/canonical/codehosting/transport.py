@@ -974,7 +974,7 @@ class SynchronousAdapter:
 
     def writeChunk(self, relpath, offset, data):
         return self._extractResult(
-            self._async_transport.writeChunk(relpath, offset, data)
+            self._async_transport.writeChunk(relpath, offset, data))
 
 
 class AsyncLaunchpadTransport(VirtualTransport):
