@@ -876,7 +876,7 @@ class VirtualTransport(Transport):
         return self._call('writeChunk', relpath, offset, data)
 
 
-class SynchronousAdapter:
+class SynchronousAdapter(Transport):
     """Converts an asynchronous transport to a synchronous one."""
 
     def __init__(self, async_transport):
@@ -893,12 +893,19 @@ class SynchronousAdapter:
         else:
             raise AssertionError("%r has not fired yet." % (deferred,))
 
+    @property
+    def base(self):
+        return self._async_transport.base
+
+    def _abspath(self, relpath):
+        return self._async_transport._abspath(relpath)
+
     def clone(self, offset=None):
         cloned_async = self._async_transport.clone(offset)
         return SynchronousAdapter(cloned_async)
 
     def ensure_base(self):
-        return self._extractResult(self._async_transport.ensure_base())
+        return self._async_transport.ensure_base()
 
     def external_url(self):
         raise InProcessTransport()
