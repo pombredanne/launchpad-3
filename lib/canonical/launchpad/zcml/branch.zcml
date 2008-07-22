@@ -47,6 +47,12 @@
 
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+      factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBranchContainer"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
       factory="canonical.launchpad.browser.BranchSOP"
       />
@@ -107,6 +113,9 @@
   <browser:pages
       for="canonical.launchpad.interfaces.IBranch"
       permission="zope.Public">
+    <browser:page
+        name="+portlet-privacy"
+        template="../templates/branch-portlet-privacy.pt" />
     <browser:page
         name="+portlet-specifications"
         template="../templates/branch-portlet-specifications.pt" />

@@ -206,11 +206,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def currentrelease(self):
-        latest_package = self._getFirstPublishingHistory()
-        if latest_package:
-            return DistroSeriesSourcePackageRelease(
-                    self.distroseries, latest_package.sourcepackagerelease)
-        return None
+        releases = self.distroseries.getCurrentSourceReleases(
+            [self.sourcepackagename])
+        return releases.get(self)
 
     def __getitem__(self, version):
         """See `ISourcePackage`."""

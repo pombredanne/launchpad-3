@@ -23,7 +23,7 @@
         <div id="search-results" tal:condition="view/has_matches">
           <tal:has_exact_matches condition="view/has_exact_matches">
 
-            <div class="upper-batch-nav">
+            <div class="search-batch" style="padding:4px;">
               <strong class="batch-navigation-index">Exact matches</strong>
             </div>
 
@@ -83,7 +83,7 @@
                 </div>
               </li>
 
-              <li tal:condition="view/pillar" class="pillar">
+              <li tal:condition="view/pillar">
                 <div>
                   <a tal:replace="structure view/pillar/fmt:link">
                     The GNOME project
@@ -155,7 +155,7 @@
             condition="view/pages"
             define="batch view/pages/currentBatch|nothing">
 
-            <div class="upper-batch-nav">
+            <div class="upper-batch-nav search-batch">
               <tal:navigation
                  replace="structure view/pages/@@+navigation-links-upper"/>
             </div>
@@ -175,7 +175,7 @@
               </li>
             </ul>
 
-            <div class="lower-batch-nav">
+            <div class="lower-batch-nav search-batch">
               <tal:navigation
                  replace="structure view/pages/@@+navigation-links-lower" />
             </div>

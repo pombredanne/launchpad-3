@@ -4207,6 +4207,7 @@ INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_cr
 INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_created, date_last_used, total_logins) VALUES (3, 52, 'http://openid.launchpad.dev/+id/no-priv_oid', 'https://shop.canonical.com', '2008-02-01 13:01:01.000001', '2008-04-01 18:01:01.000001', 3);
 INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_created, date_last_used, total_logins) VALUES (4, 52, 'http://openid.launchpad.dev/+id/no-priv_oid', 'http://moodle.org', '2008-02-02 14:01:01.000001', '2008-02-02 14:01:01.000001', 1);
 INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_created, date_last_used, total_logins) VALUES (5, 12, 'http://openid.launchpad.dev/+id/name12_oid', 'https://shop.canonical.com', '2008-02-04 13:01:01.000001', '2008-02-04 13:01:01.000001', 1);
+INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_created, date_last_used, total_logins) VALUES (6, 55, 'http://openid.launchpad.dev/+id/marilize_oid', 'https://shop.canonical.com', '2008-01-12 13:01:01.000001', '2008-01-12 13:01:01.000001', 1);
 
 
 ALTER TABLE openidrpsummary ENABLE TRIGGER ALL;

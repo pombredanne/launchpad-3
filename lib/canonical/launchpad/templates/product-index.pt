@@ -45,8 +45,9 @@
           tal:content="structure link/render" />
   </div>
   <p>
+  <p id="license-status" tal:condition="view/show_license_status">
     <strong tal:content="structure context/license_status/description">
-      This project's license is open source.
+      This project's license is proprietary.
     </strong>
   </p>
 

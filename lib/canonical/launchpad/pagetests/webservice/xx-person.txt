@@ -37,7 +37,7 @@ for teams (as they're defined in the ITeam interface).
     participations_collection_link: http://.../~salgado/participations
     preferred_email_address_link: http://.../~salgado/+email/guilherme.salgado@canonical.com
     proposed_members_collection_link: http://.../~salgado/proposed_members
-    resource_type_link: http://api.launchpad.dev/beta/#PersonEntryAdapter
+    resource_type_link: http://api.launchpad.dev/beta/#person
     self_link: http://.../~salgado
     sub_teams_collection_link: http://.../~salgado/sub_teams
     super_teams_collection_link: http://.../~salgado/super_teams
@@ -81,7 +81,7 @@ for teams (as they're defined in the ITeam interface).
     preferred_email_address_link: http://.../~ubuntu-team/+email/support@ubuntu.com
     proposed_members_collection_link: http://.../~ubuntu-team/proposed_members
     renewal_policy: invite them to apply for renewal
-    resource_type_link: http://api.launchpad.dev/beta/#TeamEntryAdapter
+    resource_type_link: http://api.launchpad.dev/beta/#team
     self_link: http://.../~ubuntu-team
     sub_teams_collection_link: http://.../~ubuntu-team/sub_teams
     subscription_policy: Moderated Team
@@ -132,7 +132,7 @@ representations too.
     email: test@canonical.com
     person_link: http://.../~name12
     resource_type_link:
-      http://api.launchpad.dev/beta/#EmailAddressEntryAdapter
+      http://api.launchpad.dev/beta/#email_address
     self_link: http://.../~name12/+email/test@canonical.com
 
 One can only traverse to the email addresses of the person already
@@ -313,7 +313,7 @@ representations too.
     >>> for key, value in sorted(wiki_name.items()):
     ...     print "%s: %s" % (key, value)
     person_link: http://.../~name12
-    resource_type_link: http://api.launchpad.dev/beta/#WikiNameEntryAdapter
+    resource_type_link: http://api.launchpad.dev/beta/#wiki_name
     self_link: http://.../~name12/+wikiname/12
     url: https://wiki.ubuntu.com/SamplePerson
     wiki: https://wiki.ubuntu.com/
@@ -349,7 +349,7 @@ representations too.
     ...     print "%s: %s" % (key, value)
     jabberid: markshuttleworth@jabber.org
     person_link: http://.../~sabdfl
-    resource_type_link: http://api.launchpad.dev/beta/#JabberIDEntryAdapter
+    resource_type_link: http://api.launchpad.dev/beta/#jabber_id
     self_link: http://.../~sabdfl/+jabberid/markshuttleworth@jabber.org
 
 One can only traverse to the Jabber IDs of the person already traversed
@@ -383,7 +383,7 @@ too.
     network: irc.freenode.net
     nickname: mark
     person_link: http://.../~sabdfl
-    resource_type_link: http://api.launchpad.dev/beta/#IrcIDEntryAdapter
+    resource_type_link: http://api.launchpad.dev/beta/#irc_id
     self_link: http://.../~sabdfl/+ircnick/1
 
 One can only traverse to the IRC IDs of the person already traversed

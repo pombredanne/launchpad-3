@@ -8,7 +8,7 @@ someone else to the bug.
 Anonymous users should not be able to subscribe someone else to a bug.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> anon_browser.getLink('Someone else').click()
+    >>> anon_browser.getLink('Subscribe someone else').click()
     Traceback (most recent call last):
     ...
     Unauthorized: ...
@@ -17,16 +17,25 @@ No Privileges wants to subscribe David Allouche to the bug because he knows
 that he's interested in that feature.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> user_browser.getLink('Someone else').click()
+    >>> user_browser.getLink('Subscribe someone else').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
 
 By looking at the 'Subscribers' portlet, he sees that David Allouche is not
 currently subscribed to the bug:
 
-    >>> subs = find_portlet(user_browser.contents, 'Subscribers')
-    >>> 'David Allouche' not in extract_text(subs.ul)
-    True
+    >>> from canonical.launchpad.ftests.bug import (
+    ...     print_direct_subscribers, print_indirect_subscribers)
+
+    >>> print_direct_subscribers(user_browser.contents)
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)
+    >>> print_indirect_subscribers(user_browser.contents)
+    From duplicates:
+    Also notified:
+    Foo Bar
+    Mark Shuttleworth
+    Ubuntu Team
 
 He subscribes David Allouche to the bug using his Launchpad username.
 
@@ -44,9 +53,10 @@ He is notified that David Allouche has been subscribed.
 
 The subscribers portlet now contains the new subscriber's name.
 
-    >>> subs = find_portlet(user_browser.contents, 'Subscribers')
-    >>> extract_text(subs.ul)
-    u'...David Allouche...'
+    >>> print_direct_subscribers(user_browser.contents)
+    David Allouche (Subscribed by No Privileges Person)
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)
 
 David got a notification, saying that he was subscribed to the bug.
 
@@ -67,7 +77,7 @@ David got a notification, saying that he was subscribed to the bug.
 
 He subscribes the Landscape developers team.
 
-    >>> user_browser.getLink('Someone else').click()
+    >>> user_browser.getLink('Subscribe someone else').click()
     >>> user_browser.getControl("Person").value = 'landscape-developers'
     >>> user_browser.getControl("Add").click()
     >>> user_browser.url
@@ -80,8 +90,10 @@ He is notified that Landscape developers team has been subscribed.
     ...     extract_text(tag)
     u'Landscape Developers team has been subscribed to this bug.'
 
-The subscribers portlet display the new subscribed team.
+The subscribers portlet displays the new subscribed team.
 
-    >>> subs = find_portlet(user_browser.contents, 'Subscribers')
-    >>> extract_text(subs.ul)
-    u'...Landscape Developers...'
+    >>> print_direct_subscribers(user_browser.contents)
+    David Allouche (Subscribed by No Privileges Person)
+    Landscape Developers (Subscribed by No Privileges Person)
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)

@@ -623,9 +623,10 @@ Now let's do the same with a bug.
 First we show that 'One Membership' is not initially a subscriber to the
 bug:
 
-  >>> subs = find_portlet(browser.contents, 'Subscribers')
-  >>> 'One Membership' in subs.renderContents()
-  False
+    >>> from canonical.launchpad.ftests.bug import print_direct_subscribers
+
+    >>> print_direct_subscribers(browser.contents)
+    Foo Bar (Subscribed by Launchpad Janitor)
 
 Now we offer mentoring, and along the way we request to be subscribed:
 
@@ -637,8 +638,6 @@ Now we offer mentoring, and along the way we request to be subscribed:
 
 And now 'One Membership' is a subscriber:
 
-  >>> subs = find_portlet(browser.contents, 'Subscribers')
-  >>> 'One Membership' in subs.renderContents()
-  True
-
-
+    >>> print_direct_subscribers(browser.contents)
+    Foo Bar (Subscribed by Launchpad Janitor)
+    One Membership (Subscribed themselves)
