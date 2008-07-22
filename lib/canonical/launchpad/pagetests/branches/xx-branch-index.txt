@@ -264,7 +264,7 @@ link is shown.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, "recent-revisions").dl)
     6. By foo... fix bug in bar...
-    >>> print browser.getLink('Browse code').url
+    >>> print browser.getLink('Source Code').url
     http://bazaar.launchpad.dev/~name12/+junk/junk.dev/files
 
 In addition, there is a "Browse revisions" link that links to the
