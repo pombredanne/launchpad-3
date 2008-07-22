@@ -527,7 +527,7 @@ class LaunchpadBranch:
 class _BaseLaunchpadServer(Server):
     """Bazaar Server for Launchpad branches."""
 
-    def __init__(self, scheme, authserver, user_id, hosting_transport,
+    def __init__(self, scheme, authserver, user_id, branch_transport,
                  mirror_transport):
         """Construct a LaunchpadServer.
 
@@ -535,17 +535,15 @@ class _BaseLaunchpadServer(Server):
         :param authserver: An XML-RPC client that implements callRemote.
         :param user_id: The database ID for the user who is accessing
             branches.
-        :param hosting_transport: A Transport pointing to the root of where
+        :param branch_transport: A Transport pointing to the root of where
             the branches are actually stored.
-        :param mirror_transport: A Transport pointing to the root of where
-            branches are mirrored to.
         """
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
         # pylint: disable-msg=W0231
         self._scheme = scheme
         self._authserver = CachingAuthserverClient(authserver, user_id)
-        self._backing_transport = hosting_transport
+        self._branch_transport = branch_transport
         self._mirror_transport = mirror_transport
         self._is_set_up = False
 
@@ -599,7 +597,7 @@ class _BaseLaunchpadServer(Server):
         if permissions == READ_ONLY:
             return self._mirror_transport
         else:
-            transport = self._backing_transport
+            transport = self._branch_transport
             deferred = branch.ensureUnderlyingPath(transport)
             deferred.addCallback(lambda ignored: transport)
             return deferred
@@ -704,7 +702,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         deferred = branch.create()
 
         def ensure_path(branch_id):
-            deferred = branch.ensureUnderlyingPath(self._backing_transport)
+            deferred = branch.ensureUnderlyingPath(self._branch_transport)
             return deferred.addCallback(lambda ignored: branch_id)
         return deferred.addCallback(ensure_path)
 
