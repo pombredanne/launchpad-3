@@ -398,4 +398,4 @@ class IBuildRescoreForm(Interface):
 
     priority = Int(
         title=_("Priority"), required=True, max=(2 ** 31),
-        description=_("Build priority."))
+        description=_("Build priority value must be 32-bit signed integer."))

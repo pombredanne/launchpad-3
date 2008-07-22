@@ -247,22 +247,38 @@ and renders a notification message indicating the operation was done.
     ...     print text
     Build rescored to 100.
 
-Negative 'score' values are also supported.
+Highest and lowest priorities.
+
+    >>> limit = 2 ** 31
 
     >>> admin_browser.getLink("Rescore build").click()
-    >>> admin_browser.getControl("Priority").value = '-50'
+    >>> admin_browser.getControl("Priority").value = str(limit - 1)
     >>> admin_browser.getControl("Rescore").click()
-
     >>> for text in get_feedback_messages(admin_browser.contents):
     ...     print text
-    Build rescored to -50.
+    Build rescored to 2147483647.
+
+    >>> admin_browser.getLink("Rescore build").click()
+    >>> admin_browser.getControl("Priority").value = str(0 - (limit - 1))
+    >>> admin_browser.getControl("Rescore").click()
+    >>> for text in get_feedback_messages(admin_browser.contents):
+    ...     print text
+    Build rescored to -2147483647.
+
+The user can 'cancel' the operation anytime and will be sent to the
+build context page.
+
+    >>> admin_browser.getLink("Rescore build").click()
+    >>> admin_browser.getControl("Cancel").click()
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
 
 The 'rescore' form checks the consistent of the new value given by the
 user.
 
     >>> admin_browser.getLink("Rescore build").click()
 
-The given value must be a not empty 32-bits interger (bug #44240,
+The given value must be a not empty 32-bits signed integer (bug #44240,
 #250490).
 
     >>> admin_browser.getControl("Priority").value = 'foo'
@@ -279,22 +295,11 @@ The given value must be a not empty 32-bits interger (bug #44240,
     There is 1 error.
     Required input is missing.
 
-    >>> admin_browser.getControl("Priority").value = '2147483648'
+    >>> admin_browser.getControl("Priority").value = str(limit)
     >>> admin_browser.getControl("Rescore").click()
     Traceback (most recent call last):
     ...
     DataError: integer out of range
-
-    >>> admin_browser.open(
-    ...    "http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9")
-
-The user can 'cancel' the operation anytime and will be sent to the
-build context page.
-
-    >>> admin_browser.getLink("Rescore build").click()
-    >>> admin_browser.getControl("Cancel").click()
-    >>> print admin_browser.url
-    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
 
 And this form also handles direct attempts to rescore a build in the
 wrong state. The request is simply redirected to the build (context)
