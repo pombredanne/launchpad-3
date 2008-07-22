@@ -524,7 +524,7 @@ class LaunchpadBranch:
         return deferred
 
 
-class LaunchpadServer(Server):
+class _BaseLaunchpadServer(Server):
     """Bazaar Server for Launchpad branches."""
 
     def __init__(self, authserver, user_id, hosting_transport,
@@ -544,8 +544,7 @@ class LaunchpadServer(Server):
         # pylint: disable-msg=W0231
         self._authserver = CachingAuthserverClient(authserver, user_id)
         self._backing_transport = hosting_transport
-        self._mirror_transport = get_transport(
-            'readonly+' + mirror_transport.base)
+        self._mirror_transport = mirror_transport
         self._is_set_up = False
 
     def _buildControlDirectory(self, stack_on_url):
@@ -592,42 +591,6 @@ class LaunchpadServer(Server):
         deferred.addCallback(self._buildControlDirectory)
         return deferred.addCallback(
             lambda transport: (transport, urlutils.escape(path)))
-
-    def createBranch(self, virtual_url_fragment):
-        """Make a new directory for the given virtual URL fragment.
-
-        If `virtual_url_fragment` is a branch directory, create the branch in
-        the database, then create a matching directory on the backing
-        transport.
-
-        :param virtual_url_fragment: A virtual path to be translated.
-
-        :raise NotABranchPath: If `virtual_path` does not have at least a
-            valid path to a branch.
-        :raise TransportNotPossible: If the branch owner or product does not
-            exist.
-        :raise PermissionDenied: If the branch cannot be created in the
-            database. This might indicate that the branch already exists, or
-            that its creation is forbidden by a policy.
-        """
-        branch, ignored = self._getBranch(virtual_url_fragment)
-        deferred = branch.create()
-
-        def ensure_path(branch_id):
-            deferred = branch.ensureUnderlyingPath(self._backing_transport)
-            return deferred.addCallback(lambda ignored: branch_id)
-        return deferred.addCallback(ensure_path)
-
-    def requestMirror(self, virtual_url_fragment):
-        """Mirror the branch that owns 'virtual_url_fragment'.
-
-        :param virtual_path: A virtual URL fragment to be translated.
-
-        :raise NotABranchPath: If `virtual_url_fragment` does not have at
-            least a valid path to a branch.
-        """
-        branch, ignored = self._getBranch(virtual_url_fragment)
-        return branch.requestMirror()
 
     def _getTransportForPermissions(self, permissions, branch):
         """Get the appropriate transport for `permissions` on `branch`."""
@@ -716,13 +679,60 @@ class LaunchpadServer(Server):
         unregister_transport(self.get_url(), self._factory)
 
 
-class LaunchpadInternalServer(LaunchpadServer):
+class LaunchpadServer(_BaseLaunchpadServer):
+
+    def __init__(self, authserver, user_id, hosting_transport,
+                 mirror_transport):
+        mirror_transport = get_transport(
+            'readonly+' + mirror_transport.base)
+        super(LaunchpadServer, self).__init__(
+            authserver, user_id, hosting_transport, mirror_transport)
+
+    def createBranch(self, virtual_url_fragment):
+        """Make a new directory for the given virtual URL fragment.
+
+        If `virtual_url_fragment` is a branch directory, create the branch in
+        the database, then create a matching directory on the backing
+        transport.
+
+        :param virtual_url_fragment: A virtual path to be translated.
+
+        :raise NotABranchPath: If `virtual_path` does not have at least a
+            valid path to a branch.
+        :raise TransportNotPossible: If the branch owner or product does not
+            exist.
+        :raise PermissionDenied: If the branch cannot be created in the
+            database. This might indicate that the branch already exists, or
+            that its creation is forbidden by a policy.
+        """
+        branch, ignored = self._getBranch(virtual_url_fragment)
+        deferred = branch.create()
+
+        def ensure_path(branch_id):
+            deferred = branch.ensureUnderlyingPath(self._backing_transport)
+            return deferred.addCallback(lambda ignored: branch_id)
+        return deferred.addCallback(ensure_path)
+
+    def requestMirror(self, virtual_url_fragment):
+        """Mirror the branch that owns 'virtual_url_fragment'.
+
+        :param virtual_path: A virtual URL fragment to be translated.
+
+        :raise NotABranchPath: If `virtual_url_fragment` does not have at
+            least a valid path to a branch.
+        """
+        branch, ignored = self._getBranch(virtual_url_fragment)
+        return branch.requestMirror()
+
+
+class LaunchpadInternalServer(_BaseLaunchpadServer):
 
     def __init__(self, scheme, authserver, branch_transport):
+        branch_transport = get_transport(
+            'readonly+' + branch_transport.base)
         super(LaunchpadInternalServer, self).__init__(
             authserver, LAUNCHPAD_SERVICES, branch_transport,
             branch_transport)
-        self._backing_transport = self._mirror_transport
         self._scheme = scheme
 
     def get_url(self):
