@@ -1,4 +1,9 @@
-= Person Packages =
+= Person Pages =
+
+There are many views that wrap the Person object to display the
+person's information.
+
+== Person Packages ==
 
 The page at ~user/+packages contains three sections,
 "Maintained Packages", "Uploaded Packages" and "PPA Packages".
