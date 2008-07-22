@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -21,25 +21,29 @@
 
 <body>
 
+<metal:heading fill-slot="before_nav_menu"
+               tal:content="structure context/@@+heading"/>
+
 <div metal:fill-slot="main"
      tal:define="context_menu context/menu:context">
 
-  <div class="asides">
-    <tal:public condition="not: context/private">
-      <aside id="privacy">
-        This branch is public
-      </aside>
-    </tal:public>
-    <tal:public condition="context/private">
-      <aside id="privacy">
-        This branch is private
-      </aside>
-    </tal:public>
+  <tal:public condition="not: context/private">
+    <div id="privacy" class="aside public">
+      This branch is public
+    </div>
+  </tal:public>
+  <tal:public condition="context/private">
+    <div id="privacy" class="aside private">
+      This branch is private
+    </div>
+  </tal:public>
+
+  <div class="aside">
     <aside tal:content="structure context/@@+portlet-subscribers" />
   </div>
 
-  <div>
-    <div style="float:right">
+    <h1>
+      <tal:branch replace="context/displayname" />
       <a tal:define="link context_menu/delete_branch"
          tal:condition="link/enabled"
          tal:attributes="href link/url"
@@ -48,25 +52,13 @@
          tal:condition="link/enabled"
          tal:attributes="href link/url"
          ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
-    </div>
-    <h1>
-      <tal:branch replace="context/displayname" />
     </h1>
-  </div>
 
-  <div>
-    <div style="float: right">
-      <a tal:define="link context_menu/edit"
-         tal:condition="link/enabled"
-         tal:attributes="href link/url"
-         ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
-    </div>
     <div tal:condition="context/summary" id="branch-summary"
          tal:content="structure context/summary/fmt:text-to-html">
       $Branch.summary goes here. This should be quite short, just a single
       paragraph of text really, giving the branch highlights.
     </div>
-  </div>
 
   <table id="branch-details-table">
     <tbody>
@@ -84,8 +76,6 @@
           id="branch-details-status-value" />
       </tr>
       <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
-
-
         <tr><th>Location:</th><td tal:content="view/mirror_location" /></tr>
         <tal:mirror-failures tal:replace="structure context/@@+mirror-status" />
       </tal:mirrored-branch>

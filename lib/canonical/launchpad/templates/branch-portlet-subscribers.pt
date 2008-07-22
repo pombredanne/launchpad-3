@@ -3,11 +3,10 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-subscribers">
-  <h2 class="unnecessary">Subscribers</h2>
   <div class="portletBody portletContent">
 
     <div tal:condition="not:view/owner_is_registrant">
-      <h3><img src="/@@/mail" />Registered by:</h3>
+      <h2>Registered by</h2>
       <dl>
         <dt>
           <img src="/@@/yes" />
@@ -17,7 +16,7 @@
     </div>
 
     <div>
-      <h3><img src="/@@/mail" />Owner:</h3>
+      <h2>Owner</h2>
       <dl>
         <dt>
           <img src="/@@/yes" />
@@ -33,7 +32,7 @@
     </div>
 
     <div>
-      <h3><img src="/@@/mail" />Subscribers:</h3>
+      <div class="actions">
       <div
         tal:define="link context/menu:context/subscription"
         tal:condition="link/enabled"
@@ -44,6 +43,8 @@
         tal:condition="link/enabled"
         tal:content="structure link/render"
         />
+      </div>
+      <h2>Subscribers</h2>
       <dl tal:condition="view/subscriptions" id="subscriptions">
         <tal:subscribers tal:repeat="subscription view/subscriptions">
           <dt class="subscriber">

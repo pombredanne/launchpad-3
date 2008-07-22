@@ -156,6 +156,8 @@ matching for the angle brackets of an enclosing tag.
     'http://code.launchpad.dev/~no-priv/applets/main'
 
     >>> print extract_text(find_main_content(user_browser.contents))
+    Last modified
+    ...
     This branch is public
     ...
     Gnome Panel Applets Mainline

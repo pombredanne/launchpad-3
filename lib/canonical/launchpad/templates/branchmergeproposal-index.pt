@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -18,12 +18,17 @@
   }
 </style>
 
+<metal:heading fill-slot="before_nav_menu"
+               tal:content="structure context/source_branch/@@+heading"/>
+
 <div metal:fill-slot="main"
      tal:define="context_menu context/menu:context">
 
-  <tal:summary replace="structure context/@@+pagelet-summary" />
-
-  <h1>Proposal to merge branch</h1>
+  <tal:proposal-heading tal:replace="structure context/@@+heading"/>
+  
+  <div class="asides">
+    <aside tal:content="structure context/@@+pagelet-subscribers" />
+  </div>
 
   <tal:superseded-proposal condition="context/supersedes">
     <p id="superseded-proposal">

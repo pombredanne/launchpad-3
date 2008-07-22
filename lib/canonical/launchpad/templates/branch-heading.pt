@@ -5,7 +5,7 @@
   id="branch-heading">
 
   <div style="float:right; text-align: right">
-    Modified <tal:modified replace="context/date_last_modified/fmt:datetime" />
+    Last modified <tal:modified replace="context/date_last_modified/fmt:displaydate" />
   </div>
   <img src="/@@/branch" alt="" /> Branch
   <tt tal:content="context/bzr_identity" />
