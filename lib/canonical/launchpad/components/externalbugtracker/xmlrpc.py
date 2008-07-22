@@ -31,9 +31,8 @@ class XMLRPCRedirectHandler(HTTPRedirectHandler):
         """
         # If we can't handle this redirect,
         # HTTPRedirectHandler.redirect_request() will raise an
-        # HTTPError.
-        # We call the superclass here in the old fashion since
-        # HTTPRedirectHandler isn't a new-style class.
+        # HTTPError. We call the superclass here in the old fashion
+        # since HTTPRedirectHandler isn't a new-style class.
         new_request = HTTPRedirectHandler.redirect_request(
             self, req, fp, code, msg, headers, newurl)
 
@@ -70,7 +69,9 @@ class UrlLib2Transport(Transport):
             self.scheme in ('http', 'https'),
             "Unsupported URL schene: %s" % self.scheme)
         self.cookie_processor = HTTPCookieProcessor()
-        self.opener = build_opener(self.cookie_processor)
+        self.redirect_handler = XMLRPCRedirectHandler()
+        self.opener = build_opener(
+            self.cookie_processor, self.redirect_handler)
 
     def setCookie(self, cookie_str):
         """Set a cookie for the transport to use in future connections."""

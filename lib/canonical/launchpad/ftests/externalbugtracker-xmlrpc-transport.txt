@@ -97,7 +97,7 @@ location.
     ... </methodCall>
     ... """
     >>> transport.request('www.example.com', 'xmlrpc', request_body)
-    ('https://www.example.com/xmlrpc/redirected',)
+    ('http://www.example.com/xmlrpc/redirected',)
 
 
 == The XMLRPCRedirectHandler ==
@@ -110,7 +110,7 @@ redirect responses. This is a subclass of urllib2's HTTPRedirectHandler.
     >>> from urllib2 import HTTPRedirectHandler, Request
 
     >>> transport.opener.handlers
-    [<urllib2.XMLRPCRedirectHandler instance ...]
+    [... <canonical...XMLRPCRedirectHandler instance ...]
 
     >>> issubclass(XMLRPCRedirectHandler, HTTPRedirectHandler)
     True
@@ -140,7 +140,7 @@ to the new target URL).
     >>> handler = XMLRPCRedirectHandler()
     >>> redirected_request = handler.redirect_request(
     ...     request_to_be_redirected, None, 302, 'Moved', {},
-    ...     newurl='https://www.example.com/redirected')
+    ...     newurl='http://www.example.com/redirected')
 
 The new request will be a POST request to the URL specified in
 redirect_request()'s newurl parameter. The payload of the request will
@@ -150,7 +150,7 @@ be the XML-RPC method call.
     POST
 
     >>> print redirected_request.get_full_url()
-    https://www.example.com/redirected
+    http://www.example.com/redirected
 
     >>> print redirected_request.data
     <?xml version="1.0"?>
@@ -171,13 +171,13 @@ request will be a GET request with no payload.
     >>> request_to_be_redirected = Request('http://www.example.com')
     >>> redirected_request = handler.redirect_request(
     ...     request_to_be_redirected, None, 302, 'Moved', {},
-    ...     newurl='https://www.example.com/redirected')
+    ...     newurl='http://www.example.com/redirected')
 
     >>> print redirected_request.get_method()
     GET
 
     >>> print redirected_request.get_full_url()
-    https://www.example.com/redirected
+    http://www.example.com/redirected
 
     >>> print redirected_request.data
     None

@@ -40,6 +40,7 @@ from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.scripts import debbugs
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -1203,20 +1204,36 @@ class Urlib2TransportTestHandler(BaseHandler):
             raise HTTPError(
                 req.get_full_url(), 500, 'Internal Error', {}, None)
 
-        response = StringIO("""<?xml version="1.0"?>
-        <methodResponse>
-          <params>
-            <param>
-              <value>%s</value>
-            </param>
-          </params>
-        </methodResponse>
-        """ % escape(req.get_full_url()))
-        info = Urlib2TransportTestInfo()
-        response.info = lambda: info
+        elif 'testRedirect' in req.data:
+            # For redirects we just tack /redirected onto the end of the
+            # original URL.
+            redirect_url = req.get_full_url()
+            redirect_url = urlappend(redirect_url, 'redirected')
+            headers = HTTPMessage(StringIO())
+            headers.headers = ['Location: %s' % redirect_url]
+
+            # We create an empty response with some salient data for the
+            # purposes of returning something sensible here.
+            response = StringIO()
+            response.code = 302
+            response.msg = 'Moved'
+
+        else:
+            response = StringIO("""<?xml version="1.0"?>
+            <methodResponse>
+              <params>
+                <param>
+                  <value>%s</value>
+                </param>
+              </params>
+            </methodResponse>
+            """ % escape(req.get_full_url()))
+            response.code = 200
+            response.msg = ''
+            headers = Urlib2TransportTestInfo()
+
+        response.info = lambda: headers
         response.geturl = lambda: req.get_full_url()
-        response.code = 200
-        response.msg = ''
         return response
 
 
