@@ -1118,7 +1118,6 @@ class IPersonEditMenu(Interface):
 class IPersonRelatedSoftwareMenu(Interface):
     """A marker interface for the 'Related Software' navigation menu."""
 
-
 class PersonPPANavigationMenuMixin:
     """A mixin that provides the PPA navigation menu link."""
 
