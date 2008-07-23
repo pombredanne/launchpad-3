@@ -1152,7 +1152,7 @@ class PersonOverviewNavigationMenu(
     NavigationMenu, PersonPPANavigationMenuMixin):
     """The top-level menu of actions a Person may take."""
 
-    usedfor = IHasPersonNavigationMenu
+    usedfor = IPerson
     facet = 'overview'
     links = ('profile', 'related_software', 'karma', 'show_ppa')
 
