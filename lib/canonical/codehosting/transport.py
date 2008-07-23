@@ -793,11 +793,6 @@ class AsyncVirtualTransport(Transport):
     Assumes that it has a 'server' which implements 'translateVirtualPath'.
     This method is expected to take an absolute virtual path and translate it
     into a real transport and a path on that transport.
-
-    translateVirtualPath will return a Deferred. Subclasses should implement
-    `_extractResult`, a method which takes a Deferred and then returns either
-    the same Deferred (for asynchronous code) or the value of the Deferred
-    (for synchronous code).
     """
 
     def __init__(self, server, url):
@@ -870,14 +865,14 @@ class AsyncVirtualTransport(Transport):
         def iter_files((transport, path)):
             return transport.clone(path).iter_files_recursive()
         deferred.addCallback(iter_files)
-        return self._extractResult(deferred)
+        return deferred
 
     def listable(self):
         deferred = self._getUnderylingTransportAndPath('.')
         def listable((transport, path)):
             return transport.listable()
         deferred.addCallback(listable)
-        return self._extractResult(deferred)
+        return deferred
 
     def list_dir(self, relpath):
         return self._call('list_dir', relpath)
@@ -925,7 +920,7 @@ class AsyncVirtualTransport(Transport):
             return getattr(from_transport, 'rename')(from_path, to_path)
 
         deferred.addCallback(check_transports_and_rename)
-        return self._extractResult(deferred)
+        return deferred
 
     def rmdir(self, relpath):
         return self._call('rmdir', relpath)
@@ -1053,13 +1048,6 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
     valid branch path') into Bazaar errors (such as 'no such file').
     """
 
-    def _call(self, method_name, *args, **kwargs):
-        return self._extractResult(
-            AsyncVirtualTransport._call(self, method_name, *args, **kwargs))
-
-    def _extractResult(self, deferred):
-        return deferred
-
     def _getUnderylingTransportAndPath(self, relpath):
         deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
             self, relpath)
@@ -1098,7 +1086,7 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         deferred.addCallback(real_mkdir)
         deferred.addErrback(maybe_make_branch_in_db)
         deferred.addErrback(check_permission_denied)
-        return self._extractResult(deferred)
+        return deferred
 
     def rename(self, rel_from, rel_to):
         # We hook into rename to catch the "unlock branch" event, so that we
@@ -1111,7 +1099,7 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         deferred = deferred.addCallback(
             lambda ignored: AsyncVirtualTransport.rename(
                 self, rel_from, rel_to))
-        return self._extractResult(deferred)
+        return deferred
 
     def rmdir(self, relpath):
         # We hook into rmdir in order to prevent users from deleting branches,
@@ -1119,6 +1107,6 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         virtual_url_fragment = self._abspath(relpath)
         path_segments = virtual_url_fragment.lstrip('/').split('/')
         if len(path_segments) <= 3:
-            return self._extractResult(defer.fail(
-                failure.Failure(PermissionDenied(virtual_url_fragment))))
+            return defer.fail(
+                failure.Failure(PermissionDenied(virtual_url_fragment)))
         return AsyncVirtualTransport.rmdir(self, relpath)
