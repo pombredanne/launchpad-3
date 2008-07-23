@@ -862,30 +862,11 @@ TAL namespace 'menu' is used to query the state of a menu and to iterate
 over the links. The TALES takes the form of 'view/menu:navigation'.
 
     >>> from zope.interface import classImplements
-    >>> from zope.security.proxy import isinstance as zope_isinstance
     >>> from zope.app.traversing.adapters import DefaultTraversable
     >>> from zope.app.traversing.interfaces import IPathAdapter, ITraversable
     >>> from canonical.launchpad.ftests import test_tales
     >>> from canonical.launchpad.webapp.tales import MenuAPI
-
-    >>> def summarise_tal_links(links):
-    ...     """List the links and their attributes in the dict or list."""
-    ...     is_dict = zope_isinstance(links, dict)
-    ...     if is_dict:
-    ...         keys = sorted(links)
-    ...     else:
-    ...         keys = links
-    ...     for link_name in keys:
-    ...         if is_dict:
-    ...             link = links[link_name]
-    ...         else:
-    ...             link = link_name
-    ...         print 'link %s' % link.name
-    ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
-    ...         for attrname in attributes:
-    ...             if not safe_hasattr(link, attrname):
-    ...                 continue
-    ...             print '    %s:' % attrname, getattr(link, attrname)
+    >>> from canonical.lazr.testing.menus import summarise_tal_links
 
     # MenuAPI is normally registered as an IPathAdapter in ZCML. This
     # approximates what is done by the code:
