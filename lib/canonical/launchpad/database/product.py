@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
@@ -1147,7 +1147,7 @@ class ProductSet:
             clauseTables=['ProductSeries', 'POTemplate'],
             orderBy='Product.title',
             distinct=True)
-        return upstream
+        return upstream.prejoin(['owner']
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""
