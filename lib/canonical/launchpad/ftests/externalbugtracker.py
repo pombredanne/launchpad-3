@@ -1190,6 +1190,31 @@ class Urlib2TransportTestInfo:
 
 class Urlib2TransportTestHandler(BaseHandler):
     """A test urllib2 handler returning a hard-coded response."""
+
+    def http_response(self, request, response):
+        """Return an HTTP response.
+
+        If test payload is found in the request the response will be
+        altered to suit that payload.
+        """
+        # Big hack to make calls to testRedirect act as though a 302
+        # has been received. Note the slightly cheaty check for
+        # 'redirected' in the URL. This is to stop urllib2 from whinging
+        # about infinite loops.
+        if ('testRedirect' in request.data and
+            'redirected' not in request.get_full_url()):
+            redirect_url = urlappend(
+                request.get_full_url(), 'redirected')
+
+            headers = HTTPMessage(StringIO())
+            headers['location'] = redirect_url
+
+            response = self.parent.error(
+                'http', request, response, 302, 'Moved',
+                headers)
+
+        return response
+
     def default_open(self, req):
         """Catch all requests and return a hard-coded response.
 
@@ -1204,41 +1229,23 @@ class Urlib2TransportTestHandler(BaseHandler):
             raise HTTPError(
                 req.get_full_url(), 500, 'Internal Error', {}, None)
 
-        elif 'testRedirect' in req.data:
-            # For redirects we just tack /redirected onto the end of the
-            # original URL.
-            redirect_url = req.get_full_url()
-            redirect_url = urlappend(redirect_url, 'redirected')
-            headers = HTTPMessage(StringIO())
-            headers.headers = ['Location: %s' % redirect_url]
-
-            # We create an empty response with some salient data for the
-            # purposes of returning something sensible here.
-            response = StringIO()
-            response.code = 302
-            response.msg = 'Moved'
-
-        else:
-            response = StringIO("""<?xml version="1.0"?>
-            <methodResponse>
-              <params>
-                <param>
-                  <value>%s</value>
-                </param>
-              </params>
-            </methodResponse>
-            """ % escape(req.get_full_url()))
-            response.code = 200
-            response.msg = ''
-            headers = Urlib2TransportTestInfo()
+        response = StringIO("""<?xml version="1.0"?>
+        <methodResponse>
+          <params>
+            <param>
+              <value>%s</value>
+            </param>
+          </params>
+        </methodResponse>
+        """ % escape(req.get_full_url()))
+        response.code = 200
+        response.msg = ''
+        headers = Urlib2TransportTestInfo()
 
         response.info = lambda: headers
         response.geturl = lambda: req.get_full_url()
         return response
 
-
 def patch_transport_opener(transport):
-    """Patch the transport's opener to use a test handler
-    returning a hard-coded response.
-    """
+    """Patch the transport's opener to use various test handlers."""
     transport.opener.add_handler(Urlib2TransportTestHandler())
