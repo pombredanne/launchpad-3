@@ -14,6 +14,7 @@ __all__ = [
     'ArchiveEditDependenciesView',
     'ArchiveEditView',
     'ArchiveNavigation',
+    'ArchiveNavigationMenu',
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
@@ -25,6 +26,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import Interface
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -56,7 +58,7 @@ from canonical.launchpad.scripts.packagecopier import (
     CannotCopy, check_copy, do_copy)
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -126,6 +128,35 @@ class ArchiveContextMenu(ContextMenu):
     def edit_dependencies(self):
         text = 'Edit dependencies'
         return Link('+edit-dependencies', text, icon='edit')
+
+
+class IArchiveNavigationMenuMarker(Interface):
+    """A marker interface for views with archive navigation submenus."""
+
+
+class ArchiveNavigationMenu(NavigationMenu):
+
+    usedfor = IArchiveNavigationMenuMarker
+    facet = 'overview'
+    links = ['ppa', 'builds', 'delete', 'copy']
+
+    def ppa(self):
+        text = 'View PPA'
+        return Link(canonical_url(self.context), text)
+
+    def builds(self):
+        text = 'Build records'
+        return Link('+builds', text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete packages'
+        return Link('+delete-packages', text)
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def copy(self):
+        text = 'Copy packages'
+        return Link('+copy-packages', text)
 
 
 class ArchiveViewBase:
