@@ -43,7 +43,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        url_prefix = 'lp-internal:///'
+        url_prefix = 'lp-mirrored:///'
         def fake_transport_factory(url):
             self.assertTrue(url.startswith(url_prefix))
             return self.get_transport(url[len(url_prefix):])
@@ -60,7 +60,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.txn = LaunchpadZopelessLayer.txn
 
     def tearDown(self):
-        unregister_transport('lp-internal:///', self.get_transport)
+        unregister_transport('lp-mirrored:///', self.get_transport)
         TestCaseWithTransport.tearDown(self)
 
     def makeFixtures(self):

@@ -166,7 +166,8 @@ class PullerWorker:
         authserver = BlockingProxy(ServerProxy(config.codehosting.authserver))
         branch_transport = get_chrooted_transport(
             config.codehosting.branches_root)
-        return LaunchpadInternalServer(authserver, branch_transport)
+        return LaunchpadInternalServer(
+            'lp-hosted:///', authserver, branch_transport)
 
     def _checkSourceUrl(self):
         """Check the validity of the source URL.

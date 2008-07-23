@@ -32,7 +32,7 @@ talks to the database. We cache requests to the authserver using
 `CachingAuthserverClient`, in order to speed things up a bit.
 
 We hook the `LaunchpadServer` into Bazaar by implementing a
-`VirtualTransport`, a `bzrlib.transport.Transport` that wraps all of its
+`AsyncVirtualTransport`, a `bzrlib.transport.Transport` that wraps all of its
 operations so that they are translated by an object that implements
 `translateVirtualPath`.
 
@@ -46,12 +46,13 @@ branch if appropriate.
 __metaclass__ = type
 __all__ = [
     'AsyncLaunchpadTransport',
+    'AsyncVirtualTransport',
     'BlockingProxy',
     'get_chrooted_transport',
     'LaunchpadInternalServer',
     'LaunchpadServer',
-    'LaunchpadTransport',
     'set_up_logging',
+    'SynchronousAdapter',
     ]
 
 import logging
@@ -523,28 +524,27 @@ class LaunchpadBranch:
         return deferred
 
 
-class LaunchpadServer(Server):
+class _BaseLaunchpadServer(Server):
     """Bazaar Server for Launchpad branches."""
 
-    def __init__(self, authserver, user_id, hosting_transport,
+    def __init__(self, scheme, authserver, user_id, branch_transport,
                  mirror_transport):
         """Construct a LaunchpadServer.
 
+        :param scheme: The URL scheme to use.
         :param authserver: An XML-RPC client that implements callRemote.
         :param user_id: The database ID for the user who is accessing
             branches.
-        :param hosting_transport: A Transport pointing to the root of where
+        :param branch_transport: A Transport pointing to the root of where
             the branches are actually stored.
-        :param mirror_transport: A Transport pointing to the root of where
-            branches are mirrored to.
         """
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
         # pylint: disable-msg=W0231
+        self._scheme = scheme
         self._authserver = CachingAuthserverClient(authserver, user_id)
-        self._backing_transport = hosting_transport
-        self._mirror_transport = get_transport(
-            'readonly+' + mirror_transport.base)
+        self._branch_transport = branch_transport
+        self._mirror_transport = mirror_transport
         self._is_set_up = False
 
     def _buildControlDirectory(self, stack_on_url):
@@ -592,42 +592,6 @@ class LaunchpadServer(Server):
         return deferred.addCallback(
             lambda transport: (transport, urlutils.escape(path)))
 
-    def createBranch(self, virtual_url_fragment):
-        """Make a new directory for the given virtual URL fragment.
-
-        If `virtual_url_fragment` is a branch directory, create the branch in
-        the database, then create a matching directory on the backing
-        transport.
-
-        :param virtual_url_fragment: A virtual path to be translated.
-
-        :raise NotABranchPath: If `virtual_path` does not have at least a
-            valid path to a branch.
-        :raise TransportNotPossible: If the branch owner or product does not
-            exist.
-        :raise PermissionDenied: If the branch cannot be created in the
-            database. This might indicate that the branch already exists, or
-            that its creation is forbidden by a policy.
-        """
-        branch, ignored = self._getBranch(virtual_url_fragment)
-        deferred = branch.create()
-
-        def ensure_path(branch_id):
-            deferred = branch.ensureUnderlyingPath(self._backing_transport)
-            return deferred.addCallback(lambda ignored: branch_id)
-        return deferred.addCallback(ensure_path)
-
-    def requestMirror(self, virtual_url_fragment):
-        """Mirror the branch that owns 'virtual_url_fragment'.
-
-        :param virtual_path: A virtual URL fragment to be translated.
-
-        :raise NotABranchPath: If `virtual_url_fragment` does not have at
-            least a valid path to a branch.
-        """
-        branch, ignored = self._getBranch(virtual_url_fragment)
-        return branch.requestMirror()
-
     def translateVirtualPath(self, virtual_url_fragment):
         """Translate 'virtual_url_fragment' into a transport and sub-fragment.
 
@@ -668,37 +632,16 @@ class LaunchpadServer(Server):
 
         def get_transport(real_path):
             permissions_deferred = branch.getPermissions()
-            def got_permissions(permissions):
-                if permissions == READ_ONLY:
-                    return self._mirror_transport
-                else:
-                    transport = self._backing_transport
-                    deferred = branch.ensureUnderlyingPath(transport)
-                    deferred.addCallback(lambda ignored: transport)
-                    return deferred
-            permissions_deferred.addCallback(got_permissions)
             permissions_deferred.addCallback(
+                self._getTransportForPermissions, branch)
+            return permissions_deferred.addCallback(
                 lambda transport: (transport, real_path))
-            return permissions_deferred
 
         return virtual_path_deferred.addCallback(get_transport)
 
-    def _factory(self, url):
-        """Construct a transport for the given URL. Used by the registry."""
-        assert url.startswith(self.get_url())
-        return LaunchpadTransport(self, url)
-
     def get_url(self):
-        """Return the URL of this server.
-
-        The URL is of the form 'lp-<object_id>:///', where 'object_id' is
-        id(self). This ensures that we can have LaunchpadServer objects for
-        different users, different backing transports and, theoretically,
-        different authservers.
-
-        See Server.get_url.
-        """
-        return 'lp-%d:///' % id(self)
+        """Return the URL of this server."""
+        return self._scheme
 
     def setUp(self):
         """See Server.setUp."""
@@ -713,19 +656,88 @@ class LaunchpadServer(Server):
         unregister_transport(self.get_url(), self._factory)
 
 
-class LaunchpadInternalServer(LaunchpadServer):
+class LaunchpadServer(_BaseLaunchpadServer):
 
-    def __init__(self, authserver, branch_transport):
+    def __init__(self, authserver, user_id, hosting_transport,
+                 mirror_transport):
+        scheme = 'lp-%d:///' % id(self)
+        mirror_transport = get_transport(
+            'readonly+' + mirror_transport.base)
+        super(LaunchpadServer, self).__init__(
+            scheme, authserver, user_id, hosting_transport, mirror_transport)
+
+    def _factory(self, url):
+        """Construct a transport for the given URL. Used by the registry."""
+        assert url.startswith(self.get_url())
+        return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
+
+    def _getTransportForPermissions(self, permissions, branch):
+        """Get the appropriate transport for `permissions` on `branch`."""
+        if permissions == READ_ONLY:
+            return self._mirror_transport
+        else:
+            transport = self._branch_transport
+            deferred = branch.ensureUnderlyingPath(transport)
+            deferred.addCallback(lambda ignored: transport)
+            return deferred
+
+    def createBranch(self, virtual_url_fragment):
+        """Make a new directory for the given virtual URL fragment.
+
+        If `virtual_url_fragment` is a branch directory, create the branch in
+        the database, then create a matching directory on the backing
+        transport.
+
+        :param virtual_url_fragment: A virtual path to be translated.
+
+        :raise NotABranchPath: If `virtual_path` does not have at least a
+            valid path to a branch.
+        :raise TransportNotPossible: If the branch owner or product does not
+            exist.
+        :raise PermissionDenied: If the branch cannot be created in the
+            database. This might indicate that the branch already exists, or
+            that its creation is forbidden by a policy.
+        """
+        branch, ignored = self._getBranch(virtual_url_fragment)
+        deferred = branch.create()
+
+        def ensure_path(branch_id):
+            deferred = branch.ensureUnderlyingPath(self._branch_transport)
+            return deferred.addCallback(lambda ignored: branch_id)
+        return deferred.addCallback(ensure_path)
+
+    def requestMirror(self, virtual_url_fragment):
+        """Mirror the branch that owns 'virtual_url_fragment'.
+
+        :param virtual_path: A virtual URL fragment to be translated.
+
+        :raise NotABranchPath: If `virtual_url_fragment` does not have at
+            least a valid path to a branch.
+        """
+        branch, ignored = self._getBranch(virtual_url_fragment)
+        return branch.requestMirror()
+
+
+class LaunchpadInternalServer(_BaseLaunchpadServer):
+
+    def __init__(self, scheme, authserver, branch_transport):
+        branch_transport = get_transport(
+            'readonly+' + branch_transport.base)
         super(LaunchpadInternalServer, self).__init__(
-            authserver, LAUNCHPAD_SERVICES, branch_transport,
+            scheme, authserver, LAUNCHPAD_SERVICES, branch_transport,
             branch_transport)
-        self._backing_transport = self._mirror_transport
 
-    def get_url(self):
-        return 'lp-internal:///'
+    def _getTransportForPermissions(self, permissions, branch):
+        """Get the appropriate transport for `permissions` on `branch`."""
+        return self._branch_transport
+
+    def _factory(self, url):
+        """Construct a transport for the given URL. Used by the registry."""
+        assert url.startswith(self.get_url())
+        return SynchronousAdapter(AsyncVirtualTransport(self, url))
 
 
-class VirtualTransport(Transport):
+class AsyncVirtualTransport(Transport):
     """A transport for a virtual file system.
 
     Assumes that it has a 'server' which implements 'translateVirtualPath'.
@@ -875,7 +887,112 @@ class VirtualTransport(Transport):
         return self._call('writeChunk', relpath, offset, data)
 
 
-class AsyncLaunchpadTransport(VirtualTransport):
+class SynchronousAdapter(Transport):
+    """Converts an asynchronous transport to a synchronous one."""
+
+    def __init__(self, async_transport):
+        self._async_transport = async_transport
+
+    def _extractResult(self, deferred):
+        failures = []
+        successes = []
+        deferred.addCallbacks(successes.append, failures.append)
+        if len(failures) == 1:
+            failures[0].raiseException()
+        elif len(successes) == 1:
+            return successes[0]
+        else:
+            raise AssertionError("%r has not fired yet." % (deferred,))
+
+    @property
+    def base(self):
+        return self._async_transport.base
+
+    def _abspath(self, relpath):
+        return self._async_transport._abspath(relpath)
+
+    def clone(self, offset=None):
+        cloned_async = self._async_transport.clone(offset)
+        return SynchronousAdapter(cloned_async)
+
+    def external_url(self):
+        raise InProcessTransport()
+
+    def abspath(self, relpath):
+        return self._async_transport.abspath(relpath)
+
+    def append_file(self, relpath, f, mode=None):
+        return self._extractResult(
+            self._async_transport.append_file(relpath, f, mode))
+
+    def delete(self, relpath):
+        return self._extractResult(self._async_transport.delete(relpath))
+
+    def delete_tree(self, relpath):
+        return self._extractResult(self._async_transport.delete_tree(relpath))
+
+    def get(self, relpath):
+        return self._extractResult(self._async_transport.get(relpath))
+
+    def get_bytes(self, relpath):
+        return self._extractResult(self._async_transport.get_bytes(relpath))
+
+    def has(self, relpath):
+        return self._extractResult(self._async_transport.has(relpath))
+
+    def iter_files_recursive(self):
+        return self._extractResult(
+            self._async_transport.iter_files_recursive())
+
+    def listable(self):
+        return self._extractResult(self._async_transport.listable())
+
+    def list_dir(self, relpath):
+        return self._extractResult(self._async_transport.list_dir(relpath))
+
+    def lock_read(self, relpath):
+        return self._extractResult(self._async_transport.lock_read(relpath))
+
+    def lock_write(self, relpath):
+        return self._extractResult(self._async_transport.lock_write(relpath))
+
+    def mkdir(self, relpath, mode=None):
+        return self._extractResult(self._async_transport.mkdir(relpath, mode))
+
+    def open_write_stream(self, relpath, mode=None):
+        return self._extractResult(
+            self._async_transport.open_write_stream(relpath, mode))
+
+    def put_file(self, relpath, f, mode=None):
+        return self._extractResult(
+            self._async_transport.put_file(relpath, f, mode))
+
+    def local_realPath(self, relpath):
+        return self._extractResult(
+            self._async_transport.local_realPath(relpath))
+
+    def readv(self, relpath, offsets, adjust_for_latency=False,
+              upper_limit=None):
+        return self._extractResult(
+            self._async_transport.readv(
+                relpath, offsets, adjust_for_latency, upper_limit))
+
+    def rename(self, rel_from, rel_to):
+        return self._extractResult(
+            self._async_transport.rename(rel_from, rel_to))
+
+    def rmdir(self, relpath):
+        return self._extractResult(self._async_transport.rmdir(relpath))
+
+    def stat(self, relpath):
+        return self._extractResult(self._async_transport.stat(relpath))
+
+    def writeChunk(self, relpath, offset, data):
+        return self._extractResult(
+            self._async_transport.writeChunk(relpath, offset, data))
+
+
+class AsyncLaunchpadTransport(AsyncVirtualTransport):
     """Virtual transport to implement the Launchpad VFS for branches.
 
     This implements a few hooks to translate filesystem operations (such as
@@ -888,13 +1005,13 @@ class AsyncLaunchpadTransport(VirtualTransport):
 
     def _call(self, method_name, *args, **kwargs):
         return self._extractResult(
-            VirtualTransport._call(self, method_name, *args, **kwargs))
+            AsyncVirtualTransport._call(self, method_name, *args, **kwargs))
 
     def _extractResult(self, deferred):
         return deferred
 
     def _getUnderylingTransportAndPath(self, relpath):
-        deferred = VirtualTransport._getUnderylingTransportAndPath(
+        deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
             self, relpath)
         def convert_failure(failure):
             failure.trap(NotABranchPath)
@@ -912,7 +1029,7 @@ class AsyncLaunchpadTransport(VirtualTransport):
         # the user tries to make a directory like "~foo/bar". That is, a
         # directory that has too little information to be translated into a
         # Launchpad branch.
-        deferred = VirtualTransport._getUnderylingTransportAndPath(
+        deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
             self, relpath)
         def maybe_make_branch_in_db(failure):
             # Looks like we are trying to make a branch.
@@ -925,10 +1042,10 @@ class AsyncLaunchpadTransport(VirtualTransport):
             exc_object = failure.value
             raise PermissionDenied(
                 exc_object.virtual_url_fragment, exc_object.reason)
-        def mkdir((transport, path)):
+        def real_mkdir((transport, path)):
             return getattr(transport, 'mkdir')(path, mode)
 
-        deferred.addCallback(mkdir)
+        deferred.addCallback(real_mkdir)
         deferred.addErrback(maybe_make_branch_in_db)
         deferred.addErrback(check_permission_denied)
         return self._extractResult(deferred)
@@ -942,7 +1059,8 @@ class AsyncLaunchpadTransport(VirtualTransport):
         else:
             deferred = defer.succeed(None)
         deferred = deferred.addCallback(
-            lambda ignored: VirtualTransport.rename(self, rel_from, rel_to))
+            lambda ignored: AsyncVirtualTransport.rename(
+                self, rel_from, rel_to))
         return self._extractResult(deferred)
 
     def rmdir(self, relpath):
@@ -953,18 +1071,4 @@ class AsyncLaunchpadTransport(VirtualTransport):
         if len(path_segments) <= 3:
             return self._extractResult(defer.fail(
                 failure.Failure(PermissionDenied(virtual_url_fragment))))
-        return VirtualTransport.rmdir(self, relpath)
-
-
-class LaunchpadTransport(AsyncLaunchpadTransport):
-
-    def _extractResult(self, deferred):
-        failures = []
-        successes = []
-        deferred.addCallbacks(successes.append, failures.append)
-        if len(failures) == 1:
-            failures[0].raiseException()
-        elif len(successes) == 1:
-            return successes[0]
-        else:
-            raise AssertionError("%r has not fired yet." % (deferred,))
+        return AsyncVirtualTransport.rmdir(self, relpath)
