@@ -2,7 +2,7 @@
 
 The pages used in our implementation of the OAuth protocol.
 
-== +oauth-authorize ==
+== +authorize-token ==
 
 This is the page where a user reviews (approving or declining) a
 consumer's request to access Launchpad on his behalf.
@@ -21,7 +21,7 @@ consumer's request to access Launchpad on his behalf.
     ...     form.update({'oauth_token': token.key})
     ...     request = LaunchpadTestRequest(form=form)
     ...     login('salgado@ubuntu.com', request)
-    ...     view = getMultiAdapter((root, request), name="+oauth-authorize")
+    ...     view = getMultiAdapter((root, request), name="+authorize-token")
     ...     view.initialize()
     ...     return view, token
 
