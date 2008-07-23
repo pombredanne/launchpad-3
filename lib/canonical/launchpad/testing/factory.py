@@ -64,6 +64,8 @@ from canonical.launchpad.interfaces import (
     UnknownBranchTypeError,
     )
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.bugtracker import (
+    BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -476,6 +478,23 @@ class LaunchpadObjectFactory:
 
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
+
+    def makeBugTracker(self):
+        """Make a new bug tracker."""
+        base_url = 'http://%s.example.com/' % self.getUniqueString()
+        owner = self.makePerson()
+        return getUtility(IBugTrackerSet).ensureBugTracker(
+            base_url, owner, BugTrackerType.BUGZILLA)
+
+    def makeBugWatch(self, remote_bug=None):
+        """Make a new bug watch."""
+        if remote_bug is None:
+            remote_bug = self.getUniqueInteger()
+        bugtracker = self.makeBugTracker()
+        bug = self.makeBug()
+        owner = self.makePerson()
+        return getUtility(IBugWatchSet).createBugWatch(
+            bug, owner, bugtracker, str(remote_bug))
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None):

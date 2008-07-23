@@ -688,6 +688,14 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-linking-back.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-linking-back.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                stdout_logging_level=logging.ERROR,
+                layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-mantis-csv.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-mantis-csv.txt',

@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IExternalBugTracker',
     'IExternalBugTrackerTokenAPI',
+    'ISupportsBackLinking',
     'ISupportsBugImport',
     'ISupportsCommentImport',
     'ISupportsCommentPushing',
@@ -137,3 +138,12 @@ class ISupportsCommentPushing(IExternalBugTracker):
         :return: The ID assigned to the comment by the remote bugtracker
             as a string.
         """
+
+
+class ISupportsBackLinking(IExternalBugTracker):
+
+    def getLaunchpadBugId(remote_bug):
+        """XXX"""
+
+    def setLaunchpadBugId(remote_bug):
+        """XXX"""
