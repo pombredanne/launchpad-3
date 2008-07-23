@@ -147,7 +147,7 @@ def is_ca_available():
 def disconnect_stores():
     """Disconnect Storm stores."""
     zstorm = getUtility(IZStorm)
-    stores = [store for store in zstorm.iterstores()]
+    stores = [store for name, store in zstorm.iterstores()]
 
     # If we have any stores, abort the transaction and close them.
     if stores:
