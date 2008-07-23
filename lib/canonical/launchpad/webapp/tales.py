@@ -210,8 +210,7 @@ class MenuAPI:
             menu = nearest_adapter(
                 context, INavigationMenu, name=selectedfacetname)
         except NoCanonicalUrl:
-            menu = queryAdapter(
-                context, INavigationMenu, name=selectedfacetname)
+            menu = None
         if menu is None:
             return {}
         else:

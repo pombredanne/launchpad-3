@@ -994,32 +994,21 @@ returned.
         linked: True
 
 
-=== Menus for objects without canonical URLs ===
+=== Menus for objects without canonical URLs or menus ===
 
-The navigation menu lookup will also work for objects that have an
-INavigationMenu adaptation while lacking a canonical URL.
+If we try a navigation menu lookup on an object without a canonical url
+or a navigation menu adaptation, then no menu will be returned, and no
+error will be raised by the template.
 
-In this example, we'll look up an adaptation on the RecipeReadJournalView.
-It has a menu, but the view itself doesn't have a canonical URL.
+    >>> class MenulessView(LaunchpadView):
+    ...     # Needed so the IPathAdapter can be applied to this view.
+    ...     implements(Interface)
+    ...     __launchpad_facetname__ = 'cookery'
 
-    >>> print queryAdapter(recipe_journal_view, ICanonicalUrlData)
-    None
+    >>> menuless_view = MenulessView(comment, request)
 
-We can still see the view's navigation menu:
-
-    >>> links_dict = test_tales(
-    ...     'view/menu:navigation', view=recipe_journal_view)
-    >>> summarise_tal_links(links_dict)
-    link read_journal
-        url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
-        enabled: True
-        menu: None
-        linked: False
-    link write_entry
-        url: http://launchpad.dev/joy-of-cooking/fried-spam/+write-entry
-        enabled: True
-        menu: None
-        linked: True
+    >>> test_tales('view/menu:navigation', view=menuless_view)
+    {}
 
 
 == Rendering the menu in a template ==
