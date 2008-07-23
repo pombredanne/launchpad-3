@@ -11,13 +11,25 @@
   >
 <body>
 
-    <metal:portlets fill-slot="portlets">
-      <tal:privacy replace="structure context/@@+portlet-privacy" />
-      <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
-    </metal:portlets>
-
     <div metal:fill-slot="main"
          tal:define="ppa_active view/is_active">
+
+      <tal:privacy replace="structure context/@@+portlet-privacy" />
+
+      <div class="actions" style="float:right;">
+        <tal:administer
+          define="link context/menu:context/admin"
+          condition="link/enabled"
+          replace="structure link/render" />
+        <tal:edit
+          define="link context/menu:context/edit"
+          condition="link/enabled"
+          replace="structure link/render" />
+        <tal:edit-dependencies
+          define="link context/menu:context/edit_dependencies"
+          condition="link/enabled"
+          replace="structure link/render" />
+      </div>
 
       <h1 tal:content="CONTEXTS/fmt:pagetitle">PPA for user</h1>
 

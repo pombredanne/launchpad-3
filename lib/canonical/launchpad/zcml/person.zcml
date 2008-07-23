@@ -88,7 +88,7 @@
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
         PersonSetFacets PersonSetContextMenu PersonTranslationsMenu
         PersonOverviewNavigationMenu PersonEditNavigationMenu
-        PersonRelatedSoftwareNavigationMenu"
+        PersonRelatedSoftwareNavigationMenu TeamOverviewNavigationMenu"
     />
 
   <browser:url
