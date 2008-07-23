@@ -13,7 +13,7 @@ __metaclass__ = type
 import os
 import re
 
-from canonical.config import config
+from canonical.config import dbconfig
 from canonical.database.sqlbase import (
     ISOLATION_LEVEL_DEFAULT, ZopelessTransactionManager)
 
@@ -38,19 +38,17 @@ dbhost = os.environ.get('LP_DBHOST', None)
 dbuser = os.environ.get('LP_DBUSER', None)
 
 if dbname is None:
-    match = re.search(r'dbname=(\S*)', config.database.main_master)
+    match = re.search(r'dbname=(\S*)', dbconfig.main_master)
     assert match is not None, 'Invalid main_master connection string'
     dbname = match.group(1)
 
 if dbhost is None:
-    match = re.search(r'dbhost=(\S*)', config.database.main_master)
+    match = re.search(r'dbhost=(\S*)', dbconfig.main_master)
     if match is not None:
         dbhost = match.group(1)
 
 if dbuser is None:
-    match = re.search(r'user=(\S*)', config.database.main_master)
-    assert match is not None, 'Invalid main_master connection string'
-    dbuser = match.group(1)
+    dbuser = dbconfig.dbuser
 
 
 def isZopeless():

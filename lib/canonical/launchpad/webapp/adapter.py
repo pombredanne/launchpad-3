@@ -237,7 +237,8 @@ class LaunchpadDatabase(Postgres):
         # opinion on what uri is.
         # pylint: disable-msg=W0231
         config_entry = uri.database.replace('-', '_')
-        self._dsn = getattr(dbconfig, config_entry)
+        self._dsn = "%s user=%s" % (
+                getattr(dbconfig, config_entry), dbconfig.dbuser)
 
     def raw_connect(self):
         # Prevent database connections from the main thread if
