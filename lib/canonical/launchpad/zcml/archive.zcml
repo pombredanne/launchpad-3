@@ -40,7 +40,7 @@
 
   <browser:menus
     module="canonical.launchpad.browser"
-    classes="ArchiveContextMenu ArchiveNavigationMenu"
+    classes="ArchiveContextMenu"
     />
 
   <browser:defaultView
