@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BranchFeed',
     'PersonBranchFeed',
+    'PersonRevisionFeed',
     'ProductBranchFeed',
     'ProjectBranchFeed',
     ]
@@ -148,6 +149,89 @@ class PersonBranchFeed(BranchListingFeed):
     """Feed for a person's branches."""
 
     usedfor = IPerson
+
+
+class RevisionListingFeed(FeedBase):
+    """Abstract class for revision feeds."""
+
+    # max_age is in seconds
+    max_age = config.launchpad.max_revision_feed_cache_minutes * MINUTES
+
+    rootsite = "code"
+    feedname = "revisions"
+
+    @property
+    def title(self):
+        """See `IFeed`."""
+        return "Revisions for %s" % self.context.displayname
+
+    @property
+    def logo(self):
+        """See `IFeed`."""
+        return "%s/@@/branch" % self.site_url
+
+    def _getRawItems(self):
+        """Get the raw set of items for the feed."""
+        raise NotImplementedError
+
+    def getPublicRawItems(self):
+        """Private branchess are not to be shown in feeds.
+
+        The list of branches is screened to ensure no private branches are
+        returned.
+        """
+        return [branch
+                for branch in self._getRawItems()
+                if not branch.private]
+
+    def _getItemsWorker(self):
+        """Create the list of items.
+
+        Called by getItems which may cache the results.
+        """
+        items = self.getPublicRawItems()
+        # Convert the items into their feed entry representation.
+        items = [self.itemToFeedEntry(item) for item in items]
+        return items
+
+    def itemToFeedEntry(self, branch):
+        """See `IFeed`."""
+        title = FeedTypedData(branch.displayname)
+        url = canonical_url(branch, rootsite=self.rootsite)
+        content_view = BranchFeedContentView(branch, self.request, self)
+        content = content_view.render()
+        content_data = FeedTypedData(content=content,
+                                     content_type="html",
+                                     root_url=self.root_url)
+        entry = BranchFeedEntry(title=title,
+                                link_alternate=url,
+                                date_created=branch.date_created,
+                                date_updated=branch.date_last_modified,
+                                date_published=branch.date_created,
+                                # XXX if author and owner are different
+                                # perhaps we should use them both?
+                                authors=[FeedPerson(branch.owner,
+                                                    self.rootsite)],
+                                content=content_data)
+        return entry
+
+
+class PersonRevisionFeed(RevisionListingFeed):
+    """Feed for a person's revisions."""
+
+    usedfor = IPerson
+
+    def _getRawItems(self):
+        """See `RevisionFeedBase._getRawItems`.
+
+        Return the branches for this context sorted by date_created in
+        descending order.
+        """
+        branch_query = getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=None,
+            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
+        return list(branch_query[:self.quantity])
 
 
 class RevisionPerson:

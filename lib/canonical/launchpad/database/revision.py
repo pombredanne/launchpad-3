@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 import email
 
 import pytz
+from storm.expr import And, Select
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 from sqlobject import (
@@ -18,6 +20,10 @@ from sqlobject import (
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.branchrevision import BranchRevision
+from canonical.launchpad.database.teamparticipation import TeamParticipation
 
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet,
@@ -208,3 +214,21 @@ class RevisionSet:
             AND Revision.revision_date >= %s
             """ % sqlvalues(product, cut_off_date),
             prejoins=['revision_author'])
+
+    @staticmethod
+    def getPublicRevisionsForPerson(person):
+        """See `IRevisionSet`."""
+        store = Store.of(person)
+
+        if person.is_team:
+            person_query = And(
+                RevisionAuthor.personID == TeamParticipation.personID,
+                TeamParticipation.team == person)
+        else:
+            person_query = RevisionAuthor.person == person
+
+        return store.find(
+            Revision, Revision.author == RevisionAuthor.id, person_query,
+            Revision.id.is_in(Select(
+                    Revision.id, And(Revision.id == BranchRevision.revisionID,
+                                     BranchRevision.branchID == Branch.id))))

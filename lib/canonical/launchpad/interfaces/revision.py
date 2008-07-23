@@ -111,3 +111,11 @@ class IRevisionSet(Interface):
         extracted from the revision properties is used.  While this may not
         be 100% accurate, it is much more accurate than using date created.
         """
+
+    def getPublicRevisionsForPerson(person):
+        """Get the public revisions for the person or team specified.
+
+        :return: ResultSet containing all revisions that are in a public
+            branch somewhere where the person is the revision author, or
+            the revision author is in the team.
+        """
