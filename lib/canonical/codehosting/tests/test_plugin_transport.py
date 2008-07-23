@@ -35,7 +35,7 @@ from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
     AsyncLaunchpadTransport, BlockingProxy, InvalidControlDirectory,
     LaunchpadInternalServer, LaunchpadServer, set_up_logging,
-    VirtualTransport)
+    AsyncVirtualTransport)
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
@@ -284,16 +284,16 @@ class TestLaunchpadInternalServer(TestLaunchpadServer):
         self.assertEqual(True, self.server._branch_transport.is_readonly())
 
 
-class TestVirtualTransport(TrialTestCase, TestCaseInTempDir):
+class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
 
     class VirtualServer(Server):
-        """Very simple server that provides a VirtualTransport."""
+        """Very simple server that provides a AsyncVirtualTransport."""
 
         def __init__(self, backing_transport):
             self._branch_transport = backing_transport
 
         def _factory(self, url):
-            return VirtualTransport(self, url)
+            return AsyncVirtualTransport(self, url)
 
         def get_url(self):
             return self.scheme
@@ -353,7 +353,7 @@ class TestVirtualTransport(TrialTestCase, TestCaseInTempDir):
 
     def test_canAccessEscapedPathsOnDisk(self):
         # Sometimes, the paths to files on disk are themselves URL-escaped.
-        # The VirtualTransport can access these files.
+        # The AsyncVirtualTransport can access these files.
         #
         # This test added in response to https://launchpad.net/bugs/236380.
         escaped_disk_path = 'prefix_%43razy'

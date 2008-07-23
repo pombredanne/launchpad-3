@@ -32,7 +32,7 @@ talks to the database. We cache requests to the authserver using
 `CachingAuthserverClient`, in order to speed things up a bit.
 
 We hook the `LaunchpadServer` into Bazaar by implementing a
-`VirtualTransport`, a `bzrlib.transport.Transport` that wraps all of its
+`AsyncVirtualTransport`, a `bzrlib.transport.Transport` that wraps all of its
 operations so that they are translated by an object that implements
 `translateVirtualPath`.
 
@@ -46,13 +46,13 @@ branch if appropriate.
 __metaclass__ = type
 __all__ = [
     'AsyncLaunchpadTransport',
+    'AsyncVirtualTransport',
     'BlockingProxy',
     'get_chrooted_transport',
     'LaunchpadInternalServer',
     'LaunchpadServer',
     'set_up_logging',
     'SynchronousAdapter',
-    'VirtualTransport',
     ]
 
 import logging
@@ -734,10 +734,10 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
         assert url.startswith(self.get_url())
-        return SynchronousAdapter(VirtualTransport(self, url))
+        return SynchronousAdapter(AsyncVirtualTransport(self, url))
 
 
-class VirtualTransport(Transport):
+class AsyncVirtualTransport(Transport):
     """A transport for a virtual file system.
 
     Assumes that it has a 'server' which implements 'translateVirtualPath'.
@@ -992,7 +992,7 @@ class SynchronousAdapter(Transport):
             self._async_transport.writeChunk(relpath, offset, data))
 
 
-class AsyncLaunchpadTransport(VirtualTransport):
+class AsyncLaunchpadTransport(AsyncVirtualTransport):
     """Virtual transport to implement the Launchpad VFS for branches.
 
     This implements a few hooks to translate filesystem operations (such as
@@ -1005,13 +1005,13 @@ class AsyncLaunchpadTransport(VirtualTransport):
 
     def _call(self, method_name, *args, **kwargs):
         return self._extractResult(
-            VirtualTransport._call(self, method_name, *args, **kwargs))
+            AsyncVirtualTransport._call(self, method_name, *args, **kwargs))
 
     def _extractResult(self, deferred):
         return deferred
 
     def _getUnderylingTransportAndPath(self, relpath):
-        deferred = VirtualTransport._getUnderylingTransportAndPath(
+        deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
             self, relpath)
         def convert_failure(failure):
             failure.trap(NotABranchPath)
@@ -1029,7 +1029,7 @@ class AsyncLaunchpadTransport(VirtualTransport):
         # the user tries to make a directory like "~foo/bar". That is, a
         # directory that has too little information to be translated into a
         # Launchpad branch.
-        deferred = VirtualTransport._getUnderylingTransportAndPath(
+        deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
             self, relpath)
         def maybe_make_branch_in_db(failure):
             # Looks like we are trying to make a branch.
@@ -1059,7 +1059,8 @@ class AsyncLaunchpadTransport(VirtualTransport):
         else:
             deferred = defer.succeed(None)
         deferred = deferred.addCallback(
-            lambda ignored: VirtualTransport.rename(self, rel_from, rel_to))
+            lambda ignored: AsyncVirtualTransport.rename(
+                self, rel_from, rel_to))
         return self._extractResult(deferred)
 
     def rmdir(self, relpath):
@@ -1070,4 +1071,4 @@ class AsyncLaunchpadTransport(VirtualTransport):
         if len(path_segments) <= 3:
             return self._extractResult(defer.fail(
                 failure.Failure(PermissionDenied(virtual_url_fragment))))
-        return VirtualTransport.rmdir(self, relpath)
+        return AsyncVirtualTransport.rmdir(self, relpath)
