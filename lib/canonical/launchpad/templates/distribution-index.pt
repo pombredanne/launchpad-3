@@ -54,6 +54,7 @@
           <a
             tal:define="link context/menu:answers/new"
             tal:condition="context/official_answers"
+            tal:attributes="href link/url"
           >
             <img
               tal:attributes="alt link/text"
@@ -63,6 +64,7 @@
           <a
             tal:define="link context/menu:overview/mentorship"
             tal:condition="context/mentoring_offers/count"
+            tal:attributes="href link/url"
           >
             <img
               tal:attributes="alt link/text"
@@ -111,10 +113,12 @@
         <h2>Registered</h2>
         <tal:created replace="context/date_created/fmt:approximatedate" />
       </div>
+
       <tal:comment condition="nothing">
         This div is necessary for correct layout in Safari (bug 250989):
       </tal:comment>
       <div />
+
     </div>
   </body>
 </html>

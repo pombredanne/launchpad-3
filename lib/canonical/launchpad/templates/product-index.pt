@@ -161,6 +161,7 @@
           <a
             tal:define="link context/menu:answers/new"
             tal:condition="context/official_answers"
+            tal:attributes="href link/url"
           >
             <img
               tal:attributes="alt link/text"
@@ -170,6 +171,7 @@
           <a
             tal:define="link context/menu:overview/mentorship"
             tal:condition="context/mentoring_offers/count"
+            tal:attributes="href link/url"
           >
             <img
               tal:attributes="alt link/text"
@@ -233,16 +235,8 @@
         <a href="+milestones">Milestone history</a>
       </div>
 
-      <div
-         class="section"
-         tal:define="top_contrib_view nocall:context/@@+portlet-top-contributors"
-         tal:condition="top_contrib_view/getTopFiveContributors"
-         tal:content="structure top_contrib_view"
-      />
-      <div
-         class="section"
-         tal:content="structure context/@@+portlet-packages"
-      />
+      <tal:contrib replace="structure context/@@+portlet-top-contributors" />
+      <tal:packages replace="structure context/@@+portlet-packages" />
 
       <div class="section">
         <h2>Registered</h2>
