@@ -1,0 +1,18 @@
+= Team navigation menus =
+
+The team pages have their own navigation menu.
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet, ITeam
+    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
+    >>> from canonical.launchpad.ftests import test_tales
+    >>> from zope.component import queryAdapter
+
+    >>> personset = getUtility(IPersonSet)
+    >>> ubuntu_team = personset.getByName('name18')
+
+The default navigation menu is registered for the 'overview' facet.
+
+    >>> print queryAdapter(ubuntu_team, INavigationMenu, name='overview')
+    <...TeamOverviewNavigationMenu ...>
+
+    >>> test_tales('context/menu:navigation', context=ubuntu_team)
