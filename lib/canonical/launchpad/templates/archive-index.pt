@@ -16,6 +16,21 @@
 
       <tal:privacy replace="structure context/@@+portlet-privacy" />
 
+      <div class="actions" style="float:right;">
+        <tal:administer
+          define="link context/menu:context/admin"
+          condition="link/enabled"
+          replace="structure link/render" />
+        <tal:edit
+          define="link context/menu:context/edit"
+          condition="link/enabled"
+          replace="structure link/render" />
+        <tal:edit-dependencies
+          define="link context/menu:context/edit_dependencies"
+          condition="link/enabled"
+          replace="structure link/render" />
+      </div>
+
       <h1 tal:content="CONTEXTS/fmt:pagetitle">PPA for user</h1>
 
       <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
