@@ -11,12 +11,10 @@
   >
 <body>
 
-    <metal:portlets fill-slot="portlets">
-      <tal:privacy replace="structure context/@@+portlet-privacy" />
-    </metal:portlets>
-
     <div metal:fill-slot="main"
          tal:define="ppa_active view/is_active">
+
+      <tal:privacy replace="structure context/@@+portlet-privacy" />
 
       <h1 tal:content="CONTEXTS/fmt:pagetitle">PPA for user</h1>
 
