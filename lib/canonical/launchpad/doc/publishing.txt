@@ -814,7 +814,6 @@ associated binary publishing records now.
     >>> deleted = publishing_set.requestDeletion(
     ...     cprov_sources[:2], cprov, 'OOPS-934EC47')
 
-
 The number of published sources will decrease by two as expected.
 
     >>> cprov_sources = list(

@@ -594,8 +594,7 @@ class IPublishingSet(Interface):
         This method deletes the source publications passed via the first
         parameter as well as their associated binary publications.
 
-        :param one_or_more_source_publications: list of
-            `SourcePackagePublishingHistory` objects.
+        :param sources: list of `SourcePackagePublishingHistory` objects.
         :param removed_by: `IPerson` responsible for the removal.
         :param removal_comment: optional text describing the removal reason.
 
