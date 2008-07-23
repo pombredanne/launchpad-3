@@ -958,10 +958,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         
         Someone who has upload permissions to a component, but also
         has permission to a specific package in a different component
-        should be able to upload that package.
+        should be able to upload that package. (Bug #250618)
         """
         self.setupBreezy()
-        # Rempve our favourite uploader from the team that has
+        # Remove our favourite uploader from the team that has
         # permissions to all components at upload time.
         uploader = getUtility(IPersonSet).getByName('name16')
         distro_team = getUtility(IPersonSet).getByName('ubuntu-team')
@@ -973,13 +973,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
             archive=self.ubuntu.main_archive,
             permission=ArchivePermissionType.UPLOAD, person=uploader,
             component=restricted)
-        self.layer.txn.commit()
 
         uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
         # Upload the first version and accept it to make it known in
-        # Ubuntu.  The uploader is has rights to upload NEW packages to
+        # Ubuntu.  The uploader has rights to upload NEW packages to
         # components that he does not have direct rights to.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
@@ -992,12 +991,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.processUpload(uploadprocessor, upload_dir)
 
         # Make sure it failed.
-        [message] = pop_notifications()
-        text = message.get_payload()
-        self.assertTrue(
-            "Signer is not permitted to upload to the component 'universe' of"
-                " file 'bar_=" in text,
-            "Expected failure email, got:\n%s" % text)
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message,
+            u"Signer is not permitted to upload to the component 'universe'"
+                " of file 'bar_1.0-2.dsc'.")
 
         # Now add permission to upload "bar" for name16.
         bar_package = getUtility(ISourcePackageNameSet).queryByName("bar")
@@ -1010,11 +1007,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.processUpload(uploadprocessor, upload_dir)
 
         # Check that it worked,
-        [announcement, message] = pop_notifications()
-        text = message.get_payload()
-        self.assertTrue(
-            "rejected" not in text,
-            "Expected acceptance email, got:\n%s" % text)
+        status = uploadprocessor.last_processed_upload.queue_root.status
+        self.assertEqual(
+            status, PackageUploadStatus.DONE,
+            "Expected NEW status, got %s" % removeSecurityProxy(status))
 
 
 def test_suite():
