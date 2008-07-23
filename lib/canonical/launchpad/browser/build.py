@@ -161,7 +161,7 @@ class BuildRescoringView(LaunchpadFormView):
         to the build context page, so the current page-scrapping libraries
         won't cause any oops.
 
-        It also set next_url and cancel_url to the build context page, so
+        It also sets next_url and cancel_url to the build context page, so
         any action will send the user back to the context build page.
         """
         build_url = canonical_url(self.context)
