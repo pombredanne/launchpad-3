@@ -23,6 +23,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,
     IOAuthRequestToken, IOAuthRequestTokenSet, NonceAlreadyUsed)
@@ -185,25 +190,24 @@ class OAuthRequestToken(SQLBase):
         else:
             return None
 
-    def review(self, user, permission, product=None, project=None,
-               distribution=None, sourcepackagename=None):
+    def review(self, user, permission, context=None):
         """See `IOAuthRequestToken`."""
         assert not self.is_reviewed, (
             "Request tokens can be reviewed only once.")
-        assert [product, project, distribution].count(None) >= 2, (
-            "More than one context given: %s, %s, %s"
-            % (product, project, distribution))
-        if sourcepackagename is not None and distribution is None:
-            raise AssertionError(
-                "You must specify a distribution when the context is a "
-                "source package.")
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
         self.person = user
         self.permission = permission
-        self.product = product
-        self.project = project
-        self.distribution = distribution
-        self.sourcepackagename = sourcepackagename
+        if IProduct.providedBy(context):
+            self.product = context
+        elif IProject.providedBy(context):
+            self.project = context
+        elif IDistribution.providedBy(context):
+            self.distribution = context
+        elif IDistributionSourcePackage.providedBy(context):
+            self.sourcepackagename = context.sourcepackagename
+            self.distribution = context.distribution
+        else:
+            assert context is None, ("Unknown context type: %r." % context)
 
     def createAccessToken(self):
         """See `IOAuthRequestToken`."""

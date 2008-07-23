@@ -779,6 +779,9 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None):
     If `recipients` is present, add the subscribers to the set of
     bug notification recipients.
     """
+    if bugtask.bug.private:
+        return set()
+
     also_notified_subscribers = set()
 
     # Assignees are indirect subscribers.

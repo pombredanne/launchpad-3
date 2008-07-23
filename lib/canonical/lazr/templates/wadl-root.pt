@@ -198,6 +198,17 @@
 
     <representation mediaType="application/json"
        tal:attributes="id string:${context/wadl_entry:singular_type}-full">
+      <param style="plain" name="self_link" path="$['self_link']">
+        <wadl:doc>The canonical link to this resource.</wadl:doc>
+        <link tal:attributes="resource_type context/wadl_entry:type_link" />
+      </param>
+      <param style="plain" name="resource_type_link"
+             path="$['resource_type_link']">
+        <wadl:doc>
+          The link to the WADL description of this resource.
+        </wadl:doc>
+        <link />
+      </param>
       <param style="plain"
              tal:repeat="field context/wadl_entry:all_fields" required="true"
              tal:attributes="name field/wadl:name;
@@ -250,6 +261,12 @@
     <representation mediaType="application/json"
        tal:attributes="id
          string:${context/wadl_entry:entry_page_representation_id}">
+
+      <param style="plain" name="resource_type_link"
+             path="$['resource_type_link']">
+        <link />
+      </param>
+
       <param style="plain" name="total_size" path="$['total_size']"
              required="true" />
 

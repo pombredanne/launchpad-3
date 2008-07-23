@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
     'canonical_name',
@@ -40,7 +41,8 @@ from canonical.launchpad.layers import (
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
+    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError,
+    ILaunchpadContainer)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -459,6 +461,21 @@ class RootObject:
 rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
 
 
+class LaunchpadContainer:
+    implements(ILaunchpadContainer)
+
+    def __init__(self, context):
+        self.context = context
+
+    def isWithin(self, scope):
+        """Is this object within the given scope?
+
+        By default all objects are only within itself.  More specific adapters
+        must override this and implement the logic they want.
+        """
+        return self.context == scope
+
+
 class Breadcrumb:
     implements(IBreadcrumb)
 
@@ -715,12 +732,9 @@ class RenamedView:
         self.rootsite = rootsite
 
     def __call__(self):
-        context_url = canonical_url(self.context, rootsite=self.rootsite)
-        # Prevents double slashes on the root object.
-        if context_url.endswith('/'):
-            target_url = "%s%s" % (context_url, self.new_name)
-        else:
-            target_url = "%s/%s" % (context_url, self.new_name)
+        target_url = "%s/%s" % (
+            canonical_url(self.context, rootsite=self.rootsite),
+            self.new_name)
 
         query_string = self.request.get('QUERY_STRING', '')
         if query_string:

@@ -1035,7 +1035,7 @@ cookbooks.
     ...             'ws.op=find_recipes&name=Roast%20chicken'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
-    >>> sorted([c['instructions'] for c in chicken_recipes])
+    >>> sorted([c['instructions'] for c in chicken_recipes['entries']])
     [u'A perfectly roasted chicken is...',
      u'Draw, singe, stuff, and truss...',
      u'You can always judge...']
@@ -1229,7 +1229,7 @@ across cookbooks.
     ...     environ={'QUERY_STRING' : 'ws.op=find_similar_recipes'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
-    >>> sorted([c['instructions'] for c in chicken_recipes])
+    >>> sorted([c['instructions'] for c in chicken_recipes['entries']])
     [u'A perfectly roasted chicken is...',
      u'Draw, singe, stuff, and truss...',
      u'You can always judge...']
@@ -1246,6 +1246,7 @@ serialized.
     ...
     ...     params = ()
     ...     result = None
+    ...     return_type = None
     ...
     ...     def call(self):
     ...         return self.result
