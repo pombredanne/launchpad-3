@@ -11,8 +11,6 @@ __all__ = [
 
 from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
 
-from storm.zope.interfaces import IZStorm
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -28,6 +26,8 @@ from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJob,
     ICodeImportJobSet, ICodeImportJobSetPublic, ICodeImportJobWorkflow,
     ICodeImportMachineSet, ICodeImportResultSet)
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -122,7 +122,7 @@ class CodeImportJobSet(object):
 
     def getReclaimableJobs(self):
         """See `ICodeImportJobSet`."""
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             CodeImportJob,
             "state = %s and heartbeat < %s + '-%s seconds'"

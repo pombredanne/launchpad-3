@@ -29,7 +29,6 @@ from sqlobject import ForeignKey, StringCol, BoolCol
 
 from storm.expr import Desc, In
 from storm.store import Store
-from storm.zope.interfaces import IZStorm
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -50,8 +49,10 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
 from canonical.launchpad.interfaces.publishing import (
     IPublishingSet, active_publishing_status)
-from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.validators.person import validate_public_person
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
@@ -938,7 +939,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             (SourcePackagePublishingHistory, Build, DistroArchSeries),
             Build.distroarchseriesID == DistroArchSeries.id,
@@ -968,7 +969,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         source_result = store.find(
             (SourcePackagePublishingHistory, LibraryFileAlias,
              LibraryFileContent),
@@ -1015,7 +1016,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             (SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
              BinaryPackageRelease, BinaryPackageName, DistroArchSeries),

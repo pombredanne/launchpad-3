@@ -72,7 +72,6 @@ from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
 from storm.expr import LeftJoin, SQL, And, Or, Not
-from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -99,13 +98,13 @@ from canonical.launchpad.interfaces import (
     IProductSeriesBugTask, IProject, ISourcePackage, ISpecification, ITeam,
     IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
 from canonical.launchpad.interfaces.account import AccountStatus
-
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.webapp.tales import (
+    DateTimeFormatterAPI, FormattersAPI)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
-
-from canonical.launchpad.webapp.tales import (
-    DateTimeFormatterAPI, FormattersAPI)
 
 
 class BasePersonVocabulary:
@@ -753,7 +752,7 @@ class ValidPersonOrTeamVocabulary(
             return Person.select(
                 query, clauseTables=['ValidPersonOrTeamCache'])
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         tables = [
             Person,

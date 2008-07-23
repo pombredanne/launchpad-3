@@ -11,8 +11,6 @@ import datetime
 import pytz
 import transaction
 
-from storm.zope.interfaces import IZStorm
-
 from twisted.web.xmlrpc import Fault
 
 from zope.component import getUtility
@@ -38,7 +36,8 @@ from canonical.launchpad.interfaces.wikiname import IWikiNameSet
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import (
+        ILaunchBag, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
@@ -918,7 +917,7 @@ class TestTransactionDecorators(DatabaseTest):
 
     def setUp(self):
         super(TestTransactionDecorators, self).setUp()
-        self.store = getUtility(IZStorm).get('main')
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self.no_priv = self.store.find(Person, name='no-priv').one()
 
     def test_read_only_transaction_reset_store(self):

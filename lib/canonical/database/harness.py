@@ -64,7 +64,6 @@ if startup:
 # Bring in useful bits of Storm
 from storm.locals import *
 from storm.expr import *
-from storm.zope.interfaces import IZStorm
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, AUTH_STORE, MASTER_FLAVOR,
         SLAVE_FLAVOR, DEFAULT_FLAVOR)

@@ -11,9 +11,6 @@ __all__ = [
         'LaunchpadDatabasePolicy',
         ]
 
-from storm.zope.interfaces import IZStorm
-
-from zope.component import getUtility
 from zope.interface import implements
 
 import canonical.launchpad.webapp.adapter as da
@@ -42,7 +39,9 @@ class LaunchpadDatabasePolicy:
         # Tell our custom database adapter that the request has started.
         da.set_request_started()
 
-        # Select the default Store.
+        # Select the default Store. Talking directly to the implementation
+        # rather than looking up via the IStoreSelector interface as
+        # setDefaultFlavor isn't part of that interface.
         if self.read_only:
             da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
         else:

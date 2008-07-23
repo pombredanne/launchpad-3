@@ -45,10 +45,11 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
-from storm.zope.interfaces import IZStorm
 
 
 class Archive(SQLBase):
@@ -389,7 +390,7 @@ class Archive(SQLBase):
     @property
     def sources_size(self):
         """See `IArchive`."""
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.find(
             (LibraryFileContent),
             SourcePackagePublishingHistory.archive == self.id,
@@ -546,7 +547,7 @@ class Archive(SQLBase):
     @property
     def binaries_size(self):
         """See `IArchive`."""
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.find(
             (LibraryFileContent),
             BinaryPackagePublishingHistory.archive == self.id,

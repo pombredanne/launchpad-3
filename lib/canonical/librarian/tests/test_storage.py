@@ -13,10 +13,10 @@ import sha
 import shutil
 import tempfile
 
-from storm.store import Store
-from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.librarian.storage import LibrarianStorage
 from canonical.librarian.storage import _sameFile, _relFileLocation
 from canonical.librarian import db
@@ -32,7 +32,8 @@ class LibrarianStorageTestCase(unittest.TestCase):
         self.storage = LibrarianStorage(self.directory, db.Library())
 
         # Hook the commit and rollback methods of the store.
-        self.store = getUtility(IZStorm).get('main')
+        self.store = getUtility(IStoreSelector).get(
+                MAIN_STORE, DEFAULT_FLAVOR)
         self.committed = self.rolledback = False
         self.orig_commit = self.store.commit
         self.orig_rollback = self.store.rollback

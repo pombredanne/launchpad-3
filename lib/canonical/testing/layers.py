@@ -80,6 +80,8 @@ from canonical.launchpad.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.testing.tests.googleserviceharness import (
     GoogleServiceTestSetup)
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
 from canonical.lazr.config import ImplicitTypeSchema
@@ -145,18 +147,16 @@ def is_ca_available():
 def disconnect_stores():
     """Disconnect Storm stores."""
     zstorm = getUtility(IZStorm)
-    stores = []
-    for store_name in ['main', 'session']:
-        if store_name in zstorm._named:
-            store = zstorm.get(store_name)
-            zstorm.remove(store)
-            stores.append(store)
+    stores = [store for store in zstorm.iterstores()]
+
     # If we have any stores, abort the transaction and close them.
     if stores:
+        for store in stores:
+            zstorm.remove(store)
         transaction.abort()
         for store in stores:
             store.close()
-
+    
 
 def reconnect_stores(database_config_section='launchpad'):
     """Reconnect Storm stores, resetting the dbconfig to its defaults.
@@ -167,7 +167,7 @@ def reconnect_stores(database_config_section='launchpad'):
     disconnect_stores()
     dbconfig.setConfigSection(database_config_section)
 
-    main_store = getUtility(IZStorm).get('main')
+    main_store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
     assert main_store is not None, 'Failed to reconnect'
 
     # Confirm the database has the right patchlevel

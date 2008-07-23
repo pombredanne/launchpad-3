@@ -26,7 +26,6 @@ from sqlobject.sqlbuilder import SQLConstant
 
 from storm.expr import Alias, AutoTables, Join, LeftJoin, SQL
 from storm.sqlobject import SQLObjectResultSet
-from storm.zope.interfaces import IZStorm
 
 import pytz
 
@@ -73,7 +72,8 @@ from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
@@ -1640,7 +1640,7 @@ class BugTaskSet:
 
     def search(self, params, *args):
         """See `IBugTaskSet`."""
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query, clauseTables, orderby = self.buildQuery(params)
         if len(args) == 0:
             # Do normal prejoins, if we don't have to do any UNION
