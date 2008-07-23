@@ -962,6 +962,7 @@ that the comment refers to.
     >>> class Comment(BaseContent):
     ...     implements(IComment)
 
+    # This is usually done in ZCML by browser:defaultView.
     >>> from zope.component.bbb.interfaces import IDefaultViewName
     >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
     >>> provideAdapter(
@@ -997,7 +998,7 @@ returned.
 === Menus for objects without canonical URLs or menus ===
 
 If we try a navigation menu lookup on an object without a canonical url
-or a navigation menu adaptation, then no menu will be returned, and no
+or a navigation menu adapter, then no menu will be returned, and no
 error will be raised by the template.
 
     >>> class MenulessView(LaunchpadView):
