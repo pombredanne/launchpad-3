@@ -37,6 +37,8 @@ from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.interfaces.launchpad import (
+    IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
     IBug, IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
     IProject, IDistributionSourcePackage, NotFoundError,
@@ -48,6 +50,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, action, canonical_url, custom_widget,
     safe_action, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
@@ -1057,6 +1060,40 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
             for index, data_item in enumerate(self.bug_count_items)])
         return js_template % dict(
             color_list=color_list, label_list=label_list, data_list=data_list)
+
+    @property
+    def uses_launchpad_bugtracker(self):
+        """Whether this distro or product tracks bugs in launchpad.
+
+        :returns: boolean
+        """
+        launchpad_usage = ILaunchpadUsage(self.context)
+        return launchpad_usage.official_malone
+
+    @property
+    def external_bugtracker(self):
+        """External bug tracking system designated for the context.
+
+        :returns: `IBugTracker` or None
+        """
+        has_external_bugtracker = IHasExternalBugTracker(self.context, None)
+        if has_external_bugtracker is None:
+            return None
+        else:
+            return has_external_bugtracker.getExternalBugTracker()
+
+    @property
+    def bugtracker(self):
+        """Description of the context's bugtracker.
+
+        :returns: str which may contain HTML.
+        """
+        if self.uses_launchpad_bugtracker:
+            return 'Launchpad'
+        elif self.external_bugtracker:
+            return BugTrackerFormatterAPI(self.external_bugtracker).link()
+        else:
+            return 'None specified'
 
 
 class BugTargetBugTagsView(LaunchpadView):

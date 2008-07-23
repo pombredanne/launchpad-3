@@ -64,6 +64,13 @@
     factory="canonical.launchpad.components.answertracker.series_to_questiontarget"
     />
 
+  <adapter
+    provides="canonical.launchpad.interfaces.ILaunchpadUsage"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    factory="canonical.launchpad.components.distroseries.distroseries_to_launchpadusage"
+    permission="zope.Public"
+    />
+
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistroSeriesNavigation"

@@ -138,6 +138,7 @@
         ProductBranchesMenu ProductSpecificationsMenu
         ProductTranslationsMenu ProductBugsMenu
         ProductSetFacets ProductSetContextMenu
+        ProductNavigationMenu ProductEditNavigationMenu
         "
         />
 
@@ -290,11 +291,6 @@
       />
     <!-- Products Portlets -->
     <browser:page
-      name="+details"
-      facet="overview"
-      template="../templates/product-details.pt"
-      />
-    <browser:page
       name="+portlet-requires-subscription"
       facet="overview"
       template="../templates/product-portlet-requires-subscription.pt"
@@ -303,11 +299,6 @@
       name="+portlet-license-missing"
       facet="overview"
       template="../templates/product-portlet-license-missing.pt"
-      />
-    <browser:page
-      name="+portlet-lifecycle"
-      facet="overview"
-      template="../templates/product-portlet-lifecycle.pt"
       />
     <browser:page
       name="+portlet-series"
@@ -351,10 +342,6 @@
     <browser:page
       name="+portlet-latestbranches"
       template="../templates/product-portlet-latestbranches.pt"
-      />
-    <browser:page
-      name="+portlet-productfiles"
-      template="../templates/product-portlet-latestfiles.pt"
       />
     <browser:page
       name="+purchase-subscription"
@@ -428,10 +415,10 @@
     for="canonical.launchpad.interfaces.IProduct"
     permission="launchpad.Edit"
     facet="overview"
-    class="canonical.launchpad.browser.ProductReassignmentView">
+    class="canonical.launchpad.browser.ProductEditPeopleView">
     <browser:page
-      name="+reassign"
-      template="../templates/object-reassignment.pt"
+      name="+edit-people"
+      template="../templates/product-edit-people.pt"
       />
   </browser:pages>
 
