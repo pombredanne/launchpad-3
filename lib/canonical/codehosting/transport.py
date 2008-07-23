@@ -49,6 +49,9 @@ __all__ = [
     'AsyncVirtualTransport',
     'BlockingProxy',
     'get_chrooted_transport',
+    'get_puller_server',
+    'get_readonly_transport',
+    'get_scanner_server',
     'LaunchpadInternalServer',
     'LaunchpadServer',
     'set_up_logging',
@@ -101,6 +104,11 @@ def get_chrooted_transport(url):
     chroot_server = chroot.ChrootServer(get_transport(url))
     chroot_server.setUp()
     return get_transport(chroot_server.get_url())
+
+
+def get_readonly_transport(transport):
+    """Return a readonly transport serving `url`."""
+    return get_transport('readonly+' + transport.base)
 
 
 def get_path_segments(path, maximum_segments=-1):
@@ -721,20 +729,68 @@ class LaunchpadServer(_BaseLaunchpadServer):
 class LaunchpadInternalServer(_BaseLaunchpadServer):
 
     def __init__(self, scheme, authserver, branch_transport):
-        branch_transport = get_transport(
-            'readonly+' + branch_transport.base)
         super(LaunchpadInternalServer, self).__init__(
             scheme, authserver, LAUNCHPAD_SERVICES, branch_transport,
             branch_transport)
 
     def _getTransportForPermissions(self, permissions, branch):
         """Get the appropriate transport for `permissions` on `branch`."""
-        return self._branch_transport
+        deferred = branch.ensureUnderlyingPath(self._branch_transport)
+        def if_not_readonly(failure):
+            failure.trap(TransportNotPossible)
+            return self._branch_transport
+        deferred.addCallback(lambda ignored: self._branch_transport)
+        deferred.addErrback(if_not_readonly)
+        return deferred
 
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
         assert url.startswith(self.get_url())
         return SynchronousAdapter(AsyncVirtualTransport(self, url))
+
+
+def get_scanner_server(warehouse_url=None):
+    """Get a Launchpad internal server for scanning branches."""
+    proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
+    authserver = BlockingProxy(proxy)
+    if warehouse_url is None:
+        warehouse_url = config.supermirror.warehouse_root_url
+    branch_transport = get_readonly_transport(
+        get_chrooted_transport(warehouse_url))
+    return LaunchpadInternalServer(
+        'lp-mirrored:///', authserver, branch_transport)
+
+
+class _PullerServer(Server):
+
+    def __init__(self, authserver, hosted_transport, mirrored_transport):
+        self._hosted_server = LaunchpadInternalServer(
+            'lp-hosted:///', authserver, hosted_transport)
+        self._mirrored_server = LaunchpadInternalServer(
+            'lp-mirrored:///', authserver, mirrored_transport)
+
+    def setUp(self):
+        self._hosted_server.setUp()
+        self._mirrored_server.setUp()
+
+    def tearDown(self):
+        self._mirrored_server.tearDown()
+        self._hosted_server.tearDown()
+
+
+def get_puller_server(source_url=None, destination_url=None):
+    """Get a Launchpad internal server for pulling branches."""
+    proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
+    authserver = BlockingProxy(proxy)
+    if source_url is None:
+        source_url = config.codehosting.branches_root
+    if destination_url is None:
+        destination_url = config.supermirror.branchesdest
+    hosted_transport = get_readonly_transport(
+        get_chrooted_transport(source_url))
+    mirrored_transport = get_chrooted_transport(destination_url)
+    return _PullerServer(
+        authserver, hosted_transport, mirrored_transport)
 
 
 class AsyncVirtualTransport(Transport):
@@ -743,11 +799,6 @@ class AsyncVirtualTransport(Transport):
     Assumes that it has a 'server' which implements 'translateVirtualPath'.
     This method is expected to take an absolute virtual path and translate it
     into a real transport and a path on that transport.
-
-    translateVirtualPath will return a Deferred. Subclasses should implement
-    `_extractResult`, a method which takes a Deferred and then returns either
-    the same Deferred (for asynchronous code) or the value of the Deferred
-    (for synchronous code).
     """
 
     def __init__(self, server, url):
@@ -820,14 +871,14 @@ class AsyncVirtualTransport(Transport):
         def iter_files((transport, path)):
             return transport.clone(path).iter_files_recursive()
         deferred.addCallback(iter_files)
-        return self._extractResult(deferred)
+        return deferred
 
     def listable(self):
         deferred = self._getUnderylingTransportAndPath('.')
         def listable((transport, path)):
             return transport.listable()
         deferred.addCallback(listable)
-        return self._extractResult(deferred)
+        return deferred
 
     def list_dir(self, relpath):
         return self._call('list_dir', relpath)
@@ -875,7 +926,7 @@ class AsyncVirtualTransport(Transport):
             return getattr(from_transport, 'rename')(from_path, to_path)
 
         deferred.addCallback(check_transports_and_rename)
-        return self._extractResult(deferred)
+        return deferred
 
     def rmdir(self, relpath):
         return self._call('rmdir', relpath)
@@ -1003,13 +1054,6 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
     valid branch path') into Bazaar errors (such as 'no such file').
     """
 
-    def _call(self, method_name, *args, **kwargs):
-        return self._extractResult(
-            AsyncVirtualTransport._call(self, method_name, *args, **kwargs))
-
-    def _extractResult(self, deferred):
-        return deferred
-
     def _getUnderylingTransportAndPath(self, relpath):
         deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
             self, relpath)
@@ -1048,7 +1092,7 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         deferred.addCallback(real_mkdir)
         deferred.addErrback(maybe_make_branch_in_db)
         deferred.addErrback(check_permission_denied)
-        return self._extractResult(deferred)
+        return deferred
 
     def rename(self, rel_from, rel_to):
         # We hook into rename to catch the "unlock branch" event, so that we
@@ -1061,7 +1105,7 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         deferred = deferred.addCallback(
             lambda ignored: AsyncVirtualTransport.rename(
                 self, rel_from, rel_to))
-        return self._extractResult(deferred)
+        return deferred
 
     def rmdir(self, relpath):
         # We hook into rmdir in order to prevent users from deleting branches,
@@ -1069,6 +1113,6 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         virtual_url_fragment = self._abspath(relpath)
         path_segments = virtual_url_fragment.lstrip('/').split('/')
         if len(path_segments) <= 3:
-            return self._extractResult(defer.fail(
-                failure.Failure(PermissionDenied(virtual_url_fragment))))
+            return defer.fail(
+                failure.Failure(PermissionDenied(virtual_url_fragment)))
         return AsyncVirtualTransport.rmdir(self, relpath)
