@@ -1165,7 +1165,7 @@ class PersonOverviewNavigationMenu(
         return Link(target, text, menu=IPersonEditMenu)
 
     def related_software(self):
-        target = '+projects'
+        target = '+related-software'
         text = 'Related Software'
         return Link(target, text, menu=IPersonRelatedSoftwareMenu)
 
