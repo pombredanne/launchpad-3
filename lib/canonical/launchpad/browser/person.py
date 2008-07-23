@@ -1120,31 +1120,8 @@ class IPersonRelatedSoftwareMenu(Interface):
     """A marker interface for the 'Related Software' navigation menu."""
 
 
-class PersonOverviewNavigationMenu(NavigationMenu):
-    """The top-level menu of actions a Person may take."""
-
-    usedfor = IHasPersonNavigationMenu
-    facet = 'overview'
-    links = ('profile', 'related_software', 'karma', 'show_ppa')
-
-    def __init__(self, context):
-        context = IPerson(context)
-        super(PersonOverviewNavigationMenu, self).__init__(context)
-
-    def profile(self):
-        target = ''
-        text = 'Profile'
-        return Link(target, text, menu=IPersonEditMenu)
-
-    def related_software(self):
-        target = '+projects'
-        text = 'Related Software'
-        return Link(target, text, menu=IPersonRelatedSoftwareMenu)
-
-    def karma(self):
-        target = '+karma'
-        text = 'Karma'
-        return Link(target, text)
+class PersonPPANavigationMenuMixin:
+    """A mixin that provides the PPA navigation menu link."""
 
     def show_ppa(self):
         """Show the link to a Personal Package Archive.
@@ -1171,6 +1148,34 @@ class PersonOverviewNavigationMenu(NavigationMenu):
             enable_link = False
 
         return Link(target, text, summary, icon='info', enabled=enable_link)
+
+
+class PersonOverviewNavigationMenu(
+    NavigationMenu, PersonPPANavigationMenuMixin):
+    """The top-level menu of actions a Person may take."""
+
+    usedfor = IHasPersonNavigationMenu
+    facet = 'overview'
+    links = ('profile', 'related_software', 'karma', 'show_ppa')
+
+    def __init__(self, context):
+        context = IPerson(context)
+        super(PersonOverviewNavigationMenu, self).__init__(context)
+
+    def profile(self):
+        target = ''
+        text = 'Profile'
+        return Link(target, text, menu=IPersonEditMenu)
+
+    def related_software(self):
+        target = '+projects'
+        text = 'Related Software'
+        return Link(target, text, menu=IPersonRelatedSoftwareMenu)
+
+    def karma(self):
+        target = '+karma'
+        text = 'Karma'
+        return Link(target, text)
 
 
 class PersonEditNavigationMenu(NavigationMenu):
@@ -1358,6 +1363,31 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             text = 'Join the team' # &#8230;
             icon = 'add'
         return Link(target, text, icon=icon, enabled=enabled)
+
+
+class TeamOverviewNavigationMenu(
+    NavigationMenu, PersonPPANavigationMenuMixin):
+    """A top-level menu for navigation within a Team."""
+
+    usedfor = ITeam
+    facet = 'overview'
+    links = ['profile', 'polls', 'members', 'show_ppa']
+
+    def profile(self):
+        target = ''
+        text = 'Overview'
+        return Link(target, text)
+
+    def polls(self):
+        target = '+polls'
+        text = 'Polls'
+        return Link(target, text)
+
+    @enabled_with_permission('launchpad.View')
+    def members(self):
+        target = '+members'
+        text = 'Members'
+        return Link(target, text)
 
 
 class TeamMembershipView(LaunchpadView):
