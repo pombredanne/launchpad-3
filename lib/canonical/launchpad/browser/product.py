@@ -413,7 +413,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'More announcements'
+        text = u'\u00BB More announcements'
         enabled = bool(self.context.announcements())
         return Link('+announcements', text, enabled=enabled)
 

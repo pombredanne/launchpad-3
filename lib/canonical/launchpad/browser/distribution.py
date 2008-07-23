@@ -374,8 +374,8 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def top_contributors(self):
-        text = 'More contributors'
-        return Link('+topcontributors', text, icon='info')
+        text = u'\u00BB More contributors'
+        return Link('+topcontributors', text)
 
     def mentorship(self):
         text = 'Mentoring available'
@@ -445,7 +445,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'More announcements'
+        text = u'\u00BB More announcements'
         enabled = bool(self.context.announcements().count())
         return Link('+announcements', text, enabled=enabled)
 
