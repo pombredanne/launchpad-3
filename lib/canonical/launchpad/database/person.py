@@ -1531,7 +1531,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     @property
     def allwikis(self):
-        return getUtility(IWikiNameSet).getAllWikisByPerson(self)
+        return [
+            wiki_name
+            for wiki_name in getUtility(IWikiNameSet).getAllWikisByPerson(self)
+            if not wiki_name.url.strip().lower().startswith('javascript:')]
 
     @property
     def title(self):
