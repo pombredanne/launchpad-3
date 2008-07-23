@@ -24,10 +24,11 @@ from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
 from zope.component import getUtility
-from zope.interface import classImplements, implements
+from zope.interface import classImplements, classProvides, implements
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
+from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.launchpad.webapp.opstats import OpStats
 
 __all__ = [
@@ -40,7 +41,7 @@ __all__ = [
     'get_request_duration',
     'hard_timeout_expired',
     'soft_timeout_expired',
-    'get_store',
+    'StoreSelector',
     ]
 
 
@@ -206,7 +207,12 @@ def break_main_thread_db_access(*ignored):
     _main_thread_id = thread.get_ident()
 
     try:
-        getUtility(IZStorm).get('main')
+        # We can't use the IStoreSelector here, as it is a secured utility,
+        # and we haven't got enough running to do security checks at this
+        # point in the startup.
+        getUtility(IZStorm).get('main-master')
+        #store_selector = getUtility(IStoreSelector)
+        #store_selector.get(store_selector.MAIN, store_selector.DEFAULT)
     except StormAccessFromMainThread:
         # LaunchpadDatabase correctly refused to create a connection
         pass
@@ -231,6 +237,9 @@ class LaunchpadDatabase(Postgres):
     def __init__(self, uri):
         # The uri is just a property name in the config, such as main_master
         # or auth_slave.
+        # We don't invoke the superclass constructor as it has a very limited
+        # opinion on what uri is.
+        # pylint: disable-msg=W0231
         config_entry = uri.database.replace('-', '_')
         self._dsn = getattr(dbconfig, config_entry)
 
@@ -372,32 +381,33 @@ class LaunchpadStatementTracer:
 install_tracer(LaunchpadTimeoutTracer())
 install_tracer(LaunchpadStatementTracer())
 
-# Stores
-MAIN = 'main'
-AUTH = 'auth'
 
-# Flavors
-MASTER = 'master'
-SLAVE = 'slave'
+class StoreSelector:
+    classProvides(IStoreSelector)
 
+    # Store names.
+    MAIN = 'main'
+    AUTH = 'auth'
 
-class MasterUnavailable(Exception):
-    """A master (writable replica) database was requested but not available.
-    """
+    # Store flavors.
+    DEFAULT = 'default'
+    MASTER = 'master'
+    SLAVE = 'slave'
 
+    @staticmethod
+    def setDefaultFlavor(flavor):
+        """Change what the DEFAULT flavor is for the current thread."""
+        _local.default_store_flavor = flavor
 
-def get_store(name, flavor):
-    """Get a Storm Store.
+    @staticmethod
+    def get(name, flavor):
+        """See IStoreSelector."""
+        if flavor == StoreSelector.DEFAULT:
+            flavor = getattr(
+                    _local, 'default_store_flavor', StoreSelector.MASTER)
+        return getUtility(IZStorm).get('%s-%s' % (name, flavor))
 
-    Results should not be shared between threads, as which store is returned
-    for a given name or flavor can depend on thread state (eg. the HTTP
-    request currently being handled).
-
-    If a readonly flavor is requested (such as SLAVE), a writable Store may
-    be returned anyway.
-
-    :raises MasterUnavailable: if a master database was requested but it isn't
-        available.
-    """
-    return getUtility(IZStorm).get('%s-%s' % (name, flavor))
-
+    @staticmethod
+    def __iter__():
+        """See IStoreSelector."""
+        

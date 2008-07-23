@@ -41,8 +41,17 @@ class LaunchpadDatabasePolicy:
         # Tell our custom database adapter that the request has started.
         da.set_request_started()
 
-        # And if we need write access or not.
-        main_store = getUtility(IZStorm).get('main')
+        # Select the default Store.
+        if self.read_only:
+            da.StoreSelector.setDefaultFlavor(da.StoreSelector.SLAVE)
+        else:
+            da.StoreSelector.setDefaultFlavor(da.StoreSelector.MASTER)
+
+        # And if we need write access or not. This isn't required for
+        # production, but simulates a read only slave in the development
+        # environment.
+        main_store = da.StoreSelector.get(
+                da.StoreSelector.MAIN, da.StoreSelector.DEFAULT)
         if self.read_only:
             main_store.execute("SET transaction_read_only TO TRUE")
         else:
@@ -54,8 +63,4 @@ class LaunchpadDatabasePolicy:
         This method is invoked by LaunchpadBrowserPublication.endRequest.
         """
         da.clear_request_started()
-
-        if self.read_only:
-            main_store = getUtility(IZStorm).get('main')
-            main_store.execute("SET transaction_read_only TO FALSE")
 

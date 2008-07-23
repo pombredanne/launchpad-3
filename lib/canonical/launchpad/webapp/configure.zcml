@@ -467,6 +467,12 @@
         provides="zope.app.session.interfaces.ISessionDataContainer"
         />
 
+    <!-- Storm Store selector. -->
+    <utility
+        component="canonical.launchpad.webapp.adapter.StoreSelector"
+        provides="canonical.launchpad.webapp.interfaces.IStoreSelector">
+    </utility>
+
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/launchpad.png" />
 

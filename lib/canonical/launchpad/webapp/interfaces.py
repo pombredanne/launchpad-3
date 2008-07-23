@@ -800,3 +800,36 @@ class IDatabasePolicy(Interface):
 
     def endRequest():
         """Perform any necessary cleanup of the database policy."""
+
+
+class MasterUnavailable(Exception):
+    """A master (writable replica) database was requested but not available.
+    """
+
+
+class IStoreSelector(Interface):
+    MAIN = Attribute("The main database.")
+    AUTH = Attribute("The authentication database.")
+
+    DEFAULT = Attribute("The default flavor.")
+    MASTER = Attribute("The master database.")
+    SLAVE = Attribute("A slave database.")
+
+    def get(name, flavor):
+        """Retrieve a Storm Store.
+
+        Results should not be shared between threads, as which store is
+        returned for a given name or flavor can depend on thread state
+        (eg. the HTTP request currently being handled).
+
+        If a SLAVE is requested, the MASTER may be returned anyway.
+
+        The DEFAULT flavor may return either a MASTER or SLAVE depending
+        on process state. Application code using the DEFAULT flavor should
+        assume they have a MASTER and that a higher level will catch
+        the exception raised if an attempt is made to write changes to
+        a read only store.
+
+        :raises MasterUnavailable: if a master database was requested but
+            it is not available.
+        """

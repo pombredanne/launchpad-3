@@ -12,11 +12,9 @@ import _pythonpath
 
 import sys, os.path, popen2
 from optparse import OptionParser
-import psycopg2
 import psycopg2.extensions
 
 from canonical import lp
-from canonical.config import config
 from canonical.database.sqlbase import (
     connect, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED)
 from canonical.launchpad.scripts import logger, logger_options, db_options
@@ -290,11 +288,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
     except psycopg2.DatabaseError:
         con.rollback()
         log.debug('Installing tsearch2')
-        if config.database.dbhost:
-            cmd = 'psql -d %s -h %s -f -' % (
-                config.database.dbname, config.database.dbhost)
-        else:
-            cmd = 'psql -d %s -f -' % (config.database.dbname, )
+        cmd = 'psql -f - -d %s' % lp.dbname
+        if lp.dbhost:
+            cmd += ' -h %s' % lp.dbhost
         if options.dbuser:
             cmd += ' -U %s' % options.dbuser
         p = popen2.Popen4(cmd)
@@ -667,5 +663,6 @@ if __name__ == '__main__':
 
     log = logger(options)
 
+    #assert False, '__name__ == %r' % (__name__,)
     main()
 
