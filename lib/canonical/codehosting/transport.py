@@ -49,6 +49,7 @@ __all__ = [
     'AsyncVirtualTransport',
     'BlockingProxy',
     'get_chrooted_transport',
+    'get_readonly_transport',
     'LaunchpadInternalServer',
     'LaunchpadServer',
     'set_up_logging',
@@ -101,6 +102,11 @@ def get_chrooted_transport(url):
     chroot_server = chroot.ChrootServer(get_transport(url))
     chroot_server.setUp()
     return get_transport(chroot_server.get_url())
+
+
+def get_readonly_transport(transport):
+    """Return a readonly transport serving `url`."""
+    return get_transport('readonly+' + transport.base)
 
 
 def get_path_segments(path, maximum_segments=-1):
@@ -721,8 +727,6 @@ class LaunchpadServer(_BaseLaunchpadServer):
 class LaunchpadInternalServer(_BaseLaunchpadServer):
 
     def __init__(self, scheme, authserver, branch_transport):
-        branch_transport = get_transport(
-            'readonly+' + branch_transport.base)
         super(LaunchpadInternalServer, self).__init__(
             scheme, authserver, LAUNCHPAD_SERVICES, branch_transport,
             branch_transport)
