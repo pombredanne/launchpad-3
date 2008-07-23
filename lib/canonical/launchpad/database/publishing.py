@@ -353,14 +353,14 @@ class ArchivePublisherBase:
         return fields.makeOutput()
 
     def supersede(self):
-        """See `IArchivePublisher`."""
+        """See `IPublishing`."""
         current = self.secure_record
         current.status = PackagePublishingStatus.SUPERSEDED
         current.datesuperseded = UTC_NOW
         return current
 
     def requestDeletion(self, removed_by, removal_comment=None):
-        """See `IArchivePublisher`."""
+        """See `IPublishing`."""
         current = self.secure_record
         current.status = PackagePublishingStatus.DELETED
         current.datesuperseded = UTC_NOW
