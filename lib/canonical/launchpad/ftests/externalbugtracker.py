@@ -1227,15 +1227,9 @@ class Urlib2TransportTestHandler(BaseHandler):
                 headers)
 
         else:
-            response = StringIO("""<?xml version="1.0"?>
-            <methodResponse>
-              <params>
-                <param>
-                  <value>%s</value>
-                </param>
-              </params>
-            </methodResponse>
-            """ % escape(req.get_full_url()))
+            xmlrpc_response = xmlrpclib.dumps(
+                (escape(req.get_full_url()),), methodresponse=True)
+            response = StringIO(xmlrpc_response)
             info = Urlib2TransportTestInfo()
             response.info = lambda: info
             response.code = 200
