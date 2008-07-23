@@ -735,7 +735,13 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
     def _getTransportForPermissions(self, permissions, branch):
         """Get the appropriate transport for `permissions` on `branch`."""
-        return self._branch_transport
+        deferred = branch.ensureUnderlyingPath(self._branch_transport)
+        def if_not_readonly(failure):
+            failure.trap(TransportNotPossible)
+            return self._branch_transport
+        deferred.addCallback(lambda ignored: self._branch_transport)
+        deferred.addErrback(if_not_readonly)
+        return deferred
 
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
@@ -779,7 +785,7 @@ def get_puller_server(source_url=None, destination_url=None):
     if source_url is None:
         source_url = config.codehosting.branches_root
     if destination_url is None:
-        destination_url = config.supermirror.warehouse_root_url
+        destination_url = config.supermirror.branchesdest
     hosted_transport = get_readonly_transport(
         get_chrooted_transport(source_url))
     mirrored_transport = get_chrooted_transport(destination_url)
