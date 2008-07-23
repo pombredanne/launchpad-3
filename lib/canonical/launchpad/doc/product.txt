@@ -120,12 +120,38 @@ ILaunchpadStatisticSet is stored in the 'stats' attribute.
     >>> print FakeStatsProductSet().count_reviewed()
     3000
 
-It provides information on all the translatables available, too:
+
+== Translatable Products ==
+
+IProductSet will also tell us which products can be translated:
 
     >>> for product in productset.getTranslatables():
     ...    print product.name
     alsa-utils
     evolution
+
+A similar list of "featured translatables" orders these randomly.  I
+can't show you here in which order they will be printed, but alsa-utils
+and evolution will both be there.
+
+    >>> featured_translatables = 0
+    >>> for random_product in productset.featuredTranslatables():
+    ...     featured_translatables += 1
+    >>> featured_translatables
+    2
+
+Only active products are listed as translatables.
+
+    >>> evo.active = False
+    >>> for product in productset.getTranslatables():
+    ...    print product.name
+    alsa-utils
+
+    >>> for product in productset.featuredTranslatables():
+    ...    print product.name
+    alsa-utils
+
+    >>> evo.active = True
 
 
 == Package links ==

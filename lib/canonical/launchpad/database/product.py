@@ -1140,6 +1140,7 @@ class ProductSet:
     def getTranslatables(self):
         """See `IProductSet`"""
         upstream = Product.select('''
+            Product.active AND
             Product.id = ProductSeries.product AND
             POTemplate.productseries = ProductSeries.id AND
             Product.official_rosetta
@@ -1153,7 +1154,8 @@ class ProductSet:
         """See `IProductSet`"""
         randomresults = Product.select('''id IN
             (SELECT Product.id FROM Product, ProductSeries, POTemplate
-               WHERE Product.id = ProductSeries.product AND
+               WHERE Product.active AND
+                     Product.id = ProductSeries.product AND
                      POTemplate.productseries = ProductSeries.id AND
                      Product.official_rosetta
                ORDER BY random())
