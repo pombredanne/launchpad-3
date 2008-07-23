@@ -29,20 +29,48 @@
         class="description"
         tal:content="structure context/description/fmt:text-to-html"
       />
-      <div class="actions">
-        <tal:reportbug define="link context/menu:bugs/filebug"
-                       condition="context/official_malone"
-                       replace="structure link/render" />
-        <tal:helptranslate define="link context/menu:translations/help_translate"
-                           condition="context/official_rosetta"
-                           replace="structure link/render" />
-        <tal:askquestion define="link context/menu:answers/new"
-                         condition="context/official_answers"
-                         replace="structure link/render" />
-        <tal:mentoring condition="context/mentoring_offers/count"
-                       define="link context/menu:overview/mentorship"
-                       replace="structure link/render"/>
-      </div>
+
+        <div class="actions">
+          <a
+            tal:define="link context/menu:bugs/filebug"
+            tal:condition="context/official_malone"
+            tal:attributes="href link/url"
+          >
+            <img
+              tal:attributes="alt link/text"
+              src="/+icing/but-sml-reportabug.gif"
+            />
+          </a>
+          <a
+            tal:define="link context/menu:translations/help_translate"
+            tal:condition="context/official_rosetta"
+            tal:attributes="href link/url"
+          >
+            <img
+              tal:attributes="alt link/text"
+              src="/+icing/but-sml-helptranslate.gif"
+            />
+          </a>
+          <a
+            tal:define="link context/menu:answers/new"
+            tal:condition="context/official_answers"
+          >
+            <img
+              tal:attributes="alt link/text"
+              src="/+icing/but-sml-askaquestion.gif"
+            />
+          </a>
+          <a
+            tal:define="link context/menu:overview/mentorship"
+            tal:condition="context/mentoring_offers/count"
+          >
+            <img
+              tal:attributes="alt link/text"
+              src="/+icing/but-sml-mentoring.gif"
+            />
+          </a>
+        </div>
+
       <tal:launchpad_usage define="uses_launchpad view/uses_launchpad_for">
         <p id="uses">
           <tal:uses_launchpad condition="uses_launchpad">
