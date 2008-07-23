@@ -109,9 +109,12 @@
 
       <div class="section">
         <h2>Registered</h2>
-        <td tal:attributes="title context/date_created/fmt:datetime"
-            tal:content="context/date_created/fmt:approximatedate" />
+        <tal:created replace="context/date_created/fmt:approximatedate" />
       </div>
+      <tal:comment condition="nothing">
+        This div is necessary for correct layout in Safari (bug 250989):
+      </tal:comment>
+      <div />
     </div>
   </body>
 </html>
