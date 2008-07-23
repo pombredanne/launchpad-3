@@ -397,5 +397,6 @@ class IBuildRescoreForm(Interface):
     """Form for rescoring a build."""
 
     priority = Int(
-        title=_("Priority"), required=True, max=(2 ** 31),
-        description=_("Build priority value must be 32-bit signed integer."))
+        title=_("Priority"), required=True, max=((2 ** 31) - 1),
+        description=_("Build priority, the build with the highest value will "
+                      "be dispatched first."))

@@ -150,33 +150,35 @@ class BuildView(LaunchpadView):
 
 
 class BuildRescoringView(LaunchpadFormView):
-    """View class for build rescoring"""
+    """View class for build rescoring."""
 
     schema = IBuildRescoreForm
 
     def initialize(self):
         """See `ILaunchpadFormView`.
 
-        Additionally, it redirects attempts to rescore builds that cannot
-        be rescored to the build context page.
+        It redirects attempts to rescore builds that cannot be rescored
+        to the build context page, so the current page-scrapping libraries
+        won't cause any oops.
+
+        It also set next_url and cancel_url to the build context page, so
+        any action will send the user back to the context build page.
         """
-        LaunchpadFormView.initialize(self)
+        build_url = canonical_url(self.context)
+        self.next_url = self.cancel_url = build_url
+
         if not self.context.can_be_rescored:
-            self.request.response.redirect(canonical_url(self.context))
+            self.request.response.redirect(build_url)
+
+        LaunchpadFormView.initialize(self)
 
     @action(_("Rescore"), name="rescore")
     def action_rescore(self, action, data):
-        """Set the new score value and redirects to the build page."""
+        """Set the given score value."""
         score = data.get('priority')
         self.context.buildqueue_record.manualScore(score)
         self.request.response.addNotification(
             "Build rescored to %s." % score)
-        self.next_url = canonical_url(self.context)
-
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        """Simply redirects to the build page."""
-        self.next_url = canonical_url(self.context)
 
 
 class CompleteBuild:

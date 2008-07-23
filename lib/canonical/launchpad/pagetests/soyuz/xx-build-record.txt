@@ -269,7 +269,7 @@ The user can 'cancel' the operation anytime and will be sent to the
 build context page.
 
     >>> admin_browser.getLink("Rescore build").click()
-    >>> admin_browser.getControl("Cancel").click()
+    >>> admin_browser.getLink("Cancel").click()
     >>> print admin_browser.url
     http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
 
@@ -297,9 +297,10 @@ The given value must be a not empty 32-bits signed integer (bug #44240,
 
     >>> admin_browser.getControl("Priority").value = str(limit)
     >>> admin_browser.getControl("Rescore").click()
-    Traceback (most recent call last):
-    ...
-    DataError: integer out of range
+    >>> for text in get_feedback_messages(admin_browser.contents):
+    ...     print text
+    There is 1 error.
+    Value is too big
 
 And this form also handles direct attempts to rescore a build in the
 wrong state. The request is simply redirected to the build (context)
