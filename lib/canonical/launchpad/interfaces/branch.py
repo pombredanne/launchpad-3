@@ -30,6 +30,7 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchListingFilter',
+    'IBranchNavigationMenu',
     'IBranchPersonSearchContext',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
@@ -421,6 +422,10 @@ def branch_name_validator(name):
 
 class IBranchBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate branch listings."""
+
+
+class IBranchNavigationMenu(Interface):
+    """A marker interface to indicate the need to show the branch menu."""
 
 
 class IBranch(IHasOwner):

@@ -6,21 +6,17 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure view/branch/@@+portlet-details" />
-  <div tal:replace="structure view/branch/@@+portlet-subscribers" />
-</metal:leftportlets>
+<metal:heading fill-slot="before_nav_menu"
+               tal:content="structure context/branch/@@+heading"/>
+
 
 <div metal:fill-slot="main">
 
-  <tal:branch-link define="branch context/branch">
-    <metal:branch-link use-macro="context/branch/@@+macros/branch-heading-link"/>
-  </tal:branch-link>
   <h1>
     Edit subscription to branch for
     <tal:person replace="context/person/displayname">Person</tal:person>
