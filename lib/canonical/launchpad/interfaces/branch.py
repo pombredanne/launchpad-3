@@ -630,7 +630,8 @@ class IBranch(IHasOwner):
         "Only active merge proposals are returned (those that have not yet "
         "been merged).")
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
-                         whiteboard=None, date_created=None):
+                         whiteboard=None, date_created=None,
+                         needs_review=False):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the dependent_branch, if it is there,
@@ -647,6 +648,8 @@ class IBranch(IHasOwner):
             pertinant to the landing such as testing notes.
         :param date_created: Used to specify the date_created value of the
             merge request.
+        :param needs_review: Used to specify the the proposal is ready for
+            review right now.
         """
 
     def getMergeQueue():

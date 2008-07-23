@@ -40,6 +40,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
+from canonical.lazr import decorates
+from canonical.lazr.enum import EnumeratedType, Item
+from canonical.lazr.interface import use_template
+
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
@@ -74,8 +78,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.uri import URI
-
-from canonical.lazr import decorates
 
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
@@ -1004,14 +1006,45 @@ class BranchMergeQueueView(LaunchpadView):
         return result
 
 
+class RegisterProposalStatus(EnumeratedType):
+    """A restricted status enum for the register proposal form."""
+
+    # The text in this enum is different from the general proposal status
+    # enum as we want the help text that is shown in the form to be more
+    # relevant to the registration of the proposal.
+
+    NEEDS_REVIEW = Item("""
+        Needs review
+
+        The changes are ready for review.
+        """)
+
+    WORK_IN_PROGRESS = Item("""
+        Work in progress
+
+        The changes are still being actively worked on, and are not
+        yet ready for review.
+        """)
+
+
+class RegisterProposalSchema(Interface):
+    """The schema to define the form for registering a new merge proposal."""
+    use_template(IBranchMergeProposal,
+                 include=['target_branch', 'dependent_branch', 'whiteboard'])
+
+    status = Choice(
+        title=_('Status'), required=True,
+        vocabulary=RegisterProposalStatus,
+        default=RegisterProposalStatus.NEEDS_REVIEW)
+
+
 class RegisterBranchMergeProposalView(LaunchpadFormView):
     """The view to register new branch merge proposals."""
-    schema = IBranchMergeProposal
+    schema = RegisterProposalSchema
     for_input = True
 
-    field_names = ['target_branch', 'dependent_branch', 'whiteboard']
-
     custom_widget('target_branch', TargetBranchWidget)
+    custom_widget('status', LaunchpadRadioWidgetWithDescription)
 
     @property
     def cancel_url(self):
@@ -1032,6 +1065,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         target_branch = data['target_branch']
         dependent_branch = data['dependent_branch']
         whiteboard = data['whiteboard']
+        status = data['status']
 
         # If the dependent_branch is set explicitly the same as the
         # target_branch, it is the same as if it was not set at all.
@@ -1039,9 +1073,11 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             dependent_branch = None
 
         try:
+            needs_review = status == RegisterProposalStatus.NEEDS_REVIEW
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                dependent_branch=dependent_branch, whiteboard=whiteboard)
+                dependent_branch=dependent_branch, whiteboard=whiteboard,
+                needs_review=needs_review)
             self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
