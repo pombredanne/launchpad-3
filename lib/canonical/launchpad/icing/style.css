@@ -598,7 +598,6 @@ hierarchy, and the application tabs. */
 /* === Location hierarchy === */
 /*
   # XXX mpt 20080710 bug=247420: Known issues with the hierarchy:
-  - The left border and bevel of the 'Launchpad' segment is missing.
   - The top border and bevel of the last segment is missing.
   - The right border and bevel of the last segment is missing.
   - The border between the last segment and the spine should not be present.
@@ -609,44 +608,45 @@ hierarchy, and the application tabs. */
   your location in the hierarchy of people and projects:
 */
 #lp-hierarchy {
-  background: #eee url(navigation-hierarchy-bg) repeat-x;
-  clear: left;
+  float: left;
+  width: auto;
+  background: #eee url(navigation-hierarchy-bg) top left no-repeat;
   min-height: 25px;
+}
+/* The first segment has a rounded top left corner:*/
+.first-rounded {
+  background: url(navigation-hierarchy-nw) top left no-repeat;
+  min-height: 25px;
+  display: block;
+  width: 6px;
   float: left;
 }
 /* The segments have '>' separators for the benefit of those without CSS: */
 #lp-hierarchy small {display: none;}
 /* The last segment is darker (on the front page, this is the only item): */
-#lp-hierarchy.home {background: #ddd;}
-/* The first segment has a rounded top left corner: */
-#lp-hierarchy:before {
-  vertical-align: top;
-  float: left;
-  content: url(navigation-hierarchy-nw);
+#lp-hierarchy.home {
+  background: url(navigation-hierarchy-home-bg) no-repeat;
+  width:110px;
 }
-#lp-hierarchy.home:before {content: url(navigation-hierarchy-nw-home);}
 /* Each segment appears as a clickable button: */
-#lp-hierarchy a {color: #000; display: inline-block; padding: 4px 22px 0 8px;}
+#lp-hierarchy a {
+  color: #000; float:left; display: block; padding: 6px 22px 0 8px;
+}
 /* The segments have chevrons to convey their parent-child relationship: */
 #lp-hierarchy .item {
   background: url(navigation-hierarchy-chevron-normal) no-repeat right;
-  display: inline-block;
+  float: left;
   min-height: 25px;
   vertical-align: middle;
 }
 /* The penultimate segment leads into the dark color of the last segment: */
 #lp-hierarchy .before-last {
-  background-image: url(navigation-hierarchy-chevron-selected);
+  background:url(navigation-hierarchy-chevron-selected) no-repeat right;
 }
-#lp-hierarchy .last a {font-weight: bold; padding-right: 4px;}
 /* The last segment is dark, and has a rounded top right corner: */
-#lp-hierarchy .last {background: #ddd;}
-.last-rounded {
-  background: #ddd url(navigation-hierarchy-ne) no-repeat top right;
-  min-height: 25px;
-  display: block;
-  width: 6px;
-  float: left;
+#lp-hierarchy .last a {font-weight: bold; padding-right: 10px;}
+#lp-hierarchy .last {
+  background: #ddd url(navigation-hierarchy-ne) top right no-repeat;
 }
 
 /* === Location spine === */
@@ -1051,7 +1051,10 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 
 /* Distributions, projects, and people have two-column main pages. */
 /* The main heading and most of the information is in the second column: */
-.pillar {margin-left: 212px;}
+.pillar {
+  margin-left: 212px;
+  zoom: 1; /* sets hasLayout in IE, ensuring correct mugshot/heading layout */
+}
 .pillar h1 {clear: none;}
 /* But the mugshot and the subheadings are in the first column: */
 .pillar h2, .pillar .mugshot {
