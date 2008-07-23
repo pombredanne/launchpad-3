@@ -30,11 +30,3 @@ First we make a product that has three branches registered on it.
     >>> make_branch_on_product(product, 'bear', 'Jane Doe')
     >>> make_branch_on_product(product, 'cabbage', 'Neil Armstrong')
     >>> logout()
-
-All of these branches appear on the Latest branches portlet.
-
-    >>> show_latest_branches('http://launchpad.dev/%s' % product.name)
-    cabbage: Neil Armstrong
-    bear: Jane Doe
-    apple: Joe Bloggs
-

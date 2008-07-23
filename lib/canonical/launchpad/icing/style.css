@@ -1062,7 +1062,7 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
   width: 192px;
 }
 /* There is a margin between each section and the previous one: */
-.pillar div.portlet, .pillar div.section {clear: left; padding-top: 2em;}
+.pillar div.portlet, .pillar div.section {clear: both; margin-bottom: 2em;}
 .pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
 
 

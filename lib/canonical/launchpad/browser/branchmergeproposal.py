@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchMergeCandidateView',
     'BranchMergeProposalSOP',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
@@ -18,6 +19,7 @@ __all__ = [
     'BranchMergeProposalRequestReviewView',
     'BranchMergeProposalResubmitView',
     'BranchMergeProposalReviewView',
+    'BranchMergeProposalSubscribersView',
     'BranchMergeProposalView',
     'BranchMergeProposalVoteLinkView',
     'BranchMergeProposalVoteView',
@@ -48,6 +50,8 @@ from canonical.launchpad.interfaces import (
     IMessageSet,
     IStructuralObjectPresentation,
     WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.branchsubscription import (
+    CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.interfaces.codereviewvote import (
@@ -102,6 +106,32 @@ class BranchMergeProposalSOP(StructuralObjectPresentation):
         return self.delegate.getMainHeading()
 
 
+class BranchMergeCandidateView(LaunchpadView):
+    """Provides a small fragment of landing targets"""
+
+    def friendly_text(self):
+        """Prints friendly text for a branch."""
+        friendly_texts = {
+            BranchMergeProposalStatus.WORK_IN_PROGRESS : 'On hold',
+            BranchMergeProposalStatus.NEEDS_REVIEW : 'Ready for review',
+            BranchMergeProposalStatus.CODE_APPROVED : 'Approved',
+            BranchMergeProposalStatus.REJECTED : 'Rejected',
+            BranchMergeProposalStatus.MERGED : 'Merged',
+            BranchMergeProposalStatus.MERGE_FAILED :
+                'Approved [Merge Failed]',
+            BranchMergeProposalStatus.QUEUED : 'Queued',
+            BranchMergeProposalStatus.SUPERSEDED : 'Superseded'
+            }
+        return friendly_texts[self.context.queue_status]
+
+    @property
+    def queue_location(self):
+        """The location of the queue view."""
+        # Will point to the target_branch queue, or the queue
+        # with multiple targets if specified.
+        return canonical_url(self.context.target_branch) + '/+merge-queue'
+
+
 class BranchMergeProposalContextMenu(ContextMenu):
     """Context menu for branches."""
 
@@ -124,7 +154,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
         text = 'Delete proposal to merge'
-        return Link('+delete', text, icon='edit')
+        return Link('+delete', text, icon='remove')
 
     def _enabledForStatus(self, next_state):
         """True if the next_state is a valid transition for the current user.
@@ -142,7 +172,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Work in progress'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        return Link('+work-in-progress', text, icon='edit', enabled=enabled)
+        return Link('+work-in-progress', text, enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def request_review(self):
@@ -154,42 +184,42 @@ class BranchMergeProposalContextMenu(ContextMenu):
             enabled = True
             if (self.context.votes.count()) > 0:
                 text = 'Request another review'
-        return Link('+request-review', text, icon='edit', enabled=enabled)
+        return Link('+request-review', text, icon='add', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def review(self):
         text = 'Review proposal'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.CODE_APPROVED)
-        return Link('+review', text, icon='edit', enabled=enabled)
+        return Link('+review', text, enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def merge(self):
         text = 'Mark as merged'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.MERGED)
-        return Link('+merged', text, icon='edit', enabled=enabled)
+        return Link('+merged', text, enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def enqueue(self):
         text = 'Queue for merging'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.QUEUED)
-        return Link('+enqueue', text, icon='edit', enabled=enabled)
+        return Link('+enqueue', text, enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def dequeue(self):
         text = 'Remove from queue'
         enabled = (self.context.queue_status ==
                    BranchMergeProposalStatus.QUEUED)
-        return Link('+dequeue', text, icon='edit', enabled=enabled)
+        return Link('+dequeue', text, enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def resubmit(self):
         text = 'Resubmit proposal'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.SUPERSEDED)
-        return Link('+resubmit', text, icon='edit', enabled=enabled)
+        return Link('+resubmit', text, enabled=enabled)
 
 
 class UnmergedRevisionsMixin:
@@ -599,16 +629,12 @@ class BranchMergeProposalEditView(MergeProposalEditView):
     """The view to control the editing of merge proposals."""
     schema = IBranchMergeProposal
     label = "Edit branch merge proposal"
-    field_names = ["whiteboard"]
+    field_names = ["commit_message", "whiteboard"]
 
     @action('Update', name='update')
     def update_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
         self.updateContextFromData(data)
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the source branch."""
 
 
 class BranchMergeProposalDeleteView(MergeProposalEditView):
@@ -733,10 +759,6 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
             revision_id = self.context.reviewed_revision_id
         self.context.enqueue(self.user, revision_id)
 
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the merge proposal."""
-
     def validate(self, data):
         """Make sure that the proposal has been reviewed.
 
@@ -828,3 +850,55 @@ class BranchMergeProposalJumpQueueView(LaunchpadEditFormView):
     @property
     def action_url(self):
         return "%s/+jump-queue" % canonical_url(self.context)
+
+
+class BranchMergeProposalSubscribersView(LaunchpadView):
+    """Used to show the pagelet subscribers on the main proposal page."""
+
+    __used_for__ = IBranchMergeProposal
+
+    def initialize(self):
+        """See `LaunchpadView`."""
+        # Get the subscribers and dump them into two sets.
+        self._full_subscribers = set()
+        self._status_subscribers = set()
+        # Add subscribers from the source and target branches.
+        self._add_subscribers_for_branch(self.context.source_branch)
+        self._add_subscribers_for_branch(self.context.target_branch)
+        # Remove all the people from the comment_subscribers from the
+        # status_and_vote_subscribers as they recipients will get the email
+        # only once, and for the most detailed subscription from the source
+        # and target branches.
+        self._status_subscribers = (
+            self._status_subscribers - self._full_subscribers)
+
+    def _add_subscribers_for_branch(self, branch):
+        """Add the subscribers to the subscription sets for the branch."""
+        for subscription in branch.subscriptions:
+            level = subscription.review_level
+            if level == CodeReviewNotificationLevel.FULL:
+                self._full_subscribers.add(subscription.person)
+            elif level == CodeReviewNotificationLevel.STATUS:
+                self._status_subscribers.add(subscription.person)
+            else:
+                # We don't do anything right now with people who say they
+                # don't want to see anything.
+                pass
+
+    @cachedproperty
+    def full_subscribers(self):
+        """A list of full subscribers ordered by displayname."""
+        return sorted(
+            self._full_subscribers, key=operator.attrgetter('displayname'))
+
+    @cachedproperty
+    def status_subscribers(self):
+        """A list of full subscribers ordered by displayname."""
+        return sorted(
+            self._status_subscribers, key=operator.attrgetter('displayname'))
+
+    @property
+    def has_subscribers(self):
+        """True if there are subscribers to the branch."""
+        return len(self.full_subscribers) + len(self.status_subscribers)
+
