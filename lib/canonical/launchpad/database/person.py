@@ -29,7 +29,9 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
+from storm.expr import And, LeftJoin, Not, Or
 from storm.store import Store
+from storm.zope.interfaces import IZStorm
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -2548,13 +2550,6 @@ class PersonSet:
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def getAllValidPersons(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        return Person.select(
-                Person.q.id == ValidPersonCache.q.id, orderBy=orderBy)
-
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
@@ -2568,9 +2563,23 @@ class PersonSet:
 
     def getAllValidPersonsAndTeams(self):
         """See `IPersonSet`."""
-        return self.getAllTeams().union(
-            self.getAllValidPersons(),
-            orderBy=Person._sortingColumnsForSetOperations)
+        store = getUtility(IZStorm).get('main')
+        tables = [
+            Person,
+            LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+            LeftJoin(Account, EmailAddress.account == Account.id),
+            ]
+        result = store.using(*tables).find(
+            Person,
+            And(
+                Person.merged == None,
+                Or(# A valid person-or-team is either a team...
+                   Not(Person.teamowner == None), # 'Not' due to Bug 244768
+
+                   # or has an active account and a preferred email address.
+                   And(Account.status == AccountStatus.ACTIVE,
+                       EmailAddress.status == EmailAddressStatus.PREFERRED))))
+        return result.order_by(Person.sortingColumns)
 
     def find(self, text, orderBy=None):
         """See `IPersonSet`."""
