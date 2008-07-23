@@ -5,7 +5,7 @@
   class="portlet" id="portlet-top-contributors"
   tal:condition="view/getTopFiveContributors">
   <h2>Top contributors</h2>
-  <div class="portletBody portletContent">
+
     <table>
       <tr tal:repeat="contributor view/getTopFiveContributors">
         <td>
@@ -18,6 +18,10 @@
         </td>
       </tr>
     </table>
-  </div>
 
+  <div
+    tal:define="link context/menu:overview/top_contributors"
+    tal:content="structure link/render"
+    class="actions"
+  />
 </div>

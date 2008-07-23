@@ -122,7 +122,8 @@ h4, h5, h6 { font-size: 1em; }
 /* H1 is only used at the top the maincontent, maybe below a short description
    of the displayed object. It must have zero margin-top. */
 h2, h3, h4, h5, h6 { margin-top: 1em; }
-ul{padding-left:0; list-style-position: inside;}
+/* Browsers indent lists inconsistently, so we override them completely: */
+ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
