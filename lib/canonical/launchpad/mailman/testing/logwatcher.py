@@ -99,11 +99,11 @@ class LogWatcher:
         return self._wait('Message discarded, msgid: <%s>' % message_id)
 
     def wait_for_hold(self, message_id):
-        return self._wait('Holding message for LP approval: <%s>'
-                              % message_id)
+        return self._wait(
+            'Holding message for LP approval: <%s>' % message_id)
 
     def wait_for_mbox_delivery(self, message_id):
-        return self._wait('msgid: <%s>')
+        return self._wait('msgid: <%s>' % message_id)
 
     def wait(self):
         # XXX REMOVE ME

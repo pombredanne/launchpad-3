@@ -1,55 +1,22 @@
 = Decorations =
 
 Messages sent by Mailman to team mailing list recipients have a number of
-decorations that help users interact better with the list, and its archive.
+decorations that help users interact better with the list and its archive.
 These decorations live in the message headers, and in the text footer that
 Mailman adds to the bottom of very message.
 
-First, create the mailing list, which will send a notification messages
-to all the members of the mailing list.  We can ignore these messages.
+A mailing list is created, and Anne subscribes to it.
 
     >>> from canonical.launchpad.mailman.testing import helpers
     >>> list_one = helpers.create_list('itest-one')
+    >>> helpers.subscribe('Anne', 'itest-one')
 
-    # Ignore the list creation message.
+Anne sends a message to the list.
+
     >>> smtpd.reset()
+    >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
+    >>> smtpd_watcher = LogWatcher('smtpd')
 
-Add a member of the mailing list so that we can post messages to the list.
-
-    >>> import transaction
-    >>> from operator import itemgetter
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from zope.component import getUtility
-
-    >>> login('foo.bar@canonical.com')
-    >>> team_one = getUtility(IPersonSet).getByName('itest-one')
-    >>> anne = new_person('Anne')
-    >>> anne.join(team_one)
-    >>> list_one.subscribe(anne)
-    >>> logout()
-
-    >>> from canonical.launchpad.mailman.testing import logwatcher
-    >>> serial_watcher = logwatcher.LogWatcher('serial')
-    >>> transaction.commit()
-    >>> serial_watcher.wait()
-
-    >>> from Mailman.MailList import MailList
-    >>> m = MailList('itest-one', lock=False)
-    >>> sorted(m.getMembers())
-    ['anne.person@example.com', 'aperson@example.org',
-     'archive@mail-archive.dev']
-
-Send a message to the list, then retrieve it from the mbox.  We'll examine its
-contents below.
-
-    >>> login('foo.bar@canonical.com')
-    >>> anne.preferredemail.email
-    u'anne.person@example.com'
-    >>> logout()
-
-    >>> smtp_watcher = logwatcher.LogWatcher('smtp')
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
@@ -59,7 +26,6 @@ contents below.
     ...
     ... Hi, I am a member of this team's list.
     ... """)
-    >>> smtp_watcher.wait()
 
 
 == VERP headers ==
@@ -75,6 +41,8 @@ rewrites there are.
 the MTA, but it's close enough in intent and exactly the same in
 implementation so we use the same terminology in Mailman.)
 
+    >>> from operator import itemgetter
+    >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
     >>> messages = sorted(smtpd.getMessages(), key=itemgetter('sender'))
     >>> for message in messages:
     ...     print message['sender']
