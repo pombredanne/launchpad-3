@@ -13,7 +13,6 @@ import urlparse
 import xmlrpclib
 
 from StringIO import StringIO
-from cgi import escape
 from datetime import datetime, timedelta
 from httplib import HTTPMessage
 from urllib2 import BaseHandler, HTTPError, Request
@@ -1228,7 +1227,7 @@ class Urlib2TransportTestHandler(BaseHandler):
 
         else:
             xmlrpc_response = xmlrpclib.dumps(
-                (escape(req.get_full_url()),), methodresponse=True)
+                (req.get_full_url(),), methodresponse=True)
             response = StringIO(xmlrpc_response)
             info = Urlib2TransportTestInfo()
             response.info = lambda: info
