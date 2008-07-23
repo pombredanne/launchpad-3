@@ -269,7 +269,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
-    def selectBy(cls, *args, **kwargs):
+    def selectBy(cls, **kwargs):
         """Prevent selecting embargo packages by default"""
         if 'embargo' in kwargs:
             if kwargs['embargo']:
@@ -278,7 +278,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
                      stacklevel=2)
         kwargs['embargo'] = False
         return super(SecureSourcePackagePublishingHistory,
-                     cls).selectBy(*args, **kwargs)
+                     cls).selectBy(**kwargs)
 
     @classmethod
     def selectByWithEmbargoedEntries(cls, *args, **kwargs):
@@ -317,7 +317,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
-    def selectBy(cls, *args, **kwargs):
+    def selectBy(cls, **kwargs):
         """Prevent selecting embargo packages by default"""
         if 'embargo' in kwargs:
             if kwargs['embargo']:
@@ -326,7 +326,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
                      stacklevel=2)
         kwargs['embargo'] = False
         return super(SecureBinaryPackagePublishingHistory,
-                     cls).selectBy(*args, **kwargs)
+                     cls).selectBy(**kwargs)
 
     @classmethod
     def selectByWithEmbargoedEntries(cls, *args, **kwargs):
