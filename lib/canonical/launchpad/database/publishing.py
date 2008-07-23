@@ -1063,11 +1063,13 @@ class PublishingSet:
         store = getUtility(IZStorm).get('main')
 
         # First update the source package publishing history table.
-        query = 'UPDATE SecureSourcePackagePublishingHistory '
-        query += query_boilerplate
-        query += ' %s' % sqlvalues([source.id for source in sources])
-        store.execute(query)
-                
+        source_ids = [source.id for source in sources]
+        if len(source_ids) > 0:
+            query = 'UPDATE SecureSourcePackagePublishingHistory '
+            query += query_boilerplate
+            query += ' %s' % sqlvalues(source_ids)
+            store.execute(query)
+
         # Prepare the list of associated *binary* packages publishing
         # history records.
         binary_packages = []
@@ -1076,9 +1078,11 @@ class PublishingSet:
 
         # Now run the query that marks the binary packages as deleted
         # as well.
-        query = 'UPDATE SecureBinaryPackagePublishingHistory '
-        query += query_boilerplate
-        query += ' %s' % sqlvalues([binary.id for binary in binary_packages])
-        store.execute(query)
+        if len(binary_packages) > 0:
+            query = 'UPDATE SecureBinaryPackagePublishingHistory '
+            query += query_boilerplate
+            query += ' %s' % sqlvalues(
+                [binary.id for binary in binary_packages])
+            store.execute(query)
 
         return sources + binary_packages
