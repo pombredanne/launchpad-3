@@ -32,9 +32,6 @@ from zope.app.datetimeutils import (
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
-from zope.proxy import isProxy
-from zope.security.checker import getChecker, ProxyFactory
-from zope.security.interfaces import ForbiddenAttribute, Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
