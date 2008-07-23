@@ -277,12 +277,6 @@ class TestLaunchpadInternalServer(TestLaunchpadServer):
         self.assertIdentical(
             self.server._branch_transport, self.server._mirror_transport)
 
-    def test_branch_transport_read_only(self):
-        # The backing transport is read only. This acts as a safeguard
-        # preventing the puller and the scanner from accidentally doing
-        # anything.
-        self.assertEqual(True, self.server._branch_transport.is_readonly())
-
 
 class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
 
