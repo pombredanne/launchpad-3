@@ -926,6 +926,73 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
         linked: True
 
 
+== Looking up the nearest navigation menu ==
+
+Sometimes the view will have a navigation menu, but the view's context
+will not.  In this case we want to search upwards through the navigation
+hierarchy for a context that *does* have a navigation menu.
+
+In this example we will use recipe comments.  The comment view has a
+menu, but the comment object does not.  We want the call to
+'context/menu:navigation' to return the navigation menu for the recipe
+that the comment refers to.
+
+    >>> class IComment(Interface):
+    ...     """A comment on a recipe."""
+
+    >>> class Comment(BaseContent):
+    ...     implements(IComment)
+
+    # This is usually done in ZCML by browser:defaultView.
+    >>> from zope.component.bbb.interfaces import IDefaultViewName
+    >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+    >>> provideAdapter(
+    ...     '+index',
+    ...     [IComment, IDefaultBrowserLayer],
+    ...     IDefaultViewName)
+
+We'll simulate the user viewing a comment.
+
+    >>> comment = Comment('a-comment', recipe)
+    >>> print canonical_url(comment)
+    http://launchpad.dev/joy-of-cooking/fried-spam/a-comment
+
+When we try to look up the menu for the comment, the navigation menu for
+the next highest object in the URL hierarchy, the Recipe, will be
+returned.
+
+    >>> links_dict = test_tales(
+    ...     'context/menu:navigation', context=comment)
+    >>> summarise_tal_links(links_dict)
+    link journal
+        url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
+        enabled: True
+        menu: <...IRecipeJournalMenuMarker...>
+        linked: False
+    link summary
+        url: http://launchpad.dev/joy-of-cooking/fried-spam
+        enabled: True
+        menu: <...IRecipeEditMenuMarker...>
+        linked: True
+
+
+=== Menus for objects without canonical URLs or menus ===
+
+If we try a navigation menu lookup on an object without a canonical url
+or a navigation menu adapter, then no menu will be returned, and no
+error will be raised by the template.
+
+    >>> class MenulessView(LaunchpadView):
+    ...     # Needed so the IPathAdapter can be applied to this view.
+    ...     implements(Interface)
+    ...     __launchpad_facetname__ = 'cookery'
+
+    >>> menuless_view = MenulessView(comment, request)
+
+    >>> test_tales('view/menu:navigation', view=menuless_view)
+    {}
+
+
 == Rendering the menu in a template ==
 
 Menus are often rendered with a view controller class to ensure
