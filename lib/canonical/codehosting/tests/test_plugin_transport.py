@@ -35,7 +35,7 @@ from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
     AsyncLaunchpadTransport, BlockingProxy, InvalidControlDirectory,
     LaunchpadInternalServer, LaunchpadServer, set_up_logging,
-    VirtualTransport)
+    AsyncVirtualTransport)
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
@@ -72,7 +72,7 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         deferred = self.server.translateVirtualPath('/~testuser/firefox/baz')
         deferred.addCallback(
             self.assertEqual,
-            (self.server._backing_transport, '00/00/00/01/'))
+            (self.server._branch_transport, '00/00/00/01/'))
         return deferred
 
     def test_base_path_translation_junk_branch(self):
@@ -81,7 +81,7 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         deferred = self.server.translateVirtualPath('/~testuser/+junk/random')
         deferred.addCallback(
             self.assertEqual,
-            (self.server._backing_transport, '00/00/00/03/'))
+            (self.server._branch_transport, '00/00/00/03/'))
         return deferred
 
     def test_base_path_translation_team_branch(self):
@@ -89,7 +89,7 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         deferred = self.server.translateVirtualPath('/~testteam/firefox/qux')
         deferred.addCallback(
             self.assertEqual,
-            (self.server._backing_transport, '00/00/00/04/'))
+            (self.server._branch_transport, '00/00/00/04/'))
         return deferred
 
     def test_base_path_translation_team_junk_branch(self):
@@ -111,7 +111,7 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
             '/~testuser/firefox/baz/.bzr')
         deferred.addCallback(
             self.assertEqual,
-            (self.server._backing_transport, '00/00/00/01/.bzr'))
+            (self.server._branch_transport, '00/00/00/01/.bzr'))
         return deferred
 
     def test_extend_path_translation_on_mirror(self):
@@ -260,7 +260,8 @@ class TestLaunchpadInternalServer(TestLaunchpadServer):
         self.authserver = FakeLaunchpad()
         self.branch_transport = MemoryTransport()
         self.server = LaunchpadInternalServer(
-            BlockingProxy(self.authserver), self.branch_transport)
+            'lp-internal:///', BlockingProxy(self.authserver),
+            self.branch_transport)
 
     def test_get_url(self):
         # Rather than the magic per-instance URL of the standard
@@ -268,31 +269,31 @@ class TestLaunchpadInternalServer(TestLaunchpadServer):
         # 'lp-internal://' URL.
         self.assertEqual('lp-internal:///', self.server.get_url())
 
-    def test_backing_transport_is_mirror_transport(self):
+    def test_branch_transport_is_mirror_transport(self):
         # The internal server provides read-only access to exactly one branch
         # area. This means that the 'backing transport' (for regular servers,
         # the hosted area) is the same as the 'mirror transport' (which
         # normally refers to the mirrored area in regular servers).
         self.assertIdentical(
-            self.server._backing_transport, self.server._mirror_transport)
+            self.server._branch_transport, self.server._mirror_transport)
 
-    def test_backing_transport_read_only(self):
+    def test_branch_transport_read_only(self):
         # The backing transport is read only. This acts as a safeguard
         # preventing the puller and the scanner from accidentally doing
         # anything.
-        self.assertEqual(True, self.server._backing_transport.is_readonly())
+        self.assertEqual(True, self.server._branch_transport.is_readonly())
 
 
-class TestVirtualTransport(TrialTestCase, TestCaseInTempDir):
+class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
 
     class VirtualServer(Server):
-        """Very simple server that provides a VirtualTransport."""
+        """Very simple server that provides a AsyncVirtualTransport."""
 
         def __init__(self, backing_transport):
-            self._backing_transport = backing_transport
+            self._branch_transport = backing_transport
 
         def _factory(self, url):
-            return VirtualTransport(self, url)
+            return AsyncVirtualTransport(self, url)
 
         def get_url(self):
             return self.scheme
@@ -306,7 +307,7 @@ class TestVirtualTransport(TrialTestCase, TestCaseInTempDir):
 
         def translateVirtualPath(self, virtual_path):
             return defer.succeed(
-                (self._backing_transport,
+                (self._branch_transport,
                  'prefix_' + virtual_path.lstrip('/')))
 
     def setUp(self):
@@ -352,7 +353,7 @@ class TestVirtualTransport(TrialTestCase, TestCaseInTempDir):
 
     def test_canAccessEscapedPathsOnDisk(self):
         # Sometimes, the paths to files on disk are themselves URL-escaped.
-        # The VirtualTransport can access these files.
+        # The AsyncVirtualTransport can access these files.
         #
         # This test added in response to https://launchpad.net/bugs/236380.
         escaped_disk_path = 'prefix_%43razy'
@@ -833,7 +834,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         # distinguish them, we'll monkey patch the mirror and backing
         # transports.
         self.lp_server._mirror_transport.listable = lambda: 'mirror'
-        self.lp_server._backing_transport.listable = lambda: 'backing'
+        self.lp_server._branch_transport.listable = lambda: 'backing'
 
         self.assertEqual('mirror', transport.listable())
 
