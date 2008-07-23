@@ -741,6 +741,19 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         return SynchronousAdapter(AsyncVirtualTransport(self, url))
 
 
+def get_scanner_server(warehouse_url=None):
+    """Get a Launchpad internal transport for scanning branches."""
+    proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
+    authserver = BlockingProxy(proxy)
+    if warehouse_url is None:
+        warehouse_url = config.supermirror.warehouse_root_url
+    branch_transport = get_readonly_transport(
+        get_chrooted_transport(warehouse_url))
+    return LaunchpadInternalServer(
+        'lp-mirrored:///', authserver, branch_transport)
+
+
+
 class AsyncVirtualTransport(Transport):
     """A transport for a virtual file system.
 
