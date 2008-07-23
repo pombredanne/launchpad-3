@@ -53,7 +53,7 @@ This is handy for examining the tar files that are generated.
     ...             size = 'bin'
     ...         else:
     ...             size = len(tarfile.extractfile(member).readlines())
-    ...         print "| %5s | %s" % (size, member.name) 
+    ...         print "| %5s | %s" % (size, member.name)
 
 
 == Base language pack export using Librarian ==

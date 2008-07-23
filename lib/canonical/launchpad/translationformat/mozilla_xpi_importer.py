@@ -72,7 +72,7 @@ class MozillaZipImportParser(MozillaZipTraversal):
     def _processTranslatableFile(self, entry, locale_code, xpi_path,
                                  chrome_path, filename_suffix):
         """Overridable hook for `MozillaZipTraversal`.
-        
+
         This implementation is only interested in DTD and properties
         files.
         """

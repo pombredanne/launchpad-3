@@ -24,7 +24,7 @@ from canonical.launchpad.translationformat.tests.xpi_helpers import (
 
 
 def unwrap(text):
-    """Remove line breaks and any other wrapping artefacts from text."""
+    """Remove line breaks and any other wrapping artifacts from text."""
     return re.sub('\s+', ' ', text.strip())
 
 
