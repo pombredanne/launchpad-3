@@ -49,7 +49,9 @@ __all__ = [
     'AsyncVirtualTransport',
     'BlockingProxy',
     'get_chrooted_transport',
+    'get_puller_server',
     'get_readonly_transport',
+    'get_scanner_server',
     'LaunchpadInternalServer',
     'LaunchpadServer',
     'set_up_logging',
@@ -742,7 +744,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
 
 def get_scanner_server(warehouse_url=None):
-    """Get a Launchpad internal transport for scanning branches."""
+    """Get a Launchpad internal server for scanning branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
     authserver = BlockingProxy(proxy)
     if warehouse_url is None:
@@ -752,6 +754,17 @@ def get_scanner_server(warehouse_url=None):
     return LaunchpadInternalServer(
         'lp-mirrored:///', authserver, branch_transport)
 
+
+def get_puller_server(source_url=None):
+    """Get a Launchpad internal server for pulling branches."""
+    proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
+    authserver = BlockingProxy(proxy)
+    if source_url is None:
+        source_url = config.codehosting.branches_root
+    branch_transport = get_readonly_transport(
+        get_chrooted_transport(source_url))
+    return LaunchpadInternalServer(
+        'lp-hosted:///', authserver, branch_transport)
 
 
 class AsyncVirtualTransport(Transport):
