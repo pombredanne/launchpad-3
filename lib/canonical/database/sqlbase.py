@@ -103,15 +103,13 @@ class StupidCache:
 storm.store.Cache = StupidCache
 
 
-# Much of this code in this module is specific to the SQLObject compatibility
-# layer. Provide a shortcut to retrieve the only store that the SQLObject
-# compatibility layer is aware of.
 def _get_sqlobject_store():
+    """Return the store used by the SQLObject compatibility layer."""
     # Imported here to work around a disgusting circular import due to
     # complex __init__.py that I can't fix now -- StuartBishop 20080722
-    from canonical.launchpad.webapp.interfaces import IStoreSelector
-    store_selector = getUtility(IStoreSelector)
-    return store_selector.get(store_selector.MAIN, store_selector.DEFAULT)
+    from canonical.launchpad.webapp.interfaces import (
+            IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):

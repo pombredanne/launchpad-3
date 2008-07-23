@@ -807,14 +807,29 @@ class MasterUnavailable(Exception):
     """
 
 
+MAIN_STORE = 'main' # The main database.
+AUTH_STORE = 'auth' # The authentication database.
+
+DEFAULT_FLAVOR = 'default' # Default flavor for current state.
+MASTER_FLAVOR = 'master' # The master database.
+SLAVE_FLAVOR = 'slave' # A slave database.
+
+
 class IStoreSelector(Interface):
-    MAIN = Attribute("The main database.")
-    AUTH = Attribute("The authentication database.")
+    """Get a Storm store with a desired flavor.
 
-    DEFAULT = Attribute("The default flavor.")
-    MASTER = Attribute("The master database.")
-    SLAVE = Attribute("A slave database.")
+    Stores come in two flavors - MASTER_FLAVOR and SLAVE_FLAVOR.
+    
+    The master is writable and up to date, but we should not use it
+    whenever possible because there is only one master and we don't want
+    it to be overloaded.
 
+    The slave is read only replica of the master and may lag behind the
+    master. For many purposes such as serving unauthenticated web requests
+    and generating reports this is fine. We can also have as many slave
+    databases as we are prepared to pay for, so they will perform better
+    because they are less loaded.
+    """
     def get(name, flavor):
         """Retrieve a Storm Store.
 
@@ -822,14 +837,17 @@ class IStoreSelector(Interface):
         returned for a given name or flavor can depend on thread state
         (eg. the HTTP request currently being handled).
 
-        If a SLAVE is requested, the MASTER may be returned anyway.
+        If a SLAVE_FLAVOR is requested, the MASTER_FLAVOR may be returned
+        anyway.
 
-        The DEFAULT flavor may return either a MASTER or SLAVE depending
-        on process state. Application code using the DEFAULT flavor should
-        assume they have a MASTER and that a higher level will catch
-        the exception raised if an attempt is made to write changes to
-        a read only store.
+        The DEFAULT_FLAVOR flavor may return either a master or slave
+        depending on process state. Application code using the
+        DEFAULT_FLAVOR flavor should assume they have a MASTER and that
+        a higher level will catch the exception raised if an attempt is
+        made to write changes to a read only store. DEFAULT_FLAVOR exists
+        for backwards compatilibity, and new code should explicity state
+        if they want a master or a slave.
 
-        :raises MasterUnavailable: if a master database was requested but
+        :raises MasterUnavailable: A master database was requested but
             it is not available.
         """

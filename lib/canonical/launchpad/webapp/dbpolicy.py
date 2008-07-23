@@ -17,7 +17,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.interfaces import IDatabasePolicy
+from canonical.launchpad.webapp.interfaces import (
+        IDatabasePolicy, MASTER_FLAVOR, SLAVE_FLAVOR)
 
 class LaunchpadDatabasePolicy:
 
@@ -43,20 +44,10 @@ class LaunchpadDatabasePolicy:
 
         # Select the default Store.
         if self.read_only:
-            da.StoreSelector.setDefaultFlavor(da.StoreSelector.SLAVE)
+            da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
         else:
-            da.StoreSelector.setDefaultFlavor(da.StoreSelector.MASTER)
+            da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
 
-        # And if we need write access or not. This isn't required for
-        # production, but simulates a read only slave in the development
-        # environment.
-        main_store = da.StoreSelector.get(
-                da.StoreSelector.MAIN, da.StoreSelector.DEFAULT)
-        if self.read_only:
-            main_store.execute("SET transaction_read_only TO TRUE")
-        else:
-            main_store.execute("SET transaction_read_only TO FALSE")
-        
     def endRequest(self):
         """Cleanup.
         

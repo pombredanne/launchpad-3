@@ -28,7 +28,8 @@ from zope.interface import classImplements, classProvides, implements
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
-from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
 
 __all__ = [
@@ -207,12 +208,7 @@ def break_main_thread_db_access(*ignored):
     _main_thread_id = thread.get_ident()
 
     try:
-        # We can't use the IStoreSelector here, as it is a secured utility,
-        # and we haven't got enough running to do security checks at this
-        # point in the startup.
-        getUtility(IZStorm).get('main-master')
-        #store_selector = getUtility(IStoreSelector)
-        #store_selector.get(store_selector.MAIN, store_selector.DEFAULT)
+        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     except StormAccessFromMainThread:
         # LaunchpadDatabase correctly refused to create a connection
         pass
@@ -385,29 +381,16 @@ install_tracer(LaunchpadStatementTracer())
 class StoreSelector:
     classProvides(IStoreSelector)
 
-    # Store names.
-    MAIN = 'main'
-    AUTH = 'auth'
-
-    # Store flavors.
-    DEFAULT = 'default'
-    MASTER = 'master'
-    SLAVE = 'slave'
-
     @staticmethod
     def setDefaultFlavor(flavor):
-        """Change what the DEFAULT flavor is for the current thread."""
+        """Change what the DEFAULT_FLAVOR is for the current thread."""
+        assert flavor != DEFAULT_FLAVOR, "Can't set DEFAULT to DEFAULT"
         _local.default_store_flavor = flavor
 
     @staticmethod
     def get(name, flavor):
         """See IStoreSelector."""
-        if flavor == StoreSelector.DEFAULT:
-            flavor = getattr(
-                    _local, 'default_store_flavor', StoreSelector.MASTER)
+        if flavor == DEFAULT_FLAVOR:
+            flavor = getattr(_local, 'default_store_flavor', MASTER_FLAVOR)
         return getUtility(IZStorm).get('%s-%s' % (name, flavor))
 
-    @staticmethod
-    def __iter__():
-        """See IStoreSelector."""
-        
