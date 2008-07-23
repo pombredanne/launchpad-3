@@ -110,6 +110,10 @@
             </tbody>
           </table>
           <ul class="cross-reference">
+            <li id="bugtracker">
+              <strong>Bug tracker:</strong>
+              <tal:bugtracker replace="structure view/bugtracker" />
+            </li>
             <li tal:define="fixed_elsewhere view/bugs_fixed_elsewhere_info">
               <a tal:attributes="href fixed_elsewhere/url">
                 <strong tal:content="fixed_elsewhere/count">42</strong>
