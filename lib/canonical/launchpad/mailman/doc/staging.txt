@@ -15,9 +15,6 @@ sync, but we can get close.  Start off by creating a few mailing lists.  When
 the mailing lists are created, messages get sent to the members of the team
 informing them of their new list.  We can ignore these.
 
-    >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
-    >>> smtp_watcher = LogWatcher('smtp')
-
     >>> import transaction
     >>> from canonical.launchpad.ftests import (
     ...     login, logout, mailinglists_helper)
@@ -33,19 +30,22 @@ informing them of their new list.  We can ignore these.
     >>> helpers.apply_for_list(browser, 'itest-one')
     >>> helpers.apply_for_list(browser, 'itest-two')
 
-    >>> serial_watcher = LogWatcher('serial')
     >>> list_one = helpers.review_list('itest-one')
     >>> list_two = helpers.review_list('itest-two')
 
-    >>> login('foo.bar@canonical.com')
+Anne subscribes to two mailing lists.  Bart and Cris both subscribe to only
+one of the mailing lists.
+
     >>> helpers.subscribe('Anne', 'itest-one')
     >>> helpers.subscribe('Anne', 'itest-two')
     >>> helpers.subscribe('Bart', 'itest-one')
     >>> helpers.subscribe('Cris', 'itest-two')
-    >>> transaction.commit()
-    >>> logout()
-    >>> serial_watcher.wait()
+
+A bunch of messages are sent to the mailing lists.
+
     >>> smtpd.reset()
+    >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
+    >>> smtpd_watcher = LogWatcher('smtpd')
 
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
@@ -56,7 +56,7 @@ informing them of their new list.  We can ignore these.
     ...
     ... Hello team!
     ... """)
-    >>> smtp_watcher.wait()
+    >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
 
     >>> inject('itest-two', """\
     ... From: anne.person@example.com
@@ -66,7 +66,7 @@ informing them of their new list.  We can ignore these.
     ...
     ... Hello team!
     ... """)
-    >>> smtp_watcher.wait()
+    >>> smtpd_watcher.wait_for_mbox_delivery('second-injection')
 
     >>> inject('itest-one', """\
     ... From: bart.person@example.com
@@ -76,7 +76,7 @@ informing them of their new list.  We can ignore these.
     ...
     ... Hello team!
     ... """)
-    >>> smtp_watcher.wait()
+    >>> smtpd_watcher.wait_for_mbox_delivery('third-injection')
 
     >>> inject('itest-two', """\
     ... From: cris.person@example.com
@@ -86,7 +86,7 @@ informing them of their new list.  We can ignore these.
     ...
     ... Hello team!
     ... """)
-    >>> smtp_watcher.wait()
+    >>> smtpd_watcher.wait_for_mbox_delivery('fourth-injection')
 
     >>> from operator import itemgetter
     >>> for message in sorted(smtpd.getMessages(), key=itemgetter('sender')):
@@ -123,7 +123,9 @@ Now we need to simulate the difference between the staging and production
 databases.  To do this, we'll use a helper, but first we need to stop Mailman.
 
     >>> from canonical.launchpad.mailman import runmailman
-    >>> runmailman.stop_mailman(quiet=True)
+    >>> from canonical.testing.layers import AppServerLayer
+    >>> runmailman.stop_mailman(
+    ...     quiet=True, config=AppServerLayer.appserver_config)
 
 In a typical synchronization situation, the production Launchpad database is
 copied to staging at a different time than when the production Mailman data is
@@ -171,12 +173,12 @@ Do the Mailman synchronization by calling the script.  We must set the
 LPCONFIG environment variable for the script to find the correct
 launchpad.conf file.
 
-    >>> from canonical.config import config
     >>> from subprocess import *
     >>> proc = Popen(
     ...     ('scripts/mlist-sync.py', '--hostname',
     ...      'lists.prod.launchpad.dev', source_dir),
-    ...     stdout=PIPE, stderr=PIPE, cwd=config.root,
+    ...     stdout=PIPE, stderr=PIPE,
+    ...     cwd=AppServerLayer.appserver_config.root,
     ...     env=dict(LPCONFIG='testrunner-appserver'))
     >>> stdout, stderr = proc.communicate()
 
@@ -210,4 +212,5 @@ web_page_url attributes for these lists should not point to 'prod'.
 
     >>> import shutil
     >>> shutil.rmtree(source_dir)
-    >>> runmailman.start_mailman(quiet=True)
+    >>> runmailman.start_mailman(
+    ...     quiet=True, config=AppServerLayer.appserver_config)

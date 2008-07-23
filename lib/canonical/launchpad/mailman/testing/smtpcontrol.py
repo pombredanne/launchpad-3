@@ -56,11 +56,14 @@ class SMTPControl:
         if pid == 0:
             # Child -- exec the server
             host, port = configure_smtp(config.mailman.smtp)
+            logfile = os.path.join(
+                config.mailman.build_var_dir, 'logs', 'smtpd')
             os.execl(sys.executable, sys.executable,
                      smtp2mbox.__file__,
                      '--host', host, '--port', str(port),
                      '--mbox', self._mbox_filename,
                      '--path', os.path.dirname(Mailman.__file__),
+                     '--logfile', logfile,
                      )
             # We should never get here!
             os._exit(1)

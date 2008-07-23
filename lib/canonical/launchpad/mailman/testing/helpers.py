@@ -13,6 +13,7 @@ __all__ = [
     'review_list',
     'run_mailman',
     'subscribe',
+    'unsubscribe',
     ]
 
 
@@ -106,10 +107,11 @@ def run_mailman(*args):
     return stdout
 
 
-def subscribe(first_name, team_name):
+def subscribe(first_name, team_name, use_alt_address=False):
     """Do everything you need to subscribe a person to a mailing list."""
     # Circular import.
     from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
+    log_watcher = LogWatcher()
     # Create the person if she does not already exist, and join her to the
     # team.
     login('foo.bar@canonical.com')
@@ -121,10 +123,28 @@ def subscribe(first_name, team_name):
     person.join(team)
     # Subscribe her to the list.
     mailing_list = getUtility(IMailingListSet).get(team_name)
-    mailing_list.subscribe(person)
+    if use_alt_address:
+        alternative_email = mailinglists_helper.get_alternative_email(person)
+        mailing_list.subscribe(person, alternative_email)
+    else:
+        mailing_list.subscribe(person)
     transaction.commit()
     logout()
+    log_watcher.wait_for_membership_changes(team_name)
+
+
+def unsubscribe(first_name, team_name):
+    """Unsubscribe the named person from the team's mailing list."""
+    from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
     log_watcher = LogWatcher()
+    login('foo.bar@canonical.com')
+    person_set = getUtility(IPersonSet)
+    person = person_set.getByName(first_name.lower())
+    assert person is not None, 'No such person: %s' % first_name
+    mailing_list = getUtility(IMailingListSet).get(team_name)
+    mailing_list.unsubscribe(person)
+    transaction.commit()
+    logout()
     log_watcher.wait_for_membership_changes(team_name)
 
 

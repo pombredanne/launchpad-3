@@ -452,6 +452,7 @@ class XMLRPCRunner(Runner):
                    'Received dispositions for these message-ids: %s',
                    COMMASPACE.join(dispositions))
         else:
+            syslog('xmlrpc', 'No dispositions')
             return
         # For each message that has been acted upon in Launchpad, handle the
         # message in here in Mailman.  We need to resort the dispositions so

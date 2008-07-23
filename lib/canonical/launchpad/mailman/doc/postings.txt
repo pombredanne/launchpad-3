@@ -32,7 +32,7 @@ Inject a message from a non-member into Mailman's incoming queue.
     ...
     ... Hi, I am not a member of Launchpad (yet).
     ... """)
-    >>> vette_watcher.wait()
+    >>> vette_watcher.wait_for_discard('aardvark')
 
 Message from non-members who are in unknown standing do not get posted to the
 mailing list.
@@ -62,7 +62,6 @@ equivalent to making it unvalidated.
     >>> print alternative_email.email, alternative_email.status.title
     aperson@example.org New Email Address
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -71,7 +70,7 @@ equivalent to making it unvalidated.
     ...
     ... Hi, I am not a verified member of Launchpad (yet).
     ... """)
-    >>> vette_watcher.wait()
+    >>> vette_watcher.wait_for_discard('beaver')
 
 As above, this message got summarily discarded.
 
@@ -88,7 +87,9 @@ administrator.
 
     >>> print anne.preferredemail.email, anne.preferredemail.status.title
     anne.person@example.com Preferred Email Address
-    >>> vette_watcher.resync()
+    >>> smtpd.reset()
+    >>> smtpd.getMailboxSize()
+    0
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -97,8 +98,12 @@ administrator.
     ...
     ... Hi, I am not a member of this team's list (yet).
     ... """)
+    >>> vette_watcher.wait_for_hold('caribou')
 
-    >>> vette_watcher.wait()
+The team administrator will receive a notification of the held message.
+
+    >>> smtpd.getMailboxSize()
+    XXX
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
@@ -156,11 +161,11 @@ rejection notice to Anne.
     ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Ccaribou%3E').value = [
     ...     'reject']
-    >>> serial_watcher = logwatcher.LogWatcher('serial')
+    >>> log_watcher = logwatcher.LogWatcher()
     >>> smtp_watcher = logwatcher.LogWatcher('smtp')
 
     >>> browser.getControl('Moderate').click()
-    >>> serial_watcher.wait()
+    >>> log_watcher.wait()
 
     >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
@@ -201,7 +206,6 @@ Anne posts another message to the mailing list that she is not subscribed to.
 The team administrator deems this message to be spam and discards it.  No
 rejection notice is sent to Anne.
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -233,14 +237,12 @@ rejection notice is sent to Anne.
         Message-ID: <donkey>
     ...
 
-    >>> smtp_watcher.resync()
-    >>> serial_watcher.resync()
     >>> browser.open(
     ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Cdonkey%3E').value = [
     ...     'discard']
     >>> browser.getControl('Moderate').click()
-    >>> serial_watcher.wait()
+    >>> log_watcher.wait()
     >>> smtp_watcher.wait()
     'Timed out'
 
@@ -254,7 +256,6 @@ rejection notice is sent to Anne.
 Now Anne posts another message to the mailing list she is not subscribed to.
 This time, her message is on topic and is accepted.
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -298,14 +299,12 @@ This time, her message is on topic and is accepted.
     Hi, I am still not yet a member of this team's list.
     <BLANKLINE>
     
-    >>> smtp_watcher.resync()
-    >>> serial_watcher.resync()
     >>> browser.open(
     ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Celephant%3E').value = [
     ...     'approve']
     >>> browser.getControl('Moderate').click()
-    >>> serial_watcher.wait()
+    >>> log_watcher.wait()
     >>> smtp_watcher.wait()
 
     >>> holds = helpers.pending_hold_ids('itest-one')
@@ -356,9 +355,8 @@ to the mailing list.
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
-    >>> serial_watcher.resync()
     >>> transaction.commit()
-    >>> serial_watcher.wait()
+    >>> log_watcher.wait()
 
     >>> print anne.preferredemail.email, anne.preferredemail.status.title
     anne.person@example.com Preferred Email Address
@@ -440,7 +438,6 @@ In addition, the in-house MHonArc archiver has archived this message.
 Anne cannot post from her alternative email address because it has not been
 validated yet.
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -459,11 +456,9 @@ However, once she validates this address, she can post from it.
     >>> login('foo.bar@canonical.com')
     >>> alternative_email.status = EmailAddressStatus.VALIDATED
     >>> logout()
-    >>> serial_watcher.resync()
     >>> transaction.commit()
-    >>> serial_watcher.wait()
+    >>> log_watcher.wait()
 
-    >>> smtp_watcher.resync()
     >>> inject('itest-one', """\
     ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -530,13 +525,11 @@ Anne now leaves the team, but she does not unsubscribe from the mailing list.
     >>> login('foo.bar@canonical.com')
     >>> anne.leave(team_one)
     >>> logout()
-    >>> serial_watcher.resync()
     >>> transaction.commit()
-    >>> serial_watcher.wait()
+    >>> log_watcher.wait()
 
 Because she is not a team member, her message is held for moderation.
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -575,11 +568,9 @@ not need to re-subscribe to the mailing list.
     >>> login('foo.bar@canonical.com')
     >>> anne.join(team_one)
     >>> logout()
-    >>> serial_watcher.resync()
     >>> transaction.commit()
-    >>> serial_watcher.wait()
+    >>> log_watcher.wait()
 
-    >>> smtp_watcher.resync()
     >>> inject('itest-one', """\
     ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -623,7 +614,6 @@ have their posts held for moderation.
     ...         print '   ', message['from']
     ...         print '   ', message['subject']
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: bperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -698,7 +688,6 @@ But a person in poor standing will have their messages held for approval.
     >>> bart.personal_standing = PersonalStanding.POOR
     >>> transaction.commit()
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: bperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -728,7 +717,6 @@ messages to the list.
     >>> from canonical.config import config
     >>> config.mailman.archive_address
     'archive@mail-archive.dev'
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: %s
     ... To: itest-one@lists.launchpad.dev
