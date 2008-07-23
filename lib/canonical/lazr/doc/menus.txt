@@ -862,30 +862,11 @@ TAL namespace 'menu' is used to query the state of a menu and to iterate
 over the links. The TALES takes the form of 'view/menu:navigation'.
 
     >>> from zope.interface import classImplements
-    >>> from zope.security.proxy import isinstance as zope_isinstance
     >>> from zope.app.traversing.adapters import DefaultTraversable
     >>> from zope.app.traversing.interfaces import IPathAdapter, ITraversable
     >>> from canonical.launchpad.ftests import test_tales
     >>> from canonical.launchpad.webapp.tales import MenuAPI
-
-    >>> def summarise_tal_links(links):
-    ...     """List the links and their attributes in the dict or list."""
-    ...     is_dict = zope_isinstance(links, dict)
-    ...     if is_dict:
-    ...         keys = sorted(links)
-    ...     else:
-    ...         keys = links
-    ...     for link_name in keys:
-    ...         if is_dict:
-    ...             link = links[link_name]
-    ...         else:
-    ...             link = link_name
-    ...         print 'link %s' % link.name
-    ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
-    ...         for attrname in attributes:
-    ...             if not safe_hasattr(link, attrname):
-    ...                 continue
-    ...             print '    %s:' % attrname, getattr(link, attrname)
+    >>> from canonical.lazr.testing.menus import summarise_tal_links
 
     # MenuAPI is normally registered as an IPathAdapter in ZCML. This
     # approximates what is done by the code:
@@ -962,6 +943,7 @@ that the comment refers to.
     >>> class Comment(BaseContent):
     ...     implements(IComment)
 
+    # This is usually done in ZCML by browser:defaultView.
     >>> from zope.component.bbb.interfaces import IDefaultViewName
     >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
     >>> provideAdapter(
@@ -994,32 +976,21 @@ returned.
         linked: True
 
 
-=== Menus for objects without canonical URLs ===
+=== Menus for objects without canonical URLs or menus ===
 
-The navigation menu lookup will also work for objects that have an
-INavigationMenu adaptation while lacking a canonical URL.
+If we try a navigation menu lookup on an object without a canonical url
+or a navigation menu adapter, then no menu will be returned, and no
+error will be raised by the template.
 
-In this example, we'll look up an adaptation on the RecipeReadJournalView.
-It has a menu, but the view itself doesn't have a canonical URL.
+    >>> class MenulessView(LaunchpadView):
+    ...     # Needed so the IPathAdapter can be applied to this view.
+    ...     implements(Interface)
+    ...     __launchpad_facetname__ = 'cookery'
 
-    >>> print queryAdapter(recipe_journal_view, ICanonicalUrlData)
-    None
+    >>> menuless_view = MenulessView(comment, request)
 
-We can still see the view's navigation menu:
-
-    >>> links_dict = test_tales(
-    ...     'view/menu:navigation', view=recipe_journal_view)
-    >>> summarise_tal_links(links_dict)
-    link read_journal
-        url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
-        enabled: True
-        menu: None
-        linked: False
-    link write_entry
-        url: http://launchpad.dev/joy-of-cooking/fried-spam/+write-entry
-        enabled: True
-        menu: None
-        linked: True
+    >>> test_tales('view/menu:navigation', view=menuless_view)
+    {}
 
 
 == Rendering the menu in a template ==
