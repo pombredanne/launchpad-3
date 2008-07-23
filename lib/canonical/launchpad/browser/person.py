@@ -1148,7 +1148,8 @@ class PersonPPANavigationMenuMixin:
         return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
-class PersonOverviewNavigationMenu(NavigationMenu):
+class PersonOverviewNavigationMenu(
+    NavigationMenu, PersonPPANavigationMenuMixin):
     """The top-level menu of actions a Person may take."""
 
     usedfor = IPerson
