@@ -16,6 +16,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.lazr.interfaces import (
     ICollection, IFieldMarshaller, IResourceGETOperation,
     IResourcePOSTOperation)
+from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
     BatchingResourceMixin, CollectionResource, ResourceJSONEncoder)
 
@@ -66,22 +67,8 @@ class ResourceOperation(BatchingResourceMixin):
             # batch of the collection.
             result = CollectionResource(
                 ICollection(result), self.request).batch()
-        elif not(zope_isinstance(result,
-                                 (basestring, set, types.TupleType,
-                                  types.ListType, types.DictionaryType))):
-            # If the result provides an iterator but isn't a list or
-            # string, it's an object capable of batching a large
-            # dataset. Serve only one batch of the dataset.
-            try:
-                iterator = iter(result)
-                # It's a list.
-                result = self.batch(result, self.request)
-            except TypeError:
-                pass
-        else:
-            # The result doesn't need to be batched. Serialize the
-            # whole thing to JSON.
-            pass
+        elif self.should_batch(result):
+            result = self.batch(result, self.request)
 
         # Serialize the result to JSON. Any embedded entries will be
         # automatically serialized.
@@ -95,6 +82,32 @@ class ResourceOperation(BatchingResourceMixin):
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', self.JSON_TYPE)
         return json_representation
+
+    def should_batch(self, result):
+        """Whether the given response data should be batched."""
+        if not IResourceGETOperation.providedBy(self):
+            # Only GET operations have meaningful return values.
+            return False
+
+        if ICollectionField.providedBy(self.return_type):
+            # An operation defined as returning a collection always
+            # has its response batched.
+            return True
+
+        if zope_isinstance(result, (basestring, dict, set, list, tuple)):
+            # Ordinary Python data structures generally are not
+            # batched.
+            return False
+        try:
+            iterator = iter(result)
+            # Objects that have iterators but aren't ordinary data structures
+            # tend to be result-set objects. Batch them.
+            return True
+        except TypeError:
+            pass
+
+        # Any other objects (eg. Entries) are not batched.
+        return False
 
     def validate(self):
         """Validate incoming arguments against the operation schema.
