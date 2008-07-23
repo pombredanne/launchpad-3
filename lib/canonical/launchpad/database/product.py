@@ -1147,7 +1147,7 @@ class ProductSet:
             clauseTables=['ProductSeries', 'POTemplate'],
             orderBy='Product.title',
             distinct=True)
-        return upstream.prejoin(['owner']
+        return upstream.prejoin(['owner'])
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""
