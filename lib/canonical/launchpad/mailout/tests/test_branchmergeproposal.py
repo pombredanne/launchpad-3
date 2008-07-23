@@ -4,6 +4,8 @@
 
 from unittest import TestLoader, TestCase
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
@@ -266,11 +268,20 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         # We can request a review, even when one of the parties involved has a
         # private email address.
         candidate = self.makePersonWithHiddenEmail()
+        # Request a review and prepare the mailer.
         vote_reference = self.bmp.nominateReviewer(
             candidate, self.owner, None)
         reason = RecipientReason.forReviewer(vote_reference, candidate)
         mailer = BMPMailer.forReviewRequest(reason, self.bmp, self.owner)
+        # Send the mail.
+        pop_notifications()
         mailer.sendAll()
+        mails = pop_notifications()
+        self.assertEqual(1, len(mails))
+        candidate = removeSecurityProxy(candidate)
+        expected_email = '%s <%s>' % (
+            candidate.displayname, candidate.preferredemail.email)
+        self.assertEqual(expected_email, mails[0]['To'])
 
 
 def test_suite():
