@@ -9,7 +9,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import login, login_person
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.mailout.branchmergeproposal import (
@@ -241,6 +241,36 @@ class TestRecipientReason(TestCaseWithFactory):
             subscription, team_member, bmp, '')
         self.assertEqual('Your team Qux is subscribed to branch foo.',
             reason.getReason())
+
+
+class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
+    """Tests for `BranchMergeProposalRequestReviewView`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.owner = self.factory.makePerson()
+        login_person(self.owner)
+        self.bmp = self.factory.makeBranchMergeProposal(registrant=self.owner)
+
+    def makePersonWithHiddenEmail(self):
+        """Make an arbitrary person with hidden email addresses."""
+        person = self.factory.makePerson()
+        login_person(person)
+        person.hide_email_addresses = True
+        login_person(self.owner)
+        return person
+
+    def test_requestReviewWithPrivateEmail(self):
+        # We can request a review, even when one of the parties involved has a
+        # private email address.
+        candidate = self.makePersonWithHiddenEmail()
+        vote_reference = self.bmp.nominateReviewer(
+            candidate, self.owner, None)
+        reason = RecipientReason.forReviewer(vote_reference, candidate)
+        mailer = BMPMailer.forReviewRequest(reason, self.bmp, self.owner)
+        mailer.sendAll()
 
 
 def test_suite():

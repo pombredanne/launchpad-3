@@ -455,8 +455,7 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         vote_reference = self.context.nominateReviewer(
             candidate, self.user, review_type)
         reason = RecipientReason.forReviewer(vote_reference, candidate)
-        mailer = BMPMailer.forReviewRequest(
-            reason, self.context, self.user)
+        mailer = BMPMailer.forReviewRequest(reason, self.context, self.user)
         mailer.sendAll()
 
     @action('Request review', name='review')
