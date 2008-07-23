@@ -38,23 +38,8 @@ class LogWatcher:
         # module is imported.
         # pylint: disable-msg=F0401
         self._log_path = os.path.join(LOG_DIR, filename)
-
-    def _line_feeder(self):
-        """Iterate over all the lines of the file."""
-        while True:
-            try:
-                log_file = open(self._log_path)
-            except IOError, error:
-                if error.errno == errno.ENOENT:
-                    # If the file does not yet exist, act just like EOF.
-                    yield ''
-                raise
-            else:
-                # Ignore anything that's already in the file.
-                log_file.seek(0, SEEK_END)
-                break
-        while True:
-            yield log_file.readline()
+        self._log_file = open(self._log_path)
+        self._log_file.seek(0, SEEK_END)
 
     def _wait(self, landmark):
         """Wait until the landmark string has been seen.
@@ -63,9 +48,8 @@ class LogWatcher:
         on each line of the file.
         """
         until = datetime.datetime.now() + LOG_GROWTH_WAIT_INTERVAL
-        line_feeder = self._line_feeder()
         while True:
-            line = line_feeder.next()
+            line = self._log_file.readline()
             if landmark in line:
                 # Return None on success for doctest convenience.
                 return None
@@ -105,6 +89,5 @@ class LogWatcher:
     def wait_for_mbox_delivery(self, message_id):
         return self._wait('msgid: <%s>' % message_id)
 
-    def wait(self):
-        # XXX REMOVE ME
-        return self._wait('')
+    def wait_for_list_traffic(self, team_name):
+        return self._wait('to: %s@lists.launchpad.dev' % team_name)

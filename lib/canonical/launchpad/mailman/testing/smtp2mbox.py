@@ -169,6 +169,8 @@ if __name__ == '__main__':
 
     # Run the main loop.
     server = Server(parser)
+    log.debug('SMTP listener started on: %s:%s',
+              parser.options.host, parser.options.port)
     asyncore.loop()
     asyncore.close_all()
     server.close()

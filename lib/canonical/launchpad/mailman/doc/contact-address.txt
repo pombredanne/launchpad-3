@@ -1,27 +1,22 @@
 = Using a mailing list as a team's contact address =
 
-Mailing lists hosted by Launchpad can be used as the contact address of any
-team in Launchpad.  When this feature is used, all notifications sent by
-Launchpad to the team will be sent to the mailing list's address, in fact.
+The contact address for any team can be set the team's mailing list, in which
+case all notifications sent by Launchpad to the team will be sent to the
+mailing list's address.
 
-We'll now register and approve the mailing list we'll be using as the contact
-address of our new team.  When the mailing lists are created, messages get
-sent to the members of the team informing them of their new list.  We can
-ignore these (there's only one, currently).
+Create a mailing list for the contact address of our new team.
 
     >>> from canonical.launchpad.mailman.testing import helpers
     >>> list_one = helpers.create_list('itest-one')
-    >>> from operator import itemgetter
-    >>> for message in sorted(smtpd.getMessages(), key=itemgetter('sender')):
-    ...     print message['subject']
-    New Mailing List for Itest One
 
-Subscribe someone to the team and mailing list so that these messages can get
-delivered.
+    # Ignore the new list notification message.
+    >>> smtpd.reset()
+
+Anne subscribes to the team and its mailing list.
 
     >>> helpers.subscribe('Anne', 'itest-one')
 
-It's possible to set the team as a project's answer contact.
+The team is set as the project's answer contact.
 
     >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev:8085/~itest-one/+contactaddress')
@@ -38,8 +33,11 @@ It's possible to set the team as a project's answer contact.
     ...     'Itest One']
     >>> browser.getControl('Continue').click()
 
-When the contact address for the team is its mailing list, creating new
-questions will email the mailing list.
+Now that the contact address for the team is its mailing list, a new questions
+will be delivered to the mailing list.
+
+    >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
+    >>> smtpd_watcher = LogWatcher('smtpd')
 
     >>> browser.open('http://answers.launchpad.dev:8085/firefox/+addquestion')
     >>> browser.getControl('Summary').value = 'A new question'
@@ -48,15 +46,17 @@ questions will email the mailing list.
     >>> browser.getControl('Add').click()
 
 There are now three messages in the mailbox.  One message goes to
-no-priv@canonical.com because he added the question.  The other two are copies
-of the same message which was posted to the mailing list.  We get two copies
-because we're VERPing delivery (i.e. sending each recipient an individual
-message marked with headers to track bounces).  One copy goes to Anne and the
-other goes to the archive submission address.  The way to distinguish and sort
-these messages is by the Sender header, which will be unique in all cases.
+no-priv@canonical.com because he added the question, one goes to the mailing
+list's archive, and one goes to Anne because she is the mailing list's only
+member.
 
-    >>> smtp_watcher = logwatcher.LogWatcher('smtp')
-    >>> smtp_watcher.wait_for_list_traffic('itest-one')
+    # The three messages addressed to the mailing list seen on the smtp server
+    # are 1) the original posted message on the +addquestion, 2) the message
+    # as sent to Anne, 3) the message as sent to the archiver.
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     3
@@ -93,7 +93,7 @@ Here is the message to the person who added the question.
     <BLANKLINE>
     <BLANKLINE>
 
-Here is the message to Anne, a member of the mailing list.
+Here is the message to Anne, the mailing list member.
 
     >>> print messages[1].as_string()
     MIME-Version: 1.0
@@ -148,18 +148,24 @@ Here is the message to the archive submission address.
     <BLANKLINE>
     <BLANKLINE>
 
-Similarly, if we subscribe our new team to a blueprint, a notification will be
-sent to Anne and to the archive via the mailing list.
+Similarly, when the team is subscribed to a blueprint, a notification will be
+sent to Anne and to the archive, via the mailing list.
 
     >>> browser.open(
     ...     'http://launchpad.dev:8085/firefox/+spec/canvas/+addsubscriber')
     >>> browser.getControl('Subscriber').value = 'itest-one'
     >>> browser.getControl('Continue').click()
 
-    >>> smtp_watcher.wait_for_list_traffic('itest-one')
+    # The three messages addressed to the mailing list seen on the smtp server
+    # are 1) the original posted message on the +addquestion, 2) the message
+    # as sent to Anne, 3) the message as sent to the archiver.
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     2
+    >>> from operator import itemgetter
     >>> messages.sort(key=itemgetter('sender'))
 
 This one gets sent to Anne...
@@ -216,9 +222,8 @@ This one gets sent to Anne...
     <BLANKLINE>
     <BLANKLINE>
 
-If we change the team's contact address to something other than the
-launchpad-hosted mailing list, though, the notifications won't be sent to the
-mailing list, they'll be sent to the team members individually.
+The team's contact address is set to each team member individually.
+Notifications will no longer be sent to the mailing list.
 
     >>> browser.open('http://launchpad.dev:8085/~itest-one/+contactaddress')
     >>> browser.getControl('Each member individually').selected = True
@@ -234,10 +239,10 @@ mailing list, they'll be sent to the team members individually.
     >>> browser.getControl('Description').value = 'More detail.'
     >>> browser.getControl('Add').click()
 
-    >>> smtp_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
     'Timed out'
 
-There are now two messages in the mailbox.  One message goes to
+There are two messages in the mailbox.  One message was sent to
 no-priv@canonical.com because he added the question.  The other goes to Anne
 as a member of the team, since the team's contact address is not set.  Nothing
 is sent to the archive because the mailing list was not used.
@@ -300,19 +305,16 @@ member.
 When emails are sent directly to the mailing list address they're still
 delivered since the mailing list is still active.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS
-    >>> login(ANONYMOUS)
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
-    ... From: %s
+    ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
     ... Subject: A member post
     ... Message-ID: <first-injection>
     ...
     ... Hi, I am a member of Launchpad.
-    ... """ % anne.preferredemail.email)
-    >>> logout()
-    >>> smtp_watcher.wait_for_list_traffic('itest-one')
+    ... """)
+    >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
     >>> messages = smtpd.getMessages()
 
 Anne (as the only member of the mailing list) and the archive submission
