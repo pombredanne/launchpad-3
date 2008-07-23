@@ -386,8 +386,8 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+reassign', text, icon='edit')
 
     def top_contributors(self):
-        text = 'More contributors'
-        return Link('+topcontributors', text, icon='info')
+        text = u'\u00BB More contributors'
+        return Link('+topcontributors', text)
 
     def distributions(self):
         text = 'Packaging information'
