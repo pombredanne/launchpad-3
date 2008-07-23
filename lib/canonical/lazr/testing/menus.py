@@ -17,7 +17,7 @@ def summarise_tal_links(links):
     """List the links and their attributes in the dict or list.
 
     :param links: A dictionary or list of menu links returned by
-        `canonical.launchpad.tales.MenuAPI`.
+        `canonical.launchpad.webapp.tales.MenuAPI`.
     """
     is_dict = zope_isinstance(links, dict)
     if is_dict:
