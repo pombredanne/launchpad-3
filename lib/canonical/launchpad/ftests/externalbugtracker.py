@@ -1238,14 +1238,14 @@ class Urlib2TransportTestHandler(BaseHandler):
           </params>
         </methodResponse>
         """ % escape(req.get_full_url()))
+        info = Urlib2TransportTestInfo()
+        response.info = lambda: info
+        response.geturl = lambda: req.get_full_url()
         response.code = 200
         response.msg = ''
-        headers = Urlib2TransportTestInfo()
 
-        response.info = lambda: headers
-        response.geturl = lambda: req.get_full_url()
         return response
 
 def patch_transport_opener(transport):
-    """Patch the transport's opener to use various test handlers."""
+    """Patch the transport's opener to use a test handler."""
     transport.opener.add_handler(Urlib2TransportTestHandler())
