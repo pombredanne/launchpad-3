@@ -1042,7 +1042,7 @@ portlets. We achieve this using a negative right margin: */
 #maincontent, #maincontentsub {width: 100%; margin-right: -200px;}
 /* And the portlets use exactly this 200px: */
 #portlets {width: 200px; margin: 0;}
-/* Inside, the main column itself keeps 20px clear of the 200px column: */ 
+/* Inside, the main column itself keeps 20px clear of the 200px column: */
 #nonportlets {margin-right: 220px;}
 /* One-column pages can construct portlets using <div class="aside">: */
 div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
@@ -1067,9 +1067,7 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 /* There is a margin between each section and the previous one: */
 .pillar div.portlet, .pillar div.section {clear: both; margin-bottom: 2em;}
 .pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
-/* The top-most portlet, Contact Details, is allowed to float up and beside
-the mugshot. */
-#contact-details {clear: none;}
+
 
 /* === Portlets === */
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
@@ -1257,7 +1255,13 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   color: #83ad23;
 }
 
+/* The top-most Person portlet, Contact Details, is allowed to float up and
+beside the mugshot. */
+#contact-details {clear: none;}
+
 .product.series, .project {margin-bottom: 1em;}
+#packages h1, #projects h1 {margin-top: 1.2em;}
+
 
 /* --- Code --- */
 

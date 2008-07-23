@@ -43,12 +43,11 @@ __all__ = [
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
     'PersonOwnedBranchesView',
-    'PersonPackagesView',
     'PersonRdfView',
     'PersonRdfContentsView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
-    'PersonRelatedProjectsView',
+    'PersonRelatedSoftwareView',
     'PersonSearchQuestionsView',
     'PersonSetContextMenu',
     'PersonSetFacets',
@@ -972,13 +971,13 @@ class CommonMenuLinks:
         return Link(target, text, icon='edit')
 
     def common_packages(self):
-        target = '+packages'
+        target = '+related-software'
         text = 'List assigned packages'
         summary = 'Packages assigned to %s' % self.context.browsername
         return Link(target, text, summary, icon='packages')
 
     def related_projects(self):
-        target = '+projects'
+        target = '+related-software#projects'
         text = 'List related projects'
         summary = 'Projects %s is involved with' % self.context.browsername
         return Link(target, text, summary, icon='packages')
@@ -1137,7 +1136,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         return Link(target, text, menu=IPersonEditMenu)
 
     def related_software(self):
-        target = '+projects'
+        target = '+related-software'
         text = 'Related Software'
         return Link(target, text, menu=IPersonRelatedSoftwareMenu)
 
@@ -1205,24 +1204,6 @@ class PersonEditNavigationMenu(NavigationMenu):
     def passwords(self):
         target = '+changepassword'
         text = 'Passwords'
-        return Link(target, text)
-
-
-class PersonRelatedSoftwareNavigationMenu(NavigationMenu):
-
-    usedfor = IPersonRelatedSoftwareMenu
-    facet = 'overview'
-    title = 'Related Software'
-    links = ('participation', 'assigned_packages')
-
-    def participation(self):
-        target = '+projects'
-        text = 'Participation'
-        return Link(target, text)
-
-    def assigned_packages(self):
-        target = '+packages'
-        text = 'Assigned Packages'
         return Link(target, text)
 
 
@@ -2646,37 +2627,6 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                 _("You have been unsubscribed from the team "
                   "mailing list."))
         self.request.response.redirect(canonical_url(self.context))
-
-
-class PersonRelatedProjectsView(LaunchpadView):
-
-    implements(IPersonRelatedSoftwareMenu)
-
-    # Safety net for the Registry Admins case which is the owner/driver of
-    # lots of projects.
-    max_results_to_display = config.launchpad.default_batch_size
-
-    def _related_projects(self):
-        """Return all projects owned or driven by this person."""
-        return self.context.getOwnedOrDrivenPillars()
-
-    @cachedproperty
-    def relatedProjects(self):
-        """Return projects owned or driven by this person up to the maximum
-        configured."""
-        return list(self._related_projects()[:self.max_results_to_display])
-
-    @cachedproperty
-    def firstFiveRelatedProjects(self):
-        """Return first five projects owned or driven by this person."""
-        return list(self._related_projects()[:5])
-
-    @cachedproperty
-    def related_projects_count(self):
-        return self._related_projects().count()
-
-    def tooManyRelatedProjectsFound(self):
-        return self.related_projects_count > self.max_results_to_display
 
 
 class PersonCodeOfConductEditView(LaunchpadView):
@@ -4373,14 +4323,58 @@ class SourcePackageReleaseWithStats:
         self.needs_building = needs_building
 
 
-class PersonPackagesView(LaunchpadView):
-    """View for +packages."""
+class PersonRelatedSoftwareView(LaunchpadView):
+    """View for +related-software."""
 
     implements(IPersonRelatedSoftwareMenu)
 
     PACKAGE_LIMIT = 50
+    # Safety net for the Registry Admins case which is the owner/driver of
+    # lots of projects.
+    max_results_to_display = config.launchpad.default_batch_size
 
-    def getLatestUploadedPPAPackagesWithStats(self):
+    @cachedproperty
+    def related_projects(self):
+        """Return a list of project dicts owned or driven by this person.
+
+        The number of projects returned is limited by max_results_to_display.
+        A project dict has the following keys: title, url, bug_count,
+        spec_count, and question_count.
+        """
+        projects = []
+        max_projects = self.max_results_to_display
+        for pillarname in self._related_projects()[:max_projects]:
+            project = {}
+            project['title'] = pillarname.pillar.title
+            project['url'] = canonical_url(pillarname.pillar)
+            project['bug_count'] = pillarname.pillar.open_bugtasks.count()
+            project['spec_count'] = pillarname.pillar.specifications().count()
+            project['question_count'] = (
+                pillarname.pillar.searchQuestions().count())
+            projects.append(project)
+        return projects
+
+    @cachedproperty
+    def first_five_related_projects(self):
+        """Return first five projects owned or driven by this person."""
+        return list(self._related_projects()[:5])
+
+    @cachedproperty
+    def related_projects_count(self):
+        """The number of project owned or driven by this person."""
+        return self._related_projects().count()
+
+    @property
+    def too_many_related_projects_found(self):
+        """Does the user have more related projects than can be displayed?"""
+        return self.related_projects_count > self.max_results_to_display
+
+    def _related_projects(self):
+        """Return all projects owned or driven by this person."""
+        return self.context.getOwnedOrDrivenPillars()
+
+    @property
+    def get_latest_uploaded_ppa_packages_with_stats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
         Results are filtered according to the permission of the requesting
@@ -4407,12 +4401,14 @@ class PersonPackagesView(LaunchpadView):
                     break
         return self._addStatsToPackages(results)
 
-    def getLatestMaintainedPackagesWithStats(self):
+    @property
+    def get_latest_maintained_packages_with_stats(self):
         """Return the latest maintained packages, including stats."""
         packages = self.context.getLatestMaintainedPackages()
         return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
-    def getLatestUploadedButNotMaintainedPackagesWithStats(self):
+    @property
+    def get_latest_uploaded_but_not_maintained_packages_with_stats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
