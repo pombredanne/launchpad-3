@@ -755,16 +755,36 @@ def get_scanner_server(warehouse_url=None):
         'lp-mirrored:///', authserver, branch_transport)
 
 
-def get_puller_server(source_url=None):
+class _PullerServer(Server):
+
+    def __init__(self, authserver, hosted_transport, mirrored_transport):
+        self._hosted_server = LaunchpadInternalServer(
+            'lp-hosted:///', authserver, hosted_transport)
+        self._mirrored_server = LaunchpadInternalServer(
+            'lp-mirrored:///', authserver, mirrored_transport)
+
+    def setUp(self):
+        self._hosted_server.setUp()
+        self._mirrored_server.setUp()
+
+    def tearDown(self):
+        self._mirrored_server.tearDown()
+        self._hosted_server.tearDown()
+
+
+def get_puller_server(source_url=None, destination_url=None):
     """Get a Launchpad internal server for pulling branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
     authserver = BlockingProxy(proxy)
     if source_url is None:
         source_url = config.codehosting.branches_root
-    branch_transport = get_readonly_transport(
+    if destination_url is None:
+        destination_url = config.supermirror.warehouse_root_url
+    hosted_transport = get_readonly_transport(
         get_chrooted_transport(source_url))
-    return LaunchpadInternalServer(
-        'lp-hosted:///', authserver, branch_transport)
+    mirrored_transport = get_chrooted_transport(destination_url)
+    return _PullerServer(
+        authserver, hosted_transport, mirrored_transport)
 
 
 class AsyncVirtualTransport(Transport):
