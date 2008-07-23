@@ -14,7 +14,7 @@ from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
-from zope.interface import implements, alsoProvides
+from zope.interface import implements
 
 
 from canonical.archivepublisher.config import Config as PubConfig
@@ -43,7 +43,6 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
@@ -191,16 +190,6 @@ class Archive(SQLBase):
                 self.purpose)
         return urlappend(config.archivepublisher.base_url,
             self.distribution.name + postfix)
-
-    def _init(self, *args, **kwargs):
-        """Mark PPA archives with the IHasPersonNavigationMenu interface.
-
-        Called when the object is created or fetched from the database.
-        """
-        SQLBase._init(self, *args, **kwargs)
-
-        if self.is_ppa:
-            alsoProvides(self, IHasPersonNavigationMenu)
 
     def getPubConfig(self):
         """See `IArchive`."""
