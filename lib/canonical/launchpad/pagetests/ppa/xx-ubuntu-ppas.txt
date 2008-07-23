@@ -218,24 +218,6 @@ access.
     Copy packages (disabled)
     Edit dependencies (disabled)
 
-The PPA page contains a portlet listing all series and architectures
-which supports PPA building in ubuntu.
-
-    >>> print extract_text(
-    ...    find_portlet(anon_browser.contents, 'PPA supported series'))
-    PPA supported series
-    5.04
-    "Hoary"
-    - development
-    i386
-    (official)
-    4.10
-    "Warty"
-    - current
-    i386
-    (official)
-
-
 Let's see his sources.list entries:
 
     >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')

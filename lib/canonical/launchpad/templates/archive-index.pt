@@ -13,7 +13,6 @@
 
     <metal:portlets fill-slot="portlets">
       <tal:privacy replace="structure context/@@+portlet-privacy" />
-      <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
     </metal:portlets>
 
     <div metal:fill-slot="main"
