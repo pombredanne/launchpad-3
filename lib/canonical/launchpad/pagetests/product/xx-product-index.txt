@@ -114,7 +114,7 @@ the homepage:
 A project that has not set a license is marked as 'Unspecified'.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
+    >>> user_browser.contents
     '<...This project&rsquo;s license has not been specified...
 
 If the project doesn't have a license, a portlet is displayed
@@ -155,7 +155,7 @@ been reviewed by a Launchpad administrator will be displayed as
 Any user can see that the project's license has not been reviewed.
 
     >>> user_browser.open('http://launchpad.dev/thunderbird')
-    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
+    >>> user_browser.contents
     '<...This project&rsquo;s license has not been reviewed...
 
 Changing the state to reviewed but not approved results in the project
@@ -167,7 +167,7 @@ being shown as proprietary.
     >>> admin_browser.getControl('Change').click()
 
     >>> user_browser.open('http://launchpad.dev/thunderbird')
-    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
+    >>> user_browser.contents
     '<...This project&rsquo;s license is proprietary...
 
 If the project doesn't qualify for free hosting, or if it doesn't
@@ -199,7 +199,7 @@ is displayed to direct the owner to purchase a subscription.
 Any user can see that the project's license is proprietary.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
+    >>> user_browser.contents
     '<...This project&rsquo;s license is proprietary...
 
 A non-owner does not see that a commercial subscription is due,

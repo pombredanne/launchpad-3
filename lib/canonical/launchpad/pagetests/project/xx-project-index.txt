@@ -150,7 +150,8 @@ It is possible to access the project's product through the project URL.
   >>> browser.title
   'Mozilla Firefox in Launchpad'
   >>> print extract_text(find_main_content(browser.contents))
-  Mozilla Firefox
+  Details
+  ...Mozilla Firefox
   ...Part of: the Mozilla Project...
 
 == Project bug subscriptions ==
