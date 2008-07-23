@@ -255,11 +255,21 @@ Any user can see that all packages present in Celso's PPA are deleted.
     iceweasel - 1.0  2007-07-09  Deleted    Warty           Editors
     pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
 
-A clear message is presented for PPAs that don't contain any
-published source packages.
+PPAs that don't contain any published source packages, do not present
+the 'Delete packages' link.
 
     >>> admin_browser.open('http://launchpad.dev/~no-priv/+archive')
     >>> admin_browser.getLink('Delete packages').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Even when accessed manually the 'Delete packages' form is not rendered
+for PPAs that do not contain any published packages, instead a clear
+message is presented.
+
+    >>> admin_browser.open(
+    ...    'http://launchpad.dev/~no-priv/+archive/+delete-packages')
     >>> admin_browser.title
     'Delete packages from PPA for No Privileges Person'
 

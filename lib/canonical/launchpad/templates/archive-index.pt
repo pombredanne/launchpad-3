@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
   >
 <body>
@@ -86,6 +86,21 @@
         <metal:package-counters
           use-macro="context/@@+macros/package-counters" />
       </tal:contents>
+
+      <div class="actions" style="float:right;">
+        <tal:builds
+          define="link context/menu:context/builds"
+          condition="link/enabled"
+          replace="structure link/render" />
+        <tal:copy
+          define="link context/menu:context/copy"
+          condition="link/enabled"
+          replace="structure link/render" />
+        <tal:delete
+          define="link context/menu:context/delete"
+          condition="link/enabled"
+          replace="structure link/render" />
+      </div>
 
       <div>
         <form name="package_search" action="" method="GET">
