@@ -32,6 +32,9 @@ from zope.app.datetimeutils import (
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
+from zope.proxy import isProxy
+from zope.security.checker import getChecker, ProxyFactory
+from zope.security.interfaces import ForbiddenAttribute, Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -40,7 +43,8 @@ from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.url import urlsplit
 
-from canonical.lazr.interfaces.rest import IFieldMarshaller
+from canonical.lazr.interfaces.rest import (
+    IFieldMarshaller, IUnmarshallingDoesntNeedValue)
 from canonical.lazr.utils import safe_hasattr
 
 
@@ -362,6 +366,7 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
 
 class CollectionFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller for collection fields."""
+    implements(IUnmarshallingDoesntNeedValue)
 
     @property
     def representation_name(self):
