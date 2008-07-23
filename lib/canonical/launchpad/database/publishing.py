@@ -1045,3 +1045,38 @@ class PublishingSet:
             Desc(BinaryPackagePublishingHistory.id))
 
         return result_set
+
+    def requestDeletion(self, sources, removed_by, removal_comment=None):
+        """See `IPublishingSet`."""
+
+        # The following query template will be used for both the source
+        # and the binary package publishing history table.
+        query_template = '''
+            UPDATE %%s
+            SET status = %s,
+                datesuperseded = %s,
+                removed_by = %s,
+                removal_comment = %s
+            WHERE id IN %%%%s
+            ''' % sqlvalues(PackagePublishingStatus.DELETED, UTC_NOW,
+                            removed_by, removal_comment)
+
+        store = getUtility(IZStorm).get('main')
+
+        # First update the source package publishing history table.
+        query = query_template % 'SecureSourcePackagePublishingHistory'
+        store.execute(query % sqlvalues([source.id for source in sources]))
+                
+        # Prepare the list of associated *binary* packages publishing
+        # history records.
+        binary_packages = []
+        for source in sources:
+            binary_packages.extend(source.getPublishedBinaries())
+
+        # Now run the query that marks the binary packages as deleted
+        # as well.
+        query = query_template % 'SecureBinaryPackagePublishingHistory'
+        store.execute(
+            query % sqlvalues([binary.id for binary in binary_packages]))
+
+        return sources + binary_packages
