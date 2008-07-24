@@ -277,13 +277,13 @@ class DatabaseConfig:
     chosen config section over the base section:
 
         >>> from canonical.config import config, dbconfig
-        >>> print config.database.dbhost
-        localhost
+        >>> print config.database.main_master
+        dbname=...
         >>> print config.database.dbuser
         Traceback (most recent call last):
           ...
         AttributeError: ...
-        >>> print config.launchpad.dbhost
+        >>> print config.launchpad.main_master
         Traceback (most recent call last):
           ...
         AttributeError: ...
@@ -293,14 +293,14 @@ class DatabaseConfig:
         librarian
 
         >>> dbconfig.setConfigSection('librarian')
-        >>> print dbconfig.dbhost
-        localhost
+        >>> print dbconfig.main_master
+        dbname=...
         >>> print dbconfig.dbuser
         librarian
 
         >>> dbconfig.setConfigSection('launchpad')
-        >>> print dbconfig.dbhost
-        localhost
+        >>> print dbconfig.main_master
+        dbname=...
         >>> print dbconfig.dbuser
         launchpad
 
