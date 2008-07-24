@@ -533,7 +533,13 @@ class LaunchpadBranch:
 
 
 class _BaseLaunchpadServer(Server):
-    """Bazaar Server for Launchpad branches."""
+    """Bazaar Server for Launchpad branches.
+
+    This server provides facilities for transports that use a virtual
+    filesystem, backed by an XML-RPC server.
+
+    For more information, see the module docstring.
+    """
 
     def __init__(self, scheme, authserver, user_id, branch_transport,
                  mirror_transport):
@@ -545,6 +551,8 @@ class _BaseLaunchpadServer(Server):
             branches.
         :param branch_transport: A Transport pointing to the root of where
             the branches are actually stored.
+-        :param mirror_transport: A Transport pointing to the root of where
+-            branches are mirrored to.
         """
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
@@ -665,6 +673,20 @@ class _BaseLaunchpadServer(Server):
 
 
 class LaunchpadServer(_BaseLaunchpadServer):
+    """The Server used for codehosting services.
+
+    This server provides a VFS that backs onto two transports: a 'hosted'
+    transport and a 'mirrored' transport. When users push up 'hosted'
+    branches, the branches are written to the hosted transport. Similarly,
+    whenever users access branches that they can write to, they are accessed
+    from the hosted transport. The mirrored transport is used for branches
+    that the user can only read.
+
+    In addition to basic VFS operations, this server provides operations for
+    creating a branch and requesting for a branch to be mirrored. The
+    associated transport, `AsyncLaunchpadTransport`, has hooks in certain
+    filesystem-level operations to trigger these.
+    """
 
     def __init__(self, authserver, user_id, hosting_transport,
                  mirror_transport):
@@ -727,6 +749,14 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
 
 class LaunchpadInternalServer(_BaseLaunchpadServer):
+    """Server for Launchpad internal services.
+
+    This server provides access to a transport using the Launchpad virtual
+    filesystem. Unlike the `LaunchpadServer`, it backs onto a single transport
+    and doesn't do any permissions work.
+
+    Intended for use with the branch puller and scanner.
+    """
 
     def __init__(self, scheme, authserver, branch_transport):
         super(LaunchpadInternalServer, self).__init__(
@@ -963,82 +993,105 @@ class SynchronousAdapter(Transport):
         return self._async_transport._abspath(relpath)
 
     def clone(self, offset=None):
+        """See `bzrlib.transport.Transport`."""
         cloned_async = self._async_transport.clone(offset)
         return SynchronousAdapter(cloned_async)
 
     def external_url(self):
+        """See `bzrlib.transport.Transport`."""
         raise InProcessTransport()
 
     def abspath(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._async_transport.abspath(relpath)
 
     def append_file(self, relpath, f, mode=None):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(
             self._async_transport.append_file(relpath, f, mode))
 
     def delete(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.delete(relpath))
 
     def delete_tree(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.delete_tree(relpath))
 
     def get(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.get(relpath))
 
     def get_bytes(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.get_bytes(relpath))
 
     def has(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.has(relpath))
 
     def iter_files_recursive(self):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(
             self._async_transport.iter_files_recursive())
 
     def listable(self):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.listable())
 
     def list_dir(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.list_dir(relpath))
 
     def lock_read(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.lock_read(relpath))
 
     def lock_write(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.lock_write(relpath))
 
     def mkdir(self, relpath, mode=None):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.mkdir(relpath, mode))
 
     def open_write_stream(self, relpath, mode=None):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(
             self._async_transport.open_write_stream(relpath, mode))
 
     def put_file(self, relpath, f, mode=None):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(
             self._async_transport.put_file(relpath, f, mode))
 
     def local_realPath(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(
             self._async_transport.local_realPath(relpath))
 
     def readv(self, relpath, offsets, adjust_for_latency=False,
               upper_limit=None):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(
             self._async_transport.readv(
                 relpath, offsets, adjust_for_latency, upper_limit))
 
     def rename(self, rel_from, rel_to):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(
             self._async_transport.rename(rel_from, rel_to))
 
     def rmdir(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.rmdir(relpath))
 
     def stat(self, relpath):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(self._async_transport.stat(relpath))
 
     def writeChunk(self, relpath, offset, data):
+        """See `bzrlib.transport.Transport`."""
         return self._extractResult(
             self._async_transport.writeChunk(relpath, offset, data))
 
@@ -1055,6 +1108,7 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
     """
 
     def _getUnderylingTransportAndPath(self, relpath):
+        """Return the underlying transport and path for `relpath`."""
         deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
             self, relpath)
         def convert_failure(failure):
