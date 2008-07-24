@@ -368,12 +368,15 @@
                                  revisions branch/latest_revisions">
     <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
 
-    <div class="actions"
-        tal:define="link context_menu/browse_revisions"
-        tal:condition="link/enabled"
-        tal:content="structure link/render">
-      All revisions
-    </div>
+    <div>
+      &raquo;
+      <span class="actions"
+          tal:define="link context_menu/browse_revisions"
+          tal:condition="link/enabled"
+          tal:content="structure link/render">
+        All revisions
+      </span>
+    <div>
 
   </tal:history-available>
 
