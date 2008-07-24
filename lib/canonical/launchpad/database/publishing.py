@@ -1049,6 +1049,9 @@ class PublishingSet:
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
 
+        if len(sources) == 0:
+            return []
+
         # The following piece of query "boiler plate" will be used for
         # both the source and the binary package publishing history table.
         query_boilerplate = '''
@@ -1073,6 +1076,9 @@ class PublishingSet:
         binary_packages = []
         for source in sources:
             binary_packages.extend(source.getPublishedBinaries())
+
+        if len(binary_packages) == 0:
+            return sources
 
         # Now run the query that marks the binary packages as deleted
         # as well.
