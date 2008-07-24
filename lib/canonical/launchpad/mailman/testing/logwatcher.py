@@ -5,6 +5,10 @@
 __metaclass__ = type
 __all__ = [
     'LogWatcher',
+    'MHonArcWatcher',
+    'SMTPDWatcher',
+    'VetteWatcher',
+    'XMLRPCWatcher',
     ]
 
 
@@ -33,11 +37,18 @@ class LogWatcher:
     You MUST open the LogWatcher before any data you're interested in could
     get written to the log.
     """
-    def __init__(self, filename='xmlrpc'):
+    FILENAME = None
+
+    def __init__(self):
         # Import this here since sys.path isn't set up properly when this
         # module is imported.
         # pylint: disable-msg=F0401
-        self._log_path = os.path.join(LOG_DIR, filename)
+        self._log_path = os.path.join(LOG_DIR, self.FILENAME)
+        log_file = open(self._log_path, 'a+')
+        try:
+            print >> log_file, 'Watching'
+        finally:
+            log_file.close()
         self._log_file = open(self._log_path)
         self._log_file.seek(0, SEEK_END)
 
@@ -56,6 +67,15 @@ class LogWatcher:
             if datetime.datetime.now() > until:
                 return 'Timed out'
             time.sleep(SECONDS_TO_SNOOZE)
+
+    def close(self):
+        self._log_file.close()
+
+
+class XMLRPCWatcher(LogWatcher):
+    """Watch logs/xmlrpc."""
+
+    FILENAME = 'xmlrpc'
 
     def wait_for_create(self, team_name):
         """Wait for the list creation message."""
@@ -80,14 +100,47 @@ class LogWatcher:
         return self._wait('Membership updates for: %s' % team_name)
 
     def wait_for_discard(self, message_id):
-        return self._wait('Message discarded, msgid: <%s>' % message_id)
+        return self._wait('Discarded: <%s>' % message_id)
 
-    def wait_for_hold(self, message_id):
-        return self._wait(
-            'Holding message for LP approval: <%s>' % message_id)
+    def wait_for_reject(self, message_id):
+        return self._wait('Rejected: <%s>' % message_id)
+
+    def wait_for_approval(self, message_id):
+        return self._wait('Approved: <%s>' % message_id)
+
+
+class SMTPDWatcher(LogWatcher):
+    """Watch logs/smtpd."""
+
+    FILENAME = 'smtpd'
 
     def wait_for_mbox_delivery(self, message_id):
         return self._wait('msgid: <%s>' % message_id)
 
     def wait_for_list_traffic(self, team_name):
         return self._wait('to: %s@lists.launchpad.dev' % team_name)
+
+    def wait_for_personal_traffic(self, address):
+        return self._wait('to: ' + address)
+
+
+class MHonArcWatcher(LogWatcher):
+    """Watch logs/mhonarc."""
+
+    FILENAME = 'mhonarc'
+
+    def wait_for_message_number(self, n):
+        return self._wait('%s total' % n)
+
+
+class VetteWatcher(LogWatcher):
+    """Watch logs/vette."""
+
+    FILENAME = 'vette'
+
+    def wait_for_discard(self, message_id):
+        return self._wait('Message discarded, msgid: <%s>' % message_id)
+
+    def wait_for_hold(self, message_id):
+        return self._wait(
+            'Holding message for LP approval: <%s>' % message_id)

@@ -14,10 +14,17 @@ import atexit
 from canonical.config import config
 from canonical.testing.layers import AppServerLayer
 from canonical.launchpad.mailman.runmailman import start_mailman, stop_mailman
+from canonical.launchpad.mailman.testing import logwatcher
 
 
 class MailmanLayer(AppServerLayer):
     """A layer for the Mailman integration tests."""
+
+    # Log watchers, shared among all layer tests.
+    mhonarc_watcher = None
+    smtpd_watcher = None
+    vette_watcher = None
+    xmlrpc_watcher = None
 
     @classmethod
     def setUp(cls):
@@ -37,8 +44,20 @@ class MailmanLayer(AppServerLayer):
 
     @classmethod
     def testSetUp(cls):
-        pass
+        # Create the common log watchers.
+        cls.mhonarc_watcher = logwatcher.MHonArcWatcher()
+        cls.smtpd_watcher = logwatcher.SMTPDWatcher()
+        cls.vette_watcher = logwatcher.VetteWatcher()
+        cls.xmlrpc_watcher = logwatcher.XMLRPCWatcher()
 
     @classmethod
     def testTearDown(cls):
-        pass
+        # Finished with the common log watchers.
+        cls.mhonarc_watcher.close()
+        cls.smtpd_watcher.close()
+        cls.vette_watcher.close()
+        cls.xmlrpc_watcher.close()
+        cls.mhonarc_watcher = None
+        cls.smtpd_watcher = None
+        cls.vette_watcher = None
+        cls.xmlrpc_watcher = None

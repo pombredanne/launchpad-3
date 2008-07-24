@@ -28,6 +28,10 @@ def setUp(testobj):
     smtp_controller = SMTPControl()
     smtp_controller.start()
     testobj.globs['smtpd'] = smtp_controller
+    testobj.globs['mhonarc_watcher'] = MailmanLayer.mhonarc_watcher
+    testobj.globs['smtpd_watcher'] = MailmanLayer.smtpd_watcher
+    testobj.globs['vette_watcher'] = MailmanLayer.vette_watcher
+    testobj.globs['xmlrpc_watcher'] = MailmanLayer.xmlrpc_watcher
 
 
 def tearDown(testobj):

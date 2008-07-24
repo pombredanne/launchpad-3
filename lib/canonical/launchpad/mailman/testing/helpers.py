@@ -31,6 +31,7 @@ from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.mailman.testing.layers import MailmanLayer
 from canonical.launchpad.testing.browser import Browser
 
 from Mailman import mm_cfg
@@ -62,14 +63,12 @@ def get_size(path):
 def review_list(list_name, status='approve'):
     """Helper for approving a mailing list."""
     # Circular import.
-    from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
-    # Watch Mailman's logs/serial file.
-    log_watcher = LogWatcher()
     browser = Browser('foo.bar@canonical.com:test')
     browser.open('http://launchpad.dev:8085/+mailinglists')
     browser.getControl(name='field.' + list_name).value = [status]
     browser.getControl('Submit').click()
-    log_watcher.wait_for_create(list_name)
+    result = MailmanLayer.xmlrpc_watcher.wait_for_create(list_name)
+    assert result is None, result
     login('foo.bar@canonical.com')
     mailing_list = getUtility(IMailingListSet).get(list_name)
     logout()
@@ -109,9 +108,6 @@ def run_mailman(*args):
 
 def subscribe(first_name, team_name, use_alt_address=False):
     """Do everything you need to subscribe a person to a mailing list."""
-    # Circular import.
-    from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
-    log_watcher = LogWatcher()
     # Create the person if she does not already exist, and join her to the
     # team.
     login('foo.bar@canonical.com')
@@ -130,13 +126,13 @@ def subscribe(first_name, team_name, use_alt_address=False):
         mailing_list.subscribe(person)
     transaction.commit()
     logout()
-    log_watcher.wait_for_membership_changes(team_name)
+    result = MailmanLayer.xmlrpc_watcher.wait_for_membership_changes(
+        team_name)
+    assert result is None, result
 
 
 def unsubscribe(first_name, team_name):
     """Unsubscribe the named person from the team's mailing list."""
-    from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
-    log_watcher = LogWatcher()
     login('foo.bar@canonical.com')
     person_set = getUtility(IPersonSet)
     person = person_set.getByName(first_name.lower())
@@ -145,7 +141,9 @@ def unsubscribe(first_name, team_name):
     mailing_list.unsubscribe(person)
     transaction.commit()
     logout()
-    log_watcher.wait_for_membership_changes(team_name)
+    result = MailmanLayer.xmlrpc_watcher.wait_for_membership_changes(
+        team_name)
+    assert result is None, result
 
 
 def pending_hold_ids(list_name):

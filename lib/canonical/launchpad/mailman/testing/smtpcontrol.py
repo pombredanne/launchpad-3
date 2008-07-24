@@ -109,4 +109,6 @@ class SMTPControl:
 
     def getMailboxSize(self):
         """Return the size in bytes of the mailbox."""
-        return get_size(self._mbox_filename)
+        # This is never going to be more than an int width so just do the
+        # simplest thing to chop off any 'L' that might be there.
+        return int(get_size(self._mbox_filename))
