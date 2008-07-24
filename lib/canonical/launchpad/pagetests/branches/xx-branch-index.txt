@@ -259,7 +259,7 @@ link is shown.
     >>> print browser.getLink('Source Code').url
     http://bazaar.launchpad.dev/~name12/+junk/junk.dev/files
 
-In addition, there is a "Browse revisions" link that links to the
+In addition, there is a "All revisions" link that links to the
 changelog view in codebrowse.
 
     >>> print browser.getLink('All revisions').url
