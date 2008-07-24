@@ -36,7 +36,7 @@ width:972px;
 position:absolute;
 left:50%;
 margin-left:388px;
-top:65px;
+top:41px;
 overflow:hidden;
 width:77px;
 height:27px;
@@ -182,7 +182,7 @@ color:#888888;
 left:50%;
 margin-left:338px;
 position:absolute;
-top:70px;
+top:47px;
 }
 
 #page-intro ul {
@@ -310,4 +310,13 @@ margin-right:18px;
 
 li.button-next a:hover {
 background-position:0px -31px;
+}
+
+#link-holder {
+left:50%;
+margin-left:217px;
+position:absolute;
+text-align:right;
+top:6px;
+width:250px;
 }
