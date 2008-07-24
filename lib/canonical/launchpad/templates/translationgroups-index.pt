@@ -12,24 +12,25 @@
     <div metal:fill-slot="main">
       <h1>Translation groups</h1>
       <p>
-        A <dfn>translation group</dfn> is a set of teams
-        chosen by the owner of a distribution, project group, or project
-        to do its translations.
-        Each team in a group concentrates on a language or group of languages.
+        A <dfn>translation group</dfn> is a set of teams or individual
+        reviewers chosen by the owner of a distribution, project group, or
+        project to manage its translations.
+        Each team or reviewer in a group is responsible for one or more
+        specific languages.
       </p>
       <p>
-        Where contributions are &#8220;Reviewed&#8221;,
-        members of the translation group have the final say on translations in their
-        languages.
-        Where contributions are &#8220;Closed&#8221;,
-        members of the translation group have the final say for any language.
+        Where contributions are &ldquo;Structured&rdquo; or
+        &ldquo;Restricted,&rdquo; members of the translation group have
+        the final say on translations in their languages.  Where
+        contributions are &ldquo;Closed,&rdquo; only members of the
+        translation group can translate at all.
       </p>
       <table class="sortable listing" id="translation-groups" width="100%">
         <thead>
           <tr>
             <th>Translation Group</th>
-            <th>Translates</th>
-            <th>Date Created</th>
+            <th>Manages Translations for</th>
+            <th>Created</th>
           </tr>
         </thead>
         <tbody>

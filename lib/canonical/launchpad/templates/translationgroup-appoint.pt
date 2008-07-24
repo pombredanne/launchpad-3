@@ -17,7 +17,7 @@
             Foo bar translation group
         </a>
       </div>
-      <h1>Appoint a translator</h1>
+      <h1>Appoint a translation team or reviewer</h1>
 
       <div metal:use-macro="context/@@launchpad_form/form" />
     </div>
