@@ -142,8 +142,8 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
     def __init__(self, session_data, product_id):
         self.session_data = session_data
         self.product_id = product_id
-        self.table_name = \
-                session_data.session_data_container.session_pkg_data_table_name
+        self.table_name = (
+            session_data.session_data_container.session_pkg_data_table_name)
         self._populate()
 
     _data_cache = None
