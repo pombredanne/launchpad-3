@@ -830,6 +830,15 @@ by one.
     >>> cprov_binaries.count()
     8
 
+Please note also that the source publishing records to be deleted must
+be passed as a list. Otherwise an exception will be raised.
+
+    >>> deleted = publishing_set.requestDeletion(
+    ...     tuple(cprov_sources[:2]), cprov, 'OOPS-934EC47')
+    Traceback (most recent call last):
+    ...
+    AssertionError: The 'sources' parameter must be a list.
+
 
 == ArchiveSourcePublications ==
 

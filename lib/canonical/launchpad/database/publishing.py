@@ -1049,6 +1049,23 @@ class PublishingSet:
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
 
+        # The 'sources' parameter could actually be any kind of sequence
+        # (e.g. even a ResultSet) and the method would still work correctly.
+        # This is problematic when it comes to the type of the return value
+        # however.
+        # Apparently the caller anticipates that we return the sequence of
+        # instances "deleted" adhering to the original type of the 'sources'
+        # parameter.
+        # Since this is too messy we prescribe that the type of 'sources'
+        # must be a list and we return the instances manipulated as a list.
+        # This may not be an ideal solution but this way we at least achieve
+        # consistency.
+        assert isinstance(sources, list), (
+            "The 'sources' parameter must be a list.")
+
+        if len(sources) == 0:
+            return []
+
         # The following piece of query "boiler plate" will be used for
         # both the source and the binary package publishing history table.
         query_boilerplate = '''
@@ -1075,6 +1092,9 @@ class PublishingSet:
         binary_packages = []
         for source in sources:
             binary_packages.extend(source.getPublishedBinaries())
+
+        if len(binary_packages) == 0:
+            return sources
 
         # Now run the query that marks the binary packages as deleted
         # as well.

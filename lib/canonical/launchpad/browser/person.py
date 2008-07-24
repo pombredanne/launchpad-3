@@ -4353,7 +4353,6 @@ class SourcePackageReleaseWithStats:
 
 class PersonRelatedSoftwareView(LaunchpadView):
     """View for +related-software."""
-
     implements(IPersonRelatedSoftwareMenu)
 
     PACKAGE_LIMIT = 50
