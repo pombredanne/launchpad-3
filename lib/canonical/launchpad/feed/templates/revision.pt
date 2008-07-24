@@ -1,0 +1,17 @@
+<div xmlns="http://www.w3.org/1999/xhtml"
+     xmlns:tal="http://xml.zope.org/namespaces/tal"
+     xmlns:metal="http://xml.zope.org/namespaces/metal">
+
+ <table border="0" padding="2">
+   <tr>
+     <th>Date:<th>
+     <td tal:content="context/revision_date/fmt:datetime"/>
+   </tr>
+ </table>
+
+  <div class="revision">
+    <p tal:replace="structure context/log_body/fmt:text-to-html">
+      Revision info
+    </p>
+  </div>
+</div>

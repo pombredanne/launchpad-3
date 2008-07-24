@@ -36,6 +36,16 @@ class IRevision(Interface):
     def getProperties():
         """Return the revision properties as a dict."""
 
+    def getBranch():
+        """Return a public branch associated with this revision.
+
+        The chances are that there will be many branches with any revision
+        that has landed on the trunk branch.  A branch owned by the revision
+        author is chosen over a branch not owned by the author.  A branch with
+        the revision in the history is chosen over a branch that just has the
+        revision in the ancestry, and a branch with the revision earlier in
+        the history is chosen over one with a later history.
+        """
 
 class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
@@ -117,5 +127,6 @@ class IRevisionSet(Interface):
 
         :return: ResultSet containing all revisions that are in a public
             branch somewhere where the person is the revision author, or
-            the revision author is in the team.
+            the revision author is in the team.  The results are ordered
+            with the most recent revision_date first.
         """
