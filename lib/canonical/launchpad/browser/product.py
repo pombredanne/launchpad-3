@@ -1590,7 +1590,7 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     @cachedproperty
     def recent_revisions(self):
         """The tip revision for each of the recent revision branches."""
-        return [branch.getBranchRevision(branch.revision_count)
+        return [branch.getBranchRevision(sequence=branch.revision_count)
                 for branch in self.recent_revision_branches]
 
     @cachedproperty
