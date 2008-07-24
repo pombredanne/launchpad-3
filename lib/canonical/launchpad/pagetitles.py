@@ -173,6 +173,9 @@ branch_edit_subscription = ContextDisplayName(smartquote(
 branch_index = ContextDisplayName(smartquote(
     '"%s" branch in Launchpad'))
 
+def branch_merges(context, view):
+    return 'Merges involving "%s" in Launchpad' % context.bzr_identity
+
 branch_link_to_bug = ContextDisplayName(smartquote(
     'Link branch "%s" to a bug report'))
 
@@ -1032,6 +1035,8 @@ product_cvereport = ContextTitle('CVE reports for %s')
 
 product_edit = 'Change project details'
 # We don't mention its name here, because that might be what you're changing.
+
+product_edit_people = "Change the roles of people"
 
 product_index = ContextTitle('%s in Launchpad')
 

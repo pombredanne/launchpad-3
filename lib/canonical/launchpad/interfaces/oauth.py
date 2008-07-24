@@ -187,8 +187,12 @@ class IOAuthRequestToken(IOAuthToken):
         description=_('A reviewed request token can only be exchanged for an '
                       'access token (in case the user granted access).'))
 
-    def review(user, permission):
+    def review(user, permission, context=None):
         """Grant `permission` as `user` to this token's consumer.
+
+        :param context: An IProduct, IProject, IDistribution or
+            IDistributionSourcePackage in which the permission is valid. If
+            None, the permission will be valid everywhere.
 
         Set this token's person, permission and date_reviewed.  This will also
         cause this token to be marked as used, meaning it can only be

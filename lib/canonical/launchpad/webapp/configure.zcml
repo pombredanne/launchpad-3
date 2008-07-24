@@ -73,6 +73,12 @@
         factory="canonical.launchpad.webapp.publisher.LaunchpadRootUrlData"
         />
 
+    <adapter
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+        factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
+        />
+
     <!-- TALES namespaces. -->
 
     <!-- TALES lp: namespace (should be deprecated) -->
