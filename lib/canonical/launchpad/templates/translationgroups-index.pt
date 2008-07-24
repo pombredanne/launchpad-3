@@ -13,9 +13,9 @@
       <h1>Translation groups</h1>
       <p>
         A <dfn>translation group</dfn> is a set of teams or individual
-        reviewers chosen by the owner of a distribution, project group, or
+        supervisors chosen by the owner of a distribution, project group, or
         project to manage its translations.
-        Each team or reviewer in a group is responsible for one or more
+        Each team or supervisor in a group is responsible for one or more
         specific languages.
       </p>
       <p>
@@ -29,7 +29,7 @@
         <thead>
           <tr>
             <th>Translation Group</th>
-            <th>Manages Translations for</th>
+            <th>Supervises Translations for</th>
             <th>Created</th>
           </tr>
         </thead>

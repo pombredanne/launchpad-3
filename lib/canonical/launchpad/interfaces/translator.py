@@ -32,22 +32,23 @@ class ITranslator(Interface):
             )
     translationgroup = Choice(title=_('Translation Group'), required=True,
         vocabulary='TranslationGroup', description=_("The translation group "
-        "in which the translation team or reviewer is being appointed."))
+        "in which the translation team (individual supervisor) is being "
+        "appointed."))
     language = Choice(title=_('Language'), required=True,
         vocabulary='Language', description=_("The language that this "
-        "team or reviewer will be responsible for."))
+        "team or person will be responsible for."))
     translator = PublicPersonChoice(
         title=_('Translator'), required=True,
         vocabulary='ValidPersonOrTeam',
-        description=_("The translation team or individual reviewer who will "
+        description=_("The translation team (or individual supervisor) to "
             "be responsible for the language in this group."))
 
 
 class ITranslatorSet(IAddFormCustomization):
-    """A container for translators."""
+    """A container for `ITranslator`s."""
 
     title = Attribute('Title')
 
     def new(translationgroup, language, translator):
-        """Create a new translator for a group."""
+        """Create a new `ITranslator` for a `TranslationGroup`."""
 

@@ -15,7 +15,8 @@ him to appoint a translator.
     ...   'http://translations.launchpad.dev/+groups/polyglot/')
     >>> print find_portlet(browser.contents, 'Translation Teams')
     <...
-    No teams or reviewers have been appointed yet in this group.
+    No translation teams or supervisors have been appointed yet in this
+    group.
     ...
 
 Verify that the appointments form displays, and offers the option to

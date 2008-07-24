@@ -43,7 +43,7 @@
                 <thead>
                   <tr>
                     <th>Language</th>
-                    <th>Team/Reviewer</th>
+                    <th>Team/Supervisor</th>
                     <th></th>
                     <th>Appointed</th>
                     <th tal:condition="context/required:launchpad.Edit"></th>
@@ -81,12 +81,13 @@
               </table>
             </tal:translators>
             <tal:no-translators condition="not: context/translators">
-              No teams or reviewers have been appointed yet in this group.
+              No translation teams or supervisors have been appointed yet in
+              this group.
             </tal:no-translators>
             <ul class="menu">
               <tal:can-edit condition="context/required:launchpad.Edit">
                 <li class="add">
-                  <a href="+appoint">Appoint translation team or reviewer</a>
+                  <a href="+appoint">Appoint translation team or supervisor</a>
                 </li>
                 <li class="edit">
                   <a href="+edit">Edit translation group details</a>
@@ -95,7 +96,7 @@
               <tal:cannot-edit
                 condition="not:context/required:launchpad.Edit">
                 <li class="locked">
-                  <a href="+appoint">Appoint translation team or reviewer</a>
+                  <a href="+appoint">Appoint translation team or supervisor</a>
                 </li>
                 <li class="locked">
                   <a href="+edit">Edit translation group details</a>
@@ -117,13 +118,13 @@
         This is an overview of the
         "<span tal:replace="context/name">transgroup</span>" translation
         group.  A translation group is a collection of teams and/or
-        people who manage the translations for a piece of software.
+        people who supervise the translations for a piece of software.
         A translation group can manage translations for any number of
         projects into any number of languages.  Translation groups make it
         easier to coordinate and oversee large translation efforts.
       </p>
       <p>
-        Within the group, a translation team or individual reviewer is
+        Within the group, a translation team or individual supervisor is
         appointed for every language that the group supports.  One
         person or team may work on multiple languages if desired, and
         even participate in multiple translation groups.
