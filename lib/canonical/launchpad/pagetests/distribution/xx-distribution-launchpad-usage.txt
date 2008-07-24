@@ -1,12 +1,12 @@
 = Distribution Launchpad usage =
 
-The distribution overview page indicates for what usage the 
+The distribution overview page indicates for what usage the
 distribution officially uses Launchpad.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'uses'))
     Ubuntu Linux uses Launchpad for
-        Answers, Bug Tracking, Blueprints, and Translations.
+        Answers, Blueprints, Bug Tracking, and Translations.
 
 Unprivileged Launchpad users cannot access the page for changing these
 details.
@@ -86,7 +86,7 @@ distribution Overview page.
 Say "nothing" when the distribution uses nothing:
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))
-    Ubuntu Linux does not use Launchpad.
+    Ubuntu Linux does not use Launchpad for development.
 
 
 == enable_bug_expiration and JavaScript ==
@@ -128,7 +128,7 @@ operation before the page complete loading.
 
     >>> content = find_main_content(admin_browser.contents)
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))
-    Ubuntu Linux does not use Launchpad.
+    Ubuntu Linux does not use Launchpad for development.
 
 Returning to the edit page, Foo Bar can see that bug expiration was
 also disabled.

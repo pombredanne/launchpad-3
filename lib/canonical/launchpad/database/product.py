@@ -421,7 +421,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return "BugTask.product = %d" % self.id
 
     def getExternalBugTracker(self):
-        """See `IProduct`."""
+        """See `IHasExternalBugTracker`."""
         if self.official_malone:
             return None
         elif self.bugtracker is not None:

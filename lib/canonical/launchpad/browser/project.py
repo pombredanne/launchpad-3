@@ -42,7 +42,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, IProductSet, IProject, IProjectSeries, IProjectSet, 
+    BranchListingSort, IProductSet, IProject, IProjectSeries, IProjectSet,
     NotFoundError)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
@@ -253,7 +253,7 @@ class ProjectOverviewMenu(ApplicationMenu):
         return Link('+driver', text, summary, icon='edit')
 
     def top_contributors(self):
-        text = 'List top contributors'
+        text = 'More contributors'
         return Link('+topcontributors', text, icon='info')
 
     def mentorship(self):
@@ -272,7 +272,7 @@ class ProjectOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'Show announcements'
+        text = 'More announcements'
         enabled = bool(self.context.announcements())
         return Link('+announcements', text, enabled=enabled)
 
