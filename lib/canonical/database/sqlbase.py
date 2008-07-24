@@ -21,6 +21,7 @@ from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.database.interfaces import ISQLBase
 
 __all__ = [
@@ -198,12 +199,35 @@ class ZopelessTransactionManager(object):
     @classmethod
     def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
                      isolation=ISOLATION_LEVEL_DEFAULT):
+        # Get the existing connection info. We use the MAIN MASTER 
+        # Store, as this is the only Store code still using this
+        # deprecated code interacts with.
+        connection_string = config.database.main_master
+
+        # Override dbname and dbhost in the connection string if they
+        # have been passed in.
+        if dbname is not None:
+            connection_string = re.sub(
+                    r'dbname=\S*', r'dbname=%s' % dbname, connection_string)
+        else:
+            match = re.search(r'dbname=(\S*)', connection_string)
+            if match is not None:
+                dbname = match.group(1)
+
+        if dbhost is not None:
+            connection_string = re.sub(
+                    r'host=\S*', r'host=%s' % dbhost, connection_string)
+        else:
+            match = re.search(r'host=(\S*)', connection_string)
+            if match is not None:
+                dbhost = match.group(1)
+
+        if dbuser is None:
+            dbuser = config.launchpad.dbuser
+
         # Construct a config fragment:
         overlay = '[database]\n'
-        if dbname:
-            overlay += 'dbname: %s\n' % dbname
-        if dbhost:
-            overlay += 'dbhost: %s\n' % dbhost
+        overlay += 'main_master: %s\n' % connection_string
         overlay += 'isolation_level: %s\n' % {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
             ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
@@ -220,7 +244,6 @@ class ZopelessTransactionManager(object):
             # installed, so return that one, but also emit a warning.
             warnings.warn(alreadyInstalledMsg, stacklevel=3)
         else:
-            from canonical.config import config
             config.push(cls._CONFIG_OVERLAY_NAME, overlay)
             cls._config_overlay = overlay
             cls._dbname = dbname

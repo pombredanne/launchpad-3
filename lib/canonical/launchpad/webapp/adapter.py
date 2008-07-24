@@ -236,9 +236,7 @@ class LaunchpadDatabase(Postgres):
         # We don't invoke the superclass constructor as it has a very limited
         # opinion on what uri is.
         # pylint: disable-msg=W0231
-        config_entry = uri.database.replace('-', '_')
-        self._dsn = "%s user=%s" % (
-                getattr(dbconfig, config_entry), dbconfig.dbuser)
+        self._uri = uri
 
     def raw_connect(self):
         # Prevent database connections from the main thread if
@@ -246,6 +244,15 @@ class LaunchpadDatabase(Postgres):
         if (_main_thread_id is not None and
             _main_thread_id == thread.get_ident()):
             raise StormAccessFromMainThread()
+
+        # We set self._dsn here rather than in __init__ so when the Store
+        # is reconnected it pays attention to any config changes.
+        config_entry = self._uri.database.replace('-', '_')
+        connection_string = getattr(dbconfig, config_entry)
+        assert 'user=' not in connection_string, (
+                "Database username should not be specified in "
+                "connection string (%s)." % connection_string)
+        self._dsn = "%s user=%s" % (connection_string, dbconfig.dbuser)
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
