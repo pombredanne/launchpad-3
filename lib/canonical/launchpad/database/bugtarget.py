@@ -10,30 +10,14 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.bugtask import get_bug_privacy_filter
-from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
+from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.interfaces.bugattachment import BugAttachmentType
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskImportance, BugTaskSearchParams, BugTaskStatus,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
-
-
-def anyfy(value):
-    """If value is a sequence, wrap its items with the `any` combinator.
-
-    Otherwise, return value as is, or None if it's a zero-length sequence.
-    """
-    if zope_isinstance(value, (list, tuple)):
-        if len(value) > 0:
-            return any(*value)
-        else:
-            return None
-    else:
-        return value
 
 
 class HasBugsBase:
@@ -60,55 +44,10 @@ class HasBugsBase:
                        distribution=None, scope=None, sourcepackagename=None,
                        has_no_package=None):
         """See `IHasBugs`."""
-
-        search_params = BugTaskSearchParams(user=user, orderby=order_by)
-
-        search_params.searchtext = search_text
-        search_params.status = anyfy(status)
-        search_params.importance = anyfy(importance)
-        search_params.assignee = assignee
-        search_params.bug_reporter = bug_reporter
-        search_params.bug_supervisor = bug_supervisor
-        search_params.bug_commenter = bug_commenter
-        search_params.subscriber = bug_subscriber
-        search_params.owner = owner
-        if has_patch:
-            search_params.attachmenttype = BugAttachmentType.PATCH
-            search_params.has_patch = has_patch
-        search_params.has_cve = has_cve
-        if zope_isinstance(tags, (list, tuple)):
-            if len(tags) > 0:
-                if tags_combinator_all:
-                    search_params.tag = all(*tags)
-                else:
-                    search_params.tag = any(*tags)
-        elif zope_isinstance(tags, str):
-            search_params.tag = tags
-        elif tags is None:
-            pass # tags not supplied
-        else:
-            raise AssertionError(
-                'Tags can only be supplied as a list or a string.')
-        search_params.omit_dupes = omit_duplicates
-        search_params.omit_targeted = omit_targeted
-        if status_upstream is not None:
-            if 'pending_bugwatch' in status_upstream:
-                search_params.pending_bugwatch_elsewhere = True
-            if 'resolved_upstream' in status_upstream:
-                search_params.resolved_upstream = True
-            if 'open_upstream' in status_upstream:
-                search_params.open_upstream = True
-            if 'hide_upstream' in status_upstream:
-                search_params.has_no_upstream_bugtask = True
-        search_params.milestone = anyfy(milestone)
-        search_params.component = anyfy(component)
-        search_params.distribution = distribution
-        search_params.scope = scope
-        search_params.sourcepackagename = sourcepackagename
-        if has_no_package:
-            search_params.sourcepackagename = NULL
-        search_params.nominated_for = nominated_for
-
+        kwargs = dict(**locals())
+        del kwargs['self']
+        del kwargs['user']
+        search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
         return self.searchTasks(search_params)
 
     def _getBugTaskContextWhereClause(self):
