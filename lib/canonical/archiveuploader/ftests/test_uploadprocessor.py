@@ -1010,7 +1010,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         status = uploadprocessor.last_processed_upload.queue_root.status
         self.assertEqual(
             status, PackageUploadStatus.DONE,
-            "Expected NEW status, got %s" % removeSecurityProxy(status))
+            "Expected NEW status, got %s" % status.value)
 
 
 def test_suite():
