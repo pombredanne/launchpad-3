@@ -1049,6 +1049,9 @@ class PublishingSet:
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
 
+        assert isinstance(sources, list), (
+            "The 'sources' parameter must be a list.")
+
         if len(sources) == 0:
             return []
 
