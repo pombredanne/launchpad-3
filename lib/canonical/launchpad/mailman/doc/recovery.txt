@@ -22,7 +22,6 @@ automatically.
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> from canonical.launchpad.mailman.testing import helpers
-    >>> from canonical.launchpad.mailman.testing import logwatcher
     >>> list_one = helpers.review_list('itest-one')
 
 
@@ -47,8 +46,7 @@ state.
 
 Now we just wait for Mailman to resynchronize its state with Launchpad.
 
-    >>> log_watcher = logwatcher.LogWatcher()
-    >>> log_watcher.wait_for_resynchronization('itest-one')
+    >>> xmlrpc_watcher.wait_for_resynchronization('itest-one')
     >>> itest_one = mailing_list_set.get('itest-one')
     >>> itest_one.status
     <DBItem MailingListStatus.ACTIVE, (5) Active>
@@ -78,7 +76,7 @@ does not actually exist in Mailman, then Mailman will create it.
     >>> raw_itest_two.date_reviewed = UTC_NOW
 
     >>> transaction.commit()
-    >>> log_watcher.wait_for_resynchronization('itest-two')
+    >>> xmlrpc_watcher.wait_for_resynchronization('itest-two')
     >>> sorted(list_names())
     ['itest-one', 'itest-two', 'unused_mailman_site_list']
 
@@ -97,7 +95,7 @@ say by giving it a welcome message.
     <DBItem MailingListStatus.ACTIVE, (5) Active>
     >>> itest_one.status = MailingListStatus.UPDATING
     >>> transaction.commit()
-    >>> log_watcher.wait_for_resynchronization('itest-one')
+    >>> xmlrpc_watcher.wait_for_resynchronization('itest-one')
     >>> itest_one = mailing_list_set.get('itest-one')
     >>> itest_one.status
     <DBItem MailingListStatus.ACTIVE, (5) Active>

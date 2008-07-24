@@ -24,14 +24,10 @@ The team administrator can deactivate the list through the web.
     >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
     >>> browser.getControl('Deactivate this Mailing List').click()
-
-    >>> from canonical.launchpad.mailman.testing import logwatcher
-    >>> log_watcher = logwatcher.LogWatcher()
-    >>> log_watcher.wait_for_deactivation('itest-one')
+    >>> xmlrpc_watcher.wait_for_deactivation('itest-one')
 
 As far as Mailman is concerned, the mailing list no longer exists.
 
-    >>> import time; time.sleep(2)
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     []

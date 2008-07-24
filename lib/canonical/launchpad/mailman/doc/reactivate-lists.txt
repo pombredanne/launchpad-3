@@ -17,10 +17,7 @@ Give the mailing list a welcome message.
     >>> browser.getControl('Welcome message text').value = (
     ...     'Greetings team one members!')
     >>> browser.getControl('Save').click()
-
-    >>> from canonical.launchpad.mailman.testing import logwatcher
-    >>> log_watcher = logwatcher.LogWatcher()
-    >>> log_watcher.wait_for_modification('itest-one')
+    >>> xmlrpc_watcher.wait_for_modification('itest-one')
 
     >>> from Mailman.MailList import MailList
     >>> mlist = MailList('itest-one', lock=False)
@@ -40,7 +37,7 @@ Now the team owner deactivates the list.
 
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Deactivate this Mailing List').click()
-    >>> log_watcher.wait_for_deactivation('itest-one')
+    >>> xmlrpc_watcher.wait_for_deactivation('itest-one')
 
 As far as Mailman is concerned, the mailing list no longer exists.
 
@@ -52,7 +49,7 @@ Now the team owner reactivates the list.
 
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Reactivate this Mailing List').click()
-    >>> log_watcher.wait_for_reactivation('itest-one')
+    >>> xmlrpc_watcher.wait_for_reactivation('itest-one')
 
 Mailman reports that the mailing list exists again.
 

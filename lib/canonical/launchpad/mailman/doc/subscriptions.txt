@@ -45,16 +45,14 @@ preferred email address, and Bart unsubscribes from the mailing list.
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
     >>> from zope.component import getUtility
 
-    >>> log_watcher = LogWatcher()
     >>> login('foo.bar@canonical.com')
     >>> anne = getUtility(IPersonSet).getByName('anne')
     >>> anne.setPreferredEmail(mailinglists_helper.get_alternative_email(anne))
     >>> transaction.commit()
     >>> logout()
-    >>> log_watcher.wait_for_membership_updates('itest-one')
+    >>> xmlrpc_watcher.wait_for_membership_updates('itest-one')
 
 Anne is now subscribed with her alternate email address, and Cris and Dirk are
 the only other members.
@@ -85,7 +83,7 @@ the membership list, either as an enabled or disabled address.
     >>> transaction.commit()
 
     # This will time out because no changes have been propagated to Mailman.
-    >>> log_watcher.wait_for_membership_changes('itest-one')
+    >>> xmlrpc_watcher.wait_for_membership_changes('itest-one')
     'Timed out'
 
     # Reload the list data.
@@ -105,7 +103,7 @@ Once Anne validates her address though, she may post from it.
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
     >>> logout()
-    >>> log_watcher.wait_for_membership_changes('itest-one')
+    >>> xmlrpc_watcher.wait_for_membership_changes('itest-one')
 
     >>> mailing_list.Load()
     >>> print_members(mailing_list)
@@ -140,7 +138,7 @@ email address.
     >>> list_one.subscribe(emma, email)
     >>> transaction.commit()
     >>> logout()
-    >>> log_watcher.wait_for_membership_changes('itest-one')
+    >>> xmlrpc_watcher.wait_for_membership_changes('itest-one')
 
 Emma is now a member of the mailing list, using her case-preserved email
 address.

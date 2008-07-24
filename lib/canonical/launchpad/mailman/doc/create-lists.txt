@@ -58,6 +58,9 @@ for this new team.
 This time, however, the mailing list expert declines the application for a new
 mailing list.
 
-    >>> list_two = helpers.review_list('itest-two', 'decline')
+    # This will time out because Mailman is never informed of the decline, so
+    # nothing gets written to its log files.
+    >>> helpers.review_list('itest-two', 'decline')
+    Timed out
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']

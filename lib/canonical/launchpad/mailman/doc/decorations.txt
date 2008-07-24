@@ -14,9 +14,6 @@ A mailing list is created, and Anne subscribes to it.
 Anne sends a message to the list.
 
     >>> smtpd.reset()
-    >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
-    >>> smtpd_watcher = LogWatcher('smtpd')
-
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
     ... From: anne.person@example.com

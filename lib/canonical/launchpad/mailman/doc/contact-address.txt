@@ -36,9 +36,6 @@ The team is set as the project's answer contact.
 Now that the contact address for the team is its mailing list, a new questions
 will be delivered to the mailing list.
 
-    >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
-    >>> smtpd_watcher = LogWatcher('smtpd')
-
     >>> browser.open('http://answers.launchpad.dev:8085/firefox/+addquestion')
     >>> browser.getControl('Summary').value = 'A new question'
     >>> browser.getControl('Continue').click()

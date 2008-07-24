@@ -68,7 +68,10 @@ def review_list(list_name, status='approve'):
     browser.getControl(name='field.' + list_name).value = [status]
     browser.getControl('Submit').click()
     result = MailmanLayer.xmlrpc_watcher.wait_for_create(list_name)
-    assert result is None, result
+    if result is not None:
+        # The watch timed out
+        print result
+        return
     login('foo.bar@canonical.com')
     mailing_list = getUtility(IMailingListSet).get(list_name)
     logout()
@@ -126,9 +129,10 @@ def subscribe(first_name, team_name, use_alt_address=False):
         mailing_list.subscribe(person)
     transaction.commit()
     logout()
-    result = MailmanLayer.xmlrpc_watcher.wait_for_membership_changes(
-        team_name)
-    assert result is None, result
+    result = MailmanLayer.xmlrpc_watcher.wait_for_membership_changes(team_name)
+    if result is not None:
+        # The watch timed out
+        print result
 
 
 def unsubscribe(first_name, team_name):
@@ -141,9 +145,10 @@ def unsubscribe(first_name, team_name):
     mailing_list.unsubscribe(person)
     transaction.commit()
     logout()
-    result = MailmanLayer.xmlrpc_watcher.wait_for_membership_changes(
-        team_name)
-    assert result is None, result
+    result = MailmanLayer.xmlrpc_watcher.wait_for_membership_changes(team_name)
+    if result is not None:
+        # The watch timed out
+        print result
 
 
 def pending_hold_ids(list_name):

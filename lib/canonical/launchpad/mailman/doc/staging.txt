@@ -44,9 +44,6 @@ one of the mailing lists.
 A bunch of messages are sent to the mailing lists.
 
     >>> smtpd.reset()
-    >>> from canonical.launchpad.mailman.testing.logwatcher import LogWatcher
-    >>> smtpd_watcher = LogWatcher('smtpd')
-
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
