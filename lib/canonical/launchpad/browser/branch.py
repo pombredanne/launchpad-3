@@ -239,7 +239,7 @@ class BranchContextMenu(ContextMenu):
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
-        text = 'Older revisions'
+        text = 'All revisions'
         enabled = self.context.code_is_browseable
         url = (config.codehosting.codebrowse_root
                + self.context.unique_name
