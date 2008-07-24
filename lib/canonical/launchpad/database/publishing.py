@@ -1049,6 +1049,17 @@ class PublishingSet:
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
 
+        # The 'sources' parameter could actually be any kind of sequence
+        # (e.g. even a ResultSet) and the method would still work correctly.
+        # This is problematic when it comes to the type of the return value
+        # however.
+        # Apparently the caller anticipates that we return the sequence of
+        # instances "deleted" adhering to the original type of the 'sources'
+        # parameter.
+        # Since this is too messy we prescribe that the type of 'sources'
+        # must be a list and we return the instances manipulated as a list.
+        # This may not be an ideal solution but this way we at least achieve
+        # consistency.
         assert isinstance(sources, list), (
             "The 'sources' parameter must be a list.")
 
