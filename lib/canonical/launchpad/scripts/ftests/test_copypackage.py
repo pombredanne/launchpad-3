@@ -226,6 +226,70 @@ class TestCopyPackage(unittest.TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 5)
 
+    def testCopyAncestryLookup(self):
+        """Check the ancestry lookup used in copy-package.
+
+        This test case exercises the 'ancestry lookup' mechanism used to
+        verify if the copy candidate version is higher than the currently
+        published version of the same source/binary in the destination
+        context.
+
+        We emulates a conflict with a pre-existing version of 'firefox-3.0'
+        in hardy-updates, a version of 'firefox' present in hardy and a copy
+        copy candidate 'firefox' from hardy-security.
+
+        As described in bug #245416, the ancestry lookup was erroneously
+        considering the 'firefox-3.0' as ancestry of the 'firefox' copy
+        candidate. It was caused because the lookup was not restricted to
+        'exact_match' names. See scripts/packagecopier.py.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
+
+        # Create the described publishing scenario.
+        ancestry_source = test_publisher.getPubSource(
+            sourcename='firefox', version='1.0',
+            archive=ubuntu.main_archive, distroseries=hoary,
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        noise_source = test_publisher.getPubSource(
+            sourcename='firefox-3.0', version='1.2',
+            archive=ubuntu.main_archive, distroseries=hoary,
+            pocket=PackagePublishingPocket.UPDATES,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        candidate_source = test_publisher.getPubSource(
+            sourcename='firefox', version='1.1',
+            archive=ubuntu.main_archive, distroseries=hoary,
+            pocket=PackagePublishingPocket.SECURITY,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Perform the copy.
+        copy_helper = self.getCopier(
+            sourcename='firefox', include_binaries=False,
+            from_suite='hoary-security', to_suite='hoary-updates')
+        copied = copy_helper.mainTask()
+
+        # Check if the copy was performed as expected.
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 1)
+
+        # Verify the resulted publishing scenario.
+        [updates, security,
+         release] = ubuntu.main_archive.getPublishedSources(
+            name='firefox', exact_match=True)
+
+        # Context publications remain the same.
+        self.assertEqual(release, ancestry_source)
+        self.assertEqual(security, candidate_source)
+
+        # The copied source is published in the 'updates' pocket as expected.
+        self.assertEqual(updates.displayname, 'firefox 1.1 in hoary')
+        self.assertEqual(updates.pocket, PackagePublishingPocket.UPDATES)
+        self.assertEqual(len(updates.getBuilds()), 1)
+
     def testCannotCopyTwice(self):
         """When invoked twice, copy package doesn't re-copy publications.
 
@@ -321,7 +385,7 @@ class TestCopyPackage(unittest.TestCase):
     def testCopySourceAndBinariesFromPPA(self):
         """Check the copy operation from PPA to PRIMARY Archive.
 
-        Source and binaries can get copied from PPA to the PRIMARY archive.
+        Source and binaries can be copied from PPA to the PRIMARY archive.
 
         This action is typically used to copy invariant/harmless packages
         built in PPA context, as language-packs.
@@ -514,26 +578,6 @@ class TestCopyPackage(unittest.TestCase):
             SoyuzScriptError,
             "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
-
-    def testBinaryCopyFromPpaToPrimaryWorks(self):
-        """Check whether copying binaries from PPA to PRIMARY archive works.
-        """
-        copy_helper = self.getCopier(
-            sourcename='iceweasel', from_ppa='cprov',
-            from_suite='warty', to_suite='hoary')
-        copied = copy_helper.mainTask()
-
-        self.assertEqual(
-            str(copy_helper.location),
-            'cprov: warty-RELEASE')
-        self.assertEqual(
-            str(copy_helper.destination),
-            'Primary Archive for Ubuntu Linux: hoary-RELEASE')
-
-        # 'iceweasel' has only one binary built for it
-        # The source and the binary got copied.
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 2)
 
     def testUnembargoing(self):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
