@@ -14,6 +14,7 @@ import sys
 import tempfile
 import unittest
 
+from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.transport import (
     get_transport, _get_protocol_handlers, register_transport, Server,
@@ -276,6 +277,17 @@ class TestLaunchpadInternalServer(TestLaunchpadServer):
         # normally refers to the mirrored area in regular servers).
         self.assertIdentical(
             self.server._branch_transport, self.server._mirror_transport)
+
+    def test_open_containing_raises_branch_not_found(self):
+        # open_containing_from_transport raises NotBranchError if there's no
+        # branch at that URL.
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+        transport = get_transport(self.server.get_url())
+        transport = transport.clone('~testuser/firefox/qux')
+        self.assertRaises(
+            errors.NotBranchError,
+            BzrDir.open_containing_from_transport, transport)
 
 
 class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
