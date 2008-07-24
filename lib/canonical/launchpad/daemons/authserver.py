@@ -54,14 +54,11 @@ class AuthserverService(service.Service):
         """Construct a ConnectionPool from the database settings in the
         Launchpad config.
         """
-        if config.database.dbhost is None:
-            dbhost = ''
-        else:
-            dbhost = 'host=' + config.database.dbhost
+        connection_string = "%s user=%s" % (
+                config.database.main_master, config.authserver.dbuser)
+        
         dbpool = ConnectionPool(
-            'psycopg2', 'dbname=%s %s user=%s' % (
-                config.database.dbname, dbhost, config.authserver.dbuser),
-            cp_reconnect=True)
+                'psycopg2', connection_string, cp_reconnect=True)
         return dbpool
 
     def buildTree(self, versionOneAPI, versionTwoAPI, branchAPI):
