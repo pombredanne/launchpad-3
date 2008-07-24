@@ -146,6 +146,9 @@ class LaunchpadBrowserPublication(
         threadrequestfile.write(request_txt)
         threadrequestfile.close()
 
+        # Tell our custom database adapter that the request has started.
+        da.set_request_started()
+
         newInteraction(request)
 
         transaction.begin()
@@ -440,6 +443,8 @@ class LaunchpadBrowserPublication(
         superclass.endRequest(self, request, object)
 
         self.endProfilingHook(request)
+
+        da.clear_request_started()
 
         if self.db_policy is not None:
             self.db_policy.endRequest()

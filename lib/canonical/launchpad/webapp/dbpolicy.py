@@ -36,9 +36,6 @@ class LaunchpadDatabasePolicy:
         """
         self.read_only = self.request.method in ['GET', 'HEAD']
 
-        # Tell our custom database adapter that the request has started.
-        da.set_request_started()
-
         # Select the default Store. Talking directly to the implementation
         # rather than looking up via the IStoreSelector interface as
         # setDefaultFlavor isn't part of that interface.
@@ -52,5 +49,5 @@ class LaunchpadDatabasePolicy:
         
         This method is invoked by LaunchpadBrowserPublication.endRequest.
         """
-        da.clear_request_started()
+        da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
 
