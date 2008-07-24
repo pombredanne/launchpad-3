@@ -189,7 +189,10 @@ Product branding
     >>> browser.open('http://launchpad.dev/jokosher')
     >>> browser.url
     'http://launchpad.dev/jokosher'
-    >>> browser.getLink('Change branding').click()
+    >>> browser.getLink('Change details').click()
+    >>> browser.url
+    'http://launchpad.dev/jokosher/+edit'
+    >>> browser.getLink('Branding').click()
     >>> browser.url
     'http://launchpad.dev/jokosher/+branding'
 
@@ -215,7 +218,10 @@ Here we see the updated values.
 
     >>> browser.url
     'http://launchpad.dev/jokosher'
-    >>> browser.getLink('Change branding').click()
+    >>> browser.getLink('Change details').click()
+    >>> browser.url
+    'http://launchpad.dev/jokosher/+edit'
+    >>> browser.getLink('Branding').click()
 
     >>> browser.getControl(name='field.icon.action').value
     ['keep']

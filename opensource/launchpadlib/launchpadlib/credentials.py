@@ -24,13 +24,20 @@ __all__ = [
     'Credentials',
     ]
 
+import cgi
+import httplib2
+from urllib import urlencode
 
 from ConfigParser import SafeConfigParser
-from launchpadlib.errors import CredentialsFileError
+from launchpadlib.errors import CredentialsFileError, HTTPError
 from launchpadlib._oauth.oauth import OAuthConsumer, OAuthToken
 
 
 CREDENTIALS_FILE_VERSION = '1'
+WEB_ROOT = 'https://edge.launchpad.net/'
+request_token_page = '+request-token'
+access_token_page = '+access-token'
+authorize_token_page = '+authorize-token'
 
 
 class Credentials:
@@ -41,16 +48,20 @@ class Credentials:
     :ivar access_token: Access information on behalf of the user
     :type access_token: `AccessToken`
     """
+    _request_token = None
 
-    def __init__(self, consumer=None, access_token=None):
+    def __init__(self, consumer_name=None, consumer_secret='',
+                 access_token=None):
         """The user's Launchpad API credentials.
 
-        :param consumer: The consumer (application)
-        :type consumer: `Consumer`
+        :param consumer_name: The name of the consumer (application)
+        :param consumer_secret: The secret of the consumer
         :param access_token: The authenticated user access token
         :type access_token: `AccessToken`
         """
-        self.consumer = consumer
+        self.consumer = None
+        if consumer_name is not None:
+            self.consumer = Consumer(consumer_name, consumer_secret)
         self.access_token = access_token
 
     def load(self, readable_file):
@@ -108,9 +119,62 @@ class Credentials:
                    'access_secret', self.access_token.secret)
         parser.write(writable_file)
 
+    def get_request_token(self, context=None):
+        """Request an OAuth token to Launchpad.
+
+        Also store the token in self._request_token. 
+
+        This method must not be called on an object with no consumer
+        specified or if an access token has already been obtained.
+
+        :param context: The context of this token, that is, its scope of
+            validity within Launchpad.
+        :return: The URL for the user to authorize the `OAuthToken` provided
+            by Launchpad.
+        """
+        assert self.consumer is not None, "Consumer not specified."
+        assert self.access_token is None, "Access token already obtained."
+        params = dict(
+            oauth_consumer_key=self.consumer.key,
+            oauth_signature_method='PLAINTEXT',
+            oauth_signature='&')
+        url = WEB_ROOT + request_token_page
+        response, content = httplib2.Http().request(
+            url, method='POST', body=urlencode(params))
+        if response.status != 200:
+            raise HTTPError(response, content)
+        self._request_token = OAuthToken.from_string(content)
+        url = '%s%s?oauth_token=%s' % (WEB_ROOT, authorize_token_page,
+                                       self._request_token.key)
+        if context is not None:
+            url += "&lp.context=%s" % context
+        return url
+
+    def exchange_request_token_for_access_token(self):
+        """Exchange the previously obtained request token for an access token.
+
+        This method must not be called unless get_request_token() has been
+        called and completed successfully.
+
+        The access token will be stored as self.access_token.
+        """
+        assert self._request_token is not None, (
+            "get_request_token() doesn't seem to have been called.")
+        params = dict(
+            oauth_consumer_key=self.consumer.key,
+            oauth_signature_method='PLAINTEXT',
+            oauth_token=self._request_token.key,
+            oauth_signature='&%s' % self._request_token.secret)
+        url = WEB_ROOT + access_token_page
+        response, content = httplib2.Http().request(
+            url, method='POST', body=urlencode(params))
+        if response.status != 200:
+            raise HTTPError(response, content)
+        self.access_token = AccessToken.from_string(content)
+
 
 # These two classes are provided for convenience (so applications don't need
-# to import from launchpadlib.oauth.oauth), and to provide a default argument
+# to import from launchpadlib._oauth.oauth), and to provide a default argument
 # for secret.
 
 class Consumer(OAuthConsumer):
@@ -121,7 +185,25 @@ class Consumer(OAuthConsumer):
 
 
 class AccessToken(OAuthToken):
-    """An OAuth access key."""
+    """An OAuth access token."""
 
-    def __init__(self, key, secret=''):
+    def __init__(self, key, secret='', context=None):
         super(AccessToken, self).__init__(key, secret)
+        self.context = context
+
+    @classmethod   
+    def from_string(cls, query_string):
+        """Create and return a new `AccessToken` from the given string."""
+        params = cgi.parse_qs(query_string, keep_blank_values=False)
+        key = params['oauth_token']
+        assert len(key) == 1, "Query string must have exactly one key."
+        key = key[0]
+        secret = params['oauth_token_secret']
+        assert len(secret) == 1, "Query string must have exactly one secret."
+        secret = secret[0]
+        context = params.get('lp.context')
+        if context is not None:
+            assert len(context) == 1, (
+                "Query string must have exactly one context")
+            context = context[0]
+        return cls(key, secret, context)

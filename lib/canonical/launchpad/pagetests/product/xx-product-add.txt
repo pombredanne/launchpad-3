@@ -139,10 +139,11 @@ Test if we can see the page of the added product and tests if we can see the
 Project.
 
     >>> anon_browser.open('http://launchpad.dev/testing')
-    >>> 'This is a Test Product' in anon_browser.contents
-    True
-    >>> 'The Mozilla Project' in anon_browser.contents
-    True
+    >>> extract_text(find_main_content(anon_browser.contents).find('h1'))
+    u'This is a Test Product'
+    >>> tag = find_main_content(anon_browser.contents).find(id='partof')
+    >>> print extract_text(tag)
+    Part of: the Mozilla Project
 
 
 We should have an automatic trunk series for this new product too.

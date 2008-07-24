@@ -192,13 +192,18 @@ class LaunchpadLoginSource:
     """
     implements(IPlacelessLoginSource)
 
-    def getPrincipal(self, id, access_level=AccessLevel.WRITE_PRIVATE):
+    def getPrincipal(self, id, access_level=AccessLevel.WRITE_PRIVATE,
+                     scope=None):
         """Return an `ILaunchpadPrincipal` for the person with the given id.
 
         Return None if there is no person with the given id.
 
         The `access_level` can be used for further restricting the capability
         of the principal.  By default, no further restriction is added.
+
+        Similarly, when a `scope` is given, the principal's capabilities will
+        apply only to things within that scope.  For everything else that is
+        not private, the principal will have only read access.
 
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to
@@ -207,7 +212,7 @@ class LaunchpadLoginSource:
         """
         person = getUtility(IPersonSet).get(id)
         if person is not None:
-            return self._principalForPerson(person, access_level)
+            return self._principalForPerson(person, access_level, scope)
         else:
             return None
 
@@ -216,7 +221,7 @@ class LaunchpadLoginSource:
 
     def getPrincipalByLogin(self, login,
                             access_level=AccessLevel.WRITE_PRIVATE,
-                            want_password=True):
+                            scope=None, want_password=True):
         """Return a principal based on the person with the email address
         signified by "login".
 
@@ -231,6 +236,11 @@ class LaunchpadLoginSource:
         The `access_level` can be used for further restricting the capability
         of the principal.  By default, no further restriction is added.
 
+        Similarly, when a `scope` is given, the principal's capabilities will
+        apply only to things within that scope.  For everything else that is
+        not private, the principal will have only read access.
+
+
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to
         validate the password against so it may then email a validation
@@ -239,11 +249,12 @@ class LaunchpadLoginSource:
         person = getUtility(IPersonSet).getByEmail(login)
         if person is not None:
             return self._principalForPerson(
-                    person, access_level, want_password)
+                    person, access_level, scope, want_password)
         else:
             return None
 
-    def _principalForPerson(self, person, access_level, want_password=True):
+    def _principalForPerson(self, person, access_level, scope,
+                            want_password=True):
         naked_person = removeSecurityProxy(person)
         if want_password:
             password = naked_person.password
@@ -252,7 +263,7 @@ class LaunchpadLoginSource:
         principal = LaunchpadPrincipal(
             naked_person.id, naked_person.browsername,
             naked_person.displayname, person, password,
-            access_level=access_level)
+            access_level=access_level, scope=scope)
         principal.__parent__ = self
         return principal
 
@@ -268,11 +279,12 @@ class LaunchpadPrincipal:
     implements(ILaunchpadPrincipal)
 
     def __init__(self, id, title, description, person, pwd=None,
-                 access_level=AccessLevel.WRITE_PRIVATE):
+                 access_level=AccessLevel.WRITE_PRIVATE, scope=None):
         self.id = id
         self.title = title
         self.description = description
         self.access_level = access_level
+        self.scope = scope
         self.person = person
         self.__pwd = pwd
 

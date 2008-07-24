@@ -47,7 +47,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IStructuralHeaderPresentation, NotFoundError)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
-    inactive_publishing_status)
+    inactive_publishing_status, IPublishingSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -468,10 +468,8 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         selected_sources = data.get('selected_sources')
 
         # Perform deletion of the source and its binaries.
-        for source in selected_sources:
-            source.requestDeletion(self.user, comment)
-            for bin in source.getPublishedBinaries():
-                bin.requestDeletion(self.user, comment)
+        publishing_set = getUtility(IPublishingSet)
+        publishing_set.requestDeletion(selected_sources, self.user, comment)
 
         # We end up issuing the published_source query twice this way,
         # because we need the original available source vocabulary to

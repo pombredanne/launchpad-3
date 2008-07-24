@@ -12,9 +12,9 @@
 
 <div metal:fill-slot="main">
 
-      <aside tal:condition="view/isPrivate" id="privacy" class="private"
-      >This report will be private, though you can disclose it later.</aside>
-      <aside
+      <div tal:condition="view/isPrivate" id="privacy" class="aside private"
+      >This report will be private, though you can disclose it later.</div>
+      <div class="aside"
         tal:condition="context/@@+portlet-details|nothing"
         tal:content="structure context/@@+portlet-details"
       />
