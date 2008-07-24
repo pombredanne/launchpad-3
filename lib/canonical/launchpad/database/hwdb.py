@@ -5,6 +5,8 @@
 
 __all__ = [
     'HWDevice',
+    'HWDeviceClass',
+    'HWDeviceClassSet',
     'HWDeviceSet',
     'HWDeviceDriverLink',
     'HWDeviceDriverLinkSet',
@@ -36,14 +38,18 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
-    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceDriverLink,
-    IHWDeviceDriverLinkSet, IHWDeviceNameVariant, IHWDeviceNameVariantSet,
-    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionDevice,
-    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
-    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
-    IHWVendorNameSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet)
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.hwdb import (HWBus, HWMainClass,
+    HWSubClass, HWSubmissionFormat, HWSubmissionKeyNotUnique,
+    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceClass,
+    IHWDeviceClassSet, IHWDeviceDriverLink, IHWDeviceDriverLinkSet,
+    IHWDeviceNameVariant, IHWDeviceNameVariantSet, IHWDeviceSet, IHWDriver,
+    IHWDriverSet, IHWSubmission, IHWSubmissionDevice, IHWSubmissionDeviceSet,
+    IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
+    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators.person import validate_public_person
 
@@ -558,6 +564,43 @@ class HWDeviceDriverLinkSet:
         if device_driver_link is None:
             return self.create(device, driver)
         return device_driver_link
+
+
+class HWDeviceClass(SQLBase):
+    """See `IHWDeviceClass`."""
+    implements(IHWDeviceClass)
+
+    device = ForeignKey(dbName='device', foreignKey='HWDevice', notNull=True)
+    main_class = EnumCol(enum=HWMainClass, notNull=True)
+    sub_class = EnumCol(enum=HWSubClass)
+
+    def _create(self, id, **kw):
+        """Create a HWDeviceClass record.
+
+        Ensure that main_class and sub_class have consistent values.
+        """
+        main_class = kw.get('main_class')
+        if main_class is None:
+            raise TypeError('HWDeviceClass() did not get expected keyword '
+                            'argument main_class')
+        sub_class = kw.get('sub_class')
+        if sub_class is not None:
+            if not sub_class.name.startswith(main_class.name + '_'):
+                raise TypeError(
+                    'HWDeviceClass() did not get matching argument values '
+                    'for main_class: %r and sub_class: %r.'
+                    % (main_class, sub_class))
+        SQLBase._create(self, id, **kw)
+
+
+class HWDeviceClassSet:
+    """See `IHWDeviceClassSet`."""
+    implements(IHWDeviceClassSet)
+
+    def create(self, device, main_class, sub_class=None):
+        """See `IHWDeviceClassSet`."""
+        return HWDeviceClass(device=device, main_class=main_class,
+                             sub_class=sub_class)
 
 
 class HWSubmissionDevice(SQLBase):

@@ -7,10 +7,14 @@ __metaclass__ = type
 
 __all__ = [
     'HWBus',
+    'HWMainClass',
+    'HWSubClass',
     'HWSubmissionFormat',
     'HWSubmissionKeyNotUnique',
     'HWSubmissionProcessingStatus',
     'IHWDevice',
+    'IHWDeviceClass',
+    'IHWDeviceClassSet',
     'IHWDeviceDriverLink',
     'IHWDeviceDriverLinkSet',
     'IHWDeviceNameVariant',
@@ -227,7 +231,7 @@ class IHWSystemFingerprintSet(Interface):
         """Create an entry in the fingerprint list.
 
         Return the new entry."""
-        
+
 # Identification of a hardware device.
 #
 # In theory, a tuple (bus, vendor ID, product ID) should identify
@@ -277,6 +281,66 @@ class HWBus(DBEnumeratedType):
     PCCARD = DBItem(13, 'PC Card (32 bit)')
 
     PCMCIA = DBItem(14, 'PCMCIA (16 bit)')
+
+
+class HWMainClass(HWBus):
+    """The device classes.
+
+    This enumeration describes the capabilities of a device.
+    """
+
+    NETWORK = DBItem(10001, 'Network')
+
+    STORAGE = DBItem(10002, 'Storage')
+
+    DISPLAY = DBItem(10003, 'Display')
+
+    VIDEO = DBItem(10004, 'Video')
+
+    AUDIO = DBItem(10005, 'Audio')
+
+    MODEM = DBItem(10006, 'Modem')
+
+    INPUT = DBItem(10007, 'Input') # keyboard, mouse tetc.
+
+    PRINTER = DBItem(10008, 'Printer')
+
+    SCANNER = DBItem(10009, 'Scanner')
+
+
+class HWSubClass(DBEnumeratedType):
+    """The device subclasses.
+
+    This enumeration gives more details for the "coarse" device class
+    specified by HWDeviceClass.
+    """
+    NETWORK_ETHERNET = DBItem(1001, 'Ethernet')
+
+    STORAGE_HARDDISK = DBItem(2001, 'Hard Disk')
+
+    STORAGE_FLASH = DBItem(2002, 'Flash Memory')
+
+    STORAGE_FLOPPY = DBItem(2003, 'Floppy')
+
+    STORAGE_CDROM = DBItem(2004, 'CDROM Drive')
+
+    STORAGE_CDWRITER = DBItem(2005, 'CD Writer')
+
+    STORAGE_DVD = DBItem(2006, 'DVD Drive')
+
+    STORAGE_DVDWRITER = DBItem(2007, 'DVD Writer')
+
+    PRINTER_INKJET = DBItem(8001, 'Inkjet Printer')
+
+    PRINTER_LASER = DBItem(8002, 'Laser Printer')
+
+    PRINTER_MATRIX = DBItem(8003, 'Matrix Printer')
+
+    SCANNER_FLATBED = DBItem(9000, 'Flatbed Scanner')
+
+    SCANNER_ADF = DBItem(9001, 'Scanner with Automatic Document Feeder')
+
+    SCANNER_TRANSPARENCY = DBItem(9002, 'Scanner for Transparent Documents')
 
 
 class IHWVendorName(Interface):
@@ -394,10 +458,33 @@ class IHWDeviceSet(Interface):
                         with identical product/vendor IDs.
 
         Return an existing IHWDevice record matching te given
-        parameters or create a new one, if no exitsing record
+        parameters or create a new one, if no existing record
         matches.
         """
 
+
+class IHWDeviceClass(Interface):
+    """The capabilities of a device."""
+    device = Attribute(u'The Device')
+    main_class = Choice(
+        title=u'The main class of this device', required=True,
+        readonly=True, vocabulary=HWMainClass)
+    sub_class = Choice(
+        title=u'The sub class of this device', required=False,
+        readonly=True, vocabulary=HWSubClass)
+
+
+class IHWDeviceClassSet(Interface):
+    """The set of device capabilities."""
+
+    def create(device, main_class, sub_class=None):
+        """Create a new IHWDevice record.
+
+        :return: An IHWDeviceClass instance.
+        :param device: The device described by the new record.
+        :param main_class: A HWMainClass instance.
+        :param sub_class: A HWSubClass instance.
+        """
 
 class IHWDeviceNameVariant(Interface):
     """Variants of a device name.

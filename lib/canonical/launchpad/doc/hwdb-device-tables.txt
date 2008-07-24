@@ -1129,6 +1129,59 @@ the given parameters or creates a new one, if no existing record matches.
     None
 
 
+== HWDeviceClass ==
+
+This table specifies the class or classes of a device. A device class
+describes the capabilities of a device, i.e, if it is a printer,
+input device, sound device etc. HWDeviceClass stores the main class of
+a device, enumerated by HWMainClass, as well as a sub class, enumerated
+by HWSubClass. The required main class specifies the generic type of
+a device, the optional sub class a more detailed type.
+
+    >>> from canonical.launchpad.interfaces import (HWMainClass, HWSubClass,
+    ...     IHWDeviceClassSet)
+    >>> device_class_set = getUtility(IHWDeviceClassSet)
+    >>> device_class_optic_pro_ut12 = device_class_set.create(
+    ...     device=optic_pro_ut12, main_class=HWMainClass.SCANNER,
+    ...     sub_class=HWSubClass.SCANNER_FLATBED)
+    >>> print device_class_optic_pro_ut12.device.name
+    OpticPro UT12
+    >>> print device_class_optic_pro_ut12.main_class.title
+    Scanner
+    >>> print device_class_optic_pro_ut12.sub_class.title
+    Flatbed Scanner
+
+A device may be associated with more than one HWDeviceClass record.
+This allows for example to describe a combined printer/scanner device
+as both a printer and a scanner. We (wrongly) assume that the
+Optic Pro UT12 is an MFP device. Let us also assume that we do not
+know if the printer component of this device uses inkjet or laser
+technology, hence we do not specify a sub class.
+
+    >>> device_class_printer_ut12 = device_class_set.create(
+    ...     device=optic_pro_ut12, main_class=HWMainClass.PRINTER)
+    >>> print device_class_printer_ut12.device.name
+    OpticPro UT12
+    >>> print device_class_printer_ut12.main_class.title
+    Printer
+    >>> print device_class_printer_ut12.sub_class
+    None
+
+If a sub class is specified, it must match the main class. The attempt
+to create a HWDeviceClass record with non-matching records results in
+a TypeError. The check for matching main class sub class values ensures
+that the main class name is a prefix of the sub class name.
+
+    >>> device_class_set.create(device=optic_pro_ut12,
+    ...     main_class=HWMainClass.NETWORK,
+    ...     sub_class=HWSubClass.STORAGE_HARDDISK)
+    Traceback (most recent call last):
+    ...
+    TypeError: HWDeviceClass() did not get matching argument values for
+    main_class: <DBItem HWMainClass.NETWORK, (10001) Network> and
+    sub_class: <DBItem HWSubClass.STORAGE_HARDDISK, (2001) Hard Disk>.
+
+
 == HWSubmissionDevice ==
 
 This table links devices listed in a submission to the
