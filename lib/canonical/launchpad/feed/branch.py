@@ -17,16 +17,18 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.browser import BranchView
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadView, urlappend, urlparse)
+from canonical.launchpad.browser import BranchView
 from canonical.launchpad.interfaces.branch import (
     BranchListingSort, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet)
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.revision import IRevisionSet
+from canonical.launchpad.webapp import (
+    canonical_url, LaunchpadView, urlappend, urlparse)
+
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.lazr.interfaces import (
@@ -162,9 +164,38 @@ class RevisionFeedContentView(LaunchpadView):
         super(RevisionFeedContentView, self).__init__(context, request)
         self.feed = feed
 
+    @cachedproperty
+    def branch(self):
+        return self.context.getBranch()
+
+    @cachedproperty
+    def revno(self):
+        return self.branch.getBranchRevision(revision=self.context).sequence
+
+    @property
+    def product(self):
+        return self.branch.product
+
     def render(self):
         """Render the view."""
         return ViewPageTemplateFile('templates/revision.pt')(self)
+
+    @property
+    def title(self):
+        if self.revno is None:
+            revno = ""
+        else:
+            revno = "r%s " % self.revno
+        log_lines = self.context.log_body.split('\n')
+        first_line = log_lines[0]
+        if len(first_line) < 60 and len(log_lines) == 1:
+            logline = first_line
+        else:
+            logline = first_line[:60] + '...'
+        return "[%(branch)s] %(revno)s %(logline)s" % {
+            'branch': self.branch.bzr_identity,
+            'revno': revno,
+            'logline': logline}
 
 
 class RevisionListingFeed(FeedBase):
@@ -197,7 +228,6 @@ class RevisionListingFeed(FeedBase):
 
     def itemToFeedEntry(self, revision):
         """See `IFeed`."""
-        title = FeedTypedData(revision.revision_date.strftime('%Y-%m-%d %T'))
         id = "tag:launchpad.net,%s:/revision/%s" % (
             revision.revision_date, revision.revision_id)
         content_view = RevisionFeedContentView(revision, self.request, self)
@@ -205,6 +235,7 @@ class RevisionListingFeed(FeedBase):
         content_data = FeedTypedData(content=content,
                                      content_type="html",
                                      root_url=self.root_url)
+        title = FeedTypedData(content_view.title)
         if revision.revision_author.person is None:
             authors = [
                 RevisionPerson(revision.revision_author, self.rootsite)]
