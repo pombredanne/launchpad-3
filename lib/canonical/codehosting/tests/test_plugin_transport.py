@@ -285,6 +285,7 @@ class TestLaunchpadInternalServer(TestLaunchpadServer):
 
 
 class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
+    """Tests for `AsyncVirtualTransport`."""
 
     class VirtualServer(Server):
         """Very simple server that provides a AsyncVirtualTransport."""
