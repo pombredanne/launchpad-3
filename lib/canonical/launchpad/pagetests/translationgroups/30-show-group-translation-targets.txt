@@ -7,7 +7,8 @@ group has been assigned as the translator for.
     http://translations.launchpad.dev/+groups/polyglot
 
     >>> def find_projects_portlet(browser):
-    ...     """Find portlet with projects/distros this group works with."""
+    ...     """Find the portlet with projects/distros this group works with.
+    ...     """
     ...     return find_portlet(
     ...         browser.contents, "This group supervises translations for")
 
