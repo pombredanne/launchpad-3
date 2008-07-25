@@ -690,11 +690,11 @@ class LaunchpadServer(_BaseLaunchpadServer):
     filesystem-level operations to trigger these.
     """
 
-    def __init__(self, authserver, user_id, hosting_transport,
+    def __init__(self, authserver, user_id, hosted_transport,
                  mirror_transport):
         scheme = 'lp-%d:///' % id(self)
         super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
-        self._branch_transport = hosting_transport
+        self._hosted_transport = hosted_transport
         self._mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
 
@@ -708,7 +708,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         if permissions == READ_ONLY:
             return self._mirror_transport
         else:
-            transport = self._branch_transport
+            transport = self._hosted_transport
             deferred = lp_branch.ensureUnderlyingPath(transport)
             deferred.addCallback(lambda ignored: transport)
             return deferred
@@ -740,7 +740,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         deferred = lp_branch.create()
 
         def ensure_path(branch_id):
-            deferred = lp_branch.ensureUnderlyingPath(self._branch_transport)
+            deferred = lp_branch.ensureUnderlyingPath(self._hosted_transport)
             return deferred.addCallback(lambda ignored: branch_id)
         return deferred.addCallback(ensure_path)
 

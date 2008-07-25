@@ -54,54 +54,6 @@ class MixinBaseLaunchpadServer:
         self.server = self.getLaunchpadServer(
             self.authserver, self.user_id, self.backing_transport)
 
-    def test_base_path_translation_person_branch(self):
-        # Branches are stored on the filesystem by branch ID. This allows
-        # users to rename and re-assign branches without causing unnecessary
-        # disk churn. The ID is converted to four-byte hexadecimal and split
-        # into four path segments, to make sure that the directory tree
-        # doesn't get too wide and cause ext3 to have conniptions.
-        #
-        # However, branches are _accessed_ using their
-        # ~person/product/branch-name. The server knows how to map this unique
-        # name to the branch's path on the filesystem.
-
-        # We can map a branch owned by the user to its path.
-        deferred = self.server.translateVirtualPath('/~testuser/firefox/baz')
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._branch_transport, '00/00/00/01/'))
-        return deferred
-
-    def test_base_path_translation_junk_branch(self):
-        # The '+junk' product doesn't actually exist. It is used for branches
-        # which don't have a product assigned to them.
-        deferred = self.server.translateVirtualPath('/~testuser/+junk/random')
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._branch_transport, '00/00/00/03/'))
-        return deferred
-
-    def test_base_path_translation_team_branch(self):
-        # We can map a branch owned by a team that the user is in to its path.
-        deferred = self.server.translateVirtualPath('/~testteam/firefox/qux')
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._branch_transport, '00/00/00/04/'))
-        return deferred
-
-    def test_extend_path_translation_on_backing(self):
-        # More than just the branch name needs to be translated: transports
-        # will ask for files beneath the branch. The server translates the
-        # unique name of the branch (i.e. the ~user/product/branch-name part)
-        # to the four-byte hexadecimal split ID described in
-        # test_base_path_translation and appends the remainder of the path.
-        deferred = self.server.translateVirtualPath(
-            '/~testuser/firefox/baz/.bzr')
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._branch_transport, '00/00/00/01/.bzr'))
-        return deferred
-
     def test_setUp(self):
         # Setting up the server registers its schema with the protocol
         # handlers.
@@ -117,13 +69,6 @@ class MixinBaseLaunchpadServer:
         self.server.tearDown()
         self.assertFalse(
             self.server.get_url() in _get_protocol_handlers().keys())
-
-    def test_noMirrorsRequestedIfNoBranchesChanged(self):
-        # Starting up and shutting down the server will send no mirror
-        # requests.
-        self.server.setUp()
-        self.server.tearDown()
-        self.assertEqual([], self.authserver._request_mirror_log)
 
     def test_translationIsCached(self):
         # We don't go to the authserver for every path translation.
@@ -237,6 +182,48 @@ class TestLaunchpadServer(MixinBaseLaunchpadServer, TrialTestCase,
             BlockingProxy(authserver), user_id, backing_transport,
             self.mirror_transport)
 
+    def test_noMirrorsRequestedIfNoBranchesChanged(self):
+        # Starting up and shutting down the server will send no mirror
+        # requests.
+        self.server.setUp()
+        self.server.tearDown()
+        self.assertEqual([], self.authserver._request_mirror_log)
+
+    def test_base_path_translation_person_branch(self):
+        # Branches are stored on the filesystem by branch ID. This allows
+        # users to rename and re-assign branches without causing unnecessary
+        # disk churn. The ID is converted to four-byte hexadecimal and split
+        # into four path segments, to make sure that the directory tree
+        # doesn't get too wide and cause ext3 to have conniptions.
+        #
+        # However, branches are _accessed_ using their
+        # ~person/product/branch-name. The server knows how to map this unique
+        # name to the branch's path on the filesystem.
+
+        # We can map a branch owned by the user to its path.
+        deferred = self.server.translateVirtualPath('/~testuser/firefox/baz')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._hosted_transport, '00/00/00/01/'))
+        return deferred
+
+    def test_base_path_translation_junk_branch(self):
+        # The '+junk' product doesn't actually exist. It is used for branches
+        # which don't have a product assigned to them.
+        deferred = self.server.translateVirtualPath('/~testuser/+junk/random')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._hosted_transport, '00/00/00/03/'))
+        return deferred
+
+    def test_base_path_translation_team_branch(self):
+        # We can map a branch owned by a team that the user is in to its path.
+        deferred = self.server.translateVirtualPath('/~testteam/firefox/qux')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._hosted_transport, '00/00/00/04/'))
+        return deferred
+
     def test_base_path_translation_team_junk_branch(self):
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
@@ -252,6 +239,19 @@ class TestLaunchpadServer(MixinBaseLaunchpadServer, TrialTestCase,
         deferred.addCallback(
             self.assertEqual,
             (self.server._mirror_transport, '00/00/00/05/.bzr'))
+        return deferred
+
+    def test_extend_path_translation_on_hosted(self):
+        # More than just the branch name needs to be translated: transports
+        # will ask for files beneath the branch. The server translates the
+        # unique name of the branch (i.e. the ~user/product/branch-name part)
+        # to the four-byte hexadecimal split ID described in
+        # test_base_path_translation and appends the remainder of the path.
+        deferred = self.server.translateVirtualPath(
+            '/~testuser/firefox/baz/.bzr')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._hosted_transport, '00/00/00/01/.bzr'))
         return deferred
 
     def test_get_url(self):
@@ -275,6 +275,41 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServer, TrialTestCase,
     def getLaunchpadServer(self, authserver, user_id, backing_transport):
         return LaunchpadInternalServer(
             'lp-test:///', BlockingProxy(authserver), backing_transport)
+
+    def test_base_path_translation_person_branch(self):
+        # Branches are stored on the filesystem by branch ID. This allows
+        # users to rename and re-assign branches without causing unnecessary
+        # disk churn. The ID is converted to four-byte hexadecimal and split
+        # into four path segments, to make sure that the directory tree
+        # doesn't get too wide and cause ext3 to have conniptions.
+        #
+        # However, branches are _accessed_ using their
+        # ~person/product/branch-name. The server knows how to map this unique
+        # name to the branch's path on the filesystem.
+
+        # We can map a branch owned by the user to its path.
+        deferred = self.server.translateVirtualPath('/~testuser/firefox/baz')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._branch_transport, '00/00/00/01/'))
+        return deferred
+
+    def test_base_path_translation_junk_branch(self):
+        # The '+junk' product doesn't actually exist. It is used for branches
+        # which don't have a product assigned to them.
+        deferred = self.server.translateVirtualPath('/~testuser/+junk/random')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._branch_transport, '00/00/00/03/'))
+        return deferred
+
+    def test_base_path_translation_team_branch(self):
+        # We can map a branch owned by a team that the user is in to its path.
+        deferred = self.server.translateVirtualPath('/~testteam/firefox/qux')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._branch_transport, '00/00/00/04/'))
+        return deferred
 
 
 class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
@@ -828,8 +863,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         # distinguish them, we'll monkey patch the mirror and backing
         # transports.
         self.lp_server._mirror_transport.listable = lambda: 'mirror'
-        self.lp_server._branch_transport.listable = lambda: 'backing'
-
+        self.lp_server._hosted_transport.listable = lambda: 'hosted'
         self.assertEqual('mirror', transport.listable())
 
 
