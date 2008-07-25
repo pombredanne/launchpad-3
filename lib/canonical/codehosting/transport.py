@@ -574,7 +574,7 @@ class _BaseLaunchpadServer(Server):
             '.bzr/control.conf', 'default_stack_on=%s\n' % stack_on_url)
         return transport
 
-    def _factory(self, url):
+    def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.
 
         Override this in subclasses.
@@ -663,7 +663,7 @@ class _BaseLaunchpadServer(Server):
 
     def setUp(self):
         """See Server.setUp."""
-        register_transport(self.get_url(), self._factory)
+        register_transport(self.get_url(), self._transportFactory)
         self._is_set_up = True
 
     def tearDown(self):
@@ -671,7 +671,7 @@ class _BaseLaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
-        unregister_transport(self.get_url(), self._factory)
+        unregister_transport(self.get_url(), self._transportFactory)
 
 
 class LaunchpadServer(_BaseLaunchpadServer):
@@ -698,7 +698,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         self._mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
 
-    def _factory(self, url):
+    def _transportFactory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
         assert url.startswith(self.get_url())
         return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
@@ -783,7 +783,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         deferred.addErrback(if_not_readonly)
         return deferred
 
-    def _factory(self, url):
+    def _transportFactory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
         assert url.startswith(self.get_url())
         return SynchronousAdapter(AsyncVirtualTransport(self, url))

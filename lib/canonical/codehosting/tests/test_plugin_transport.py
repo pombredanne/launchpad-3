@@ -321,7 +321,7 @@ class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
         def __init__(self, backing_transport):
             self._branch_transport = backing_transport
 
-        def _factory(self, url):
+        def _transportFactory(self, url):
             return AsyncVirtualTransport(self, url)
 
         def get_url(self):
@@ -329,10 +329,10 @@ class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
 
         def setUp(self):
             self.scheme = 'virtual:///'
-            register_transport(self.scheme, self._factory)
+            register_transport(self.scheme, self._transportFactory)
 
         def tearDown(self):
-            unregister_transport(self.scheme, self._factory)
+            unregister_transport(self.scheme, self._transportFactory)
 
         def translateVirtualPath(self, virtual_path):
             return defer.succeed(
