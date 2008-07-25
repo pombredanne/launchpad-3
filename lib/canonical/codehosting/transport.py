@@ -766,6 +766,8 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     def _getTransportForPermissions(self, permissions, lp_branch):
         """Get the appropriate transport for `permissions` on `lp_branch`."""
         deferred = lp_branch.ensureUnderlyingPath(self._branch_transport)
+        # We try to make the branch's directory on the underlying transport.
+        # If the transport is read-only, then we just continue silently.
         def if_not_readonly(failure):
             failure.trap(TransportNotPossible)
             return self._branch_transport
