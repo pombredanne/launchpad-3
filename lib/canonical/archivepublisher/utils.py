@@ -66,7 +66,10 @@ class PublishingTunableLoop(object):
 
     def isDone(self):
         """See `ITunableLoop`."""
-        return self.offset == self.input.count()
+        # When the main loop has no more input to process it sets
+        # offset to None. Until then, it always has a numerical
+        # value.
+        return self.offset is None
 
     def __call__(self, chunk_size):
         """Run the initialized 'task' with a limited batch of 'input'.
@@ -81,6 +84,7 @@ class PublishingTunableLoop(object):
         self.logger.debug("Batch [%d..%d) [%d MiB]" % (start, end, mem_size))
 
         batch = self.input[start:end]
+        self.offset = None
         for pub in batch:
             start += 1
             self.offset = start

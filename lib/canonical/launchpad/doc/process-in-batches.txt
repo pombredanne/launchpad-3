@@ -120,3 +120,27 @@ deletions in the given result set.
     >>> end_set_size = input.count()
     >>> end_set_size < start_set_size
     True
+
+process_in_batches() also copes with extreme cases, as having all input
+vanished between the batches. It might confuse the batch processor,
+because it will notice that "more work" has been done that what is
+actually available to do.
+
+    >>> def very_nasty_task(binary_publication):
+    ...     all_pubs = BinaryPackagePublishingHistory.selectBy(
+    ...         status=PackagePublishingStatus.PUBLISHED)
+    ...     if all_pubs.count() == 0:
+    ...         return
+    ...     for pub in all_pubs:
+    ...          pub.requestDeletion(cprov, 'on-going deletion.')
+    ...     print 'All gone'
+    ...     transaction.commit()
+    ...     ignore = binary_publication.binarypackagerelease.name
+
+But this is clearly not a problem for the current code.
+
+    >>> process_in_batches(input, very_nasty_task, logger, goal_seconds=1,
+    ...                    minimum_chunk_size=10)
+    DEBUG: Batch [0..10) [... MiB]
+    All gone
+    DEBUG: Batch [10...) [... MiB]
