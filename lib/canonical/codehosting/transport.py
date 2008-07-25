@@ -541,8 +541,7 @@ class _BaseLaunchpadServer(Server):
     For more information, see the module docstring.
     """
 
-    def __init__(self, scheme, authserver, user_id, branch_transport,
-                 mirror_transport):
+    def __init__(self, scheme, authserver, user_id, branch_transport):
         """Construct a LaunchpadServer.
 
         :param scheme: The URL scheme to use.
@@ -551,8 +550,6 @@ class _BaseLaunchpadServer(Server):
             branches.
         :param branch_transport: A Transport pointing to the root of where
             the branches are actually stored.
--        :param mirror_transport: A Transport pointing to the root of where
--            branches are mirrored to.
         """
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
@@ -560,7 +557,6 @@ class _BaseLaunchpadServer(Server):
         self._scheme = scheme
         self._authserver = CachingAuthserverClient(authserver, user_id)
         self._branch_transport = branch_transport
-        self._mirror_transport = mirror_transport
         self._is_set_up = False
 
     def _buildControlDirectory(self, stack_on_url):
@@ -584,6 +580,13 @@ class _BaseLaunchpadServer(Server):
     def _getLaunchpadBranch(self, virtual_path):
         return LaunchpadBranch.from_virtual_path(
             self._authserver, virtual_path)
+
+    def _getTransportForPermissions(self, permissions, lp_branch):
+        """Return the transport for accessing `lp_branch` with `permissions`.
+
+        Called by translateVirtualPath. Override this in subclasses.
+        """
+        raise NotImplementedError("Override this in subclasses.")
 
     def _parseProductControlDirectory(self, virtual_path):
         """Parse `virtual_path` and return a product and path in that product.
@@ -691,10 +694,10 @@ class LaunchpadServer(_BaseLaunchpadServer):
     def __init__(self, authserver, user_id, hosting_transport,
                  mirror_transport):
         scheme = 'lp-%d:///' % id(self)
-        mirror_transport = get_transport(
-            'readonly+' + mirror_transport.base)
         super(LaunchpadServer, self).__init__(
-            scheme, authserver, user_id, hosting_transport, mirror_transport)
+            scheme, authserver, user_id, hosting_transport)
+        self._mirror_transport = get_transport(
+            'readonly+' + mirror_transport.base)
 
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
@@ -760,8 +763,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
     def __init__(self, scheme, authserver, branch_transport):
         super(LaunchpadInternalServer, self).__init__(
-            scheme, authserver, LAUNCHPAD_SERVICES, branch_transport,
-            branch_transport)
+            scheme, authserver, LAUNCHPAD_SERVICES, branch_transport)
 
     def _getTransportForPermissions(self, permissions, lp_branch):
         """Get the appropriate transport for `permissions` on `lp_branch`."""
