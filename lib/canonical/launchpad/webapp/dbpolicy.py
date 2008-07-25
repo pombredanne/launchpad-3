@@ -8,13 +8,26 @@ __all__ = [
         ]
 
 from datetime import datetime, timedelta
+from textwrap import dedent
 
 from zope.app.session.interfaces import ISession
+from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.webapp import LaunchpadView
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import (
-        IDatabasePolicy, MASTER_FLAVOR, SLAVE_FLAVOR)
+        IDatabasePolicy, IStoreSelector,
+        MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR, SLAVE_FLAVOR)
+
+
+def _now():
+    """Return current utc time as a datetime with no timezone info.
+
+    This is a global method to allow the test suite to override.
+    """
+    return datetime.utcnow()
+
 
 class LaunchpadDatabasePolicy:
 
@@ -44,7 +57,7 @@ class LaunchpadDatabasePolicy:
         if self.read_only:
             session_data = ISession(self.request)['lp.dbpolicy']
             last_write = session_data.get('last_write', None)
-            now = datetime.utcnow()
+            now = _now()
             # 'recently' is hardcoded at 5 minutes.
             if last_write is None or last_write < now - timedelta(minutes=5):
                 da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
@@ -63,7 +76,27 @@ class LaunchpadDatabasePolicy:
             # in the session. Precision is hard coded at 1 minute.
             session_data = ISession(self.request)['lp.dbpolicy']
             last_write = session_data.get('last_write', None)
-            now = datetime.utcnow()
+            now = _now()
             if last_write is None or last_write < now - timedelta(minutes=1):
                 session_data['last_write'] = now
+
+
+class WhichDbView(LaunchpadView):
+    "A page that reports which database is being used by default."
+    def __init__(self, context, request):
+        self.context, self.request = context, request
+    def render(self):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        dbname = store.execute("SELECT current_database()").get_one()[0]
+        return dedent("""
+                <html>
+                <body>
+                <span id="dbname">
+                %s
+                </span>
+                <form method="post">
+                <input type="submit" value="Do Post" />
+                </form>
+                </html>
+                """ % dbname).strip()
 

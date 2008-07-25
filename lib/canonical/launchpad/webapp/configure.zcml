@@ -638,4 +638,13 @@
       permission="zope.Public"
       />
 
+    <!-- A simple view used by the page tests. -->
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+whichdb"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.dbpolicy.WhichDbView"
+        layer="canonical.launchpad.layers.PageTestLayer"
+        />
+
 </configure>

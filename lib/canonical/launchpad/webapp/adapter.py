@@ -402,3 +402,4 @@ class StoreSelector:
             flavor = getattr(_local, 'default_store_flavor', MASTER_FLAVOR)
         return getUtility(IZStorm).get('%s-%s' % (name, flavor))
 
+

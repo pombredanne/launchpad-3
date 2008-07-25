@@ -1,0 +1,94 @@
+The database policy chooses the default Storm store to used. Its goal
+is to distribute load away from the master databases to read only
+stores where possible. It will benefit old code - new code should
+explicitly select objects from the master or slave stores as needed.
+
+To test this policy, lets point the MAIN SLAVE store to a Launchpad
+database with a different name. This makes it easy to check if a
+request is querying the master or slave database.
+
+>>> from canonical.config import config
+>>> from textwrap import dedent
+>>> config_overlay = dedent("""
+...     [database]
+...     main_slave: dbname=launchpad_empty
+...     """)
+>>> config.push('empty_slave', config_overlay)
+
+>>> def whichdb(browser):
+...     dbname = extract_text(find_tag_by_id(browser.contents, 'dbname'))
+...     if dbname == 'launchpad_ftest':
+...         return 'MASTER'
+...     elif dbname == 'launchpad_empty':
+...         return 'SLAVE'
+...     else:
+...         return 'UNKNOWN'
+
+
+Read only requests such as GET and HEAD will use the MAIN SLAVE
+Store by default.
+
+>>> browser.open('http://launchpad.dev/+whichdb')
+>>> print whichdb(browser)
+SLAVE
+
+
+POST requests might make updates, so they use the MAIN MASTER
+Store by default.
+
+>>> browser.getControl('Do Post').click()
+>>> print whichdb(browser)
+MASTER
+
+
+Once a POST request has been made, further GET and HEAD requests
+from the same client continue to use the MAIN MASTER Store by
+default for 5 minutes. This ensures that a user will see any
+changes they have made immediately, even though the slave
+databases may lag some time behind the master database.
+
+>>> browser.open('http://launchpad.dev/+whichdb')
+>>> print whichdb(browser)
+MASTER
+
+
+GET and HEAD requests from other clients are unaffected though
+and use the MAIN SLAVE Store by default.
+
+>>> anon_browser.open('http://launchpad.dev/+whichdb')
+>>> print whichdb(anon_browser)
+SLAVE
+>>> admin_browser.open('http://launchpad.dev/+whichdb')
+>>> print whichdb(admin_browser)
+SLAVE
+
+
+If no more POST requests are made for 5 minutes, GET and HEAD
+requests will once again be using the MAIN SLAVE store as we
+can assume that any changes made to the master database have
+propagated to the slaves.
+
+To test this, first we need to wind forward the database policy's clock.
+
+>>> from canonical.launchpad.webapp import dbpolicy
+>>> from datetime import timedelta
+>>> _org_now = dbpolicy._now
+>>> def _future_now():
+...     return _org_now() + timedelta(minutes=10)
+
+
+>>> browser.open('http://launchpad.dev/+whichdb')
+>>> print whichdb(browser)
+MASTER
+
+>>> dbpolicy._now = _future_now # Install the time machine.
+
+>>> browser.open('http://launchpad.dev/+whichdb')
+>>> print whichdb(browser)
+SLAVE
+
+>>> dbpolicy._now = _org_now # Reset the time machine.
+
+Reset our config to avoid affecting other tests.
+
+>>> ignored = config.pop('empty_slave')
