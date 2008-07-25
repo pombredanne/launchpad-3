@@ -541,22 +541,19 @@ class _BaseLaunchpadServer(Server):
     For more information, see the module docstring.
     """
 
-    def __init__(self, scheme, authserver, user_id, branch_transport):
+    def __init__(self, scheme, authserver, user_id):
         """Construct a LaunchpadServer.
 
         :param scheme: The URL scheme to use.
         :param authserver: An XML-RPC client that implements callRemote.
         :param user_id: The database ID for the user who is accessing
             branches.
-        :param branch_transport: A Transport pointing to the root of where
-            the branches are actually stored.
         """
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
         # pylint: disable-msg=W0231
         self._scheme = scheme
         self._authserver = CachingAuthserverClient(authserver, user_id)
-        self._branch_transport = branch_transport
         self._is_set_up = False
 
     def _buildControlDirectory(self, stack_on_url):
@@ -696,8 +693,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
     def __init__(self, authserver, user_id, hosting_transport,
                  mirror_transport):
         scheme = 'lp-%d:///' % id(self)
-        super(LaunchpadServer, self).__init__(
-            scheme, authserver, user_id, hosting_transport)
+        super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
+        self._branch_transport = hosting_transport
         self._mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
 
@@ -771,7 +768,8 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
     def __init__(self, scheme, authserver, branch_transport):
         super(LaunchpadInternalServer, self).__init__(
-            scheme, authserver, LAUNCHPAD_SERVICES, branch_transport)
+            scheme, authserver, LAUNCHPAD_SERVICES)
+        self._branch_transport = branch_transport
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
