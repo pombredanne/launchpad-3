@@ -791,13 +791,13 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
 
     if IStructuralSubscriptionTarget.providedBy(bugtask.target):
         also_notified_subscribers.update(
-            bugtask.target.getBugNotificationsRecipients(recipients,
-                                                         level=level))
+            bugtask.target.getBugNotificationsRecipients(
+                recipients, level=level))
 
     if bugtask.milestone is not None:
         also_notified_subscribers.update(
-            bugtask.milestone.getBugNotificationsRecipients(recipients,
-                                                            level=level))
+            bugtask.milestone.getBugNotificationsRecipients(
+                recipients, level=level))
 
     # If the target's bug supervisor isn't set,
     # we add the owner as a subscriber.
