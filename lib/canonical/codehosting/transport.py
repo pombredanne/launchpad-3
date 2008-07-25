@@ -595,6 +595,15 @@ class _BaseLaunchpadServer(Server):
         """
         raise NotImplementedError("Override this in subclasses.")
 
+    def _getTransportForRealPath(self, real_path, lp_branch):
+        """Return the transport for accessing `lp_branch` at `real_path`.
+        """
+        permissions_deferred = lp_branch.getPermissions()
+        permissions_deferred.addCallback(
+            self._getTransportForPermissions, lp_branch)
+        return permissions_deferred.addCallback(
+            lambda transport: (transport, real_path))
+
     def _parseProductControlDirectory(self, virtual_path):
         """Parse `virtual_path` and return a product and path in that product.
 
@@ -656,14 +665,8 @@ class _BaseLaunchpadServer(Server):
 
         virtual_path_deferred.addErrback(branch_not_found)
 
-        def get_transport(real_path):
-            permissions_deferred = lp_branch.getPermissions()
-            permissions_deferred.addCallback(
-                self._getTransportForPermissions, lp_branch)
-            return permissions_deferred.addCallback(
-                lambda transport: (transport, real_path))
-
-        return virtual_path_deferred.addCallback(get_transport)
+        return virtual_path_deferred.addCallback(
+            self._getTransportForRealPath, lp_branch)
 
     def get_url(self):
         """Return the URL of this server."""
