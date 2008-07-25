@@ -18,6 +18,9 @@ from canonical.launchpad.testing.browser import (
     tearDown as tearDownBrowser)
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
+from Mailman.MailList import MailList
+
+
 HERE = os.path.dirname(__file__)
 
 
@@ -50,6 +53,15 @@ def tearDown(testobj):
     # this fails because it means the list doesn't exist.  While we're at it,
     # remove any related archived backup files.
     for team_name in ('itest-one', 'itest-two', 'itest-three', 'fake-team'):
+        try:
+            # Ensure that the lock gets cleaned up properly by first acquiring
+            # the lock, then unconditionally unlocking it.
+            mailing_list = MailList(team_name)
+            mailing_list.Unlock()
+        except:
+            # Yes, ignore all errors, including Mailman's ancient string
+            # exceptions.
+            pass
         try:
             helpers.run_mailman('./rmlist', '-a', team_name)
         except AssertionError:

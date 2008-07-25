@@ -22,16 +22,19 @@ of them is enabled.
     ...     for key in sorted(mailing_list.getMembers()):
     ...         address = mailing_list.getMemberCPAddress(key)
     ...         fullname = mailing_list.getMemberName(key)
-    ...         is_enabled = (mailing_list.getDeliveryStatus(key) == ENABLED)
-    ...         print fullname, '<%s>' % address, is_enabled
+    ...         if mailing_list.getDeliveryStatus(key) == ENABLED:
+    ...             status = 'ENABLED'
+    ...         else:
+    ...             status = 'DISABLED'
+    ...         print fullname, '<%s>' % address, status
 
     >>> mailing_list = MailList('itest-one', lock=False)
     >>> print_members(mailing_list)
-    Anne Person <anne.person@example.com> True
-    Anne Person <aperson@example.org> False
-     <archive@mail-archive.dev> True
-    Bart Person <bart.person@example.com> False
-    Bart Person <bperson@example.org> True
+    Anne Person <anne.person@example.com>   ENABLED
+    Anne Person <aperson@example.org>       DISABLED
+                <archive@mail-archive.dev>  ENABLED
+    Bart Person <bart.person@example.com>   DISABLED
+    Bart Person <bperson@example.org>       ENABLED
 
 Cris and Dirk now subscribe to the team and its list.  Anne changes her
 preferred email address, and Bart unsubscribes from the mailing list.
@@ -49,10 +52,13 @@ preferred email address, and Bart unsubscribes from the mailing list.
 
     >>> login('foo.bar@canonical.com')
     >>> anne = getUtility(IPersonSet).getByName('anne')
-    >>> anne.setPreferredEmail(mailinglists_helper.get_alternative_email(anne))
+    >>> alternative = mailinglists_helper.get_alternative_email(anne)
+    >>> anne.setPreferredEmail(alternative)
     >>> transaction.commit()
     >>> logout()
-    >>> helpers.ensure_membership('itest-one', anne)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> helpers.ensure_addresses_are_enabled(
+    ...     'itest-one', removeSecurityProxy(alternative).email)
 
 Anne is now subscribed with her alternate email address, and Cris and Dirk are
 the only other members.
@@ -60,13 +66,13 @@ the only other members.
     # Reload the list data.
     >>> mailing_list.Load()
     >>> print_members(mailing_list)
-    Anne Person <anne.person@example.com> False
-    Anne Person <aperson@example.org> True
-     <archive@mail-archive.dev> True
-    Cris Person <cperson@example.org> False
-    Cris Person <cris.person@example.com> True
-    Dirk Person <dirk.person@example.com> True
-    Dirk Person <dperson@example.org> False
+    Anne Person <anne.person@example.com>   DISABLED
+    Anne Person <aperson@example.org>       ENABLED
+                <archive@mail-archive.dev>  ENABLED
+    Cris Person <cperson@example.org>       DISABLED
+    Cris Person <cris.person@example.com>   ENABLED
+    Dirk Person <dirk.person@example.com>   ENABLED
+    Dirk Person <dperson@example.org>       DISABLED
 
 
 == Alternative addresses ==
@@ -86,13 +92,13 @@ the membership list, either as an enabled or disabled address.
     # Reload the list data.
     >>> mailing_list.Load()
     >>> print_members(mailing_list)
-    Anne Person <anne.person@example.com> False
-    Anne Person <aperson@example.org> True
-     <archive@mail-archive.dev> True
-    Cris Person <cperson@example.org> False
-    Cris Person <cris.person@example.com> True
-    Dirk Person <dirk.person@example.com> True
-    Dirk Person <dperson@example.org> False
+    Anne Person <anne.person@example.com>   DISABLED
+    Anne Person <aperson@example.org>       ENABLED
+                <archive@mail-archive.dev>  ENABLED
+    Cris Person <cperson@example.org>       DISABLED
+    Cris Person <cris.person@example.com>   ENABLED
+    Dirk Person <dirk.person@example.com>   ENABLED
+    Dirk Person <dperson@example.org>       DISABLED
 
 Once Anne validates her address though, she may post from it.
 
@@ -104,14 +110,14 @@ Once Anne validates her address though, she may post from it.
 
     >>> mailing_list.Load()
     >>> print_members(mailing_list)
-    Anne Person <anne.person@example.com> False
-    Anne Person <anne.x.person@example.net> False
-    Anne Person <aperson@example.org> True
-     <archive@mail-archive.dev> True
-    Cris Person <cperson@example.org> False
-    Cris Person <cris.person@example.com> True
-    Dirk Person <dirk.person@example.com> True
-    Dirk Person <dperson@example.org> False
+    Anne Person <anne.person@example.com>   DISABLED
+    Anne Person <anne.x.person@example.net> DISABLED
+    Anne Person <aperson@example.org>       ENABLED
+                <archive@mail-archive.dev>  ENABLED
+    Cris Person <cperson@example.org>       DISABLED
+    Cris Person <cris.person@example.com>   ENABLED
+    Dirk Person <dirk.person@example.com>   ENABLED
+    Dirk Person <dperson@example.org>       DISABLED
 
 
 == Case-preservation ==
@@ -142,14 +148,14 @@ address.
 
     >>> mailing_list.Load()
     >>> print_members(mailing_list)
-    Anne Person <anne.person@example.com> False
-    Anne Person <anne.x.person@example.net> False
-    Anne Person <aperson@example.org> True
-     <archive@mail-archive.dev> True
-    Cris Person <cperson@example.org> False
-    Cris Person <cris.person@example.com> True
-    Dirk Person <dirk.person@example.com> True
-    Dirk Person <dperson@example.org> False
-    Emma Person <emma.person@example.com> False
-    Emma Person <EmmaXPerson@example.org> True
-    Emma Person <eperson@example.org> False
+    Anne Person <anne.person@example.com>   DISABLED
+    Anne Person <anne.x.person@example.net> DISABLED
+    Anne Person <aperson@example.org>       ENABLED
+                <archive@mail-archive.dev>  ENABLED
+    Cris Person <cperson@example.org>       DISABLED
+    Cris Person <cris.person@example.com>   ENABLED
+    Dirk Person <dirk.person@example.com>   ENABLED
+    Dirk Person <dperson@example.org>       DISABLED
+    Emma Person <emma.person@example.com>   DISABLED
+    Emma Person <EmmaXPerson@example.org>   ENABLED
+    Emma Person <eperson@example.org>       DISABLED

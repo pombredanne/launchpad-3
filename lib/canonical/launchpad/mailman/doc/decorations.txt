@@ -24,6 +24,10 @@ Anne sends a message to the list.
     ... Hi, I am a member of this team's list.
     ... """)
 
+    # Wait for two deliveries, one to Anne and the other to the archiver.
+    >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
+    >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
+
 
 == VERP headers ==
 
@@ -39,7 +43,6 @@ the MTA, but it's close enough in intent and exactly the same in
 implementation so we use the same terminology in Mailman.)
 
     >>> from operator import itemgetter
-    >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
     >>> messages = sorted(smtpd.getMessages(), key=itemgetter('sender'))
     >>> for message in messages:
     ...     print message['sender']

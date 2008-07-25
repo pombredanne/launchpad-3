@@ -7,6 +7,7 @@ __all__ = [
     'apply_for_list',
     'collect_archive_message_ids',
     'create_list',
+    'ensure_addresses_are_enabled',
     'ensure_membership',
     'ensure_nonmembership',
     'get_size',
@@ -39,7 +40,9 @@ from canonical.launchpad.mailman.testing.layers import MailmanLayer
 from canonical.launchpad.testing.browser import Browser
 
 from Mailman import mm_cfg
+from Mailman.Errors import NotAMemberError
 from Mailman.MailList import MailList
+from Mailman.MemberAdaptor import ENABLED
 from Mailman.Utils import list_names
 
 
@@ -267,3 +270,26 @@ def ensure_nonmembership(team_name, *people):
         # The intersection of the two sets is empty.
         return len(list_members & unwanted_members) == 0
     return _membership_test(team_name, people, none_are_members)
+
+
+def ensure_addresses_are_enabled(team_name, *addresses):
+    """Ensure that addresses are both subscribed and enabled."""
+    mailing_list = MailList(team_name, lock=False)
+    until = datetime.datetime.now() + MAILING_LIST_CHECK_INTERVAL
+    while True:
+        for address in addresses:
+            try:
+                if mailing_list.getDeliveryStatus(address) != ENABLED:
+                    break
+            except NotAMemberError:
+                # The address can't be enabled because its not a member.
+                break
+        else:
+            # All addresses are enabled.For doctest success convenience,
+            # return None.
+            return None
+        if datetime.datetime.now() > until:
+            return 'Timed out'
+        time.sleep(SECONDS_TO_SNOOZE)
+        # Reload the mailing list data and go around again.
+        mailing_list.Load()
