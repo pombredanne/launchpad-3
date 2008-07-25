@@ -179,6 +179,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
@@ -2682,6 +2683,23 @@ class PersonCodeOfConductEditView(LaunchpadView):
 
 
 class PersonEditWikiNamesView(LaunchpadView):
+    def _validateWikiURL(self, url):
+        """Validate the URL.
+
+        Make sure that the result is a valid URL with only the
+        appropriate schemes.
+        """
+        try:
+            uri = URI(url)
+            if uri.scheme not in ('http', 'https'):
+                self.error_message = (
+                'The URL scheme "%s" is not allowed.  Only http or https '
+                'URLs may be used.' % uri.scheme)
+                return False
+        except InvalidURIError, e:
+            self.error_message = ('"%s" is not a valid URL.' % url)
+            return False
+        return True
 
     def _sanitizeWikiURL(self, url):
         """Strip whitespaces and make sure :url ends in a single '/'."""
@@ -2732,6 +2750,8 @@ class PersonEditWikiNamesView(LaunchpadView):
                     self.error_message = (
                         "Neither Wiki nor WikiName can be empty.")
                     return
+                if not self._validateWikiURL(wiki):
+                    return
                 # Try to make sure people will have only a single Ubuntu
                 # WikiName registered. Although this is almost impossible
                 # because they can do a lot of tricks with the URLs to make
@@ -2764,6 +2784,8 @@ class PersonEditWikiNamesView(LaunchpadView):
                 elif wiki == UBUNTU_WIKI_URL:
                     self.error_message = (
                         "You cannot have two Ubuntu WikiNames.")
+                    return
+                if not self._validateWikiURL(wiki):
                     return
                 wikinameset.new(context, wiki, wikiname)
             else:
