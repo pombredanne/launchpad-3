@@ -588,18 +588,9 @@ class _BaseLaunchpadServer(Server):
         return LaunchpadBranch.from_virtual_path(
             self._authserver, virtual_path)
 
-    def _getTransportForPermissions(self, permissions, lp_branch):
-        """Return the transport for accessing `lp_branch` with `permissions`.
-
-        Called by translateVirtualPath. Override this in subclasses.
-        """
-        raise NotImplementedError("Override this in subclasses.")
-
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
-        permissions_deferred = lp_branch.getPermissions()
-        return permissions_deferred.addCallback(
-            self._getTransportForPermissions, lp_branch)
+        raise NotImplementedError("Override this in subclasses.")
 
     def _parseProductControlDirectory(self, virtual_path):
         """Parse `virtual_path` and return a product and path in that product.
@@ -725,6 +716,12 @@ class LaunchpadServer(_BaseLaunchpadServer):
             deferred.addCallback(lambda ignored: transport)
             return deferred
 
+    def _getTransportForLaunchpadBranch(self, lp_branch):
+        """Return the transport for accessing `lp_branch`."""
+        permissions_deferred = lp_branch.getPermissions()
+        return permissions_deferred.addCallback(
+            self._getTransportForPermissions, lp_branch)
+
     def createBranch(self, virtual_url_fragment):
         """Make a new directory for the given virtual URL fragment.
 
@@ -776,8 +773,8 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         super(LaunchpadInternalServer, self).__init__(
             scheme, authserver, LAUNCHPAD_SERVICES, branch_transport)
 
-    def _getTransportForPermissions(self, permissions, lp_branch):
-        """Get the appropriate transport for `permissions` on `lp_branch`."""
+    def _getTransportForLaunchpadBranch(self, lp_branch):
+        """Return the transport for accessing `lp_branch`."""
         deferred = lp_branch.ensureUnderlyingPath(self._branch_transport)
         # We try to make the branch's directory on the underlying transport.
         # If the transport is read-only, then we just continue silently.
