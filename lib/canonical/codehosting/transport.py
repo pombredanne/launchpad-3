@@ -581,7 +581,7 @@ class _BaseLaunchpadServer(Server):
             '.bzr/control.conf', 'default_stack_on=%s\n' % stack_on_url)
         return transport
 
-    def _getBranch(self, virtual_path):
+    def _getLaunchpadBranch(self, virtual_path):
         return LaunchpadBranch.from_virtual_path(
             self._authserver, virtual_path)
 
@@ -624,7 +624,7 @@ class _BaseLaunchpadServer(Server):
         :return: (transport, path_on_transport)
         """
         try:
-            branch, path = self._getBranch(virtual_url_fragment)
+            lp_branch, path = self._getLaunchpadBranch(virtual_url_fragment)
         except NotABranchPath:
             fail = failure.Failure()
             deferred = defer.maybeDeferred(
@@ -632,7 +632,7 @@ class _BaseLaunchpadServer(Server):
             deferred.addErrback(lambda ignored: fail)
             return deferred
 
-        virtual_path_deferred = branch.getRealPath(path)
+        virtual_path_deferred = lp_branch.getRealPath(path)
 
         def branch_not_found(failure):
             failure.trap(BranchNotFound)
@@ -647,9 +647,9 @@ class _BaseLaunchpadServer(Server):
         virtual_path_deferred.addErrback(branch_not_found)
 
         def get_transport(real_path):
-            permissions_deferred = branch.getPermissions()
+            permissions_deferred = lp_branch.getPermissions()
             permissions_deferred.addCallback(
-                self._getTransportForPermissions, branch)
+                self._getTransportForPermissions, lp_branch)
             return permissions_deferred.addCallback(
                 lambda transport: (transport, real_path))
 
@@ -701,13 +701,13 @@ class LaunchpadServer(_BaseLaunchpadServer):
         assert url.startswith(self.get_url())
         return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
 
-    def _getTransportForPermissions(self, permissions, branch):
+    def _getTransportForPermissions(self, permissions, lp_branch):
         """Get the appropriate transport for `permissions` on `branch`."""
         if permissions == READ_ONLY:
             return self._mirror_transport
         else:
             transport = self._branch_transport
-            deferred = branch.ensureUnderlyingPath(transport)
+            deferred = lp_branch.ensureUnderlyingPath(transport)
             deferred.addCallback(lambda ignored: transport)
             return deferred
 
@@ -728,11 +728,11 @@ class LaunchpadServer(_BaseLaunchpadServer):
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
         """
-        branch, ignored = self._getBranch(virtual_url_fragment)
-        deferred = branch.create()
+        lp_branch, ignored = self._getLaunchpadBranch(virtual_url_fragment)
+        deferred = lp_branch.create()
 
         def ensure_path(branch_id):
-            deferred = branch.ensureUnderlyingPath(self._branch_transport)
+            deferred = lp_branch.ensureUnderlyingPath(self._branch_transport)
             return deferred.addCallback(lambda ignored: branch_id)
         return deferred.addCallback(ensure_path)
 
@@ -744,8 +744,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
         :raise NotABranchPath: If `virtual_url_fragment` does not have at
             least a valid path to a branch.
         """
-        branch, ignored = self._getBranch(virtual_url_fragment)
-        return branch.requestMirror()
+        lp_branch, ignored = self._getLaunchpadBranch(virtual_url_fragment)
+        return lp_branch.requestMirror()
 
 
 class LaunchpadInternalServer(_BaseLaunchpadServer):
@@ -763,9 +763,9 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
             scheme, authserver, LAUNCHPAD_SERVICES, branch_transport,
             branch_transport)
 
-    def _getTransportForPermissions(self, permissions, branch):
-        """Get the appropriate transport for `permissions` on `branch`."""
-        deferred = branch.ensureUnderlyingPath(self._branch_transport)
+    def _getTransportForPermissions(self, permissions, lp_branch):
+        """Get the appropriate transport for `permissions` on `lp_branch`."""
+        deferred = lp_branch.ensureUnderlyingPath(self._branch_transport)
         def if_not_readonly(failure):
             failure.trap(TransportNotPossible)
             return self._branch_transport
