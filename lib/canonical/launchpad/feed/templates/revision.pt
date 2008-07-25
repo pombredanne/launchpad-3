@@ -15,7 +15,7 @@
         <tal:non-lp-person condition="not: author/person"
                            define="name author/name_without_email">
           <tal:has-name condition="name" replace="name"/>
-          <tal:no-name condition="not: name" replace="string: <email address hidden>"/>
+          <tal:no-name condition="not: name" replace="string: &lt;email address hidden&gt;"/>
         </tal:non-lp-person>
       </td>
     </tr>
