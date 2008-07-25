@@ -427,7 +427,7 @@ However, once she validates this address, she can post from it.
     >>> alternative_email.status = EmailAddressStatus.VALIDATED
     >>> logout()
     >>> transaction.commit()
-    >>> xmlrpc_watcher.wait_for_membership_changes('itest-one')
+    >>> helpers.ensure_membership('itest-one', anne)
 
     >>> inject('itest-one', """\
     ... From: aperson@example.org
@@ -500,7 +500,7 @@ Anne now leaves the team, but she does not unsubscribe from the mailing list.
     >>> anne.leave(team_one)
     >>> logout()
     >>> transaction.commit()
-    >>> xmlrpc_watcher.wait_for_membership_changes('itest-one')
+    >>> helpers.ensure_nonmembership('itest-one', anne)
 
 Because she is not a team member, her message is held for moderation.
 
@@ -544,7 +544,7 @@ not need to re-subscribe to the mailing list.
     >>> anne.join(team_one)
     >>> logout()
     >>> transaction.commit()
-    >>> xmlrpc_watcher.wait_for_membership_changes('itest-one')
+    >>> helpers.ensure_membership('itest-one', anne)
 
     >>> inject('itest-one', """\
     ... From: aperson@example.org

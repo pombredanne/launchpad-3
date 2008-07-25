@@ -8,6 +8,7 @@ __all__ = [
     'collect_archive_message_ids',
     'create_list',
     'ensure_membership',
+    'ensure_nonmembership',
     'get_size',
     'pending_hold_ids',
     'print_mailman_hold',
@@ -103,6 +104,9 @@ def create_list(team_name):
     assert team_name in list_names(), (
         'Mailing list was not created: %s (found: %s)' %
         (team_name, list_names()))
+    result = ensure_membership(team_name, 'archive@mail-archive.dev')
+    if result is not None:
+        return result
     return mailing_list
 
 
@@ -147,10 +151,7 @@ def unsubscribe(first_name, team_name):
     mailing_list.unsubscribe(person)
     transaction.commit()
     logout()
-    result = MailmanLayer.xmlrpc_watcher.wait_for_membership_changes(team_name)
-    if result is not None:
-        # The watch timed out
-        print result
+    return ensure_nonmembership(team_name, person)
 
 
 def pending_hold_ids(list_name):
@@ -228,19 +229,20 @@ def apply_for_list(browser, team_name):
         browser, team_name, 'http://launchpad.dev:8085/')
 
 
-def ensure_membership(team_name, *people):
-    """Ensure that all the addresses are members of the mailing list."""
-    member_addresses = []
+def _membership_test(team_name, people, predicate):
+    """Test membership via the predicate."""
+    member_addresses = set()
     for person in people:
-        for email in person.validatedemails:
-            member_addresses.append(removeSecurityProxy(email).email)
+        if isinstance(person, basestring):
+            member_addresses.add(person)
+        else:
+            for email in person.validatedemails:
+                member_addresses.add(removeSecurityProxy(email).email.lower())
     mailing_list = MailList(team_name, lock=False)
     until = datetime.datetime.now() + MAILING_LIST_CHECK_INTERVAL
     while True:
-        for address in member_addresses:
-            if not mailing_list.isMember(address):
-                break
-        else:
+        members = set(mailing_list.getMembers())
+        if members >= member_addresses:
             # Every address in the arguments was a member.  For doctest
             # success convenience, return None.
             return None
@@ -250,3 +252,18 @@ def ensure_membership(team_name, *people):
         time.sleep(SECONDS_TO_SNOOZE)
         # Reload the mailing list data and go around again.
         mailing_list.Load()
+
+
+def ensure_membership(team_name, *people):
+    """Ensure that all the addresses are members of the mailing list."""
+    def all_are_members(list_members, wanted_members):
+        return list_members >= wanted_members
+    return _membership_test(team_name, people, all_are_members)
+
+
+def ensure_nonmembership(team_name, *people):
+    """Ensure that none of the addresses are members of the mailing list."""
+    def none_are_members(list_members, unwanted_members):
+        # The intersection of the two sets is empty.
+        return len(list_members & unwanted_members) == 0
+    return _membership_test(team_name, people, none_are_members)

@@ -52,7 +52,7 @@ preferred email address, and Bart unsubscribes from the mailing list.
     >>> anne.setPreferredEmail(mailinglists_helper.get_alternative_email(anne))
     >>> transaction.commit()
     >>> logout()
-    >>> xmlrpc_watcher.wait_for_membership_updates('itest-one')
+    >>> helpers.ensure_membership('itest-one', anne)
 
 Anne is now subscribed with her alternate email address, and Cris and Dirk are
 the only other members.
@@ -81,10 +81,7 @@ the membership list, either as an enabled or disabled address.
     >>> email_set = getUtility(IEmailAddressSet)
     >>> email = email_set.new('anne.x.person@example.net', anne)
     >>> transaction.commit()
-
-    # This will time out because no changes have been propagated to Mailman.
-    >>> xmlrpc_watcher.wait_for_membership_changes('itest-one')
-    'Timed out'
+    >>> helpers.ensure_membership('itest-one', anne)
 
     # Reload the list data.
     >>> mailing_list.Load()
@@ -103,7 +100,7 @@ Once Anne validates her address though, she may post from it.
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
     >>> logout()
-    >>> xmlrpc_watcher.wait_for_membership_changes('itest-one')
+    >>> helpers.ensure_membership('itest-one', anne)
 
     >>> mailing_list.Load()
     >>> print_members(mailing_list)
@@ -138,7 +135,7 @@ email address.
     >>> list_one.subscribe(emma, email)
     >>> transaction.commit()
     >>> logout()
-    >>> xmlrpc_watcher.wait_for_membership_changes('itest-one')
+    >>> helpers.ensure_membership('itest-one', emma)
 
 Emma is now a member of the mailing list, using her case-preserved email
 address.

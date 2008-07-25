@@ -186,6 +186,8 @@ class XMLRPCRunner(Runner):
                 deletes = current_members - future_members
                 updates = current_members & future_members
                 if adds or deletes:
+                    syslog('xmlrpc', 'adds: %s', adds)
+                    syslog('xmlrpc', 'deletes: %s', deletes)
                     syslog('xmlrpc', 'Membership changes for: %s', list_name)
                 # Handle additions first.
                 for address in adds:
@@ -208,6 +210,7 @@ class XMLRPCRunner(Runner):
                         mlist.setDeliveryStatus(address, status)
                         found_updates = True
                 if found_updates:
+                    syslog('xmlrpc', 'updates: %s', updates)
                     syslog('xmlrpc', 'Membership updates for: %s', list_name)
                 # We're done, so flush the changes for this mailing list.
                 mlist.Save()
