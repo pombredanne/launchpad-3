@@ -16,7 +16,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 class ITranslator(Interface):
     """A member of a `TranslationGroup`.
-    
+
     This is not the same thing as what is called a translator in the UI.
     An `ITranslator` represents a person or team appointed within a
     translation group to be responsible for a language.  On the other
