@@ -31,14 +31,10 @@ class BranchScanner:
         self.ztm = ztm
         self.log = log
 
-    def _getLaunchpadServer(self):
-        """Get a Launchpad internal transport for scanning branches."""
-        return get_scanner_server()
-
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
         self.log.info('Starting branch scanning')
-        server = self._getLaunchpadServer()
+        server = get_scanner_server()
         server.setUp()
         try:
             for branch in getUtility(IBranchSet).getBranchesToScan():

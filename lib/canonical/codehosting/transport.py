@@ -107,7 +107,7 @@ def get_chrooted_transport(url):
 
 
 def get_readonly_transport(transport):
-    """Return a readonly transport serving `url`."""
+    """Wrap `transport` in a readonly transport."""
     return get_transport('readonly+' + transport.base)
 
 
@@ -779,23 +779,28 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         return SynchronousAdapter(AsyncVirtualTransport(self, url))
 
 
-def get_scanner_server(warehouse_url=None):
+def get_scanner_server():
     """Get a Launchpad internal server for scanning branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
     authserver = BlockingProxy(proxy)
-    if warehouse_url is None:
-        warehouse_url = config.supermirror.warehouse_root_url
     branch_transport = get_readonly_transport(
-        get_chrooted_transport(warehouse_url))
+        get_chrooted_transport(config.supermirror.warehouse_root_url))
     return LaunchpadInternalServer(
         'lp-mirrored:///', authserver, branch_transport)
 
 
 class _PullerServer(Server):
+    """Server for the Launchpad branch puller.
+
+    This server wraps up two `LaunchpadInternalServer`s. One of them points to
+    the hosted branch area and is read-only, the other points to the mirrored
+    area and is read/write.
+    """
 
     def __init__(self, authserver, hosted_transport, mirrored_transport):
         self._hosted_server = LaunchpadInternalServer(
-            'lp-hosted:///', authserver, hosted_transport)
+            'lp-hosted:///', authserver,
+            get_readonly_transport(hosted_transport))
         self._mirrored_server = LaunchpadInternalServer(
             'lp-mirrored:///', authserver, mirrored_transport)
 
@@ -808,17 +813,14 @@ class _PullerServer(Server):
         self._hosted_server.tearDown()
 
 
-def get_puller_server(source_url=None, destination_url=None):
+def get_puller_server():
     """Get a Launchpad internal server for pulling branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
     authserver = BlockingProxy(proxy)
-    if source_url is None:
-        source_url = config.codehosting.branches_root
-    if destination_url is None:
-        destination_url = config.supermirror.branchesdest
     hosted_transport = get_readonly_transport(
-        get_chrooted_transport(source_url))
-    mirrored_transport = get_chrooted_transport(destination_url)
+        get_chrooted_transport(config.codehosting.branches_root))
+    mirrored_transport = get_chrooted_transport(
+        config.supermirror.branchesdest)
     return _PullerServer(
         authserver, hosted_transport, mirrored_transport)
 
