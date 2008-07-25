@@ -813,7 +813,6 @@ def get_puller_server():
     the hosted branch area and is read-only, the other points to the mirrored
     area and is read/write.
     """
-
     proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
     authserver = BlockingProxy(proxy)
     hosted_transport = get_readonly_transport(
