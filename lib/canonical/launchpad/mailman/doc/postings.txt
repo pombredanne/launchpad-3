@@ -336,6 +336,9 @@ Anne now joins the team and subscribes to the mailing list.  She can now post
 to the mailing list.
 
     >>> helpers.subscribe('Anne', 'itest-one')
+    >>> helpers.ensure_addresses_are_enabled(
+    ...     'itest-one', 'anne.person@example.com')
+
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev

@@ -245,7 +245,7 @@ def _membership_test(team_name, people, predicate):
     until = datetime.datetime.now() + MAILING_LIST_CHECK_INTERVAL
     while True:
         members = set(mailing_list.getMembers())
-        if members >= member_addresses:
+        if predicate(members, member_addresses):
             # Every address in the arguments was a member.  For doctest
             # success convenience, return None.
             return None
