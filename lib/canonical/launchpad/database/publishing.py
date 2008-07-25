@@ -1078,7 +1078,7 @@ class PublishingSet:
             ''' % sqlvalues(PackagePublishingStatus.DELETED, UTC_NOW,
                             removed_by, removal_comment)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # First update the source package publishing history table.
         source_ids = [source.id for source in sources]
