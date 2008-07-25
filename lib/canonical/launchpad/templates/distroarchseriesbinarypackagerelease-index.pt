@@ -63,6 +63,18 @@
     </p>
   </div>
 
+  <h2>Build</h2>
+
+  <div id="build">
+    <ul>
+      <li class="package build">
+        <a tal:define="pbuild context/build"
+           tal:content="pbuild/title"
+           tal:attributes="href pbuild/fmt:url">BUILD</a>
+      </li>
+    </ul>
+  </div>
+
   <h2>Package relationships</h2>
 
   <table width="100%" tal:define="bpr context/binarypackagerelease">
