@@ -40,7 +40,8 @@ from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
 
-class MixinBaseLaunchpadServer:
+class MixinBaseLaunchpadServerTests:
+    """Common tests for _BaseLaunchpadServer subclasses."""
 
     # bzrlib manipulates 'logging'. The test runner will generate spurious
     # warnings if these manipulations are not cleaned up. BaseLayer does the
@@ -53,6 +54,10 @@ class MixinBaseLaunchpadServer:
         self.backing_transport = MemoryTransport()
         self.server = self.getLaunchpadServer(
             self.authserver, self.user_id, self.backing_transport)
+
+    def getLaunchpadServer(self, authserver, user_id, backing_transport):
+        raise NotImplementedError(
+            "Override this with a Launchpad server factory.")
 
     def test_setUp(self):
         # Setting up the server registers its schema with the protocol
@@ -169,13 +174,13 @@ class MixinBaseLaunchpadServer:
             'user/product/.bzr/foo')
 
 
-class TestLaunchpadServer(MixinBaseLaunchpadServer, TrialTestCase,
+class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
                           BzrTestCase):
 
     def setUp(self):
         BzrTestCase.setUp(self)
         self.mirror_transport = MemoryTransport()
-        MixinBaseLaunchpadServer.setUp(self)
+        MixinBaseLaunchpadServerTests.setUp(self)
 
     def getLaunchpadServer(self, authserver, user_id, backing_transport):
         return LaunchpadServer(
@@ -263,14 +268,14 @@ class TestLaunchpadServer(MixinBaseLaunchpadServer, TrialTestCase,
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
 
 
-class TestLaunchpadInternalServer(MixinBaseLaunchpadServer, TrialTestCase,
+class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests, TrialTestCase,
                                   BzrTestCase):
     """Tests for the LaunchpadInternalServer, used by the puller and scanner.
     """
 
     def setUp(self):
         BzrTestCase.setUp(self)
-        MixinBaseLaunchpadServer.setUp(self)
+        MixinBaseLaunchpadServerTests.setUp(self)
 
     def getLaunchpadServer(self, authserver, user_id, backing_transport):
         return LaunchpadInternalServer(

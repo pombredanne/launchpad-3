@@ -704,7 +704,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
 
     def _getTransportForPermissions(self, permissions, lp_branch):
-        """Get the appropriate transport for `permissions` on `branch`."""
+        """Get the appropriate transport for `permissions` on `lp_branch`."""
         if permissions == READ_ONLY:
             return self._mirror_transport
         else:
