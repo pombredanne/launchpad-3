@@ -53,7 +53,10 @@ A bunch of messages are sent to the mailing lists.
     ...
     ... Hello team!
     ... """)
-    >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
+
+    # Wait for all recipients to receive the message.
+    >>> for index in range(3):
+    ...     smtpd_watcher.wait_for_mbox_delivery('first-injection')
 
     >>> inject('itest-two', """\
     ... From: anne.person@example.com
@@ -63,7 +66,10 @@ A bunch of messages are sent to the mailing lists.
     ...
     ... Hello team!
     ... """)
-    >>> smtpd_watcher.wait_for_mbox_delivery('second-injection')
+
+    # Wait for all recipients to receive the message.
+    >>> for index in range(3):
+    ...     smtpd_watcher.wait_for_mbox_delivery('second-injection')
 
     >>> inject('itest-one', """\
     ... From: bart.person@example.com
@@ -73,7 +79,10 @@ A bunch of messages are sent to the mailing lists.
     ...
     ... Hello team!
     ... """)
-    >>> smtpd_watcher.wait_for_mbox_delivery('third-injection')
+
+    # Wait for all recipients to receive the message.
+    >>> for index in range(3):
+    ...     smtpd_watcher.wait_for_mbox_delivery('third-injection')
 
     >>> inject('itest-two', """\
     ... From: cris.person@example.com
@@ -83,7 +92,10 @@ A bunch of messages are sent to the mailing lists.
     ...
     ... Hello team!
     ... """)
-    >>> smtpd_watcher.wait_for_mbox_delivery('fourth-injection')
+
+    # Wait for all recipients to receive the message.
+    >>> for index in range(3):
+    ...     smtpd_watcher.wait_for_mbox_delivery('fourth-injection')
 
     >>> from operator import itemgetter
     >>> for message in sorted(smtpd.getMessages(), key=itemgetter('sender')):
