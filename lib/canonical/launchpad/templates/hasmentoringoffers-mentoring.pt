@@ -34,11 +34,11 @@
 <metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Offers of help and mentoring</h1>
-</metal:heading>
 
 <div metal:fill-slot="main">
+
+<h1>Offers of help and mentoring</h1>
+
 <tal:def_batch define="batch view/batched_offers;
                         total batch/batch/total">
 
