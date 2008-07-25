@@ -190,7 +190,7 @@ When No Privileges Person adds a comment to the oldest bug, it is
 pushed to the bottom of the list.
 
     >>> user_browser.getLink('Make Jokosher use autoaudiosink').click()
-    >>> user_browser.getControl('Comment', index=1).value = "bump"
+    >>> user_browser.getControl(name='field.comment').value = "bump"
     >>> user_browser.getControl('Save Changes', index=1).click()
     >>> user_browser.getLink('Bugs').click()
     >>> user_browser.getLink('incomplete bugs can expire').click()
