@@ -195,7 +195,8 @@
         <tal:contributors replace="structure context/@@+contributors" />
       </tal:havepluralforms>
       <tal:comment replace="nothing">
-        XXX 20080710 beuno: This JS should be in the header instead (bug 247302).
+        XXX: beuno 20080710 bug=247302: This JS should be in the header
+        instead.
       </tal:comment>
       <script language="javascript">insertAllExpansionButtons()</script>
     </div>
