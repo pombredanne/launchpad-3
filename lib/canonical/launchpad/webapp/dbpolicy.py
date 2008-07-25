@@ -95,6 +95,7 @@ class WhichDbView(LaunchpadView):
                 <form method="post">
                 <input type="submit" value="Do Post" />
                 </form>
+                </body>
                 </html>
                 """ % dbname).strip()
 
