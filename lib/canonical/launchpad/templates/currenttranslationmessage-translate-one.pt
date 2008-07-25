@@ -507,17 +507,8 @@
               onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
             "
-            class="translate"
-          /><span
-            tal:condition="not:translation_dictionary/is_multi_line"
-            tal:attributes="
-              name string:${translation_dictionary/html_id_translation}_new_to_textarea;
-              id string:${translation_dictionary/html_id_translation}_new_to_textarea;
-              class string:translations_add_more_lines;
-              onClick string:javascript:upgradeToTextAreaForTranslation('${translation_dictionary/html_id_translation}_new');
-            "
-            title="Makes this field larger."
-          ></span>
+            class="translate expandable"
+          />
           <tal:multi-line condition="translation_dictionary/is_multi_line">
             <tal:with-content
               condition="translation_dictionary/submitted_translation">

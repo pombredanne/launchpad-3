@@ -197,7 +197,7 @@
       <tal:comment replace="nothing">
         XXX 20080710 beuno: This JS should be in the header instead (bug 247302).
       </tal:comment>
-      <script language="javascript">setAddMoreLinesButton()</script>
+      <script language="javascript">insertAllExpansionButtons()</script>
     </div>
 
   </body>
