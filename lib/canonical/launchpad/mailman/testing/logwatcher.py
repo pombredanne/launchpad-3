@@ -93,12 +93,6 @@ class XMLRPCWatcher(LogWatcher):
     def wait_for_modification(self, team_name):
         return self._wait('[%s] modify: success' % team_name)
 
-    def wait_for_membership_changes(self, team_name):
-        return self._wait('Membership changes for: %s' % team_name)
-
-    def wait_for_membership_updates(self, team_name):
-        return self._wait('Membership updates for: %s' % team_name)
-
     def wait_for_discard(self, message_id):
         return self._wait('Discarded: <%s>' % message_id)
 

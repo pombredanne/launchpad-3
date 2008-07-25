@@ -7,6 +7,7 @@ __all__ = [
     'apply_for_list',
     'collect_archive_message_ids',
     'create_list',
+    'ensure_membership',
     'get_size',
     'pending_hold_ids',
     'print_mailman_hold',
@@ -22,10 +23,12 @@ import re
 import time
 import errno
 import pickle
+import datetime
 import transaction
 
 from subprocess import Popen, PIPE
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.ftests import mailinglists_helper
@@ -45,6 +48,8 @@ MAILMAN_PKGDIR = os.path.dirname(Mailman.__file__)
 MAILMAN_BINDIR = os.path.join(os.path.dirname(MAILMAN_PKGDIR), 'bin')
 
 SPACE = ' '
+MAILING_LIST_CHECK_INTERVAL = datetime.timedelta(seconds=5)
+SECONDS_TO_SNOOZE = 0.1
 
 
 def get_size(path):
@@ -129,10 +134,7 @@ def subscribe(first_name, team_name, use_alt_address=False):
         mailing_list.subscribe(person)
     transaction.commit()
     logout()
-    result = MailmanLayer.xmlrpc_watcher.wait_for_membership_changes(team_name)
-    if result is not None:
-        # The watch timed out
-        print result
+    return ensure_membership(team_name, person)
 
 
 def unsubscribe(first_name, team_name):
@@ -224,3 +226,27 @@ def apply_for_list(browser, team_name):
     """Like mailinglists_helper.apply_for_list() but with the right rooturl."""
     mailinglists_helper.apply_for_list(
         browser, team_name, 'http://launchpad.dev:8085/')
+
+
+def ensure_membership(team_name, *people):
+    """Ensure that all the addresses are members of the mailing list."""
+    member_addresses = []
+    for person in people:
+        for email in person.validatedemails:
+            member_addresses.append(removeSecurityProxy(email).email)
+    mailing_list = MailList(team_name, lock=False)
+    until = datetime.datetime.now() + MAILING_LIST_CHECK_INTERVAL
+    while True:
+        for address in member_addresses:
+            if not mailing_list.isMember(address):
+                break
+        else:
+            # Every address in the arguments was a member.  For doctest
+            # success convenience, return None.
+            return None
+        # At least one address was not a member.  See if we timed out.
+        if datetime.datetime.now() > until:
+            return 'Timed out'
+        time.sleep(SECONDS_TO_SNOOZE)
+        # Reload the mailing list data and go around again.
+        mailing_list.Load()
