@@ -82,10 +82,11 @@ specify a date the announcement was made:
 Because Tomcat is part of the Apache group, it picks up on the Apache
 announcement so there is a "Latest news" portlet:
 
-    >>> print latest_news(priv_browser.contents)
+    >>> print latest_news(priv_browser.contents).encode(
+    ...     'ascii', 'backslashreplace')
     Announcements
     Apache announcement headline
-    More announcements
+    ...More announcements
     Make announcement
     >>> priv_browser.getLink('Make announcement').click()
     >>> priv_browser.getControl('Headline').value = (
@@ -99,11 +100,12 @@ announcement so there is a "Latest news" portlet:
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.url
     http://launchpad.dev/tomcat
-    >>> print latest_news(priv_browser.contents)
+    >>> print latest_news(priv_browser.contents).encode(
+    ...     'ascii', 'backslashreplace')
     Announcements
     Apache announcement headline
     Tomcat announcement headline
-    More announcements
+    ...More announcements
     Make announcement
 
 Let's make sure that the announcement is presented as a link.

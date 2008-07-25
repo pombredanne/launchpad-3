@@ -1,4 +1,9 @@
-= Person Packages =
+= Person Pages =
+
+There are many views that wrap the Person object to display the
+person's information.
+
+== Person Packages ==
 
 The page at ~user/+packages contains three sections,
 "Maintained Packages", "Uploaded Packages" and "PPA Packages".
@@ -15,7 +20,6 @@ that we're willing to display.
     ...     IDistributionSet)
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     PackagePublishingStatus)
-    >>> from canonical.launchpad.browser.person import PersonPackagesView
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -24,7 +28,14 @@ that we're willing to display.
     ...     SoyuzTestPublisher)
     >>> test_pub = SoyuzTestPublisher()
     >>> test_pub.person = name16
-    >>> for count in range(0, PersonPackagesView.PACKAGE_LIMIT + 3):
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> view = getMultiAdapter(
+    ...     (name16, LaunchpadTestRequest()), name='+related-software')
+    >>> view.initialize()
+
+    >>> for count in range(0, view.PACKAGE_LIMIT + 3):
     ...     source_name = "foo" + str(count)
     ...     # Add the PPA packages.
     ...     discard = test_pub.getPubSource(
@@ -59,21 +70,11 @@ There are many more new packages to be displayed on the page now:
 
 The view enforces the limit.
 
-    >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> view = getMultiAdapter(
-    ...     (name16, LaunchpadTestRequest()), name='+packages')
-    >>> view.initialize()
-
-    >>> packages = list(view.getLatestUploadedPPAPackagesWithStats())
-    >>> len(packages)
+    >>> len(view.get_latest_uploaded_ppa_packages_with_stats)
     50
 
-    >>> packages = list(view.getLatestMaintainedPackagesWithStats())
-    >>> len(packages)
+    >>> len(view.get_latest_maintained_packages_with_stats)
     50
 
-    >>> packages = list(
-    ...     view.getLatestUploadedButNotMaintainedPackagesWithStats())
-    >>> len(packages)
+    >>> len(view.get_latest_uploaded_but_not_maintained_packages_with_stats)
     50
