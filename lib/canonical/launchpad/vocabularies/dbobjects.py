@@ -99,7 +99,7 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import (
     DateTimeFormatterAPI, FormattersAPI)
 from canonical.launchpad.webapp.vocabulary import (

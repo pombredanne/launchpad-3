@@ -663,6 +663,5 @@ if __name__ == '__main__':
 
     log = logger(options)
 
-    #assert False, '__name__ == %r' % (__name__,)
     main()
 
