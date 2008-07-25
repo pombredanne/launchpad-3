@@ -791,40 +791,41 @@ def get_scanner_server():
         'lp-mirrored:///', authserver, branch_transport)
 
 
-class _PullerServer(Server):
-    """Server for the Launchpad branch puller.
+class _MultiServer(Server):
+    """Server that wraps around multiple servers."""
 
-    This server wraps up two `LaunchpadInternalServer`s. One of them points to
+    def __init__(self, *servers):
+        self._servers = servers
+
+    def setUp(self):
+        for server in self._servers:
+            server.setUp()
+
+    def tearDown(self):
+        for server in reversed(self._servers):
+            server.tearDown()
+
+
+def get_puller_server():
+    """Get a server for the Launchpad branch puller.
+
+    The server wraps up two `LaunchpadInternalServer`s. One of them points to
     the hosted branch area and is read-only, the other points to the mirrored
     area and is read/write.
     """
 
-    def __init__(self, authserver, hosted_transport, mirrored_transport):
-        self._hosted_server = LaunchpadInternalServer(
-            'lp-hosted:///', authserver,
-            get_readonly_transport(hosted_transport))
-        self._mirrored_server = LaunchpadInternalServer(
-            'lp-mirrored:///', authserver, mirrored_transport)
-
-    def setUp(self):
-        self._hosted_server.setUp()
-        self._mirrored_server.setUp()
-
-    def tearDown(self):
-        self._mirrored_server.tearDown()
-        self._hosted_server.tearDown()
-
-
-def get_puller_server():
-    """Get a Launchpad internal server for pulling branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
     authserver = BlockingProxy(proxy)
     hosted_transport = get_readonly_transport(
         get_chrooted_transport(config.codehosting.branches_root))
     mirrored_transport = get_chrooted_transport(
         config.supermirror.branchesdest)
-    return _PullerServer(
-        authserver, hosted_transport, mirrored_transport)
+    hosted_server = LaunchpadInternalServer(
+        'lp-hosted:///', authserver,
+        get_readonly_transport(hosted_transport))
+    mirrored_server = LaunchpadInternalServer(
+        'lp-mirrored:///', authserver, mirrored_transport)
+    return _MultiServer(hosted_server, mirrored_server)
 
 
 class AsyncVirtualTransport(Transport):
