@@ -280,7 +280,6 @@ class ZopelessTransactionManager(object):
         """
         assert cls._installed is not None, (
             "ZopelessTransactionManager not installed")
-        from canonical.config import config
         config.pop(cls._CONFIG_OVERLAY_NAME)
         cls._reset_store()
         cls._installed = None
@@ -600,7 +599,6 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     Default database name is the one specified in the main configuration file.
     """
     from canonical import lp
-    from canonical.config import config
     # We start with the config string from the config file, and overwrite
     # with the passed in dbname or modifications made by db_options()
     # command line arguments. This will do until db_options gets an overhaul.

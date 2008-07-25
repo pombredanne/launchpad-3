@@ -83,8 +83,6 @@ class LaunchpadDatabasePolicy:
 
 class WhichDbView(LaunchpadView):
     "A page that reports which database is being used by default."
-    def __init__(self, context, request):
-        self.context, self.request = context, request
     def render(self):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         dbname = store.execute("SELECT current_database()").get_one()[0]
