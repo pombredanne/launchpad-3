@@ -51,11 +51,9 @@ class MixinBaseLaunchpadServerTests:
     def setUp(self):
         self.authserver = FakeLaunchpad()
         self.user_id = 1
-        self.backing_transport = MemoryTransport()
-        self.server = self.getLaunchpadServer(
-            self.authserver, self.user_id, self.backing_transport)
+        self.server = self.getLaunchpadServer(self.authserver, self.user_id)
 
-    def getLaunchpadServer(self, authserver, user_id, backing_transport):
+    def getLaunchpadServer(self, authserver, user_id):
         raise NotImplementedError(
             "Override this with a Launchpad server factory.")
 
@@ -179,13 +177,12 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
 
     def setUp(self):
         BzrTestCase.setUp(self)
-        self.mirror_transport = MemoryTransport()
         MixinBaseLaunchpadServerTests.setUp(self)
 
-    def getLaunchpadServer(self, authserver, user_id, backing_transport):
+    def getLaunchpadServer(self, authserver, user_id):
         return LaunchpadServer(
-            BlockingProxy(authserver), user_id, backing_transport,
-            self.mirror_transport)
+            BlockingProxy(authserver), user_id, MemoryTransport(),
+            MemoryTransport())
 
     def test_noMirrorsRequestedIfNoBranchesChanged(self):
         # Starting up and shutting down the server will send no mirror
@@ -277,9 +274,9 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         BzrTestCase.setUp(self)
         MixinBaseLaunchpadServerTests.setUp(self)
 
-    def getLaunchpadServer(self, authserver, user_id, backing_transport):
+    def getLaunchpadServer(self, authserver, user_id):
         return LaunchpadInternalServer(
-            'lp-test:///', BlockingProxy(authserver), backing_transport)
+            'lp-test:///', BlockingProxy(authserver), MemoryTransport())
 
     def test_base_path_translation_person_branch(self):
         # Branches are stored on the filesystem by branch ID. This allows
