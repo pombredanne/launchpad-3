@@ -33,14 +33,14 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
-    AsyncLaunchpadTransport, BlockingProxy, InvalidControlDirectory,
-    LaunchpadInternalServer, LaunchpadServer, set_up_logging,
-    AsyncVirtualTransport)
+    AsyncLaunchpadTransport, AsyncVirtualTransport, BlockingProxy,
+    InvalidControlDirectory, LaunchpadInternalServer, LaunchpadServer,
+    set_up_logging)
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
 
-class TestLaunchpadServer(TrialTestCase, BzrTestCase):
+class MixinBaseLaunchpadServer:
 
     # bzrlib manipulates 'logging'. The test runner will generate spurious
     # warnings if these manipulations are not cleaned up. BaseLayer does the
@@ -48,14 +48,11 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
     layer = BaseLayer
 
     def setUp(self):
-        BzrTestCase.setUp(self)
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = MemoryTransport()
-        self.mirror_transport = MemoryTransport()
-        self.server = LaunchpadServer(
-            BlockingProxy(self.authserver), self.user_id,
-            self.backing_transport, self.mirror_transport)
+        self.server = self.getLaunchpadServer(
+            self.authserver, self.user_id, self.backing_transport)
 
     def test_base_path_translation_person_branch(self):
         # Branches are stored on the filesystem by branch ID. This allows
@@ -92,15 +89,6 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
             (self.server._branch_transport, '00/00/00/04/'))
         return deferred
 
-    def test_base_path_translation_team_junk_branch(self):
-        # The '+junk' product doesn't actually exist. It is used for branches
-        # which don't have a product assigned to them.
-        deferred = self.server.translateVirtualPath('/~name12/+junk/junk.dev')
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._mirror_transport, '00/00/00/05/'))
-        return deferred
-
     def test_extend_path_translation_on_backing(self):
         # More than just the branch name needs to be translated: transports
         # will ask for files beneath the branch. The server translates the
@@ -112,14 +100,6 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         deferred.addCallback(
             self.assertEqual,
             (self.server._branch_transport, '00/00/00/01/.bzr'))
-        return deferred
-
-    def test_extend_path_translation_on_mirror(self):
-        deferred = self.server.translateVirtualPath(
-            '/~name12/+junk/junk.dev/.bzr')
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._mirror_transport, '00/00/00/05/.bzr'))
         return deferred
 
     def test_setUp(self):
@@ -144,14 +124,6 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         self.server.setUp()
         self.server.tearDown()
         self.assertEqual([], self.authserver._request_mirror_log)
-
-    def test_get_url(self):
-        # The URL of the server is 'lp-<number>:///', where <number> is the
-        # id() of the server object. Including the id allows for multiple
-        # Launchpad servers to be running within a single process.
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
-        self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
 
     def test_translationIsCached(self):
         # We don't go to the authserver for every path translation.
@@ -252,32 +224,57 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
             'user/product/.bzr/foo')
 
 
-class TestLaunchpadInternalServer(TestLaunchpadServer):
+class TestLaunchpadServer(MixinBaseLaunchpadServer, TrialTestCase,
+                          BzrTestCase):
+
+    def setUp(self):
+        BzrTestCase.setUp(self)
+        self.mirror_transport = MemoryTransport()
+        MixinBaseLaunchpadServer.setUp(self)
+
+    def getLaunchpadServer(self, authserver, user_id, backing_transport):
+        return LaunchpadServer(
+            BlockingProxy(authserver), user_id, backing_transport,
+            self.mirror_transport)
+
+    def test_base_path_translation_team_junk_branch(self):
+        # The '+junk' product doesn't actually exist. It is used for branches
+        # which don't have a product assigned to them.
+        deferred = self.server.translateVirtualPath('/~name12/+junk/junk.dev')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._mirror_transport, '00/00/00/05/'))
+        return deferred
+
+    def test_extend_path_translation_on_mirror(self):
+        deferred = self.server.translateVirtualPath(
+            '/~name12/+junk/junk.dev/.bzr')
+        deferred.addCallback(
+            self.assertEqual,
+            (self.server._mirror_transport, '00/00/00/05/.bzr'))
+        return deferred
+
+    def test_get_url(self):
+        # The URL of the server is 'lp-<number>:///', where <number> is the
+        # id() of the server object. Including the id allows for multiple
+        # Launchpad servers to be running within a single process.
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+        self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
+
+
+class TestLaunchpadInternalServer(MixinBaseLaunchpadServer, TrialTestCase,
+                                  BzrTestCase):
     """Tests for the LaunchpadInternalServer, used by the puller and scanner.
     """
 
     def setUp(self):
-        self.authserver = FakeLaunchpad()
-        self.branch_transport = MemoryTransport()
-        self.server = LaunchpadInternalServer(
-            'lp-internal:///', BlockingProxy(self.authserver),
-            self.branch_transport)
+        BzrTestCase.setUp(self)
+        MixinBaseLaunchpadServer.setUp(self)
 
-    def test_get_url(self):
-        # Rather than the magic per-instance URL of the standard
-        # LaunchpadServer, the LaunchpadInternalServer returns a fixed
-        # 'lp-internal://' URL.
-        self.assertEqual('lp-internal:///', self.server.get_url())
-
-    def test_base_path_translation_team_junk_branch(self):
-        # XXX: Disabling this test for the LaunchpadInternalServer.
-        # Incremental refactoring.
-        pass
-
-    def test_extend_path_translation_on_mirror(self):
-        # XXX: Disabling this test for the LaunchpadInternalServer.
-        # Incremental refactoring.
-        pass
+    def getLaunchpadServer(self, authserver, user_id, backing_transport):
+        return LaunchpadInternalServer(
+            'lp-test:///', BlockingProxy(authserver), backing_transport)
 
 
 class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):

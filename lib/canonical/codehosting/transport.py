@@ -577,6 +577,13 @@ class _BaseLaunchpadServer(Server):
             '.bzr/control.conf', 'default_stack_on=%s\n' % stack_on_url)
         return transport
 
+    def _factory(self, url):
+        """Create a transport for this server pointing at `url`.
+
+        Override this in subclasses.
+        """
+        raise NotImplementedError("Override this in subclasses.")
+
     def _getLaunchpadBranch(self, virtual_path):
         return LaunchpadBranch.from_virtual_path(
             self._authserver, virtual_path)
