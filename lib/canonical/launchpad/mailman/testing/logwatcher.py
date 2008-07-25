@@ -87,8 +87,7 @@ class XMLRPCWatcher(LogWatcher):
     def wait_for_deactivation(self, team_name):
         return self._wait('[%s] deactivate: success' % team_name)
 
-    def wait_for_reactivation(self, team_name):
-        return self._wait('[%s] reactivate: success' % team_name)
+    wait_for_reactivation = wait_for_create
 
     def wait_for_modification(self, team_name):
         return self._wait('[%s] modify: success' % team_name)
