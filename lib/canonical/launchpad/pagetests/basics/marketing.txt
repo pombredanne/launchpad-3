@@ -16,7 +16,7 @@ The tour is circular. Clicking the Next button repeatedly will bring you
 back to the tour start.
 
     >>> def take_the_tour(steps_taken=0):
-    ...     browser.getLink('Next').click()
+    ...     browser.getLink(id='btnNext').click()
     ...     print browser.url
     ...     if browser.url != 'http://launchpad.dev/+tour/index.html':
     ...         if steps_taken >= 20:
@@ -32,7 +32,6 @@ back to the tour start.
     http://launchpad.dev/+tour/community-support.html
     http://launchpad.dev/+tour/feature-tracking.html
     http://launchpad.dev/+tour/release-management.html
-    http://launchpad.dev/+tour/api.html
     http://launchpad.dev/+tour/index.html
 
 The images from the tour are retrieved relative to +tour.
