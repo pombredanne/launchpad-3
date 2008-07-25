@@ -159,10 +159,6 @@ class PullerWorker:
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
-    def _getLaunchpadServer(self):
-        """Return a LaunchpadInternalServer for fetching hosted branches."""
-        return get_puller_server()
-
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
 
@@ -319,7 +315,7 @@ class PullerWorker:
         particularly useful for tests that want to mirror a branch and be
         informed immediately of any errors.
         """
-        server = self._getLaunchpadServer()
+        server = get_puller_server()
         server.setUp()
         try:
             self._checkSourceUrl()

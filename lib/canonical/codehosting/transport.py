@@ -107,7 +107,7 @@ def get_chrooted_transport(url):
 
 
 def get_readonly_transport(transport):
-    """Return a readonly transport serving `url`."""
+    """Wrap `transport` in a readonly transport."""
     return get_transport('readonly+' + transport.base)
 
 
@@ -541,26 +541,19 @@ class _BaseLaunchpadServer(Server):
     For more information, see the module docstring.
     """
 
-    def __init__(self, scheme, authserver, user_id, branch_transport,
-                 mirror_transport):
+    def __init__(self, scheme, authserver, user_id):
         """Construct a LaunchpadServer.
 
         :param scheme: The URL scheme to use.
         :param authserver: An XML-RPC client that implements callRemote.
         :param user_id: The database ID for the user who is accessing
             branches.
-        :param branch_transport: A Transport pointing to the root of where
-            the branches are actually stored.
--        :param mirror_transport: A Transport pointing to the root of where
--            branches are mirrored to.
         """
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
         # pylint: disable-msg=W0231
         self._scheme = scheme
         self._authserver = CachingAuthserverClient(authserver, user_id)
-        self._branch_transport = branch_transport
-        self._mirror_transport = mirror_transport
         self._is_set_up = False
 
     def _buildControlDirectory(self, stack_on_url):
@@ -581,9 +574,20 @@ class _BaseLaunchpadServer(Server):
             '.bzr/control.conf', 'default_stack_on=%s\n' % stack_on_url)
         return transport
 
-    def _getBranch(self, virtual_path):
+    def _transportFactory(self, url):
+        """Create a transport for this server pointing at `url`.
+
+        Override this in subclasses.
+        """
+        raise NotImplementedError("Override this in subclasses.")
+
+    def _getLaunchpadBranch(self, virtual_path):
         return LaunchpadBranch.from_virtual_path(
             self._authserver, virtual_path)
+
+    def _getTransportForLaunchpadBranch(self, lp_branch):
+        """Return the transport for accessing `lp_branch`."""
+        raise NotImplementedError("Override this in subclasses.")
 
     def _parseProductControlDirectory(self, virtual_path):
         """Parse `virtual_path` and return a product and path in that product.
@@ -624,7 +628,7 @@ class _BaseLaunchpadServer(Server):
         :return: (transport, path_on_transport)
         """
         try:
-            branch, path = self._getBranch(virtual_url_fragment)
+            lp_branch, path = self._getLaunchpadBranch(virtual_url_fragment)
         except NotABranchPath:
             fail = failure.Failure()
             deferred = defer.maybeDeferred(
@@ -632,7 +636,7 @@ class _BaseLaunchpadServer(Server):
             deferred.addErrback(lambda ignored: fail)
             return deferred
 
-        virtual_path_deferred = branch.getRealPath(path)
+        virtual_path_deferred = lp_branch.getRealPath(path)
 
         def branch_not_found(failure):
             failure.trap(BranchNotFound)
@@ -647,11 +651,9 @@ class _BaseLaunchpadServer(Server):
         virtual_path_deferred.addErrback(branch_not_found)
 
         def get_transport(real_path):
-            permissions_deferred = branch.getPermissions()
-            permissions_deferred.addCallback(
-                self._getTransportForPermissions, branch)
-            return permissions_deferred.addCallback(
-                lambda transport: (transport, real_path))
+            deferred = self._getTransportForLaunchpadBranch(lp_branch)
+            deferred.addCallback(lambda transport: (transport, real_path))
+            return deferred
 
         return virtual_path_deferred.addCallback(get_transport)
 
@@ -661,7 +663,7 @@ class _BaseLaunchpadServer(Server):
 
     def setUp(self):
         """See Server.setUp."""
-        register_transport(self.get_url(), self._factory)
+        register_transport(self.get_url(), self._transportFactory)
         self._is_set_up = True
 
     def tearDown(self):
@@ -669,7 +671,7 @@ class _BaseLaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
-        unregister_transport(self.get_url(), self._factory)
+        unregister_transport(self.get_url(), self._transportFactory)
 
 
 class LaunchpadServer(_BaseLaunchpadServer):
@@ -688,28 +690,34 @@ class LaunchpadServer(_BaseLaunchpadServer):
     filesystem-level operations to trigger these.
     """
 
-    def __init__(self, authserver, user_id, hosting_transport,
+    def __init__(self, authserver, user_id, hosted_transport,
                  mirror_transport):
         scheme = 'lp-%d:///' % id(self)
-        mirror_transport = get_transport(
+        super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
+        self._hosted_transport = hosted_transport
+        self._mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
-        super(LaunchpadServer, self).__init__(
-            scheme, authserver, user_id, hosting_transport, mirror_transport)
 
-    def _factory(self, url):
+    def _transportFactory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
         assert url.startswith(self.get_url())
         return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
 
-    def _getTransportForPermissions(self, permissions, branch):
-        """Get the appropriate transport for `permissions` on `branch`."""
+    def _getTransportForPermissions(self, permissions, lp_branch):
+        """Get the appropriate transport for `permissions` on `lp_branch`."""
         if permissions == READ_ONLY:
             return self._mirror_transport
         else:
-            transport = self._branch_transport
-            deferred = branch.ensureUnderlyingPath(transport)
+            transport = self._hosted_transport
+            deferred = lp_branch.ensureUnderlyingPath(transport)
             deferred.addCallback(lambda ignored: transport)
             return deferred
+
+    def _getTransportForLaunchpadBranch(self, lp_branch):
+        """Return the transport for accessing `lp_branch`."""
+        permissions_deferred = lp_branch.getPermissions()
+        return permissions_deferred.addCallback(
+            self._getTransportForPermissions, lp_branch)
 
     def createBranch(self, virtual_url_fragment):
         """Make a new directory for the given virtual URL fragment.
@@ -728,11 +736,11 @@ class LaunchpadServer(_BaseLaunchpadServer):
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
         """
-        branch, ignored = self._getBranch(virtual_url_fragment)
-        deferred = branch.create()
+        lp_branch, ignored = self._getLaunchpadBranch(virtual_url_fragment)
+        deferred = lp_branch.create()
 
         def ensure_path(branch_id):
-            deferred = branch.ensureUnderlyingPath(self._branch_transport)
+            deferred = lp_branch.ensureUnderlyingPath(self._hosted_transport)
             return deferred.addCallback(lambda ignored: branch_id)
         return deferred.addCallback(ensure_path)
 
@@ -744,8 +752,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
         :raise NotABranchPath: If `virtual_url_fragment` does not have at
             least a valid path to a branch.
         """
-        branch, ignored = self._getBranch(virtual_url_fragment)
-        return branch.requestMirror()
+        lp_branch, ignored = self._getLaunchpadBranch(virtual_url_fragment)
+        return lp_branch.requestMirror()
 
 
 class LaunchpadInternalServer(_BaseLaunchpadServer):
@@ -760,12 +768,14 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
     def __init__(self, scheme, authserver, branch_transport):
         super(LaunchpadInternalServer, self).__init__(
-            scheme, authserver, LAUNCHPAD_SERVICES, branch_transport,
-            branch_transport)
+            scheme, authserver, LAUNCHPAD_SERVICES)
+        self._branch_transport = branch_transport
 
-    def _getTransportForPermissions(self, permissions, branch):
-        """Get the appropriate transport for `permissions` on `branch`."""
-        deferred = branch.ensureUnderlyingPath(self._branch_transport)
+    def _getTransportForLaunchpadBranch(self, lp_branch):
+        """Return the transport for accessing `lp_branch`."""
+        deferred = lp_branch.ensureUnderlyingPath(self._branch_transport)
+        # We try to make the branch's directory on the underlying transport.
+        # If the transport is read-only, then we just continue silently.
         def if_not_readonly(failure):
             failure.trap(TransportNotPossible)
             return self._branch_transport
@@ -773,54 +783,56 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         deferred.addErrback(if_not_readonly)
         return deferred
 
-    def _factory(self, url):
+    def _transportFactory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
         assert url.startswith(self.get_url())
         return SynchronousAdapter(AsyncVirtualTransport(self, url))
 
 
-def get_scanner_server(warehouse_url=None):
+def get_scanner_server():
     """Get a Launchpad internal server for scanning branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
     authserver = BlockingProxy(proxy)
-    if warehouse_url is None:
-        warehouse_url = config.supermirror.warehouse_root_url
     branch_transport = get_readonly_transport(
-        get_chrooted_transport(warehouse_url))
+        get_chrooted_transport(config.supermirror.warehouse_root_url))
     return LaunchpadInternalServer(
         'lp-mirrored:///', authserver, branch_transport)
 
 
-class _PullerServer(Server):
+class _MultiServer(Server):
+    """Server that wraps around multiple servers."""
 
-    def __init__(self, authserver, hosted_transport, mirrored_transport):
-        self._hosted_server = LaunchpadInternalServer(
-            'lp-hosted:///', authserver, hosted_transport)
-        self._mirrored_server = LaunchpadInternalServer(
-            'lp-mirrored:///', authserver, mirrored_transport)
+    def __init__(self, *servers):
+        self._servers = servers
 
     def setUp(self):
-        self._hosted_server.setUp()
-        self._mirrored_server.setUp()
+        for server in self._servers:
+            server.setUp()
 
     def tearDown(self):
-        self._mirrored_server.tearDown()
-        self._hosted_server.tearDown()
+        for server in reversed(self._servers):
+            server.tearDown()
 
 
-def get_puller_server(source_url=None, destination_url=None):
-    """Get a Launchpad internal server for pulling branches."""
+def get_puller_server():
+    """Get a server for the Launchpad branch puller.
+
+    The server wraps up two `LaunchpadInternalServer`s. One of them points to
+    the hosted branch area and is read-only, the other points to the mirrored
+    area and is read/write.
+    """
     proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
     authserver = BlockingProxy(proxy)
-    if source_url is None:
-        source_url = config.codehosting.branches_root
-    if destination_url is None:
-        destination_url = config.supermirror.branchesdest
     hosted_transport = get_readonly_transport(
-        get_chrooted_transport(source_url))
-    mirrored_transport = get_chrooted_transport(destination_url)
-    return _PullerServer(
-        authserver, hosted_transport, mirrored_transport)
+        get_chrooted_transport(config.codehosting.branches_root))
+    mirrored_transport = get_chrooted_transport(
+        config.supermirror.branchesdest)
+    hosted_server = LaunchpadInternalServer(
+        'lp-hosted:///', authserver,
+        get_readonly_transport(hosted_transport))
+    mirrored_server = LaunchpadInternalServer(
+        'lp-mirrored:///', authserver, mirrored_transport)
+    return _MultiServer(hosted_server, mirrored_server)
 
 
 class AsyncVirtualTransport(Transport):
