@@ -73,7 +73,7 @@ matching the given text.
     >>> admin_browser.getControl("Update").click()
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section  Built
-    pmount - 0.1-1   2007-07-09  Published  Warty           Editors  
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
 Foo Bar can select one or more sources to be deleted and the
 'deletion_comment' field is mandatory.
@@ -226,6 +226,7 @@ available for deletion.
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
+    ...
     Delete packages from PPA for Celso Providelo
     This PPA does not contain any source packages published.
 
@@ -240,6 +241,8 @@ previous state to check if the bug 185922 is really fixed.
     >>> re_post_browser.getControl("Request Deletion").click()
 
     >>> print extract_text(find_main_content(re_post_browser.contents))
+    Profile /
+    ...
     Delete packages from PPA for Celso Providelo
     This PPA does not contain any source packages published.
     There is 1 error.
@@ -255,15 +258,27 @@ Any user can see that all packages present in Celso's PPA are deleted.
     iceweasel - 1.0  2007-07-09  Deleted    Warty           Editors
     pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
 
-A clear message is presented for PPAs that don't contain any
-published source packages.
+PPAs that don't contain any published source packages, do not present
+the 'Delete packages' link.
 
     >>> admin_browser.open('http://launchpad.dev/~no-priv/+archive')
     >>> admin_browser.getLink('Delete packages').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Even when accessed manually the 'Delete packages' form is not rendered
+for PPAs that do not contain any published packages, instead a clear
+message is presented.
+
+    >>> admin_browser.open(
+    ...    'http://launchpad.dev/~no-priv/+archive/+delete-packages')
     >>> admin_browser.title
     'Delete packages from PPA for No Privileges Person'
 
     >>> print extract_text(find_main_content(admin_browser.contents))
+    Profile /
+    ...
     Delete packages from PPA for No Privileges Person
     This PPA does not contain any source packages published.
 
