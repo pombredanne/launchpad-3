@@ -313,10 +313,8 @@ background-position:0px -31px;
 }
 
 #link-holder {
-left:50%;
-margin-left:217px;
-position:absolute;
+margin: 0 20px;
+padding-bottom: 1em;
+font-size: 8pt;
 text-align:right;
-top:6px;
-width:250px;
 }
