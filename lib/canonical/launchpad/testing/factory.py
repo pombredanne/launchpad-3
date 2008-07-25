@@ -360,7 +360,8 @@ class LaunchpadObjectFactory:
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
 
-    def makeRevision(self, author=None, revision_date=None, parent_ids=None):
+    def makeRevision(self, author=None, revision_date=None, parent_ids=None,
+                     rev_id=None, log_body=None):
         """Create a single `Revision`."""
         if author is None:
             author = self.getUniqueString('author')
@@ -368,13 +369,14 @@ class LaunchpadObjectFactory:
             revision_date = datetime.now(pytz.UTC)
         if parent_ids is None:
             parent_ids = []
+        if rev_id is None:
+            rev_id = self.getUniqueString('revision-id')
+        if log_body is None:
+            log_body = self.getUniqueString('log-body')
         return getUtility(IRevisionSet).new(
-            revision_id = self.getUniqueString('revision-id'),
-            log_body=self.getUniqueString('log-body'),
-            revision_date=revision_date,
-            revision_author=author,
-            parent_ids=parent_ids,
-            properties={})
+            revision_id=rev_id, log_body=log_body,
+            revision_date=revision_date, revision_author=author,
+            parent_ids=parent_ids, properties={})
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):

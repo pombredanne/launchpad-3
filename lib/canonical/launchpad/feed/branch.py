@@ -229,7 +229,7 @@ class RevisionListingFeed(FeedBase):
     def itemToFeedEntry(self, revision):
         """See `IFeed`."""
         id = "tag:launchpad.net,%s:/revision/%s" % (
-            revision.revision_date, revision.revision_id)
+            revision.revision_date.date().isoformat(), revision.revision_id)
         content_view = RevisionFeedContentView(revision, self.request, self)
         content = content_view.render()
         content_data = FeedTypedData(content=content,
@@ -250,7 +250,7 @@ class RevisionListingFeed(FeedBase):
             date_updated=revision.revision_date,
             date_published=revision.date_created,
             authors=authors,
-            id_=revision.revision_id,
+            id_=id,
             content=content_data)
         return entry
 
