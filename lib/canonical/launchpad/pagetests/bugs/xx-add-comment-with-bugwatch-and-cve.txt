@@ -6,9 +6,7 @@ added to the bugwatches resp CVEs related to this bug
 
   >>> user_browser.open(
   ...     'http://localhost/debian/+source/mozilla-firefox/+bug/1')
-  >>> user_browser.getControl('Subject').value = (
-  ...     'Test Comment Subject')
-  >>> user_browser.getControl('Comment', index=-1).value = (
+  >>> user_browser.getControl(name='field.comment').value = (
   ...     '''This is a test comment. This bug is the same as the one
   ...        described here http://some.bugzilla/show_bug.cgi?id=9876
   ...        See also CVE-1991-9911
@@ -38,9 +36,7 @@ a comment, both on the same line, one surrounded by non-ascii characters.
 One of these URLs looks like a remote bugzilla bug, the other is not the
 url of a remote bug.
 
-  >>> user_browser.getControl('Subject').value = (
-  ...     'Test Comment Subject')
-  >>> user_browser.getControl('Comment', index=-1).value = (
+  >>> user_browser.getControl(name='field.comment').value = (
   ...     u'\xabhttps://answers.launchpad.net/ubuntu\xbb is not a linked bug '
   ...     u'but https://bugzilla.example.org/show_bug.cgi?id=1235555 '
   ...     u'is.'.encode('utf-8'))

@@ -4,7 +4,9 @@ __metaclass__ = type
 
 import unittest
 
-from zope.interface import implements
+from zope.component import provideAdapter
+from zope.interface import implements, Interface
+from zope.testing.cleanup import CleanUp
 
 from canonical.testing import ZopelessLayer
 
@@ -14,13 +16,15 @@ from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interfaces import AccessLevel
 
 
-class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(unittest.TestCase):
-    layer = ZopelessLayer
+class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(
+    CleanUp, unittest.TestCase):
 
     def setUp(self):
         self.principal = LaunchpadPrincipal(
             'foo.bar@canonical.com', 'foo', 'foo', object())
         self.security = LaunchpadSecurityPolicy()
+        provideAdapter(
+            adapt_loneobject_to_container, [ILoneObject], ILaunchpadContainer)
 
     def test_no_scope(self):
         """Principal's access level is used when no scope is given."""
@@ -62,12 +66,20 @@ class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(unittest.TestCase):
             AccessLevel.READ_PUBLIC)
 
 
+class ILoneObject(Interface):
+    """A marker interface for objects that only contain themselves."""
+
+
 class LoneObject:
-    """An object which is only within itself."""
-    implements(ILaunchpadContainer)
+    implements(ILoneObject, ILaunchpadContainer)
 
     def isWithin(self, context):
         return self == context
+
+
+def adapt_loneobject_to_container(loneobj):
+    """Adapt a LoneObject to an `ILaunchpadContainer`."""
+    return loneobj
 
 
 def test_suite():

@@ -480,6 +480,14 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
 
     cancel_url = next_url
 
+    def requestReview(self, candidate, review_type):
+        """Request a `review_type` review from `candidate` and email them."""
+        vote_reference = self.context.nominateReviewer(
+            candidate, self.user, review_type)
+        reason = RecipientReason.forReviewer(vote_reference, candidate)
+        mailer = BMPMailer.forReviewRequest(reason, self.context, self.user)
+        mailer.sendAll()
+
     @action('Request review', name='review')
     @notify
     def review_action(self, action, data):
@@ -488,12 +496,7 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         candidate = data.pop('review_candidate', None)
         review_type = data.pop('review_type', None)
         if candidate is not None:
-            vote_reference = self.context.nominateReviewer(
-                candidate, self.user, review_type)
-            reason = RecipientReason.forReviewer(vote_reference, candidate)
-            mailer = BMPMailer.forReviewRequest(
-                reason, self.context, self.user)
-            mailer.sendAll()
+            self.requestReview(candidate, review_type)
         form.applyChanges(self, self.form_fields, data, self.adapters)
 
     def validate(self, data):
