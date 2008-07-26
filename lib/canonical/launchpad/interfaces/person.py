@@ -22,7 +22,6 @@ __all__ = [
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
-    'IHasPersonNavigationMenu',
     'JoinNotAllowed',
     'NameAlreadyTaken',
     'PersonCreationRationale',
@@ -48,7 +47,8 @@ from canonical.lazr.rest.declarations import (
    export_as_webservice_entry, export_factory_operation,
    export_read_operation, export_write_operation, exported,
    operation_parameters, operation_returns_collection_of,
-   rename_parameters_as, REQUEST_USER, webservice_error)
+   operation_returns_entry, rename_parameters_as, REQUEST_USER,
+   webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
 from canonical.launchpad import _
@@ -1242,6 +1242,7 @@ class IPersonViewRestricted(Interface):
         """
 
     @operation_parameters(status=copy_field(ITeamMembership['status']))
+    @operation_returns_collection_of(Interface) # Really IPerson
     @export_read_operation()
     def getMembersByStatus(status, orderby=None):
         """Return the people whose membership on this team match :status:.
@@ -1444,14 +1445,6 @@ class INewPersonForm(IPerson):
 
     password = PasswordField(
         title=_('Create password'), required=True, readonly=False)
-
-
-class IHasPersonNavigationMenu(Interface):
-    """A marker interface for objects that use the Person navigation menus.
-
-    An object providing this interface will use the Person navigation menu
-    for its pages.
-    """
 
 
 class ITeamPublic(Interface):
@@ -1665,6 +1658,7 @@ class IPersonSet(Interface):
 
     @operation_parameters(
         email=TextLine(required=True, constraint=email_validator))
+    @operation_returns_entry(IPerson)
     @export_read_operation()
     def getByEmail(email):
         """Return the person with the given email address.
@@ -1682,6 +1676,7 @@ class IPersonSet(Interface):
     def getByOpenIdIdentifier(openid_identity):
         """Return the person with the given OpenID identifier, or None."""
 
+    @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def getAllTeams(orderBy=None):
         """Return all Teams, ignoring the merged ones.
@@ -1702,6 +1697,7 @@ class IPersonSet(Interface):
         current will not appear in the returned list.
         """
 
+    @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
@@ -1731,8 +1727,8 @@ class IPersonSet(Interface):
 
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
-    @export_read_operation()
     @operation_returns_collection_of(IPerson)
+    @export_read_operation()
     def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
@@ -1749,6 +1745,7 @@ class IPersonSet(Interface):
 
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
+    @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def findPerson(text="", orderBy=None, exclude_inactive_accounts=True,
                    must_have_email=False):
@@ -1777,6 +1774,7 @@ class IPersonSet(Interface):
 
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
+    @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def findTeam(text="", orderBy=None):
         """Return all Teams whose name, displayname or email address
@@ -2023,6 +2021,8 @@ for method, name in params_to_fix:
 
 # Fix schema of operation return values.
 IPersonPublic['findPathToTeam'].queryTaggedValue(
+    'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
+IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of

@@ -24,7 +24,7 @@ Some distributions have listings of major versions, for example Debian:
 
     >>> anon_browser.open('http://launchpad.dev/debian')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'sandm'))
-    Series &amp; milestones
+    Series and milestones
     3.1 &#8220;Sarge&#8221; series - frozen
     3.0 &#8220;Woody&#8221; series - current
         Milestones: 3.1 and 3.1-rc1
@@ -40,7 +40,7 @@ rules.
 
     >>> anon_browser.open('http://launchpad.dev/debian')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'sandm'))
-    Series &amp; milestones
+    Series and milestones
     ...
         Milestones: testmilestone, 3.1, and 3.1-rc1
     ...
