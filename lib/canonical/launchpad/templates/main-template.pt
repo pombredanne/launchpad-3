@@ -93,6 +93,20 @@
   >
     <div id="locationbar">
       <tal:login replace="structure context/@@login_status" />
+      <form
+        tal:condition="view/macro:pagehas/globalsearch"
+        id="globalsearch"
+        action=""
+        xml:lang="en" lang="en" dir="ltr"
+        method="get"
+        accept-charset="UTF-8"
+        tal:attributes="action string:${rooturl}+search"
+      >
+        <label>
+          Search:
+          <input type="search" id="search-text" name="field.text" />
+        </label>
+      </form>
       <tal:hierarchy replace="structure context/@@+hierarchy" />
 
     <div
@@ -134,24 +148,8 @@
     </div><!--id="locationbar"-->
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
-      <table
-        tal:condition="view/macro:pagehas/applicationbuttons"
-        id="applications" xml:lang="en" lang="en" dir="ltr"
-      >
-        <tbody>
-          <tr>
-            <th><h1 metal:define-slot="heading" /></th>
-            <td
-              tal:define="
-                facetname CONTEXTS/menu:selectedfacetname;
-                facetname python:facetname == 'overview' and 'people' or facetname;
-                facetname python:facetname == 'branches' and 'code' or facetname;
-                facetname python:facetname == 'specifications' and 'blueprints' or facetname"
-              tal:content="structure context/@@+applicationbuttons/?facetname"
-            />
-          </tr>
-        </tbody>
-      </table>
+      <h1 metal:define-slot="heading"
+          tal:condition="view/macro:pagehas/applicationbuttons" />
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
         <div id="container">
           <!--[if IE 7]>&nbsp;<![endif]-->
@@ -236,26 +234,7 @@
             use-macro="context/@@+main-template-macros/notifications" />
         </tal:notifications>
         <metal:block define-slot="main" />
-        <div style="clear: both; height: 2em;">&nbsp;</div>
-        <tal:comment condition="nothing">
-          No easier way to put a gap before the footer, because in CSS a
-          top margin for a cleared item is ignored.
-        </tal:comment>
       </tal:noborder>
-      <form
-        tal:condition="view/macro:pagehas/globalsearch"
-        id="globalsearch"
-        action=""
-        xml:lang="en" lang="en" dir="ltr"
-        method="get"
-        accept-charset="UTF-8"
-        tal:attributes="action string:${rooturl}+search"
-      >
-        <label>
-          Search Launchpad:
-          <input type="search" id="search-text" name="field.text" />
-        </label>
-      </form>
      <div id="globalfooter" class="clearfix" xml:lang="en" lang="en" dir="ltr">
         <div id="colophon">
           <a tal:condition="not:request/lp:person" href="/+tour"

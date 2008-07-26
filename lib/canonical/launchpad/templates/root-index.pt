@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/freeform"
+  metal:use-macro="view/macro:page/search"
   i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
@@ -28,51 +28,46 @@
     </tal:redirect_enabled>
   </div>
 
-      <div id="applications" tal:content="structure context/@@+applicationbuttons/main" />
-      <form
-        id="project-search"
-        class="central front_page"
-        style="text-align: center;"
-        action="/projects/"
-        method="get"
-        accept-charset="UTF-8"
-      >
         <tal:comment replace="nothing">
           Do not replace the line below: "Is your project registered yet?"
           without contacting the IS team. It's used by Nagios to verify
           the app servers are running.
         </tal:comment>
-        <label for="text">Is your project registered yet?</label>
-        <input id="text" type="text" name="text" size="20" />
+        <!-- Is your project registered yet? -->
+
+      <form
+        id="project-search"
+        class="central front_page"
+        style="text-align: center;"
+        action="/+search"
+        method="get"
+        accept-charset="UTF-8"
+      >
+        <center><img src="/@@/launchpad-logo-and-name.png"
+             style="display: block; margin-bottom: 1em" /></center>
+        <input id="text" type="text" name="field.text" size="20" />
         <input type="submit" value="Search" />
       </form>
 
         <div class="three column left">
+
           <h2>What is Launchpad?</h2>
           <p id="application-summary">
-            Launchpad is a free software hosting and development
-            website. We make it easy to <strong>collaborate
-            across multiple projects</strong>.
-            <br />
-            <center>
-              <a href="/+about">
-                <img
-                  alt="Take a tour"
-                  src="/+icing/but-lrg-takeatour.gif"
-                />
-              </a>
-            </center>
+            Launchpad is an open source hosting service that's big on
+            collaboration. <a href="/+about">Take a
+            tour!</a>
           </p>
-          <tal:not-beta-team-member condition="not: view/isBetaUser">
-           <h2>Join the Launchpad beta team</h2>
-           <p id="beta-test">
-            Get first access to new features and take part in the Launchpad development process.
-            Join the <a href="https://help.launchpad.net/BetaTesting">beta team</a> today!
-           </p>
-          </tal:not-beta-team-member>
+
+          <h2>Start here:</h2>
+          <ul style="font-size: larger">
+            <li><a href="/projects">Projects</a></li>
+            <li><a href="/distros">Distributions</a></li>
+            <li><a href="/people">People and Teams</a></li>
+          </ul>
+
         </div>
         <div class="three column middle">
-          <h2>What&#8217;s new here?</h2>
+          <h2>What&#8217;s new?</h2>
           <ul>
             <li class="news">
               <a href="http://news.launchpad.net/?p=99">
@@ -92,32 +87,6 @@
                 Use email to vote and add your comments to code reviews in Launchpad.
               </a>
            </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/?p=92">
-                <strong>Redesigned pages for bugs, translations, and distributions</strong><br />
-                We're making Launchpad easier to navigate.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/cool-new-stuff/review-branch-merge-proposals-in-launchpad">
-                <strong>Code merger reviews</strong><br />
-                Review proposed branch mergers, using comments and voting, direct in Launchpad.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/?p=80">
-                <strong>Site-wide search improvements</strong><br />
-                We have significantly enhanced our site-wide search feature to
-                provide better results. Give it a try!
-              </a>
-           </li>
-            <li class="news">
-              <a href="http://news.launchpad.net/category/podcast">
-                <strong>New Launchpad podcast</strong><br />
-                Hear the latest from the Launchpad team, with interviews and
-                news in Launchpod - the Launchpad team podcast.
-              </a>
-            </li>
           </ul>
           <div class="discreet" style="text-align: right">
             Updated 2008-07-02.
