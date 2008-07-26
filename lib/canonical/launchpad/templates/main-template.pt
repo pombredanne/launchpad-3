@@ -23,7 +23,6 @@
   tal:define="
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
       icingroot string:${rooturl}+icing/rev${revno};
-      site_message modules/canonical.config/config/launchpad/site_message;
       devmode modules/canonical.config/config/devmode;
       is_demo modules/canonical.config/config/launchpad/is_demo;
       is_edge modules/canonical.config/config/launchpad/is_edge;
@@ -105,10 +104,6 @@
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
-    <div id="globalheader"  xml:lang="en" lang="en" dir="ltr"
-      tal:condition="site_message">
-      <div class="sitemessage" tal:content="structure site_message"/>
-    </div>
     <tal:login replace="structure context/@@login_status" />
     <tal:hierarchy replace="structure context/@@+hierarchy" />
     <div
