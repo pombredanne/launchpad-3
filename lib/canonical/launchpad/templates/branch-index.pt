@@ -264,7 +264,10 @@
 
         <tal:can-edit condition="code_import/required:launchpad.Edit">
           <p>
-            <a href="+edit-import">Edit import source or review import</a>.
+            <a tal:define="link context_menu/edit_import"
+               tal:condition="link/enabled"
+               tal:content="structure link/render">
+               Edit import source or review import</a>.
           </p>
         </tal:can-edit>
       </tal:has-codeimport>
