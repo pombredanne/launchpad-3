@@ -14,13 +14,14 @@ import sys
 from xmlrpclib import ServerProxy
 
 from bzrlib.errors import NotBranchError, ConnectionError
+from bzrlib.transport import get_transport
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.codehosting.scanner.bzrsync import BzrSync
 from canonical.codehosting.transport import (
-    BlockingProxy, get_chrooted_transport, LaunchpadInternalServer)
+    BlockingProxy, LaunchpadInternalServer)
 from canonical.launchpad.webapp import canonical_url, errorlog
 
 
@@ -37,7 +38,7 @@ class BranchScanner:
     def _getLaunchpadServer(self):
         """Get a Launchpad internal transport for scanning branches."""
         authserver = BlockingProxy(ServerProxy(config.codehosting.authserver))
-        branch_transport = get_chrooted_transport(
+        branch_transport = get_transport(
             config.supermirror.warehouse_root_url)
         return LaunchpadInternalServer(authserver, branch_transport)
 

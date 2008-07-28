@@ -87,10 +87,9 @@ from canonical.launchpad.interfaces.mailinglist import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
-    InvalidName, IPerson, IPersonSet, ITeam, IHasPersonNavigationMenu,
-    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
-    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
+    InvalidName, IPerson, IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
+    PersonCreationRationale, PersonVisibility, PersonalStanding,
+    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -182,8 +181,7 @@ class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
-    implements(IPerson, IHasBugs, IHasIcon, IHasLogo, IHasMugshot,
-               IHasPersonNavigationMenu)
+    implements(IPerson, IHasBugs, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
