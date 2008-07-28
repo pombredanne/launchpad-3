@@ -50,6 +50,7 @@ def is_completely_built(source):
 
     return True
 
+
 def has_unpublished_binaries(source):
     """Whether or not a source publication has unpublished binaries.
 
@@ -67,6 +68,8 @@ def has_unpublished_binaries(source):
     # Binaries built from this source in the publishing context.
     built_binaries = set()
     for build in source.getBuilds():
+        if source.pocket != build.pocket:
+            continue
         for binarypackagerelease in build.binarypackages:
             built_binaries.add(binarypackagerelease)
 
@@ -209,7 +212,7 @@ def check_copy(source, archive, series, pocket, include_binaries):
     Check possible conflicting publications in the destination archive.
     See `check_archive_conflicts()`.
 
-    Also hecks if the version of the source being copied is higher
+    Also hecks if the version of the source being copied is equal or higher
     than any version of the same source present in the destination suite
     (series + pocket).
 
@@ -232,7 +235,7 @@ def check_copy(source, archive, series, pocket, include_binaries):
     check_archive_conflicts(source, archive, pocket, include_binaries)
 
     ancestry = get_ancestry_candidate(source, archive, series, pocket)
-    if ancestry is not None and compare_sources(source, ancestry) <= 0:
+    if ancestry is not None and compare_sources(source, ancestry) < 0:
         raise CannotCopy(
             "version older than the %s published in %s" %
             (ancestry.displayname, ancestry.distroseries.name))

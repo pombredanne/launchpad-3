@@ -440,8 +440,8 @@ class TestCopyPackage(unittest.TestCase):
         new_builds = copied_source.createMissingBuilds()
         self.assertEqual(len(new_builds), 0)
 
-    def testCopyNotCompletelyBuiltSources(self):
-        """Check if source not completely build can be copied.
+    def testPropagatingSecurityToUpdates(self):
+        """Check if copy-packages copes with the ubuntu workflow.
 
         As mentioned in bug #251492, ubuntu distro-team uses copy-package
         to propagate security updates across the mirrors via the updates
@@ -456,9 +456,12 @@ class TestCopyPackage(unittest.TestCase):
         than official architectures) before propagating security updates
         causes a severe and unaffordable load on the security repository.
 
-        That's basically why we decided to suppress the error issued by
-        the copy back-end when copying source with incomplete builds in
-        such circumstances.
+        The copy-backend was modified to support 'incremental' copies, i.e.
+        when copying a source (and its binaries) only the missing
+        publications will be copied across. That fixes the symptoms of bad
+        copies (publishing duplications) and avoid reaching the bug we have
+        in the 'domination' component when operating on duplicated arch-indep
+        binary publications.
         """
         sourcename = 'lazy-building'
 
@@ -478,35 +481,50 @@ class TestCopyPackage(unittest.TestCase):
         self._checkSecurityPropagationContext(
             security_source.archive, sourcename)
 
-    def testCopySourcesWithUnplublishedBinaries(self):
-        """Check if sources with unpublished binaries can be copied.
-
-        Like in `testCopyNotCompletelyBuiltSources`, the fact that the
-        copied candidate has unpublished binaries is not considered an
-        error when it is a security updates that already quiesced all
-        its builds to the official architectures.
-        """
-        sourcename = 'lazy-publishing'
-
-        (test_publisher,
-         security_source) = self._setupSecurityPropagationContext(sourcename)
-
-        # Upload a hppa binary but keep it unpublished.
+        # Upload a hppa binary but keep it unpublished. When attempting
+        # to re-copy 'lazy-bulding' to -updates the copy succeeds but
+        # nothing gets copied. Everything built and published from this
+        # source is already copied.
         [build_hppa, build_i386] = security_source.getBuilds()
         lazy_bin_hppa = test_publisher.uploadBinaryForBuild(
             build_hppa, 'lazy-bin')
 
-        # Source and i386 binaries can be copied.
         copy_helper = self.getCopier(
             sourcename=sourcename, include_binaries=True,
             from_suite='hoary-security', to_suite='hoary-updates')
-        copied = copy_helper.mainTask()
+        nothing_copied = copy_helper.mainTask()
+        self.assertEqual(len(nothing_copied), 0)
 
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 2)
+        # Publishing the hppa binary and re-issuing the full copy procedure
+        # will copy only the new binary.
+        test_publisher.publishBinaryInArchive(
+            lazy_bin_hppa, security_source.archive,
+            pocket=PackagePublishingPocket.SECURITY,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        copy_helper = self.getCopier(
+            sourcename=sourcename, include_binaries=True,
+            from_suite='hoary-security', to_suite='hoary-updates')
+        copied_increment = copy_helper.mainTask()
+
+        [hppa_copy] = copied_increment
+        self.assertEqual(hppa_copy.displayname, 'lazy-bin 1.0 in hoary hppa')
+
+        # Source and its 2 binaries are now available in both, hoary-security
+        # and hoary-updates suites.
+        currently_copied = copied + copied_increment
+        self.checkCopies(currently_copied, target_archive, 3)
 
         self._checkSecurityPropagationContext(
             security_source.archive, sourcename)
+
+        # At this point, try to copy stuff from -security to -updates will
+        # not copy anything again.
+        copy_helper = self.getCopier(
+            sourcename=sourcename, include_binaries=True,
+            from_suite='hoary-security', to_suite='hoary-updates')
+        nothing_copied = copy_helper.mainTask()
+        self.assertEqual(len(nothing_copied), 0)
 
     def testCopyAcrossPPAs(self):
         """Check the copy operation across PPAs.
