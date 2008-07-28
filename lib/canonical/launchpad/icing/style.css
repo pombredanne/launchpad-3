@@ -612,6 +612,7 @@ hierarchy, and the application tabs. */
   float: left;
   width: auto;
   background: #eee url(navigation-hierarchy-bg) top left no-repeat;
+  margin-bottom: -1px;
   min-height: 25px;
 }
 /* The first segment has a rounded top left corner:*/
@@ -627,6 +628,7 @@ hierarchy, and the application tabs. */
 /* The last segment is darker (on the front page, this is the only item): */
 #lp-hierarchy.home {
   background: url(navigation-hierarchy-home-bg) no-repeat;
+  padding: 0 0 2px 6px;
   width:110px;
 }
 /* Each segment appears as a clickable button: */
@@ -638,6 +640,7 @@ hierarchy, and the application tabs. */
   background: url(navigation-hierarchy-chevron-normal) no-repeat right;
   float: left;
   min-height: 25px;
+  padding-bottom: 2px;
   vertical-align: middle;
 }
 /* The penultimate segment leads into the dark color of the last segment: */
