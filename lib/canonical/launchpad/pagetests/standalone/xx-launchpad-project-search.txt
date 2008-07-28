@@ -3,15 +3,12 @@
 Launchpad provides a way for people to search across products, projects and
 distributions.
 
-    >>> browser.open('http://launchpad.dev/')
+    >>> browser.open('http://launchpad.dev/projects')
     >>> project_search = browser.getForm(id='project-search')
     >>> project_search.getControl(name='text').value = 'whizzbar'
     >>> browser.getControl('Search', index=0).click()
-
-The actual search is done at the /projects page:
-
     >>> browser.url
-    'http://launchpad.dev/projects/?text=whizzbar'
+    'http://launchpad.dev/projects/+index?text=whizzbar'
 
 And when no matches are found, we are told so:
 
