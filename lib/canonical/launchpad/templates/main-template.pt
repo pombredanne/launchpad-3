@@ -53,7 +53,11 @@
       tal:content="string:@import url(${icingroot}/style.css);"/>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background-image: url(/@@/demo) !important;}</style>
-
+    <!--[if lte IE 7]>
+      <style type="text/css">
+        #lp-apps span {margin: 0 0.125%; /* accidentally doubled by IE */}
+      </style>
+    <![endif]-->
     <tal:comment condition="nothing">
       This CSS collapses the contents of collapsible fieldsets,
       without the flashing that would result from doing it in JavaScript.
