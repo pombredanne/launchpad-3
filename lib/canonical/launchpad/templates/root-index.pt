@@ -36,10 +36,11 @@
         <!-- Is your project registered yet? -->
 
       <form
-        id="project-search"
+        xml:lang="en" lang="en" dir="ltr"
+        id="globalsearch"
         class="central front_page"
         style="text-align: center;"
-        action="/+search"
+        tal:attributes="action string:${rooturl}+search"
         method="get"
         accept-charset="UTF-8"
       >
