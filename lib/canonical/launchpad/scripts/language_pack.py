@@ -54,7 +54,7 @@ def iter_sourcepackage_translationdomain_mapping(series):
 def export(distroseries, component, update, force_utf8, logger,
            cache_clear_interval):
     """Return a pair containing a filehandle from which the distribution's
-    translations tarball can be read and the size of the tarball i bytes.
+    translations tarball can be read and the size of the tarball in bytes.
 
     :arg distroseries: The `IDistroSeries` we want to export from.
     :arg component: The component name from the given distribution series.
