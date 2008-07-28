@@ -41,6 +41,7 @@ from datetime import timedelta, datetime
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
+from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.app.traversing.interfaces import ITraversable
@@ -245,12 +246,21 @@ class Hierarchy(LaunchpadView):
         """
         elements = list(self.request.breadcrumbs)
 
+        if config.launchpad.site_message:
+            site_message = (
+                '<div id="globalheader" xml:lang="en" lang="en" dir="ltr">'
+                '<div class="sitemessage">%s</div></div>'
+                % config.launchpad.site_message)
+        else:
+            site_message = ""
+
         if len(elements) > 0:
             # We're not on the home page.
             prefix = ('<div id="lp-hierarchy">'
                      '<span class="first-rounded"></span>')
             suffix = ('</div><span class="last-rounded">&nbsp;</span>'
-                     '<div class="apps-separator"><!-- --></div>')
+                     '%s<div class="apps-separator"><!-- --></div>'
+                     % site_message)
 
             if len(elements) == 1:
                 first_class = 'before-last item'
@@ -298,7 +308,8 @@ class Hierarchy(LaunchpadView):
                         '<img alt="Launchpad" '
                         ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
                         '</a></div>'
-                        '<div class="apps-separator"><!-- --></div>')
+                        '%s<div class="apps-separator"><!-- --></div>' %
+                        site_message)
 
         return hierarchy
 
@@ -845,6 +856,38 @@ class EdubuntuIcingFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing-edubuntu/')
+
+
+
+class LaunchpadTourFolder(ExportedFolder):
+    """Export a launchpad tour folder.
+
+    This exported folder supports traversing to subfolders.
+    """
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../tour/')
+
+    export_subdirectories = True
+
+    def publishTraverse(self, request, name):
+        """Hide the source directory.
+
+        The source directory contains source material that we don't want
+        published over the web.
+        """
+        if name == 'source':
+            raise NotFound(request, name)
+        return super(LaunchpadTourFolder, self).publishTraverse(request, name)
+
+    def browserDefault(self, request):
+        """Redirect to index.html if the directory itself is requested."""
+        if len(self.names) == 0:
+            return RedirectionView(
+                "%s+tour/index" % canonical_url(self.context),
+                self.request, status=302), ()
+        else:
+            return self, ()
 
 
 class StructuralHeaderPresentationView(LaunchpadView):
