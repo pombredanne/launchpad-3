@@ -367,54 +367,6 @@ hr {
   padding-top: 2px;
 }
 
-ul#menuroot a#homebreadcrumb span {
-  background: url(home-low-high.gif) left top no-repeat;
-  padding-left: 16px; /* space between home icon and the word "Home" */
-}
-ul#menuroot li a#homebreadcrumb:hover span,
-ul#menuroot li.selected a#homebreadcrumb span {
-  background: url(home-low-high.gif) left -20px no-repeat;
-  padding-left: 16px;
-}
-/* The location bar contains menus. */
-ul#menuroot {
-  display: inline;
-  float: left;
-  margin: 0;
-  /* Right padding needed so the rightmost arrow is within the box. It must be
-     the opposite of the negative right margin on breadcrumb items. */
-  /* Other paddings and margins set to zero to undo the generic "ul" style. */
-  padding: 0 16px 0 0;
-  margin: 0;
-  /* To prevent a gap when "#logincontrol" wraps around and the font size is
-     increased, we need to prevent the box height from being greater than the
-     height of the #locationbar box, which sets the green background. We do not
-     inherit the height limit from #location bar because this element is
-     floated.
-
-     0px vertical padding + 26px height = 26px, height of "#locationbar". */
-  height: 26px;
-}
-/* XXX: needs explanation */
-ul#menuroot li {
-  display: inline;
-}
-/* Style for breadcrumb items.
- *
- * XXX: background stuff needs explanation.
- *
- * Negative right margin for breadcrumbs.
- * This is part of how we make them look like arrows.
- */
-ul#menuroot a.breadcrumb {
-  position: relative;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1000px 0px;
-  display: block;
-  float: left;
-  margin-right: -16px;
-}
 /* Display dyn menu items and breadcrumbs with black text and as blocks. */
 #locationbar li a,
 #locationbar li span {
@@ -424,22 +376,6 @@ ul#menuroot a.breadcrumb {
 /* Unlinked items.  Same colour as the overview actions menu. */
 #locationbar li .unlinked {
   color: #83AD23;
-}
-/* XXX: needs explanation */
-ul#menuroot a.breadcrumb em { /* should be changed to not need em */
-  font-style: normal;
-  float: left;
-  display: block;
-  background-image: url(locationbar_nodrop_em_bg.gif);
-  background-repeat: no-repeat;
-  background-position: right top;
-  padding: 6px 26px 6px 20px;
-  cursor: pointer;
-}
-* html ul#menuroot a.breadcrumb em {padding-bottom: 4px;} /* for IE6 */
-/* When a breadcrumb has a submenu, show a down-arrow. */
-ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
-  background-image: url(locationbar_em_bg.gif);
 }
 /* General appearance of a dynamic menu item.
  * The area we actually see on the page is an <a> element.
@@ -478,10 +414,6 @@ ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
   padding-right: 0px;
 }
 
-/* Because the menus are misplaced on IE6, we'll hide them for now. */
-* html ul#menuroot a.container.breadcrumb em {
-  background-image: url(locationbar_nodrop_em_bg.gif);
-}
 * html #locationbar ul.menu {display: none;}
 
 /* Inhibit underlines on all dyn menu items. */
@@ -510,20 +442,6 @@ ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
 }
 #locationbar ul.menu li.selected>a {
   background-color: #C8EF48;
-  color: #000;
-}
-/* Set the appearance of breadcrumb items on mouse-over.
- * This is the same as how they look when selected, so that
- * they look right during the deliberate delay between being
- * moused-over and actually activated.
- */
-ul#menuroot li a.breadcrumb:hover {
-  background-position: 0px 0px;
-  color: #000;
-}
-/* Set the appearance of breadcrumb items when selected for opening. */
-ul#menuroot li.selected a.breadcrumb {
-  background-position: 0px 0px;
   color: #000;
 }
 /* Make dyn menu items that are the source of submenus have a right-arrow
