@@ -87,14 +87,15 @@ def export(distroseries, component, update, force_utf8, logger,
 
     # XXX JeroenVermeulen 2008-02-06: Is there anything here that we can unify
     # with the export-queue code?
-    index = 0
     xpi_templates_to_export = set()
     path_prefix = 'rosetta-%s' % distroseries.name
 
-    for pofile in export_set.get_distroseries_pofiles(
-        distroseries, date, component, languagepack=True):
+    pofiles = export_set.get_distroseries_pofiles(
+        distroseries, date, component, languagepack=True)
+    for index, pofile in enumerate(pofiles):
+        number = index + 1
         logger.debug("Exporting PO file %d (%d/%d)" %
-            (pofile.id, index + 1, pofile_count))
+            (pofile.id, number, pofile_count))
 
         potemplate = pofile.potemplate
         domain = potemplate.translation_domain.encode('ascii')
@@ -125,9 +126,7 @@ def export(distroseries, component, update, force_utf8, logger,
             logger.exception(
                 "Uncaught exception while exporting PO file %d" % pofile.id)
 
-        index += 1
-
-        if index % cache_clear_interval == 0:
+        if number % cache_clear_interval == 0:
             # XXX JeroenVermeulen 2008-07-28 bug=252545: we go through a
             # lot of data here, and it accumulates somewhere in the
             # object cache.  Invalidate the cache from time to time, and
