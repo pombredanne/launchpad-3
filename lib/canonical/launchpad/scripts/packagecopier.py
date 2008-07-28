@@ -25,7 +25,8 @@ from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    PackagePublishingStatus, active_publishing_status)
+    PackagePublishingPocket, PackagePublishingStatus,
+    active_publishing_status)
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 from canonical.librarian.utils import copy_and_close
@@ -34,6 +35,21 @@ from canonical.librarian.utils import copy_and_close
 class CannotCopy(Exception):
     """Exception raised when a copy cannot be performed."""
 
+
+def is_official_security_build(build):
+    """Whether or not a given build is an official security build.
+
+    If the build is targetted to PRIMARY archive, SECURITY pocket and
+    a 'official' distroarchseries return True, otherwise False.
+
+    :param build: an `IBuild` object to be tested.
+
+    :return: True if the given build is an official-security one or
+        False otherwise.
+    """
+    return (build.archive.purpose == ArchivePurpose.PRIMARY and
+            build.pocket == PackagePublishingPocket.SECURITY and
+            not build.distroarchseries.official)
 
 def is_completely_built(source):
     """Whether or not a source publication is completely built.
@@ -45,6 +61,8 @@ def is_completely_built(source):
         otherwise.
     """
     for build in source.getBuilds():
+        if is_official_security_build(build):
+            continue
         if build.buildstate in incomplete_building_status:
             return False
 
@@ -67,6 +85,8 @@ def has_unpublished_binaries(source):
     # Binaries built from this source in the publishing context.
     built_binaries = set()
     for build in source.getBuilds():
+        if is_official_security_build(build):
+            continue
         for binarypackagerelease in build.binarypackages:
             built_binaries.add(binarypackagerelease)
 
@@ -79,7 +99,7 @@ def has_unpublished_binaries(source):
     candidate_binaries = set(
         pub_binary.binarypackagerelease
         for pub_binary in source.getBuiltBinaries())
-    if candidate_binaries != built_binaries:
+    if candidate_binaries < built_binaries:
         return True
 
     return False

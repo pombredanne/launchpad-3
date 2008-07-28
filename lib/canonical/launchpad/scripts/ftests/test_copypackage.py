@@ -21,7 +21,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus,
+    active_publishing_status)
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.ftpmasterbase import SoyuzScriptError
 from canonical.launchpad.scripts.packagecopier import (
@@ -357,6 +358,155 @@ class TestCopyPackage(unittest.TestCase):
         self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
         self.assertEqual(len(copied_source.getPublishedBinaries()), 2)
         self.assertEqual(len(copied_source.getBuilds()), 0)
+
+    def _setupSecurityPropagationContext(self, sourcename):
+        """Setup a security propagation publishing context.
+
+        Assert there is not previous publication with the given sourcename
+        in the ubuntu archive.
+
+        Then publish a corresponding source in hoary-security context with
+        builds for i386 and hppa. Only one i386 binary is published, so the
+        hppa build will remain NEEDSBUILD.
+
+        Return the initialized instance of `SoyuzTestPublisher` and the
+        security source publication.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+        # There is no previous source publications for the given
+        # sourcename.
+        existing_sources = ubuntu.main_archive.getPublishedSources(
+            name=sourcename, exact_match=True)
+        self.assertEqual(existing_sources.count(), 0)
+
+        # Build a SoyuzTestPublisher for ubuntu/hoary and also enable
+        # it to build hppa binaries.
+        hoary = ubuntu.getSeries('hoary')
+        fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+        hoary['hppa'].addOrUpdateChroot(fake_chroot)
+        test_publisher = self.getTestPublisher(hoary)
+
+        # Ensure hoary/i386 is official and hoary/hppa unofficial before
+        # continue with the test.
+        self.assertTrue(hoary['i386'].official)
+        self.assertFalse(hoary['hppa'].official)
+
+        # Publish the requested architecture-specific source in
+        # ubuntu/hoary-security.
+        security_source = test_publisher.getPubSource(
+            sourcename=sourcename, version='1.0',
+            architecturehintlist="any",
+            archive=ubuntu.main_archive, distroseries=hoary,
+            pocket=PackagePublishingPocket.SECURITY,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Create builds and upload and published one binary package
+        # in i386 architecture.
+        [build_hppa, build_i386] = security_source.createMissingBuilds()
+        lazy_bin = test_publisher.uploadBinaryForBuild(
+            build_i386, 'lazy-bin')
+        test_publisher.publishBinaryInArchive(
+            lazy_bin, ubuntu.main_archive,
+            pocket=PackagePublishingPocket.SECURITY,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        return test_publisher, security_source
+
+    def _checkSecurityPropagationContext(self, archive, sourcename):
+        """Verify publishing context after propagating a security update.
+
+        Check if both publications remain active, the newest in UPDATES and
+        the oldest in SECURITY.
+
+        Assert that no build was created during the copy, first because
+        the copy was 'including binaries'.
+
+        Addionally, check that no builds will be created in future runs of
+        `buildd-queue-builder`, because a source version can only be build
+        once in a distroarchseries, independent of its targeted pocket.
+        """
+        sources = archive.getPublishedSources(
+            name=sourcename, exact_match=True,
+            status=active_publishing_status)
+
+        self.assertEqual(
+            [pub.pocket.name for pub in sources], ['UPDATES', 'SECURITY'])
+
+        [copied_source, original_source] = sources
+        self.assertEqual(
+            copied_source.getBuilds(), original_source.getBuilds())
+
+        new_builds = copied_source.createMissingBuilds()
+        self.assertEqual(len(new_builds), 0)
+
+    def testCopyNotCompletelyBuiltSources(self):
+        """Check if source not completely build can be copied.
+
+        As mentioned in bug #251492, ubuntu distro-team uses copy-package
+        to propagate security updates across the mirrors via the updates
+        pocket and reduce the bottle-neck in the only security repository
+        we have.
+
+        This procedure should be executed as soon as the security updates are
+        published; the sooner the copy happens, the lower will be the impact
+        on the security repository.
+
+        Having to wait for the unofficial builds (which are  usually slower
+        than official architectures) before propagating security updates
+        causes a severe and unaffordable load on the security repository.
+
+        That's basically why we decided to suppress the error issued by
+        the copy back-end when copying source with incomplete builds in
+        such circumstances.
+        """
+        sourcename = 'lazy-building'
+
+        (test_publisher,
+         security_source) = self._setupSecurityPropagationContext(sourcename)
+
+        # Source and i386 binary(ies) can be propagated from security to
+        # updates pocket.
+        copy_helper = self.getCopier(
+            sourcename=sourcename, include_binaries=True,
+            from_suite='hoary-security', to_suite='hoary-updates')
+        copied = copy_helper.mainTask()
+
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 2)
+
+        self._checkSecurityPropagationContext(
+            security_source.archive, sourcename)
+
+    def testCopySourcesWithUnplublishedBinaries(self):
+        """Check if sources with unpublished binaries can be copied.
+
+        Like in `testCopyNotCompletelyBuiltSources`, the fact that the
+        copied candidate has unpublished binaries is not considered an
+        error when it is a security updates that already quiesced all
+        its builds to the official architectures.
+        """
+        sourcename = 'lazy-publishing'
+
+        (test_publisher,
+         security_source) = self._setupSecurityPropagationContext(sourcename)
+
+        # Upload a hppa binary but keep it unpublished.
+        [build_hppa, build_i386] = security_source.getBuilds()
+        lazy_bin_hppa = test_publisher.uploadBinaryForBuild(
+            build_hppa, 'lazy-bin')
+
+        # Source and i386 binaries can be copied.
+        copy_helper = self.getCopier(
+            sourcename=sourcename, include_binaries=True,
+            from_suite='hoary-security', to_suite='hoary-updates')
+        copied = copy_helper.mainTask()
+
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 2)
+
+        self._checkSecurityPropagationContext(
+            security_source.archive, sourcename)
 
     def testCopyAcrossPPAs(self):
         """Check the copy operation across PPAs.
