@@ -367,106 +367,10 @@ hr {
   padding-top: 2px;
 }
 
-/* Display dyn menu items and breadcrumbs with black text and as blocks. */
-#locationbar li a,
-#locationbar li span {
-  display: block;
-  color: #000000;
-}
-/* Unlinked items.  Same colour as the overview actions menu. */
-#locationbar li .unlinked {
-  color: #83AD23;
-}
-/* General appearance of a dynamic menu item.
- * The area we actually see on the page is an <a> element.
- * The <li> element takes up no space.
- */
-#locationbar ul.menu li a,
-#locationbar ul.menu li .unlinked {
-  background-image: none;
-  background-color: #AFDB1F;
-  float: none;
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 3px;
-  padding-bottom: 3px;
-  height: auto;
-}
-/* General appearance of a dynamic menu item. */
-#locationbar ul.menu li {
-  margin-bottom: 0px;
-  padding-bottom: 0px;
-}
-/* Appearance of a dynamic menu or submenu.
- * Note the 3d-effect border.
- * Note the z-index so that they appear above all other content.
- */
-#locationbar ul.menu {
-  background-color: #AFDB1F;
-  position: absolute;
-  z-index: 2000;
-  margin-left: 0px;
-  border-right: 1px solid #90B51A;
-  border-bottom: 1px solid #90B51A;
-  border-top: 1px solid #DCF58B;
-  border-left: 1px solid #DCF58B;
-  padding-left: 0px;
-  padding-right: 0px;
-}
-
-* html #locationbar ul.menu {display: none;}
-
-/* Inhibit underlines on all dyn menu items. */
-#locationbar li a:hover {
-  text-decoration: none;
-}
-/* Set the appearance of dyn menu items other than the breadcrumbs
- * on mouse-over.
- * The colour #EEE is sometimes used for debugging.
- */
-#locationbar ul#rootmenu ul.menu li a:hover {
-  /* color: #EEE; */
-}
-/* Set the appearance of dyn menu items other than the breadcrumbs
- * when selected and potentially opened.
- * This works, but has the > that makes IE unhappy.
- * #locationbar ul.menu li.selected>a {
- *   background-color: #C8EF48;
- *   color: #000;
- * }
- * So instead, we have the following two rules.
-*/
-#locationbar ul.menu li a {
-  background-color: #AFDB1F;
-  color: #000;
-}
-#locationbar ul.menu li.selected>a {
-  background-color: #C8EF48;
-  color: #000;
-}
-/* Make dyn menu items that are the source of submenus have a right-arrow
- * on the far right, to show they can be opened.
- *
- * Does not include the breadcrumbs.
- */
-#locationbar ul.menu a.container {
-  background-image: url(/@@/arrowRight);
-  background-repeat: no-repeat;
-  background-position: center right;
-}
 /* Allow dyn menus to appear ouside of the locationbar, even though they
  * overflow its bounds.
  */
 #locationbar {overflow: visible;}
-/* Prevent the text in links in menu items from wrapping.
- * Apply appropriate formatting to links in menu items.
- */
-#locationbar li a,
-#locationbar li .unlinked {
-  left: auto;
-  margin: 0px 0px 0px 0px;
-  white-space: pre;
-}
 
 /* === Location bar === */
 /* The location bar consists of three element: the login control, the location
