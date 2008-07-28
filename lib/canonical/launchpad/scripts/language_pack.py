@@ -174,7 +174,7 @@ def export(distroseries, component, update, force_utf8, logger,
 
 def export_language_pack(distribution_name, series_name, logger,
                          component=None, force_utf8=False, output_file=None,
-                         cache_clear_interval=100):
+                         cache_clear_interval=20):
     """Export a language pack for the given distribution series.
 
     :param distribution_name: Name of the distribution we want to export the
