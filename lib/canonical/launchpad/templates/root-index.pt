@@ -75,49 +75,31 @@
           <h2>What&#8217;s new here?</h2>
           <ul>
             <li class="news">
-              <a href="http://news.launchpad.net/?p=99">
-                <strong>Launchpad's new look</strong><br />
-                We've given Launchpad an updated style.
+              <a href="http://news.launchpad.net/?p=105">
+                <strong>New simpler web interface</strong><br />
+                Learn more about Launchpad's new layout and navigation
               </a>
            </li>
            <li class="news">
-              <a href="http://news.launchpad.net/?p=94">
-                <strong>More control over your code imports</strong><br />
-                Get more information on the status of code imports CVS and Subversion.
+              <a href="http://news.launchpad.net/?p=106">
+
+                <strong>Help test Launchpad's new API!</strong><br />
+                Our new internet-services API is now in beta test.
               </a>
            </li>
            <li class="news">
-              <a href="http://news.launchpad.net/?p=91">
-                <strong>Code review by email</strong><br />
-                Use email to vote and add your comments to code reviews in Launchpad.
+              <a href="http://news.launchpad.net/?p=107">
+                <strong>Closer integration with Bugzilla and Trac</strong><br />
+                Our new GPL plugins allow comment sharing between Launchpad and external trackers.
               </a>
+
            </li>
            <li class="news">
-              <a href="http://news.launchpad.net/?p=92">
-                <strong>Redesigned pages for bugs, translations, and distributions</strong><br />
-                We're making Launchpad easier to navigate.
+              <a href="https://launchpad.net/+tour/index.html">
+                <strong>New tour</strong><br />
+                Get a quick overview of what Launchpad's all about with our new tour.
               </a>
            </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/cool-new-stuff/review-branch-merge-proposals-in-launchpad">
-                <strong>Code merger reviews</strong><br />
-                Review proposed branch mergers, using comments and voting, direct in Launchpad.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/?p=80">
-                <strong>Site-wide search improvements</strong><br />
-                We have significantly enhanced our site-wide search feature to
-                provide better results. Give it a try!
-              </a>
-           </li>
-            <li class="news">
-              <a href="http://news.launchpad.net/category/podcast">
-                <strong>New Launchpad podcast</strong><br />
-                Hear the latest from the Launchpad team, with interviews and
-                news in Launchpod - the Launchpad team podcast.
-              </a>
-            </li>
           </ul>
           <div class="discreet" style="text-align: right">
             Updated 2008-07-02.
