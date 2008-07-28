@@ -55,7 +55,9 @@
         <h2>What is Launchpad?</h2>
         <p id="application-summary">
           Launchpad is hosting service for open source projects that's
-          big on collaboration. <a href="/+tour">Take a tour!</a>
+          big on collaboration.
+          <a href="/+tour"><strong>Take a tour!</strong></a><sup 
+            style="font-size: small; color: red">(new)</sup>
         </p>
 
         <h2>Start here:</h2>
@@ -71,29 +73,33 @@
         <h2>What&#8217;s new?</h2>
         <ul>
           <li class="news">
-            <a href="http://news.launchpad.net/?p=99">
-              <strong>Launchpad's new look</strong><br />
-              We've given Launchpad an updated style.
+            <a href="http://news.launchpad.net/?p=105">
+              <strong>New simpler web interface</strong><br />
+              Learn more about Launchpad's new layout and navigation
             </a>
          </li>
          <li class="news">
-            <a href="http://news.launchpad.net/?p=94">
-              <strong>More control over your code imports</strong><br />
-              Get more information on the status of code imports CVS and Subversion.
+            <a href="http://news.launchpad.net/?p=106">
+
+              <strong>Help test Launchpad's new API!</strong><br />
+              Our new internet-services API is now in beta test.
             </a>
          </li>
          <li class="news">
-            <a href="http://news.launchpad.net/?p=91">
-              <strong>Code review by email</strong><br />
-              Use email to vote and add your comments to code reviews in Launchpad.
+            <a href="http://news.launchpad.net/?p=107">
+              <strong>Closer Bugzilla and Trac integration</strong><br />
+              New GPLed plugins allow comment sharing between Launchpad
+              and external trackers.
             </a>
+
          </li>
         </ul>
         <div class="discreet" style="text-align: right">
-          Updated 2008-07-02.
+          Updated 2008-07-28.
           <a href="http://news.launchpad.net">More...</a>
         </div>
       </div>
+
       <div class="three column right" id="featured-projects">
         <h2>Featured projects</h2>
         <table>
