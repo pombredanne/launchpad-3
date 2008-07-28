@@ -56,8 +56,8 @@
         <p id="application-summary">
           Launchpad is hosting service for open source projects that's
           big on collaboration.
-          <a href="/+tour"><strong>Take a tour!</strong></a><sup 
-            style="font-size: small; color: red">(new)</sup>
+          <a href="/+tour">Take a tour...</a>
+            <span style="font-size: small; color: red">(new!)</span>
         </p>
 
         <h2>Start here:</h2>

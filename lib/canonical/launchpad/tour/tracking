@@ -19,16 +19,16 @@
     <div id="container">
         <p class="page-number">8 of 10</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="ppa.html" accesskey="1" tabindex="1">Next</a></li>
-            <li class="home"><a href="index.html" accesskey="2">Launchpad Tour Home</a></li>
-            <li class="current"><a href="bugs.html" accesskey="3">Cross-project bug tracking</a></li>
-            <li><a href="ppa.html" accesskey="4">Personal Package Archive</a></li>
-            <li><a href="branch-hosting-tracking.html" accesskey="5">Branch Hosting tracking</a></li>
-            <li><a href="community.html" accesskey="6">Building community</a></li>
-            <li><a href="community-support.html" accesskey="7">Community support</a></li>
-            <li><a href="feature-tracking.html" accesskey="8">Feature Tracking</a></li>
-            <li><a href="translation.html" accesskey="9">Web-based translation</a></li>
-            <li><a href="release-management.html" accesskey="a">Release Management</a></li>
+            <li class="button-next"><a id="btnNext" href="ppa" accesskey="1" tabindex="1">Next</a></li>
+            <li class="home"><a href="index" accesskey="2">Launchpad Tour Home</a></li>
+            <li class="current"><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
+            <li><a href="ppa" accesskey="4">Personal Package Archive</a></li>
+            <li><a href="branch-hosting-tracking" accesskey="5">Branch Hosting tracking</a></li>
+            <li><a href="community" accesskey="6">Building community</a></li>
+            <li><a href="community-support" accesskey="7">Community support</a></li>
+            <li><a href="feature-tracking" accesskey="8">Feature Tracking</a></li>
+            <li><a href="translation" accesskey="9">Web-based translation</a></li>
+            <li><a href="release-management" accesskey="a">Release Management</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -43,7 +43,7 @@
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
             <li class="button-next">
-                <a href="ppa.html">Next</a>
+                <a href="ppa">Next</a>
             </li>
         </ul>
         <ul id="further-information">
@@ -110,7 +110,7 @@
         </ul>
         <ul id="footer-navigation">
             <li class="button-next">
-                <a href="ppa.html">Next</a>
+                <a href="ppa">Next</a>
             </li>
             <li class="copyright">
                 &copy; 2004-2008 Canonical Ltd. <a href="#">Terms of Use</a> | <a href="#">Feedback</a> | <a href="#">FAQ</a>

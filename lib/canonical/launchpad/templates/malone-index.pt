@@ -31,8 +31,8 @@
 
       <ul class="rollover buttons">
         <li>
-          <a href="/+tour"
-             tal:attributes="href string:${rooturl}+tour/bugs.html">
+          <a href="/+tour/bugs"
+             tal:attributes="href string:${rooturl}+tour/bugs">
             <img
               alt="Take a tour"
               src="/+icing/but-lrg-takeatour.gif"

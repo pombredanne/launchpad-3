@@ -19,18 +19,18 @@
     <div id="container">
         <p class="page-number">11 of 10</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="index.html" tabindex="1" accesskey="1">Next</a></li>
-            <li class="home"><a href="index.html" accesskey="2" tabindex="0">Launchpad Tour Home</a></li>
-            <li><a href="bugs.html" accesskey="3" tabindex="0">Cross-project bug tracking</a></li>
-            <li><a href="branch-hosting-tracking.html" accesskey="4" tabindex="0">Welcome to the Bazaar</a></li>
-            <li><a href="code-review.html" accesskey="5" tabindex="0">Code review</a></li>
-            <li><a href="translation.html" accesskey="6" tabindex="0">Freedom in every language</a></li>
-            <li><a href="community.html" accesskey="7" tabindex="0">Building community</a></li>
-            <li><a href="ppa.html" accesskey="8" tabindex="0">Distribute software</a></li>
-            <li><a href="community-support.html" accesskey="9" tabindex="0">Community support</a></li>
-            <li><a href="feature-tracking.html" accesskey="a" tabindex="0">Tracking Work</a></li>
-            <li><a href="release-management.html" accesskey="b" tabindex="0">Release Management</a></li>
-            <li class="current"><a href="api.html" accesskey="c" tabindex="0">API</a></li>
+            <li class="button-next"><a id="btnNext" href="index" tabindex="1" accesskey="1">Next</a></li>
+            <li class="home"><a href="index" accesskey="2" tabindex="0">Launchpad Tour Home</a></li>
+            <li><a href="bugs" accesskey="3" tabindex="0">Cross-project bug tracking</a></li>
+            <li><a href="branch-hosting-tracking" accesskey="4" tabindex="0">Welcome to the Bazaar</a></li>
+            <li><a href="code-review" accesskey="5" tabindex="0">Code review</a></li>
+            <li><a href="translation" accesskey="6" tabindex="0">Freedom in every language</a></li>
+            <li><a href="community" accesskey="7" tabindex="0">Building community</a></li>
+            <li><a href="ppa" accesskey="8" tabindex="0">Distribute software</a></li>
+            <li><a href="community-support" accesskey="9" tabindex="0">Community support</a></li>
+            <li><a href="feature-tracking" accesskey="a" tabindex="0">Tracking Work</a></li>
+            <li><a href="release-management" accesskey="b" tabindex="0">Release Management</a></li>
+            <li class="current"><a href="api" accesskey="c" tabindex="0">API</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -45,7 +45,7 @@
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
             <li class="button-next">
-                <a href="index.html" tabindex="13" accesskey="d">Next</a>
+                <a href="index" tabindex="13" accesskey="d">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -122,7 +122,7 @@
         </div>
         <ul id="footer-navigation">
             <li class="button-next">
-                <a href="index.html" tabindex="14" accesskey="e">Next</a>
+                <a href="index" tabindex="14" accesskey="e">Next</a>
             </li>
             <li class="copyright">
                 &copy; 2004-2008 Canonical Ltd. <a href="#" tabindex="15" accesskey="f">Terms of Use</a> &#124; <a href="#" tabindex="16" accesskey="g">Feedback</a> &#124; <a href="#" tabindex="17" accesskey="h">FAQ</a>

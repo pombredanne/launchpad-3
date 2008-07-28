@@ -15,7 +15,7 @@
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         name="+about"
-        new_name="+tour/index.html"
+        new_name="+tour/index"
         rootsite="mainsite"
         />
 
@@ -24,19 +24,19 @@
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.AnswersLayer"
         name="+about"
-        new_name="+tour/community-support.html"
+        new_name="+tour/community-support"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.AnswersLayer"
         name="+faq"
-        new_name="+tour/community-support.html"
+        new_name="+tour/community-support"
         rootsite="mainsite"
         />
     <browser:renamed-page
         name="+tour"
-        new_name="+tour/community-support.html"
+        new_name="+tour/community-support"
         rootsite="mainsite"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.AnswersLayer"
@@ -47,21 +47,21 @@
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BlueprintsLayer"
         name="+about"
-        new_name="+tour/feature-tracking.html"
+        new_name="+tour/feature-tracking"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BlueprintsLayer"
         name="+faq"
-        new_name="+tour/feature-tracking.html"
+        new_name="+tour/feature-tracking"
         rootsite="mainsite"
         />
     <browser:renamed-page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BlueprintsLayer"
-        new_name="+tour/feature-tracking.html"
+        new_name="+tour/feature-tracking"
         rootsite="mainsite"
         />
 
@@ -70,21 +70,21 @@
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BugsLayer"
         name="+about"
-        new_name="+tour/bugs.html"
+        new_name="+tour/bugs"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BugsLayer"
         name="+faq"
-        new_name="+tour/bugs.html"
+        new_name="+tour/bugs"
         rootsite="mainsite"
         />
     <browser:renamed-page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.BugsLayer"
-        new_name="+tour/bugs.html"
+        new_name="+tour/bugs"
         rootsite="mainsite"
         />
 
@@ -93,21 +93,21 @@
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.CodeLayer"
         name="+about"
-        new_name="+tour/branch-hosting-tracking.html"
+        new_name="+tour/branch-hosting-tracking"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.CodeLayer"
         name="+faq"
-        new_name="+tour/branch-hosting-tracking.html"
+        new_name="+tour/branch-hosting-tracking"
         rootsite="mainsite"
         />
     <browser:renamed-page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.CodeLayer"
-        new_name="+tour/branch-hosting-tracking.html"
+        new_name="+tour/branch-hosting-tracking"
         rootsite="mainsite"
         />
 
@@ -117,21 +117,21 @@
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.TranslationsLayer"
         name="+about"
-        new_name="+tour/translation.html"
+        new_name="+tour/translation"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.TranslationsLayer"
         name="+faq"
-        new_name="+tour/translation.html"
+        new_name="+tour/translation"
         rootsite="mainsite"
         />
     <browser:renamed-page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
         layer="canonical.launchpad.layers.TranslationsLayer"
-        new_name="+tour/translation.html"
+        new_name="+tour/translation"
         rootsite="mainsite"
         />
 

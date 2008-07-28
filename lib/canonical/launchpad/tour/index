@@ -17,17 +17,17 @@
     <div id="container">
         <p class="page-number">1 of 10</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="bugs.html" accesskey="1" tabindex="1">Next</a></li>
-            <li class="home current"><a href="index.html" accesskey="2">Launchpad Tour Home</a></li>
-            <li><a href="bugs.html" accesskey="3">Cross-project bug tracking</a></li>
-            <li><a href="branch-hosting-tracking.html" accesskey="4">Welcome to the Bazaar</a></li>
-            <li><a href="code-review.html" accesskey="5">Code review</a></li>
-            <li><a href="translation.html" accesskey="6">Freedom in every language</a></li>
-            <li><a href="community.html" accesskey="7">Building community</a></li>
-            <li><a href="ppa.html" accesskey="8">Distribute software</a></li>
-            <li><a href="community-support.html" accesskey="9">Community support</a></li>
-            <li><a href="feature-tracking.html" accesskey="a">Tracking Work</a></li>
-            <li><a href="release-management.html" accesskey="b">Release Management</a></li>
+            <li class="button-next"><a id="btnNext" href="bugs" accesskey="1" tabindex="1">Next</a></li>
+            <li class="home current"><a href="index" accesskey="2">Launchpad Tour Home</a></li>
+            <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
+            <li><a href="branch-hosting-tracking" accesskey="4">Welcome to the Bazaar</a></li>
+            <li><a href="code-review" accesskey="5">Code review</a></li>
+            <li><a href="translation" accesskey="6">Freedom in every language</a></li>
+            <li><a href="community" accesskey="7">Building community</a></li>
+            <li><a href="ppa" accesskey="8">Distribute software</a></li>
+            <li><a href="community-support" accesskey="9">Community support</a></li>
+            <li><a href="feature-tracking" accesskey="a">Tracking Work</a></li>
+            <li><a href="release-management" accesskey="b">Release Management</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -51,7 +51,7 @@
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
             <li class="button-next">
-                <a href="bugs.html" accesskey="d" tabindex="2">Next</a>
+                <a href="bugs" accesskey="d" tabindex="2">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -67,7 +67,7 @@
                         <p>In the free software world, the same code is used by many different communities. Launchpad helps you work with different groups affected by the same bug. By sharing bug reports, statuses, patches and comments you can have a conversation across project boundaries to develop a fix. Even where the bug is tracked in different places with different tools - such as in Bugzilla or Trac - Launchpad will import comments and status information directly into your bug report.
                         </p>
                         <ul class="further-links">
-                            <li><a href="bugs.html" accesskey="e" tabindex="3">More about bug tracking</a></li>
+                            <li><a href="bugs" accesskey="e" tabindex="3">More about bug tracking</a></li>
                         </ul>
                     </div>
                     <div class="block odd">
@@ -82,8 +82,8 @@
 Launchpad also supports an efficient flow of new code into your project. You can publicly review code and reach consensus with core developers on which new branches are ready to merge into your trunk.
                         </p>
                         <ul class="further-links">
-                            <li><a href="branch-hosting-tracking.html" accesskey="f" tabindex="4">More about code hosting and tracking</a></li>
-                            <li><a href="code-review.html" accesskey="g" tabindex="5">More about code reviews</a></li>
+                            <li><a href="branch-hosting-tracking" accesskey="f" tabindex="4">More about code hosting and tracking</a></li>
+                            <li><a href="code-review" accesskey="g" tabindex="5">More about code reviews</a></li>
                         </ul>
                     </div>
                     <div class="clear"></div>
@@ -103,7 +103,7 @@ Launchpad also supports an efficient flow of new code into your project. You can
                             Launchpad&rsquo;s intuitive web interface allows anyone who speaks English and another language as their mother tongue to help translate your project into their language, ready for export in standard GNU GetText files. Putting your project into Launchpad gives you access to 30,000 translators working in 257 languages, with automatic suggestions from a library of more than sixteen million strings.
                         </p>
                         <ul class="further-links">
-                            <li><a href="translation.html" accesskey="h" tabindex="6">More about translations</a></li>
+                            <li><a href="translation" accesskey="h" tabindex="6">More about translations</a></li>
                         </ul>
                     </div>
                     <div class="block odd">
@@ -116,7 +116,7 @@ Launchpad also supports an efficient flow of new code into your project. You can
                             Build and host Ubuntu packages and host them in your own APT repository. Use Launchpad to distribute experimental builds and betas of your software, with automatic updates pushed to your users whenever you modify a package.
                         </p>
                         <ul class="further-links">
-                            <li><a href="ppa.html" accesskey="i" tabindex="7">More about package hosting</a></li>
+                            <li><a href="ppa" accesskey="i" tabindex="7">More about package hosting</a></li>
                         </ul>
                     </div>
                     <div class="clear"></div>
@@ -136,7 +136,7 @@ Launchpad also supports an efficient flow of new code into your project. You can
                             Target chunks of work to forthcoming releases, see who&rsquo;s working on them and track their progress. Open up your planning: anyone can use Launchpad to register a specification for your project and communicate their progress.
                         </p>
                         <ul class="further-links">
-                            <li><a href="feature-tracking.html" accesskey="j" tabindex="8">More about specification tracking</a></li>
+                            <li><a href="feature-tracking" accesskey="j" tabindex="8">More about specification tracking</a></li>
                         </ul>
                     </div>
                     <div class="block odd">
@@ -149,7 +149,7 @@ Launchpad also supports an efficient flow of new code into your project. You can
                             Track help requests just like bug reports. Create FAQs and build a searchable knowledge base of previous answers. When requests for help turn out to be symptoms of an underlying bug, you can easily change the request into a bug report.
                         </p>
                         <ul class="further-links">
-                            <li><a href="community-support.html" accesskey="k" tabindex="9">More about community support</a></li>
+                            <li><a href="community-support" accesskey="k" tabindex="9">More about community support</a></li>
                         </ul>
                     </div>
                     <div class="clear"></div>
@@ -159,7 +159,7 @@ Launchpad also supports an efficient flow of new code into your project. You can
         </div>
         <ul id="footer-navigation">
             <li class="button-next">
-                <a href="bugs.html" accesskey="l" tabindex="10">Next</a>
+                <a href="bugs" accesskey="l" tabindex="10">Next</a>
             </li>
             <li class="copyright">
                 &copy; 2004-2008 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="i" tabindex="7">Terms of Use</a> &#124; <a href="https://help.launchpad.net/Feedback" accesskey="j" tabindex="8">Feedback</a> &#124; <a href="https://help.launchpad.net/FAQ" accesskey="k" tabindex="9">FAQ</a>

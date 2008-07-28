@@ -884,7 +884,7 @@ class LaunchpadTourFolder(ExportedFolder):
         """Redirect to index.html if the directory itself is requested."""
         if len(self.names) == 0:
             return RedirectionView(
-                "%s+tour/index.html" % canonical_url(self.context),
+                "%s+tour/index" % canonical_url(self.context),
                 self.request, status=302), ()
         else:
             return self, ()

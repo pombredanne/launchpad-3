@@ -17,17 +17,17 @@
     <div id="container">
         <p class="page-number">6 of 10</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="ppa.html" tabindex="1" accesskey="1">Next</a></li>
-            <li class="home"><a href="index.html" accesskey="2">Launchpad tour home</a></li>
-            <li><a href="bugs.html" accesskey="3">Cross-project bug tracking</a></li>
-            <li><a href="branch-hosting-tracking.html" accesskey="4">Code hosting and tracking</a></li>
-            <li><a href="code-review.html" accesskey="5">Code review</a></li>
-            <li><a href="translation.html" accesskey="6">Web-based translation</a></li>
-            <li class="current"><a href="community.html" accesskey="7">Community building</a></li>
-            <li><a href="ppa.html" accesskey="8">Software distribution</a></li>
-            <li><a href="community-support.html" accesskey="9">Community support</a></li>
-            <li><a href="feature-tracking.html" accesskey="a">Lightweight specifications</a></li>
-            <li><a href="release-management.html" accesskey="b">Release management</a></li>
+            <li class="button-next"><a id="btnNext" href="ppa" tabindex="1" accesskey="1">Next</a></li>
+            <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
+            <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
+            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and tracking</a></li>
+            <li><a href="code-review" accesskey="5">Code review</a></li>
+            <li><a href="translation" accesskey="6">Web-based translation</a></li>
+            <li class="current"><a href="community" accesskey="7">Community building</a></li>
+            <li><a href="ppa" accesskey="8">Software distribution</a></li>
+            <li><a href="community-support" accesskey="9">Community support</a></li>
+            <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
+            <li><a href="release-management" accesskey="b">Release management</a></li>
             
         </ul>
         <div id="page-intro-top"></div>
@@ -46,7 +46,7 @@ Launchpad also helps you organise the social structure of your community with a 
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
             <li class="button-next">
-                <a href="ppa.html" accesskey="d" tabindex="2">Next</a>
+                <a href="ppa" accesskey="d" tabindex="2">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -69,7 +69,7 @@ Launchpad also helps you organise the social structure of your community with a 
                         <p class="screen-holder">
                             <img src="images/community/2.png" alt="Team Responsibility" />                        </p>
                         <p>
-                            Teams are interchangable with individuals in just about any role in Launchpad, such as <a href="bugs.html">bug triage</a>, owning a <a href="branch-hosting-tracking.html">branch of code</a> or publishing software packages through a <a href="ppa.html">PPA</a>. You can create as many teams as you want and even arrange a hierarchy of teams so that all the members of one team are also automatically members of another. Launchpad&rsquo;s team functionality is unique among tools for free software developers.
+                            Teams are interchangable with individuals in just about any role in Launchpad, such as <a href="bugs">bug triage</a>, owning a <a href="branch-hosting-tracking">branch of code</a> or publishing software packages through a <a href="ppa">PPA</a>. You can create as many teams as you want and even arrange a hierarchy of teams so that all the members of one team are also automatically members of another. Launchpad&rsquo;s team functionality is unique among tools for free software developers.
                         </p>
                     </div>
                     <div class="clear"></div>
@@ -122,7 +122,7 @@ Karma gives you a quick way to separate the heavy contributors from the newcomer
         </div>
         <ul id="footer-navigation">
             <li class="button-next">
-                <a href="ppa.html" accesskey="d" tabindex="3">Next</a>
+                <a href="ppa" accesskey="d" tabindex="3">Next</a>
             </li>
             <li class="copyright">
                 &copy; 2004-2008 Canonical Ltd. <a href="#" accesskey="e" tabindex="4">Terms of Use</a> &#124; <a href="#" accesskey="f" tabindex="5">Feedback</a> &#124; <a href="#" accesskey="g" tabindex="6">FAQ</a>

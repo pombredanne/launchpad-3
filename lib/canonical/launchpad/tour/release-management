@@ -17,17 +17,17 @@
     <div id="container">
         <p class="page-number">10 of 10</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="index.html" taborder="1" accesskey="1">Start</a></li>
-            <li class="home"><a href="index.html" accesskey="2">Launchpad tour home</a></li>
-            <li><a href="bugs.html" accesskey="3">Cross-project bug tracking</a></li>
-            <li><a href="branch-hosting-tracking.html" accesskey="4">Code hosting and tracking</a></li>
-            <li><a href="code-review.html" accesskey="5">Code review</a></li>
-            <li><a href="translation.html" accesskey="6">Web-based translation</a></li>
-            <li><a href="community.html" accesskey="7">Community building</a></li>
-            <li><a href="ppa.html" accesskey="8">Software distribution</a></li>
-            <li><a href="community-support.html" accesskey="9">Community support</a></li>
-            <li><a href="feature-tracking.html" accesskey="a">Light-weight specifications</a></li>
-            <li class="current"><a href="release-management.html" accesskey="b">Release management</a></li>
+            <li class="button-next"><a id="btnNext" href="index" taborder="1" accesskey="1">Start</a></li>
+            <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
+            <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
+            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and tracking</a></li>
+            <li><a href="code-review" accesskey="5">Code review</a></li>
+            <li><a href="translation" accesskey="6">Web-based translation</a></li>
+            <li><a href="community" accesskey="7">Community building</a></li>
+            <li><a href="ppa" accesskey="8">Software distribution</a></li>
+            <li><a href="community-support" accesskey="9">Community support</a></li>
+            <li><a href="feature-tracking" accesskey="a">Light-weight specifications</a></li>
+            <li class="current"><a href="release-management" accesskey="b">Release management</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -50,7 +50,7 @@ Launchpad&rsquo;s extensive search to discover your work.
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
             <li class="button-next">
-                <a href="index.html" accesskey="d" tabindex="2">Start</a>
+                <a href="index" accesskey="d" tabindex="2">Start</a>
             </li>
         </ul>
         <div id="further-information">
@@ -66,7 +66,7 @@ Launchpad&rsquo;s extensive search to discover your work.
                             
 Launchpad calls these series and helps you to organise your work &mdash; code, translations, bug reports and so on &mdash; around them. Through series, your community can work in parallel on different major releases of your software.</p>
                         <p>
-                            By targeting <a href="bugs.html" accesskey="e" tabindex="3">bug reports</a> and <a href="feature-tracking.html" accesskey="f" tabindex="4">chunks of work</a> to future releases, trusted members of your community can help you to create a light-weight roadmap for the future of your project.
+                            By targeting <a href="bugs" accesskey="e" tabindex="3">bug reports</a> and <a href="feature-tracking" accesskey="f" tabindex="4">chunks of work</a> to future releases, trusted members of your community can help you to create a light-weight roadmap for the future of your project.
                         </p>
                     </div>
                     <div class="block odd">
@@ -75,7 +75,7 @@ Launchpad calls these series and helps you to organise your work &mdash; code, t
                         <p class="screen-holder">
                             <img src="images/rm/2.png" alt="Publishing your software"  />                        </p>
                         <p>
-                            Launchpad helps you to get your software to the users of Linux-based operating systems, such as Ubuntu, using <a href="ppa.html" accesskey="g" tabindex="5">Debian-style packages</a> and as direct binary downloads from your project&rsquo;s Launchpad home page.
+                            Launchpad helps you to get your software to the users of Linux-based operating systems, such as Ubuntu, using <a href="ppa" accesskey="g" tabindex="5">Debian-style packages</a> and as direct binary downloads from your project&rsquo;s Launchpad home page.
                         </p>
                     </div>
                     
@@ -107,7 +107,7 @@ Launchpad calls these series and helps you to organise your work &mdash; code, t
         </div>
         <ul id="footer-navigation">
             <li class="button-next">
-                <a href="index.html" accesskey="e" tabindex="3">Start</a>
+                <a href="index" accesskey="e" tabindex="3">Start</a>
             </li>
             <li class="copyright">
                 &copy; 2004-2008 Canonical Ltd. <a href="#" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="#" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="#" accesskey="h" tabindex="6">FAQ</a>
