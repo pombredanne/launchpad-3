@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
-    'Breadcrumbs',
     'BrowserWindowDimensions',
     'ContribIcingFolder',
     'DefaultShortLink',
@@ -301,45 +300,6 @@ class Hierarchy(LaunchpadView):
                         '<div class="apps-separator"><!-- --></div>')
 
         return hierarchy
-
-
-class Breadcrumbs(LaunchpadView):
-    """Page fragment to display the breadcrumbs text."""
-
-    def render(self):
-        """Render the breadcrumbs text.
-
-        The breadcrumbs are taken from the request.breadcrumbs list.
-        For each breadcrumb, breadcrumb.text is cgi escaped.
-        """
-        crumbs = list(self.request.breadcrumbs)
-
-        L = []
-        firsttext = 'Home'
-        firsturl = allvhosts.configs['mainsite'].rooturl
-
-        L.append(
-            '<li lpm:mid="root" class="item">'
-            '<a href="%s" class="breadcrumb container" id="homebreadcrumb">'
-            '<em><span>%s</span></em></a></li>'
-            % (firsturl, cgi.escape(firsttext)))
-
-        if crumbs:
-
-            for crumb in crumbs:
-                if crumb.has_menu:
-                    menudata = ' lpm:mid="%s/+menudata"' % crumb.url
-                    cssclass = 'breadcrumb container'
-                else:
-                    menudata = ''
-                    cssclass = 'breadcrumb'
-                L.append('<li class="item"%s>'
-                         '<a href="%s" class="%s"><em>%s</em></a>'
-                         '</li>'
-                         % (menudata, crumb.url, cssclass,
-                            cgi.escape(crumb.text)))
-
-        return u'\n'.join(L)
 
 
 class MaintenanceMessage:
