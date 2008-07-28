@@ -93,6 +93,8 @@
   >
     <div id="locationbar">
       <tal:login replace="structure context/@@login_status" />
+      <img src="/@@/search.png" style="margin-bottom: -4px"
+           alt="Search launchpad:" />
       <form
         tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch"
@@ -102,10 +104,7 @@
         accept-charset="UTF-8"
         tal:attributes="action string:${rooturl}+search"
       >
-        <label>
-          Search:
-          <input type="search" id="search-text" name="field.text" />
-        </label>
+        <input type="search" id="search-text" name="field.text" />
       </form>
       <tal:hierarchy replace="structure context/@@+hierarchy" />
 
