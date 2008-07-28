@@ -2,11 +2,49 @@
 
 """An XMLRPC transport which uses urllib2."""
 
+__metaclass__ = type
+__all__ = [
+    'UrlLib2Transport',
+    'XMLRPCRedirectHandler'
+    ]
+
 
 from cookielib import Cookie
-from urllib2 import build_opener, HTTPCookieProcessor, HTTPError, Request
+from urllib2 import (
+    build_opener, HTTPCookieProcessor, HTTPError, HTTPRedirectHandler,
+    Request)
 from urlparse import urlparse, urlunparse
 from xmlrpclib import ProtocolError, Transport
+
+
+class XMLRPCRedirectHandler(HTTPRedirectHandler):
+    """A handler for HTTP redirections of XML-RPC requests."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        """Return a Request or None in response to a redirect.
+
+        See `urllib2.HTTPRedirectHandler`.
+
+        If the original request is a POST request, the request's payload
+        will be preserved in the redirect and the returned request will
+        also be a POST request.
+        """
+        # If we can't handle this redirect,
+        # HTTPRedirectHandler.redirect_request() will raise an
+        # HTTPError. We call the superclass here in the old fashion
+        # since HTTPRedirectHandler isn't a new-style class.
+        new_request = HTTPRedirectHandler.redirect_request(
+            self, req, fp, code, msg, headers, newurl)
+
+        # If the old request is a POST request, the payload will be
+        # preserved. Note that we don't need to test for the POST-ness
+        # of the old request; if its data attribute - its payload - is
+        # not None it's a POST request, if it's None it's a GET request.
+        # We can therefore just copy the data from the old request to
+        # the new without worrying about breaking things.
+        new_request.data = req.data
+        return new_request
+
 
 class UrlLib2Transport(Transport):
     """An XMLRPC transport which uses urllib2.
@@ -31,7 +69,9 @@ class UrlLib2Transport(Transport):
             self.scheme in ('http', 'https'),
             "Unsupported URL schene: %s" % self.scheme)
         self.cookie_processor = HTTPCookieProcessor()
-        self.opener = build_opener(self.cookie_processor)
+        self.redirect_handler = XMLRPCRedirectHandler()
+        self.opener = build_opener(
+            self.cookie_processor, self.redirect_handler)
 
     def setCookie(self, cookie_str):
         """Set a cookie for the transport to use in future connections."""

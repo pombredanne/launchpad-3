@@ -245,20 +245,30 @@ class Hierarchy(LaunchpadView):
         """
         elements = list(self.request.breadcrumbs)
 
+        if config.launchpad.site_message:
+            site_message = (
+                '<div id="globalheader" xml:lang="en" lang="en" dir="ltr">'
+                '<div class="sitemessage">%s</div></div>'
+                % config.launchpad.site_message)
+        else:
+            site_message = ""
+
         if len(elements) > 0:
             # We're not on the home page.
-            prefix = '<div id="lp-hierarchy">'
+            prefix = ('<div id="lp-hierarchy">'
+                     '<span class="first-rounded"></span>')
             suffix = ('</div><span class="last-rounded">&nbsp;</span>'
-                     '<div class="apps-separator"><!-- --></div>')
+                     '%s<div class="apps-separator"><!-- --></div>'
+                     % site_message)
 
             if len(elements) == 1:
-                first_class = 'before-last'
+                first_class = 'before-last item'
             else:
-                first_class = 'first'
+                first_class = 'item'
 
             steps = []
             steps.append(
-                '<span class="%s item">'
+                '<span class="%s">'
                 '<a href="/" class="breadcrumb container"'
                 ' id="homebreadcrumb">'
                 '<img alt="Launchpad"'
@@ -297,8 +307,8 @@ class Hierarchy(LaunchpadView):
                         '<img alt="Launchpad" '
                         ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
                         '</a></div>'
-                        '<span class="last-rounded">&nbsp;</span>'
-                        '<div class="apps-separator"><!-- --></div>')
+                        '%s<div class="apps-separator"><!-- --></div>' %
+                        site_message)
 
         return hierarchy
 

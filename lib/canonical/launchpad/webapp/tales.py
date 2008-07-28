@@ -206,7 +206,11 @@ class MenuAPI:
             # facet name from the layer implemented by the request.
             view = get_current_view(self._request)
             selectedfacetname = get_facet(view)
-        menu = queryAdapter(context, INavigationMenu, name=selectedfacetname)
+        try:
+            menu = nearest_adapter(
+                context, INavigationMenu, name=selectedfacetname)
+        except NoCanonicalUrl:
+            menu = None
         if menu is None:
             return {}
         else:

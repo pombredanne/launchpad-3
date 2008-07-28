@@ -205,37 +205,6 @@ clickable link to his PPA page:
     >>> anon_browser.title
     'PPA for Celso Providelo'
 
-The PPA page "Actions" portlet list all the related pages, only
-'View build records' and 'View PPA' is allowed for unprivileged
-access.
-
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'actions'))
-    View PPA
-    Administer archive (disabled)
-    Change details (disabled)
-    View build records
-    Delete packages (disabled)
-    Copy packages (disabled)
-    Edit dependencies (disabled)
-
-The PPA page contains a portlet listing all series and architectures
-which supports PPA building in ubuntu.
-
-    >>> print extract_text(
-    ...    find_portlet(anon_browser.contents, 'PPA supported series'))
-    PPA supported series
-    5.04
-    "Hoary"
-    - development
-    i386
-    (official)
-    4.10
-    "Warty"
-    - current
-    i386
-    (official)
-
-
 Let's see his sources.list entries:
 
     >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
@@ -493,6 +462,8 @@ it presents NEEDSBUILD records by default, which is the most accessed
 status in the PPA workflow.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
+    Profile /
+    ...
     Builds for PPA for Celso Providelo
     ...
     No 'Needs building' build records.

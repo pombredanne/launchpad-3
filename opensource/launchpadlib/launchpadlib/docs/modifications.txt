@@ -98,10 +98,10 @@ Teams also have attributes that can be changed.  For example, Salgado creates
 the most awesome team in the world.
 
     >>> bassists = launchpad.people.newTeam(
-    ...     'bassists', 'Awesome Rock Bass Players')
+    ...     name='bassists', display_name='Awesome Rock Bass Players')
 
 Then Salgado realizes he wants to express the awesomeness of this team in its
-description.  Salgado also understand that anybody can achieve awesomeoness.
+description.  Salgado also understands that anybody can achieve awesomeness.
 
     >>> print bassists.team_description
     None
@@ -111,13 +111,51 @@ description.  Salgado also understand that anybody can achieve awesomeoness.
     >>> bassists.team_description = (
     ...     u'The most important instrument in the world')
     >>> bassists.subscription_policy = u'Open Team'
+    >>> bassists_copy = launchpad.people['bassists']
     >>> bassists.lp_save()
 
-    >>> bassists = launchpad.people['bassists']
+A resource object is automatically refreshed after saving.
+
+    >>> print bassists.team_description
+    The most important instrument in the world
+
+Any other version of that resource will still have the old data.
+
+    >>> print bassists_copy.team_description
+    None
+
+But you can also refresh a resource object manually.
+
+    >>> bassists_copy.lp_refresh()
     >>> print bassists.team_description
     The most important instrument in the world
     >>> bassists.subscription_policy
     u'Open Team'
+
+Some of a resource's attributes may take other resources as values.
+
+    >>> bug_one = launchpad.bugs[1]
+    >>> task = [task for task in bug_one.bug_tasks][0]
+    >>> print repr(task.owner)
+    <person at http://api.launchpad.dev:8085/beta/~name12>
+    >>> print task.owner
+    http://api.launchpad.dev:8085/beta/~name12
+
+    >>> task.owner = salgado
+    >>> task.lp_save()
+    >>> print task.owner
+    http://api.launchpad.dev:8085/beta/~salgado
+
+Resources may also be used as arguments to named operations.
+
+    >>> task.assignee.display_name
+    u'Mark Shuttleworth'
+    >>> task.transitionToAssignee(assignee=salgado)
+    >>> task.assignee.display_name
+    u'Guilherme Salgado'
+
+    >>> salgado.inTeam(team=bassists)
+    True
 
 
 == Moving an entry ==

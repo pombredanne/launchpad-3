@@ -13,7 +13,6 @@ import urlparse
 import xmlrpclib
 
 from StringIO import StringIO
-from cgi import escape
 from datetime import datetime, timedelta
 from httplib import HTTPMessage
 from urllib2 import BaseHandler, HTTPError, Request
@@ -40,6 +39,7 @@ from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.scripts import debbugs
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -1189,6 +1189,7 @@ class Urlib2TransportTestInfo:
 
 class Urlib2TransportTestHandler(BaseHandler):
     """A test urllib2 handler returning a hard-coded response."""
+
     def default_open(self, req):
         """Catch all requests and return a hard-coded response.
 
@@ -1203,25 +1204,39 @@ class Urlib2TransportTestHandler(BaseHandler):
             raise HTTPError(
                 req.get_full_url(), 500, 'Internal Error', {}, None)
 
-        response = StringIO("""<?xml version="1.0"?>
-        <methodResponse>
-          <params>
-            <param>
-              <value>%s</value>
-            </param>
-          </params>
-        </methodResponse>
-        """ % escape(req.get_full_url()))
-        info = Urlib2TransportTestInfo()
-        response.info = lambda: info
-        response.geturl = lambda: req.get_full_url()
-        response.code = 200
-        response.msg = ''
+        elif ('testRedirect' in req.data and
+              'redirected' not in req.get_full_url()):
+            # Big hack to make calls to testRedirect act as though a 302
+            # has been received. Note the slightly cheaty check for
+            # 'redirected' in the URL. This is to stop urllib2 from
+            # whinging about infinite loops.
+            redirect_url = urlappend(
+                req.get_full_url(), 'redirected')
+
+            headers = HTTPMessage(StringIO())
+            headers['location'] = redirect_url
+
+            response = StringIO()
+            response.info = lambda: headers
+            response.geturl = lambda: req.get_full_url()
+            response.code = 302
+            response.msg = 'Moved'
+            response = self.parent.error(
+                'http', req, response, 302, 'Moved',
+                headers)
+
+        else:
+            xmlrpc_response = xmlrpclib.dumps(
+                (req.get_full_url(),), methodresponse=True)
+            response = StringIO(xmlrpc_response)
+            info = Urlib2TransportTestInfo()
+            response.info = lambda: info
+            response.code = 200
+            response.geturl = lambda: req.get_full_url()
+            response.msg = ''
+
         return response
 
-
 def patch_transport_opener(transport):
-    """Patch the transport's opener to use a test handler
-    returning a hard-coded response.
-    """
+    """Patch the transport's opener to use a test handler."""
     transport.opener.add_handler(Urlib2TransportTestHandler())
