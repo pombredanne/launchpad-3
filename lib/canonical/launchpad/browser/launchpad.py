@@ -273,10 +273,7 @@ class Hierarchy(LaunchpadView):
             for element in elements:
                 cssclass = 'item'
                 if element.has_menu:
-                    menudata = ' lpm:mid="%s/+menudata"' % element.url
                     cssclass = ' '.join([cssclass, 'container'])
-                else:
-                    menudata = ''
                 if element is before_last_element:
                     cssclass = ' '.join(['before-last', cssclass])
                 elif element is last_element:
@@ -284,10 +281,10 @@ class Hierarchy(LaunchpadView):
                 else:
                     # No extra CSS class.
                     pass
-                steps.append('<span class="%s"%s>'
+                steps.append('<span class="%s">'
                          '<a href="%s">%s</a>'
                          '</span>'
-                         % (cssclass, menudata, element.url,
+                         % (cssclass, element.url,
                             cgi.escape(element.text)))
             hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
         else:

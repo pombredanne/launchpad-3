@@ -10,7 +10,6 @@
 <metal:block define-slot="top_slot" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:lpm="http://ns.launchpad.net/lpm"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
@@ -71,15 +70,12 @@
 
     <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/inlinehelp.js"></script>
     <script type="text/javascript"
         tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
     <script type="text/javascript">
       function onLoadFunction() {
-        lpmenu.initialize(['menuroot'], '/', 'menupreload',
-                           [], '1.3em', 16, true);
         sortables_init();
         initInlineHelp();
       }
@@ -316,22 +312,6 @@
       <div id="help-footer">
         <span id="help-close"></span>
       </div>
-    </div>
-    <div id="menupreload" style="visibility:hidden"
-      xml:lang="en" lang="en" dir="ltr">
-      <ul class="menu" lpm:mid="root">
-        <tal:condition condition="request/lp:person">
-          <li class="item"
-              tal:attributes="lpm:mid string:/~${request/lp:person/name}/+menudata/contributions"><a
-          class="container" href="/projects">Projects</a></li>
-        </tal:condition>
-        <tal:condition condition="not: request/lp:person">
-          <li class="item"><a href="/projects">Projects</a></li>
-        </tal:condition>
-        <li class="item"><a href="/distros">Distributions</a></li>
-        <li class="item"><a href="/people">People</a></li>
-        <li class="item"><a href="/sprints">Meetings</a></li>
-      </ul>
     </div>
     <tal:datetimepicker condition="request/needs_datetimepicker_iframe">
       <script language="Javascript" type="text/javascript">
