@@ -415,31 +415,6 @@ ul#menuroot a.breadcrumb {
   float: left;
   margin-right: -16px;
 }
-/* "Your location:" text.
- *
- * The 1px negative right margin is to bring the first breadcrumb a little
- * closer to the "Your location:" text.  It makes it look visually tighter
- * because of the chevron shape of the highlights.
- */
-#yourlocation {
-  float: left;
-  display: block;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1100px 0px;
-  padding: 6px 0 6px 10px;
-  margin-right: -1px;
-  /* To prevent a gap when "#logincontrol" wraps around and the font size is
-     increased, we need to prevent the box height from being greater than the
-     height of the #locationbar box, which sets the green background. We do not
-     inherit the height limit from #location bar because this element is
-     floated.
-
-     12px vertical padding + 14px height = 26px, height of "#locationbar". */
-  height: 14px;
-}
-/* IE6 specific rule to make the location bar look better. */
-* html #yourlocation {padding-bottom: 4px;}
 /* Display dyn menu items and breadcrumbs with black text and as blocks. */
 #locationbar li a,
 #locationbar li span {
