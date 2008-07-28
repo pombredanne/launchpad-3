@@ -662,8 +662,7 @@ hierarchy, and the application tabs. */
   margin: 0;
   padding: 0;
   background: #ddd;
-  border-top: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
+  border: 1px solid #ccc;
 }
 
 /* === Location application tabs === */
