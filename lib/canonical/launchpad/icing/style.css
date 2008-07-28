@@ -355,12 +355,6 @@ hr {
   background-repeat: repeat-x;
   background-position: top center;
 }
-/* Home icon and link. */
-#globalheader a.home {
-  display: block;
-  margin: 0;
-  padding: 0;
-}
 #globalheader .sitemessage a {
   color: #FFF;
   text-decoration: underline;
@@ -951,7 +945,7 @@ span.help {font-weight: normal;}
 
 /* The last element on every page is a standard footer. */
 #globalfooter {
-    clear: both; 
+    clear: both;
     border: solid #c1c9d6;
     border-width: 1px 0 0 0;
     margin: 0.5em 0;
