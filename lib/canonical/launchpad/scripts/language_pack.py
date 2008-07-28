@@ -10,11 +10,13 @@ __all__ = [
     ]
 
 import datetime
+import gc
 import os
 import sys
 import tempfile
 from shutil import copyfileobj
 
+from storm.store import Store
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues, cursor
@@ -49,7 +51,8 @@ def iter_sourcepackage_translationdomain_mapping(series):
         yield (sourcepackagename, translationdomain)
 
 
-def export(distroseries, component, update, force_utf8, logger):
+def export(distroseries, component, update, force_utf8, logger,
+           cache_clear_interval):
     """Return a pair containing a filehandle from which the distribution's
     translations tarball can be read and the size of the tarball i bytes.
 
@@ -59,6 +62,9 @@ def export(distroseries, component, update, force_utf8, logger):
     :arg force_utf8: Whether the export should have all files exported as
         UTF-8.
     :arg logger: A logger object.
+    :arg cache_clear_interval: Number indicating how often to clear the
+        ORM cache to avoid dangerous buildup.  The cache is cleared after
+        every cache_clear_interval POFiles.
     """
     # We will need when the export started later to add the timestamp for this
     # export inside the exported tarball.
@@ -84,6 +90,7 @@ def export(distroseries, component, update, force_utf8, logger):
     index = 0
     xpi_templates_to_export = set()
     path_prefix = 'rosetta-%s' % distroseries.name
+
     for pofile in export_set.get_distroseries_pofiles(
         distroseries, date, component, languagepack=True):
         logger.debug("Exporting PO file %d (%d/%d)" %
@@ -119,6 +126,14 @@ def export(distroseries, component, update, force_utf8, logger):
                 "Uncaught exception while exporting PO file %d" % pofile.id)
 
         index += 1
+
+        if index % cache_clear_interval == 0:
+            # XXX JeroenVermeulen 2008-07-28 bug=252545: we go through a
+            # lot of data here, and it accumulates somewhere in the
+            # object cache.  Invalidate the cache from time to time, and
+            # allow the garbage collector to run.
+            Store.of(pofile).invalidate()
+            gc.collect()
 
     logger.info("Exporting XPI template files.")
     librarian_client = getUtility(ILibrarianClient)
@@ -158,7 +173,8 @@ def export(distroseries, component, update, force_utf8, logger):
 
 
 def export_language_pack(distribution_name, series_name, logger,
-                         component=None, force_utf8=False, output_file=None):
+                         component=None, force_utf8=False, output_file=None,
+                         cache_clear_interval=100):
     """Export a language pack for the given distribution series.
 
     :param distribution_name: Name of the distribution we want to export the
@@ -172,6 +188,9 @@ def export_language_pack(distribution_name, series_name, logger,
         force to use the UTF-8 encoding.
     :param output_file: File path where this export file should be stored,
         instead of using Librarian. If '-' is given, we use standard output.
+    :arg cache_clear_interval: Number indicating how often to clear the
+        ORM cache to avoid dangerous buildup.  The cache is cleared after
+        every cache_clear_interval POFiles.
     :return: The exported language pack or None.
     """
     distribution = getUtility(IDistributionSet)[distribution_name]
@@ -196,7 +215,8 @@ def export_language_pack(distribution_name, series_name, logger,
     # Export the translations to a tarball.
     try:
         filehandle, size = export(
-            distroseries, component, update, force_utf8, logger)
+            distroseries, component, update, force_utf8, logger,
+            cache_clear_interval=cache_clear_interval)
     except:
         # Bare except statements are used in order to prevent premature
         # termination of the script.
