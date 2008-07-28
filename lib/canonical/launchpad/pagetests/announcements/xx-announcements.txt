@@ -85,7 +85,7 @@ announcement so there is a "Latest news" portlet:
     >>> print latest_news(priv_browser.contents).encode(
     ...     'ascii', 'backslashreplace')
     Announcements
-    Apache announcement headline
+    20...: Apache announcement headline
     ...More announcements
     Make announcement
     >>> priv_browser.getLink('Make announcement').click()
@@ -103,8 +103,8 @@ announcement so there is a "Latest news" portlet:
     >>> print latest_news(priv_browser.contents).encode(
     ...     'ascii', 'backslashreplace')
     Announcements
-    Apache announcement headline
-    Tomcat announcement headline
+    20...: Apache announcement headline
+    2007-11-24: Tomcat announcement headline
     ...More announcements
     Make announcement
 
