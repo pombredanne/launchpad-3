@@ -367,15 +367,16 @@ hr {
   padding-top: 2px;
 }
 
+/* === Location bar === */
+/* The location bar consists of three element: the login control, the location
+hierarchy, and the application tabs. */
+#locationbar {margin-bottom: 30px;}
+
 /* Allow dyn menus to appear ouside of the locationbar, even though they
  * overflow its bounds.
  */
 #locationbar {overflow: visible;}
 
-/* === Location bar === */
-/* The location bar consists of three element: the login control, the location
-hierarchy, and the application tabs. */
-#locationbar {margin-bottom: 30px;}
 
 /* === Login control === */
 /* At the top right of the page is a link to log in or a button to log out: */
