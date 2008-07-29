@@ -10,11 +10,11 @@
     also_notified_subscribers context/getAlsoNotifiedSubscribers
   "
 >
-  <section tal:define="context_menu context/menu:context">
+  <div class="section" tal:define="context_menu context/menu:context">
     <div tal:content="structure context_menu/subscription/render" />
     <div tal:content="structure context_menu/addsubscriber/render" />
-  </section>
-  <section id="subscribers-direct">
+  </div>
+  <div class="section" id="subscribers-direct">
     <h2>Subscribers</h2>
       <div
         tal:condition="direct_subscriptions"
@@ -31,10 +31,11 @@
         </a>
       </div>
       <div tal:condition="not:direct_subscriptions">None</div>
-  </section>
-  <section
+  </div>
+  <div
     tal:condition="from_dupes_subscriptions"
     id="subscribers-from-duplicates"
+    class="section"
   >
     <h2>From duplicates</h2>
     <div tal:repeat="subscription from_dupes_subscriptions">
@@ -48,12 +49,16 @@
         <tal:block replace="subscription/person/browsername" />
       </a>
     </div>
-  </section>
-  <section tal:condition="also_notified_subscribers" id="subscribers-indirect">
+  </div>
+  <div
+    tal:condition="also_notified_subscribers"
+    id="subscribers-indirect"
+    class="Section"
+  >
     <h2>Also notified</h2>
     <div
       tal:repeat="subscriber also_notified_subscribers"
       tal:content="structure subscriber/fmt:link"
     />
-  </section>
+  </div>
 </div>

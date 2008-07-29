@@ -88,7 +88,7 @@
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
         PersonSetFacets PersonSetContextMenu PersonTranslationsMenu
         PersonOverviewNavigationMenu PersonEditNavigationMenu
-        PersonRelatedSoftwareNavigationMenu"
+        TeamOverviewNavigationMenu"
     />
 
   <browser:url
@@ -258,9 +258,21 @@
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     permission="zope.Public"
-    class="canonical.launchpad.browser.person.PersonPackagesView"
+    class="canonical.launchpad.browser.person.PersonRelatedSoftwareView"
+    name="+related-software"
+    template="../templates/person-related-software.pt"
+    />
+
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+packages"
-    template="../templates/person-packages.pt"
+    new_name="+related-software"
+    />
+
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+projects"
+    new_name="+related-software"
     />
 
   <!-- The bounty system is kept maintained but not available for users.
@@ -291,17 +303,9 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    name="+projects"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.PersonRelatedProjectsView"
-    template="../templates/person-projects.pt"
-    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
     name="+portlet-related-projects"
     permission="zope.Public"
-    class="canonical.launchpad.browser.PersonRelatedProjectsView"
+    class="canonical.launchpad.browser.PersonRelatedSoftwareView"
     template="../templates/person-portlet-related-projects.pt"
     />
 

@@ -41,6 +41,7 @@ __all__ = [
     'IHasBug',
     'IHasDateCreated',
     'IHasDrivers',
+    'IHasExternalBugTracker',
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
@@ -50,7 +51,6 @@ __all__ = [
     'IHasSecurityContact',
     'ILaunchBag',
     'ILaunchpadCelebrities',
-    'ILaunchpadContainer',
     'ILaunchpadRoot',
     'ILaunchpadSearch',
     'ILaunchpadUsage',
@@ -80,6 +80,21 @@ __all__ = [
 
 class NameNotAvailable(KeyError):
     """You're trying to set a name, but the name you chose isn't available."""
+
+
+class IHasExternalBugTracker(Interface):
+    """An object that can have an external bugtracker specified."""
+
+    def getExternalBugTracker():
+        """Return the external bug tracker used by this bug tracker.
+
+        If the product uses Launchpad, return None.
+
+        If the product doesn't have a bug tracker specified, return the
+        project bug tracker instead. If the product doesn't belong to a
+        superproject, or if the superproject doesn't have a bug tracker,
+        return None.
+        """
 
 
 class ILaunchpadCelebrities(Interface):
@@ -465,6 +480,12 @@ class INotificationRecipientSet(Interface):
         :return: An iterator of `IPerson`, sorted by display name.
         """
 
+    def getRecipientPersons():
+        """Return the set of individual Persons who will be notified.
+
+        :return: An iterator of (`email_address`, `IPerson`), unsorted.
+        """
+
     def __iter__():
         """Return an iterator of the recipients."""
 
@@ -536,16 +557,3 @@ class ILaunchpadUsage(Interface):
     enable_bug_expiration = Bool(
         title=_('Expire Incomplete bug reports when they become inactive'),
         required=True)
-
-
-class ILaunchpadContainer(Interface):
-    """Marker interface for objects used as the context of something."""
-
-    def isWithin(context):
-        """Return True if this context is the given one or is within it.
-
-        By default a context can only be within itself, but an IProduct is
-        said to be within an IProject if the product is part of that project.
-        Similarly, an IDistributionSourcePackage is said to be within an
-        IDistribution if it is part of the distribution.
-        """

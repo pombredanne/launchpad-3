@@ -17,8 +17,6 @@ from storm.expr import Desc, In
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.launchpad.components.launchpadcontainer import (
-    LaunchpadContainerMixin)
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IQuestionTarget,
     IStructuralSubscriptionTarget, PackagePublishingStatus)
@@ -42,7 +40,7 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.lazr.utils import smartquote
 
 
-class DistributionSourcePackage(BugTargetBase, LaunchpadContainerMixin,
+class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin):
     """This is a "Magic Distribution Source Package". It is not an
@@ -320,7 +318,3 @@ class DistributionSourcePackage(BugTargetBase, LaunchpadContainerMixin,
         return (
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
-
-    def isWithin(self, context):
-        """See `ILaunchpadContainer`."""
-        return context == self or context == self.distribution

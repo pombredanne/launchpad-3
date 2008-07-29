@@ -1064,7 +1064,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
             # Everything is fine, let's return the principal.
             pass
         principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            token.person.id, access_level=token.permission)
+            token.person.id, access_level=token.permission,
+            scope=token.context)
 
         # Make sure the principal is a member of the beta test team.
         # XXX leonardr 2008-05-22 blueprint=api-bugs-remote
