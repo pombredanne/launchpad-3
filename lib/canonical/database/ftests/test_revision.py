@@ -109,7 +109,13 @@ class TestRevision(unittest.TestCase):
         self.cur.execute("""
             INSERT INTO LaunchpadDatabaseRevision VALUES (999,999,999)
             """)
+
+        # First statement doesn't raise an exception, as according to
+        # the LaunchpadDatabaseRevision table the patch has been applied.
         self.cur.execute("SELECT assert_patch_applied(999,999,999)")
+
+        # This second statement raises an exception, as no such patch
+        # has been applied.
         self.failUnlessRaises(
                 psycopg.ProgrammingError, self.cur.execute,
                 "SELECT assert_patch_applied(1,999,999)")
