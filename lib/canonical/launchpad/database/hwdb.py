@@ -77,7 +77,7 @@ class HWSubmission(SQLBase):
     system_fingerprint = ForeignKey(dbName='system_fingerprint',
                                     foreignKey='HWSystemFingerprint',
                                     notNull=True)
-    raw_emailaddress = StringCol(notNull=True)
+    raw_emailaddress = StringCol()
 
 
 class HWSubmissionSet:
@@ -99,7 +99,10 @@ class HWSubmissionSet:
                 'A submission with this ID already exists')
 
         personset = getUtility(IPersonSet)
-        owner = personset.getByEmail(emailaddress)
+        if emailaddress is not None:
+            owner = personset.getByEmail(emailaddress)
+        else:
+            owner = None
 
         fingerprint = HWSystemFingerprint.selectOneBy(
             fingerprint=system_fingerprint)

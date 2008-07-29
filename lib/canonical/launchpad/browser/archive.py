@@ -25,6 +25,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import Interface
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -47,7 +48,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IStructuralHeaderPresentation, NotFoundError)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
-    inactive_publishing_status)
+    inactive_publishing_status, IPublishingSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -468,10 +469,8 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         selected_sources = data.get('selected_sources')
 
         # Perform deletion of the source and its binaries.
-        for source in selected_sources:
-            source.requestDeletion(self.user, comment)
-            for bin in source.getPublishedBinaries():
-                bin.requestDeletion(self.user, comment)
+        publishing_set = getUtility(IPublishingSet)
+        publishing_set.requestDeletion(selected_sources, self.user, comment)
 
         # We end up issuing the published_source query twice this way,
         # because we need the original available source vocabulary to

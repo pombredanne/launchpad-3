@@ -1,31 +1,35 @@
 = Launchpad front pages =
 
-Launchpad's main front page includes, instead of application tabs,
-buttons for each of the main applications.
+Visit our home page:
 
   >>> browser.open('http://launchpad.dev/')
   >>> browser.url
   'http://launchpad.dev/'
 
+It contains a string which our IS uses to determine whether or not
+Launchpad is alive:
+
   >>> print browser.contents
   <!DOCTYPE...
-  ...Join thousands of people...
-  ...Publish your code...
-  ...Is your project registered yet?...
+  ...
+  <!-- Is your project registered yet? -->
+  ...
+
+And links to the important applications and facets:
 
   >>> people_link = browser.getLink(url='/people')
   >>> people_link.url
-  'http://launchpad.dev/people/'
+  'http://launchpad.dev/people'
 
   >>> people_link.text
-  'people[IMG]'
+  'People and Teams'
 
   >>> code_link = browser.getLink(url='code')
   >>> code_link.url
   'http://code.launchpad.dev/'
 
   >>> code_link.text
-  'code[IMG]'
+  'Code'
 
 It also includes a search form...
 

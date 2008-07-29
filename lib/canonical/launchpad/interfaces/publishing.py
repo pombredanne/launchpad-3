@@ -588,6 +588,21 @@ class IPublishingSet(Interface):
              `BinaryPackageRelease`, `BinaryPackageName`, `DistroArchSeries`)
         """
 
+    def requestDeletion(sources, removed_by, removal_comment=None):
+        """Delete the source and binary publications specified.
+
+        This method deletes the source publications passed via the first
+        parameter as well as their associated binary publications.
+
+        :param sources: list of `SourcePackagePublishingHistory` objects.
+        :param removed_by: `IPerson` responsible for the removal.
+        :param removal_comment: optional text describing the removal reason.
+
+        :return: The deleted publishing record, either:
+            `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory`.
+        """
+
 
 class PackagePublishingStatus(DBEnumeratedType):
     """Package Publishing Status

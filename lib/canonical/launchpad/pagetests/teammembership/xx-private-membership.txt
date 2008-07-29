@@ -233,13 +233,14 @@ no user can set that team as the owner of a project.
 To prevent leaking information about a team's private membership,
 no user can set that team as the maintainer of a product.
 
-    >>> admin_browser.open('http://launchpad.dev/jokosher/+reassign')
+    >>> admin_browser.open('http://launchpad.dev/jokosher/+edit-people')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
-    >>> admin_browser.getControl('Change Registrant').click()
+    >>> admin_browser.getControl('Save changes').click()
     >>> admin_browser.url
-    'http://launchpad.dev/jokosher/+reassign'
+    'http://launchpad.dev/jokosher/+edit-people'
     >>> get_feedback_messages(admin_browser.contents)
-    [...The person/team named 'myteam' is not a valid owner for...
+    [u'There is 1 error.', u'Constraint not satisfied']
+
 
 == Restrict Product Bug Supervisor ==
 

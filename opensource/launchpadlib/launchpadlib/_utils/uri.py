@@ -275,7 +275,6 @@ class URI:
             raise InvalidURIError('%s URIs must have a host name' %
                                   self.scheme)
 
-
     def _normalise(self):
         """Perform normalisation of URI components."""
         self.scheme = self.scheme.lower()

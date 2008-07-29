@@ -327,7 +327,8 @@ class WadlFieldAPI(WadlAPI):
         name = self.field.__name__
         if ICollectionField.providedBy(self.field):
             return name + '_collection_link'
-        elif IObject.providedBy(self.field) or IBytes.providedBy(self.field):
+        elif (IObject.providedBy(self.field) or IBytes.providedBy(self.field)
+              or IReferenceChoice.providedBy(self.field)):
             return name + '_link'
         else:
             return name
