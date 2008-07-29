@@ -68,7 +68,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
-        path_expression="string:+id/${person/openid_identifier}"
+        path_expression="string:${openid_identifier}"
         parent_utility="canonical.launchpad.interfaces.IOpenIdApplication"
         rootsite="openid"
         />

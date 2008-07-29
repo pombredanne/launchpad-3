@@ -15,7 +15,7 @@ __all__ = [
         ]
 
 
-from zope.interface import Attribute, Interface
+from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
@@ -211,8 +211,6 @@ class IAccountPrivate(Interface):
     password = PasswordField(
             title=_("Password."), readonly=False, required=True)
 
-    openid_identity_url = Attribute("The OpenID identity URL.")
-
 
 class IAccount(IAccountPublic, IAccountPrivate):
     """Interface describing an `Account`."""
@@ -242,4 +240,7 @@ class IAccountSet(Interface):
         :return: An `IAccount`, or None if the given email address
         does not exist in the database or is not linked to an `IAccount`.
         """
+
+    def getByOpenIdIdentifier(openid_identity):
+        """Return the `IAccount` with the given OpenID identifier, or None."""
 

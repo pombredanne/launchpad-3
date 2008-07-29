@@ -26,6 +26,8 @@ from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.launchpad.components.openidserver import (
+    OpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIdStoreFactory, IOpenIdAuthorization,
@@ -246,7 +248,7 @@ class OpenIDRPSummarySet:
         if account.status != AccountStatus.ACTIVE:
             raise AssertionError(
                 'Account %d is not ACTIVE account.' % account.id)
-        identifier = account.openid_identity_url
+        identifier = OpenIDPersistentIdentity(account).openid_identity_url
         self._assert_identifier_is_not_reused(account, identifier)
         if date_used is None:
             date_used = datetime.now(pytz.UTC)

@@ -16,7 +16,7 @@
     </head>
     <body>
         <h1>OpenID Identity URL for <a tal:attributes="href view/person_url"
-                tal:content="context/person/displayname">Display Name</a></h1>
+                tal:content="context/displayname">Display Name</a></h1>
     </body>
 </html>
 

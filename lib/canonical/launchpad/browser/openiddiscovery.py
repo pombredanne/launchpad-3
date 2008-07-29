@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'OpenIDPersistentIdentity',
     'XRDSContentNegotiationMixin',
     ]
 
@@ -16,8 +15,11 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.components.openidserver import (
+    OpenIDPersistentIdentity)
+from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces import (
-    ILoginTokenSet, IOpenIdApplication, IOpenIDPersistentIdentity,
+    ILoginTokenSet, IOpenIdApplication,
     IOpenIDRPConfigSet, IPersonSet, NotFoundError)
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -45,9 +47,9 @@ class OpenIdApplicationNavigation(Navigation):
     @stepthrough('+id')
     def traverse_id(self, name):
         """Traverse to persistent OpenID identity URLs."""
-        person = getUtility(IPersonSet).getByOpenIdIdentifier(name)
-        if person is not None:
-            return OpenIDPersistentIdentity(person)
+        account = getUtility(IAccountSet).getByOpenIdIdentifier(name)
+        if account is not None:
+            return OpenIDPersistentIdentity(account)
         else:
             return None
 
@@ -67,21 +69,11 @@ class OpenIdApplicationNavigation(Navigation):
         """Redirect person names to equivalent persistent identity URLs."""
         person = getUtility(IPersonSet).getByName(name)
         if person is not None and person.is_openid_enabled:
-            target = '%s+id/%s' % (
-                    allvhosts.configs['openid'].rooturl,
-                    person.openid_identifier)
+            openid_identity = OpenIDPersistentIdentity(person.account)
+            target = openid_identity.openid_identity_url
             return RedirectionView(target, self.request, 303)
         else:
             raise NotFoundError(name)
-
-
-class OpenIDPersistentIdentity:
-    """A persistent OpenID identifier for a user."""
-
-    implements(IOpenIDPersistentIdentity)
-
-    def __init__(self, person):
-        self.person = person
 
 
 class XRDSContentNegotiationMixin:
