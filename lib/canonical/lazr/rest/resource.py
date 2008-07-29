@@ -53,7 +53,7 @@ from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    LAZR_WEBSERVICE_NAME)
+    IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 
@@ -413,7 +413,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                                           IFieldMarshaller)
             repr_name = marshaller.representation_name
             try:
-                value = getattr(self.entry, name)
+                if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
+                    value = None
+                else:
+                    value = getattr(self.entry, name)
                 repr_value = marshaller.unmarshall(self.entry, value)
             except Unauthorized:
                 # Either the client doesn't have permission to see

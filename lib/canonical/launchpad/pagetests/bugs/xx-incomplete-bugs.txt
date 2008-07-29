@@ -167,15 +167,12 @@ the bug he set to Incomplete previously.
     12  Copy, Cut and Delete operations should work  ...
 
 This specialized list does not include the search form. So there is no
-'Search' button on the page, just the global search field that's
-present on almost every Launchpad page.
+'Search' button on the page:
 
     >>> user_browser.getControl('Search', index=0).type
-    'search'
-    >>> user_browser.getControl('Search', index=1).type
     Traceback (most recent call last):
     ...
-    IndexError...
+    LookupError: label 'Search'
 
 The 'Report a bug' link is also not present.
 
@@ -190,7 +187,7 @@ When No Privileges Person adds a comment to the oldest bug, it is
 pushed to the bottom of the list.
 
     >>> user_browser.getLink('Make Jokosher use autoaudiosink').click()
-    >>> user_browser.getControl('Comment', index=1).value = "bump"
+    >>> user_browser.getControl(name='field.comment').value = "bump"
     >>> user_browser.getControl('Save Changes', index=1).click()
     >>> user_browser.getLink('Bugs').click()
     >>> user_browser.getLink('incomplete bugs can expire').click()

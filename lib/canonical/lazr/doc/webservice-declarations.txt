@@ -944,7 +944,7 @@ parameters accepted by the operation.
     >>> print_params(read_method_adapter_factory.params)
     text: TextLine
 
-The call() method calls the underlying method and return its result.
+The call() method calls the underlying method and returns its result.
 
     >>> class BookSetOnSteroids(BookSet):
     ...     implements(IBookSetOnSteroids)
@@ -965,8 +965,12 @@ The call() method calls the underlying method and return its result.
     True
 
     >>> read_method_adapter.context.result = []
+
+Since the method is declared as returning a list of objects, the
+return value is a dictionary containing a batched list.
+
     >>> print read_method_adapter.call(text='')
-    []
+    {"total_size": 0, "start": null, "entries": []}
 
 Methods exported as a write operations generates an adapter providing
 IResourcePOSTOperation.
@@ -1103,7 +1107,7 @@ the underlying content security checker will still apply.)
 
     >>> print debug_proxy(ProxyFactory(read_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: __call__
+        public: __call__, return_type
 
     >>> print debug_proxy(ProxyFactory(write_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)

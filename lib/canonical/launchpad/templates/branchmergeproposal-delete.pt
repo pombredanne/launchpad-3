@@ -11,11 +11,19 @@
 >
 <body>
 
+<metal:heading fill-slot="before_nav_menu"
+               tal:content="structure context/source_branch/@@+heading"/>
+
 <div metal:fill-slot="main">
 
   <tal:summary replace="structure context/@@+pagelet-summary" />
+  <tal:proposal-heading tal:replace="structure context/@@+heading"/>
 
   <div metal:use-macro="context/@@launchpad_form/form">
+    <p metal:fill-slot="extra_info">
+      Deleting a proposal for merging will also delete all the associated
+      comments that have been made.
+    </p>
   </div>
 
 </div>
