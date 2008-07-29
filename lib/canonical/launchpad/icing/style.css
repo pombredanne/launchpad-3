@@ -86,6 +86,9 @@ thead th, tr.thead th {text-align: center;}
 /* Opera doesn't use the general tr above for the radio button table */
 table.radio-button-widget tr td {vertical-align: top;}
 
+/* For readability, paragraphs and other text should have a maximum width: */
+h1, h2, h3, h4, h5, h6, label, p {max-width: 60em;}
+
 /* == Overall presentation == */
 
 /* === Fonts and colors === */
@@ -93,10 +96,10 @@ table.radio-button-widget tr td {vertical-align: top;}
 /* Launchpad uses a white background with small, mostly black, text: */
 html {background: #fff; color: #000; font: 10pt sans-serif;}
 /* Links are blue, brighter when clicked, and greyer once visited: */
-:link                         {color: #039;    text-decoration: none;}
+:link                         {color: #03a;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
-:visited                      {color: #324c7f; text-decoration: none;}
+:visited                      {color: #5b73b0; text-decoration: none;}
 /* Links that don't open separate pages are green to denote their behavior: */
 a[onclick], .collapsible legend a               {color: #063;}
 a[onclick]:active, .collapsible legend a:active {color: #093;}
@@ -872,7 +875,9 @@ it out of the page flow. */
 span.help {font-weight: normal;}
 
 /* === ID and timestamp === */
-/* The first text in many pages is the object's timestamp and identifier. */
+/* The first text in many pages is the object's timestamp and identifier.
+These may be <div>s or <p>s, but should have the same spacing regardless: */
+.object {margin: 0 0 0.5em; padding: 0;}
 /* The timestamp is the date last modified or (more usually) registered: */
 .object.timestamp {float: right;}
 /* An identifier is a unique label, such as a bug number or branch ID: */
