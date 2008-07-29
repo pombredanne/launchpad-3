@@ -269,7 +269,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
-    def selectBy(cls, *args, **kwargs):
+    def selectBy(cls, **kwargs):
         """Prevent selecting embargo packages by default"""
         if 'embargo' in kwargs:
             if kwargs['embargo']:
@@ -278,7 +278,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
                      stacklevel=2)
         kwargs['embargo'] = False
         return super(SecureSourcePackagePublishingHistory,
-                     cls).selectBy(*args, **kwargs)
+                     cls).selectBy(**kwargs)
 
     @classmethod
     def selectByWithEmbargoedEntries(cls, *args, **kwargs):
@@ -317,7 +317,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
-    def selectBy(cls, *args, **kwargs):
+    def selectBy(cls, **kwargs):
         """Prevent selecting embargo packages by default"""
         if 'embargo' in kwargs:
             if kwargs['embargo']:
@@ -326,7 +326,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
                      stacklevel=2)
         kwargs['embargo'] = False
         return super(SecureBinaryPackagePublishingHistory,
-                     cls).selectBy(*args, **kwargs)
+                     cls).selectBy(**kwargs)
 
     @classmethod
     def selectByWithEmbargoedEntries(cls, *args, **kwargs):
@@ -353,14 +353,14 @@ class ArchivePublisherBase:
         return fields.makeOutput()
 
     def supersede(self):
-        """See `IArchivePublisher`."""
+        """See `IPublishing`."""
         current = self.secure_record
         current.status = PackagePublishingStatus.SUPERSEDED
         current.datesuperseded = UTC_NOW
         return current
 
     def requestDeletion(self, removed_by, removal_comment=None):
-        """See `IArchivePublisher`."""
+        """See `IPublishing`."""
         current = self.secure_record
         current.status = PackagePublishingStatus.DELETED
         current.datesuperseded = UTC_NOW
@@ -1045,3 +1045,64 @@ class PublishingSet:
             Desc(BinaryPackagePublishingHistory.id))
 
         return result_set
+
+    def requestDeletion(self, sources, removed_by, removal_comment=None):
+        """See `IPublishingSet`."""
+
+        # The 'sources' parameter could actually be any kind of sequence
+        # (e.g. even a ResultSet) and the method would still work correctly.
+        # This is problematic when it comes to the type of the return value
+        # however.
+        # Apparently the caller anticipates that we return the sequence of
+        # instances "deleted" adhering to the original type of the 'sources'
+        # parameter.
+        # Since this is too messy we prescribe that the type of 'sources'
+        # must be a list and we return the instances manipulated as a list.
+        # This may not be an ideal solution but this way we at least achieve
+        # consistency.
+        assert isinstance(sources, list), (
+            "The 'sources' parameter must be a list.")
+
+        if len(sources) == 0:
+            return []
+
+        # The following piece of query "boiler plate" will be used for
+        # both the source and the binary package publishing history table.
+        query_boilerplate = '''
+            SET status = %s,
+                datesuperseded = %s,
+                removed_by = %s,
+                removal_comment = %s
+            WHERE id IN
+            ''' % sqlvalues(PackagePublishingStatus.DELETED, UTC_NOW,
+                            removed_by, removal_comment)
+
+        store = getUtility(IZStorm).get('main')
+
+        # First update the source package publishing history table.
+        source_ids = [source.id for source in sources]
+        if len(source_ids) > 0:
+            query = 'UPDATE SecureSourcePackagePublishingHistory '
+            query += query_boilerplate
+            query += ' %s' % sqlvalues(source_ids)
+            store.execute(query)
+
+        # Prepare the list of associated *binary* packages publishing
+        # history records.
+        binary_packages = []
+        for source in sources:
+            binary_packages.extend(source.getPublishedBinaries())
+
+        if len(binary_packages) == 0:
+            return sources
+
+        # Now run the query that marks the binary packages as deleted
+        # as well.
+        if len(binary_packages) > 0:
+            query = 'UPDATE SecureBinaryPackagePublishingHistory '
+            query += query_boilerplate
+            query += ' %s' % sqlvalues(
+                [binary.id for binary in binary_packages])
+            store.execute(query)
+
+        return sources + binary_packages

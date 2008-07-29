@@ -649,7 +649,7 @@ key of the hash.
     >>> full_rep_names = sorted([param.attrib['name']
     ...                         for param in full_params])
     >>> full_rep_names
-    [..., 'bug_link', ... 'title']
+    ['assignee_link', 'bug_link', ... 'title']
 
 In addition to a name, each representation parameter has a 'path', a
 JSONPath expression you can apply to the JSON data structure to get
@@ -757,9 +757,11 @@ is kept in the <resource_type> tag.
     >>> entry_type.tag
     '...resource_type'
 
-    >>> methods = list(entry_type)
-    >>> (get, put, patch, transitionToStatus,
-    ...     transitionToImportance, transitionToAssignee) = methods
+    >>> def sort_by_id(method):
+    ...     return method.attrib['id']
+    >>> methods = sorted(list(entry_type), key=sort_by_id)
+    >>> (get, patch, put, transitionToAssignee,
+    ...     transitionToImportance, transitionToStatus) = methods
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST

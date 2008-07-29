@@ -23,6 +23,12 @@
                         removeBugSubscription" />
     </content>
 
+    <adapter
+        for="canonical.launchpad.interfaces.IProject"
+        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+        factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
+        />
+
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="ProjectNavigation"

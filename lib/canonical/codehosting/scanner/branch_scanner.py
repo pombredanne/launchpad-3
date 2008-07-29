@@ -13,6 +13,7 @@ __all__ = ['BranchScanner']
 import sys
 
 from bzrlib.errors import NotBranchError, ConnectionError
+from bzrlib.transport import get_transport
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IBranchSet
