@@ -479,10 +479,9 @@ class LaunchpadContainer:
 class Breadcrumb:
     implements(IBreadcrumb)
 
-    def __init__(self, url, text, has_menu=False):
+    def __init__(self, url, text):
         self.url = url
         self.text = text
-        self.has_menu = has_menu
 
 
 class Navigation:
@@ -562,16 +561,8 @@ class Navigation:
         request.getURL(1) represents the path traversed so far, but without
         the step we're currently working out how to traverse.
         """
-        # If self.context has a view called +menudata, it has a menu.
-        menuview = queryMultiAdapter(
-            (self.context, self.request), name="+menudata")
-        if menuview is None:
-            has_menu = False
-        else:
-            has_menu = menuview.submenuHasItems('')
         self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=False), text,
-                       has_menu))
+            Breadcrumb(self.request.getURL(1, path_only=False), text))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.

@@ -282,8 +282,6 @@ class Hierarchy(LaunchpadView):
                 before_last_element = None
             for element in elements:
                 cssclass = 'item'
-                if element.has_menu:
-                    cssclass = ' '.join([cssclass, 'container'])
                 if element is before_last_element:
                     cssclass = ' '.join(['before-last', cssclass])
                 elif element is last_element:
