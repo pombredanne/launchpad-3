@@ -57,12 +57,8 @@ kbd {
   min-width: 1em;
   outline: 1px #666;
 }
-label {
-  white-space: nowrap;
-  font-weight: bold;
-}
+label {white-space: nowrap;}
 legend {font-weight: bold;}
-legend legend {font-weight: normal;}
 .listbox { /* a scrolling list of checkboxes or radio buttons */
   border: 1px solid #8cacbb;
   display: inline-block;
@@ -80,7 +76,7 @@ div.section {display: block; margin-bottom: 1em;}
 table {border-collapse: collapse;}
 textarea {display: block;}
 thead {vertical-align: bottom;}
-tr {vertical-align: top;}
+th, td {vertical-align: baseline;}
 th {text-align: right;}
 thead th, tr.thead th {text-align: center;}
 /* make <wbr> work with Opera */
@@ -186,6 +182,7 @@ dd .whiteboard {
 /* --- Form controls --- */
 
 form {border: 0; margin: 0; padding: 0;}
+fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
 input[type="text"], input[type="search"], input[type="password"], textarea {
   font-family: sans-serif;
   margin: 0;
@@ -199,7 +196,7 @@ input[type="submit"], input[type="text"], select, textarea {
   margin-right: 0.5em;
 }
 input.urlTextType {width: 100%;}
-.fieldRequired, .fieldOptional {color: #999; font-weight: normal;}
+.fieldRequired, .fieldOptional {color: #999;}
 .formHelp {margin-top: 0.2em; margin-bottom: 0.5em; color: #777;}
 /* Hack to add breathing room to bug status forms: */
 table.listing div.field>table {margin-top: 0.5em;}
@@ -213,7 +210,8 @@ textarea {width: 90%; max-width: 60em;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
 table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
-table.form th, table.form td {padding-bottom: 1em;}
+table.form th, table.form td {padding: 0 0.5em 1em 0;}
+table.form th {font-weight: normal;}
 
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
@@ -287,17 +285,21 @@ img {
   border: none;
 }
 
+/* === Collapsible sections === */
+/* Some page sections are hidden by default, expanded by clicking a link. */
 /* see launchpad.js:activateCollapsibles() */
-.collapsible legend a, .collapsible legend a:hover {text-decoration: none;}
-img.collapseIcon {text-decoration: none; vertical-align: middle;}
-.collapsible legend a span {text-decoration: underline;}
-.collapsible {
+fieldset.collapsible {
+  border: none;
   margin: 0;
   padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
 }
+.collapsible legend a, .collapsible legend a:hover {text-decoration: none;}
+img.collapseIcon {text-decoration: none; vertical-align: middle;}
+.collapsible legend a span {text-decoration: underline;}
 .collapsed {border: none; margin-bottom: 0;}
 fieldset .collapsed {display: none;}
 fieldset .expanded {display: block;}
+fieldset.collapsible legend {font-weight: normal;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -1634,12 +1636,6 @@ li {
 
 .bug-summary, .summary {
   font-weight: bold;
-}
-
-fieldset {
-  border: none;
-  margin: 0.5em 0 1em;
-  padding: 0;
 }
 
 /* === Tables === */
