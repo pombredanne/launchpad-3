@@ -526,7 +526,7 @@ new proposal).
 
     >>> new_proposal = proposal.resubmit(sample_person)
     >>> print new_proposal.queue_status.title
-    Work in progress
+    Needs review
     >>> new_proposal == proposal
     False
     >>> new_proposal.supersedes == proposal

@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
-    ILaunchpadContainer, ILaunchpadUsage)
+    ILaunchpadUsage)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.milestone import IHasMilestones
@@ -54,7 +54,7 @@ class DistributionNameField(PillarNameField):
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     IHasMentoringOffers, IHasMilestones, IMakesAnnouncements, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, ISpecificationTarget, IPillar, ILaunchpadContainer):
+    ILaunchpadUsage, ISpecificationTarget, IPillar):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")

@@ -794,7 +794,7 @@ def get_scanner_server():
     proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
     authserver = BlockingProxy(proxy)
     branch_transport = get_readonly_transport(
-        get_chrooted_transport(config.supermirror.warehouse_root_url))
+        config.supermirror.warehouse_root_url)
     return LaunchpadInternalServer(
         'lp-mirrored:///', authserver, branch_transport)
 

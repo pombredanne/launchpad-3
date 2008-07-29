@@ -11,14 +11,12 @@ __all__ = [
 
 from zope.interface import Attribute
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadContainer
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 
 
-class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget,
-                                 ILaunchpadContainer):
+class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking
