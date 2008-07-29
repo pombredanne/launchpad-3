@@ -51,10 +51,11 @@ the process calling it.
 
 By default is starts with 10000 records batches and the LoopTuner will
 adjust it according to the default 'goal_seconds' of 2 s,  when
-necessary.
+necessary. The first batch is more than enough to process all
+available published records in the sampledata.
 
     >>> process_in_batches(input, simple_task, logger)
-    DEBUG: Batch [0..10000) [... MiB]
+    DEBUG: Batch [0...) [... MiB]
 
 
 == Coping with changes in the given input ==
@@ -113,8 +114,8 @@ deletions in the given result set.
 
     >>> process_in_batches(input, nasty_task, logger, goal_seconds=1,
     ...                    minimum_chunk_size=10)
-    DEBUG: Batch [0..10) [... MiB]
     One gone
+    DEBUG: Batch [0..10) [... MiB]
     DEBUG: Batch [10...) [... MiB]
 
     >>> end_set_size = input.count()
@@ -141,6 +142,5 @@ But this is clearly not a problem for the current code.
 
     >>> process_in_batches(input, very_nasty_task, logger, goal_seconds=1,
     ...                    minimum_chunk_size=10)
-    DEBUG: Batch [0..10) [... MiB]
     All gone
-    DEBUG: Batch [10...) [... MiB]
+    DEBUG: Batch [0..10) [... MiB]

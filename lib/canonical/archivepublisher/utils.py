@@ -63,13 +63,11 @@ class PublishingTunableLoop(object):
         self.logger = logger
         self.total_updated = 0
         self.offset = 0
+        self.done = False
 
     def isDone(self):
         """See `ITunableLoop`."""
-        # When the main loop has no more input to process it sets
-        # offset to None. Until then, it always has a numerical
-        # value.
-        return self.offset is None
+        return self.done
 
     def __call__(self, chunk_size):
         """Run the initialized 'task' with a limited batch of 'input'.
@@ -78,18 +76,22 @@ class PublishingTunableLoop(object):
         """
         chunk_size = int(chunk_size)
         start = self.offset
-        end = self.offset + chunk_size
+        end = start + chunk_size
 
-        mem_size = resident() / (2 ** 20)
-        self.logger.debug("Batch [%d..%d) [%d MiB]" % (start, end, mem_size))
+        batch = list(self.input[start:end])
 
-        batch = self.input[start:end]
-        self.offset = None
+        if len(batch) == 0:
+            self.done = True
+            return
+
         for pub in batch:
-            start += 1
-            self.offset = start
+            self.offset += 1
             self.task(pub)
             self.total_updated += 1
+
+        mem_size = resident() / (2 ** 20)
+        self.logger.debug(
+            "Batch [%d..%d) [%d MiB]" % (start, self.offset, mem_size))
 
         # Invalidate the whole cache for the main store, this we we will also
         # get rid of all the foreign keys referred by the publishing records.
