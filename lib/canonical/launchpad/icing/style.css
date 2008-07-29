@@ -701,6 +701,7 @@ hierarchy, and the application tabs. */
   text-align: center;
   color: #333;
   line-height: 1.5em;
+  white-space: nowrap; /* keeps multi-word tab labels on a single line */
 }
 #lp-apps span a, #lp-apps span strong {
   display: block;
