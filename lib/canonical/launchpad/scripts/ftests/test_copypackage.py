@@ -234,14 +234,14 @@ class TestCopyPackage(unittest.TestCase):
         published version of the same source/binary in the destination
         context.
 
-        We emulates a conflict with a pre-existing version of 'firefox-3.0'
+        We emulate a conflict with a pre-existing version of 'firefox-3.0'
         in hardy-updates, a version of 'firefox' present in hardy and a copy
         copy candidate 'firefox' from hardy-security.
 
         As described in bug #245416, the ancestry lookup was erroneously
-        considering the 'firefox-3.0' as ancestry of the 'firefox' copy
+        considering the 'firefox-3.0' as an ancestor to the 'firefox' copy
         candidate. It was caused because the lookup was not restricted to
-        'exact_match' names. See scripts/packagecopier.py.
+        'exact_match' names. See `scripts/packagecopier.py`.
         """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
@@ -276,7 +276,7 @@ class TestCopyPackage(unittest.TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 1)
 
-        # Verify the resulted publishing scenario.
+        # Verify the resulting publishing scenario.
         [updates, security,
          release] = ubuntu.main_archive.getPublishedSources(
             name='firefox', exact_match=True)
