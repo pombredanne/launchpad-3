@@ -82,7 +82,7 @@ def has_unpublished_binaries(source):
     candidate_binaries = set(
         pub_binary.binarypackagerelease
         for pub_binary in source.getBuiltBinaries())
-    if candidate_binaries < built_binaries:
+    if candidate_binaries != built_binaries:
         return True
 
     return False
