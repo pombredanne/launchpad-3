@@ -6,6 +6,9 @@
  * Things browsers should do but don't
  * Overall presentation
   - Fonts and colors
+  - Error, warning, and informational messages
+  - Forms
+  - Tables
 ...
  * Application-specific styles
   - Overview
@@ -181,7 +184,7 @@ dd .whiteboard {
   padding-left: 1em;
 }
 
-/* --- Form controls --- */
+/* === Forms === */
 
 form {border: 0; margin: 0; padding: 0;}
 fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
@@ -212,14 +215,106 @@ textarea {width: 90%; max-width: 60em;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
 table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
-table.form th, table.form td {padding: 0 0.5em 1em 0;}
 table.form th {font-weight: normal;}
+table.form th, table.form td {padding-bottom: 1em;}
+table.form td td {padding-bottom: 0;}
 
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
  * person-pagelet-details.pt. We should move to use tables everywhere
  * and then kill this class I guess. -- kiko, 2007-12-05 */
 table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
+
+/* === Tables === */
+/* All table cells have horizontal padding between their contents: */
+th, td {padding: 0 0.5em 0 0;} /* http://launchpad.dev/ubuntu "Officers" */
+
+table.latest th, table.latest td {padding-bottom: 2em;}
+table.summary {float: right; margin: 0 0 1em 1em;}
+table.listing table.summary {margin-top: 0.5em;}
+table.summary caption {font-style: italic; margin-left: 1em;}
+div.right table.summary {float: none; margin: 1em auto;}
+table.summary tr {border: dotted #cbcbcb; border-width: 1px 0;}
+table.summary td {padding-left: 0.5em;}
+table.summary ul, table.summary ul li {
+  list-style-position: inside;
+  margin: 0;
+  padding: 0;
+}
+th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
+th.icon.left, td.icon.left {padding-right: 0;}
+th.icon.right, td.icon.right {padding-left: 0;}
+th.nowrap, td.nowrap {white-space: nowrap;}
+tfoot th, table.contributions th {text-align: left;}
+table.contributions, table.contributions th, table.contributions td {
+  border: 1px solid #e6e6e6;}
+table.contributions th {font-weight: normal;}
+table.contributions tr.odd {background-color: #fff; color: inherit;}
+table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
+table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
+table.contributions td {vertical-align: middle; width: 16px;}
+
+/* --- Listing tables --- */
+
+table.listing {margin: 0; width: 100%; font-size: 90%;}
+table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
+table.listing thead, table.listing thead th, table.listing tfoot tr {
+  border: 1px solid #d2d2d2;
+  background-color: #fff;
+}
+table.listing tr.category {border-bottom: 1px solid #d2d2d2;}
+table.listing tr.category th, table.listing tr.category td {padding-top: 1em;}
+table.listing tfoot td {border: 1px solid #d2d2d2;}
+table.listing thead td {border: none;}
+tr.highlight {background-color: #ff9;}
+table.listing tr.note {font-size: smaller;}
+.amount {text-align: right;}
+table.listing th, table.listing td {padding: 0.25em;}
+/* We don't want extra padding on nested tables, such as batch navigation. */
+table.listing table th, table.listing table td {padding: 0;}
+table.listing th {font-size: 1.125em; white-space: nowrap;}
+table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
+table.listing tr.note td {border-style: none;}
+table.listing img {vertical-align: middle;}
+table.listing tr.secondary th, table.listing tr.secondary td {border-top: none;}
+table.listing table tbody, table.listing table thead,
+table.listing table thead th, table.listing tfoot tr,
+table.listing table tfoot td, table.listing table td {
+  border: none;
+}
+table.duplicate.listing * {color: #999;}
+
+table.listing table.simple {margin-left: 2em;}
+table.listing table.simple td {padding: 0.25em;}
+
+table.compressed { width: auto }
+table.compressed td { padding: 0.25em 0.5em }
+
+/* --- Sortable tables --- */
+
+table.sortable a.sortheader {
+  color:#666666;
+  font-weight: bold;
+  text-decoration: none;
+  display: block;
+}
+table.sortable img.sortarrow {
+  padding-left: 2px;
+}
+th.ascending {
+  background-image: url(/@@/arrowDown);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+th.descending {
+  background-image: url(/@@/arrowUp);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+/* Used to indicate a value to be used to sort cells in a row */
+.sortkey, .revsortkey {display: none;}
+
+
 
 /* --- Action links and buttons --- */
 
@@ -1642,93 +1737,6 @@ li {
 .bug-summary, .summary {
   font-weight: bold;
 }
-
-/* === Tables === */
-
-table.latest th, table.latest td {padding-bottom: 2em;}
-table.summary {float: right; margin: 0 0 1em 1em;}
-table.listing table.summary {margin-top: 0.5em;}
-table.summary caption {font-style: italic; margin-left: 1em;}
-div.right table.summary {float: none; margin: 1em auto;}
-table.summary tr {border: dotted #cbcbcb; border-width: 1px 0;}
-table.summary td {padding-left: 0.5em;}
-table.summary ul, table.summary ul li {
-  list-style-position: inside;
-  margin: 0;
-  padding: 0;
-}
-th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
-th.icon.left, td.icon.left {padding-right: 0;}
-th.icon.right, td.icon.right {padding-left: 0;}
-th.nowrap, td.nowrap {white-space: nowrap;}
-tfoot th, table.contributions th {text-align: left;}
-table.contributions, table.contributions th, table.contributions td {
-  border: 1px solid #e6e6e6;}
-table.contributions th {font-weight: normal;}
-table.contributions tr.odd {background-color: #fff; color: inherit;}
-table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
-table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
-table.contributions td {vertical-align: middle; width: 16px;}
-
-/* --- Listing tables --- */
-
-table.listing {margin: 0; width: 100%; font-size: 90%;}
-table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
-table.listing thead, table.listing thead th, table.listing tfoot tr {
-  border: 1px solid #d2d2d2;
-  background-color: #fff;
-}
-table.listing tr.category {border-bottom: 1px solid #d2d2d2;}
-table.listing tr.category th, table.listing tr.category td {padding-top: 1em;}
-table.listing tfoot td {border: 1px solid #d2d2d2;}
-table.listing thead td {border: none;}
-tr.highlight {background-color: #ff9;}
-table.listing tr.note {font-size: smaller;}
-.amount {text-align: right;}
-table.listing th, table.listing td {padding: 0.25em;}
-/* We don't want extra padding on nested tables, such as batch navigation. */
-table.listing table th, table.listing table td {padding: 0;}
-table.listing th {font-size: 1.125em; white-space: nowrap;}
-table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
-table.listing tr.note td {border-style: none;}
-table.listing img {vertical-align: middle;}
-table.listing tr.secondary th, table.listing tr.secondary td {border-top: none;}
-table.listing table tbody, table.listing table thead,
-table.listing table thead th, table.listing tfoot tr,
-table.listing table tfoot td, table.listing table td {
-  border: none;
-}
-table.duplicate.listing * {color: #999;}
-
-table.listing table.simple {margin-left: 2em;}
-table.listing table.simple td {padding: 0.25em;}
-
-table.compressed { width: auto }
-table.compressed td { padding: 0.25em 0.5em }
-
-/* --- Sortable tables --- */
-
-table.sortable a.sortheader {
-  color:#666666;
-  font-weight: bold;
-  text-decoration: none;
-  display: block;
-}
-table.sortable img.sortarrow {
-  padding-left: 2px;
-}
-th.ascending {
-  background-image: url(/@@/arrowDown);
-  background-position: center right;
-  background-repeat: no-repeat;
-}
-th.descending {
-  background-image: url(/@@/arrowUp);
-  background-position: center right;
-  background-repeat: no-repeat;
-}
-/* Used to indicate a value to be used to sort cells in a row */
-.sortkey, .revsortkey {display: none;}
 
 /* Clouds of links. */
 .cloud-size-small {
