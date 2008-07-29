@@ -3,8 +3,9 @@
 /* == Contents == */
 /*
  * Guidelines
- * Stuff browsers should do but don't
+ * Things browsers should do but don't
  * Overall presentation
+  - Fonts and colors
 ...
  * Application-specific styles
   - Overview
@@ -24,7 +25,7 @@
 
 .demo {background-color: #fee;}
 
-/* === Stuff browsers should do but don't === */
+/* == Things browsers should do but don't == */
 
 .clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
   content: ".";
@@ -89,17 +90,13 @@ thead th, tr.thead th {text-align: center;}
 /* Opera doesn't use the general tr above for the radio button table */
 table.radio-button-widget tr td {vertical-align: top;}
 
-/* === Overall presentation === */
+/* == Overall presentation == */
 
-html {
-  position: static;
-  font-family: sans-serif;
-  font-size: 10pt;
-  color: #333;
-  background-color: #fff;
-}
-body {margin: 0; padding: 10px 20px;}
+/* === Fonts and colors === */
 
+/* Launchpad uses a white background with small, mostly black, text: */
+html {background: #fff; color: #000; font: 10pt sans-serif;}
+/* Links are blue, brighter when clicked, and greyer once visited: */
 :link                         {color: #039;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
@@ -130,6 +127,10 @@ ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
 .offline {text-align: center; margin: 2em 20px;}
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 .unavailable {color: #999; background: none;}
+
+/* Blank space at the top of the page makes the location bar more noticable.
+Ideally page margins would scale non-linearly, but absolute is next best: */
+body {margin: 0; padding: 10pt 16pt;}
 
 /* === Error, warning, and informational messages === */
 /* Error, warning, and informational alerts are in a centered box: */
