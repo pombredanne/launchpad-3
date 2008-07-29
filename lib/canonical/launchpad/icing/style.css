@@ -1838,3 +1838,13 @@ pre.wrap {
   white-space: -o-pre-wrap;
   word-wrap: break-word;
 }
+
+/* Don't add styles here.
+A chronologically-ordered style sheet is hard to maintain and debug.
+
+First, see if you can solve your problem by correcting the HTML.
+If not, see if there is an existing class that does what you want.
+As a last resort, if you really do need extra CSS, add it to the appropriate
+section of the style sheet, as shown in the table of contents.
+
+Don't add styles here. Thanks. */
