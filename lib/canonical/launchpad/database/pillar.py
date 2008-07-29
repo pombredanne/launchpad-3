@@ -22,10 +22,8 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-        NotFoundError, IPillarNameSet, IPillarName,
-        IProduct, IDistribution,
-        IDistributionSet, IProductSet, IProjectSet,
-        )
+    IDistribution, IDistributionSet, IPillarName, IPillarNameSet, IProduct,
+    IProductSet, IProjectSet, License, NotFoundError)
 
 from canonical.launchpad.database.featuredproject import FeaturedProject
 
@@ -158,7 +156,8 @@ class PillarNameSet:
 
     def search(self, text, limit):
         """See `IPillarSet`."""
-        from canonical.launchpad.database.product import Product
+        from canonical.launchpad.database.product import (
+            Product, ProductWithLicenses)
         from canonical.launchpad.database.productlicense import ProductLicense
         if limit is None:
             limit = config.launchpad.default_batch_size
@@ -195,14 +194,17 @@ class PillarNameSet:
                 stacklevel=2)
         pillars = []
         # Prefill pillar.product.licenses.
-        for pillar, product, project, distro, license_ids in result[:limit]:
-            pillars.append(pillar)
-            if (pillar.product is not None
-                and pillar.product._cached_licenses is None):
+        for pillar_name, product, project, distro, license_ids in (
+            result[:limit]):
+            if pillar_name.product is not None:
                 licenses = [
                     License.items[license_id]
                     for license_id in license_ids]
-                pillar.product._cached_licenses = tuple(sorted(licenses))
+                product_with_licenses = ProductWithLicenses(
+                    pillar_name.product, tuple(sorted(licenses)))
+                pillars.append(product_with_licenses)
+            else:
+                pillars.append(pillar_name.pillar)
         return pillars
 
     def add_featured_project(self, project):

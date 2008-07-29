@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'PillarSearchItem',
     'ProductActiveReviewsView',
     'ProductAddSeriesView',
     'ProductAddView',
@@ -787,7 +786,9 @@ class ReleaseWithFiles:
 class ProductDownloadFileMixin:
     """Provides methods for managing download files."""
 
-    def _fetchProductData(self):
+
+    @cachedproperty
+    def product(self):
         """Fetch all series, release and file data for the product.
 
         Decorated classes are created rooted at self.product and they
@@ -796,25 +797,16 @@ class ProductDownloadFileMixin:
         """
         # Create the decorated product and set the list of series.
         original_product = self.context
-        try:
-            original_serieses = original_product.serieses
-        except AttributeError:
-            # PillarSearchItem pretends to provide IProduct but
-            # doesn't really because it does not have a 'serieses'
-            # attribute.  When the attribute isn't present we can just
-            # return.
-            self.product = original_product
-            return
 
-        self.product = ProductWithSeries(original_product)
+        product = ProductWithSeries(original_product)
         serieses = []
-        for series in original_serieses:
+        for series in original_product.serieses:
             series_with_releases = SeriesWithReleases(series)
             serieses.append(series_with_releases)
             if original_product.development_focus == series:
-                self.product.development_focus = series_with_releases
+                product.development_focus = series_with_releases
 
-        self.product.setSeries(serieses)
+        product.setSeries(serieses)
 
         # Get all of the releases for all of the serieses in a single
         # query.  The query sorts the releases properly so we know the
@@ -822,9 +814,9 @@ class ProductDownloadFileMixin:
         release_set = getUtility(IProductReleaseSet)
         release_by_id = {}
         releases = release_set.getReleasesForSerieses(
-            self.product.serieses)
+            product.serieses)
         for release in releases:
-            series = self.product.getSeriesById(
+            series = product.getSeriesById(
                 release.productseries.id)
             decorated_release = ReleaseWithFiles(release)
             series.addRelease(decorated_release)
@@ -836,6 +828,8 @@ class ProductDownloadFileMixin:
         for file in files:
             release = release_by_id[file.productrelease.id]
             release.addFile(file)
+
+        return product
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
@@ -924,7 +918,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def initialize(self):
         self.status_message = None
-        self._fetchProductData()
 
     @property
     def show_license_status(self):
@@ -1063,7 +1056,6 @@ class ProductDownloadFilesView(LaunchpadView,
 
     def initialize(self):
         self.form = self.request.form
-        self._fetchProductData()
         # Manually process action for the 'Delete' button.
         self.processDeleteFiles()
 

@@ -8,6 +8,7 @@ __all__ = [
     'get_allowed_default_stacking_names',
     'Product',
     'ProductSet',
+    'ProductWithLicenses',
     ]
 
 
@@ -23,6 +24,7 @@ from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.lazr import decorates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -82,6 +84,59 @@ from canonical.launchpad.interfaces.specification import (
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
+
+def get_license_status(license_approved, license_reviewed, licenses):
+    """Decide the license status for an `IProduct`.
+
+    :return: A LicenseStatus enum value.
+    """
+    # A project can only be marked 'license_approved' if it is
+    # OTHER_OPEN_SOURCE.  So, if it is 'license_approved' we return
+    # OPEN_SOURCE, which means one of our admins has determined it is good
+    # enough for us for the project to freely use Launchpad.
+    if license_approved:
+        return LicenseStatus.OPEN_SOURCE
+    if len(licenses) == 0:
+        # We don't know what the license is.
+        return LicenseStatus.UNSPECIFIED
+    elif License.OTHER_PROPRIETARY in licenses:
+        # Notice the difference between the License and LicenseStatus.
+        return LicenseStatus.PROPRIETARY
+    elif License.OTHER_OPEN_SOURCE in licenses:
+        if license_reviewed:
+            # The OTHER_OPEN_SOURCE license was not manually approved
+            # by setting license_approved to true.
+            return LicenseStatus.PROPRIETARY
+        else:
+            # The OTHER_OPEN_SOURCE is pending review.
+            return LicenseStatus.UNREVIEWED
+    else:
+        # The project has at least one license and does not have
+        # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
+        return LicenseStatus.OPEN_SOURCE
+
+
+class ProductWithLicenses:
+    """Caches Product.licenses."""
+
+    decorates(IProduct, 'product')
+
+    def __init__(self, product, licenses):
+        self.product = product
+        self._licenses = licenses
+
+    @property
+    def licenses(self):
+        return self._licenses
+
+    @property
+    def license_status(self):
+        """Make license_status use cached ProductWithLicenses.licenses.
+
+        Normally, the Product.license_status property would use Product.licenses.
+        """
+        return get_license_status(
+            self.license_approved, self.license_reviewed, self.licenses)
 
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -341,34 +396,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         :return: A LicenseStatus enum value.
         """
-        # A project can only be marked 'license_approved' if it is
-        # OTHER_OPEN_SOURCE.  So, if it is 'license_approved' we return
-        # OPEN_SOURCE, which means one of our admins has determined it is good
-        # enough for us for the project to freely use Launchpad.
-        if self.license_approved:
-            return LicenseStatus.OPEN_SOURCE
-        # Since accesses to the licenses property performs a query on
-        # the ProductLicense table, store the value to avoid doing the
-        # query 3 times.
-        licenses = self.licenses
-        if len(licenses) == 0:
-            # We don't know what the license is.
-            return LicenseStatus.UNSPECIFIED
-        elif License.OTHER_PROPRIETARY in licenses:
-            # Notice the difference between the License and LicenseStatus.
-            return LicenseStatus.PROPRIETARY
-        elif License.OTHER_OPEN_SOURCE in licenses:
-            if self.license_reviewed:
-                # The OTHER_OPEN_SOURCE license was not manually approved
-                # by setting license_approved to true.
-                return LicenseStatus.PROPRIETARY
-            else:
-                # The OTHER_OPEN_SOURCE is pending review.
-                return LicenseStatus.UNREVIEWED
-        else:
-            # The project has at least one license and does not have
-            # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
-            return LicenseStatus.OPEN_SOURCE
+        return get_license_status(
+            self.license_approved, self.license_reviewed, self.licenses)
 
     def _resetLicenseReview(self):
         """When the license is modified, it must be reviewed again."""

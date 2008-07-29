@@ -5,9 +5,9 @@
   omit-tag="">
 <tr>
   <td>
-    <div tal:content="structure context/pillar/fmt:link" />
+    <div tal:content="structure context/fmt:link" />
     <div>
-      <tal:summary replace="context/pillar/summary/fmt:shorten/240" />
+      <tal:summary replace="context/summary/fmt:shorten/240" />
     </div>
   </td>
 </tr>
