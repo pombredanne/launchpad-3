@@ -77,7 +77,7 @@ changes to that test.
     >>> user_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
     >>> user_browser.title.decode('utf-8')
     u'Bug #2 in Tomcat: ...Blackhole Trash folder...'
-    >>> user_browser.getControl('Comment', index=-1).value = (
+    >>> user_browser.getControl(name='field.comment').value = (
     ...     "-----BEGIN PGP SIGNED MESSAGE-----\n"
     ...     "Hash: SHA1\n"
     ...     "\n"
