@@ -124,7 +124,7 @@ deletions in the given result set.
 
 process_in_batches() also copes with extreme cases, as having all input
 vanished between the batches. It might confuse the batch processor,
-because it will notice that "more work" has been done that what is
+because it will notice that "more work" has been done than what is
 actually available to do.
 
     >>> def very_nasty_task(binary_publication):
@@ -138,7 +138,7 @@ actually available to do.
     ...     transaction.commit()
     ...     ignore = binary_publication.binarypackagerelease.name
 
-But this is clearly not a problem for the current code.
+The code deftly handles this situation.
 
     >>> process_in_batches(input, very_nasty_task, logger, goal_seconds=1,
     ...                    minimum_chunk_size=10)
