@@ -6,7 +6,7 @@ A user can have rights to appoint or remove members on any of three
 grounds: owning the group, being a Rosetta expert, or being a Launchpad
 administrator.
 
-Jordi Mallach, is a Rosetta administrator ("expert").  He does not own
+Jordi Mallach is a Rosetta administrator ("expert").  He does not own
 polyglot nor is he a Launchpad adminstrator.  That is enough to allow
 him to appoint a translator.
 
@@ -15,7 +15,8 @@ him to appoint a translator.
     ...   'http://translations.launchpad.dev/+groups/polyglot/')
     >>> print find_portlet(browser.contents, 'Translation Teams')
     <...
-    There are no translators appointed in this group yet.
+    No translation teams or supervisors have been appointed yet in this
+    group.
     ...
 
 Verify that the appointments form displays, and offers the option to

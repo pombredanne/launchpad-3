@@ -89,7 +89,7 @@ registerLaunchpadFunction(hookUpFilterSubmission);
         </td>
         <td align="right" style="padding-right: 5px">
           <tal:dev_focus condition="branch/is_development_focus">
-            <img src="/@@/favourite-yes" title="Current development focus"/>
+            <img src="/@@/favourite-yes" title="focus of development"/>
           </tal:dev_focus>
           <tal:badges replace="structure branch/badges:small"/>
         </td>

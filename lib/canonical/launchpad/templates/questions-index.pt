@@ -14,7 +14,8 @@
 
       <ul class="rollover buttons">
         <li>
-          <a href="/+tour">
+          <a href="/+tour/community-support"
+             tal:attributes="href string:${rooturl}+tour/community-support">
             <img
               alt="Take a tour"
               src="/+icing/but-lrg-takeatour.gif"
@@ -72,7 +73,6 @@
         community support network and knowledge base for
         your project. Encourage new users to ask questions
         rather than file bugs!
-        <a href="/+about">Learn more&#8230;</a>
       </p>
 
       <div class="columns">
