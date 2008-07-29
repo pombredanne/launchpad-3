@@ -26,5 +26,24 @@ ALTER TABLE Person
     ADD CONSTRAINT person__account__key UNIQUE (account),
     ADD CONSTRAINT person__name__key UNIQUE (name);
 
+-- Fix some bugs in the schema that replication picked up. Neither of these
+-- tables is in use yet.
+ALTER TABLE PackageBugSupervisor
+    ADD CONSTRAINT packagebugsupervisor__bug_supervisor__fk
+        FOREIGN KEY (bug_supervisor) REFERENCES Person;
+ALTER SEQUENCE sourcepackagereleasefile_id_seq
+    OWNED BY SourcePackageReleaseFile.id;
+ALTER SEQUENCE binarypackagefile_id_seq OWNED BY BinaryPackageFile.id;
+ALTER SEQUENCE packaging_id_seq OWNED BY Packaging.id;
+ALTER SEQUENCE spokenin_id_seq OWNED BY SpokenIn.id;
+ALTER SEQUENCE productreleasefile_id_seq OWNED BY ProductReleaseFile.id;
+DROP SEQUENCE sourcepackagerelationship_id_seq;
+DROP SEQUENCE branchrelationship_id_seq;
+DROP SEQUENCE distributionrole_id_seq;
+DROP SEQUENCE projectbugtracker_id_seq;
+
+-- Can't use is_team as a constraint as the result is mutable.
+ALTER TABLE Poll DROP CONSTRAINT is_team;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 71, 0);
 
