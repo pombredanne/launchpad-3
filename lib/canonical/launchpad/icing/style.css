@@ -97,10 +97,12 @@ table.radio-button-widget tr td {vertical-align: top;}
 /* Launchpad uses a white background with small, mostly black, text: */
 html {background: #fff; color: #000; font: 10pt sans-serif;}
 /* Links are blue, brighter when clicked, and greyer once visited: */
-:link                         {color: #039;    text-decoration: none;}
-:link:hover, :visited:hover   {                text-decoration: underline;}
-:link:active, :visited:active {color: #36c;}
-:visited                      {color: #324c7f; text-decoration: none;}
+:link                             {color: #039;    text-decoration: none;}
+:link:hover, :visited:hover       {                text-decoration: underline;}
+:link:active, :visited:active     {color: #36c;}
+:visited                          {color: #324c7f; text-decoration: none;}
+/* Links that don't open separate pages are green to denote their behavior: */
+a[onclick], .collapsible legend a {color: #063;}
 
 h1, h2, h3, h4, h5, h6 {
   background: none;
@@ -285,11 +287,8 @@ img {
 }
 
 /* see launchpad.js:activateCollapsibles() */
-.collapsible legend a, .collapsible legend a:visited {
-  text-decoration: none;
-  color: #000088;
-}
-img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
+.collapsible legend a, .collapsible legend a:hover {text-decoration: none;}
+img.collapseIcon {text-decoration: none;}
 .collapsible legend a span {text-decoration: underline;}
 .collapsible {
   margin: 0;
