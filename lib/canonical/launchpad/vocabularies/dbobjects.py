@@ -96,8 +96,9 @@ from canonical.launchpad.interfaces import (
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
     IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
     IPerson, IPersonSet, IPillarName, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification, ITeam,
-    IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
+    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification,
+    SpecificationFilter, ITeam, IUpstreamBugTask, LanguagePackType,
+    MailingListStatus, PersonVisibility)
 from canonical.launchpad.interfaces.account import AccountStatus
 
 from canonical.launchpad.webapp.vocabulary import (
@@ -1558,7 +1559,9 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
                                  candidate_specs)
 
     def _all_specs(self):
-        return self._filter_specs(self.context.target.specifications())
+        all_specs = self.context.target.specifications(
+            filter=[SpecificationFilter.ALL])
+        return self._filter_specs(all_specs)
 
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())
