@@ -45,26 +45,7 @@ def get_string_representation(obj):
 def what_changed(sqlobject_modified_event):
     before = sqlobject_modified_event.object_before_modification
     after = sqlobject_modified_event.object
-    fields = sqlobject_modified_event.edited_fields
-    changes = {}
-    for fieldname in fields:
-        val_before = getattr(before, fieldname, None)
-        val_after = getattr(after, fieldname, None)
-
-        #XXX Bjorn Tillenius 2005-06-09: This shouldn't be necessary.
-        # peel off the zope stuff
-        if isProxy(val_before):
-            val_before = removeSecurityProxy(val_before)
-        if isProxy(val_after):
-            val_after = removeSecurityProxy(val_after)
-
-        before_string = get_string_representation(val_before)
-        after_string = get_string_representation(val_after)
-
-        if before_string != after_string:
-            changes[fieldname] = [before_string, after_string]
-
-    return changes
+    return get_bug_delta(before, after)
 
 @block_implicit_flushes
 def record_bug_added(bug, object_created_event):

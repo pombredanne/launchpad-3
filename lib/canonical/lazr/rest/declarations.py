@@ -709,6 +709,7 @@ def generate_operation_adapter(method):
             "'%s' isn't tagged for webservice export." % method.__name__)
 
     bases = (BaseResourceOperationAdapter, )
+    completion_event = None
     if tag['type'] == 'read_operation':
         prefix = 'GET'
         provides = IResourceGETOperation
@@ -728,7 +729,11 @@ def generate_operation_adapter(method):
     class_dict = {'params' : tuple(tag['params'].values()),
              'return_type' : return_type,
              '_export_info': tag,
-             '_method_name': method.__name__}
+             '_method_name': method.__name__ }
+
+    if provides == IResourcePOSTOperation:
+        send_modification_event = tag['type'] == 'write_operation'
+        class_dict['send_modification_event'] = send_modification_event
     factory = type(name, bases, class_dict)
     classImplements(factory, provides)
     protect_schema(factory, provides)

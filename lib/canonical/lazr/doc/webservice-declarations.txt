@@ -1107,15 +1107,15 @@ the underlying content security checker will still apply.)
 
     >>> print debug_proxy(ProxyFactory(read_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: __call__, return_type
+        public: __call__, return_type, send_modification_event
 
     >>> print debug_proxy(ProxyFactory(write_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: __call__
+        public: __call__, send_modification_event
 
     >>> print debug_proxy(ProxyFactory(factory_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: __call__
+        public: __call__, send_modification_event
 
 
 == ZCML Registration ==
