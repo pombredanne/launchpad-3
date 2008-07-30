@@ -117,8 +117,8 @@ def get_ancestry_candidate(source, archive, series, pocket):
         it was found or None.
     """
     destination_series_ancestries = archive.getPublishedSources(
-        name=source.sourcepackagerelease.name, pocket=pocket,
-        distroseries=series,
+        name=source.sourcepackagerelease.name, exact_match=True,
+        pocket=pocket, distroseries=series,
         status=active_publishing_status)
 
     if destination_series_ancestries.count() == 0:
