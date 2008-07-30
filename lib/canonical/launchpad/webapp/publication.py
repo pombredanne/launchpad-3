@@ -510,7 +510,7 @@ class LaunchpadBrowserPublication(
         timestamp = "%s.%d" % (
             now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
         pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
-        oopsid= getattr(request, 'oopsid', None)
+        oopsid = getattr(request, 'oopsid', None)
 
         if config.profiling.profile_requests:
             profiler = self.thread_locals.profiler
