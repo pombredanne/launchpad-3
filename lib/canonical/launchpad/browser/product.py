@@ -54,7 +54,7 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.interface import alsoProvides, implements, Interface
+from zope.interface import implements, Interface
 
 from canonical.cachedproperty import cachedproperty
 
@@ -63,9 +63,9 @@ from canonical.lazr import decorates
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
-    ICountry, IDistribution, IHasIcon, ILaunchBag, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IPersonSet, IPillarNameSet, IProductReviewSearch,
-    IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
+    ICountry, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IPersonSet, IPillarNameSet, IProductReviewSearch, IRevisionSet,
+    ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)

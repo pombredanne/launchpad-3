@@ -413,10 +413,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _getLicenses(self):
         """Get the licenses as a tuple."""
         if self._cached_licenses is None:
+            product_licenses = ProductLicense.selectBy(
+                product=self, orderBy='license')
             self._cached_licenses = tuple(
                 product_license.license
-                for product_license
-                    in ProductLicense.selectBy(product=self, orderBy='license'))
+                for product_license in product_licenses)
         return self._cached_licenses
 
     def _setLicenses(self, licenses, reset_license_reviewed=True):

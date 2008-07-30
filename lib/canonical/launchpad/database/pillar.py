@@ -20,7 +20,6 @@ from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPillarName, IPillarNameSet, IProduct,
     IProductSet, IProjectSet, License, NotFoundError)
@@ -129,7 +128,8 @@ class PillarNameSet:
             PillarName,
             LeftJoin(Product, PillarName.product == Product.id),
             LeftJoin(Project, PillarName.project == Project.id),
-            LeftJoin(Distribution, PillarName.distribution == Distribution.id),
+            LeftJoin(Distribution,
+                     PillarName.distribution == Distribution.id),
             ]
         conditions = SQL('''
             (Product.fti @@ ftq(%(text)s)
