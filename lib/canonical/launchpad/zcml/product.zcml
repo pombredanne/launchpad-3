@@ -95,7 +95,7 @@
         attributes="setBugSupervisor" />
   </content>
 
-  <!-- ProductWithLicenses 
+  <!-- ProductWithLicenses
         This is a decorator for IProduct that eliminates an additional query
         for the product licenses.
   -->
