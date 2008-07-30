@@ -132,17 +132,18 @@ class PillarNameSet:
                      PillarName.distribution == Distribution.id),
             ]
         conditions = SQL('''
-            (Product.fti @@ ftq(%(text)s)
-             OR Product.name = lower(%(text)s)
-             OR lower(Product.title) = lower(%(text)s))
-            OR
-            (Project.fti @@ ftq(%(text)s)
-             OR Project.name = lower(%(text)s)
-             OR lower(Project.title) = lower(%(text)s))
-            OR
-            (Distribution.fti @@ ftq(%(text)s)
-             OR Distribution.name = lower(%(text)s)
-             OR lower(Distribution.title) = lower(%(text)s))
+            PillarName.active = TRUE
+            AND ((Product.fti @@ ftq(%(text)s)
+                  OR Product.name = lower(%(text)s)
+                  OR lower(Product.title) = lower(%(text)s))
+                 OR
+                 (Project.fti @@ ftq(%(text)s)
+                  OR Project.name = lower(%(text)s)
+                  OR lower(Project.title) = lower(%(text)s))
+                 OR
+                 (Distribution.fti @@ ftq(%(text)s)
+                  OR Distribution.name = lower(%(text)s)
+                  OR lower(Distribution.title) = lower(%(text)s)))
             ''' % sqlvalues(text=text))
         store = getUtility(IZStorm).get('main')
         columns = [PillarName, Product, Project, Distribution]
