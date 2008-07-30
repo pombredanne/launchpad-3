@@ -42,7 +42,8 @@ from canonical.mem import (
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.webapp.interfaces import (
+    IPlacelessAuthUtility, IPrimaryContext)
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -635,3 +636,11 @@ def debug_references_startup_check(event):
     if os.path.exists(config.debug.references_scoreboard_file):
         os.remove(config.debug.references_scoreboard_file)
 
+
+class DefaultPrimaryContext:
+    """The default primary context is the context."""
+
+    implements(IPrimaryContext)
+
+    def __init__(self, context):
+        self.context = context

@@ -51,7 +51,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
-    NoCanonicalUrl)
+    IPrimaryContext, NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url
@@ -166,7 +166,8 @@ class MenuAPI:
     def facet(self):
         """Return the IFacetMenu related to the context."""
         try:
-            menu = nearest_adapter(self._context, IFacetMenu)
+            context = IPrimaryContext(self._context).context
+            menu = nearest_adapter(context, IFacetMenu)
         except NoCanonicalUrl:
             menu = None
 
