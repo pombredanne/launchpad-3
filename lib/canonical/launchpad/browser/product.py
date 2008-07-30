@@ -1054,6 +1054,18 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return (check_permission('launchpad.Edit', self.context)
                 and not self.context.qualifies_for_free_hosting)
 
+    @cachedproperty
+    def effective_driver(self):
+        """Return the product driver or the project driver."""
+        if self.context.driver is not None:
+            driver = self.context.driver
+        elif (self.context.project is not None and
+              self.context.project.driver is not None):
+            driver = self.context.project.driver
+        else:
+            driver = None
+        return driver
+
 
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,

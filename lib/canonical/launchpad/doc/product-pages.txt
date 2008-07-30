@@ -1,0 +1,54 @@
+= Product Pages =
+
+== Product View ==
+
+The page at /product_name includes overview information about the product.
+
+The `effective_driver` property on the view shows the product driver,
+if one exists.  If the product does not have a driver, then the driver
+for the project is returned.  If the product has no project or the
+project has no driver then None is returned.
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> from canonical.launchpad.interfaces.project import IProjectSet
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+
+Neither Mozilla nor Firefox has a driver set.
+
+    >>> print mozilla.driver
+    None
+    >>> print firefox.driver
+    None
+
+Thus the effective driver for Firefox is None.
+
+    >>> view = getMultiAdapter(
+    ...     (firefox, LaunchpadTestRequest()), name='+index')
+    >>> view.initialize()
+    >>> print view.effective_driver
+    None
+
+Setting the driver for the Mozilla project trickles down to Firefox.
+
+    >>> mozilla.driver = sabdfl
+    >>> view = getMultiAdapter(
+    ...     (firefox, LaunchpadTestRequest()), name='+index')
+    >>> view.initialize()
+    >>> print view.effective_driver.name
+    sabdfl
+
+Setting the driver for Firefox shows that it is used.
+
+    >>> firefox.driver = cprov
+    >>> view = getMultiAdapter(
+    ...     (firefox, LaunchpadTestRequest()), name='+index')
+    >>> view.initialize()
+    >>> print view.effective_driver.name
+    cprov
