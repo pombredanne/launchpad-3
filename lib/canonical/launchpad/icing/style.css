@@ -9,6 +9,8 @@
   - Error, warning, and informational messages
   - Forms
   - Tables
+   - Listing tables
+   - Summary tables
 ...
  * Application-specific styles
   - Overview
@@ -230,17 +232,7 @@ table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 th, td {padding: 0 0.5em 0 0;} /* http://launchpad.dev/ubuntu "Officers" */
 
 table.latest th, table.latest td {padding-bottom: 2em;}
-table.summary {float: right; margin: 0 0 1em 1em;}
-table.listing table.summary {margin-top: 0.5em;}
-table.summary caption {font-style: italic; margin-left: 1em;}
-div.right table.summary {float: none; margin: 1em auto;}
-table.summary tr {border: dotted #cbcbcb; border-width: 1px 0;}
-table.summary td {padding-left: 0.5em;}
-table.summary ul, table.summary ul li {
-  list-style-position: inside;
-  margin: 0;
-  padding: 0;
-}
+
 th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
 th.icon.left, td.icon.left {padding-right: 0;}
 th.icon.right, td.icon.right {padding-left: 0;}
@@ -254,7 +246,7 @@ table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
 table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
 table.contributions td {vertical-align: middle; width: 16px;}
 
-/* --- Listing tables --- */
+/* ==== Listing tables ==== */
 
 table.listing {margin: 0; width: 100%; font-size: 90%;}
 table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
@@ -266,13 +258,12 @@ table.listing tr.category {border-bottom: 1px solid #d2d2d2;}
 table.listing tr.category th, table.listing tr.category td {padding-top: 1em;}
 table.listing tfoot td {border: 1px solid #d2d2d2;}
 table.listing thead td {border: none;}
-tr.highlight {background-color: #ff9;}
 table.listing tr.note {font-size: smaller;}
 .amount {text-align: right;}
 table.listing th, table.listing td {padding: 0.25em;}
 /* We don't want extra padding on nested tables, such as batch navigation. */
 table.listing table th, table.listing table td {padding: 0;}
-table.listing th {font-size: 1.125em; white-space: nowrap;}
+table.listing thead th {font-size: 1.125em; white-space: nowrap;}
 table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
 table.listing tr.note td {border-style: none;}
 table.listing img {vertical-align: middle;}
@@ -289,6 +280,23 @@ table.listing table.simple td {padding: 0.25em;}
 
 table.compressed { width: auto }
 table.compressed td { padding: 0.25em 0.5em }
+
+/* ==== Summary tables ==== */
+
+/* Tables presenting summary information have subdued headers and a little
+row spacing: */
+table.summary th, table.summary td,
+table.listing table.summary th, table.listing table.summary td {
+  padding: 0 0.5em 0.5em 0;
+}
+table.summary th {color: #555; font-weight: normal;}
+table.summary caption {font-style: italic; margin-left: 1em;}
+table.summary ul, table.summary ul li {
+  list-style-position: inside;
+  margin: 0;
+  padding: 0;
+}
+
 
 /* --- Sortable tables --- */
 
@@ -1425,8 +1433,8 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .vcsimportSUCCESS {} /* inherited text color */
 .vcsimportFAILURE {color: Red;}
 
-/* --- Bugs --- */
-
+/* === Bugs === */
+/* The Launchpad Bugs application uses a maroon color: */
 body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}
 body.tab-bugs #mainarea #portlets .portlet.active h2 a,
 body.tab-bugs #mainarea div#portlets div.portlet.active a {
@@ -1475,6 +1483,9 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 .importanceWISHLIST,  .importanceWISHLIST a  {color: blue;}
 .importanceUNDECIDED, .importanceUNDECIDED a {color: #999;}
 .status :link, .importance :link {text-decoration: none;}
+
+/* In a bug report page, the current context is highlighted in yellow: */
+#affected-software tr.highlight {background-color: #ff9;}
 
 #bug-description {font-family: monospace;}
 
@@ -1733,10 +1744,6 @@ li {
   margin-bottom: 0.75em;
 }
 */
-
-.bug-summary, .summary {
-  font-weight: bold;
-}
 
 /* Clouds of links. */
 .cloud-size-small {
