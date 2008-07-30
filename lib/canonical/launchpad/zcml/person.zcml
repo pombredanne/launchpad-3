@@ -317,7 +317,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     name="+table-specworkload"
     permission="zope.Public"
-    class="canonical.launchpad.browser.PersonSpecWorkLoadView"
+    class="canonical.launchpad.browser.PersonSpecWorkloadTableView"
     template="../templates/person-table-specworkload.pt"
     />
 
@@ -371,6 +371,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     name="+specworkload"
     facet="specifications"
+    class="canonical.launchpad.browser.PersonSpecWorkloadView"
     permission="zope.Public"
     template="../templates/person-specworkload.pt"
     />

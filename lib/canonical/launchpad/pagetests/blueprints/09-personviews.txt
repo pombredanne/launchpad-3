@@ -14,7 +14,7 @@ involving that person.
   >>> soup('h1')
   [<h1>Blueprints involving Foo Bar</h1>]
 
-In the left-side menu, there are menu items that allow to select a 
+In the left-side menu, there are menu items that allow to select a
 subset of these specifications. The 'Approver' link selects the specs
 that the user is supposed to approve.
 
@@ -39,7 +39,7 @@ to the person.
   No feature specifications match your criteria.
   </p>]
 
-The 'Subscriber' link displays a page showing the specifications to 
+The 'Subscriber' link displays a page showing the specifications to
 which the person subscribed.
 
   >>> browser.getLink('Subscriber').click()
@@ -60,7 +60,7 @@ person drafted.
   No feature specifications match your criteria.
   </p>]
 
-The 'Workload' link displays a page showing the specifications that are 
+The 'Workload' link displays a page showing the specifications that are
 in the workload of that person.
 
   >>> browser.getLink('Workload').click()
@@ -69,9 +69,29 @@ in the workload of that person.
   >>> browser.title
   'Blueprint workload for Foo Bar'
 
+For a team, the 'Workload' link first shows the specifications that
+are part of the workload for the team.  It then shows the workloads
+for each member of the team, using batching.
+
+  >>> browser.open('http://blueprints.launchpad.dev/~admins')
+  >>> browser.title
+  'Blueprints involving Launchpad Administrators'
+  >>> browser.getLink('Workload').click()
+  >>> browser.url
+  '.../~admins/+specworkload'
+  >>> browser.title
+  'Blueprint workload for Launchpad Administrators'
+  >>> print extract_text(find_main_content(browser.contents))
+  Blueprint workload...
+  Team member workload...
+  Andrew Bennetts's specifications:...
+  Daniel Silverstone has no outstanding specifications...
+  5 of ... results...
+
 The 'Feedback requests' link displays a list of the specifications that
 the person was asked to review.
 
+  >>> browser.open('http://blueprints.launchpad.dev/~name16')
   >>> browser.getLink('Feedback request').click()
   >>> browser.url
   '.../~name16/+specfeedback'
@@ -80,4 +100,3 @@ the person was asked to review.
   >>> soup = find_main_content(browser.contents)
   >>> soup('p')
   [... 1 specification(s) listed...]
-
