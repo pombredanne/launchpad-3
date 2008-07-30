@@ -2566,6 +2566,95 @@ class PersonView(LaunchpadView, FeedsMixin):
         else:
             return None
 
+    @property
+    def email_address_observation(self):
+        """What a user many know of another user's email address.
+
+        There are five states that describe what one user may know of
+        another user or team's email addresses:
+
+            * are-private: The user is unknown; email addresses are
+              not shown.
+            * are-unknown: There are no email addresses to show to the
+              known user.
+            * are-public: There are email addresses and any known user
+              can see them.
+            * are-hidden: There are email addresses, but the known user
+              does not have permission to see them.
+            * are-visible: There are email addresses and the known user
+              has permission to see them.
+
+        :return: The state that summarises what a user may know of another
+            user or team's email addresses.
+        """
+        if self.user is None:
+            return 'are-private'
+        if self.context.preferredemail is None:
+            return 'are-unknown'
+        if not self.context.hide_email_addresses:
+            return 'are-public'
+        if check_permission('launchpad.View',  self.context.preferredemail):
+            return 'are-visible'
+        else:
+            return 'are-hidden'
+
+    @property
+    def email_addresses_are_private(self):
+        """The observing user is anonymous; do not show email addresses."""
+        return self.email_address_observation == 'are-private'
+
+    @property
+    def email_addresses_are_unknown(self):
+        """There are no email addresses to show to the known user."""
+        return self.email_address_observation == 'are-unknown'
+
+    @property
+    def email_addresses_are_hidden(self):
+        """The known user dis not permitted to see the email addresses."""
+        return self.email_address_observation == 'are-hidden'
+
+    @property
+    def email_addresses_are_visible(self):
+        """The known user does have permission to see the email addresses."""
+        return self.email_address_observation == 'are-visible'
+
+    @property
+    def email_addresses_are_public(self):
+        """The known user can see the email addresses."""
+        return self.email_address_observation == 'are-public'
+
+    @property
+    def observable_email_addresses(self):
+        """The list of email address that can be shown, or None.
+
+        The list contains email addresses when the email_address_observation
+        property is 'are-public' or 'are-visible'. The preferred email
+        address is the first in the list of validated email addresses.
+
+        :return: A list of email address strings or None if the no email
+            addresses are observable.
+        """
+        if self.email_address_observation in ('are-public', 'are-visible'):
+            emails = [email.email for email in self.context.validatedemails]
+            emails.insert(0, self.context.preferredemail.email)
+            return emails
+        else:
+            return None
+
+    @property
+    def observable_email_address_description(self):
+        """A description of who can see a user's email addresses.
+
+        :return: A string, or None if the email addresses cannot be viewed
+            by any user.
+        """
+        if self.email_address_observation == 'are-public':
+            return 'This email address is only visible to Launchpad users.'
+        elif self.email_address_observation == 'are-visible':
+            return 'This email address is not disclosed to others.'
+        else:
+            return None
+
     def htmlEmail(self):
         if self.context.preferredemail is not None:
             return convertToHtmlCode(self.context.preferredemail.email)

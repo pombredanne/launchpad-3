@@ -17,70 +17,41 @@
 
           <th>Email:</th>
 
-          <tal:has_preferredemail condition="context/preferredemail">
-            <tal:logged_in condition="request/lp:person">
-              <tal:hidden_emails condition="context/hide_email_addresses">
-
-                <tal:can-view-hidden-emails
-                  condition="context/preferredemail/required:launchpad.View">
-                  <td title="This email address is not disclosed to others.">
-                    <span style="white-space: nowrap">
-                      <img src="/@@/private" alt="" />
-                      <tal:email replace="context/preferredemail/email">foo@bar.com</tal:email>
-                    </span>
-                    <tal:validated-emails
-                      define="emails context/validatedemails"
-                      condition="emails"
-                      repeat="email emails">
-                     <span style="white-space: nowrap">
-                        <br />
-                        <img src="/@@/private" alt="" />
-                        <tal:email replace="email/email">foo2@bar.com</tal:email>
-                      </span>
-                    </tal:validated-emails>
-                  </td>
-                </tal:can-view-hidden-emails>
-
-                <tal:cant-view-hidden-emails
-                  condition="not: context/preferredemail/required:launchpad.View">
-                  <td>
-                    No public address provided.
-                  </td>
-                </tal:cant-view-hidden-emails>
-
-              </tal:hidden_emails>
-
-              <tal:visible_emails condition="not: context/hide_email_addresses">
-                <td>
-                <img src="/@@/mail" alt="" />
-                  <tal:email replace="context/preferredemail/email">foo@bar.com</tal:email>
-                </td>
-              </tal:visible_emails>
-
-            </tal:logged_in>
-
-            <tal:not_logged_in condition="not: request/lp:person">
-              <td>
-                <a href="+login">Log in</a> for email information.
-              </td>
+          <td
+            tal:attributes="title view/observable_email_address_description">
+            <tal:not_logged_in
+              condition="view/email_addresses_are_private">
+              <a href="+login">Log in</a> for email information.
             </tal:not_logged_in>
 
-          </tal:has_preferredemail>
-
-          <tal:no_preferredemail condition="not: context/preferredemail">
-            <tal:is-team condition="context/isTeam">
-              <td>
-                No contact address <br /><small>(Launchpad notifications are sent to
-                all team members)</small>
-              </td>
-            </tal:is-team>
-            <tal:not-team condition="not:context/isTeam">
-              <td>
+            <tal:no_preferredemail
+              condition="view/email_addresses_are_unknown">
+              <tal:is-team condition="context/isTeam">
+                No contact address <br /><small>(Launchpad notifications are
+                sent to all team members)</small>
+              </tal:is-team>
+              <tal:not-team condition="not:context/isTeam">
                 No public address provided.
-              </td>
-            </tal:not-team>
-          </tal:no_preferredemail>
+              </tal:not-team>
+            </tal:no_preferredemail>
 
+            <tal:cant-view-hidden-emails
+              condition="view/email_addresses_are_hidden">
+              No public address provided.
+            </tal:cant-view-hidden-emails>
+
+            <tal:emails
+              repeat="email view/observable_email_addresses">
+              <span style="white-space: nowrap">
+                <img src="/@@/private" alt=""
+                  tal:condition="view/email_addresses_are_visible"/>
+                <img src="/@@/mail" alt=""
+                  tal:condition="view/email_addresses_are_public"/>
+                <tal:email replace="email">foo2@bar.com</tal:email>
+                <br tal:omit-tag="repeat/email/end" />
+              </span>
+            </tal:emails>
+          </td>
         </tr>
 
         <tr tal:condition="view/team_has_mailing_list">
