@@ -41,13 +41,12 @@ user to refine his search.
 
     >>> search_results = find_tag_by_id(browser.contents, 'search-results')
     >>> for tr in search_results.tbody('tr'):
-    ...     image_td, description_td = tr('td')
-    ...     print description_td.a.renderContents()
-    Ubuntu Linux
-    Ubuntu Test
-    The Evolution Groupware Application
+    ...     print extract_text(tr.td.a)
+    Ubuntu
+    ubuntutest
+    Evolution
     Tomcat
-    The Gnome Panel Applets
+    Gnome Applets
 
 We can follow one of these links to go straight to the
 Product/Project/Distribution.
@@ -78,13 +77,12 @@ URL, saving them a page load.
     >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
     >>> search_results = find_tag_by_id(browser.contents, 'search-results')
     >>> for tr in search_results.tbody('tr'):
-    ...     image_td, description_td = tr('td')
-    ...     print description_td.a.renderContents()
-    Ubuntu Linux
-    Ubuntu Test
-    The Evolution Groupware Application
+    ...     print extract_text(tr.td.a)
+    Ubuntu
+    ubuntutest
+    Evolution
     Tomcat
-    The Gnome Panel Applets
+    Gnome Applets
 
 == Showing icons ==
 
@@ -94,13 +92,12 @@ standard images used for products/projects/distributions.
     >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
     >>> search_results = find_tag_by_id(browser.contents, 'search-results')
     >>> for tr in search_results.tbody('tr'):
-    ...     image_td, description_td = tr('td')
-    ...     print image_td.img['src'], description_td.a.renderContents()
-    /@@/distribution Ubuntu Linux
-    /@@/distribution Ubuntu Test
-    /@@/product The Evolution Groupware Application
+    ...     print tr.td.a.img['src'], extract_text(tr.td.a)
+    /@@/distribution Ubuntu
+    /@@/distribution ubuntutest
+    /@@/product Evolution
     /@@/product Tomcat
-    /@@/product The Gnome Panel Applets
+    /@@/product Gnome Applets
 
 If the project has specified an icon, that is shown in the listing
 instead.
@@ -123,13 +120,12 @@ instead.
     >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
     >>> search_results = find_tag_by_id(browser.contents, 'search-results')
     >>> for tr in search_results.tbody('tr'):
-    ...     image_td, description_td = tr('td')
-    ...     print image_td.img['src'], description_td.a.renderContents()
-    http://.../ubuntu-icon.png Ubuntu Linux
-    /@@/distribution Ubuntu Test
-    /@@/product The Evolution Groupware Application
+    ...     print tr.td.a.img['src'], extract_text(tr.td.a)
+    http://.../ubuntu-icon.png Ubuntu
+    /@@/distribution ubuntutest
+    /@@/product Evolution
     /@@/product Tomcat
-    /@@/product The Gnome Panel Applets
+    /@@/product Gnome Applets
 
 == Robustness ==
 

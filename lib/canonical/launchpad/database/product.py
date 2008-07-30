@@ -25,6 +25,7 @@ from zope.component import getUtility
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.lazr import decorates
+from canonical.lazr.utils import safe_hasattr
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -403,6 +404,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """When the license is modified, it must be reviewed again."""
         self.license_reviewed = False
         self.license_approved = False
+
+    def __storm_invalidated__(self):
+        self._cached_licenses = None
+        if safe_hasattr(self, '_commercial_subscription_cached'):
+            del self._commercial_subscription_cached
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""
