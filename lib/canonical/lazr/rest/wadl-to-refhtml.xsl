@@ -645,4 +645,24 @@
         <code><xsl:value-of select="@mediaType"/></code>
     </xsl:template>
 
+    <!-- Copy html elements. -->
+    <xsl:template match="html:*" mode="copy">
+        <!-- remove the prefix on HTML elements -->
+        <xsl:element name="{local-name()}">
+            <xsl:for-each select="@*">
+                <xsl:attribute name="{local-name()}"
+                    ><xsl:value-of select="."/></xsl:attribute>
+            </xsl:for-each>
+            <xsl:apply-templates select="node()" mode="copy"/>
+        </xsl:element>
+    </xsl:template>
+
+    <xsl:template match="@*|node()[
+            namespace-uri()!='http://www.w3.org/1999/xhtml']" mode="copy">
+        <!-- everything else goes straight through -->
+        <xsl:copy>
+            <xsl:apply-templates select="@*|node()" mode="copy"/>
+        </xsl:copy>
+    </xsl:template>
+
 </xsl:stylesheet>
