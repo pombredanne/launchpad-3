@@ -489,14 +489,6 @@ these URLs in Apache.
   />
 
 <browser:page
-  for="zope.interface.Interface"
-  class="canonical.launchpad.browser.StructuralHeaderPresentationView"
-  permission="zope.Public"
-  name="+structural-header"
-  template="../templates/launchpad-structuralheader.pt"
-  />
-
-<browser:page
   for="*"
   name="+applicationbuttons"
   permission="zope.Public"

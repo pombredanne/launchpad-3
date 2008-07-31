@@ -24,7 +24,6 @@ __all__ = [
     'OneZeroTemplateStatus',
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
-    'StructuralHeaderPresentationView',
     'StructuralObjectPresentation',
     'UbuntuIcingFolder',
     ]
@@ -843,18 +842,6 @@ class LaunchpadTourFolder(ExportedFolder):
                 self.request, status=302), ()
         else:
             return self, ()
-
-
-class StructuralHeaderPresentationView(LaunchpadView):
-
-    def initialize(self):
-        self.headerpresentation = IStructuralHeaderPresentation(self.context)
-
-    def getIntroHeading(self):
-        return self.headerpresentation.getIntroHeading()
-
-    def getMainHeading(self):
-        return self.headerpresentation.getMainHeading()
 
 
 class StructuralHeaderPresentation:
