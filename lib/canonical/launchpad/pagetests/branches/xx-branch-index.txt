@@ -259,10 +259,10 @@ link is shown.
     >>> print browser.getLink('Source Code').url
     http://bazaar.launchpad.dev/~name12/+junk/junk.dev/files
 
-In addition, there is a "Browse revisions" link that links to the
+In addition, there is a "All revisions" link that links to the
 changelog view in codebrowse.
 
-    >>> print browser.getLink('Older revisions').url
+    >>> print browser.getLink('All revisions').url
     http://bazaar.launchpad.dev/~name12/+junk/junk.dev/changes
 
 If the branch is private, the browse code link is not shown.
