@@ -266,6 +266,7 @@
           <p>
             <a tal:define="link context_menu/edit_import"
                tal:condition="link/enabled"
+               tal:attributes="href link/url"
                tal:content="structure link/render">
                Edit import source or review import</a>.
           </p>
