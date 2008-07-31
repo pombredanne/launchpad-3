@@ -4,7 +4,6 @@ __metaclass__ = type
 
 __all__ = [
     'TeamMembershipEditView',
-    'TeamMembershipSHP',
     ]
 
 import pytz
@@ -28,15 +27,6 @@ from canonical.launchpad.browser.launchpad import (
 from canonical.widgets import DateWidget
 
 
-class TeamMembershipSHP(StructuralHeaderPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.team.title
-
-
 class TeamMembershipEditView:
 
     def __init__(self, context, request):
@@ -51,7 +41,7 @@ class TeamMembershipEditView:
         expiration_field = fields['expirationdate']
         expiration_field.custom_widget = CustomWidgetFactory(DateWidget)
         expires = self.context.dateexpires
-        UTC = pytz.timezone('UTC') 
+        UTC = pytz.timezone('UTC')
         if self.isExpired():
             # For expired members, we will present the team's default
             # renewal date.
