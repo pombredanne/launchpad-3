@@ -351,275 +351,87 @@
         </div>
     </xsl:template>
 
-   <!-- Row describing one field in the default representation -->
-   <xsl:template match="wadl:param" mode="representation">
-       <xsl:variable name="resource_type"
-           select="substring-before(../@id, '-')" />
-       <xsl:variable name="patch_representation_id"
-           ><xsl:value-of select="$resource_type"/>-diff</xsl:variable>
-       <xsl:variable name="patch_representation"
-           select="key('id', $patch_representation_id)"/>
-       <tr>
-           <td>
-               <p><strong><xsl:value-of select="@name"/></strong></p>
-           </td>
-           <td>
-               <p>
-                   <xsl:choose>
-                       <xsl:when test="$patch_representation/wadl:param[@name
-                           = current()/@name]">
-                           <small>(writeable)</small>
-                       </xsl:when>
-                       <xsl:otherwise>
-                           <small>(read-only)</small>
-                       </xsl:otherwise>
-                   </xsl:choose>
-               </p>
-               <xsl:choose>
-                   <xsl:when test="wadl:option">
-                       <p><em>One of:</em></p>
-                       <ul>
-                           <xsl:apply-templates select="wadl:option"/>
-                       </ul>
-                   </xsl:when>
-                   <xsl:when test="wadl:link[@resource_type]">
-                       <xsl:apply-templates select="wadl:link" 
-                           mode="representation" />
-                   </xsl:when>
-                   <xsl:otherwise>
-                       <xsl:if test="@default">
-                           <p>
-                               Default:
-                               <var><xsl:value-of select="@default"/></var>
-                           </p>
-                       </xsl:if>
-                       <xsl:if test="@fixed">
-                           <p>
-                               Fixed:
-                               <var><xsl:value-of select="@fixed"/></var>
-                           </p>
-                       </xsl:if>
-                   </xsl:otherwise>
-               </xsl:choose>
-           </td>
-           <td>
-               <xsl:apply-templates select="wadl:doc"/>
-               <xsl:if test="wadl:option[wadl:doc]">
-                   <dl>
-                       <xsl:apply-templates
-                           select="wadl:option" mode="option-doc"/>
-                   </dl>
-               </xsl:if>
-           </td>
-       </tr>
-   </xsl:template>
-
-   <!-- Output the description of a link type in param listing -->
-   <xsl:template match="wadl:link[@resource_type and ../@name != 'self_link']" 
-       mode="representation">
-       <xsl:variable name="resource_type"
-           select="substring-after(@resource_type, '#')"/>
-       <xsl:choose>
-           <xsl:when test="contains($resource_type, 'page-resource')">
-               Link to a <a href="#{substring-before($resource_type, '-')}"
-                   ><xsl:value-of 
-                       select="substring-before($resource_type, '-')"
-                       /></a> collection.
-           </xsl:when>
-           <xsl:when test="$resource_type = 'HostedFile'">
-               Link to a file resource.
-           </xsl:when>
-           <xsl:otherwise>
-               Link to a <a href="#{$resource_type}"
-                   ><xsl:value-of select="$resource_type"/></a>.
-           </xsl:otherwise>
-       </xsl:choose>
-   </xsl:template>
-
-    <!-- Table of Contents -->
-    <xsl:template name="toc">
-        <ul>
-            <li>
-                <a href="#resources">Resources</a>
-                <xsl:apply-templates
-                    select="wadl:resources"
-                    mode="toc">
-                    <xsl:with-param name="base" select="$base"/>
-                </xsl:apply-templates>
-            </li>
-            <li>
-                <a href="#representations">Representations</a>
-                <ul>
-                    <xsl:apply-templates
-                        select="wadl:representation[@id]" mode="toc"/>
-                </ul>
-            </li>
-            <xsl:if test="descendant::wadl:fault">
-                <li><a href="#faults">Faults</a>
-                    <ul>
+    <!-- Row describing one field in the default representation -->
+    <xsl:template match="wadl:param" mode="representation">
+        <xsl:variable name="resource_type"
+            select="substring-before(../@id, '-')" />
+        <xsl:variable name="patch_representation_id"
+            ><xsl:value-of select="$resource_type"/>-diff</xsl:variable>
+        <xsl:variable name="patch_representation"
+            select="key('id', $patch_representation_id)"/>
+        <tr>
+            <td>
+                <p><strong><xsl:value-of select="@name"/></strong></p>
+            </td>
+            <td>
+                <p>
+                    <xsl:choose>
+                        <xsl:when test="$patch_representation/wadl:param[@name
+                            = current()/@name]">
+                            <small>(writeable)</small>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <small>(read-only)</small>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </p>
+                <xsl:choose>
+                    <xsl:when test="wadl:option">
+                        <p><em>One of:</em></p>
+                        <ul>
+                            <xsl:apply-templates select="wadl:option"/>
+                        </ul>
+                    </xsl:when>
+                    <xsl:when test="wadl:link[@resource_type]">
+                        <xsl:apply-templates select="wadl:link" 
+                            mode="representation" />
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:if test="@default">
+                            <p>
+                                Default:
+                                <var><xsl:value-of select="@default"/></var>
+                            </p>
+                        </xsl:if>
+                        <xsl:if test="@fixed">
+                            <p>
+                                Fixed:
+                                <var><xsl:value-of select="@fixed"/></var>
+                            </p>
+                        </xsl:if>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </td>
+            <td>
+                <xsl:apply-templates select="wadl:doc"/>
+                <xsl:if test="wadl:option[wadl:doc]">
+                    <dl>
                         <xsl:apply-templates
-                            select="wadl:fault" mode="toc"/>
-                    </ul>
-                </li>
-            </xsl:if>
-        </ul>
+                            select="wadl:option" mode="option-doc"/>
+                    </dl>
+                </xsl:if>
+            </td>
+        </tr>
     </xsl:template>
 
-    <xsl:template match="wadl:resources" mode="toc">
-        <xsl:param name="base"/>
-        <ul>
-            <xsl:apply-templates
-                select="/*/wadl:resource_type[@id = 'service-root' or not(contains(@id, '-'))]"
-                mode="toc">
-                <xsl:with-param name="base" select="$base"/>
-            </xsl:apply-templates>
-        </ul>
-    </xsl:template>
-
-    <xsl:template match="wadl:resource" mode="toc">
-        <xsl:param name="base"/>
-        <xsl:variable name="id"><xsl:call-template name="get-id"/></xsl:variable>
-        <xsl:variable name="name"><xsl:value-of select="$base"/>/<xsl:value-of select="@path"/></xsl:variable>
-        <li><a href="#{$id}"><xsl:value-of select="$name"/></a>
-            <xsl:if test="wadl:resource">
-                <ul>
-                    <xsl:apply-templates select="wadl:resource" mode="toc">
-                        <xsl:with-param name="context" select="$name"/>
-                    </xsl:apply-templates>
-                </ul>
-            </xsl:if>
-        </li>
-    </xsl:template>
-
-    <xsl:template match="wadl:resource_type" mode="toc">
-        <xsl:param name="base"/>
-        <xsl:variable name="id">
-            <!-- The webservice root is '/', not its id. -->
-            <xsl:choose>
-                <xsl:when test="@id = 'service-root'">
-                    <xsl:value-of select="'/'"/>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:call-template name="get-id"/>
-                </xsl:otherwise>
-            </xsl:choose>
-        </xsl:variable>
-        <li>
-            <a href="#{@id}"><xsl:value-of select="$id"/></a>
-        </li>
-    </xsl:template>
-
-    <xsl:template match="wadl:representation|wadl:fault" mode="toc">
-        <xsl:variable name="id"><xsl:call-template name="get-id"/></xsl:variable>
-        <xsl:variable name="href" select="@id"/>
+    <!-- Output the description of a link type in param listing -->
+    <xsl:template match="wadl:link[@resource_type and ../@name != 'self_link']" 
+        mode="representation">
+        <xsl:variable name="resource_type"
+            select="substring-after(@resource_type, '#')"/>
         <xsl:choose>
-            <xsl:when test="preceding::wadl:*[@id=$href]"/>
+            <xsl:when test="contains($resource_type, 'page-resource')">
+                Link to a <a href="#{substring-before($resource_type, '-')}"
+                    ><xsl:value-of 
+                        select="substring-before($resource_type, '-')"
+                        /></a> collection.
+            </xsl:when>
+            <xsl:when test="$resource_type = 'HostedFile'">
+                Link to a file resource.
+            </xsl:when>
             <xsl:otherwise>
-                <li>
-                    <a href="#{$id}">
-                        <xsl:value-of select="@id"/>
-                    </a>
-                </li>
-            </xsl:otherwise>
-        </xsl:choose>
-    </xsl:template>
-
-    <xsl:template name="resources">
-        <h2 id="resources">Resources</h2>
-        <xsl:apply-templates
-            select="wadl:resource_type[@id = 'service-root' or not(contains(@id, '-'))]"
-            mode="list">
-            <xsl:with-param name="base" select="$base"/>
-        </xsl:apply-templates>
-    </xsl:template>
-
-    <xsl:template name="representations">
-        <h2 id="representations">Representations</h2>
-        <xsl:apply-templates
-            select="wadl:representation[@id]"
-            mode="list"/>
-
-        <xsl:if test="wadl:fault">
-            <h2 id="faults">Faults</h2>
-            <xsl:apply-templates select="wadl:fault" mode="list"/>
-        </xsl:if>
-    </xsl:template>
-
-    <!-- Listings -->
-
-    <xsl:template match="wadl:resources" mode="list">
-        <xsl:variable name="base">
-            <xsl:choose>
-                <xsl:when test="substring(@base, string-length(@base), 1) = '/'">
-                    <xsl:value-of select="substring(@base, 1, string-length(@base) - 1)"/>
-                </xsl:when>
-                <xsl:otherwise><xsl:value-of select="@base"/></xsl:otherwise>
-            </xsl:choose>
-        </xsl:variable>
-        <xsl:apply-templates select="wadl:resource" mode="list"/>
-
-    </xsl:template>
-
-    <xsl:template match="wadl:resource|wadl:resource_type" mode="list">
-        <xsl:param name="base"/>
-        <xsl:param name="context"/>
-        <xsl:variable name="href" select="@id"/>
-        <xsl:variable name="id">
-            <!-- The webservice root is '/', not its id. -->
-            <xsl:choose>
-                <xsl:when test="@id = 'service-root'">
-                    <xsl:value-of select="'/'"/>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:call-template name="get-id"/>
-                </xsl:otherwise>
-            </xsl:choose>
-        </xsl:variable>
-        <xsl:choose>
-            <xsl:when test="preceding::wadl:resource[@id=$href]"/>
-            <xsl:otherwise>
-                <xsl:variable name="name">
-                    <xsl:value-of select="$context"/>/<xsl:value-of select="@path"/>
-                    <xsl:for-each select="wadl:param[@style='matrix']">
-                        <span class="optional">;<xsl:value-of select="@name"/>=...</span>
-                    </xsl:for-each>
-                </xsl:variable>
-                <div class="resource">
-                    <h3 id="{@id}">
-                        <xsl:choose>
-                            <xsl:when test="wadl:doc[@title]">
-                                <xsl:value-of select="wadl:doc[@title][1]/@title"/>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                 <xsl:value-of select="$id"/>
-                            </xsl:otherwise>
-                        </xsl:choose>
-                    </h3>
-                    <xsl:apply-templates select="wadl:doc"/>
-                    <xsl:apply-templates select="." mode="param-group">
-                        <xsl:with-param name="prefix">resource-wide</xsl:with-param>
-                        <xsl:with-param name="style">template</xsl:with-param>
-                    </xsl:apply-templates>
-                    <xsl:apply-templates select="." mode="param-group">
-                        <xsl:with-param name="prefix">resource-wide</xsl:with-param>
-                        <xsl:with-param name="style">matrix</xsl:with-param>
-                    </xsl:apply-templates>
-                    <h6>Methods</h6>
-                    <div class="methods">
-                        <xsl:choose>
-                            <xsl:when test="wadl:method">
-                                <xsl:apply-templates select="wadl:method"/>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <xsl:apply-templates
-                                    select="/*/wadl:resource_type[@id = @id]/wadl:method"/>
-                            </xsl:otherwise>
-                        </xsl:choose>
-                    </div>
-                </div>
-                <xsl:apply-templates select="wadl:resource" mode="list">
-                    <xsl:with-param name="context" select="$name"/>
-                </xsl:apply-templates>
+                Link to a <a href="#{$resource_type}"
+                    ><xsl:value-of select="$resource_type"/></a>.
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
@@ -898,51 +710,6 @@
                             .//wadl:representation[not(@mediaType)]/@href, 
                             '#'))" />
         <code><xsl:value-of select="$representation/@mediaType"/></code>
-    </xsl:template>
-
-    <!-- entity-encode markup for display -->
-
-    <xsl:template match="*" mode="encode">
-        <xsl:text>&lt;</xsl:text>
-        <xsl:value-of select="name()"/><xsl:apply-templates
-            select="attribute::*" mode="encode"/>
-        <xsl:choose>
-            <xsl:when test="*|text()">
-                <xsl:text>&gt;</xsl:text>
-                <xsl:apply-templates select="*|text()" mode="encode" xml:space="preserve"/>
-                <xsl:text>&lt;/</xsl:text><xsl:value-of select="name()"/><xsl:text>&gt;</xsl:text>
-            </xsl:when>
-            <xsl:otherwise>
-                <xsl:text>/&gt;</xsl:text>
-            </xsl:otherwise>
-        </xsl:choose>
-    </xsl:template>
-
-    <xsl:template match="@*" mode="encode">
-        <xsl:text> </xsl:text><xsl:value-of select="name()"/><xsl:text>="</xsl:text><xsl:value-of select="."/><xsl:text>"</xsl:text>
-    </xsl:template>
-
-    <xsl:template match="text()" mode="encode">
-        <xsl:value-of select="." xml:space="preserve"/>
-    </xsl:template>
-
-    <!-- copy HTML for display -->
-
-    <xsl:template match="html:*" mode="copy">
-        <!-- remove the prefix on HTML elements -->
-        <xsl:element name="{local-name()}">
-            <xsl:for-each select="@*">
-                <xsl:attribute name="{local-name()}"><xsl:value-of select="."/></xsl:attribute>
-            </xsl:for-each>
-            <xsl:apply-templates select="node()" mode="copy"/>
-        </xsl:element>
-    </xsl:template>
-
-    <xsl:template match="@*|node()[namespace-uri()!='http://www.w3.org/1999/xhtml']" mode="copy">
-        <!-- everything else goes straight through -->
-        <xsl:copy>
-            <xsl:apply-templates select="@*|node()" mode="copy"/>
-        </xsl:copy>
     </xsl:template>
 
 </xsl:stylesheet>
