@@ -90,17 +90,6 @@ Ensure the self link is correct and there is only one.
     >>> print_parse_links(anon_browser)
     <link rel="self" href="http://feeds.launchpad.dev/~mike/revisions.atom" />
 
-The <update> field for the feed will be the most recent value for the
-updated field in all of the entries.
-
-    >>> strainer = SoupStrainer('updated')
-    >>> updated_dates = [extract_text(tag) for tag in BSS(anon_browser.contents,
-    ...                  parseOnlyThese=strainer)]
-    >>> feed_updated = updated_dates[0]
-    >>> entry_dates = sorted(updated_dates[1:], reverse=True)
-    >>> assert feed_updated == entry_dates[0], (
-    ...     "Feed <update> value is not the same as latest entry.")
-
 If we look at the feed for a team, we get revisions created by any member
 of that team.
 

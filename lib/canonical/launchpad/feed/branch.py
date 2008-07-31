@@ -193,7 +193,7 @@ class RevisionFeedContentView(LaunchpadView):
         else:
             logline = first_line[:60] + '...'
         return "[%(branch)s] %(revno)s %(logline)s" % {
-            'branch': self.branch.bzr_identity,
+            'branch': self.branch.name,
             'revno': revno,
             'logline': logline}
 
