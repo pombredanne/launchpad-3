@@ -75,11 +75,17 @@ class LaunchpadDatabasePolicy:
         if not self.read_only and not WebServiceLayer.providedBy(self.request):
             # A non-readonly request has been made. Store this fact
             # in the session. Precision is hard coded at 1 minute.
+            # Note that webservice clients may not support cookies, so
+            # don't mess with their session.
             session_data = ISession(self.request)['lp.dbpolicy']
             last_write = session_data.get('last_write', None)
             now = _now()
             if last_write is None or last_write < now - timedelta(minutes=1):
                 session_data['last_write'] = now
+        # For the webapp, it isn't necessary to reset the default store as
+        # it will just be selected the next request. However, changing the
+        # default store in the middle of a pagetest can break things.
+        da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
 
 
 class WhichDbView(LaunchpadView):
