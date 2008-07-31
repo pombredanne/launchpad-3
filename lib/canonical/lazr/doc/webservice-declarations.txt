@@ -706,7 +706,6 @@ base interface isn't exported itself.
     type: 'write_operation'
 
 
-
 == Generating the webservice ==
 
 === Entry ==
@@ -963,6 +962,8 @@ The call() method calls the underlying method and returns its result.
     ...     BookSetOnSteroids(), request)
     >>> verifyObject(IResourceGETOperation, read_method_adapter)
     True
+    >>> read_method_adapter.send_modification_event
+    False
 
     >>> read_method_adapter.context.result = []
 
@@ -1004,6 +1005,8 @@ The adapter's params property also contains the available parameters
 
     >>> verifyObject(IResourcePOSTOperation, write_method_adapter)
     True
+    >>> write_method_adapter.send_modification_event
+    True
 
 The call() method invokes the exported method on the context object. In
 this case, the underlying parameters were set using call_with. The
@@ -1025,6 +1028,8 @@ IResourcePOSTOperation.
     ...     BookSetOnSteroids(), FakeRequest())
     >>> verifyObject(IResourcePOSTOperation, factory_method_adapter)
     True
+    >>> factory_method_adapter.send_modification_event
+    False
 
 The generated adapter class name is also POST_<interface>_<operation>.
 

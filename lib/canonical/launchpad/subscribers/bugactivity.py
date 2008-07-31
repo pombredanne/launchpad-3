@@ -78,6 +78,9 @@ def record_bug_added(bug, object_created_event):
 
 @block_implicit_flushes
 def record_bug_edited(bug_edited, sqlobject_modified_event):
+    # If the event was triggered by a web service named operation, its
+    # edited_fields will be empty. We'll need to check all fields to
+    # see which were actually changed.
     sqlobject_modified_event.edited_fields = IBug.names(all=True)
     changes = what_changed(sqlobject_modified_event)
 
@@ -114,6 +117,9 @@ def record_bug_task_added(bug_task, object_created_event):
 @block_implicit_flushes
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     """Make an activity note that a bug task was edited."""
+    # If the event was triggered by a web service named operation, its
+    # edited_fields will be empty. We'll need to check all fields to
+    # see which were actually changed.
     sqlobject_modified_event.edited_fields = IBugTask.names(all=True)
     changes = what_changed(sqlobject_modified_event)
     if changes:
@@ -154,6 +160,9 @@ def record_product_task_added(product_task, object_created_event):
 
 @block_implicit_flushes
 def record_product_task_edited(product_task_edited, sqlobject_modified_event):
+    # If the event was triggered by a web service named operation, its
+    # edited_fields will be empty. We'll need to check all fields to
+    # see which were actually changed.
     sqlobject_modified_event.edited_fields = IBugTask.names(all=True)
     changes = what_changed(sqlobject_modified_event)
     if changes:
