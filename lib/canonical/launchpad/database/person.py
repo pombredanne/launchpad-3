@@ -31,7 +31,6 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.expr import And, LeftJoin, Not, Or
 from storm.store import Store
-from storm.zope.interfaces import IZStorm
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -146,6 +145,9 @@ from canonical.launchpad.database.question import QuestionPersonSearch
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
+
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class ValidPersonCache(SQLBase):
@@ -2561,7 +2563,7 @@ class PersonSet:
 
     def getAllValidPersonsAndTeams(self):
         """See `IPersonSet`."""
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         tables = [
             Person,
             LeftJoin(EmailAddress, EmailAddress.person == Person.id),
