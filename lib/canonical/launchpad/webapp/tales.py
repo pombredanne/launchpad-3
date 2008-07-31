@@ -166,7 +166,12 @@ class MenuAPI:
     def facet(self):
         """Return the IFacetMenu related to the context."""
         try:
-            context = IPrimaryContext(self._context).context
+            try:
+                context = IPrimaryContext(self._context).context
+            except TypeError:
+                # Could not adapt raises a type error.  If there was no
+                # way to adapt, then just use self._context.
+                context = self._context
             menu = nearest_adapter(context, IFacetMenu)
         except NoCanonicalUrl:
             menu = None
