@@ -1747,7 +1747,7 @@ def userIsActiveTeamMember(team):
 
 
 class PersonSpecWorkloadView(LaunchpadView):
-    """View used to render the specification workload for a particular person.
+    """View to render the specification workload for a person or team.
 
     It shows the set of specifications with which this person has a role.  If
     the person is a team, then all members of the team are presented using
@@ -1765,16 +1765,18 @@ class PersonSpecWorkloadView(LaunchpadView):
         This batch does not test for whether the person has specifications or
         not.
         """
+        assert self.context.isTeam, (
+            "PersonSpecWorkloadView.members can only be called on a team.")
         members = self.context.allmembers
         batch_nav = BatchNavigator(members, self.request)
         return batch_nav
 
 
 class PersonSpecWorkloadTableView(LaunchpadView):
-    """View used to render the specification workload for a particular person.
+    """View to render the specification workload table for a person.
 
-    It shows the set of specifications with which this person has a role for
-    display in a single table.
+    It shows the set of specifications with which this person has a role
+    in a single table.
     """
 
     def initialize(self):
