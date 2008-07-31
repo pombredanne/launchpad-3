@@ -168,20 +168,9 @@ class ResourceOperation(BatchingResourceMixin):
                 validated_values[name] = value
         return (validated_values, errors)
 
-    def preCall(self):
-        """Called before the operation is invoked.
-
-        :return: An object to be passed into postCall().
-        """
-        pass
-
     def call(self, **kwargs):
         """Actually invoke the operation."""
         raise NotImplementedError
-
-    def postCall(self, pre_call_result):
-        """Called after the operation is invoked."""
-        pass
 
 
 class ResourceGETOperation(ResourceOperation):
