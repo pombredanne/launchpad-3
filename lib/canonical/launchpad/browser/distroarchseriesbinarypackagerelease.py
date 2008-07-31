@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 from canonical.launchpad.interfaces import (
-    IDistroArchSeriesBinaryPackageRelease, IStructuralHeaderPresentation)
+    IDistroArchSeriesBinaryPackageRelease)
 
 from canonical.launchpad.webapp import ApplicationMenu, Navigation
 
