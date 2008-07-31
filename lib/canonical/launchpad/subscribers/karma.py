@@ -60,15 +60,14 @@ def bug_modified(bug, event):
     bug_delta = get_bug_delta(
         event.object_before_modification, event.object, user)
 
-    assert bug_delta is not None
+    if bug_delta is not None:
+        attrs_actionnames = {'title': 'bugtitlechanged',
+                             'description': 'bugdescriptionchanged',
+                             'duplicateof': 'bugmarkedasduplicate'}
 
-    attrs_actionnames = {'title': 'bugtitlechanged',
-                         'description': 'bugdescriptionchanged',
-                         'duplicateof': 'bugmarkedasduplicate'}
-
-    for attr, actionname in attrs_actionnames.items():
-        if getattr(bug_delta, attr) is not None:
-            _assignKarmaUsingBugContext(user, bug, actionname)
+        for attr, actionname in attrs_actionnames.items():
+            if getattr(bug_delta, attr) is not None:
+                _assignKarmaUsingBugContext(user, bug, actionname)
 
 
 @block_implicit_flushes

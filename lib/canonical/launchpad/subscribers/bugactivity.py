@@ -10,8 +10,9 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
-    IBug, IBugActivitySet, IMilestone, IPerson, IProductRelease,
+    IBug, IBugActivitySet, IBugTask, IMilestone, IPerson, IProductRelease,
     ISourcePackageRelease)
+from canonical.launchpad.mailnotification import get_bug_delta
 from canonical.lazr import BaseItem
 
 vocabulary_registry = getVocabularyRegistry()
@@ -45,7 +46,27 @@ def get_string_representation(obj):
 def what_changed(sqlobject_modified_event):
     before = sqlobject_modified_event.object_before_modification
     after = sqlobject_modified_event.object
-    return get_bug_delta(before, after)
+    fields = sqlobject_modified_event.edited_fields
+    changes = {}
+    for fieldname in fields:
+        val_before = getattr(before, fieldname, None)
+        val_after = getattr(after, fieldname, None)
+
+        #XXX Bjorn Tillenius 2005-06-09: This shouldn't be necessary.
+        # peel off the zope stuff
+        if isProxy(val_before):
+            val_before = removeSecurityProxy(val_before)
+        if isProxy(val_after):
+            val_after = removeSecurityProxy(val_after)
+
+        before_string = get_string_representation(val_before)
+        after_string = get_string_representation(val_after)
+
+        if before_string != after_string:
+            changes[fieldname] = [before_string, after_string]
+
+    return changes
+
 
 @block_implicit_flushes
 def record_bug_added(bug, object_created_event):
@@ -58,6 +79,7 @@ def record_bug_added(bug, object_created_event):
 
 @block_implicit_flushes
 def record_bug_edited(bug_edited, sqlobject_modified_event):
+    sqlobject_modified_event.edited_fields = IBug.names(all=True)
     changes = what_changed(sqlobject_modified_event)
 
     if changes:
@@ -93,6 +115,7 @@ def record_bug_task_added(bug_task, object_created_event):
 @block_implicit_flushes
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     """Make an activity note that a bug task was edited."""
+    sqlobject_modified_event.edited_fields = IBugTask.names(all=True)
     changes = what_changed(sqlobject_modified_event)
     if changes:
         task_title = ""
@@ -132,6 +155,7 @@ def record_product_task_added(product_task, object_created_event):
 
 @block_implicit_flushes
 def record_product_task_edited(product_task_edited, sqlobject_modified_event):
+    sqlobject_modified_event.edited_fields = IBugTask.names(all=True)
     changes = what_changed(sqlobject_modified_event)
     if changes:
         product = sqlobject_modified_event.object_before_modification.product
