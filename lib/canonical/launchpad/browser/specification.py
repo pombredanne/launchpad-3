@@ -27,7 +27,6 @@ __all__ = [
     'SpecificationTreeImageTag',
     'SpecificationTreeDotOutput',
     'SpecificationSetView',
-    'SpecificationSHP',
     ]
 
 from operator import attrgetter
@@ -72,8 +71,7 @@ from canonical.launchpad.webapp import (
     Link, Navigation, action, canonical_url, enabled_with_permission,
     safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
-from canonical.launchpad.browser.launchpad import (
-    AppFrontPageSearchView, StructuralHeaderPresentation)
+from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 from canonical.launchpad.webapp.authorization import check_permission
 
 
@@ -664,7 +662,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
             # if the current state is SUPERSEDED and we are now removing the
             # superseded-by then we should move this spec back into the
             # drafting pipeline by resetting its status to NEW
-            if (self.context.definition_status == 
+            if (self.context.definition_status ==
                     SpecificationDefinitionStatus.SUPERSEDED):
                 self.context.definition_status = NEW
         newstate = self.context.updateLifecycleStatus(self.user)
@@ -1144,13 +1142,3 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url
-
-
-class SpecificationSHP(StructuralHeaderPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.target.title
-
