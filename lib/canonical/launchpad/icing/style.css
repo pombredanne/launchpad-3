@@ -372,12 +372,6 @@ hr {
 hierarchy, and the application tabs. */
 #locationbar {margin-bottom: 30px;}
 
-/* Allow dyn menus to appear ouside of the locationbar, even though they
- * overflow its bounds.
- */
-#locationbar {overflow: visible;}
-
-
 /* === Login control === */
 /* At the top right of the page is a link to log in or a button to log out: */
 #logincontrol {
