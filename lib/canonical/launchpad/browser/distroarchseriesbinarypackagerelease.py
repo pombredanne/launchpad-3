@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'distroarchseriesbinarypackagerelease_to_structuralheading',
     'DistroArchSeriesBinaryPackageReleaseNavigation',
     'DistroArchSeriesBinaryPackageReleaseView',
     ]
@@ -12,13 +11,6 @@ from canonical.launchpad.interfaces import (
     IDistroArchSeriesBinaryPackageRelease, IStructuralHeaderPresentation)
 
 from canonical.launchpad.webapp import ApplicationMenu, Navigation
-
-
-def distroarchseriesbinarypackagerelease_to_structuralheading(dasbpr):
-    """Adapt an `IDistroArchSeriesBinaryPackageRelease` into an
-    `IStructuralHeaderPresentation`.
-    """
-    return IStructuralHeaderPresentation(dasbpr.distroseries)
 
 
 class DistroArchSeriesBinaryPackageReleaseOverviewMenu(ApplicationMenu):
