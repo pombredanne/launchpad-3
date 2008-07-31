@@ -216,13 +216,6 @@
         />
 
     <adapter
-        for="dict"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.GotoStructuralObject"
-        name="lp"
-        />
-
-    <adapter
         for="datetime.datetime"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.DateTimeFormatterAPI"
