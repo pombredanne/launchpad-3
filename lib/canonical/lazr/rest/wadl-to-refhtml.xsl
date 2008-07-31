@@ -123,7 +123,8 @@
                  slash.  -->
             <xsl:variable name="uri" select="wadl:resources/@base"/>
             <xsl:choose>
-                <xsl:when test="substring($uri, string-length($uri) , 1) = '/'">
+                <xsl:when 
+                    test="substring($uri, string-length($uri) , 1) = '/'">
                     <xsl:value-of
                         select="substring($uri, 1, string-length($uri) - 1)"/>
                 </xsl:when>
@@ -191,7 +192,7 @@
             of the default representation. Link is in the form
             <resource>-page.
              -->
-            <dl class="standard-methods">
+            <dl class="methods standard">
                 <h4>Standard method</h4>
                 <xsl:variable name="default_get"
                     select="wadl:method[not(wadl:request)][1]" />
@@ -217,7 +218,7 @@
 
     <!-- Documentation for the standard methods on an entry -->
     <xsl:template name="standard-methods">
-        <dl class="standard-methods">
+        <dl id="{@id}-standard-methods" class="methods standard">
             <h4>Standard methods</h4>
 
             <!-- Standard methods are the ones without a ws.op param. -->
@@ -265,7 +266,7 @@
                 @name = 'GET'][.//wadl:param[@name = 'ws.op']]" />
 
         <xsl:if test="$operations">
-            <div class="custom-GETs">
+            <div id="{@id}-custom-GETs" class="methods GETs">
                 <h4>Custom GET methods</h4>
 
                 <xsl:apply-templates select="$operations">
@@ -281,7 +282,7 @@
             @name = 'POST'][.//wadl:param[@name = 'ws.op']]" />
 
         <xsl:if test="$operations">
-            <div class="custom-POSTs">
+            <div id="{@id}-custom-POSTs" class="methods POSTs">
                 <h4>Custom POST methods</h4>
 
                 <xsl:apply-templates select="$operations">
@@ -351,6 +352,58 @@
         </div>
     </xsl:template>
 
+    <!-- Output the cell containing the field name.
+   
+    current() should be a wadl:param. 
+    -->
+    <xsl:template name="param-name">
+        <td>
+            <p><strong><xsl:value-of select="@name"/></strong></p>
+        </td>
+    </xsl:template>
+
+    <!-- Output a table cell containing the parameter description.
+
+    current() should a wadl:param.
+    -->
+    <xsl:template name="param-description">
+        <td>
+            <xsl:apply-templates select="wadl:doc"/>
+            <xsl:if test="wadl:option[wadl:doc]">
+                <dl>
+                    <xsl:apply-templates
+                        select="wadl:option" mode="option-doc"/>
+                </dl>
+            </xsl:if>
+        </td>
+    </xsl:template>
+
+    <!-- Output information about the parameter value.
+
+    current() should be a wadl:param.
+    -->
+    <xsl:template name="param-value">
+        <xsl:if test="wadl:option">
+            <p><em>One of:</em></p>
+            <ul>
+                <xsl:apply-templates select="wadl:option"/>
+            </ul>
+        </xsl:if>
+        <xsl:apply-templates select="wadl:link[@resource_type]"/>
+        <xsl:if test="@default">
+            <p>
+                Default:
+                <var><xsl:value-of select="@default"/></var>
+            </p>
+        </xsl:if>
+        <xsl:if test="@fixed">
+            <p>
+                Fixed:
+                <var><xsl:value-of select="@fixed"/></var>
+            </p>
+        </xsl:if>
+    </xsl:template>
+
     <!-- Row describing one field in the default representation -->
     <xsl:template match="wadl:param" mode="representation">
         <xsl:variable name="resource_type"
@@ -360,9 +413,7 @@
         <xsl:variable name="patch_representation"
             select="key('id', $patch_representation_id)"/>
         <tr>
-            <td>
-                <p><strong><xsl:value-of select="@name"/></strong></p>
-            </td>
+            <xsl:call-template name="param-name"/>
             <td>
                 <p>
                     <xsl:choose>
@@ -375,49 +426,15 @@
                         </xsl:otherwise>
                     </xsl:choose>
                 </p>
-                <xsl:choose>
-                    <xsl:when test="wadl:option">
-                        <p><em>One of:</em></p>
-                        <ul>
-                            <xsl:apply-templates select="wadl:option"/>
-                        </ul>
-                    </xsl:when>
-                    <xsl:when test="wadl:link[@resource_type]">
-                        <xsl:apply-templates select="wadl:link" 
-                            mode="representation" />
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:if test="@default">
-                            <p>
-                                Default:
-                                <var><xsl:value-of select="@default"/></var>
-                            </p>
-                        </xsl:if>
-                        <xsl:if test="@fixed">
-                            <p>
-                                Fixed:
-                                <var><xsl:value-of select="@fixed"/></var>
-                            </p>
-                        </xsl:if>
-                    </xsl:otherwise>
-                </xsl:choose>
+                <xsl:call-template name="param-value" />
             </td>
-            <td>
-                <xsl:apply-templates select="wadl:doc"/>
-                <xsl:if test="wadl:option[wadl:doc]">
-                    <dl>
-                        <xsl:apply-templates
-                            select="wadl:option" mode="option-doc"/>
-                    </dl>
-                </xsl:if>
-            </td>
+            <xsl:call-template name="param-description" />
         </tr>
     </xsl:template>
 
     <!-- Output the description of a link type in param listing -->
     <xsl:template match="wadl:link[
-        @resource_type and ../@name != 'self_link']" 
-        mode="representation">
+        @resource_type and ../@name != 'self_link']">
         <xsl:variable name="resource_type"
             select="substring-after(@resource_type, '#')"/>
         <xsl:choose>
@@ -437,11 +454,11 @@
         </xsl:choose>
     </xsl:template>
 
-    <xsl:template match="wadl:method">
-        <xsl:variable name="id"
-            ><xsl:call-template name="get-id"/></xsl:variable>
+    <!-- Documentation for a custom method -->
+    <xsl:template match="wadl:method[.//wadl:param[@name = 'ws.op']]">
         <div class="method">
-            <h4 id="{@id}"><xsl:value-of select="@name"/></h4>
+            <h5 id="{@id}"><xsl:value-of 
+                    select=".//wadl:param[@name = 'ws.op']/@fixed"/></h5>
             <xsl:choose>
                 <xsl:when test="wadl:doc|wadl:request|wadl:response">
                     <xsl:apply-templates select="wadl:doc"/>
@@ -455,99 +472,39 @@
         </div>
     </xsl:template>
 
+    <!-- Documentation for the request parameters of a custom method -->
     <xsl:template match="wadl:request">
         <xsl:apply-templates select="." mode="param-group">
-            <xsl:with-param name="prefix">request</xsl:with-param>
+            <xsl:with-param name="prefix">Request</xsl:with-param>
             <xsl:with-param name="style">query</xsl:with-param>
         </xsl:apply-templates>
         <xsl:apply-templates select="." mode="param-group">
-            <xsl:with-param name="prefix">request</xsl:with-param>
+            <xsl:with-param name="prefix">Request</xsl:with-param>
             <xsl:with-param name="style">header</xsl:with-param>
         </xsl:apply-templates>
-        <xsl:if test="wadl:representation[@href]">
-            <p>
-                <em>acceptable request representations:</em>
-            </p>
-            <ul>
-                <xsl:apply-templates
-                    select="wadl:representation"/>
-            </ul>
-        </xsl:if>
     </xsl:template>
 
-    <xsl:template match="wadl:response">
-        <xsl:apply-templates select="." mode="param-group">
-            <xsl:with-param name="prefix">response</xsl:with-param>
-            <xsl:with-param name="style">header</xsl:with-param>
-        </xsl:apply-templates>
-        <xsl:if test="wadl:representation">
-            <p>
-                <em>available response representations:</em>
-            </p>
-            <ul>
-                <xsl:apply-templates
-                    select="wadl:representation[not(@mediaType)]"/>
-            </ul>
-        </xsl:if>
-        <xsl:if test="wadl:fault">
-            <p><em>potential faults:</em></p>
-            <ul>
-                <xsl:apply-templates select="wadl:fault"/>
-            </ul>
-        </xsl:if>
+    <!-- Documentation for the response of custom methods returning
+        and entry or a collection. 
+    -->
+    <xsl:template match="wadl:response/wadl:representation[@href]">
+        <xsl:variable name="id" select="substring-after(@href, '#')" />
+        <xsl:variable name="resource_type"
+            select="substring-before($id, '-')"/>
+
+        <p class="response">Response contains an
+            <xsl:apply-templates select="key('id', $id)"
+                mode="representation-type"/>
+            representation of a
+            <a href="{$resource_type}"><xsl:value-of
+                select="$resource_type"
+            /></a><xsl:if test="contains($id, '-page')">
+                    collection
+                </xsl:if>.
+        </p>
     </xsl:template>
 
-    <xsl:template match="wadl:representation|wadl:fault">
-        <xsl:variable name="id">
-            <xsl:choose>
-                <xsl:when test="@id">
-                    <xsl:value-of
-                        select="@id"/>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:value-of
-                        select="substring-after(@href, '#')"/>
-                </xsl:otherwise>
-            </xsl:choose>
-        </xsl:variable>
-        <li>
-            <a href="#{$id}">
-                <xsl:value-of select="$id"/>
-                <xsl:if test="@mediaType">
-                (<xsl:value-of select="@mediaType"/>)
-                </xsl:if>
-            </a>
-        </li>
-    </xsl:template>
-
-    <xsl:template match="wadl:representation|wadl:fault" mode="list">
-        <xsl:variable name="id"
-            ><xsl:call-template name="get-id"/></xsl:variable>
-        <xsl:variable name="href" select="@id"/>
-        <xsl:choose>
-            <xsl:when test="preceding::wadl:*[@id=$href]"/>
-            <xsl:otherwise>
-                <h3 id="{$id}">
-                    <xsl:value-of select="@id"/> (<xsl:value-of select="@mediaType"/>)
-                </h3>
-                <xsl:if test="not(wadl:param)">
-                    <p><em>Missing documentation.</em></p>
-                </xsl:if>
-                <xsl:apply-templates select="wadl:doc"/>
-                <xsl:if test="wadl:param">
-                    <div class="representation">
-                        <xsl:apply-templates select="." mode="param-group">
-                            <xsl:with-param name="style">plain</xsl:with-param>
-                        </xsl:apply-templates>
-                        <xsl:apply-templates select="." mode="param-group">
-                            <xsl:with-param name="style">header</xsl:with-param>
-                        </xsl:apply-templates>
-                    </div>
-                </xsl:if>
-            </xsl:otherwise>
-        </xsl:choose>
-    </xsl:template>
-
+    <!-- Documentation of the parameters to a custom method -->
     <xsl:template match="wadl:*" mode="param-group">
         <xsl:param name="style"/>
         <xsl:param name="prefix"></xsl:param>
@@ -558,79 +515,56 @@
         </h6>
         <table>
             <tr>
-                <th>parameter</th>
-                <th>value</th>
-                <th>description</th>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Description</th>
            </tr>
             <xsl:apply-templates
-                select=".//wadl:param[@style=$style]"/>
+                select=".//wadl:param[@style=$style][@fixed]"/>
+            <xsl:apply-templates
+                select=".//wadl:param[@style=$style][not(@fixed)]">
+                <xsl:sort select="@name" />
+            </xsl:apply-templates>
         </table>
         </xsl:if>
     </xsl:template>
 
+    <!-- Documentation for request parameter. -->
     <xsl:template match="wadl:param">
         <tr>
+            <xsl:call-template name="param-name"/>
             <td>
-                <p><strong><xsl:value-of select="@name"/></strong></p>
-            </td>
-            <td>
-                <p>
-                    <xsl:if test="@required='true'">
-                        <small>(required)</small>
-                    </xsl:if>
-                    <xsl:if test="@repeating='true'">
-                        <small>(repeating)</small>
-                    </xsl:if>
-                </p>
-                <xsl:choose>
-                    <xsl:when test="wadl:option">
-                        <p><em>One of:</em></p>
-                        <ul>
-                            <xsl:apply-templates select="wadl:option"/>
-                        </ul>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:if test="@default">
-                            <p>
-                                Default:
-                                <tt><xsl:value-of select="@default"/></tt>
-                            </p>
+                <xsl:if test="@required or @repeating">
+                    <p>
+                        <xsl:if test="@required='true'">
+                            <small>(required)</small>
                         </xsl:if>
-                        <xsl:if test="@fixed">
-                            <p>
-                                Fixed:
-                                <tt><xsl:value-of select="@fixed"/></tt>
-                            </p>
+                        <xsl:if test="@repeating='true'">
+                            <small>(repeating)</small>
                         </xsl:if>
-                    </xsl:otherwise>
-                </xsl:choose>
-            </td>
-            <td>
-                <xsl:apply-templates select="wadl:doc"/>
-                <xsl:if test="wadl:option[wadl:doc]">
-                    <dl>
-                        <xsl:apply-templates
-                            select="wadl:option" mode="option-doc"/>
-                    </dl>
+                    </p>
                 </xsl:if>
-                <xsl:if test="@path">
-                    <ul>
-                        <li>
-                            XPath to value:
-                            <tt><xsl:value-of select="@path"/></tt>
-                        </li>
-                        <xsl:apply-templates select="wadl:link"/>
-                    </ul>
-                </xsl:if>
+                <xsl:call-template name="param-value"/>
             </td>
+            <xsl:call-template name="param-description"/>
         </tr>
     </xsl:template>
 
-    <xsl:template match="wadl:link">
-        <li>
-            Link:
-            <a href="#{@resource_type}"><xsl:value-of select="@rel"/></a>
-        </li>
+    <!-- Documentation for factories. 
+    
+    Factory's response include a Location header pointint to a resource type.
+    -->
+    <xsl:template match="wadl:response/wadl:param[
+        @name = 'Location' and @style = 'header' 
+        and wadl:link[@resource_type]]">
+        <xsl:variable name="resource_type"
+            select="substring-after(
+                wadl:link[@resource_type]/@resource_type, '#')"/>
+        <p>On success, the response status will be 201 and the 
+            <var>Location</var> header will contain the link to the newly 
+            created <a href="#{$resource_type}"
+                ><xsl:value-of select="$resource_type" /></a>.
+        </p>
     </xsl:template>
 
     <xsl:template match="wadl:option">
@@ -669,20 +603,6 @@
         </xsl:choose>
     </xsl:template>
 
-    <!-- utilities -->
-
-    <xsl:template name="get-id">
-        <xsl:choose>
-            <xsl:when test="@id">
-                <xsl:value-of select="@id"/>
-            </xsl:when>
-            <xsl:otherwise>
-                <xsl:value-of select="generate-id()"/>
-            </xsl:otherwise>
-        </xsl:choose>
-    </xsl:template>
-
-
     <!-- Returns the title or id of an element.
 
     Look for the first wadl:doc title attribute content of the
@@ -709,12 +629,18 @@
     without a mediaType attribute.
     -->
     <xsl:template name="representation-type">
-        <xsl:variable name="representation" 
+        <xsl:apply-templates 
             select="key('id',
                         substring-after(
                             .//wadl:representation[not(@mediaType)]/@href, 
-                            '#'))" />
-        <code><xsl:value-of select="$representation/@mediaType"/></code>
+                            '#'))" 
+             mode="representation-type"/>
+    </xsl:template>
+
+    <!-- Output the mediaType attribute of a representation -->
+    <xsl:template match="wadl:representation[@mediaType]"
+        mode="representation-type">
+        <code><xsl:value-of select="@mediaType"/></code>
     </xsl:template>
 
 </xsl:stylesheet>
