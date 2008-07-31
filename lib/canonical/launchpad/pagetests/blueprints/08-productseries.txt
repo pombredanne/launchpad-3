@@ -57,6 +57,7 @@ so the targeting should NOT be automatically approved.
   Content-Length: 0
   ...
   Location: http://.../firefox/+spec/svg-support
+  ...
 
 
 When we view that page, we see the targeted product series listed in the
@@ -99,6 +100,7 @@ OK, we will also pitch the e4x spec to the same series:
   Content-Length: 0
   ...
   Location: http://.../firefox/+spec/e4x
+  ...
 
 
 And now both should show up on the "+setgoals" page for that product series.
@@ -186,6 +188,7 @@ because we are an admin, then we will move it back.
   Content-Length: 0
   ...
   Location: http://.../firefox/+spec/svg-support
+  ...
 
 
 OK, lets see if it was immediately accepted:
@@ -226,6 +229,7 @@ And lets put it back:
   Content-Length: 0
   ...
   Location: http://.../firefox/+spec/svg-support
+  ...
 
 And again, it should be accepted automatically.
 
