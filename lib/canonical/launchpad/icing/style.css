@@ -91,17 +91,18 @@ thead th, tr.thead th {text-align: center;}
 /* Opera doesn't use the general tr above for the radio button table */
 table.radio-button-widget tr td {vertical-align: top;}
 
-/* For readability, paragraphs and other text should have a maximum width: */
-h1, h2, h3, h4, h5, h6, label, p {max-width: 60em;}
+/* For readability, paragraphs and other potentially-long text blocks should
+have a maximum width: */
+label, p {max-width: 60em;}
 
 /* == Overall presentation == */
-/* Styles that apply to pages regardless of layout or application. */
+/* These styles apply to pages regardless of layout or application. */
 
 /* === Fonts and colors === */
 
 /* Launchpad uses a white background with small, mostly black, text: */
 html {background: #fff; color: #000; font: 83.33% sans-serif;}
-/* If you change the size here, change #bug-description to match. */
+/* (If you change the size here, change #bug-description to compensate.) */
 
 /* Links are blue, brighter when clicked, and greyer once visited: */
 :link                         {color: #03a;    text-decoration: none;}
@@ -133,13 +134,12 @@ ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 90%;}
-.offline {text-align: center; margin: 2em 20px;}
-/* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
+.offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 
 /* Blank space at the top of the page makes the location bar more noticable.
 Ideally page margins would scale non-linearly, but absolute is next best: */
-body {margin: 0; padding: 10pt 16pt;}
+body {margin: 0; padding: 10px 20px;}
 
 /* === Error, warning, and informational messages === */
 /* Error, warning, and informational alerts are in a centered box: */
