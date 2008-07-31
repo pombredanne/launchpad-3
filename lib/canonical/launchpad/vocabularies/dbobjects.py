@@ -812,6 +812,9 @@ class ValidPersonOrTeamVocabulary(
                 )
             )
         result.config(distinct=True)
+        # XXX: salgado, 2008-07-23: Sorting by Person.sortingColumns would
+        # make this run a lot faster, but I couldn't find how to do that
+        # because this query uses distinct=True.
         return result.order_by(Person.displayname, Person.name)
 
     def search(self, text):

@@ -211,7 +211,7 @@ class BranchContextMenu(ContextMenu):
              'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
              'register_merge', 'landing_candidates', 'merge_queue',
-             'link_bug', 'link_blueprint',
+             'link_bug', 'link_blueprint', 'edit_import'
              ]
 
     def whiteboard(self):
@@ -239,7 +239,7 @@ class BranchContextMenu(ContextMenu):
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
-        text = 'Older revisions'
+        text = 'All revisions'
         enabled = self.context.code_is_browseable
         url = (config.codehosting.codebrowse_root
                + self.context.unique_name
@@ -302,6 +302,10 @@ class BranchContextMenu(ContextMenu):
         # point showing this link if the branch is junk.
         enabled = self.context.product is not None
         return Link('+linkblueprint', text, icon='add', enabled=enabled)
+
+    def edit_import(self):
+        text = 'Edit import source or review import'
+        return Link('+edit-import', text, enabled=True)
 
 
 class BranchView(LaunchpadView, FeedsMixin):
