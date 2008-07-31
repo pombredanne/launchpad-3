@@ -522,7 +522,11 @@ def print_location(contents):
     segments = [extract_text(step).encode('us-ascii', 'replace')
                 for step in hierarchy
                 if step.name != 'small']
-    print 'Location:', ' > '.join(segments[2:])
+    # The first segment is spurious (used for styling), and the second
+    # contains only <img alt="Launchpad"> that extract_text() doesn't
+    # pick up. So we replace the first two elements with 'Launchpad':
+    segments = ['Launchpad'] + segments[2:]
+    print 'Hierarchy:', ' > '.join(segments)
     print 'Tabs:'
     print_location_apps(contents)
     main_heading = doc.h1
@@ -538,11 +542,14 @@ def print_location_apps(contents):
     """Print the application tabs' text and URL."""
     location_apps = find_tag_by_id(contents, 'lp-apps')
     for tab in location_apps.findAll('span'):
+        tab_text = extract_text(tab)
+        if tab['class'].find('active') != -1:
+            tab_text += ' (selected)'
         if tab.a:
             link = tab.a['href']
         else:
             link = 'Not active'
-        print "* %s (%s)" % (extract_text(tab), link)
+        print "* %s - %s" % (tab_text, link)
 
 
 def print_tag_with_id(contents, id):
