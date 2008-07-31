@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'archive_to_structuralheading',
     'ArchiveAdminView',
     'ArchiveActivateView',
     'ArchiveBadges',
@@ -45,7 +44,7 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IStructuralHeaderPresentation, NotFoundError)
+    ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
     inactive_publishing_status, IPublishingSet)
@@ -952,12 +951,3 @@ class ArchiveAdminView(BaseArchiveEditView):
             self.setFieldError(
                 'buildd_secret',
                 'Do not specify for non-private archives')
-
-
-def archive_to_structuralheading(archive):
-    """Adapts an `IArchive` into an `IStructuralHeaderPresentation`."""
-    if archive.purpose == ArchivePurpose.PPA:
-        return IStructuralHeaderPresentation(archive.owner)
-    else:
-        return IStructuralHeaderPresentation(archive.distribution)
-
