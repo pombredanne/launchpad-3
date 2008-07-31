@@ -251,10 +251,10 @@ class RevisionSet:
             person_query = RevisionAuthor.person == person
 
         result_set = store.find(
-            Revision, Revision.revision_author == RevisionAuthor.id,
+            Revision,
+            Revision.revision_author == RevisionAuthor.id,
             person_query,
-            Revision.id.is_in(Select(
-                    Revision.id, And(Revision.id == BranchRevision.revisionID,
-                                     BranchRevision.branchID == Branch.id,
-                                     Not(Branch.private)))))
+            Revision.id == BranchRevision.revisionID,
+            BranchRevision.branchID == Branch.id,
+            Not(Branch.private))
         return result_set.order_by(Desc(Revision.revision_date))
