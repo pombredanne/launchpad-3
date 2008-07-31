@@ -198,8 +198,8 @@
                 <xsl:variable name="resource_type"
                     select="substring-after(
                         substring-before(
-                            $default_get//wadl:representation[not(@mediaType)]/@href, 
-                            '-page'), 
+                            $default_get//wadl:representation[
+                                not(@mediaType)]/@href, '-page'), 
                         '#')" />
                 <dt>GET</dt>
                 <dd>Response contains a <a href="#{$resource_type}"
@@ -233,8 +233,8 @@
     <xsl:template match="wadl:method[@name='GET']" mode="standard-method">
         <dt><xsl:value-of select="@name" /></dt>
         <dd>Response contains the default 
-            <xsl:call-template name="representation-type" /> representation for
-            this entry.
+            <xsl:call-template name="representation-type" /> representation 
+            for this entry.
         </dd>
     </xsl:template>
 
@@ -253,16 +253,16 @@
     <xsl:template match="wadl:method[@name='PATCH']" mode="standard-method">
         <dt><xsl:value-of select="@name" /></dt>
         <dd>Entity body should contain a represention encoded using 
-            <xsl:call-template name="representation-type"/> of the entry fields 
-            to update. Any fields of the default representation marked as
-            writeable can be included.
+            <xsl:call-template name="representation-type"/> of the entry
+            fields to update. Any fields of the default representation marked
+            as writeable can be included.
         </dd>
     </xsl:template>
 
     <!-- Documentation for the custom GET operations of the resource type -->
     <xsl:template name="custom-GETs">
-        <xsl:variable name="operations" 
-            select="wadl:method[@name = 'GET'][.//wadl:param[@name = 'ws.op']]" />
+        <xsl:variable name="operations" select="wadl:method[
+                @name = 'GET'][.//wadl:param[@name = 'ws.op']]" />
 
         <xsl:if test="$operations">
             <div class="custom-GETs">
@@ -277,8 +277,8 @@
 
     <!-- Documentation for the custom POST operations of the resource type -->
     <xsl:template name="custom-POSTs">
-        <xsl:variable name="operations" 
-            select="wadl:method[@name = 'POST'][.//wadl:param[@name = 'ws.op']]" />
+        <xsl:variable name="operations" select="wadl:method[
+            @name = 'POST'][.//wadl:param[@name = 'ws.op']]" />
 
         <xsl:if test="$operations">
             <div class="custom-POSTs">
@@ -415,7 +415,8 @@
     </xsl:template>
 
     <!-- Output the description of a link type in param listing -->
-    <xsl:template match="wadl:link[@resource_type and ../@name != 'self_link']" 
+    <xsl:template match="wadl:link[
+        @resource_type and ../@name != 'self_link']" 
         mode="representation">
         <xsl:variable name="resource_type"
             select="substring-after(@resource_type, '#')"/>
@@ -437,7 +438,8 @@
     </xsl:template>
 
     <xsl:template match="wadl:method">
-        <xsl:variable name="id"><xsl:call-template name="get-id"/></xsl:variable>
+        <xsl:variable name="id"
+            ><xsl:call-template name="get-id"/></xsl:variable>
         <div class="method">
             <h4 id="{@id}"><xsl:value-of select="@name"/></h4>
             <xsl:choose>
@@ -519,7 +521,8 @@
     </xsl:template>
 
     <xsl:template match="wadl:representation|wadl:fault" mode="list">
-        <xsl:variable name="id"><xsl:call-template name="get-id"/></xsl:variable>
+        <xsl:variable name="id"
+            ><xsl:call-template name="get-id"/></xsl:variable>
         <xsl:variable name="href" select="@id"/>
         <xsl:choose>
             <xsl:when test="preceding::wadl:*[@id=$href]"/>
@@ -694,7 +697,9 @@
             <xsl:when test="$element/wadl:doc[@title]">
                 <xsl:value-of select="$element/wadl:doc[@title][1]/@title"/>
             </xsl:when>
-            <xsl:otherwise><xsl:value-of select="$element/@id"/></xsl:otherwise>
+            <xsl:otherwise>
+                <xsl:value-of select="$element/@id"/>
+            </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
 
