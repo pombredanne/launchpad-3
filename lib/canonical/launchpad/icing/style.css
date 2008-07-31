@@ -95,6 +95,7 @@ table.radio-button-widget tr td {vertical-align: top;}
 h1, h2, h3, h4, h5, h6, label, p {max-width: 60em;}
 
 /* == Overall presentation == */
+/* Styles that apply to pages regardless of layout or application. */
 
 /* === Fonts and colors === */
 
