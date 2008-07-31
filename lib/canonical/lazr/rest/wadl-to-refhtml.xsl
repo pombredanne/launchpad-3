@@ -23,8 +23,6 @@
  xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
  xmlns:wadl="http://research.sun.com/wadl/2006/10"
  xmlns:html="http://www.w3.org/1999/xhtml"
- xmlns:exsl="http://exslt.org/common"
- extension-element-prefixes="exsl"
  xmlns="http://www.w3.org/1999/xhtml"
  exclude-result-prefixes="xsl wadl html"
 >
@@ -42,7 +40,7 @@
     -->
     <xsl:key name="id" match="*[@id]" use="@id"/>
 
-    <!-- main template -->
+    <!-- Embedded stylesheet. -->
     <xsl:template name="css-stylesheet">
         <style type="text/css">
             body {
@@ -117,6 +115,7 @@
         </style>
     </xsl:template>
 
+    <!-- We start here. -->
     <xsl:template match="/wadl:application">
         <xsl:variable name="base">
             <!-- Contains the base URL for the webservice without a trailing
@@ -404,7 +403,7 @@
         </xsl:if>
     </xsl:template>
 
-    <!-- Row describing one field in the default representation -->
+    <!-- Output row describing one field in the default representation -->
     <xsl:template match="wadl:param" mode="representation">
         <xsl:variable name="resource_type"
             select="substring-before(../@id, '-')" />
@@ -567,6 +566,7 @@
         </p>
     </xsl:template>
 
+    <!-- Output the available value for the parameter. -->
     <xsl:template match="wadl:option">
         <li>
             <tt><xsl:value-of select="@value"/></tt>
@@ -576,6 +576,7 @@
         </li>
     </xsl:template>
 
+    <!-- Ouput list of the documentation for each available option. -->
     <xsl:template match="wadl:option" mode="option-doc">
             <dt>
                 <tt><xsl:value-of select="@value"/></tt>
@@ -588,6 +589,7 @@
             </dd>
     </xsl:template>
 
+    <!-- Format wadl:doc -->
     <xsl:template match="wadl:doc">
         <xsl:param name="inline">0</xsl:param>
         <!-- skip WADL elements -->
