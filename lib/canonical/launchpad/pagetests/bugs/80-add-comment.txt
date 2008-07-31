@@ -16,9 +16,7 @@ Bar. First, let's clear out the notification table:
 
   >>> user_browser.open(
   ...     'http://localhost/debian/+source/mozilla-firefox/+bug/2')
-  >>> user_browser.getControl('Subject').value = (
-  ...     'Test Comment Subject')
-  >>> user_browser.getControl('Comment', index=-1).value = (
+  >>> user_browser.getControl(name='field.comment').value = (
   ...     'This is a test comment.')
   >>> user_browser.getControl('Save Changes', index=-1).click()
 

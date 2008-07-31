@@ -23,7 +23,6 @@
   tal:define="
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
       icingroot string:${rooturl}+icing/rev${revno};
-      site_message modules/canonical.config/config/launchpad/site_message;
       devmode modules/canonical.config/config/devmode;
       is_demo modules/canonical.config/config/launchpad/is_demo;
       is_edge modules/canonical.config/config/launchpad/is_edge;
@@ -53,7 +52,14 @@
       tal:content="string:@import url(${icingroot}/style.css);"/>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background-image: url(/@@/demo) !important;}</style>
-
+    <tal:comment condition="nothing">
+      Internet Explorer apparently doubles the horizontal margins of the
+      application tabs, which causes the 'Answers' tab to wrap onto a second
+      row. To work around this, we give IE some speshul CSS:
+    </tal:comment>
+    <!--[if lte IE 7]>
+      <style type="text/css">#lp-apps span {margin: 0 0.125%;}</style>
+    <![endif]-->
     <tal:comment condition="nothing">
       This CSS collapses the contents of collapsible fieldsets,
       without the flashing that would result from doing it in JavaScript.
@@ -92,12 +98,21 @@
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
-    <div id="globalheader"  xml:lang="en" lang="en" dir="ltr"
-      tal:condition="site_message">
-      <div class="sitemessage" tal:content="structure site_message"/>
-    </div>
     <div id="locationbar">
       <tal:login replace="structure context/@@login_status" />
+      <form
+        tal:condition="view/macro:pagehas/globalsearch"
+        id="globalsearch"
+        action=""
+        xml:lang="en" lang="en" dir="ltr"
+        method="get"
+        accept-charset="UTF-8"
+        tal:attributes="action string:${rooturl}+search"
+      >
+        <img src="/@@/search.png" style="margin-bottom: -4px"
+             alt="Search launchpad:" />
+        <input type="search" id="search-text" name="field.text" />
+      </form>
       <tal:hierarchy replace="structure context/@@+hierarchy" />
 
     <div
@@ -139,24 +154,8 @@
     </div><!--id="locationbar"-->
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
-      <table
-        tal:condition="view/macro:pagehas/applicationbuttons"
-        id="applications" xml:lang="en" lang="en" dir="ltr"
-      >
-        <tbody>
-          <tr>
-            <th><h1 metal:define-slot="heading" /></th>
-            <td
-              tal:define="
-                facetname CONTEXTS/menu:selectedfacetname;
-                facetname python:facetname == 'overview' and 'people' or facetname;
-                facetname python:facetname == 'branches' and 'code' or facetname;
-                facetname python:facetname == 'specifications' and 'blueprints' or facetname"
-              tal:content="structure context/@@+applicationbuttons/?facetname"
-            />
-          </tr>
-        </tbody>
-      </table>
+      <h1 metal:define-slot="heading"
+          tal:condition="view/macro:pagehas/applicationbuttons" />
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
         <div id="container">
           <!--[if IE 7]>&nbsp;<![endif]-->
@@ -241,26 +240,7 @@
             use-macro="context/@@+main-template-macros/notifications" />
         </tal:notifications>
         <metal:block define-slot="main" />
-        <div style="clear: both; height: 2em;">&nbsp;</div>
-        <tal:comment condition="nothing">
-          No easier way to put a gap before the footer, because in CSS a
-          top margin for a cleared item is ignored.
-        </tal:comment>
       </tal:noborder>
-      <form
-        tal:condition="view/macro:pagehas/globalsearch"
-        id="globalsearch"
-        action=""
-        xml:lang="en" lang="en" dir="ltr"
-        method="get"
-        accept-charset="UTF-8"
-        tal:attributes="action string:${rooturl}+search"
-      >
-        <label>
-          Search Launchpad:
-          <input type="search" id="search-text" name="field.text" />
-        </label>
-      </form>
      <div id="globalfooter" class="clearfix" xml:lang="en" lang="en" dir="ltr">
         <div id="colophon">
           <a tal:condition="not:request/lp:person" href="/+tour"

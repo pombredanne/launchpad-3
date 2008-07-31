@@ -79,14 +79,18 @@ originated itself:
     >>> print source_element.find(name='a')['href']
     /ubuntu/+source/mozilla-firefox/0.9
 
-Also provide a section with the contained files, including respective
-librarian URL and size:
+Also provide a section with the contained files, including the build,
+the respective librarian URL and size:
 
     >>> files_element = find_tag_by_id(browser.contents, 'files')
     >>> print extract_text(files_element)
+    i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    produced these files:
     mozilla-firefox_0.9_i386.deb (3 bytes)
 
-    >>> print files_element.find(name='a')['href']
+    >>> dfiles_element = find_tag_by_id(
+    ...     browser.contents, 'downloadable-files')
+    >>> print dfiles_element.find(name='a')['href']
     http://localhost:58000/40/mozilla-firefox_0.9_i386.deb
 
 Binary Packages with no files to present results in a clear statement
@@ -95,7 +99,8 @@ intead of a empty section.
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount/0.1-1')
     >>> print extract_text(find_tag_by_id(browser.contents, 'files'))
-    There are no downloadable files for this binary package.
+    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
+    produced no files for this binary package.
 
 
 == DistroArchSeries Partner Binary Package Pages ==
@@ -170,6 +175,8 @@ Also provide a section with the contained files, including respective
 librarian URL and size:
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'files'))
+    i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
+    produced these files:
     commercialpackage_1.0-1_i386.deb (652 bytes)
 
 
