@@ -447,12 +447,13 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     @property
     def svn_url_is_web(self):
-        """True if an imported branch's SVN url is HTTP or HTTPS."""
+        """True if an imported branch's SVN URL is HTTP or HTTPS."""
+        # You should only be calling this if it's an SVN code import
+        assert self.context.code_import
         assert self.context.code_import.svn_branch_url
         url = self.context.code_import.svn_branch_url
-        if url.startswith("http"):
-            return True
-        return False
+        # https starts with http too!
+        return url.startswith("http")
 
     @property
     def mirror_location(self):
