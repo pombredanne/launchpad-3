@@ -21,6 +21,8 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
+XSLTPROC=xsltproc
+
 APPSERVER_ENV = \
   LPCONFIG=${LPCONFIG} \
   PYTHONPATH=$(PYTHONPATH) \
@@ -108,6 +110,9 @@ build: bzr_version_info
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
 		 $(PYTHON) -t buildmailman.py
+	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
+		$(XSLTPROC) ./lib/canonical/lazr/rest/wadl-to-refhtml.xsl - \
+		> ./lib/canonical/launchpad/apidoc/index.html
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
