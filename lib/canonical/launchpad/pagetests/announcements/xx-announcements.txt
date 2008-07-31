@@ -80,14 +80,22 @@ specify a date the announcement was made:
     >>> priv_browser.open('http://launchpad.dev/tomcat')
 
 Because Tomcat is part of the Apache group, it picks up on the Apache
-announcement so there is a "Latest news" portlet:
+announcement so there is a "Latest news" portlet. Let's render the
+portlet, taking care not to render today's date which would timebomb our
+script.
 
+    >>> import time
+    >>> today = time.strftime("%Y-%m-%d")
     >>> print latest_news(priv_browser.contents).encode(
-    ...     'ascii', 'backslashreplace')
+    ...     'ascii', 'backslashreplace').replace(today, "TODAY")
     Announcements
-    20...: Apache announcement headline
+    TODAY: Apache announcement headline
     ...More announcements
     Make announcement
+
+Add another one, this time specifying a date in the past, which should
+work too:
+
     >>> priv_browser.getLink('Make announcement').click()
     >>> priv_browser.getControl('Headline').value = (
     ...     'Tomcat announcement headline')
@@ -100,10 +108,13 @@ announcement so there is a "Latest news" portlet:
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.url
     http://launchpad.dev/tomcat
+
+And check out the results:
+
     >>> print latest_news(priv_browser.contents).encode(
-    ...     'ascii', 'backslashreplace')
+    ...     'ascii', 'backslashreplace').replace(today, "TODAY")
     Announcements
-    20...: Apache announcement headline
+    TODAY: Apache announcement headline
     2007-11-24: Tomcat announcement headline
     ...More announcements
     Make announcement
