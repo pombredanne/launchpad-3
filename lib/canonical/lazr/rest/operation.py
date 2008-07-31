@@ -3,7 +3,6 @@
 """Base classes for one-off HTTP operations."""
 
 import simplejson
-import types
 
 from zope.component import getMultiAdapter, getUtility, queryAdapter
 from zope.event import notify

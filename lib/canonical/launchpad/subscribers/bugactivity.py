@@ -12,7 +12,6 @@ from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
     IBug, IBugActivitySet, IBugTask, IMilestone, IPerson, IProductRelease,
     ISourcePackageRelease)
-from canonical.launchpad.mailnotification import get_bug_delta
 from canonical.lazr import BaseItem
 
 vocabulary_registry = getVocabularyRegistry()

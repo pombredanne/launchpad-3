@@ -113,7 +113,7 @@ class IResourceOperation(Interface):
         """
 
     send_modification_event = Attribute(
-        "Whether or not to send out an event when this event completes.")
+        "Whether or not to send out an event when this operation completes.")
 
 
 class IResourceGETOperation(IResourceOperation):
