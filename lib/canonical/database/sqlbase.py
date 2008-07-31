@@ -23,6 +23,8 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.interfaces import ISQLBase
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 __all__ = [
     'alreadyInstalledMsg',
@@ -106,10 +108,6 @@ storm.store.Cache = StupidCache
 
 def _get_sqlobject_store():
     """Return the store used by the SQLObject compatibility layer."""
-    # Imported here to work around a disgusting circular import due to
-    # complex __init__.py that I can't fix now -- StuartBishop 20080722
-    from canonical.launchpad.webapp.interfaces import (
-            IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
 
@@ -199,7 +197,7 @@ class ZopelessTransactionManager(object):
     @classmethod
     def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
                      isolation=ISOLATION_LEVEL_DEFAULT):
-        # Get the existing connection info. We use the MAIN MASTER 
+        # Get the existing connection info. We use the MAIN MASTER
         # Store, as this is the only Store code still using this
         # deprecated code interacts with.
         connection_string = config.database.main_master
@@ -589,7 +587,7 @@ def commit():
     transaction.commit()
 
 def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
-    """Return a fresh DB-API connecction to the MAIN MASTER database.
+    """Return a fresh DB-API connection to the MAIN MASTER database.
 
     DEPRECATED - if needed, this should become a method on the Store.
 
@@ -608,9 +606,9 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     else:
         con_str = re.sub(r'user=\S*', r'user=%s' % user, con_str)
     if lp.dbhost is not None:
-        con_str = re.sub(r'dbhost=\S*', r'dbhost=%s' % lp.dbhost, con_str)
+        con_str = re.sub(r'host=\S*', r'host=%s' % lp.dbhost, con_str)
     if dbname is None:
-        dbname = lp.dbname
+        dbname = lp.dbname # Note that lp.dbname may be None.
     if dbname is not None:
         con_str = re.sub(r'dbname=\S*', r'dbname=%s' % dbname, con_str)
 

@@ -826,7 +826,7 @@ class IStoreSelector(Interface):
     """Get a Storm store with a desired flavor.
 
     Stores come in two flavors - MASTER_FLAVOR and SLAVE_FLAVOR.
-    
+ 
     The master is writable and up to date, but we should not use it
     whenever possible because there is only one master and we don't want
     it to be overloaded.

@@ -158,7 +158,7 @@ def disconnect_stores():
         transaction.abort()
         for store in stores:
             store.close()
-    
+ 
 
 def reconnect_stores(database_config_section='launchpad'):
     """Reconnect Storm stores, resetting the dbconfig to its defaults.

@@ -41,7 +41,7 @@ class LaunchpadDatabasePolicy:
 
         This method is invoked by
         LaunchpadBrowserPublication.beforeTraversal()
-        
+
         The policy connects our Storm stores to either master or
         replica databases.
         """
@@ -68,7 +68,7 @@ class LaunchpadDatabasePolicy:
 
     def endRequest(self):
         """Cleanup.
-        
+
         This method is invoked by LaunchpadBrowserPublication.endRequest.
         """
         if not self.read_only:

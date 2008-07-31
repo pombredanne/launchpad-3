@@ -72,9 +72,9 @@ To test this, first we need to wind forward the database policy's clock.
 
 >>> from canonical.launchpad.webapp import dbpolicy
 >>> from datetime import timedelta
->>> _org_now = dbpolicy._now
+>>> _original_now = dbpolicy._now
 >>> def _future_now():
-...     return _org_now() + timedelta(minutes=10)
+...     return _original_now() + timedelta(minutes=10)
 
 
 >>> browser.open('http://launchpad.dev/+whichdb')
@@ -87,7 +87,7 @@ MASTER
 >>> print whichdb(browser)
 SLAVE
 
->>> dbpolicy._now = _org_now # Reset the time machine.
+>>> dbpolicy._now = _original_now # Reset the time machine.
 
 Reset our config to avoid affecting other tests.
 

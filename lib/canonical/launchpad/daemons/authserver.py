@@ -56,7 +56,7 @@ class AuthserverService(service.Service):
         """
         connection_string = "%s user=%s" % (
                 config.database.main_master, config.authserver.dbuser)
-        
+
         dbpool = ConnectionPool(
                 'psycopg2', connection_string, cp_reconnect=True)
         return dbpool
