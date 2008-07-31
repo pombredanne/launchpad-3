@@ -14,6 +14,7 @@ from zope.app.session.interfaces import ISession
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp import LaunchpadView
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import (
@@ -71,7 +72,7 @@ class LaunchpadDatabasePolicy:
 
         This method is invoked by LaunchpadBrowserPublication.endRequest.
         """
-        if not self.read_only:
+        if not self.read_only and not WebServiceLayer.providedBy(self.request):
             # A non-readonly request has been made. Store this fact
             # in the session. Precision is hard coded at 1 minute.
             session_data = ISession(self.request)['lp.dbpolicy']
