@@ -1152,19 +1152,24 @@ class ProductSet:
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""
-        randomresults = Product.select('''id IN
-            (SELECT Product.id FROM Product, ProductSeries, POTemplate
-               WHERE Product.active AND
-                     Product.id = ProductSeries.product AND
-                     POTemplate.productseries = ProductSeries.id AND
-                     Product.official_rosetta
-               ORDER BY random())
-            ''',
-            distinct=True)
-
-        results = list(randomresults[:maximumproducts])
-        results.sort(lambda a, b: cmp(a.title, b.title))
-        return results
+        return Product.select('''
+            id IN (
+                SELECT DISTINCT product_id AS id
+                FROM (
+                    SELECT Product.id AS product_id, random() AS place
+                    FROM Product
+                    JOIN ProductSeries ON
+                        ProductSeries.Product = Product.id
+                    JOIN POTemplate ON
+                        POTemplate.productseries = ProductSeries.id
+                    WHERE Product.active AND Product.official_rosetta
+                    ORDER BY place
+                ) AS randomized_products
+                LIMIT %s
+            )
+            ''' % quote(maximumproducts),
+            distinct=True,
+            orderBy='Product.title')
 
     @cachedproperty
     def stats(self):

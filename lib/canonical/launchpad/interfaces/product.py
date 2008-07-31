@@ -509,15 +509,24 @@ class IProductSet(Interface):
         """Return the latest products registered in the Launchpad."""
 
     def getTranslatables():
-        """Return an iterator over products that have resources translatables.
+        """Return an iterator over products that have translatable resources.
+
+        Skips products that are not configured to be translated in
+        Launchpad, as well as non-active ones.
         """
 
     def featuredTranslatables(maximumproducts=8):
-        """Return an iterator over a sample of translatable products.
+        """Return an iterator over a random sample of translatable products.
 
-        maximum_products is a maximum number of products to be displayed
-        on the front page (it will be less if there are no enough products).
+        Similar to `getTranslatables`, except the number of results is
+        limited and they are randomly chosen.
+
+        :param maximum_products: Maximum number of products to be
+            returned.
+        :return: An iterator over active, translatable products.
         """
+        # XXX JeroenVermeulen 2008-07-31 bug=253583: this is not
+        # currently used!
 
     def count_all():
         """Return a count of the total number of products registered in

@@ -130,15 +130,28 @@ IProductSet will also tell us which products can be translated:
     alsa-utils
     evolution
 
-A similar list of "featured translatables" orders these randomly.  I
-can't show you here in which order they will be printed, but alsa-utils
-and evolution will both be there.
+A similar list of "featured translatables" picks a random set of these,
+so we can present a short list of arbitrary projects that a user can
+help translate.
 
-    >>> featured_translatables = 0
-    >>> for random_product in productset.featuredTranslatables():
-    ...     featured_translatables += 1
-    >>> featured_translatables
-    2
+XXX JeroenVermeulen 2008-07-31 bug-253583: We're not using this method
+at the moment.  Remove it or start using it?
+
+    >>> for product in productset.featuredTranslatables():
+    ...     print product.name
+    alsa-utils
+    evolution
+
+In featuredTranslatables() we can also set how many products we want to
+show at maximum.  We can pick just one random translatable product, for
+example.
+
+    >>> features = [
+    ...     product.name for product in productset.featuredTranslatables(1)]
+    >>> len(features)
+    1
+    >>> features[0] in ('alsa-utils', 'evolution')
+    True
 
 Only active products are listed as translatables.
 
