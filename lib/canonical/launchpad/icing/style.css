@@ -100,7 +100,9 @@ h1, h2, h3, h4, h5, h6, label, p {max-width: 60em;}
 /* === Fonts and colors === */
 
 /* Launchpad uses a white background with small, mostly black, text: */
-html {background: #fff; color: #000; font: 10pt sans-serif;}
+html {background: #fff; color: #000; font: 83.33% sans-serif;}
+/* If you change the size here, change #bug-description to match. */
+
 /* Links are blue, brighter when clicked, and greyer once visited: */
 :link                         {color: #03a;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
@@ -1488,7 +1490,9 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
 
-#bug-description {font-family: monospace;}
+/* Bug descriptions and comments use the reciprocal of the normal 83.33% font
+size, so that they exactly obey your preferred monospace font size: */
+#bug-description, .bug-comment {font: 120% monospace;}
 
 /* --- Blueprints --- */
 
