@@ -45,7 +45,6 @@ from canonical.launchpad.interfaces import (
     IProduct,
     IProject,
     ISprint,
-    IStructuralHeaderPresentation,
     LicenseStatus,
     NotFoundError,
     )
