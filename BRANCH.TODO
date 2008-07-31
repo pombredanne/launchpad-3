@@ -2,11 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-Other major query suckers are ProductSeries, LibraryFilecontent (for
-icons?), ProductLicense, and ValidPersonCache.
-
-Prejoining alone won't help much there, since Storm does not seem to
-cache the "n" side of 1:n relationships.  It may remember the objects
-themselves, but not which objects exactly it needs.
-
