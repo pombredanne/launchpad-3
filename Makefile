@@ -39,6 +39,14 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
+# XXX flacoste 2008/07/31 This is not automatically run and the
+# generated file is stored in the revision control, until IS installs
+# xsltproc on all required machine.
+apidoc:
+	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
+		$(XSLTPROC) ./lib/canonical/lazr/rest/wadl-to-refhtml.xsl - \
+		> ./lib/canonical/launchpad/apidoc/index.html
+
 check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
 
 check_launchpad_storm_on_merge: check_launchpad_on_merge
@@ -110,9 +118,6 @@ build: bzr_version_info
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
 		 $(PYTHON) -t buildmailman.py
-	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
-		$(XSLTPROC) ./lib/canonical/lazr/rest/wadl-to-refhtml.xsl - \
-		> ./lib/canonical/launchpad/apidoc/index.html
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
