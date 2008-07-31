@@ -1,10 +1,10 @@
 = Blueprint dependencies =
 
-Blueprints support the idea of dependencies. So, one blueprint can
-require that another blueprint has been implemented before its own
-implementation can begin. We record those dependencies in Launchpad.
+Blueprints support the idea of dependencies: one blueprint can require
+another blueprint be complete before its own implementation can
+begin. We record those dependencies in Launchpad.
 
-Lets look at the dependencies of the "canvas" blueprint for Firefox. It
+Let's look at the dependencies of the "canvas" blueprint for Firefox. It
 depends on another blueprint, "e4x". No blueprints depend on "canvas"
 itself.
 
@@ -21,14 +21,14 @@ itself.
 
 Let's add a new dependency for the "canvas" blueprint. We'll add the
 "extension-manager-upgrades" blueprint as a dependency. First, we
-confirm we can see the page to add a dependency.
+confirm we can see the page for adding a dependency.
 
   >>> admin_browser.getLink('Add dependency').click()
   >>> admin_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas/+linkdependency'
 
 The page contains a link back to the blueprint, in case we change our
-mind.
+minds.
 
     >>> back_link = admin_browser.getLink('Support <canvas> Objects')
     >>> back_link.url
