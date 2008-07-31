@@ -88,7 +88,8 @@ def bugtask_modified(bugtask, event):
     user = event.user
     task_delta = event.object.getDelta(event.object_before_modification)
 
-    assert task_delta is not None
+    if task_delta is None:
+        return
 
     actionname_status_mapping = {
         BugTaskStatus.FIXRELEASED: 'bugfixed',
