@@ -564,6 +564,15 @@ Members who are not owners can see the link.
     >>> admin_browser.getControl('New member').value = 'salgado'
     >>> admin_browser.getControl('Add Member').click()
 
+Reset our Storm stores, because our test environment doesn't do this for
+us, and we need to ensure that the MAIN SLAVE store sees the changes just
+committed to the database.
+
+    >>> from zope.component import getUtility
+    >>> from storm.zope.interfaces import IZStorm
+    >>> for name, store in getUtility(IZStorm).iterstores():
+    ...     store.reset()
+
     >>> salgado_browser.open('http://launchpad.dev/~bassists')
     >>> print extract_link_from_tag(
     ...     find_tag_by_id(salgado_browser.contents, 'mailing-list-archive'))
@@ -577,6 +586,13 @@ in the EmailAddress table, and we don't want them to be deleted (to make
 sure the address is reserved for the team which owns the ML) when a
 team's contact address is changed from a hosted ML to an external
 address.
+
+    >>> from zope.component import getUtility
+    >>> from storm.zope.interfaces import IZStorm
+    >>> for name, store in getUtility(IZStorm).iterstores():
+    ...     store.reset()
+    >>> list_set = MailingListSet()
+    >>> mailing_list = list_set.get('landscape-developers')
 
     >>> from canonical.launchpad.database import EmailAddressSet
     >>> email_set = EmailAddressSet()
