@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'distroarchseries_to_structuralheading',
     'DistroArchSeriesAddView',
     'DistroArchSeriesBinariesView',
     'DistroArchSeriesContextMenu',
@@ -19,15 +18,6 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
-from canonical.launchpad.interfaces.launchpad import (
-    IStructuralHeaderPresentation)
-
-
-def distroarchseries_to_structuralheading(distroarchseries):
-    """Adapt an `IDistroArchSeries` into an
-    `IStructuralHeaderPresentation`.
-    """
-    return IStructuralHeaderPresentation(distroarchseries.distroseries)
 
 
 class DistroArchSeriesNavigation(GetitemNavigation):
