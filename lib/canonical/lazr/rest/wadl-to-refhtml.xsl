@@ -320,10 +320,121 @@
         <h3 id="{@id}"><xsl:call-template name="get-title-or-id"/></h3>
         <xsl:apply-templates select="wadl:doc"/>
 
+        <xsl:call-template name="default-representation" />
         <xsl:call-template name="standard-methods" />
         <xsl:call-template name="custom-GETs" />
         <xsl:call-template name="custom-POSTs" />
     </xsl:template>
+
+    <!-- Documentation of the default representation for an entry -->
+    <xsl:template name="default-representation">
+        <xsl:variable name="default_get" select="wadl:method[
+            @name = 'GET' and not(wadl:request)]" />
+        <xsl:variable name="representation" select="key(
+                'id', substring-after(
+                    $default_get/wadl:response/wadl:representation[
+                        not(@mediaType)]/@href, '#'))"/>
+
+        <div class="representation">
+            <h4>Default representation 
+                (<xsl:value-of select="$representation/@mediaType"/>)</h4>
+
+            <table>
+                <th>Key</th>
+                <th>Value</th>
+                <th>Description</th>
+                <xsl:apply-templates select="$representation/wadl:param"
+                    mode="representation">
+                    <xsl:sort select="@name"/>
+                </xsl:apply-templates>
+            </table>
+        </div>
+    </xsl:template>
+
+   <!-- Row describing one field in the default representation -->
+   <xsl:template match="wadl:param" mode="representation">
+       <xsl:variable name="resource_type"
+           select="substring-before(../@id, '-')" />
+       <xsl:variable name="patch_representation_id"
+           ><xsl:value-of select="$resource_type"/>-diff</xsl:variable>
+       <xsl:variable name="patch_representation"
+           select="key('id', $patch_representation_id)"/>
+       <tr>
+           <td>
+               <p><strong><xsl:value-of select="@name"/></strong></p>
+           </td>
+           <td>
+               <p>
+                   <xsl:choose>
+                       <xsl:when test="$patch_representation/wadl:param[@name
+                           = current()/@name]">
+                           <small>(writeable)</small>
+                       </xsl:when>
+                       <xsl:otherwise>
+                           <small>(read-only)</small>
+                       </xsl:otherwise>
+                   </xsl:choose>
+               </p>
+               <xsl:choose>
+                   <xsl:when test="wadl:option">
+                       <p><em>One of:</em></p>
+                       <ul>
+                           <xsl:apply-templates select="wadl:option"/>
+                       </ul>
+                   </xsl:when>
+                   <xsl:when test="wadl:link[@resource_type]">
+                       <xsl:apply-templates select="wadl:link" 
+                           mode="representation" />
+                   </xsl:when>
+                   <xsl:otherwise>
+                       <xsl:if test="@default">
+                           <p>
+                               Default:
+                               <var><xsl:value-of select="@default"/></var>
+                           </p>
+                       </xsl:if>
+                       <xsl:if test="@fixed">
+                           <p>
+                               Fixed:
+                               <var><xsl:value-of select="@fixed"/></var>
+                           </p>
+                       </xsl:if>
+                   </xsl:otherwise>
+               </xsl:choose>
+           </td>
+           <td>
+               <xsl:apply-templates select="wadl:doc"/>
+               <xsl:if test="wadl:option[wadl:doc]">
+                   <dl>
+                       <xsl:apply-templates
+                           select="wadl:option" mode="option-doc"/>
+                   </dl>
+               </xsl:if>
+           </td>
+       </tr>
+   </xsl:template>
+
+   <!-- Output the description of a link type in param listing -->
+   <xsl:template match="wadl:link[@resource_type and ../@name != 'self_link']" 
+       mode="representation">
+       <xsl:variable name="resource_type"
+           select="substring-after(@resource_type, '#')"/>
+       <xsl:choose>
+           <xsl:when test="contains($resource_type, 'page-resource')">
+               Link to a <a href="#{substring-before($resource_type, '-')}"
+                   ><xsl:value-of 
+                       select="substring-before($resource_type, '-')"
+                       /></a> collection.
+           </xsl:when>
+           <xsl:when test="$resource_type = 'HostedFile'">
+               Link to a file resource.
+           </xsl:when>
+           <xsl:otherwise>
+               Link to a <a href="#{$resource_type}"
+                   ><xsl:value-of select="$resource_type"/></a>.
+           </xsl:otherwise>
+       </xsl:choose>
+   </xsl:template>
 
     <!-- Table of Contents -->
     <xsl:template name="toc">
