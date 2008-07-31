@@ -29,8 +29,6 @@ class CveSetNavigation(GetitemNavigation):
 
     usedfor = ICveSet
 
-    def breadcrumb(self):
-        return "CVE reports"
 
 class CveContextMenu(ContextMenu):
 
