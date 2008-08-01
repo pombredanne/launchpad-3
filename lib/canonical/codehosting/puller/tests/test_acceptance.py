@@ -170,7 +170,7 @@ class TestBranchPuller(BranchTestCase):
         # XXX: JonathanLange 2007-08-21, This test will fail if run by itself,
         # due to an unidentified bug in bzrlib.trace, possibly related to bug
         # 124849.
-        db_branch = self.makeBranch(BranchType.HOSTED)
+        db_branch = self.factory.makeBranch(BranchType.HOSTED)
         self.pushToBranch(db_branch)
         db_branch.requestMirror()
         transaction.commit()
@@ -180,7 +180,7 @@ class TestBranchPuller(BranchTestCase):
 
     def test_mirrorAHostedLoomBranch(self):
         """Run the puller over a branch with looms enabled."""
-        db_branch = self.makeBranch(BranchType.HOSTED)
+        db_branch = self.factory.makeBranch(BranchType.HOSTED)
         loom_tree = self.makeLoomBranchAndTree('loom')
         self.pushToBranch(db_branch, loom_tree)
         db_branch.requestMirror()
@@ -191,7 +191,7 @@ class TestBranchPuller(BranchTestCase):
 
     def test_mirrorAPrivateBranch(self):
         """Run the puller with a private branch in the queue."""
-        db_branch = self.makeBranch(BranchType.HOSTED)
+        db_branch = self.factory.makeBranch(BranchType.HOSTED)
         self.pushToBranch(db_branch)
         db_branch.requestMirror()
         db_branch.private = True
@@ -202,7 +202,7 @@ class TestBranchPuller(BranchTestCase):
 
     def test_mirrorAMirroredBranch(self):
         """Run the puller on a populated mirrored branch pull queue."""
-        db_branch = self.makeBranch(BranchType.MIRRORED)
+        db_branch = self.factory.makeBranch(BranchType.MIRRORED)
         tree = self.createTemporaryBazaarBranchAndTree()
         db_branch.url = self.serveOverHTTP()
         db_branch.requestMirror()
@@ -231,7 +231,7 @@ class TestBranchPuller(BranchTestCase):
     def test_mirrorAnImportedBranch(self):
         """Run the puller on a populated imported branch pull queue."""
         # Create the branch in the database.
-        db_branch = self.makeBranch(BranchType.IMPORTED)
+        db_branch = self.factory.makeBranch(BranchType.IMPORTED)
         db_branch.requestMirror()
         transaction.commit()
 

@@ -137,7 +137,7 @@ class BranchTestCase(TestCaseWithTransport, LoomTestMixin):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        self._factory = LaunchpadObjectFactory()
+        self.factory = LaunchpadObjectFactory()
 
     def createTemporaryBazaarBranchAndTree(self, base_directory='.'):
         """Create a local branch with one revision, return the working tree.
@@ -153,51 +153,6 @@ class BranchTestCase(TestCaseWithTransport, LoomTestMixin):
         transaction.begin()
         cursor().execute("UPDATE Branch SET next_mirror_time = NULL")
         transaction.commit()
-
-    def getUniqueInteger(self):
-        """Return an integer unique to this run of the test case."""
-        # Delegate to the factory.
-        return self._factory.getUniqueInteger()
-
-    def getUniqueString(self, prefix=None):
-        """Return a string to this run of the test case.
-
-        The string returned will always be a valid name that can be used in
-        Launchpad URLs.
-
-        :param prefix: Used as a prefix for the unique string. If unspecified,
-            defaults to the name of the test.
-        """
-        if prefix is None:
-            prefix = self.id().split('.')[-1]
-        # Delegate to the factory.
-        return self._factory.getUniqueString(prefix)
-
-    def getUniqueURL(self):
-        """Return a URL unique to this run of the test case."""
-        # Delegate to the factory.
-        return self._factory.getUniqueURL()
-
-    def makePerson(self, email=None, name=None):
-        """Create and return a new, arbitrary Person."""
-        # Delegate to the factory.
-        return self._factory.makePerson(email, name)
-
-    def makeProduct(self):
-        """Create and return a new, arbitrary Product."""
-        # Delegate to the factory.
-        return self._factory.makeProduct()
-
-    def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, **optional_branch_args):
-        """Create and return a new, arbitrary Branch of the given type.
-
-        Any parameters for IBranchSet.new can be specified to override the
-        default ones.
-        """
-        # Delegate to the factory.
-        return self._factory.makeBranch(
-            branch_type, owner, name, product, url, **optional_branch_args)
 
     def restrictSecurityPolicy(self):
         """Switch to using 'LaunchpadSecurityPolicy'."""
