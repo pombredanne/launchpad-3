@@ -420,7 +420,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs
-        # targetted to be fixed in a specific distroseries + sourcepackage.
+        # targeted to be fixed in a specific distroseries + sourcepackage.
         raise NotImplementedError(
             "A new bug cannot be filed directly on a source package in a "
             "specific distribution series, because series are meant for "
