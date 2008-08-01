@@ -83,6 +83,13 @@ overview page or the +assignedbugs page because it has a private membership.
     ...     print a_tag.contents
     [u'Other Team']
 
+    >>> nopriv_browser.open('http://launchpad.dev/~owner/+teamhierarchy')
+    >>> div = find_tag_by_id(nopriv_browser.contents, 'superteams')
+    >>> a_tags = div.findAll('a')
+    >>> for a_tag in a_tags:
+    ...     print extract_text(a_tag)
+    Other Team
+
 A member of a team with private membership (MyTeam) can see that team
 on other members' overview or +assignedbugs pages.
 
@@ -102,6 +109,14 @@ on other members' overview or +assignedbugs pages.
     ...     print a_tag.contents
     [u'My Team']
     [u'Other Team']
+
+    >>> browser.open('http://launchpad.dev/~owner/+teamhierarchy')
+    >>> div = find_tag_by_id(browser.contents, 'superteams')
+    >>> a_tags = div.findAll('a')
+    >>> for a_tag in a_tags:
+    ...     print extract_text(a_tag)
+    My Team
+    Other Team
 
 
 == Teams with Icons ==
