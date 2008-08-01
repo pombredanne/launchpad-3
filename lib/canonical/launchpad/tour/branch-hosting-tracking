@@ -43,7 +43,7 @@
                 With Launchpad and Bazaar, anyone can create their own line of development, with full version control, to be published alongside your official branches. From experimental lines of development by entirely new contributors, to work on the the next major release, all code related to your project - whether hosted on Launchpad or elsewhere - is catalogued and can be downloaded with just a few key strokes.
             </p>
             <p class="intro-text">
-               If your code's not in Bazaar, Launchpad will even run a continuous import of Subversion and CVS repositories direct into a Bazaar branch.
+               If your code's not in Bazaar, Launchpad will even run a continuous import of Subversion and CVS repositories directly into a Bazaar branch.
             </p>
             <div id="link-holder"><a href="https://code.launchpad.net/">Visit Launchpad Code &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
         </div>
@@ -63,7 +63,7 @@
                         <p class="screen-holder">
                             <img src="images/hosting/1.png" alt="Drive-by contributions" />                        </p>
                         <p>
-                            With Launchpad and Bazaar they can create their own branch of your code, make their changes and then push it all back up to Launchpad to be listed right alongside your official branches. And because they never touch your mailine they don&rsquo;t need to ask for commit access.
+                            With Launchpad and Bazaar, contributors can create their own branch of your code, make their changes and then push it all back up to Launchpad to be listed right alongside your official branches. And because they never touch your mailine they don&rsquo;t need to ask for commit access.
                         </p>
                     </div>
                     <div class="block odd">
@@ -71,7 +71,7 @@
                         <h4>Once a contributor is happy with their branch, they can propose it to be merged into your main line of development, or any other branch registered for your project.</h4>
                         <p class="screen-holder"><img src="images/hosting/2.png" alt="Merge flows" " /></p>
                         <p>
-Launchpad and Bazaar then make it easy to integrate that work with your mainline. Launchpad&rsquo;s <a href="code-review">code review</a> and Bazaar&rsquo;s superb support for merging make bringing the new code and its revision history back into your branch quick and easy.
+Launchpad&rsquo;s <a href="code-review">code review</a> and Bazaar&rsquo;s superb support for merging make bringing the new code and its revision history back into your branch quick and easy.
                         </p>
                     </div>
                     <div class="clear"></div>
@@ -99,7 +99,7 @@ In effect, your branch becomes a living patch: the very latest version of your c
                         <p class="screen-holder">
                             <img src="images/hosting/4.png" alt="Team branches" />                        </p>
                         <p>
-Thanks to Bazaar&rsquo;s workflow flexibility, all team members can commit to the centrally hosted branch, while anyone can still created their own separate line of development with full version control.
+Thanks to Bazaar&rsquo;s workflow flexibility, all team members can commit to a centrally hosted branch, while anyone can still created their own separate line of development with full version control.
 
 
                         </p>

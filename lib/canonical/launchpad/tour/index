@@ -36,7 +36,7 @@
                 <img src="images/home/main-image.jpg" alt="Collaborate with free software communities." />
             </p>
             <p class="intro-text center">
-                <strong>Launchpad helps people to work together on free software by making it easy to share code, bug reports, translations and ideas.</strong>
+                <strong>Launchpad is a unique collaboration and hosting platform for free software.</strong>˙It brings communities together - regardless of their choice of tools - by making it easy to share code, bug reports, translations and ideas across projects.
             </p>
             <h2>Choose Launchpad to&#58;</h2>
             <ul>
@@ -64,7 +64,7 @@
                         <p class="screen-holder">
                             <img src="images/home/screens/bugs.jpg" alt="Bug tracking" />
                         </p>
-                        <p>In the free software world, the same code is used by many different communities. Launchpad helps you work with different groups affected by the same bug. By sharing bug reports, statuses, patches and comments you can have a conversation across project boundaries to develop a fix. Even where the bug is tracked in different places with different tools - such as in Bugzilla or Trac - Launchpad will import comments and status information directly into your bug report.
+                        <p>In the free software world, the same code is used by many different communities. Launchpad helps you work with different groups affected by the same bug. By sharing bug reports, statuses, patches and comments you can have a conversation across project boundaries to develop a fix. Even where the bug is tracked in different places with different tools - such as in Bugzilla or Trac - Launchpad can import comments and status information directly into your bug report.
                         </p>
                         <ul class="further-links">
                             <li><a href="bugs" accesskey="e" tabindex="3">More about bug tracking</a></li>
@@ -113,7 +113,7 @@ Launchpad also supports an efficient flow of new code into your project. You can
                             <img src="images/home/screens/hosting.jpg" alt="Package building and hosting" />
                         </p>
                         <p>
-                            Build and host Ubuntu packages and host them in your own APT repository. Use Launchpad to distribute experimental builds and betas of your software, with automatic updates pushed to your users whenever you modify a package.
+                            Build and host Ubuntu packages in your own APT repository. Use Launchpad to distribute experimental builds and betas of your software, with automatic updates pushed to your users whenever you modify a package.
                         </p>
                         <ul class="further-links">
                             <li><a href="ppa" accesskey="i" tabindex="7">More about package hosting</a></li>
