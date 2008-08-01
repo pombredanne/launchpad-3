@@ -33,12 +33,6 @@ from canonical.lazr.rest import (
     CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
 
 
-WADL_DOC_TEMPLATE = textwrap.dedent("""\
-    <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">
-    %s
-    </wadl:doc>""")
-
-
 class WadlDocstringLinker(DocstringLinker):
     """Converts link reference for WADL generation.
 
@@ -56,26 +50,25 @@ class WadlDocstringLinker(DocstringLinker):
         return indexterm
 
 
-class WadlAPI(RESTUtilityBase):
-    """Base class for WADL-related function namespaces."""
+def generate_wadl_doc(doc):
+    """Create a wadl:doc element wrapping a docstring."""
+    if doc is None:
+        return None
+    doc = textwrap.dedent(doc)
+    if doc == '':
+        return None
+    errors = []
+    parsed = parse_docstring(doc, errors)
+    if len(errors) > 0:
+        messages = [str(error) for error in errors]
+        raise AssertionError(
+            "Invalid docstring %s:\n %s" % (doc, "\n ".join(messages)))
+    return (
+        '<wadl:doc xmlns="http://www.w3.org/1999/xhtml/">\n%s\n</wadl:doc>' %
+        parsed.to_html(WadlDocstringLinker()))
 
-    def docstringToXHTML(self, doc):
-        """Convert an epydoc docstring to XHTML."""
-        if doc is None:
-            return None
-        doc = textwrap.dedent(doc)
-        if doc == '':
-            return None
-        errors = []
-        parsed = parse_docstring(doc, errors)
-        if len(errors) > 0:
-            messages = [str(error) for error in errors]
-            raise AssertionError(
-                "Invalid docstring %s:\n %s" % (doc, "\n ".join(messages)))
-        return parsed.to_html(WadlDocstringLinker())
 
-
-class WadlResourceAPI(WadlAPI):
+class WadlResourceAPI(RESTUtilityBase):
     "Namespace for WADL functions that operate on resources."
 
     def __init__(self, resource):
@@ -142,7 +135,7 @@ class WadlByteStorageResourceAPI(WadlResourceAPI):
         return "%s#HostedFile" % self._service_root_url()
 
 
-class WadlServiceRootResourceAPI(WadlAPI):
+class WadlServiceRootResourceAPI(RESTUtilityBase):
     """Namespace for functions that operate on the service root resource.
 
     This class doesn't subclass WadlResourceAPI because that class
@@ -175,7 +168,7 @@ class WadlServiceRootResourceAPI(WadlAPI):
         return resource_dicts
 
 
-class WadlResourceAdapterAPI(WadlAPI):
+class WadlResourceAdapterAPI(RESTUtilityBase):
     """Namespace for functions that operate on resource adapter classes."""
 
     def __init__(self, adapter, adapter_interface):
@@ -186,7 +179,7 @@ class WadlResourceAdapterAPI(WadlAPI):
     @property
     def doc(self):
         """Human-readable XHTML documentation for this object type."""
-        return WADL_DOC_TEMPLATE % self.docstringToXHTML(self.adapter.__doc__)
+        return generate_wadl_doc(self.adapter.__doc__)
 
     @property
     def named_operations(self):
@@ -324,7 +317,7 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
         return self.adapter.entry_schema
 
 
-class WadlFieldAPI(WadlAPI):
+class WadlFieldAPI(RESTUtilityBase):
     "Namespace for WADL functions that operate on schema fields."
 
     def __init__(self, field):
@@ -361,7 +354,7 @@ class WadlFieldAPI(WadlAPI):
     @property
     def doc(self):
         """The docstring for this field."""
-        return WADL_DOC_TEMPLATE % self.docstringToXHTML(self.field.__doc__)
+        return generate_wadl_doc(self.field.__doc__)
 
     @property
     def path(self):
@@ -434,7 +427,7 @@ class WadlFieldAPI(WadlAPI):
         return None
 
 
-class WadlOperationAPI(WadlAPI):
+class WadlOperationAPI(RESTUtilityBase):
     "Namespace for WADL functions that operate on named operations."
 
     def __init__(self, operation):
@@ -459,8 +452,7 @@ class WadlOperationAPI(WadlAPI):
     @property
     def doc(self):
         """Human-readable documentation for this operation."""
-        return WADL_DOC_TEMPLATE % self.docstringToXHTML(
-            self.operation.__doc__)
+        return generate_wadl_doc(self.operation.__doc__)
 
     @property
     def has_return_type(self):
