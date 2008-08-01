@@ -115,23 +115,24 @@
         </style>
     </xsl:template>
 
+    <!-- Contains the base URL for the webservice without a trailing
+         slash.  -->
+    <xsl:variable name="base">
+        <xsl:variable name="uri" select="//wadl:resources/@base"/>
+        <xsl:choose>
+            <xsl:when 
+                test="substring($uri, string-length($uri) , 1) = '/'">
+                <xsl:value-of
+                    select="substring($uri, 1, string-length($uri) - 1)"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="$uri"/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
+
     <!-- We start here. -->
     <xsl:template match="/wadl:application">
-        <xsl:variable name="base">
-            <!-- Contains the base URL for the webservice without a trailing
-                 slash.  -->
-            <xsl:variable name="uri" select="wadl:resources/@base"/>
-            <xsl:choose>
-                <xsl:when 
-                    test="substring($uri, string-length($uri) , 1) = '/'">
-                    <xsl:value-of
-                        select="substring($uri, 1, string-length($uri) - 1)"/>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:value-of select="$uri"/>
-                </xsl:otherwise>
-            </xsl:choose>
-        </xsl:variable>
         <xsl:variable name="title">
             <xsl:choose>
                 <xsl:when test="wadl:doc[@title]">
@@ -473,14 +474,20 @@
 
     <!-- Documentation for the request parameters of a custom method -->
     <xsl:template match="wadl:request">
-        <xsl:apply-templates select="." mode="param-group">
-            <xsl:with-param name="prefix">Request</xsl:with-param>
-            <xsl:with-param name="style">query</xsl:with-param>
-        </xsl:apply-templates>
-        <xsl:apply-templates select="." mode="param-group">
-            <xsl:with-param name="prefix">Request</xsl:with-param>
-            <xsl:with-param name="style">header</xsl:with-param>
-        </xsl:apply-templates>
+        <h6>Parameters</h6>
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Description</th>
+           </tr>
+            <xsl:apply-templates
+                select=".//wadl:param[@style='query'][@fixed]"/>
+            <xsl:apply-templates
+                select=".//wadl:param[@style='query'][not(@fixed)]">
+                <xsl:sort select="@name" />
+            </xsl:apply-templates>
+        </table>
     </xsl:template>
 
     <!-- Documentation for the response of custom methods returning
@@ -501,31 +508,6 @@
                     collection
                 </xsl:if>.
         </p>
-    </xsl:template>
-
-    <!-- Documentation of the parameters to a custom method -->
-    <xsl:template match="wadl:*" mode="param-group">
-        <xsl:param name="style"/>
-        <xsl:param name="prefix"></xsl:param>
-        <xsl:if test=".//wadl:param[@style=$style]">
-        <h6>
-            <xsl:value-of select="$prefix"/>
-            <xsl:text> </xsl:text><xsl:value-of select="$style"/> parameters
-        </h6>
-        <table>
-            <tr>
-                <th>Parameter</th>
-                <th>Value</th>
-                <th>Description</th>
-           </tr>
-            <xsl:apply-templates
-                select=".//wadl:param[@style=$style][@fixed]"/>
-            <xsl:apply-templates
-                select=".//wadl:param[@style=$style][not(@fixed)]">
-                <xsl:sort select="@name" />
-            </xsl:apply-templates>
-        </table>
-        </xsl:if>
     </xsl:template>
 
     <!-- Documentation for request parameter. -->
