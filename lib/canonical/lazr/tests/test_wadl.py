@@ -116,7 +116,7 @@ class WadlAPITestCase(CleanUp, unittest.TestCase):
         doclines = test_tales(
             'entry/wadl_entry:doc', entry=entry).splitlines()
         self.assertEquals([
-            '<wadl:doc xmlns="http://www.w3.org/1999/xhtml/">',
+            '<wadl:doc xmlns="http://www.w3.org/1999/xhtml">',
             '<p>A simple entry.</p>',
             '<p>This is the description of the entry.</p>',
             '',
@@ -135,7 +135,7 @@ class WadlAPITestCase(CleanUp, unittest.TestCase):
             'collection/wadl_collection:doc', collection=collection
             ).splitlines()
         self.assertEquals([
-            '<wadl:doc xmlns="http://www.w3.org/1999/xhtml/">',
+            '<wadl:doc xmlns="http://www.w3.org/1999/xhtml">',
             'A simple collection containing IAnEntry.',
             '</wadl:doc>'], doclines)
 
@@ -146,7 +146,7 @@ class WadlAPITestCase(CleanUp, unittest.TestCase):
         doclines = test_tales(
             'field/wadl:doc', field=field).splitlines()
         self.assertEquals([
-            '<wadl:doc xmlns="http://www.w3.org/1999/xhtml/">',
+            '<wadl:doc xmlns="http://www.w3.org/1999/xhtml">',
             '<p>A &quot;field&quot;</p>',
             '<p>The only field that can be &lt;&gt; 0 in the entry.</p>',
             '',
@@ -166,7 +166,7 @@ class WadlAPITestCase(CleanUp, unittest.TestCase):
         # Only compare the first 2 lines and the last one.
         # we dont care about the formatting of the parameters table.
         self.assertEquals([
-            '<wadl:doc xmlns="http://www.w3.org/1999/xhtml/">',
+            '<wadl:doc xmlns="http://www.w3.org/1999/xhtml">',
             '<p>Print an appropriate greeting based on the message.</p>',],
             doclines[0:2])
         self.assertEquals('</wadl:doc>', doclines[-1])

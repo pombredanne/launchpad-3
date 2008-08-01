@@ -66,7 +66,7 @@ def generate_wadl_doc(doc):
         raise AssertionError(
             "Invalid docstring %s:\n %s" % (doc, "\n ".join(messages)))
     return (
-        '<wadl:doc xmlns="http://www.w3.org/1999/xhtml/">\n%s\n</wadl:doc>' %
+        '<wadl:doc xmlns="http://www.w3.org/1999/xhtml">\n%s\n</wadl:doc>' %
         parsed.to_html(WadlDocstringLinker()))
 
 

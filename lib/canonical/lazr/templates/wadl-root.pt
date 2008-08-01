@@ -1,4 +1,7 @@
 <?xml version="1.0"?>
+<!DOCTYPE application [
+  <!ENTITY nbsp "\&#160;">
+]>
 <application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd"
   xmlns="http://research.sun.com/wadl/2006/10"
@@ -202,7 +205,7 @@
              tal:repeat="field context/wadl_entry:all_fields" required="true"
              tal:attributes="name field/wadl:name;
                              path field/wadl:path">
-        <wadl:doc tal:content="structure field/wadl:doc">
+        <wadl:doc tal:replace="structure field/wadl:doc">
           Field title: field description
         </wadl:doc>
         <link tal:condition="field/wadl:is_represented_as_link"

@@ -230,7 +230,10 @@ resources. It's a big document.
 
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
-    >>> wadl_schema.validate(wadl)
+
+    # We need to replace the nbsp entity, because the validator
+    # doesn't support embedded definition.
+    >>> wadl_schema.validate(wadl.replace('&nbsp;', '&#160;'))
     True
     >>> wadl_schema.error_log
     ''
@@ -672,9 +675,8 @@ name for the parameter and an optional short description.
     >>> doc = full_params[2][0]
     >>> doc.tag
     '...doc'
-    >>> print extract_text(doc.text)
+    >>> print "\n".join([node.text for node in doc])
     Date Closed
-    <BLANKLINE>
     The date on which this task was marked either Fix Committed or Fix
     Released.
 
