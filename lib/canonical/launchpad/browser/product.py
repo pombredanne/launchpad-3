@@ -231,6 +231,7 @@ class ProductLicenseMixin:
                 user_browsername=user.browsername,
                 user_name=user.name,
                 product_name=self.product.name,
+                product_url=canonical_url(self.product),
                 product_summary=indent(self.product.summary),
                 license_titles=indent(license_titles),
                 license_info=indent(self.product.license_info))

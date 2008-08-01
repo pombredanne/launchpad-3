@@ -1026,7 +1026,7 @@ class IBranchSet(Interface):
         """
 
     def getTargetBranchesForUsersMergeProposals(user, product):
-        """Return a sequence of branches the user has targetted before."""
+        """Return a sequence of branches the user has targeted before."""
 
     def isBranchNameAvailable(owner, product, branch_name):
         """Is the specified branch_name valid for the owner and product.
