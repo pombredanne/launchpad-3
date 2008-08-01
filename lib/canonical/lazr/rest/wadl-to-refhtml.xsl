@@ -325,7 +325,7 @@
             <xsl:apply-templates select="wadl:doc"/>
 
             <xsl:call-template name="resource-uri-doc"/>
-            <!-- All top-level colletions supports a GET without arguments
+            <!-- All top-level collections supports a GET without arguments
             iterating over all the resources. 
             The type of the resource is found by looking at the href attribute
             of the default representation. Link is in the form
