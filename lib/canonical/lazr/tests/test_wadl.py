@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 import unittest
-from textwrap import dedent
 
 from zope.component import getGlobalSiteManager
 from zope.configuration import xmlconfig
