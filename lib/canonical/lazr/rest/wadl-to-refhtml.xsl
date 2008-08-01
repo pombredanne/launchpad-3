@@ -762,6 +762,12 @@
              mode="representation-type"/>
     </xsl:template>
 
+    <!-- Omit docutils parameter lists in methods since they are redundant
+    or misleading with the one we give. -->
+    <xsl:template match="wadl:method//html:table[
+        contains(@class, 'field-list')]" 
+        mode="copy"/>
+
     <!-- Output the mediaType attribute of a representation -->
     <xsl:template match="wadl:representation[@mediaType]"
         mode="representation-type">
