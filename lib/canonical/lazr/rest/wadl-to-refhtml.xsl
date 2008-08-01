@@ -84,7 +84,7 @@
             dd {
                 margin-left: 1em;
             }
-            tt, var {
+            tt, code {
                 font-size: 1.2em;
             }
             table {
@@ -112,6 +112,9 @@
             p + ul, p + ol, p + dl {
                 margin-top: 0em;
             }
+            label {
+                font-weight: bold;
+            }
             .optional {
                 font-weight: normal;
                 opacity: 0.75;
@@ -135,6 +138,137 @@
         </xsl:choose>
     </xsl:variable>
 
+    <!-- Generate the URL to the top-level collection. -->
+    <xsl:template name="resource-uri-doc">
+        <xsl:param name="url"><xsl:value-of 
+                select="$base"/>/<xsl:value-of select="@id"/></xsl:param>
+        <p><label>URL:</label> 
+            <code><xsl:copy-of select="$url" /></code></p>
+    </xsl:template>
+
+    <xsl:template name="entry-uri-doc">
+        <xsl:call-template name="resource-uri-doc">
+            <xsl:with-param name="url">
+                <xsl:choose>
+                    <xsl:when test="@id = 'has_milestones'">
+                        <em>depends on the underlying entry</em>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:call-template name="find-entry-uri"/>
+                     </xsl:otherwise>
+                 </xsl:choose>
+            </xsl:with-param>
+        </xsl:call-template>
+    </xsl:template>
+
+    <xsl:template name="find-entry-uri">
+        <xsl:value-of select="$base"/>
+        <xsl:choose>
+            <xsl:when test="@id = 'bug'">
+                <xsl:text>/bugs/</xsl:text><var>&lt;id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'bug_attachment'">
+                <xsl:text>/bugs/</xsl:text>
+                <var>&lt;bug.id&gt;</var>
+                <xsl:text>/attachments/</xsl:text>
+                <var>&lt;id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'bug_subscription'">
+                <xsl:text>/bugs/</xsl:text>
+                <var>&lt;bug.id&gt;</var>
+                <xsl:text>/subscriptions/</xsl:text>
+                <var>&lt;subscriber.name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'bug_task'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;target.name&gt;</var>
+                <xsl:text>/+bug/</xsl:text>
+                <var >&lt;bug.id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'bug_watch'">
+                <xsl:text>/bugs/</xsl:text>
+                <var>&lt;bug.id&gt;</var>
+                <xsl:text>/watch/</xsl:text>
+                <var>&lt;id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'bug_tracker'">
+                <xsl:text>/bugs/bugtrackers/</xsl:text>
+                <var>&lt;name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'email_address'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+email/</xsl:text>
+                <var>&lt;email&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'jabber_id'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+jabberid/</xsl:text>
+                <var>&lt;id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'irc_id'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+ircnick/</xsl:text>
+                <var>&lt;id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'language'">
+                <xsl:text>/+languages/</xsl:text>
+                <var>&lt;code&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'message'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;target.name&gt;</var>
+                <xsl:text>/+bug/</xsl:text>
+                <var>&lt;bug.id&gt;</var>
+                <xsl:text>/comments/</xsl:text>
+                <var>&lt;index&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'milestone'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;target.name&gt;</var>
+                <xsl:text>/+milestone/</xsl:text>
+                <var>&lt;name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'product' or @id = 'team' or @id = 'person'
+                or @id = 'project'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'product_release'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;product.name&gt;</var>
+                <xsl:text>/</xsl:text>
+                <var>&lt;product_series.name&gt;</var>
+                <xsl:text>/</xsl:text>
+                <var>&lt;name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'product_series'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;product.name&gt;</var>
+                <xsl:text>/</xsl:text>
+                <var>&lt;name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'team_membership'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;team.name&gt;</var>
+                <xsl:text>/+member/</xsl:text>
+                <var>&lt;member.name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'wiki_name'">
+                <xsl:text>/</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+wikiname/</xsl:text>
+                <var>&lt;id&gt;</var>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:message>Unknown entry URL:
+                    <xsl:value-of select="@id" />
+                </xsl:message>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
     <!-- We start here. -->
     <xsl:template match="/wadl:application">
         <xsl:variable name="title">
@@ -190,6 +324,7 @@
             <h3><xsl:call-template name="get-title-or-id"/></h3>
             <xsl:apply-templates select="wadl:doc"/>
 
+            <xsl:call-template name="resource-uri-doc"/>
             <!-- All top-level colletions supports a GET without arguments
             iterating over all the resources. 
             The type of the resource is found by looking at the href attribute
@@ -324,6 +459,8 @@
     <xsl:template match="wadl:resource_type" mode="entry-types">
         <h3 id="{@id}"><xsl:call-template name="get-title-or-id"/></h3>
         <xsl:apply-templates select="wadl:doc"/>
+
+        <xsl:call-template name="entry-uri-doc"/>
 
         <xsl:call-template name="default-representation" />
         <xsl:call-template name="standard-methods" />
