@@ -14,14 +14,14 @@ While navigating around the PPA the "structural location" remains the
 "PPA owner":
 
     >>> print_location(anon_browser.contents)
-    Location: Celso Providelo
+    Hierarchy: Launchpad > Celso Providelo
     Tabs:
-    * Overview (http://launchpad.dev/~cprov)
-    * Code (http://code.launchpad.dev/~cprov)
-    * Bugs (http://bugs.launchpad.dev/~cprov)
-    * Blueprints (http://blueprints.launchpad.dev/~cprov)
-    * Translations (http://translations.launchpad.dev/~cprov)
-    * Answers (http://answers.launchpad.dev/~cprov)
+    * Overview (selected) - http://launchpad.dev/~cprov
+    * Code - http://code.launchpad.dev/~cprov
+    * Bugs - http://bugs.launchpad.dev/~cprov
+    * Blueprints - http://blueprints.launchpad.dev/~cprov
+    * Translations - http://translations.launchpad.dev/~cprov
+    * Answers - http://answers.launchpad.dev/~cprov
     Main heading: PPA for Celso Providelo
 
 You can see the build details of the packages in the archive by using
@@ -48,14 +48,14 @@ The user can navigate to an individual build details:
     'i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
 
     >>> print_location(anon_browser.contents)
-    Location: Celso Providelo
+    Hierarchy: Launchpad > Celso Providelo
     Tabs:
-    * Overview (http://launchpad.dev/~cprov)
-    * Code (http://code.launchpad.dev/~cprov)
-    * Bugs (http://bugs.launchpad.dev/~cprov)
-    * Blueprints (http://blueprints.launchpad.dev/~cprov)
-    * Translations (http://translations.launchpad.dev/~cprov)
-    * Answers (http://answers.launchpad.dev/~cprov)
+    * Overview (selected) - http://launchpad.dev/~cprov
+    * Code - http://code.launchpad.dev/~cprov
+    * Bugs - http://bugs.launchpad.dev/~cprov
+    * Blueprints - http://blueprints.launchpad.dev/~cprov
+    * Translations - http://translations.launchpad.dev/~cprov
+    * Answers - http://answers.launchpad.dev/~cprov
     Main heading:
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
 

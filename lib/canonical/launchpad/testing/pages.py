@@ -548,7 +548,7 @@ def print_location_apps(contents):
         if tab.a:
             link = tab.a['href']
         else:
-            link = 'Not active'
+            link = 'not linked'
         print "* %s - %s" % (tab_text, link)
 
 

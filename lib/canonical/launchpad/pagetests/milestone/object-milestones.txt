@@ -130,14 +130,14 @@ A project milestone page has the same navigation as the project:
 
     >>> anon_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
     >>> print_location(anon_browser.contents)
-    Location: Mozilla Firefox
+    Hierarchy: Launchpad > Mozilla Firefox
     Tabs:
-    * Overview (http://launchpad.dev/firefox)
-    * Code (http://code.launchpad.dev/firefox)
-    * Bugs (http://bugs.launchpad.dev/firefox)
-    * Blueprints (http://blueprints.launchpad.dev/firefox)
-    * Translations (http://translations.launchpad.dev/firefox)
-    * Answers (http://answers.launchpad.dev/firefox)
+    * Overview (selected) - http://launchpad.dev/firefox
+    * Code - http://code.launchpad.dev/firefox
+    * Bugs - http://bugs.launchpad.dev/firefox
+    * Blueprints - http://blueprints.launchpad.dev/firefox
+    * Translations - http://translations.launchpad.dev/firefox
+    * Answers - http://answers.launchpad.dev/firefox
     Main heading: Milestone 1.0 for Mozilla Firefox
 
 Similarly, a distribution milestone page has the same navigation as
@@ -145,14 +145,14 @@ the distribution:
 
     >>> anon_browser.open('http://launchpad.dev/debian/+milestone/3.1')
     >>> print_location(anon_browser.contents)
-    Location: Debian
+    Hierarchy: Launchpad > Debian
     Tabs:
-    * Overview (http://launchpad.dev/debian)
-    * Code (Not active)
-    * Bugs (http://bugs.launchpad.dev/debian)
-    * Blueprints (http://blueprints.launchpad.dev/debian)
-    * Translations (http://translations.launchpad.dev/debian)
-    * Answers (http://answers.launchpad.dev/debian)
+    * Overview (selected) - http://launchpad.dev/debian
+    * Code - not linked
+    * Bugs - http://bugs.launchpad.dev/debian
+    * Blueprints - http://blueprints.launchpad.dev/debian
+    * Translations - http://translations.launchpad.dev/debian
+    * Answers - http://answers.launchpad.dev/debian
     Main heading: Milestone 3.1 for Debian
 
 
