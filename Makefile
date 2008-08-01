@@ -42,8 +42,12 @@ newsampledata:
 # XXX flacoste 2008/07/31 This is not automatically run and the
 # generated file is stored in the revision control, until IS installs
 # xsltproc on all required machine.
+# The sed command is to inject a definition for the common entity
+# &nbsp; that epydoc uses. It makes xsltproc fails if it's not defined, and
+# we can't put it in the template because schema validation then fails.
 apidoc:
 	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
+		sed -e 's@<?xml version="1.0"?>@&<!DOCTYPE wadl:application [<!ENTITY nbsp "\&#160;">]>@' |\
 		$(XSLTPROC) ./lib/canonical/lazr/rest/wadl-to-refhtml.xsl - \
 		> ./lib/canonical/launchpad/apidoc/index.html
 
