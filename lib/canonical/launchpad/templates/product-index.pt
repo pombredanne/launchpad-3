@@ -121,6 +121,11 @@
     <strong>Languages:</strong> <span tal:content="context/programminglang">Python</span>
   </p>
 
+
+  <p id="owner" tal:condition="context/owner">
+    <strong>Owner:</strong> <tal:link replace="structure context/owner/fmt:link" />
+  </p>
+
   <p id="driver" tal:condition="view/effective_driver">
     <strong>Driver:</strong> <tal:link replace="structure view/effective_driver/fmt:link" />
   </p>
