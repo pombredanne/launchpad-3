@@ -3,15 +3,19 @@
 """Base classes for one-off HTTP operations."""
 
 import simplejson
-import types
 
-from zope.component import getMultiAdapter, queryAdapter
-from zope.interface import Attribute, implements
+from zope.component import getMultiAdapter, getUtility, queryAdapter
+from zope.event import notify
+from zope.interface import Attribute, implements, providedBy
 from zope.interface.interfaces import IInterface
 from zope.schema import Field
 from zope.schema.interfaces import (
     IField, RequiredMissing, ValidationError, WrongType)
 from zope.security.proxy import isinstance as zope_isinstance
+
+from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.lazr.interfaces import (
     ICollection, IFieldMarshaller, IResourceGETOperation,
@@ -19,6 +23,7 @@ from canonical.lazr.interfaces import (
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
     BatchingResourceMixin, CollectionResource, ResourceJSONEncoder)
+
 
 __metaclass__ = type
 __all__ = [
@@ -34,6 +39,7 @@ class ResourceOperation(BatchingResourceMixin):
     """A one-off operation associated with a resource."""
 
     JSON_TYPE = 'application/json'
+    send_modification_event = False
 
     def __init__(self, context, request):
         self.context = context
@@ -41,12 +47,25 @@ class ResourceOperation(BatchingResourceMixin):
 
     def __call__(self):
         values, errors = self.validate()
-        if len(errors) == 0:
-            return self.encodeResult(self.call(**values))
-        else:
+        if len(errors) > 0:
             self.request.response.setStatus(400)
             self.request.response.setHeader('Content-type', 'text/plain')
             return "\n".join(errors)
+
+        if self.send_modification_event:
+            snapshot = Snapshot(
+                self.context, providing=providedBy(self.context))
+
+        response = self.call(**values)
+
+        if self.send_modification_event:
+            event = SQLObjectModifiedEvent(
+                object=self.context,
+                object_before_modification=snapshot,
+                edited_fields=None,
+                user=getUtility(ILaunchBag).user)
+            notify(event)
+        return self.encodeResult(response)
 
     def encodeResult(self, result):
         """Encode the result of a custom operation into a string.
@@ -168,6 +187,7 @@ class IObjectLink(IField):
 
     schema = Attribute("schema",
         u"The Interface of the Object on the other end of the link.")
+
 
 class ObjectLink(Field):
     """A reference to an object."""
