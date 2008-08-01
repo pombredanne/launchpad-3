@@ -50,7 +50,6 @@ __all__ = [
     'PersonRelatedSoftwareView',
     'PersonSearchQuestionsView',
     'PersonSetContextMenu',
-    'PersonSetFacets',
     'PersonSetNavigation',
     'PersonSetSOP',
     'PersonSOP',
@@ -574,14 +573,6 @@ class PersonSetSOP(StructuralObjectPresentation):
 
     def listAltChildren(self, num):
         return None
-
-
-class PersonSetFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for the IPersonSet."""
-
-    usedfor = IPersonSet
-
-    enable_only = ['overview']
 
 
 class PersonSetContextMenu(ContextMenu):
