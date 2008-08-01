@@ -53,9 +53,12 @@ def generate_wadl_doc(doc):
     """Create a wadl:doc element wrapping a docstring."""
     if doc is None:
         return None
-    doc = textwrap.dedent(doc)
-    if doc == '':
+    # Our docstring convention prevents dedent from working correctly, we need
+    # to dedent all but the first line.
+    lines = doc.strip().splitlines()
+    if not len(lines):
         return None
+    doc = "%s\n%s" % (lines[0], textwrap.dedent("\n".join(lines[1:])))
     errors = []
     parsed = parse_docstring(doc, errors)
     if len(errors) > 0:

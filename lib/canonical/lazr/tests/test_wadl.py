@@ -118,8 +118,7 @@ class WadlAPITestCase(CleanUp, unittest.TestCase):
         self.assertEquals([
             '<wadl:doc xmlns="http://www.w3.org/1999/xhtml/">',
             '<p>A simple entry.</p>',
-            '<blockquote>',
-            'This is the description of the entry.</blockquote>',
+            '<p>This is the description of the entry.</p>',
             '',
             '</wadl:doc>'], doclines)
 
