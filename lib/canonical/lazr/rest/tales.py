@@ -8,7 +8,9 @@ all = ['entry_adapter_for_schema']
 
 import textwrap
 import urllib
+from xml.sax.saxutils import escape, quoteattr
 
+from epydoc.markup import DocstringLinker
 from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
@@ -31,6 +33,29 @@ from canonical.lazr.rest import (
     CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
 
 
+WADL_DOC_TEMPLATE = textwrap.dedent("""\
+    <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">
+    %s
+    </wadl:doc>""")
+
+
+class WadlDocstringLinker(DocstringLinker):
+    """Converts link reference for WADL generation.
+
+    This basically don't create references.
+    """
+
+    def translate_identifier_xref(self, identifier, label=None):
+        """See `DocstringLinker`."""
+        if label:
+            return label
+        return identifier
+
+    def translate_indexterm(self, indexterm):
+        """See DocstringLinker`."""
+        return indexterm
+
+
 class WadlAPI(RESTUtilityBase):
     """Base class for WADL-related function namespaces."""
 
@@ -47,7 +72,7 @@ class WadlAPI(RESTUtilityBase):
             messages = [str(error) for error in errors]
             raise AssertionError(
                 "Invalid docstring %s:\n %s" % (doc, "\n ".join(messages)))
-        return parsed.to_html(None)
+        return parsed.to_html(WadlDocstringLinker())
 
 
 class WadlResourceAPI(WadlAPI):
@@ -161,7 +186,7 @@ class WadlResourceAdapterAPI(WadlAPI):
     @property
     def doc(self):
         """Human-readable XHTML documentation for this object type."""
-        return self.docstringToXHTML(self.adapter.__doc__)
+        return WADL_DOC_TEMPLATE % self.docstringToXHTML(self.adapter.__doc__)
 
     @property
     def named_operations(self):
@@ -336,14 +361,7 @@ class WadlFieldAPI(WadlAPI):
     @property
     def doc(self):
         """The docstring for this field."""
-        title = self.field.title
-        if title != '':
-            title = "<strong>%s</strong>" % title
-            if self.field.description != '':
-                return "%s: %s" % (self.field.title, self.field.description)
-            else:
-                return title
-        return self.field.description
+        return WADL_DOC_TEMPLATE % self.docstringToXHTML(self.field.__doc__)
 
     @property
     def path(self):
@@ -441,7 +459,8 @@ class WadlOperationAPI(WadlAPI):
     @property
     def doc(self):
         """Human-readable documentation for this operation."""
-        return self.docstringToXHTML(self.operation.__doc__)
+        return WADL_DOC_TEMPLATE % self.docstringToXHTML(
+            self.operation.__doc__)
 
     @property
     def has_return_type(self):
