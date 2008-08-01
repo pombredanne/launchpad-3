@@ -68,9 +68,13 @@
                 margin-bottom: 0em;
             }
             h4 {
+                font-size: 1.50em;
                 margin: 0em;
                 padding: 0em;
                 border-bottom: 2px solid white;
+            }
+            h5 {
+                font-size: 1.25em;
             }
             h6 {
                 font-size: 1.1em;
@@ -80,7 +84,7 @@
             dd {
                 margin-left: 1em;
             }
-            tt {
+            tt, var {
                 font-size: 1.2em;
             }
             table {
