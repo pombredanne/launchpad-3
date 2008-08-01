@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-__all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
+__all__ = ['DistributionMirrorEditView',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
            'DistributionMirrorView', 'DistributionMirrorReviewView',
            'DistributionMirrorReassignmentView',
@@ -31,12 +31,6 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, Link, StandardLaunchpadFacets)
-
-
-class DistributionMirrorFacets(StandardLaunchpadFacets):
-
-    usedfor = IDistributionMirror
-    enable_only = ['overview']
 
 
 class DistributionMirrorOverviewMenu(ApplicationMenu):
