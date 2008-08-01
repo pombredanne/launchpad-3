@@ -6,8 +6,6 @@ __metaclass__ = type
 
 import unittest
 
-from bzrlib.urlutils import local_path_to_url
-
 from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
