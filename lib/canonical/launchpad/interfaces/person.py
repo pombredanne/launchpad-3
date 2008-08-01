@@ -591,7 +591,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "Branches to which this person " "subscribes.")
     myactivememberships = exported(
         CollectionField(
-            title=_("All `ITeamMembership`s for Teams this Person is an "
+            title=_("All TeamMemberships for Teams this Person is an "
                     "active member of."),
             value_type=Reference(schema=ITeamMembership),
             readonly=True, required=False),
@@ -1209,7 +1209,7 @@ class IPersonViewRestricted(Interface):
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
         CollectionField(
-            title=_("Active `ITeamMembership`s for this object's members."),
+            title=_("Active TeamMemberships for this object's members."),
             description=_(
                 "Active TeamMemberships are the ones with the ADMIN or "
                 "APPROVED status.  The results are ordered using "
