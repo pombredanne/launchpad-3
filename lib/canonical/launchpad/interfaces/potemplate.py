@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Attribute, Interface
@@ -74,8 +74,7 @@ class TranslationPriority(DBEnumeratedType):
 class IHasTranslationTemplates(Interface):
     """An entity that has translation templates attached.
 
-    Examples include ISourcePackage, IDistribution, IDistroSeries, IProduct
-    and IProductSeries.
+    Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
     """
 
     def getCurrentTranslationTemplates():
