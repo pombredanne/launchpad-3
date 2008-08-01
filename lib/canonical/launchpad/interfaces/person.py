@@ -1262,6 +1262,7 @@ class IPersonEditRestricted(Interface):
 
         Join the given team according to the policies and defaults of that
         team:
+
         - If the team subscriptionpolicy is OPEN, the user is added as
           an APPROVED member with a NULL TeamMembership.reviewer.
         - If the team subscriptionpolicy is MODERATED, the user is added as
