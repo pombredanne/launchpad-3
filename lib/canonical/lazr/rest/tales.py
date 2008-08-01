@@ -8,7 +8,6 @@ all = ['entry_adapter_for_schema']
 
 import textwrap
 import urllib
-from xml.sax.saxutils import escape, quoteattr
 
 from epydoc.markup import DocstringLinker
 from epydoc.markup.restructuredtext import parse_docstring
@@ -36,7 +35,7 @@ from canonical.lazr.rest import (
 class WadlDocstringLinker(DocstringLinker):
     """Converts link reference for WADL generation.
 
-    This basically don't create references.
+    This basically doesn't create any reference.
     """
 
     def translate_identifier_xref(self, identifier, label=None):
@@ -46,7 +45,7 @@ class WadlDocstringLinker(DocstringLinker):
         return identifier
 
     def translate_indexterm(self, indexterm):
-        """See DocstringLinker`."""
+        """See `DocstringLinker`."""
         return indexterm
 
 

@@ -55,7 +55,7 @@ class IACollection(Interface):
         """Returns all the entries."""
 
 
-# The two following are used to tests when docstrings are missing.
+# This one is used to test when docstrings are missing.
 class IUndocumentedEntry(Interface):
     export_as_webservice_entry()
 
