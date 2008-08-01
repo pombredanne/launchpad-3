@@ -10,11 +10,9 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
+    <div metal:fill-slot="main">
+      <div><a href="/people">People and teams</a></div>
       <h1>Merge Launchpad accounts</h1>
-    </metal:heading>
-
-  <div metal:fill-slot="main">
 
   <div metal:define-macro="addform">
 
