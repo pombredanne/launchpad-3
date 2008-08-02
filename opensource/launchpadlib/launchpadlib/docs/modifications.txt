@@ -154,8 +154,10 @@ Resources may also be used as arguments to named operations.
     >>> task.assignee.display_name
     u'Guilherme Salgado'
 
-    >>> salgado.inTeam(team=bassists)
-    True
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> salgado.inTeam(team=bassists)
+    # True
 
 
 == Moving an entry ==
