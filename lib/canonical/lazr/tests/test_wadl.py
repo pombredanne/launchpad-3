@@ -94,7 +94,7 @@ class WadlAPITestCase(CleanUp, unittest.TestCase):
     def setUp(self):
         """Set the component registry with our simple model."""
         super(WadlAPITestCase, self).setUp()
-        zcmlcontext = xmlconfig.string("""
+        xmlconfig.string("""
         <configure
            xmlns="http://namespaces.zope.org/zope"
            xmlns:webservice="http://namespaces.canonical.com/webservice">
