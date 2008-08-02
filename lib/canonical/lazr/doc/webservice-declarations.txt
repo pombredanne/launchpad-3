@@ -792,7 +792,7 @@ The resulting class is named based on the interface:
     >>> entry_adapter_factory.__name__
     'BookEntryAdapter'
 
-It's docstring is also copied over from the original interface:
+Its docstring is also copied over from the original interface:
 
     >>> entry_adapter_factory.__doc__
     'A simple book data model.'

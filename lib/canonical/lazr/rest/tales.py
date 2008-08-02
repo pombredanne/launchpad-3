@@ -33,9 +33,14 @@ from canonical.lazr.rest import (
 
 
 class WadlDocstringLinker(DocstringLinker):
-    """Converts link reference for WADL generation.
+    """DocstringLinker used during WADL geneneration.
 
-    This basically doesn't create any reference.
+    epydoc uses this object to turn index and identifier references
+    like `DocstringLinker` into an appropriate markup in the output
+    format.
+
+    We don't want to generate links in the WADL file so we basically
+    return the identifier without any special linking markup.
     """
 
     def translate_identifier_xref(self, identifier, label=None):
@@ -47,6 +52,10 @@ class WadlDocstringLinker(DocstringLinker):
     def translate_indexterm(self, indexterm):
         """See `DocstringLinker`."""
         return indexterm
+
+
+WADL_DOC_TEMPLATE = (
+    '<wadl:doc xmlns="http://www.w3.org/1999/xhtml">\n%s\n</wadl:doc>')
 
 
 def generate_wadl_doc(doc):
@@ -65,9 +74,8 @@ def generate_wadl_doc(doc):
         messages = [str(error) for error in errors]
         raise AssertionError(
             "Invalid docstring %s:\n %s" % (doc, "\n ".join(messages)))
-    return (
-        '<wadl:doc xmlns="http://www.w3.org/1999/xhtml">\n%s\n</wadl:doc>' %
-        parsed.to_html(WadlDocstringLinker()))
+
+    return WADL_DOC_TEMPLATE % parsed.to_html(WadlDocstringLinker())
 
 
 class WadlResourceAPI(RESTUtilityBase):
