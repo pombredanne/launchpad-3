@@ -14,6 +14,9 @@
                 background-color: #eef;
                 padding: 1em;
             }
+            .method {
+                padding-left: 4em;
+            }
             h1 {
                 font-size: 2.5em;
             }
@@ -30,9 +33,14 @@
                 margin-bottom: 0em;
             }
             h4 {
+                font-size: 1.50em;
                 margin: 0em;
                 padding: 0em;
                 border-bottom: 2px solid white;
+            }
+            h5 {
+                font-size: 1.25em;
+                margin-left: -4em;
             }
             h6 {
                 font-size: 1.1em;
@@ -42,7 +50,7 @@
             dd {
                 margin-left: 1em;
             }
-            tt {
+            tt, code {
                 font-size: 1.2em;
             }
             table {
@@ -70,6 +78,9 @@
             p + ul, p + ol, p + dl {
                 margin-top: 0em;
             }
+            label {
+                font-weight: bold;
+            }
             .optional {
                 font-weight: normal;
                 opacity: 0.75;
@@ -82,6 +93,13 @@
       <h2>Top-level collections</h2>
       <div id="bugs" class="top-level-collection">
         <h3>bugs</h3>
+        <p>
+Application root for malone.
+</p>
+        <p>
+          <label>URL:</label>
+          <code>http://api.launchpad.dev/beta/bugs</code>
+        </p>
         <dl class="methods standard">
           <h4>Standard method</h4>
           <dt>GET</dt>
@@ -91,6 +109,13 @@
       </div>
       <div id="people" class="top-level-collection">
         <h3>people</h3>
+        <p>
+The set of Persons.
+</p>
+        <p>
+          <label>URL:</label>
+          <code>http://api.launchpad.dev/beta/people</code>
+        </p>
         <dl class="methods standard">
           <h4>Standard method</h4>
           <dt>GET</dt>
@@ -99,10 +124,22 @@
         </dl>
         <div id="people-custom-GETs" class="methods GETs">
           <h4>Custom GET methods</h4>
-          <div class="method"><h5 id="people-find">find</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+          <div class="method"><h5 id="people-find">find</h5><p>
+<p>Return all non-merged Persons and Teams whose name, displayname or
+email address match &lt;text&gt;.</p>
+<p>&lt;orderBy&gt; can be either a string with the column name you want to sort
+or a list of column names as strings.
+If no orderBy is specified the results will be ordered using the
+default ordering specified in Person._defaultOrder.</p>
+<p>While we don't have Full Text Indexes in the emailaddress table, we'll
+be trying to match the text only against the beginning of an email
+address.</p>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
-                <var>find</var></p></td><td><p>The name of the operation being invoked.</p></td></tr><tr><td><p><strong>text</strong></p></td><td><p><small>(required)</small></p></td><td><p>&lt;strong&gt;Search text&lt;/strong&gt;</p></td></tr></table>
+                <var>find</var></p></td><td><p>The name of the operation being invoked.</p></td></tr><tr><td><p><strong>text</strong></p></td><td><p><small>(required)</small></p></td><td><p>
+Search text
+</p></td></tr></table>
           
           <p class="response">Response contains an
             <code>application/json</code>
@@ -112,10 +149,29 @@
                 .
         </p>
         </div>
-          <div class="method"><h5 id="people-findPerson">findPerson</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+          <div class="method"><h5 id="people-findPerson">findPerson</h5><p>
+<p>Return all non-merged Persons with at least one email address whose
+name, displayname or email address match &lt;text&gt;.</p>
+<p>If text is an empty string, all persons with at least one email
+address will be returned.</p>
+<p>&lt;orderBy&gt; can be either a string with the column name you want to sort
+or a list of column names as strings.
+If no orderBy is specified the results will be ordered using the
+default ordering specified in Person._defaultOrder.</p>
+<p>If exclude_inactive_accounts is True, any accounts whose
+account_status is any of INACTIVE_ACCOUNT_STATUSES will not be in the
+returned set.</p>
+<p>If must_have_email is True, only people with one or more email
+addresses are returned.</p>
+<p>While we don't have Full Text Indexes in the emailaddress table, we'll
+be trying to match the text only against the beginning of an email
+address.</p>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
-                <var>findPerson</var></p></td><td><p>The name of the operation being invoked.</p></td></tr><tr><td><p><strong>text</strong></p></td><td><p><small>(required)</small></p></td><td><p>&lt;strong&gt;Search text&lt;/strong&gt;</p></td></tr></table>
+                <var>findPerson</var></p></td><td><p>The name of the operation being invoked.</p></td></tr><tr><td><p><strong>text</strong></p></td><td><p><small>(required)</small></p></td><td><p>
+Search text
+</p></td></tr></table>
           
           <p class="response">Response contains an
             <code>application/json</code>
@@ -125,10 +181,22 @@
                 .
         </p>
         </div>
-          <div class="method"><h5 id="people-findTeam">findTeam</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+          <div class="method"><h5 id="people-findTeam">findTeam</h5><p>
+<p>Return all Teams whose name, displayname or email address
+match &lt;text&gt;.</p>
+<p>&lt;orderBy&gt; can be either a string with the column name you want to sort
+or a list of column names as strings.
+If no orderBy is specified the results will be ordered using the
+default ordering specified in Person._defaultOrder.</p>
+<p>While we don't have Full Text Indexes in the emailaddress table, we'll
+be trying to match the text only against the beginning of an email
+address.</p>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
-                <var>findTeam</var></p></td><td><p>The name of the operation being invoked.</p></td></tr><tr><td><p><strong>text</strong></p></td><td><p><small>(required)</small></p></td><td><p>&lt;strong&gt;Search text&lt;/strong&gt;</p></td></tr></table>
+                <var>findTeam</var></p></td><td><p>The name of the operation being invoked.</p></td></tr><tr><td><p><strong>text</strong></p></td><td><p><small>(required)</small></p></td><td><p>
+Search text
+</p></td></tr></table>
           
           <p class="response">Response contains an
             <code>application/json</code>
@@ -138,8 +206,14 @@
                 .
         </p>
         </div>
-          <div class="method"><h5 id="people-getAllPersons">getAllPersons</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+          <div class="method"><h5 id="people-getAllPersons">getAllPersons</h5><p>
+<p>Return all Persons, ignoring the merged ones.</p>
+<p>&lt;orderBy&gt; can be either a string with the column name you want to sort
+or a list of column names as strings.
+If no orderBy is specified the results will be ordered using the
+default ordering specified in Person._defaultOrder.</p>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
                 <var>getAllPersons</var></p></td><td><p>The name of the operation being invoked.</p></td></tr></table>
           
@@ -151,8 +225,14 @@
                 .
         </p>
         </div>
-          <div class="method"><h5 id="people-getAllTeams">getAllTeams</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+          <div class="method"><h5 id="people-getAllTeams">getAllTeams</h5><p>
+<p>Return all Teams, ignoring the merged ones.</p>
+<p>&lt;orderBy&gt; can be either a string with the column name you want to sort
+or a list of column names as strings.
+If no orderBy is specified the results will be ordered using the
+default ordering specified in Person._defaultOrder.</p>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
                 <var>getAllTeams</var></p></td><td><p>The name of the operation being invoked.</p></td></tr></table>
           
@@ -164,8 +244,11 @@
                 .
         </p>
         </div>
-          <div class="method"><h5 id="people-getByEmail">getByEmail</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+          <div class="method"><h5 id="people-getByEmail">getByEmail</h5><p>
+<p>Return the person with the given email address.</p>
+<p>Return None if there is no person with the given email address.</p>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
                 <var>getByEmail</var></p></td><td><p>The name of the operation being invoked.</p></td></tr><tr><td><p><strong>email</strong></p></td><td><p><small>(required)</small></p></td><td></td></tr></table>
           
@@ -178,10 +261,33 @@
         </div>
         <div id="people-custom-POSTs" class="methods POSTs">
           <h4>Custom POST methods</h4>
-          <div class="method"><h5 id="people-newTeam">newTeam</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+          <div class="method"><h5 id="people-newTeam">newTeam</h5><p>
+Create and return a new Team with given arguments.
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
-                <var>newTeam</var></p></td><td><p>The name of the operation being invoked.</p></td></tr><tr><td><p><strong>default_membership_period</strong></p></td><td><p></p></td><td><p>Subscription period: Number of days a new subscription lasts before expiring. You can customize the length of an individual subscription when approving it. Leave this empty or set to 0 for subscriptions to never expire.</p></td></tr><tr><td><p><strong>default_renewal_period</strong></p></td><td><p></p></td><td><p>Renewal period: Number of days a subscription lasts after being renewed. You can customize the lengths of individual renewals, but this is what's used for auto-renewed and user-renewed memberships.</p></td></tr><tr><td><p><strong>display_name</strong></p></td><td><p><small>(required)</small></p></td><td><p>Display Name: This team's name as you would like it displayed throughout Launchpad.</p></td></tr><tr><td><p><strong>name</strong></p></td><td><p><small>(required)</small></p></td><td><p>Name: A short unique name, beginning with a lower-case letter or number, and containing only letters, numbers, dots, hyphens, or plus signs.</p></td></tr><tr><td><p><strong>subscription_policy</strong></p></td><td><p></p><p><em>One of:</em></p><ul><li><tt>Moderated Team</tt></li><li><tt>Open Team</tt></li><li><tt>Restricted Team</tt></li></ul></td><td><p>&lt;strong&gt;Subscription policy&lt;/strong&gt;</p></td></tr><tr><td><p><strong>team_description</strong></p></td><td><p></p></td><td><p>Team Description: Use plain text; URLs will be linkified</p></td></tr></table>
+                <var>newTeam</var></p></td><td><p>The name of the operation being invoked.</p></td></tr><tr><td><p><strong>default_membership_period</strong></p></td><td><p></p></td><td><p>
+<p>Subscription period</p>
+<p>Number of days a new subscription lasts before expiring. You can customize the length of an individual subscription when approving it. Leave this empty or set to 0 for subscriptions to never expire.</p>
+
+</p></td></tr><tr><td><p><strong>default_renewal_period</strong></p></td><td><p></p></td><td><p>
+<p>Renewal period</p>
+<p>Number of days a subscription lasts after being renewed. You can customize the lengths of individual renewals, but this is what's used for auto-renewed and user-renewed memberships.</p>
+
+</p></td></tr><tr><td><p><strong>display_name</strong></p></td><td><p><small>(required)</small></p></td><td><p>
+<p>Display Name</p>
+<p>Your name as you would like it displayed throughout Launchpad. Most people use their full name here.</p>
+
+</p></td></tr><tr><td><p><strong>name</strong></p></td><td><p><small>(required)</small></p></td><td><p>
+<p>Name</p>
+<p>A short unique name, beginning with a lower-case letter or number, and containing only letters, numbers, dots, hyphens, or plus signs.</p>
+
+</p></td></tr><tr><td><p><strong>subscription_policy</strong></p></td><td><p></p><p><em>One of:</em></p><ul><li><tt>Moderated Team</tt></li><li><tt>Open Team</tt></li><li><tt>Restricted Team</tt></li></ul></td><td><p>
+Subscription policy
+</p></td></tr><tr><td><p><strong>team_description</strong></p></td><td><p></p></td><td><p>
+<p>Team Description</p>
+<p>Use plain text; URLs will be linkified</p>
+
+</p></td></tr></table>
           <p>On success, the response status will be 201 and the 
             <var>Location</var> header will contain the link to the newly 
             created <a href="#team">team</a>.
@@ -193,6 +299,13 @@
     </div>
     <h2 id="entry-types">Entry types</h2>
     <h3 id="bug">bug</h3>
+    <p>
+The core bug entry.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/bugs/<var>&lt;id&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -210,7 +323,9 @@
                 Link to a <a href="#bug_attachment">bug_attachment</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;List of bug attachments.&lt;/strong&gt;</p>
+            <p>
+List of bug attachments.
+</p>
           </td>
         </tr>
         <tr>
@@ -223,7 +338,9 @@
                 Link to a <a href="#bug_task">bug_task</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;BugTasks on this bug, sorted upstream, then ubuntu, then other distroseriess.&lt;/strong&gt;</p>
+            <p>
+BugTasks on this bug, sorted upstream, then ubuntu, then other distroseriess.
+</p>
           </td>
         </tr>
         <tr>
@@ -236,7 +353,9 @@
                 Link to a <a href="#bug_watch">bug_watch</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All bug watches associated with this bug.&lt;/strong&gt;</p>
+            <p>
+All bug watches associated with this bug.
+</p>
           </td>
         </tr>
         <tr>
@@ -251,7 +370,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Date Created&lt;/strong&gt;</p>
+            <p>
+Date Created
+</p>
           </td>
         </tr>
         <tr>
@@ -266,7 +387,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Date of last bug message&lt;/strong&gt;</p>
+            <p>
+Date of last bug message
+</p>
           </td>
         </tr>
         <tr>
@@ -281,7 +404,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Date Last Updated&lt;/strong&gt;</p>
+            <p>
+Date Last Updated
+</p>
           </td>
         </tr>
         <tr>
@@ -296,7 +421,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Date Made Private&lt;/strong&gt;</p>
+            <p>
+Date Made Private
+</p>
           </td>
         </tr>
         <tr>
@@ -311,8 +438,14 @@
             </p>
           </td>
           <td>
-            <p>Description: A detailed description of the problem,
-                 including the steps required to reproduce it.</p>
+            <p>
+<p>Description</p>
+<dl class="rst-docutils">
+<dt>A detailed description of the problem,</dt>
+<dd>including the steps required to reproduce it.</dd>
+</dl>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -325,7 +458,9 @@
                 Link to a <a href="#bug">bug</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Duplicate Of&lt;/strong&gt;</p>
+            <p>
+Duplicate Of
+</p>
           </td>
         </tr>
         <tr>
@@ -338,7 +473,9 @@
                 Link to a <a href="#bug">bug</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;MultiJoin of the bugs which are dups of this one&lt;/strong&gt;</p>
+            <p>
+MultiJoin of the bugs which are dups of this one
+</p>
           </td>
         </tr>
         <tr>
@@ -353,7 +490,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Bug ID&lt;/strong&gt;</p>
+            <p>
+Bug ID
+</p>
           </td>
         </tr>
         <tr>
@@ -366,7 +505,9 @@
                 Link to a <a href="#message">message</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;The messages related to this object, in reverse order of creation (so newest first).&lt;/strong&gt;</p>
+            <p>
+The messages related to this object, in reverse order of creation (so newest first).
+</p>
           </td>
         </tr>
         <tr>
@@ -381,9 +522,15 @@
             </p>
           </td>
           <td>
-            <p>Nickname: A short and unique name.
-                Add one only if you often need to retype the URL
-                but have trouble remembering the bug number.</p>
+            <p>
+<p>Nickname</p>
+<dl class="rst-docutils">
+<dt>A short and unique name.</dt>
+<dd>Add one only if you often need to retype the URL
+but have trouble remembering the bug number.</dd>
+</dl>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -396,7 +543,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;The owner's IPerson&lt;/strong&gt;</p>
+            <p>
+The owner's IPerson
+</p>
           </td>
         </tr>
         <tr>
@@ -411,7 +560,11 @@
             </p>
           </td>
           <td>
-            <p>This bug report should be private: Private bug reports are visible only to their subscribers.</p>
+            <p>
+<p>This bug report should be private</p>
+<p>Private bug reports are visible only to their subscribers.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -443,7 +596,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;This bug is a security vulnerability&lt;/strong&gt;</p>
+            <p>
+This bug is a security vulnerability
+</p>
           </td>
         </tr>
         <tr>
@@ -471,7 +626,9 @@
                 Link to a <a href="#bug_subscription">bug_subscription</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;Subscriptions.&lt;/strong&gt;</p>
+            <p>
+Subscriptions.
+</p>
           </td>
         </tr>
         <tr>
@@ -486,7 +643,11 @@
             </p>
           </td>
           <td>
-            <p>Tags: Separated by whitespace.</p>
+            <p>
+<p>Tags</p>
+<p>Separated by whitespace.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -501,7 +662,11 @@
             </p>
           </td>
           <td>
-            <p>Summary: A one-line summary of the problem.</p>
+            <p>
+<p>Summary</p>
+<p>A one-line summary of the problem.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -514,7 +679,11 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>Who Made Private: The person who set this bug private.</p>
+            <p>
+<p>Who Made Private</p>
+<p>The person who set this bug private.</p>
+
+</p>
           </td>
         </tr>
       </table>
@@ -542,8 +711,11 @@
     </dl>
     <div id="bug-custom-POSTs" class="methods POSTs">
       <h4>Custom POST methods</h4>
-      <div class="method"><h5 id="bug-addAttachment">addAttachment</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+      <div class="method"><h5 id="bug-addAttachment">addAttachment</h5><p>
+<p>Attach a file to this bug.</p>
+
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
                 <var>addAttachment</var></p></td><td></td></tr><tr><td><p><strong>comment</strong></p></td><td><p><small>(required)</small></p></td><td></td></tr><tr><td><p><strong>content_type</strong></p></td><td><p></p></td><td></td></tr><tr><td><p><strong>data</strong></p></td><td><p><small>(required)</small></p>
                 Link to a file resource.
@@ -554,12 +726,22 @@
         </p>
           
         </div>
-      <div class="method"><h5 id="bug-addWatch">addWatch</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+      <div class="method"><h5 id="bug-addWatch">addWatch</h5><p>
+Create a new watch for this bug on the given remote bug and bug
+tracker, owned by the person given as the owner.
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
                 <var>addWatch</var></p></td><td></td></tr><tr><td><p><strong>bug_tracker</strong></p></td><td><p><small>(required)</small></p>
                 Link to a <a href="#bug_tracker">bug_tracker</a>.
-            </td><td><p>Bug System: You can register new bug trackers from the Launchpad Bugs home page.</p></td></tr><tr><td><p><strong>remote_bug</strong></p></td><td><p><small>(required)</small></p></td><td><p>Remote Bug: The bug number of this bug in the remote bug tracker.</p></td></tr></table>
+            </td><td><p>
+<p>Bug System</p>
+<p>You can register new bug trackers from the Launchpad Bugs home page.</p>
+
+</p></td></tr><tr><td><p><strong>remote_bug</strong></p></td><td><p><small>(required)</small></p></td><td><p>
+<p>Remote Bug</p>
+<p>The bug number of this bug in the remote bug tracker.</p>
+
+</p></td></tr></table>
           <p>On success, the response status will be 201 and the 
             <var>Location</var> header will contain the link to the newly 
             created <a href="#bug_watch">bug_watch</a>.
@@ -568,8 +750,12 @@
         </div>
       <div class="method">
         <h5 id="bug-subscribe">subscribe</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Subscribe person to the bug.</p>
+
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -602,15 +788,19 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Person&lt;/strong&gt;</p>
+              <p>
+Person
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="bug-unsubscribe">unsubscribe</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+Remove this person's subscription to this bug.
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -637,6 +827,13 @@
       </div>
     </div>
     <h3 id="bug_attachment">bug_attachment</h3>
+    <p>
+A file attachment to an IBug.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/bugs/<var>&lt;bug.id&gt;</var>/attachments/<var>&lt;id&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -654,7 +851,9 @@
                 Link to a <a href="#bug">bug</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;The bug the attachment belongs to.&lt;/strong&gt;</p>
+            <p>
+The bug the attachment belongs to.
+</p>
           </td>
         </tr>
         <tr>
@@ -667,7 +866,9 @@
                 Link to a file resource.
             </td>
           <td>
-            <p>&lt;strong&gt;The attachment content.&lt;/strong&gt;</p>
+            <p>
+The attachment content.
+</p>
           </td>
         </tr>
         <tr>
@@ -680,7 +881,9 @@
                 Link to a <a href="#message">message</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;The message that was created when we added this attachment.&lt;/strong&gt;</p>
+            <p>
+The message that was created when we added this attachment.
+</p>
           </td>
         </tr>
         <tr>
@@ -727,7 +930,11 @@
             </p>
           </td>
           <td>
-            <p>Title: A short and descriptive description of the attachment</p>
+            <p>
+<p>Title</p>
+<p>A short and descriptive description of the attachment</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -753,7 +960,11 @@
             </ul>
           </td>
           <td>
-            <p>Attachment Type: The type of the attachment, for example Patch or Unspecified.</p>
+            <p>
+<p>Attachment Type</p>
+<p>The type of the attachment, for example Patch or Unspecified.</p>
+
+</p>
           </td>
         </tr>
       </table>
@@ -780,6 +991,13 @@
         </dd>
     </dl>
     <h3 id="bug_subscription">bug_subscription</h3>
+    <p>
+The relationship between a person and a bug.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/bugs/<var>&lt;bug.id&gt;</var>/subscriptions/<var>&lt;subscriber.name&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -797,7 +1015,9 @@
                 Link to a <a href="#bug">bug</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Bug&lt;/strong&gt;</p>
+            <p>
+Bug
+</p>
           </td>
         </tr>
         <tr>
@@ -810,7 +1030,11 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>Person: The person's Launchpad ID or e-mail address. You can only subscribe someone who has a Launchpad account.</p>
+            <p>
+<p>Person</p>
+<p>The person's Launchpad ID or e-mail address. You can only subscribe someone who has a Launchpad account.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -855,7 +1079,11 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>Subscribed by: The person who created this subscription.</p>
+            <p>
+<p>Subscribed by</p>
+<p>The person who created this subscription.</p>
+
+</p>
           </td>
         </tr>
       </table>
@@ -882,6 +1110,13 @@
         </dd>
     </dl>
     <h3 id="bug_task">bug_task</h3>
+    <p>
+A bug needing fixing in a particular product or package.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;target.name&gt;</var>/+bug/<var>&lt;bug.id&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -899,7 +1134,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Assigned to&lt;/strong&gt;</p>
+            <p>
+Assigned to
+</p>
           </td>
         </tr>
         <tr>
@@ -912,7 +1149,9 @@
                 Link to a <a href="#bug">bug</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Bug&lt;/strong&gt;</p>
+            <p>
+Bug
+</p>
           </td>
         </tr>
         <tr>
@@ -927,7 +1166,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;The short, descriptive name of the target&lt;/strong&gt;</p>
+            <p>
+The short, descriptive name of the target
+</p>
           </td>
         </tr>
         <tr>
@@ -942,7 +1183,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;The target as presented in mail notifications&lt;/strong&gt;</p>
+            <p>
+The target as presented in mail notifications
+</p>
           </td>
         </tr>
         <tr>
@@ -957,7 +1200,11 @@
             </p>
           </td>
           <td>
-            <p>Remote Bug Details: Select the bug watch that represents this task in the relevant bug tracker. If none of the bug watches represents this particular bug task, leave it as (None). Linking the remote bug watch with the task in this way means that a change in the remote bug status will change the status of this bug task in Launchpad.</p>
+            <p>
+<p>Remote Bug Details</p>
+<p>Select the bug watch that represents this task in the relevant bug tracker. If none of the bug watches represents this particular bug task, leave it as (None). Linking the remote bug watch with the task in this way means that a change in the remote bug status will change the status of this bug task in Launchpad.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -972,7 +1219,11 @@
             </p>
           </td>
           <td>
-            <p>Date Assigned: The date on which this task was assigned to someone.</p>
+            <p>
+<p>Date Assigned</p>
+<p>The date on which this task was assigned to someone.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -987,7 +1238,11 @@
             </p>
           </td>
           <td>
-            <p>Date Closed: The date on which this task was marked either Fix Committed or Fix Released.</p>
+            <p>
+<p>Date Closed</p>
+<p>The date on which this task was marked either Fix Committed or Fix Released.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1002,7 +1257,11 @@
             </p>
           </td>
           <td>
-            <p>Date Confirmed: The date on which this task was marked Confirmed.</p>
+            <p>
+<p>Date Confirmed</p>
+<p>The date on which this task was marked Confirmed.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1017,7 +1276,11 @@
             </p>
           </td>
           <td>
-            <p>Date Created: The date on which this task was created.</p>
+            <p>
+<p>Date Created</p>
+<p>The date on which this task was created.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1032,7 +1295,11 @@
             </p>
           </td>
           <td>
-            <p>Date Fix Committed: The date on which this task was marked Fix Committed.</p>
+            <p>
+<p>Date Fix Committed</p>
+<p>The date on which this task was marked Fix Committed.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1047,7 +1314,11 @@
             </p>
           </td>
           <td>
-            <p>Date Fix Relesaed: The date on which this task was marked Fix Released.</p>
+            <p>
+<p>Date Fix Relesaed</p>
+<p>The date on which this task was marked Fix Released.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1062,7 +1333,11 @@
             </p>
           </td>
           <td>
-            <p>Date In Progress: The date on which this task was marked In Progress.</p>
+            <p>
+<p>Date In Progress</p>
+<p>The date on which this task was marked In Progress.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1077,7 +1352,11 @@
             </p>
           </td>
           <td>
-            <p>Date left new: The date on which this task was marked with a status higher than New.</p>
+            <p>
+<p>Date left new</p>
+<p>The date on which this task was marked with a status higher than New.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1092,7 +1371,11 @@
             </p>
           </td>
           <td>
-            <p>Date Triaged: The date on which this task was marked Triaged.</p>
+            <p>
+<p>Date Triaged</p>
+<p>The date on which this task was marked Triaged.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1133,7 +1416,9 @@
             </ul>
           </td>
           <td>
-            <p>&lt;strong&gt;Importance&lt;/strong&gt;</p>
+            <p>
+Importance
+</p>
           </td>
         </tr>
         <tr>
@@ -1148,7 +1433,9 @@
             </p>
           </td>
           <td>
-            <p>True or False depending on whether or not there is more  work required on this bug task.</p>
+            <p>
+True or False depending on whether or not there is more  work required on this bug task.
+</p>
           </td>
         </tr>
         <tr>
@@ -1161,7 +1448,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;The owner&lt;/strong&gt;</p>
+            <p>
+The owner
+</p>
           </td>
         </tr>
         <tr>
@@ -1174,7 +1463,9 @@
                 Link to a <a href="#bug_task">bug_task</a> collection.
             </td>
           <td>
-            <p>IBugTasks related to this one, namely other IBugTasks on the same IBug.</p>
+            <p>
+IBugTasks related to this one, namely other IBugTasks on the same IBug.
+</p>
           </td>
         </tr>
         <tr>
@@ -1256,7 +1547,9 @@
             </ul>
           </td>
           <td>
-            <p>&lt;strong&gt;Status&lt;/strong&gt;</p>
+            <p>
+Status
+</p>
           </td>
         </tr>
         <tr>
@@ -1271,7 +1564,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;The title of the bug related to this bugtask&lt;/strong&gt;</p>
+            <p>
+The title of the bug related to this bugtask
+</p>
           </td>
         </tr>
       </table>
@@ -1301,8 +1596,14 @@
       <h4>Custom POST methods</h4>
       <div class="method">
         <h5 id="bug_task-transitionToAssignee">transitionToAssignee</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Perform a workflow transition to the given assignee.</p>
+<p>When the bugtask assignee is changed from None to an IPerson
+object, the date_assigned is set on the task. If the assignee
+value is set to None, date_assigned is also set to None.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -1335,15 +1636,22 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Assigned to&lt;/strong&gt;</p>
+              <p>
+Assigned to
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="bug_task-transitionToImportance">transitionToImportance</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Set the BugTask importance.</p>
+<p>Set the bugtask importance, making sure that the user is
+authorised to do so.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -1402,15 +1710,26 @@
               </ul>
             </td>
             <td>
-              <p>&lt;strong&gt;Importance&lt;/strong&gt;</p>
+              <p>
+Importance
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="bug_task-transitionToStatus">transitionToStatus</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Perform a workflow transition to the new_status.</p>
+
+<p>For certain statuses, e.g. Confirmed, other actions will
+happen, like recording the date when the task enters this
+status.</p>
+<p>Some status transitions require extra conditions to be met.
+See canTransitionToStatus for more details.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -1478,13 +1797,22 @@
               </ul>
             </td>
             <td>
-              <p>&lt;strong&gt;Status&lt;/strong&gt;</p>
+              <p>
+Status
+</p>
             </td>
           </tr>
         </table>
       </div>
     </div>
     <h3 id="bug_tracker">bug_tracker</h3>
+    <p>
+A remote bug system.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/bugs/bugtrackers/<var>&lt;name&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -1504,7 +1832,11 @@
             </p>
           </td>
           <td>
-            <p>Location: The top-level URL for the bug tracker, or an upstream email address. This must be accurate so that Launchpad can link to external bug reports.</p>
+            <p>
+<p>Location</p>
+<p>The top-level URL for the bug tracker, or an upstream email address. This must be accurate so that Launchpad can link to external bug reports.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1519,7 +1851,11 @@
             </p>
           </td>
           <td>
-            <p>Location aliases: A list of URLs or email addresses that all lead to the same bug tracker, or commonly seen typos, separated by whitespace.</p>
+            <p>
+<p>Location aliases</p>
+<p>A list of URLs or email addresses that all lead to the same bug tracker, or commonly seen typos, separated by whitespace.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1569,7 +1905,9 @@
             </ul>
           </td>
           <td>
-            <p>&lt;strong&gt;Bug Tracker Type&lt;/strong&gt;</p>
+            <p>
+Bug Tracker Type
+</p>
           </td>
         </tr>
         <tr>
@@ -1584,7 +1922,11 @@
             </p>
           </td>
           <td>
-            <p>Contact details: The contact details for the external bug tracker (so that, for example, its administrators can be contacted about a security breach).</p>
+            <p>
+<p>Contact details</p>
+<p>The contact details for the external bug tracker (so that, for example, its administrators can be contacted about a security breach).</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1599,7 +1941,11 @@
             </p>
           </td>
           <td>
-            <p>Name: An URL-friendly name for the bug tracker, such as "mozilla-bugs".</p>
+            <p>
+<p>Name</p>
+<p>An URL-friendly name for the bug tracker, such as "mozilla-bugs".</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1612,7 +1958,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Owner&lt;/strong&gt;</p>
+            <p>
+Owner
+</p>
           </td>
         </tr>
         <tr>
@@ -1659,7 +2007,11 @@
             </p>
           </td>
           <td>
-            <p>Summary: A brief introduction or overview of this bug tracker instance.</p>
+            <p>
+<p>Summary</p>
+<p>A brief introduction or overview of this bug tracker instance.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1674,7 +2026,11 @@
             </p>
           </td>
           <td>
-            <p>Title: A descriptive label for this tracker to show in listings.</p>
+            <p>
+<p>Title</p>
+<p>A descriptive label for this tracker to show in listings.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1687,7 +2043,9 @@
                 Link to a <a href="#bug_watch">bug_watch</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;The remote watches on this bug tracker.&lt;/strong&gt;</p>
+            <p>
+The remote watches on this bug tracker.
+</p>
           </td>
         </tr>
       </table>
@@ -1714,6 +2072,13 @@
         </dd>
     </dl>
     <h3 id="bug_watch">bug_watch</h3>
+    <p>
+A bug on a remote system.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/bugs/<var>&lt;bug.id&gt;</var>/watch/<var>&lt;id&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -1731,7 +2096,9 @@
                 Link to a <a href="#bug">bug</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Bug&lt;/strong&gt;</p>
+            <p>
+Bug
+</p>
           </td>
         </tr>
         <tr>
@@ -1744,7 +2111,9 @@
                 Link to a <a href="#bug_task">bug_task</a> collection.
             </td>
           <td>
-            <p>The tasks which this watch will affect. In Launchpad, a bug watch can be linked to one or more tasks, and if it is linked and we notice a status change in the watched bug then we will try to update the Launchpad bug task accordingly.</p>
+            <p>
+The tasks which this watch will affect. In Launchpad, a bug watch can be linked to one or more tasks, and if it is linked and we notice a status change in the watched bug then we will try to update the Launchpad bug task accordingly.
+</p>
           </td>
         </tr>
         <tr>
@@ -1757,7 +2126,11 @@
                 Link to a <a href="#bug_tracker">bug_tracker</a>.
             </td>
           <td>
-            <p>Bug System: You can register new bug trackers from the Launchpad Bugs home page.</p>
+            <p>
+<p>Bug System</p>
+<p>You can register new bug trackers from the Launchpad Bugs home page.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1772,7 +2145,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Date Created&lt;/strong&gt;</p>
+            <p>
+Date Created
+</p>
           </td>
         </tr>
         <tr>
@@ -1787,7 +2162,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Last Changed&lt;/strong&gt;</p>
+            <p>
+Last Changed
+</p>
           </td>
         </tr>
         <tr>
@@ -1802,7 +2179,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Last Checked&lt;/strong&gt;</p>
+            <p>
+Last Checked
+</p>
           </td>
         </tr>
         <tr>
@@ -1849,7 +2228,9 @@
             </ul>
           </td>
           <td>
-            <p>&lt;strong&gt;Last Error Type&lt;/strong&gt;</p>
+            <p>
+Last Error Type
+</p>
           </td>
         </tr>
         <tr>
@@ -1862,7 +2243,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Owner&lt;/strong&gt;</p>
+            <p>
+Owner
+</p>
           </td>
         </tr>
         <tr>
@@ -1877,7 +2260,11 @@
             </p>
           </td>
           <td>
-            <p>Remote Bug: The bug number of this bug in the remote bug tracker.</p>
+            <p>
+<p>Remote Bug</p>
+<p>The bug number of this bug in the remote bug tracker.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -1892,7 +2279,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Remote Importance&lt;/strong&gt;</p>
+            <p>
+Remote Importance
+</p>
           </td>
         </tr>
         <tr>
@@ -1907,7 +2296,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Remote Status&lt;/strong&gt;</p>
+            <p>
+Remote Status
+</p>
           </td>
         </tr>
         <tr>
@@ -1954,7 +2345,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Bug watch title&lt;/strong&gt;</p>
+            <p>
+Bug watch title
+</p>
           </td>
         </tr>
         <tr>
@@ -1969,7 +2362,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;The URL at which to view the remote bug.&lt;/strong&gt;</p>
+            <p>
+The URL at which to view the remote bug.
+</p>
           </td>
         </tr>
       </table>
@@ -1996,6 +2391,13 @@
         </dd>
     </dl>
     <h3 id="email_address">email_address</h3>
+    <p>
+The object that stores the IPerson's emails.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;person.name&gt;</var>/+email/<var>&lt;email&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -2015,7 +2417,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Email Address&lt;/strong&gt;</p>
+            <p>
+Email Address
+</p>
           </td>
         </tr>
         <tr>
@@ -2028,7 +2432,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Person&lt;/strong&gt;</p>
+            <p>
+Person
+</p>
           </td>
         </tr>
         <tr>
@@ -2087,6 +2493,15 @@
         </dd>
     </dl>
     <h3 id="has_milestones">has_milestones</h3>
+    <p>
+An interface for classes providing milestones.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>
+        <em>depends on the underlying entry</em>
+      </code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -2150,6 +2565,13 @@
         </dd>
     </dl>
     <h3 id="irc_id">irc_id</h3>
+    <p>
+A person's nickname on an IRC network.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;person.name&gt;</var>/+ircnick/<var>&lt;id&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -2169,7 +2591,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;IRC network&lt;/strong&gt;</p>
+            <p>
+IRC network
+</p>
           </td>
         </tr>
         <tr>
@@ -2184,7 +2608,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Nickname&lt;/strong&gt;</p>
+            <p>
+Nickname
+</p>
           </td>
         </tr>
         <tr>
@@ -2197,7 +2623,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Owner&lt;/strong&gt;</p>
+            <p>
+Owner
+</p>
           </td>
         </tr>
         <tr>
@@ -2256,6 +2684,13 @@
         </dd>
     </dl>
     <h3 id="jabber_id">jabber_id</h3>
+    <p>
+Jabber specific user ID
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;person.name&gt;</var>/+jabberid/<var>&lt;id&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -2275,7 +2710,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Jabber user ID&lt;/strong&gt;</p>
+            <p>
+Jabber user ID
+</p>
           </td>
         </tr>
         <tr>
@@ -2288,7 +2725,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Owner&lt;/strong&gt;</p>
+            <p>
+Owner
+</p>
           </td>
         </tr>
         <tr>
@@ -2347,6 +2786,13 @@
         </dd>
     </dl>
     <h3 id="language">language</h3>
+    <p>
+A Language.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/+languages/<var>&lt;code&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -2410,6 +2856,16 @@
         </dd>
     </dl>
     <h3 id="message">message</h3>
+    <p>
+<p>A message.</p>
+<p>This is like an email (RFC822) message, though it could be created through
+the web as well.</p>
+
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;target.name&gt;</var>/+bug/<var>&lt;bug.id&gt;</var>/comments/<var>&lt;index&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -2427,7 +2883,9 @@
                 Link to a <a href="#bug_attachment">bug_attachment</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;A list of BugAttachments connected to this message.&lt;/strong&gt;</p>
+            <p>
+A list of BugAttachments connected to this message.
+</p>
           </td>
         </tr>
         <tr>
@@ -2442,7 +2900,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;All the text/plain chunks joined together as a unicode string.&lt;/strong&gt;</p>
+            <p>
+All the text/plain chunks joined together as a unicode string.
+</p>
           </td>
         </tr>
         <tr>
@@ -2457,7 +2917,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Date Created&lt;/strong&gt;</p>
+            <p>
+Date Created
+</p>
           </td>
         </tr>
         <tr>
@@ -2470,7 +2932,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Person&lt;/strong&gt;</p>
+            <p>
+Person
+</p>
           </td>
         </tr>
         <tr>
@@ -2483,7 +2947,9 @@
                 Link to a <a href="#message">message</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Parent&lt;/strong&gt;</p>
+            <p>
+Parent
+</p>
           </td>
         </tr>
         <tr>
@@ -2530,7 +2996,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Subject&lt;/strong&gt;</p>
+            <p>
+Subject
+</p>
           </td>
         </tr>
       </table>
@@ -2557,6 +3025,14 @@
         </dd>
     </dl>
     <h3 id="milestone">milestone</h3>
+    <p>
+A milestone, or a targeting point for bugs and other
+release-management items that need coordination.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;target.name&gt;</var>/+milestone/<var>&lt;name&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -2576,7 +3052,11 @@
             </p>
           </td>
           <td>
-            <p>Name: Only letters, numbers, and simple punctuation are allowed.</p>
+            <p>
+<p>Name</p>
+<p>Only letters, numbers, and simple punctuation are allowed.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -2621,7 +3101,9 @@
                 Link to a <a href="#has_milestones">has_milestones</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;The product or distribution of this milestone.&lt;/strong&gt;</p>
+            <p>
+The product or distribution of this milestone.
+</p>
           </td>
         </tr>
       </table>
@@ -2648,6 +3130,13 @@
         </dd>
     </dl>
     <h3 id="person">person</h3>
+    <p>
+A Person.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;name&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -2665,7 +3154,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;List of this team's admins.&lt;/strong&gt;</p>
+            <p>
+List of this team's admins.
+</p>
           </td>
         </tr>
         <tr>
@@ -2678,7 +3169,11 @@
                 Link to a <a href="#email_address">email_address</a> collection.
             </td>
           <td>
-            <p>Confirmed e-mails of this person.: Confirmed e-mails are the ones in the VALIDATED state</p>
+            <p>
+<p>Confirmed e-mails of this person.</p>
+<p>Confirmed e-mails are the ones in the VALIDATED state</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -2693,7 +3188,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Date Created&lt;/strong&gt;</p>
+            <p>
+Date Created
+</p>
           </td>
         </tr>
         <tr>
@@ -2706,7 +3203,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All members whose membership is in the DEACTIVATED state&lt;/strong&gt;</p>
+            <p>
+All members whose membership is in the DEACTIVATED state
+</p>
           </td>
         </tr>
         <tr>
@@ -2721,7 +3220,11 @@
             </p>
           </td>
           <td>
-            <p>Display Name: Your name as you would like it displayed throughout Launchpad. Most people use their full name here.</p>
+            <p>
+<p>Display Name</p>
+<p>Your name as you would like it displayed throughout Launchpad. Most people use their full name here.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -2734,7 +3237,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All members whose membership is in the EXPIRED state&lt;/strong&gt;</p>
+            <p>
+All members whose membership is in the EXPIRED state
+</p>
           </td>
         </tr>
         <tr>
@@ -2749,7 +3254,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Hide my email addresses from other Launchpad users&lt;/strong&gt;</p>
+            <p>
+Hide my email addresses from other Launchpad users
+</p>
           </td>
         </tr>
         <tr>
@@ -2764,7 +3271,11 @@
             </p>
           </td>
           <td>
-            <p>Homepage Content: The content of your home page. Edit this and it will be displayed for all the world to see.</p>
+            <p>
+<p>Homepage Content</p>
+<p>The content of your home page. Edit this and it will be displayed for all the world to see.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -2777,7 +3288,9 @@
                 Link to a <a href="#team">team</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All teams in which this person is an indirect member.&lt;/strong&gt;</p>
+            <p>
+All teams in which this person is an indirect member.
+</p>
           </td>
         </tr>
         <tr>
@@ -2790,7 +3303,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All members whose membership is in the INVITED state&lt;/strong&gt;</p>
+            <p>
+All members whose membership is in the INVITED state
+</p>
           </td>
         </tr>
         <tr>
@@ -2803,7 +3318,9 @@
                 Link to a <a href="#irc_id">irc_id</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;List of IRC nicknames of this Person.&lt;/strong&gt;</p>
+            <p>
+List of IRC nicknames of this Person.
+</p>
           </td>
         </tr>
         <tr>
@@ -2818,7 +3335,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Is this object a team?&lt;/strong&gt;</p>
+            <p>
+Is this object a team?
+</p>
           </td>
         </tr>
         <tr>
@@ -2833,7 +3352,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;This is an active user or a team.&lt;/strong&gt;</p>
+            <p>
+This is an active user or a team.
+</p>
           </td>
         </tr>
         <tr>
@@ -2846,7 +3367,9 @@
                 Link to a <a href="#jabber_id">jabber_id</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;List of Jabber IDs of this Person.&lt;/strong&gt;</p>
+            <p>
+List of Jabber IDs of this Person.
+</p>
           </td>
         </tr>
         <tr>
@@ -2861,7 +3384,11 @@
             </p>
           </td>
           <td>
-            <p>Karma: The cached total karma for this person.</p>
+            <p>
+<p>Karma</p>
+<p>The cached total karma for this person.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -2874,7 +3401,9 @@
                 Link to a <a href="#language">language</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;List of languages known by this person&lt;/strong&gt;</p>
+            <p>
+List of languages known by this person
+</p>
           </td>
         </tr>
         <tr>
@@ -2889,7 +3418,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;The latitude of this object.&lt;/strong&gt;</p>
+            <p>
+The latitude of this object.
+</p>
           </td>
         </tr>
         <tr>
@@ -2904,7 +3435,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;The longitude of this object.&lt;/strong&gt;</p>
+            <p>
+The longitude of this object.
+</p>
           </td>
         </tr>
         <tr>
@@ -2933,7 +3466,11 @@
             </ul>
           </td>
           <td>
-            <p>Mailing List Auto-subscription Policy: This attribute determines whether a person is automatically subscribed to a team's mailing list when the person joins said team.</p>
+            <p>
+<p>Mailing List Auto-subscription Policy</p>
+<p>This attribute determines whether a person is automatically subscribed to a team's mailing list when the person joins said team.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -2946,7 +3483,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;List of members with ADMIN or APPROVED status&lt;/strong&gt;</p>
+            <p>
+List of members with ADMIN or APPROVED status
+</p>
           </td>
         </tr>
         <tr>
@@ -2959,7 +3498,11 @@
                 Link to a <a href="#team_membership">team_membership</a> collection.
             </td>
           <td>
-            <p>Active `ITeamMembership`s for this object's members.: Active TeamMemberships are the ones with the ADMIN or APPROVED status.  The results are ordered using Person.sortingColumns.</p>
+            <p>
+<p>Active TeamMemberships for this object's members.</p>
+<p>Active TeamMemberships are the ones with the ADMIN or APPROVED status.  The results are ordered using Person.sortingColumns.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -2972,7 +3515,9 @@
                 Link to a <a href="#team_membership">team_membership</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All `ITeamMembership`s for Teams this Person is an active member of.&lt;/strong&gt;</p>
+            <p>
+All TeamMemberships for Teams this Person is an active member of.
+</p>
           </td>
         </tr>
         <tr>
@@ -2985,7 +3530,11 @@
                 Link to a file resource.
             </td>
           <td>
-            <p>Mugshot: A large image of exactly 192x192 pixels, that will be displayed on your home page in Launchpad. Traditionally this is a great big picture of your grinning face. Make the most of it! It should be no bigger than 100kb in size. </p>
+            <p>
+<p>Mugshot</p>
+<p>A large image of exactly 192x192 pixels, that will be displayed on your home page in Launchpad. Traditionally this is a great big picture of your grinning face. Make the most of it! It should be no bigger than 100kb in size.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -3000,7 +3549,11 @@
             </p>
           </td>
           <td>
-            <p>Name: A short unique name, beginning with a lower-case letter or number, and containing only letters, numbers, dots, hyphens, or plus signs.</p>
+            <p>
+<p>Name</p>
+<p>A short unique name, beginning with a lower-case letter or number, and containing only letters, numbers, dots, hyphens, or plus signs.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -3013,7 +3566,11 @@
                 Link to a <a href="#team_membership">team_membership</a> collection.
             </td>
           <td>
-            <p>Open membership invitations.: All TeamMemberships which represent an invitation (to join a team) sent to this person.</p>
+            <p>
+<p>Open membership invitations.</p>
+<p>All TeamMemberships which represent an invitation (to join a team) sent to this person.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -3026,7 +3583,11 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>All participants of this team.: List of all direct and indirect people and teams who, one way or another, are a part of this team. If you want a method to check if a given person is a member of a team, you should probably look at IPerson.inTeam().</p>
+            <p>
+<p>All participants of this team.</p>
+<p>List of all direct and indirect people and teams who, one way or another, are a part of this team. If you want a method to check if a given person is a member of a team, you should probably look at IPerson.inTeam().</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -3039,7 +3600,9 @@
                 Link to a <a href="#team">team</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All teams in which this person is a participant.&lt;/strong&gt;</p>
+            <p>
+All teams in which this person is a participant.
+</p>
           </td>
         </tr>
         <tr>
@@ -3052,7 +3615,11 @@
                 Link to a <a href="#email_address">email_address</a>.
             </td>
           <td>
-            <p>Preferred email address: The preferred email address for this person. The one we'll use to communicate with them.</p>
+            <p>
+<p>Preferred email address</p>
+<p>The preferred email address for this person. The one we'll use to communicate with them.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -3065,7 +3632,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All members whose membership is in the PROPOSED state&lt;/strong&gt;</p>
+            <p>
+All members whose membership is in the PROPOSED state
+</p>
           </td>
         </tr>
         <tr>
@@ -3110,20 +3679,25 @@
                 Link to a <a href="#team">team</a> collection.
             </td>
           <td>
-            <p>All subteams of this team.: 
-                A subteam is any team that is a member (either directly or
-                indirectly) of this team. As an example, let's say we have
-                this hierarchy of teams:
+            <p>
+<p>All subteams of this team.</p>
+<p>A subteam is any team that is a member (either directly or
+indirectly) of this team. As an example, let's say we have
+this hierarchy of teams:</p>
+<dl class="rst-docutils">
+<dt>Rosetta Translators</dt>
+<dd><dl class="rst-first rst-last rst-docutils">
+<dt>Rosetta pt Translators</dt>
+<dd>Rosetta pt_BR Translators</dd>
+</dl>
+</dd>
+</dl>
+<p>In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
+Translators' are subteams of the 'Rosetta Translators' team,
+and all members of both subteams are considered members of
+"Rosetta Translators".</p>
 
-                Rosetta Translators
-                    Rosetta pt Translators
-                        Rosetta pt_BR Translators
-
-                In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
-                Translators' are subteams of the 'Rosetta Translators' team,
-                and all members of both subteams are considered members of
-                "Rosetta Translators".
-                </p>
+</p>
           </td>
         </tr>
         <tr>
@@ -3136,18 +3710,23 @@
                 Link to a <a href="#team">team</a> collection.
             </td>
           <td>
-            <p>All superteams of this team.: 
-                A superteam is any team that this team is a member of. For
-                example, let's say we have this hierarchy of teams, and we are
-                the "Rosetta pt_BR Translators":
+            <p>
+<p>All superteams of this team.</p>
+<p>A superteam is any team that this team is a member of. For
+example, let's say we have this hierarchy of teams, and we are
+the "Rosetta pt_BR Translators":</p>
+<dl class="rst-docutils">
+<dt>Rosetta Translators</dt>
+<dd><dl class="rst-first rst-last rst-docutils">
+<dt>Rosetta pt Translators</dt>
+<dd>Rosetta pt_BR Translators</dd>
+</dl>
+</dd>
+</dl>
+<p>In this case, we will return both 'Rosetta pt Translators' and
+'Rosetta Translators', because we are member of both of them.</p>
 
-                Rosetta Translators
-                    Rosetta pt Translators
-                        Rosetta pt_BR Translators
-
-                In this case, we will return both 'Rosetta pt Translators' and
-                'Rosetta Translators', because we are member of both of them.
-                </p>
+</p>
           </td>
         </tr>
         <tr>
@@ -3160,7 +3739,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Team Owner&lt;/strong&gt;</p>
+            <p>
+Team Owner
+</p>
           </td>
         </tr>
         <tr>
@@ -3175,7 +3756,11 @@
             </p>
           </td>
           <td>
-            <p>Time zone: The time zone of where you live.</p>
+            <p>
+<p>Time zone</p>
+<p>The time zone of where you live.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -3201,7 +3786,11 @@
             </ul>
           </td>
           <td>
-            <p>Visibility: Public visibility is standard, and Private Membership means that a team's members are hidden.</p>
+            <p>
+<p>Visibility</p>
+<p>Public visibility is standard, and Private Membership means that a team's members are hidden.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -3214,7 +3803,9 @@
                 Link to a <a href="#wiki_name">wiki_name</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All WikiNames of this Person.&lt;/strong&gt;</p>
+            <p>
+All WikiNames of this Person.
+</p>
           </td>
         </tr>
       </table>
@@ -3242,12 +3833,21 @@
     </dl>
     <div id="person-custom-GETs" class="methods GETs">
       <h4>Custom GET methods</h4>
-      <div class="method"><h5 id="person-findPathToTeam">findPathToTeam</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+      <div class="method"><h5 id="person-findPathToTeam">findPathToTeam</h5><p>
+<p>Return the teams that cause this person to be a participant of the
+given team.</p>
+<p>If there is more than one path leading this person to the given team,
+only the one with the oldest teams is returned.</p>
+<p>This method must not be called if this person is not an indirect
+member of the given team.</p>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
                 <var>findPathToTeam</var></p></td><td></td></tr><tr><td><p><strong>team</strong></p></td><td><p><small>(required)</small></p>
                 Link to a <a href="#person">person</a>.
-            </td><td><p>&lt;strong&gt;Team&lt;/strong&gt;</p></td></tr></table>
+            </td><td><p>
+Team
+</p></td></tr></table>
           
           <p class="response">Response contains an
             <code>application/json</code>
@@ -3257,10 +3857,15 @@
                 .
         </p>
         </div>
-      <div class="method"><h5 id="person-getMembersByStatus">getMembersByStatus</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+      <div class="method"><h5 id="person-getMembersByStatus">getMembersByStatus</h5><p>
+<p>Return the people whose membership on this team match :status:.</p>
+<p>If no orderby is provided, Person.sortingColumns is used.</p>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
-                <var>getMembersByStatus</var></p></td><td></td></tr><tr><td><p><strong>status</strong></p></td><td><p><small>(required)</small></p><p><em>One of:</em></p><ul><li><tt>Proposed</tt></li><li><tt>Approved</tt></li><li><tt>Administrator</tt></li><li><tt>Deactivated</tt></li><li><tt>Expired</tt></li><li><tt>Declined</tt></li><li><tt>Invited</tt></li><li><tt>Invitation declined</tt></li></ul></td><td><p>&lt;strong&gt;The state of this membership&lt;/strong&gt;</p></td></tr></table>
+                <var>getMembersByStatus</var></p></td><td></td></tr><tr><td><p><strong>status</strong></p></td><td><p><small>(required)</small></p><p><em>One of:</em></p><ul><li><tt>Proposed</tt></li><li><tt>Approved</tt></li><li><tt>Administrator</tt></li><li><tt>Deactivated</tt></li><li><tt>Expired</tt></li><li><tt>Declined</tt></li><li><tt>Invited</tt></li><li><tt>Invitation declined</tt></li></ul></td><td><p>
+The state of this membership
+</p></td></tr></table>
           
           <p class="response">Response contains an
             <code>application/json</code>
@@ -3272,8 +3877,16 @@
         </div>
       <div class="method">
         <h5 id="person-inTeam">inTeam</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Return True if this person is a member or the owner of &lt;team&gt;.</p>
+<p>This method is meant to be called by objects which implement either
+IPerson or ITeam, and it will return True when you ask if a Person is
+a member of himself (i.e. person1.inTeam(person1)).</p>
+<p>&lt;team&gt; can be the id of a team, an SQLObject representing the
+ITeam, or the name of the team.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -3306,7 +3919,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Team&lt;/strong&gt;</p>
+              <p>
+Team
+</p>
             </td>
           </tr>
         </table>
@@ -3316,8 +3931,14 @@
       <h4>Custom POST methods</h4>
       <div class="method">
         <h5 id="person-acceptInvitationToBeMemberOf">acceptInvitationToBeMemberOf</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Accept an invitation to become a member of the given team.</p>
+<p>There must be a TeamMembership for this person and the given team with
+the INVITED status. The status of this TeamMembership will be changed
+to APPROVED.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -3363,15 +3984,33 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Team&lt;/strong&gt;</p>
+              <p>
+Team
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="person-addMember">addMember</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Add the given person as a member of this team.</p>
+<p>If the given person is already a member of this team we'll simply
+change its membership status. Otherwise a new TeamMembership is
+created with the given status.</p>
+<p>If the person is actually a team and force_team_add is False, the
+team will actually be invited to join this one. Otherwise the team
+is added as if it were a person.</p>
+<p>If the the person is not a team, and may_subscribe_to_list
+is True, then the person may be subscribed to the team's
+mailing list, depending on the list status and the person's
+auto-subscribe settings.</p>
+<p>The given status must be either Approved, Proposed or Admin.</p>
+<p>The reviewer is the user who made the given person a member of this
+team.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -3415,7 +4054,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Member&lt;/strong&gt;</p>
+              <p>
+Member
+</p>
             </td>
           </tr>
           <tr>
@@ -3457,15 +4098,23 @@
               </ul>
             </td>
             <td>
-              <p>&lt;strong&gt;The state of this membership&lt;/strong&gt;</p>
+              <p>
+The state of this membership
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="person-declineInvitationToBeMemberOf">declineInvitationToBeMemberOf</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Decline an invitation to become a member of the given team.</p>
+<p>There must be a TeamMembership for this person and the given team with
+the INVITED status. The status of this TeamMembership will be changed
+to INVITATION_DECLINED.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -3511,15 +4160,33 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Team&lt;/strong&gt;</p>
+              <p>
+Team
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="person-join">join</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Join the given team if its subscriptionpolicy is not RESTRICTED.</p>
+<p>Join the given team according to the policies and defaults of that
+team:</p>
+<ul class="rst-simple">
+<li>If the team subscriptionpolicy is OPEN, the user is added as
+an APPROVED member with a NULL TeamMembership.reviewer.</li>
+<li>If the team subscriptionpolicy is MODERATED, the user is added as
+a PROPOSED member and one of the team's administrators have to
+approve the membership.</li>
+</ul>
+<p>If may_subscribe_to_list is True, then also attempt to
+subscribe to the team's mailing list, depending on the list
+status and the person's auto-subscribe settings.</p>
+
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -3552,15 +4219,27 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Team&lt;/strong&gt;</p>
+              <p>
+Team
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="person-leave">leave</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Leave the given team.</p>
+<p>If there's a membership entry for this person on the given team and
+its status is either APPROVED or ADMIN, we change the status to
+DEACTIVATED and remove the relevant entries in teamparticipation.</p>
+<p>Teams cannot call this method because they're not allowed to
+login and thus can't 'leave' another team. Instead, they have their
+subscription deactivated (using the setMembershipData() method) by
+a team administrator.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -3593,15 +4272,19 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Team&lt;/strong&gt;</p>
+              <p>
+Team
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="person-setLocation">setLocation</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+Specify the location and time zone of a person.
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -3636,7 +4319,9 @@
               </p>
             </td>
             <td>
-              <p>&lt;strong&gt;The latitude of this object.&lt;/strong&gt;</p>
+              <p>
+The latitude of this object.
+</p>
             </td>
           </tr>
           <tr>
@@ -3651,7 +4336,9 @@
               </p>
             </td>
             <td>
-              <p>&lt;strong&gt;The longitude of this object.&lt;/strong&gt;</p>
+              <p>
+The longitude of this object.
+</p>
             </td>
           </tr>
           <tr>
@@ -3666,13 +4353,27 @@
               </p>
             </td>
             <td>
-              <p>&lt;strong&gt;The time zone of this object.&lt;/strong&gt;</p>
+              <p>
+The time zone of this object.
+</p>
             </td>
           </tr>
         </table>
       </div>
     </div>
     <h3 id="product">product</h3>
+    <p>
+<p>A Product.</p>
+<p>The Launchpad Registry describes the open source world as Projects and
+Products. Each Project may be responsible for several Products.
+For example, the Mozilla Project has Firefox, Thunderbird and The
+Mozilla App Suite as Products, among others.</p>
+
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;name&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -3692,7 +4393,11 @@
             </p>
           </td>
           <td>
-            <p>Name: At least one lowercase letter or number, followed by letters, dots, hyphens or plusses. Keep this name short, as it is used in URLs.</p>
+            <p>
+<p>Name</p>
+<p>At least one lowercase letter or number, followed by letters, dots, hyphens or plusses. Keep this name short, as it is used in URLs.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -3707,7 +4412,11 @@
             </p>
           </td>
           <td>
-            <p>Part of: Super-project. In Launchpad, we can setup a special "project group" that is an overarching initiative that includes several related projects. For example, the Mozilla Project produces Firefox, Thunderbird and Gecko. This information is used to group those projects in a coherent way. If you make this project part of a group, the group preferences and decisions around bug tracking, translation and security policy will apply to this project.</p>
+            <p>
+<p>Part of</p>
+<p>Super-project. In Launchpad, we can setup a special "project group" that is an overarching initiative that includes several related projects. For example, the Mozilla Project produces Firefox, Thunderbird and Gecko. This information is used to group those projects in a coherent way. If you make this project part of a group, the group preferences and decisions around bug tracking, translation and security policy will apply to this project.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -3766,6 +4475,14 @@
         </dd>
     </dl>
     <h3 id="product_release">product_release</h3>
+    <p>
+A specific release (i.e. has a version) of a product. For example,
+Mozilla 1.7.2 or Apache 2.0.48.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;product.name&gt;</var>/<var>&lt;product_series.name&gt;</var>/<var>&lt;name&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -3785,7 +4502,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Release Series&lt;/strong&gt;</p>
+            <p>
+Release Series
+</p>
           </td>
         </tr>
         <tr>
@@ -3832,7 +4551,11 @@
             </p>
           </td>
           <td>
-            <p>Version: The specific version number assigned to this release. Letters and numbers are acceptable, for releases like "1.2rc3".</p>
+            <p>
+<p>Version</p>
+<p>The specific version number assigned to this release. Letters and numbers are acceptable, for releases like "1.2rc3".</p>
+
+</p>
           </td>
         </tr>
       </table>
@@ -3859,6 +4582,13 @@
         </dd>
     </dl>
     <h3 id="product_series">product_series</h3>
+    <p>
+A series of releases. For example '2.0' or '1.3' or 'dev'.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;product.name&gt;</var>/<var>&lt;name&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -3878,7 +4608,11 @@
             </p>
           </td>
           <td>
-            <p>Name: The name of the series is a short, unique name that identifies it, being used in URLs. It must be all lowercase, with no special characters. For example, '2.0' or 'trunk'.</p>
+            <p>
+<p>Name</p>
+<p>The name of the series is a short, unique name that identifies it, being used in URLs. It must be all lowercase, with no special characters. For example, '2.0' or 'trunk'.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -3893,7 +4627,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Project&lt;/strong&gt;</p>
+            <p>
+Project
+</p>
           </td>
         </tr>
         <tr>
@@ -3952,6 +4688,13 @@
         </dd>
     </dl>
     <h3 id="project">project</h3>
+    <p>
+A Project.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;name&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -3971,9 +4714,15 @@
             </p>
           </td>
           <td>
-            <p>Name: A unique name, used in URLs, identifying the project
-                group.  All lowercase, no special characters.
-                Examples: apache, mozilla, gimp.</p>
+            <p>
+<p>Name</p>
+<dl class="rst-docutils">
+<dt>A unique name, used in URLs, identifying the project</dt>
+<dd>group.  All lowercase, no special characters.
+Examples: apache, mozilla, gimp.</dd>
+</dl>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4032,6 +4781,15 @@
         </dd>
     </dl>
     <h3 id="team">team</h3>
+    <p>
+<p>ITeam extends IPerson.</p>
+<p>The teamowner should never be None.</p>
+
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;name&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -4049,7 +4807,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;List of this team's admins.&lt;/strong&gt;</p>
+            <p>
+List of this team's admins.
+</p>
           </td>
         </tr>
         <tr>
@@ -4062,7 +4822,11 @@
                 Link to a <a href="#email_address">email_address</a> collection.
             </td>
           <td>
-            <p>Confirmed e-mails of this person.: Confirmed e-mails are the ones in the VALIDATED state</p>
+            <p>
+<p>Confirmed e-mails of this person.</p>
+<p>Confirmed e-mails are the ones in the VALIDATED state</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4077,7 +4841,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Date Created&lt;/strong&gt;</p>
+            <p>
+Date Created
+</p>
           </td>
         </tr>
         <tr>
@@ -4090,7 +4856,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All members whose membership is in the DEACTIVATED state&lt;/strong&gt;</p>
+            <p>
+All members whose membership is in the DEACTIVATED state
+</p>
           </td>
         </tr>
         <tr>
@@ -4105,7 +4873,11 @@
             </p>
           </td>
           <td>
-            <p>Subscription period: Number of days a new subscription lasts before expiring. You can customize the length of an individual subscription when approving it. Leave this empty or set to 0 for subscriptions to never expire.</p>
+            <p>
+<p>Subscription period</p>
+<p>Number of days a new subscription lasts before expiring. You can customize the length of an individual subscription when approving it. Leave this empty or set to 0 for subscriptions to never expire.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4120,7 +4892,11 @@
             </p>
           </td>
           <td>
-            <p>Renewal period: Number of days a subscription lasts after being renewed. You can customize the lengths of individual renewals, but this is what's used for auto-renewed and user-renewed memberships.</p>
+            <p>
+<p>Renewal period</p>
+<p>Number of days a subscription lasts after being renewed. You can customize the lengths of individual renewals, but this is what's used for auto-renewed and user-renewed memberships.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4135,7 +4911,11 @@
             </p>
           </td>
           <td>
-            <p>Display Name: This team's name as you would like it displayed throughout Launchpad.</p>
+            <p>
+<p>Display Name</p>
+<p>Your name as you would like it displayed throughout Launchpad. Most people use their full name here.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4148,7 +4928,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All members whose membership is in the EXPIRED state&lt;/strong&gt;</p>
+            <p>
+All members whose membership is in the EXPIRED state
+</p>
           </td>
         </tr>
         <tr>
@@ -4163,7 +4945,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Hide my email addresses from other Launchpad users&lt;/strong&gt;</p>
+            <p>
+Hide my email addresses from other Launchpad users
+</p>
           </td>
         </tr>
         <tr>
@@ -4178,7 +4962,11 @@
             </p>
           </td>
           <td>
-            <p>Homepage Content: The content of your home page. Edit this and it will be displayed for all the world to see.</p>
+            <p>
+<p>Homepage Content</p>
+<p>The content of your home page. Edit this and it will be displayed for all the world to see.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4191,7 +4979,9 @@
                 Link to a <a href="#team">team</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All teams in which this person is an indirect member.&lt;/strong&gt;</p>
+            <p>
+All teams in which this person is an indirect member.
+</p>
           </td>
         </tr>
         <tr>
@@ -4204,7 +4994,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All members whose membership is in the INVITED state&lt;/strong&gt;</p>
+            <p>
+All members whose membership is in the INVITED state
+</p>
           </td>
         </tr>
         <tr>
@@ -4217,7 +5009,9 @@
                 Link to a <a href="#irc_id">irc_id</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;List of IRC nicknames of this Person.&lt;/strong&gt;</p>
+            <p>
+List of IRC nicknames of this Person.
+</p>
           </td>
         </tr>
         <tr>
@@ -4232,7 +5026,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Is this object a team?&lt;/strong&gt;</p>
+            <p>
+Is this object a team?
+</p>
           </td>
         </tr>
         <tr>
@@ -4247,7 +5043,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;This is an active user or a team.&lt;/strong&gt;</p>
+            <p>
+This is an active user or a team.
+</p>
           </td>
         </tr>
         <tr>
@@ -4260,7 +5058,9 @@
                 Link to a <a href="#jabber_id">jabber_id</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;List of Jabber IDs of this Person.&lt;/strong&gt;</p>
+            <p>
+List of Jabber IDs of this Person.
+</p>
           </td>
         </tr>
         <tr>
@@ -4275,7 +5075,11 @@
             </p>
           </td>
           <td>
-            <p>Karma: The cached total karma for this person.</p>
+            <p>
+<p>Karma</p>
+<p>The cached total karma for this person.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4288,7 +5092,9 @@
                 Link to a <a href="#language">language</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;List of languages known by this person&lt;/strong&gt;</p>
+            <p>
+List of languages known by this person
+</p>
           </td>
         </tr>
         <tr>
@@ -4303,7 +5109,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;The latitude of this object.&lt;/strong&gt;</p>
+            <p>
+The latitude of this object.
+</p>
           </td>
         </tr>
         <tr>
@@ -4318,7 +5126,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;The longitude of this object.&lt;/strong&gt;</p>
+            <p>
+The longitude of this object.
+</p>
           </td>
         </tr>
         <tr>
@@ -4347,7 +5157,11 @@
             </ul>
           </td>
           <td>
-            <p>Mailing List Auto-subscription Policy: This attribute determines whether a person is automatically subscribed to a team's mailing list when the person joins said team.</p>
+            <p>
+<p>Mailing List Auto-subscription Policy</p>
+<p>This attribute determines whether a person is automatically subscribed to a team's mailing list when the person joins said team.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4360,7 +5174,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;List of members with ADMIN or APPROVED status&lt;/strong&gt;</p>
+            <p>
+List of members with ADMIN or APPROVED status
+</p>
           </td>
         </tr>
         <tr>
@@ -4373,7 +5189,11 @@
                 Link to a <a href="#team_membership">team_membership</a> collection.
             </td>
           <td>
-            <p>Active `ITeamMembership`s for this object's members.: Active TeamMemberships are the ones with the ADMIN or APPROVED status.  The results are ordered using Person.sortingColumns.</p>
+            <p>
+<p>Active TeamMemberships for this object's members.</p>
+<p>Active TeamMemberships are the ones with the ADMIN or APPROVED status.  The results are ordered using Person.sortingColumns.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4386,7 +5206,9 @@
                 Link to a <a href="#team_membership">team_membership</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All `ITeamMembership`s for Teams this Person is an active member of.&lt;/strong&gt;</p>
+            <p>
+All TeamMemberships for Teams this Person is an active member of.
+</p>
           </td>
         </tr>
         <tr>
@@ -4399,7 +5221,11 @@
                 Link to a file resource.
             </td>
           <td>
-            <p>Mugshot: A large image of exactly 192x192 pixels, that will be displayed on the team page in Launchpad. It should be no bigger than 100kb in size. </p>
+            <p>
+<p>Mugshot</p>
+<p>A large image of exactly 192x192 pixels, that will be displayed on your home page in Launchpad. Traditionally this is a great big picture of your grinning face. Make the most of it! It should be no bigger than 100kb in size.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4414,7 +5240,11 @@
             </p>
           </td>
           <td>
-            <p>Name: A short unique name, beginning with a lower-case letter or number, and containing only letters, numbers, dots, hyphens, or plus signs.</p>
+            <p>
+<p>Name</p>
+<p>A short unique name, beginning with a lower-case letter or number, and containing only letters, numbers, dots, hyphens, or plus signs.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4427,7 +5257,11 @@
                 Link to a <a href="#team_membership">team_membership</a> collection.
             </td>
           <td>
-            <p>Open membership invitations.: All TeamMemberships which represent an invitation (to join a team) sent to this person.</p>
+            <p>
+<p>Open membership invitations.</p>
+<p>All TeamMemberships which represent an invitation (to join a team) sent to this person.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4440,7 +5274,11 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>All participants of this team.: List of all direct and indirect people and teams who, one way or another, are a part of this team. If you want a method to check if a given person is a member of a team, you should probably look at IPerson.inTeam().</p>
+            <p>
+<p>All participants of this team.</p>
+<p>List of all direct and indirect people and teams who, one way or another, are a part of this team. If you want a method to check if a given person is a member of a team, you should probably look at IPerson.inTeam().</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4453,7 +5291,9 @@
                 Link to a <a href="#team">team</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All teams in which this person is a participant.&lt;/strong&gt;</p>
+            <p>
+All teams in which this person is a participant.
+</p>
           </td>
         </tr>
         <tr>
@@ -4466,7 +5306,11 @@
                 Link to a <a href="#email_address">email_address</a>.
             </td>
           <td>
-            <p>Preferred email address: The preferred email address for this person. The one we'll use to communicate with them.</p>
+            <p>
+<p>Preferred email address</p>
+<p>The preferred email address for this person. The one we'll use to communicate with them.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4479,7 +5323,9 @@
                 Link to a <a href="#person">person</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All members whose membership is in the PROPOSED state&lt;/strong&gt;</p>
+            <p>
+All members whose membership is in the PROPOSED state
+</p>
           </td>
         </tr>
         <tr>
@@ -4508,7 +5354,9 @@
             </ul>
           </td>
           <td>
-            <p>&lt;strong&gt;When someone's membership is about to expire, notify them and&lt;/strong&gt;</p>
+            <p>
+When someone's membership is about to expire, notify them and
+</p>
           </td>
         </tr>
         <tr>
@@ -4553,20 +5401,25 @@
                 Link to a <a href="#team">team</a> collection.
             </td>
           <td>
-            <p>All subteams of this team.: 
-                A subteam is any team that is a member (either directly or
-                indirectly) of this team. As an example, let's say we have
-                this hierarchy of teams:
+            <p>
+<p>All subteams of this team.</p>
+<p>A subteam is any team that is a member (either directly or
+indirectly) of this team. As an example, let's say we have
+this hierarchy of teams:</p>
+<dl class="rst-docutils">
+<dt>Rosetta Translators</dt>
+<dd><dl class="rst-first rst-last rst-docutils">
+<dt>Rosetta pt Translators</dt>
+<dd>Rosetta pt_BR Translators</dd>
+</dl>
+</dd>
+</dl>
+<p>In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
+Translators' are subteams of the 'Rosetta Translators' team,
+and all members of both subteams are considered members of
+"Rosetta Translators".</p>
 
-                Rosetta Translators
-                    Rosetta pt Translators
-                        Rosetta pt_BR Translators
-
-                In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
-                Translators' are subteams of the 'Rosetta Translators' team,
-                and all members of both subteams are considered members of
-                "Rosetta Translators".
-                </p>
+</p>
           </td>
         </tr>
         <tr>
@@ -4595,7 +5448,11 @@
             </ul>
           </td>
           <td>
-            <p>Subscription policy: 'Moderated' means all subscriptions must be approved. 'Open' means any user can join without approval. 'Restricted' means new members can be added only by a team administrator.</p>
+            <p>
+<p>Subscription policy</p>
+<p>'Moderated' means all subscriptions must be approved. 'Open' means any user can join without approval. 'Restricted' means new members can be added only by a team administrator.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4608,18 +5465,23 @@
                 Link to a <a href="#team">team</a> collection.
             </td>
           <td>
-            <p>All superteams of this team.: 
-                A superteam is any team that this team is a member of. For
-                example, let's say we have this hierarchy of teams, and we are
-                the "Rosetta pt_BR Translators":
+            <p>
+<p>All superteams of this team.</p>
+<p>A superteam is any team that this team is a member of. For
+example, let's say we have this hierarchy of teams, and we are
+the "Rosetta pt_BR Translators":</p>
+<dl class="rst-docutils">
+<dt>Rosetta Translators</dt>
+<dd><dl class="rst-first rst-last rst-docutils">
+<dt>Rosetta pt Translators</dt>
+<dd>Rosetta pt_BR Translators</dd>
+</dl>
+</dd>
+</dl>
+<p>In this case, we will return both 'Rosetta pt Translators' and
+'Rosetta Translators', because we are member of both of them.</p>
 
-                Rosetta Translators
-                    Rosetta pt Translators
-                        Rosetta pt_BR Translators
-
-                In this case, we will return both 'Rosetta pt Translators' and
-                'Rosetta Translators', because we are member of both of them.
-                </p>
+</p>
           </td>
         </tr>
         <tr>
@@ -4634,7 +5496,11 @@
             </p>
           </td>
           <td>
-            <p>Team Description: Use plain text; URLs will be linkified</p>
+            <p>
+<p>Team Description</p>
+<p>Use plain text; URLs will be linkified</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4647,7 +5513,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Team Owner&lt;/strong&gt;</p>
+            <p>
+Team Owner
+</p>
           </td>
         </tr>
         <tr>
@@ -4662,7 +5530,11 @@
             </p>
           </td>
           <td>
-            <p>Time zone: The time zone of where you live.</p>
+            <p>
+<p>Time zone</p>
+<p>The time zone of where you live.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4688,7 +5560,11 @@
             </ul>
           </td>
           <td>
-            <p>Visibility: Public visibility is standard, and Private Membership means that a team's members are hidden.</p>
+            <p>
+<p>Visibility</p>
+<p>Public visibility is standard, and Private Membership means that a team's members are hidden.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -4701,7 +5577,9 @@
                 Link to a <a href="#wiki_name">wiki_name</a> collection.
             </td>
           <td>
-            <p>&lt;strong&gt;All WikiNames of this Person.&lt;/strong&gt;</p>
+            <p>
+All WikiNames of this Person.
+</p>
           </td>
         </tr>
       </table>
@@ -4729,12 +5607,21 @@
     </dl>
     <div id="team-custom-GETs" class="methods GETs">
       <h4>Custom GET methods</h4>
-      <div class="method"><h5 id="team-findPathToTeam">findPathToTeam</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+      <div class="method"><h5 id="team-findPathToTeam">findPathToTeam</h5><p>
+<p>Return the teams that cause this person to be a participant of the
+given team.</p>
+<p>If there is more than one path leading this person to the given team,
+only the one with the oldest teams is returned.</p>
+<p>This method must not be called if this person is not an indirect
+member of the given team.</p>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
                 <var>findPathToTeam</var></p></td><td></td></tr><tr><td><p><strong>team</strong></p></td><td><p><small>(required)</small></p>
                 Link to a <a href="#person">person</a>.
-            </td><td><p>&lt;strong&gt;Team&lt;/strong&gt;</p></td></tr></table>
+            </td><td><p>
+Team
+</p></td></tr></table>
           
           <p class="response">Response contains an
             <code>application/json</code>
@@ -4744,10 +5631,15 @@
                 .
         </p>
         </div>
-      <div class="method"><h5 id="team-getMembersByStatus">getMembersByStatus</h5><h6>Request query parameters
-        </h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+      <div class="method"><h5 id="team-getMembersByStatus">getMembersByStatus</h5><p>
+<p>Return the people whose membership on this team match :status:.</p>
+<p>If no orderby is provided, Person.sortingColumns is used.</p>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
                 Fixed:
-                <var>getMembersByStatus</var></p></td><td></td></tr><tr><td><p><strong>status</strong></p></td><td><p><small>(required)</small></p><p><em>One of:</em></p><ul><li><tt>Proposed</tt></li><li><tt>Approved</tt></li><li><tt>Administrator</tt></li><li><tt>Deactivated</tt></li><li><tt>Expired</tt></li><li><tt>Declined</tt></li><li><tt>Invited</tt></li><li><tt>Invitation declined</tt></li></ul></td><td><p>&lt;strong&gt;The state of this membership&lt;/strong&gt;</p></td></tr></table>
+                <var>getMembersByStatus</var></p></td><td></td></tr><tr><td><p><strong>status</strong></p></td><td><p><small>(required)</small></p><p><em>One of:</em></p><ul><li><tt>Proposed</tt></li><li><tt>Approved</tt></li><li><tt>Administrator</tt></li><li><tt>Deactivated</tt></li><li><tt>Expired</tt></li><li><tt>Declined</tt></li><li><tt>Invited</tt></li><li><tt>Invitation declined</tt></li></ul></td><td><p>
+The state of this membership
+</p></td></tr></table>
           
           <p class="response">Response contains an
             <code>application/json</code>
@@ -4759,8 +5651,16 @@
         </div>
       <div class="method">
         <h5 id="team-inTeam">inTeam</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Return True if this person is a member or the owner of &lt;team&gt;.</p>
+<p>This method is meant to be called by objects which implement either
+IPerson or ITeam, and it will return True when you ask if a Person is
+a member of himself (i.e. person1.inTeam(person1)).</p>
+<p>&lt;team&gt; can be the id of a team, an SQLObject representing the
+ITeam, or the name of the team.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -4793,7 +5693,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Team&lt;/strong&gt;</p>
+              <p>
+Team
+</p>
             </td>
           </tr>
         </table>
@@ -4803,8 +5705,14 @@
       <h4>Custom POST methods</h4>
       <div class="method">
         <h5 id="team-acceptInvitationToBeMemberOf">acceptInvitationToBeMemberOf</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Accept an invitation to become a member of the given team.</p>
+<p>There must be a TeamMembership for this person and the given team with
+the INVITED status. The status of this TeamMembership will be changed
+to APPROVED.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -4850,15 +5758,33 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Team&lt;/strong&gt;</p>
+              <p>
+Team
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="team-addMember">addMember</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Add the given person as a member of this team.</p>
+<p>If the given person is already a member of this team we'll simply
+change its membership status. Otherwise a new TeamMembership is
+created with the given status.</p>
+<p>If the person is actually a team and force_team_add is False, the
+team will actually be invited to join this one. Otherwise the team
+is added as if it were a person.</p>
+<p>If the the person is not a team, and may_subscribe_to_list
+is True, then the person may be subscribed to the team's
+mailing list, depending on the list status and the person's
+auto-subscribe settings.</p>
+<p>The given status must be either Approved, Proposed or Admin.</p>
+<p>The reviewer is the user who made the given person a member of this
+team.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -4902,7 +5828,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Member&lt;/strong&gt;</p>
+              <p>
+Member
+</p>
             </td>
           </tr>
           <tr>
@@ -4944,15 +5872,23 @@
               </ul>
             </td>
             <td>
-              <p>&lt;strong&gt;The state of this membership&lt;/strong&gt;</p>
+              <p>
+The state of this membership
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="team-declineInvitationToBeMemberOf">declineInvitationToBeMemberOf</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Decline an invitation to become a member of the given team.</p>
+<p>There must be a TeamMembership for this person and the given team with
+the INVITED status. The status of this TeamMembership will be changed
+to INVITATION_DECLINED.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -4998,15 +5934,33 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Team&lt;/strong&gt;</p>
+              <p>
+Team
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="team-join">join</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Join the given team if its subscriptionpolicy is not RESTRICTED.</p>
+<p>Join the given team according to the policies and defaults of that
+team:</p>
+<ul class="rst-simple">
+<li>If the team subscriptionpolicy is OPEN, the user is added as
+an APPROVED member with a NULL TeamMembership.reviewer.</li>
+<li>If the team subscriptionpolicy is MODERATED, the user is added as
+a PROPOSED member and one of the team's administrators have to
+approve the membership.</li>
+</ul>
+<p>If may_subscribe_to_list is True, then also attempt to
+subscribe to the team's mailing list, depending on the list
+status and the person's auto-subscribe settings.</p>
+
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -5039,15 +5993,27 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Team&lt;/strong&gt;</p>
+              <p>
+Team
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="team-leave">leave</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+<p>Leave the given team.</p>
+<p>If there's a membership entry for this person on the given team and
+its status is either APPROVED or ADMIN, we change the status to
+DEACTIVATED and remove the relevant entries in teamparticipation.</p>
+<p>Teams cannot call this method because they're not allowed to
+login and thus can't 'leave' another team. Instead, they have their
+subscription deactivated (using the setMembershipData() method) by
+a team administrator.</p>
+
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -5080,15 +6046,19 @@
                 Link to a <a href="#person">person</a>.
             </td>
             <td>
-              <p>&lt;strong&gt;Team&lt;/strong&gt;</p>
+              <p>
+Team
+</p>
             </td>
           </tr>
         </table>
       </div>
       <div class="method">
         <h5 id="team-setLocation">setLocation</h5>
-        <h6>Request query parameters
-        </h6>
+        <p>
+Specify the location and time zone of a person.
+</p>
+        <h6>Parameters</h6>
         <table>
           <tr>
             <th>Parameter</th>
@@ -5123,7 +6093,9 @@
               </p>
             </td>
             <td>
-              <p>&lt;strong&gt;The latitude of this object.&lt;/strong&gt;</p>
+              <p>
+The latitude of this object.
+</p>
             </td>
           </tr>
           <tr>
@@ -5138,7 +6110,9 @@
               </p>
             </td>
             <td>
-              <p>&lt;strong&gt;The longitude of this object.&lt;/strong&gt;</p>
+              <p>
+The longitude of this object.
+</p>
             </td>
           </tr>
           <tr>
@@ -5153,13 +6127,22 @@
               </p>
             </td>
             <td>
-              <p>&lt;strong&gt;The time zone of this object.&lt;/strong&gt;</p>
+              <p>
+The time zone of this object.
+</p>
             </td>
           </tr>
         </table>
       </div>
     </div>
     <h3 id="team_membership">team_membership</h3>
+    <p>
+TeamMembership for Users
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;team.name&gt;</var>/+member/<var>&lt;member.name&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -5179,7 +6162,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Date expires&lt;/strong&gt;</p>
+            <p>
+Date expires
+</p>
           </td>
         </tr>
         <tr>
@@ -5194,7 +6179,11 @@
             </p>
           </td>
           <td>
-            <p>Date joined: The date in which this membership was made active for the first time.</p>
+            <p>
+<p>Date joined</p>
+<p>The date in which this membership was made active for the first time.</p>
+
+</p>
           </td>
         </tr>
         <tr>
@@ -5209,7 +6198,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Comment on the last change&lt;/strong&gt;</p>
+            <p>
+Comment on the last change
+</p>
           </td>
         </tr>
         <tr>
@@ -5222,7 +6213,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Last person who change this&lt;/strong&gt;</p>
+            <p>
+Last person who change this
+</p>
           </td>
         </tr>
         <tr>
@@ -5235,7 +6228,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Member&lt;/strong&gt;</p>
+            <p>
+Member
+</p>
           </td>
         </tr>
         <tr>
@@ -5311,7 +6306,9 @@
             </ul>
           </td>
           <td>
-            <p>&lt;strong&gt;The state of this membership&lt;/strong&gt;</p>
+            <p>
+The state of this membership
+</p>
           </td>
         </tr>
         <tr>
@@ -5324,7 +6321,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Team&lt;/strong&gt;</p>
+            <p>
+Team
+</p>
           </td>
         </tr>
       </table>
@@ -5351,6 +6350,13 @@
         </dd>
     </dl>
     <h3 id="wiki_name">wiki_name</h3>
+    <p>
+Wiki for Users
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta/<var>&lt;person.name&gt;</var>/+wikiname/<var>&lt;id&gt;</var></code>
+    </p>
     <div class="representation">
       <h4>Default representation 
                 (application/json)</h4>
@@ -5368,7 +6374,9 @@
                 Link to a <a href="#person">person</a>.
             </td>
           <td>
-            <p>&lt;strong&gt;Owner&lt;/strong&gt;</p>
+            <p>
+Owner
+</p>
           </td>
         </tr>
         <tr>
@@ -5415,7 +6423,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;The URL for this wiki home page.&lt;/strong&gt;</p>
+            <p>
+The URL for this wiki home page.
+</p>
           </td>
         </tr>
         <tr>
@@ -5430,7 +6440,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Wiki host&lt;/strong&gt;</p>
+            <p>
+Wiki host
+</p>
           </td>
         </tr>
         <tr>
@@ -5445,7 +6457,9 @@
             </p>
           </td>
           <td>
-            <p>&lt;strong&gt;Wikiname&lt;/strong&gt;</p>
+            <p>
+Wikiname
+</p>
           </td>
         </tr>
       </table>
