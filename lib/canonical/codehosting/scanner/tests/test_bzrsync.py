@@ -487,7 +487,8 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(expected_mapping, db_branch_revision_map)
 
 
-class TestBzrSyncModified(BzrSyncTestCase):
+class TestBzrSyncOneRevision(BzrSyncTestCase):
+    """Tests for `BzrSync.syncOneRevision`."""
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
@@ -541,6 +542,15 @@ class TestBzrSyncModified(BzrSyncTestCase):
         revision = getUtility(IRevisionSet).getByRevisionId(
             FakeRevision.revision_id)
         self.assertEqual(old_date, revision.revision_date)
+
+
+class TestBzrSyncModified(BzrSyncTestCase):
+    """Tests for BzrSync.syncOneRevision when the revision has been modified.
+    """
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        self.bzrsync = self.makeBzrSync(self.db_branch)
 
     def test_revision_modified(self):
         # test that modifications to the list of parents get caught.
