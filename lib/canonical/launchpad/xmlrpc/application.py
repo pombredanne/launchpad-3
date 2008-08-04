@@ -22,6 +22,8 @@ from canonical.launchpad.interfaces import (
     IAuthServerApplication, ICodeImportSchedulerApplication, ILaunchBag,
     IMailingListApplication, IPrivateApplication,
     IPrivateMaloneApplication)
+from canonical.launchpad.interfaces.codehosting import (
+    IBranchDetailsStorageApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
@@ -37,6 +39,11 @@ class PrivateApplication:
     def authserver(self):
         """See `IPrivateApplication`."""
         return getUtility(IAuthServerApplication)
+
+    @property
+    def branchdetails(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IBranchDetailsStorageApplication)
 
     @property
     def codeimportscheduler(self):
