@@ -67,6 +67,7 @@ Go to the link sent by email.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:9000/token/.../+newaccount
+    ...
     <BLANKLINE>
 
 
@@ -160,6 +161,7 @@ Go to the link sent by email.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:9000/token/.../+newaccount
+    ...
     <BLANKLINE>
 
 
