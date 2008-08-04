@@ -576,6 +576,14 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         permissive = arguments.get('permissive', False)
         assert permissive, "get_bugs() must be called with permissive=True"
 
+        # If a changed_since argument is specified, marshall it into a
+        # datetime so that we can use it for comparisons.
+        changed_since = arguments.get('changed_since')
+        if changed_since is not None:
+            changed_since_timetuple = time.strptime(
+                str(changed_since), '%Y%m%dT%H:%M:%S')
+            changed_since = datetime(*changed_since_timetuple[:6])
+
         for id in bug_ids:
             # If the ID is an int, look up the bug directly. We copy the
             # bug dict into a local variable so we can manipulate the
@@ -585,6 +593,12 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
                 bug_dict = dict(self.bugs[int(id)])
             except ValueError:
                 bug_dict = dict(self.bugs[self.bug_aliases[id]])
+
+            # If changed_since is specified, discard all the bugs whose
+            # last_change_time is < changed_since.
+            if (changed_since is not None and
+                bug_dict['last_change_time'] < changed_since):
+                continue
 
             # Update the DateTime fields of the bug dict so that they
             # look like ones that would be sent over XML-RPC.
