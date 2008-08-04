@@ -550,20 +550,21 @@ class BzrSync:
         revision_id = bzr_revision.revision_id
         revision_set = getUtility(IRevisionSet)
         db_revision = revision_set.getByRevisionId(revision_id)
-        if db_revision is None:
-            # Revision not yet in the database. Load it.
-            self.logger.debug("Inserting revision: %s", revision_id)
-            revision_date = self._timestampToDatetime(bzr_revision.timestamp)
-            db_revision = revision_set.new(
-                revision_id=revision_id,
-                log_body=bzr_revision.message,
-                revision_date=revision_date,
-                revision_author=bzr_revision.get_apparent_author(),
-                parent_ids=bzr_revision.parent_ids,
-                properties=bzr_revision.properties)
-            # If a mainline revision, add the bug branch link.
-            if branchrevisions_to_insert[revision_id] is not None:
-                self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
+        if db_revision is not None:
+            return
+        # Revision not yet in the database. Load it.
+        self.logger.debug("Inserting revision: %s", revision_id)
+        revision_date = self._timestampToDatetime(bzr_revision.timestamp)
+        db_revision = revision_set.new(
+            revision_id=revision_id,
+            log_body=bzr_revision.message,
+            revision_date=revision_date,
+            revision_author=bzr_revision.get_apparent_author(),
+            parent_ids=bzr_revision.parent_ids,
+            properties=bzr_revision.properties)
+        # If a mainline revision, add the bug branch link.
+        if branchrevisions_to_insert[revision_id] is not None:
+            self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
 
     def getRevisions(self, bzr_history, revision_subset):
         """Generate revision IDs that make up the branch's ancestry.
