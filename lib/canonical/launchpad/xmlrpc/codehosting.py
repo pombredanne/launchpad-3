@@ -27,6 +27,15 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
         """See `IBranchDetailsStorage`."""
         return []
 
+    def mirrorFailed(self, branchID, reason):
+        """See `IBranchDetailsStorage`."""
+        branch = getUtility(IBranchSet).get(branchID)
+        if branch is None:
+            return False
+        # See comment in startMirroring.
+        removeSecurityProxy(branch).mirrorFailed(reason)
+        return True
+
     def startMirroring(self, branchID):
         """See `IBranchDetailsStorage`."""
         branch = getUtility(IBranchSet).get(branchID)

@@ -51,31 +51,22 @@ class BranchDetailsStorageTest(TestCaseWithFactory):
         self.assertEqual(success, False)
 
     def test_mirrorFailed(self):
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
-                mirror_status_message
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertEqual(row[0], None)
-        self.assertEqual(row[1], None)
-        self.assertEqual(row[2], 0)
-        self.assertEqual(row[3], None)
+        branch = self.factory.makeBranch()
+        self.assertIs(None, branch.last_mirror_attempt)
+        self.assertIs(None, branch.last_mirrored)
+        self.assertIs(0, branch.mirror_failures)
+        self.assertIs(None, branch.mirror_status_message)
 
-        success = self.storage._startMirroringInteraction(1)
-        self.assertEqual(success, True)
-        success = self.storage._mirrorFailedInteraction(1, "failed")
+        self.storage.startMirroring(branch.id)
+        failure_message = self.factory.getUniqueString()
+        success = self.storage.mirrorFailed(branch.id, failure_message)
         self.assertEqual(success, True)
 
-        cur = cursor()
-        cur.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
-                mirror_status_message
-                FROM branch WHERE id = 1""")
-        row = cur.fetchone()
-        self.assertNotEqual(row[0], None)
-        self.assertEqual(row[1], None)
-        self.assertEqual(row[2], 1)
-        self.assertEqual(row[3], 'failed')
+        self.assertSqlAttributeEqualsDate(
+            branch, 'last_mirror_attempt', UTC_NOW)
+        self.assertIs(None, branch.last_mirrored)
+        self.assertEqual(1, branch.mirror_failures)
+        self.assertEqual(failure_message, branch.mirror_status_message)
 
     def test_mirrorComplete(self):
         self.cursor.execute("""
