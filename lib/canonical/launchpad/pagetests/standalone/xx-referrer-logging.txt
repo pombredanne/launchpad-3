@@ -23,7 +23,7 @@ Create a helper to load the referrer from the session database.
 >>> browser.addHeader('Referer', 'http://www.example.com/?foo=bar')
 >>> browser.open('http://launchpad.dev/?q=p')
 >>> referrer(browser)
-(u'http://www.example.com/?foo=bar', u'http://launchpad.dev/index.html?q=p')
+(u'http://www.example.com/?foo=bar', u'http://launchpad.dev?q=p')
 
 No referrer is handled too just fine, storing None in the session.
 
@@ -34,12 +34,12 @@ http://www.zope.org/Collectors/Zope3-dev/710 -- StuartBishop 20060913
 
 >>> anon_browser.open('http://blueprints.launchpad.dev/')
 >>> referrer(anon_browser)
-(u'localhost', u'http://blueprints.launchpad.dev/specs/+index')
+(u'localhost', u'http://blueprints.launchpad.dev')
 
 And crazy referrers do not cause things to blow up.
 
 >>> admin_browser.addHeader('Referer', 'bogus'.encode('UTF-16'))
 >>> admin_browser.open('http://launchpad.dev/')
 >>> referrer(admin_browser)
-(u'\ufffd\ufffdb\x00o\x00g\x00u\x00s\x00', u'http://launchpad.dev/index.html')
+(u'\ufffd\ufffdb\x00o\x00g\x00u\x00s\x00', u'http://launchpad.dev')
 
