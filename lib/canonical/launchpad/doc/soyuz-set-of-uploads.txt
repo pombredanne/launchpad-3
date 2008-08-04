@@ -419,7 +419,7 @@ will get compared in this case (see bug #85201):
   >>> simulate_upload('bar_1.0-7', upload_policy='sync')
   >>> read_email()
   To: ...
-  Subject: Accepted: bar 1:1.0-7 (source)
+  Subject: [ubuntutest/breezy-RELEASE] bar 1.0-6 (Accepted)
   ...
 
   >>> simulate_upload('bar_1.0-8', upload_policy='sync')
