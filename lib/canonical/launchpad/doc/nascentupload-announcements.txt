@@ -745,7 +745,7 @@ UTF-8 text in the changes file that is sent on the email is preserved
 in the MIME encoding.
 
   >>> print msgs[0].get_payload() # doctest: -NORMALIZE_WHITESPACE
-  Accepted:
+  -----BEGIN PGP SIGNED MESSAGE-----
   ...
   Maintainer: Non-ascii maintainer =C4=8Ciha=C5=99 <launchpad@lists.canonical=
   .com>
@@ -754,4 +754,3 @@ in the MIME encoding.
   ...
      * Non-ascii text: =C4=8Ciha=C5=99
   ...
-
