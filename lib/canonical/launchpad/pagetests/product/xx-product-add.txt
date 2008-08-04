@@ -204,7 +204,7 @@ The mail is sent when the transaction gets commited:
     >>> msg['Reply-To']
     'Sample Person <test@canonical.com>'
     >>> msg.get_payload()
-    "...Other/Proprietary...
+    "...http://launchpad.dev/testing2...Other/Proprietary...
 
 When a product is created with the license OTHER_OPEN_SOURCE an email
 is also sent to feedback@canonical.com.

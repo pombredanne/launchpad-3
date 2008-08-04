@@ -27,7 +27,6 @@ At the top level we provide a collection of bugs.
     u'http://api.launchpad.dev/beta/bugs/11/bug_tasks'),
    (u'bug_watches_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/bug_watches'),
-   (u'can_expire', False),
    (u'date_created', u'2007-03-15T20:33:56.678930+00:00'),
    (u'date_last_message', None),
    (u'date_last_updated', u'2007-03-15T20:37:51.603369+00:00'),
@@ -37,12 +36,10 @@ At the top level we provide a collection of bugs.
    (u'duplicates_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/duplicates'),
    (u'id', 11),
-   (u'is_complete', False),
    (u'messages_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/messages'),
    (u'name', None),
    (u'owner_link', u'http://api.launchpad.dev/beta/~name16'),
-   (u'permits_expiration', False),
    (u'private', False),
    (u'resource_type_link', u'http://api.launchpad.dev/beta/#bug'),
    (u'security_related', False),
@@ -77,6 +74,58 @@ Bugs have relationships to other bugs, like "duplicate_of".
   >>> bug_six = webservice.get(bug_six_url).jsonBody()
   >>> bug_six['duplicate_of_link']
   u'http://api.launchpad.dev/beta/bugs/5'
+
+To create a new bug we use the createBug operation.  That operation
+takes a target parameter which must be a either a Product, a
+Distribution or a DistributionSourcePackage.
+
+    >>> print webservice.named_post(
+    ...     '/beta/bugs', 'createBug',
+    ...     title='Test bug', description='Test bug',
+    ...     target='http://api.launchpad.dev/beta/firefox')
+    HTTP/1.1 201 Created
+    ...
+    Location: http://api.launchpad.dev/beta/bugs/...
+    <BLANKLINE>
+
+    >>> print webservice.named_post(
+    ...     '/beta/bugs', 'createBug',
+    ...     title='Test bug', description='Test bug',
+    ...     target='http://api.launchpad.dev/beta/ubuntu')
+    HTTP/1.1 201 Created
+    ...
+    Location: http://api.launchpad.dev/beta/bugs/...
+    <BLANKLINE>
+
+    >>> print webservice.named_post(
+    ...     '/beta/bugs', 'createBug',
+    ...     title='Test bug', description='Test bug',
+    ...     target='http://api.launchpad.dev/beta/ubuntu/+source/evolution')
+    HTTP/1.1 201 Created
+    ...
+    Location: http://api.launchpad.dev/beta/bugs/...
+    <BLANKLINE>
+
+A ProductSeries can't be the target of a new bug.
+
+    >>> print webservice.named_post(
+    ...     '/beta/bugs', 'createBug',
+    ...     title='Test bug', description='Test bug',
+    ...     target='http://api.launchpad.dev/beta/firefox/1.0')
+    HTTP/1.1 400 Bad Request
+    ...
+    A bug target must be a Project, a Distribution or a
+    DistributionSourcePackage.  Got <ProductSeries...
+
+That operation will fail if the client doesn't specify the product or
+distribution in which the bug exists.
+
+    >>> print webservice.named_post(
+    ...     '/beta/bugs', 'createBug',
+    ...     title='Test bug', description='Test bug')
+    HTTP/1.1 400 Bad Request
+    ...
+    target: Required input is missing.
 
 
 == Bugs as message targets ==
@@ -281,10 +330,10 @@ report described by the bugwatch.
 
   >>> show(bug_watch_2000)
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+   (u'bug_tasks_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/1/+watch/2/bug_tasks'),
    (u'bug_tracker_link',
     u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org'),
-   (u'bugtasks_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/1/+watch/2/bugtasks'),
    (u'date_created', u'2004-10-04T01:00:00+00:00'),
    (u'date_last_changed', u'2004-10-04T01:00:00+00:00'),
    (u'date_last_checked', u'2004-10-04T01:00:00+00:00'),
@@ -355,10 +404,10 @@ Following the redirect, we can see the new bug watch:
   >>> new_bug_watch = webservice.get(new_bug_watch_path).jsonBody()
   >>> show(new_bug_watch)
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+   (u'bug_tasks_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/1/+watch/13/bug_tasks'),
    (u'bug_tracker_link',
     u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org'),
-   (u'bugtasks_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/1/+watch/13/bugtasks'),
    (u'date_created', u'...'),
    (u'date_last_changed', None),
    (u'date_last_checked', None),

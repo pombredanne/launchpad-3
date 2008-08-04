@@ -23,7 +23,7 @@ First make sure it uses Launchpad for translations.
 
     >>> print extract_text(
     ...     find_tag_by_id(netapplet_owner_browser.contents, 'uses'))
-    Uses Launchpad for: Code and Translations.
+    Uses Launchpad for: Translations.
 
 Netapplet doesn't have TranslationGroup and uses open permissions. We
 can see that from the translations page.
