@@ -12,6 +12,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/~ubuntu-team/+poll/never-closes2/+vote-condorcet
+  ...
   <BLANKLINE>
 
   >>> print http(r"""
@@ -125,6 +126,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/~ubuntu-team/+poll/never-closes3/+vote-condorcet
+  ...
   <BLANKLINE>
 
   >>> print http(r"""
@@ -211,6 +213,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/~ubuntu-team/+poll/never-closes3/+vote-condorcet
+  ...
   <BLANKLINE>
 
 
