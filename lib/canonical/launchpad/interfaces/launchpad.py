@@ -201,6 +201,8 @@ class IPrivateApplication(ILaunchpadApplication):
 
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
 
+    branchdetails = Attribute("""Branch details end point.""")
+
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
     bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")

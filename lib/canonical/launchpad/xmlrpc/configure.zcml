@@ -24,6 +24,19 @@
     />
 
   <securedutility
+    class="canonical.launchpad.systemhomes.BranchDetailsStorageApplication"
+    provides="canonical.launchpad.interfaces.codehosting.IBranchDetailsStorageApplication">
+    <allow interface="canonical.launchpad.interfaces.codehosting.IBranchDetailsStorageApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.codehosting.IBranchDetailsStorageApplication"
+    interface="canonical.launchpad.interfaces.codehosting.IBranchDetailsStorage"
+    class="canonical.launchpad.xmlrpc.codehosting.BranchDetailsStorageAPI"
+    permission="zope.Public"
+    />
+
+  <securedutility
     class="canonical.launchpad.systemhomes.CodeImportSchedulerApplication"
     provides="canonical.launchpad.interfaces.ICodeImportSchedulerApplication">
     <allow interface="canonical.launchpad.interfaces.ICodeImportSchedulerApplication"/>
