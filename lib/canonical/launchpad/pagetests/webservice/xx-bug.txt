@@ -521,6 +521,7 @@ we must follow to download the data.
   Content-Length: 0
   Content-Type: text/plain
   Location: http://localhost:58000/.../numbers.txt
+  ...
   <BLANKLINE>
 
   >>> from urllib2 import urlopen
