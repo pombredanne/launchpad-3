@@ -475,12 +475,12 @@ Upload a newer version of source package "foo" to breezy-backports:
   >>> simulate_upload(
   ...     'foo_2.9-1', upload_policy='sync', loglevel=logging.DEBUG)
   log> ...
+  log> Distribution: breezy-backports
+  ...
   log> OK: foo_2.9.orig.tar.gz
   log> OK: foo_2.9-1.diff.gz
   log> OK: foo_2.9-1.dsc
   log> -> Component: universe Section: devel
-  ...
-  log> Distribution: breezy-backports
   ...
   Upload complete.
 
