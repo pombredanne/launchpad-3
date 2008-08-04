@@ -589,21 +589,20 @@ class TestBzrSyncModified(BzrSyncTestCase):
             new_parents=len(parent_ids), new_authors=0)
         return fake_revision
 
-    def test_revision_modified(self):
-        # test that modifications to the list of parents get caught.
-
+    def test_sync_twice(self):
         # Synchronise the fake revision:
-        fake_revision = self.makeSyncedRevision(['rev1', 'rev2'])
-
         # Verify that synchronising the revision twice passes and does
         # not create a second revision object:
+        fake_revision = self.makeSyncedRevision(['rev1', 'rev2'])
         counts = self.getCounts()
         self.syncFakeRevision(fake_revision)
         self.assertCounts(
             counts, new_revisions=0, new_numbers=0,
             new_parents=0, new_authors=0)
 
+    def test_adding_parents(self):
         # Verify that adding a parent gets caught:
+        fake_revision = self.makeSyncedRevision(['rev1', 'rev2'])
         fake_revision = self.makeFakeRevision(
             fake_revision.revision_id, ['rev1', 'rev2', 'rev3'])
         self.assertRaises(
@@ -611,7 +610,9 @@ class TestBzrSyncModified(BzrSyncTestCase):
             self.syncFakeRevision,
             fake_revision)
 
+    def test_removing_parents(self):
         # Verify that removing a parent gets caught:
+        fake_revision = self.makeSyncedRevision(['rev1', 'rev2'])
         fake_revision = self.makeFakeRevision(
             fake_revision.revision_id, ['rev1'])
         self.assertRaises(
@@ -619,7 +620,9 @@ class TestBzrSyncModified(BzrSyncTestCase):
             self.syncFakeRevision,
             fake_revision)
 
+    def test_reordering_parents(self):
         # Verify that reordering the parents gets caught:
+        fake_revision = self.makeSyncedRevision(['rev1', 'rev2'])
         fake_revision = self.makeFakeRevision(
             fake_revision.revision_id, ['rev2', 'rev1'])
         self.assertRaises(
