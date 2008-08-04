@@ -112,6 +112,10 @@ class IResourceOperation(Interface):
         as application/json.
         """
 
+    send_modification_event = Attribute(
+        "Whether or not to send out an event when this operation completes.")
+
+
 class IResourceGETOperation(IResourceOperation):
     """A one-off operation invoked through GET.
 

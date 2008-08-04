@@ -95,7 +95,7 @@ It's using Launchpad Translations officially.
   http://launchpad.dev/alsa-utils
   >>> uses = find_tag_by_id(browser.contents, 'uses')
   >>> print extract_text(uses)
-  Uses Launchpad for: Code and Translations.
+  Uses Launchpad for: Translations.
 
 And it has translations.
 

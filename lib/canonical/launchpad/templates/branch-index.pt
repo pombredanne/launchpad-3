@@ -195,8 +195,14 @@
         </p>
 
         <tal:svn-import condition="code_import/rcs_type/enumvalue:SVN">
-          <p>This branch is an import of the Subversion branch
-          from <strong tal:content="code_import/svn_branch_url"/>.
+          <p>This branch is an import of the Subversion branch from
+          <tal:is-web-url condition="view/svn_url_is_web">
+            <a tal:attributes="href code_import/svn_branch_url"
+                    tal:content="code_import/svn_branch_url" />.
+          </tal:is-web-url>
+          <tal:not-web-url condition="not: view/svn_url_is_web">
+              <span tal:replace="code_import/svn_branch_url" />.
+          </tal:not-web-url>
           </p>
         </tal:svn-import>
 
@@ -264,7 +270,11 @@
 
         <tal:can-edit condition="code_import/required:launchpad.Edit">
           <p>
-            <a href="+edit-import">Edit import source or review import</a>.
+            <a tal:define="link context_menu/edit_import"
+               tal:condition="link/enabled"
+               tal:attributes="href link/url"
+               tal:content="structure link/render">
+               Edit import source or review import</a>.
           </p>
         </tal:can-edit>
       </tal:has-codeimport>
@@ -368,12 +378,15 @@
                                  revisions branch/latest_revisions">
     <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
 
-    <div class="actions"
-        tal:define="link context_menu/browse_revisions"
-        tal:condition="link/enabled"
-        tal:content="structure link/render">
-      Older revisions
-    </div>
+    <div>
+      &raquo;
+      <span class="actions"
+          tal:define="link context_menu/browse_revisions"
+          tal:condition="link/enabled"
+          tal:content="structure link/render">
+        All revisions
+      </span>
+    <div>
 
   </tal:history-available>
 
