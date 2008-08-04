@@ -13,7 +13,6 @@ import pytz
 from storm.expr import And, Asc, Desc, Not, Select
 from storm.store import Store
 from zope.component import getUtility
-from zope.event import notify
 from zope.interface import implements
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
@@ -23,7 +22,6 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet,
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
@@ -82,18 +80,19 @@ class Revision(SQLBase):
             karma.datecreated = self.revision_date
             self.karma_allocated = True
 
-    def getBranch(self):
+    def getBranch(self, allow_private=False):
         """See `IRevision`."""
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
 
         store = Store.of(self)
 
-        result_set = store.find(
-            Branch,
+        query = And(
             self.id == BranchRevision.revisionID,
-            BranchRevision.branchID == Branch.id,
-            Not(Branch.private))
+            BranchRevision.branchID == Branch.id)
+        if not allow_private:
+            query = And(query, Not(Branch.private))
+        result_set = store.find(Branch, query)
         if self.revision_author.person is None:
             result_set.order_by(Asc(BranchRevision.sequence))
         else:
@@ -137,11 +136,33 @@ class RevisionAuthor(SQLBase):
         # Only accept an email address that is validated.
         if lp_email.status != EmailAddressStatus.NEW:
             self.person = lp_email.person
-            # If we have just linked a Launchpad Person to a RevisionAuthor we
-            # create karma actions for those revisions.
             return True
         else:
             return False
+
+    def _claimRevisionKarma(self):
+        """Claim karma for the revsions by this author.
+
+        This method generates historical karma events for this user.
+        """
+        # Avoiding circular imports.
+        from canonical.launchpad.database.branchrevision import BranchRevision
+
+        if self.person is None:
+            # Nothing to do here.
+            return
+        store = Store.of(self)
+        # Only claim revisions that are currently associated with branches.
+        revisions = store.find(
+            Revision,
+            Revision.revision_author == self,
+            Not(Revision.karma_allocated),
+            Revision.id.is_in(Select(
+                    Revision.id, BranchRevision.revision == Revision.id)))
+        for revision in revisions:
+            # Get the associated branch.
+            branch = revision.getBranch(allow_private=True)
+            revision.allocateKarma(branch)
 
 
 class RevisionParent(SQLBase):
@@ -225,6 +246,7 @@ class RevisionSet:
         naked_email = removeSecurityProxy(email)
         for author in RevisionAuthor.selectBy(email=naked_email.email):
             author.person = email.person
+            author._claimRevisionKarma()
 
     def getTipRevisionsForBranches(self, branches):
         """See `IRevisionSet`."""

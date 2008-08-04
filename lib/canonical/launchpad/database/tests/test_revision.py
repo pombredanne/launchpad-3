@@ -23,6 +23,62 @@ from canonical.launchpad.testing import (
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 
+class TestRevisionKarma(TestCaseWithFactory):
+    """Test the `getBranch` method of the revision."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Use an administrator to set branch privacy easily.
+        TestCaseWithFactory.setUp(self, "foo.bar@canonical.com")
+
+    def test_revisionWithUnknownEmail(self):
+        # A revision when created does not have karma allocated.
+        rev = self.factory.makeRevision()
+        self.assertEqual(False, rev.karma_allocated)
+        # Even if the revision author is someone we know.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(
+            author=author.preferredemail.email)
+        self.assertEqual(False, rev.karma_allocated)
+
+    def test_noKarmaForUnknownAuthor(self):
+        # If the revision author is unknown, karam isn't allocated.
+        rev = self.factory.makeRevision()
+        branch = self.factory.makeBranch()
+        branch.createBranchRevision(1, rev)
+        self.assertEqual(False, rev.karma_allocated)
+
+    def test_karmaAllocatedForKnownAuthor(self):
+        # If the revision author is known, allocate karma.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(
+            author=author.preferredemail.email)
+        branch = self.factory.makeBranch()
+        branch.createBranchRevision(1, rev)
+        self.assertEqual(True, rev.karma_allocated)
+        [karma] = list(author.latestKarma(1))
+        self.assertEqual(karma.datecreated, rev.revision_date)
+        self.assertEqual(karma.product, branch.product)
+
+    def test_checkNewVerifiedEmailClaimsRevisionKarma(self):
+        # Revisions that exist already, but without allocated karma will get
+        # karma events created when we work out who the Launchpad person is.
+        email = self.factory.getUniqueEmailAddress()
+        rev = self.factory.makeRevision(author=email)
+        branch = self.factory.makeBranch()
+        branch.createBranchRevision(1, rev)
+        self.assertEqual(False, rev.karma_allocated)
+        author = self.factory.makePerson(email=email)
+
+        RevisionSet().checkNewVerifiedEmail(author.preferredemail)
+
+        self.assertEqual(True, rev.karma_allocated)
+        [karma] = list(author.latestKarma(1))
+        self.assertEqual(karma.datecreated, rev.revision_date)
+        self.assertEqual(karma.product, branch.product)
+
+
 class TestRevisionGetBranch(TestCaseWithFactory):
     """Test the `getBranch` method of the revision."""
 
@@ -71,6 +127,8 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         b2.createBranchRevision(1, self.revision)
         b2.private = True
         self.assertEqual(b1, self.revision.getBranch())
+        # Private branches can be returned if explicitly asked for.
+        self.assertEqual(b2, self.revision.getBranch(allow_private=True))
 
     def testEarlierHistoryFirst(self):
         # If all else is equal, choose the branch that has the revision

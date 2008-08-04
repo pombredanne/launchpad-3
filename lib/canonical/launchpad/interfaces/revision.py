@@ -42,8 +42,8 @@ class IRevision(Interface):
     def allocateKarma(branch):
         """Allocate karma to the revision_author for this revision."""
 
-    def getBranch():
-        """Return a public branch associated with this revision.
+    def getBranch(allow_private=False):
+        """Return a branch associated with this revision.
 
         The chances are that there will be many branches with any revision
         that has landed on the trunk branch.  A branch owned by the revision
@@ -51,6 +51,8 @@ class IRevision(Interface):
         the revision in the history is chosen over a branch that just has the
         revision in the ancestry, and a branch with the revision earlier in
         the history is chosen over one with a later history.
+
+        :param allow_private: Should private branches be returned?
         """
 
 
