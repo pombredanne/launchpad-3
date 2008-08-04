@@ -385,7 +385,7 @@ class BzrSync:
 
         (added_ancestry, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges(
-            bzr_ancestry, bzr_history, db_ancestry, db_history, 
+            bzr_ancestry, bzr_history, db_ancestry, db_history,
             db_branch_revision_map)
         self.logger.info("Inserting or checking %d revisions.",
             len(added_ancestry))
@@ -550,40 +550,7 @@ class BzrSync:
         revision_id = bzr_revision.revision_id
         revision_set = getUtility(IRevisionSet)
         db_revision = revision_set.getByRevisionId(revision_id)
-        if db_revision is not None:
-            # Verify that the revision in the database matches the
-            # revision from the branch.  Currently we just check that
-            # the parent revision list matches.
-            self.logger.debug("Checking revision: %s", revision_id)
-            db_parents = db_revision.parents
-            bzr_parents = bzr_revision.parent_ids
-
-            seen_parents = set()
-            for sequence, parent_id in enumerate(bzr_parents):
-                if parent_id in seen_parents:
-                    continue
-                seen_parents.add(parent_id)
-                matching_parents = [db_parent for db_parent in db_parents
-                                    if db_parent.parent_id == parent_id]
-                if len(matching_parents) == 0:
-                    raise RevisionModifiedError(
-                        'parent %s was added since last scan' % parent_id)
-                elif len(matching_parents) > 1:
-                    raise RevisionModifiedError(
-                        'parent %s is listed multiple times in db'
-                        % parent_id)
-                if matching_parents[0].sequence != sequence:
-                    raise RevisionModifiedError(
-                        'parent %s reordered (old index %d, new index %d)'
-                        % (parent_id, matching_parents[0].sequence, sequence))
-            if len(seen_parents) != len(db_parents):
-                removed_parents = [db_parent.parent_id
-                                   for db_parent in db_parents
-                                   if db_parent.parent_id not in seen_parents]
-                raise RevisionModifiedError(
-                    'some parents removed since last scan: %s'
-                    % (removed_parents,))
-        else:
+        if db_revision is None:
             # Revision not yet in the database. Load it.
             self.logger.debug("Inserting revision: %s", revision_id)
             revision_date = self._timestampToDatetime(bzr_revision.timestamp)

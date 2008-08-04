@@ -600,36 +600,6 @@ class TestBzrSyncModified(BzrSyncTestCase):
             counts, new_revisions=0, new_numbers=0,
             new_parents=0, new_authors=0)
 
-    def test_adding_parents(self):
-        # Verify that adding a parent gets caught:
-        fake_revision = self.makeSyncedRevision(['rev1', 'rev2'])
-        fake_revision = self.makeFakeRevision(
-            fake_revision.revision_id, ['rev1', 'rev2', 'rev3'])
-        self.assertRaises(
-            RevisionModifiedError,
-            self.syncFakeRevision,
-            fake_revision)
-
-    def test_removing_parents(self):
-        # Verify that removing a parent gets caught:
-        fake_revision = self.makeSyncedRevision(['rev1', 'rev2'])
-        fake_revision = self.makeFakeRevision(
-            fake_revision.revision_id, ['rev1'])
-        self.assertRaises(
-            RevisionModifiedError,
-            self.syncFakeRevision,
-            fake_revision)
-
-    def test_reordering_parents(self):
-        # Verify that reordering the parents gets caught:
-        fake_revision = self.makeSyncedRevision(['rev1', 'rev2'])
-        fake_revision = self.makeFakeRevision(
-            fake_revision.revision_id, ['rev2', 'rev1'])
-        self.assertRaises(
-            RevisionModifiedError,
-            self.syncFakeRevision,
-            fake_revision)
-
 
 class TestBzrSyncEmail(BzrSyncTestCase):
     """Tests BzrSync support for generating branch email notifications."""
