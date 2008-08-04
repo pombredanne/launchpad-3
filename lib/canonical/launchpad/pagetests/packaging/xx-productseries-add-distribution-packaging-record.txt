@@ -74,6 +74,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/firefox/1.0
+  ...
   <BLANKLINE>
 
   We can now check that the packaging information was successfully added.
