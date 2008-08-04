@@ -164,7 +164,7 @@ class LaunchpadObjectFactory:
         if password is None:
             password = self.getUniqueString('password')
         # By default, make the email address preferred.
-        if (email_address_status is None 
+        if (email_address_status is None
                 or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
         # Set the password to test in order to allow people that have
@@ -221,10 +221,13 @@ class LaunchpadObjectFactory:
             name, title, summary, owner)
 
     def makeProduct(self, name=None, project=None, displayname=None,
-                    licenses=None, owner=None):
+                    licenses=None, owner=None, registrant=None,
+                    title=None, summary=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
+        if registrant is None:
+            registrant = owner
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
@@ -234,41 +237,58 @@ class LaunchpadObjectFactory:
                 displayname = name.capitalize()
         if licenses is None:
             licenses = [License.GNU_GPL_V2]
+        if title is None:
+            title = self.getUniqueString('title')
+        if summary is None:
+            summary = self.getUniqueString('summary')
         return getUtility(IProductSet).createProduct(
             owner,
             name,
             displayname,
-            self.getUniqueString('title'),
-            self.getUniqueString('summary'),
+            title,
+            summary,
             self.getUniqueString('description'),
             licenses=licenses,
-            project=project)
+            project=project,
+            registrant=registrant)
 
-    def makeProductSeries(self, product=None, name=None):
+    def makeProductSeries(self, product=None, name=None, owner=None,
+                          summary=None):
         """Create and return a new ProductSeries."""
         if product is None:
             product = self.makeProduct()
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString()
-        summary = self.getUniqueString()
+        if summary is None:
+            summary = self.getUniqueString()
         return product.newSeries(owner=owner, name=name, summary=summary)
 
-    def makeProject(self, name=None, displayname=None):
+    def makeProject(self, name=None, displayname=None, title=None,
+                    homepageurl=None, summary=None, owner=None,
+                    description=None):
         """Create and return a new, arbitrary Project."""
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('project-name')
         if displayname is None:
             displayname = self.getUniqueString('displayname')
+        if summary is None:
+            summary=self.getUniqueString('summary')
+        if description is None:
+            description=self.getUniqueString('description')
+        if title is None:
+            title=self.getUniqueString('title')
         return getUtility(IProjectSet).new(
-            name,
-            displayname,
-            self.getUniqueString('title'),
-            None,
-            self.getUniqueString('summary'),
-            self.getUniqueString('description'),
-            owner)
+            name=name,
+            displayname=displayname,
+            title=title,
+            homepageurl=homepageurl,
+            summary=summary,
+            description=description,
+            owner=owner)
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=None, url=None, registrant=None,

@@ -1503,6 +1503,26 @@ ValidTeamOwner's context must provide IPerson or IPersonSet.
     >>> [person.name for person in vocab.search('foo.bar')]
     [u'name16']
 
+=== ValidPerson ===
+
+All 'valid' persons who are not a team.
+
+    >>> vocab = vocabulary_registry.get(None, "ValidPerson")
+    >>> vocab.displayname
+    'Select a Person'
+    >>> people = vocab.search(None)
+    >>> print len(people) > 0
+    True
+    >>> invalid_people = [person for person in people if not person.is_valid_person]
+    >>> print len(invalid_people)
+    0
+
+There are two 'Carlos' in the sample data but only one is a valid person.
+
+    >>> carlos = vocab.search('Carlos')
+    >>> print len(carlos)
+    1
+
 
 === Processor ===
 

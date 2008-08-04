@@ -65,6 +65,13 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
         description=_("""Project group owner, it can either a valid
             Person or Team inside Launchpad context."""))
 
+    registrant = Choice(
+        title=_('Registrant'),
+        required=True,
+        vocabulary='ValidPerson',
+        description=_("""Project group registrant, a valid
+            Person inside Launchpad context."""))
+
     name = exported(
         ProjectNameField(
             title=_('Name'),
@@ -164,7 +171,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
             "that can be used to identify this project group. The icon will "
             "be displayed in Launchpad everywhere that we link to this "
             "project group. For example in listings or tables of active "
-	    "project groups."))
+            "project groups."))
 
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
@@ -191,7 +198,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
     bugtracker = Choice(title=_('Bug Tracker'), required=False,
         vocabulary='BugTracker',
         description=_(
-	    "The bug tracker the products in this project group use."))
+            "The bug tracker the products in this project group use."))
 
     products = Attribute(
         _("An iterator over the active Products for this project group."))
