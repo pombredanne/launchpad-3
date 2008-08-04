@@ -4,19 +4,165 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
 from unittest import TestCase, TestLoader
 
 import psycopg2
+import pytz
 import transaction
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
+from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     IBranchSet, IRevisionSet)
-from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.launchpad.testing import (
+    LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+
+
+class TestRevisionGetBranch(TestCaseWithFactory):
+    """Test the `getBranch` method of the revision."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Use an administrator to set branch privacy easily.
+        TestCaseWithFactory.setUp(self, "foo.bar@canonical.com")
+        self.author = self.factory.makePerson()
+        self.revision = self.factory.makeRevision(
+            author=self.author.preferredemail.email)
+
+    def testPreferAuthorBranch(self):
+        # If a revision is on the mainline history of two (or more) different
+        # branches, then choose one owned by the revision author.
+        b1 = self.factory.makeBranch()
+        b1.createBranchRevision(1, self.revision)
+        b2 = self.factory.makeBranch(owner=self.author)
+        b2.createBranchRevision(1, self.revision)
+        self.assertEqual(b2, self.revision.getBranch())
+
+    def testPreferMainlineRevisionBranch(self):
+        # Choose a branch where the revision is on the mainline history over a
+        # branch where the revision is just in the ancestry.
+        b1 = self.factory.makeBranch()
+        b1.createBranchRevision(None, self.revision)
+        b2 = self.factory.makeBranch()
+        b2.createBranchRevision(1, self.revision)
+        self.assertEqual(b2, self.revision.getBranch())
+
+    def testOwnerTrunksMainline(self):
+        # If the revision is mainline on a branch not owned by the revision
+        # owner, but in the ancestry of a branch owned by the revision owner,
+        # choose the branch owned by the revision author.
+        b1 = self.factory.makeBranch()
+        b1.createBranchRevision(1, self.revision)
+        b2 = self.factory.makeBranch(owner=self.author)
+        b2.createBranchRevision(None, self.revision)
+        self.assertEqual(b2, self.revision.getBranch())
+
+    def testPublicBranchTrumpsOwner(self):
+        # Only public branches are returned.
+        b1 = self.factory.makeBranch()
+        b1.createBranchRevision(1, self.revision)
+        b2 = self.factory.makeBranch(owner=self.author)
+        b2.createBranchRevision(1, self.revision)
+        b2.private = True
+        self.assertEqual(b1, self.revision.getBranch())
+
+    def testEarlierHistoryFirst(self):
+        # If all else is equal, choose the branch that has the revision
+        # earlier in the mainline history.
+        b1 = self.factory.makeBranch()
+        b1.createBranchRevision(2, self.revision)
+        b2 = self.factory.makeBranch()
+        b2.createBranchRevision(1, self.revision)
+        self.assertEqual(b2, self.revision.getBranch())
+
+
+class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
+    """Test the `getPublicRevisionsForPerson` method of `RevisionSet`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Use an administrator to set branch privacy easily.
+        TestCaseWithFactory.setUp(self, "foo.bar@canonical.com")
+        self.author = self.factory.makePerson()
+        self.revision = self.factory.makeRevision(
+            author=self.author.preferredemail.email)
+        self.date_generator = time_counter(
+            datetime(2007, 1, 1, tzinfo=pytz.UTC),
+            delta=timedelta(days=1))
+
+    def _makeRevision(self, author=None):
+        """Make a revision owned by self.author."""
+        if author is None:
+            author = self.author
+        return self.factory.makeRevision(
+            author=author.preferredemail.email,
+            revision_date=self.date_generator.next())
+
+    def _addRevisionsToBranch(self, branch, *revs):
+        # Add the revisions to the the branch.
+        for sequence, rev in enumerate(revs):
+            branch.createBranchRevision(sequence, rev)
+
+    def testRevisionsMustBeInABranch(self):
+        # A revision authored by the person must be in a branch to be
+        # returned.
+        rev1 = self._makeRevision()
+        self.assertEqual(self.author, rev1.revision_author.person)
+        self.assertEqual(
+            [],
+            list(RevisionSet.getPublicRevisionsForPerson(self.author)))
+        b = self.factory.makeBranch()
+        b.createBranchRevision(1, rev1)
+        self.assertEqual(
+            [rev1],
+            list(RevisionSet.getPublicRevisionsForPerson(self.author)))
+
+    def testRevisionsMustBeInAPublicBranch(self):
+        # A revision authored by the person must be in a branch to be
+        # returned.
+        rev1 = self._makeRevision()
+        self.assertEqual(self.author, rev1.revision_author.person)
+        self.assertEqual(
+            [],
+            list(RevisionSet.getPublicRevisionsForPerson(self.author)))
+        b = self.factory.makeBranch()
+        b.createBranchRevision(1, rev1)
+        b.private = True
+        self.assertEqual(
+            [],
+            list(RevisionSet.getPublicRevisionsForPerson(self.author)))
+
+    def testNewestRevisionFirst(self):
+        # The revisions are ordered with the newest first.
+        rev1 = self._makeRevision()
+        rev2 = self._makeRevision()
+        rev3 = self._makeRevision()
+        branch = self.factory.makeBranch()
+        self._addRevisionsToBranch(branch, rev1, rev2, rev3)
+        self.assertEqual(
+            [rev3, rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForPerson(self.author)))
+
+    def testTeamRevisions(self):
+        # Revisions owned by all members of a team are returnded.
+        team = self.factory.makeTeam(self.author)
+        team_member = self.factory.makePerson()
+        team.addMember(team_member, self.author)
+        rev1 = self._makeRevision()
+        rev2 = self._makeRevision(team_member)
+        rev3 = self._makeRevision(self.factory.makePerson())
+        branch = self.factory.makeBranch()
+        self._addRevisionsToBranch(branch, rev1, rev2, rev3)
+        self.assertEqual(
+            [rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForPerson(team)))
 
 
 class TestTipRevisionsForBranches(TestCase):

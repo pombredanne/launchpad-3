@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import Join, LeftJoin
+from storm.expr import And, Join, LeftJoin
 from storm.info import ClassAlias
 from storm.store import Store
 from sqlobject import (
@@ -515,16 +515,28 @@ class Branch(SQLBase):
         BranchSubscription.delete(subscription.id)
         store.flush()
 
-    def getBranchRevision(self, sequence):
+    def getBranchRevision(self, sequence=None, revision=None,
+                          revision_id=None):
         """See `IBranch`."""
-        assert sequence is not None, \
-               "Only use this to fetch revisions from mainline history."
-        return BranchRevision.selectOneBy(branch=self, sequence=sequence)
+        params = (sequence, revision, revision_id)
+        if len(filter(lambda x: x, [p is not None for p in params])) != 1:
+            raise AssertionError(
+                "One and only one of sequence, revision, or revision_id "
+                "should have a value.")
+        if sequence is not None:
+            query = BranchRevision.sequence == sequence
+        elif revision is not None:
+            query = BranchRevision.revision == revision
+        else:
+            query = And(BranchRevision.revision == Revision.id,
+                        Revision.revision_id == revision_id)
 
-    def getBranchRevisionByRevisionId(self, revision_id):
-        """See `IBranch`."""
-        revision = Revision.selectOneBy(revision_id=revision_id)
-        return BranchRevision.selectOneBy(branch=self, revision=revision)
+        store = Store.of(self)
+
+        return store.find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            query).one()
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""

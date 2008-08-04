@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 import email
 
 import pytz
+from storm.expr import And, Asc, Desc, Not, Select
+from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -79,6 +81,27 @@ class Revision(SQLBase):
             # Backdate the karma to the time the revision was created.
             karma.datecreated = self.revision_date
             self.karma_allocated = True
+
+    def getBranch(self):
+        """See `IRevision`."""
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+
+        store = Store.of(self)
+
+        result_set = store.find(
+            Branch,
+            self.id == BranchRevision.revisionID,
+            BranchRevision.branchID == Branch.id,
+            Not(Branch.private))
+        if self.revision_author.person is None:
+            result_set.order_by(Asc(BranchRevision.sequence))
+        else:
+            result_set.order_by(
+                Branch.ownerID != self.revision_author.personID,
+                Asc(BranchRevision.sequence))
+
+        return result_set.first()
 
 
 class RevisionAuthor(SQLBase):
@@ -227,3 +250,30 @@ class RevisionSet:
             AND Revision.revision_date >= %s
             """ % sqlvalues(product, cut_off_date),
             prejoins=['revision_author'])
+
+    @staticmethod
+    def getPublicRevisionsForPerson(person):
+        """See `IRevisionSet`."""
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+        from canonical.launchpad.database.teammembership import (
+            TeamParticipation)
+
+        store = Store.of(person)
+
+        if person.is_team:
+            person_query = And(
+                RevisionAuthor.personID == TeamParticipation.personID,
+                TeamParticipation.team == person)
+        else:
+            person_query = RevisionAuthor.person == person
+
+        result_set = store.find(
+            Revision,
+            Revision.revision_author == RevisionAuthor.id,
+            person_query,
+            Revision.id == BranchRevision.revisionID,
+            BranchRevision.branchID == Branch.id,
+            Not(Branch.private))
+        return result_set.order_by(Desc(Revision.revision_date))

@@ -23,7 +23,7 @@
                     bzr_identity canBeDeleted deletionRequirements
                     associatedProductSeries subscribe getSubscription
                     hasSubscription unsubscribe getSubscriptionsByLevel
-                    getBranchRevision getBranchRevisionByRevisionId
+                    getBranchRevision
                     createBranchRevision getTipRevision updateScannedDetails
                     getNotificationRecipients getScannerData getPullURL
                     requestMirror startMirroring mirrorComplete mirrorFailed
