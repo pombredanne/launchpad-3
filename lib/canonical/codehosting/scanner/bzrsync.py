@@ -474,7 +474,7 @@ class BzrSync:
             RepositoryFormat, repository_string,
             RepositoryFormat.UNRECOGNIZED)
 
-    def planDatabaseChanges(self, bzr_ancestry, bzr_history, db_ancestry, 
+    def planDatabaseChanges(self, bzr_ancestry, bzr_history, db_ancestry,
                             db_history, db_branch_revision_map):
         """Plan database changes to synchronize with bzrlib data.
 
@@ -526,13 +526,13 @@ class BzrSync:
             self.getRevisions(
                 bzr_history, added_merged.union(added_history)))
 
-        return (added_ancestry, branchrevisions_to_delete, 
+        return (added_ancestry, branchrevisions_to_delete,
                 branchrevisions_to_insert)
 
     def getNewBazaarRevisions(self, bzr_branch, added_ancestry):
         """Return the new Bazaar revisions in `bzr_branch`.
 
-        :param added_ancestry: the set of Bazaar revision IDs that the 
+        :param added_ancestry: the set of Bazaar revision IDs that the
             scanner has found in the Bazaar branch but not in the database
             branch.
         """
