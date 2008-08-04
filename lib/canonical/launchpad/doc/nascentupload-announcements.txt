@@ -703,6 +703,7 @@ the INFO level what it /would/ have sent.
   INFO:   Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
   INFO:   Bcc: Root <root@localhost>
   INFO:   Body:
+  ...
   INFO: Accepted:
   INFO:  OK: bar_1.0-2_i386.deb
   ...

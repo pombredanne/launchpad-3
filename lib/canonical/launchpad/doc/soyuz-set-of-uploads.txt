@@ -355,7 +355,7 @@ Check the email recipient for displayname containing special chars,
   To:
     "Foo B. Bar" <foo.bar@canonical.com>,
     Celso Providelo <celso.providelo@canonical.com>
-  Subject: Accepted: bar 1.0-4 (source)
+  Subject: [ubuntutest/breezy-RELEASE] bar 1.0-4 (Accepted)
   ...
 
 Revert changes:
