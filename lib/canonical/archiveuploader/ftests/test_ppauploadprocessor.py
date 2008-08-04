@@ -168,7 +168,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-1 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
         queue_items = self.breezy.getQueueItems(
@@ -213,8 +214,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-10 (source)",
-            "[PPA name16] Accepted:",
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-10 "
+            "(Accepted)",
             "OK: bar_1.0.orig.tar.gz",
             "OK: bar_1.0-10.diff.gz",
             "OK: bar_1.0-10.dsc",
@@ -265,7 +266,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1_universe", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-1 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
         # The SourcePackageRelease still has a component of universe:
@@ -309,7 +311,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-1 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
         # Source publication and build record for breezy-i386
@@ -351,7 +354,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-1 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
         # Copy source uploaded to name16 PPA to cprov's PPA.
@@ -458,7 +462,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+            "Subject: [PPA name16] [ubuntu/hoary-RELEASE] bar 1.0-1 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
         queue_items = hoary.getQueueItems(
@@ -490,7 +495,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: [PPA ubuntu-team] Accepted: bar 1.0-1 (source)"]
+            "Subject: [PPA ubuntu-team] [ubuntu/breezy-RELEASE] bar 1.0-1 "
+            "(Accepted)"]
         self.assertEmail(contents, ppa_header='ubuntu-team')
 
         queue_items = self.breezy.getQueueItems(
@@ -589,7 +595,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-1 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
     def testUploadToAMismatchingDistribution(self):
@@ -918,7 +925,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: New: bar 1.0-1 (source)"]
+            "Subject: [ubuntu/breezy-RELEASE] bar 1.0-1 (New)"]
         ubuntu_recipients = [
             self.name16_recipient, self.kinnison_recipient]
         self.assertEmail(contents, recipients=ubuntu_recipients,
@@ -949,7 +956,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # content.
         announcement = stub.test_emails.pop()
         contents = [
-            "Subject: Accepted: bar 1.0-10 (source)"]
+            "Subject: [ubuntu/breezy-RELEASE] bar 1.0-10 (Accepted)"]
         self.assertEmail(contents, ppa_header=None)
 
     def testPPAReusingOrigFromUbuntu(self):
@@ -962,7 +969,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-10 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-10 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
         # Cleanup queue directory in order to re-upload the same source.
@@ -989,7 +997,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-3_valid", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-3 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-3 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
         # The published section should be "devel" and not "web".
@@ -1019,7 +1028,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1-ppa-orig", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-1 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
         # Make the official bar orig.tar.gz available in the system.
@@ -1030,7 +1040,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-10 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-10 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
         # Upload a higher version of bar that relies on the official
@@ -1084,13 +1095,15 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-1 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-10 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-10 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
 
@@ -1147,7 +1160,8 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-1 "
+            "(Accepted)",
             "Upload Warnings:",
             "PPA exceeded its size limit (1024.00 of 1024.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
@@ -1168,7 +1182,8 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-1 "
+            "(Accepted)",
             "Upload Warnings:",
             "PPA exceeded 95 % of its size limit (973.00 of 1024.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
@@ -1185,7 +1200,8 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+            "Subject: [PPA name16] [ubuntu/breezy-RELEASE] bar 1.0-1 "
+            "(Accepted)"]
         self.assertEmail(contents)
 
         # Retrieve the build record for source bar in breezy-i386

@@ -111,7 +111,7 @@ There is only one email generated:
   'Launchpad actually'
 
   >>> notification['Subject']
-  'New: bar 1.0-1 (source)'
+  '[ubuntu/hoary-RELEASE] bar 1.0-1 (New)'
 
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
@@ -169,7 +169,16 @@ Upload notifications from primary archive do not contain the
   >>> 'X-Launchpad-PPA' in notification.keys()
   False
 
-Let's perform and PPA upload to verify the PPA header presence.
+Notifications for source uploads will contain the 'X-Launchpad-Component'
+header however.
+
+  >>> 'X-Launchpad-Component' in notification.keys()
+  True
+
+  >>> notification['X-Launchpad-Component']
+  'component=universe, section=devel'
+
+    Let's perform and PPA upload to verify the PPA header presence.
 
   >>> from canonical.launchpad.interfaces import (
   ...     ArchivePurpose, IArchiveSet, IDistributionSet, IPersonSet)
@@ -348,7 +357,7 @@ the upload is waiting for approval:
   'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
 
   >>> notification['Subject']
-  'Waiting for approval: bar 1.0-2 (source)'
+  '[ubuntu/hoary-UPDATES] bar 1.0-2 (Waiting for approval)'
 
 
 UNAPPROVED upload to BACKPORTS via insecure policy will send a notification
@@ -377,7 +386,7 @@ saying they are waiting for approval:
   'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
 
   >>> notification['Subject']
-  'Waiting for approval: bar 1.0-3 (source)'
+  '[ubuntu/hoary-BACKPORTS] bar 1.0-3 (Waiting for approval)'
 
 
 AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
@@ -423,7 +432,7 @@ There is one email generated:
   'Celso Providelo <celso.providelo@canonical.com>'
 
   >>> notification['Subject']
-  'Accepted: bar 1.0-4 (source)'
+  '[ubuntu/hoary-BACKPORTS] bar 1.0-4 (Accepted)'
 
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
@@ -464,10 +473,12 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   2
 
   >>> [message['To'] for message in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
+  ['Daniel Silverstone <daniel.silverstone@canonical.com>',
+   'hoary-announce@lists.ubuntu.com']
 
   >>> [message['Subject'] for message in msgs]
-  ['Accepted: bar 1.0-2 (source)', 'Accepted: bar 1.0-2 (source)']
+  ['[ubuntu/hoary-SECURITY] bar 1.0-2 (Accepted)',
+   '[ubuntu/hoary-SECURITY] bar 1.0-2 (Accepted)']
 
   >>> [message['X-Katie'] for message in msgs]
   ['Launchpad actually', 'Launchpad actually']
@@ -502,7 +513,7 @@ One email generated:
 
   >>> [notification] = pop_notifications()
   >>> notification['Subject']
-  'Accepted: bar 1.0-5 (source)'
+  '[ubuntu/hoary-RELEASE] bar 1.0-5 (Accepted)'
 
 
 In contrast, manual sync uploads do generate the announcement:
@@ -529,7 +540,8 @@ Two emails generated:
       'hoary-announce@lists.ubuntu.com']
 
   >>> [message['Subject'] for message in msgs]
-  ['Accepted: bar 1.0-6 (source)', 'Accepted: bar 1.0-6 (source)']
+  ['[ubuntu/hoary-RELEASE] bar 1.0-6 (Accepted)',
+   '[ubuntu/hoary-RELEASE] bar 1.0-6 (Accepted)']
 
 Reset hoary back to released and remove disk files created during processing:
 
@@ -580,7 +592,7 @@ One email generated:
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
 
   >>> notification['Subject']
-  'Accepted: bar 1.0-2 (i386)'
+  '[ubuntu/hoary-SECURITY] bar 1.0-2 (Accepted)'
 
 
 A mixed mode upload to the SECURITY pocket via the 'security' policy
@@ -635,7 +647,8 @@ Two emails generated:
     'hoary-announce@lists.ubuntu.com']
 
   >>> [message['Subject'] for message in msgs]
-  ['Accepted: foo 1.0-2.1 (source)', 'Accepted: foo 1.0-2.1 (source)']
+  ['[ubuntu/hoary-SECURITY] foo 1.0-2.1 (Accepted)',
+   '[ubuntu/hoary-SECURITY] foo 1.0-2.1 (Accepted)']
 
   >>> [message['X-Katie'] for message in msgs]
   ['Launchpad actually', 'Launchpad actually']
@@ -685,7 +698,7 @@ the INFO level what it /would/ have sent.
   DEBUG: Building recipients list.
   ...
   INFO: Would have sent a mail:
-  INFO:   Subject: Accepted: bar 1.0-2 (i386)
+  INFO:   Subject: [ubuntu/hoary-SECURITY] bar 1.0-2 (Accepted)
   INFO:   Sender: Root <root@localhost>
   INFO:   Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
   INFO:   Bcc: Root <root@localhost>

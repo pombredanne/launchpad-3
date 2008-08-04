@@ -563,11 +563,16 @@ class PackageUpload(SQLBase):
                         bcc=None):
             """Perform substitutions on a template and send the email."""
             body = message.template % message.__dict__
-            subject = "%s: %s %s (%s)" % (
-                message.STATUS, self.displayname, self.displayversion,
-                self.displayarchs)
+            # Weed out duplicate name entries.
+            names = ', '.join(set(self.displayname.split()))
+            subject = '[%s/%s-%s] %s %s (%s)' % (
+                self.distroseries.distribution.name,
+                self.distroseries.name, self.pocket.name, names,
+                self.displayversion, message.STATUS)
+
             if self.isPPA():
                 subject = "[PPA %s] " % self.archive.owner.name + subject
+
             self._sendMail(recipients, subject, body, dry_run,
                            from_addr=from_addr, bcc=bcc)
 
@@ -832,6 +837,21 @@ class PackageUpload(SQLBase):
         if (self.archive.purpose == ArchivePurpose.PPA and
             self.archive.owner):
             extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
+
+        # Include a 'X-Launchpad-Component' header with the component and
+        # the section of the source package uploaded in order to facilitate
+        # filtering on the part of the email recipients.
+        if self.sources:
+            spr = self.sourcepackagerelease
+            xlp_component_header = 'component=%s, section=%s' % (
+                spr.component.name, spr.section.name)
+            extra_headers['X-Launchpad-Component'] = xlp_component_header
+
+        # Include a 'X-Launchpad-Signer' header if this is a signed upload.
+        if self.signing_key:
+            # This is a signed upload.
+            signer = self.signing_key.owner
+            extra_headers['X-Launchpad-Signer'] = signer.displayname
 
         if from_addr is None:
             from_addr = format_address(
