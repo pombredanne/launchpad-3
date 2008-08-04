@@ -41,6 +41,7 @@ from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
+from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
@@ -1043,6 +1044,27 @@ class PublishingSet:
             BinaryPackageName.name,
             DistroArchSeries.architecturetag,
             Desc(BinaryPackagePublishingHistory.id))
+
+        return result_set
+
+    def getPackageDiffsForSources(self, one_or_more_source_publications):
+        """See `PublishingSet`."""
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IZStorm).get('main')
+        result_set = store.find(
+            (SourcePackagePublishingHistory, PackageDiff,
+             LibraryFileAlias, LibraryFileContent),
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                PackageDiff.to_sourceID,
+            PackageDiff.diff_contentID == LibraryFileAlias.id,
+            LibraryFileAlias.contentID == LibraryFileContent.id,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        result_set.order_by(
+            SourcePackagePublishingHistory.id,
+            Desc(PackageDiff.date_requested))
 
         return result_set
 

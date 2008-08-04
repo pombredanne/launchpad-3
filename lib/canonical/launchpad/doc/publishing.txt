@@ -650,6 +650,7 @@ This utility implements the following methods:
  * getBuildsForSources();
  * getFilesForSources();
  * getBinaryPublicationsForSources();
+ * getPackageDiffsForSources();
 
 They receive a list of `SourcePackagePublishingHistory` objects and
 fetch the corresponding information for all of them.
@@ -756,8 +757,7 @@ ascending `DistroArchSeries.architecturetag and descending
     >>> print arch.displayname
     ubuntutest Breezy Badger Autotest i386
 
-Finally we can retrieve all files related with Celso's PPA
-publications.
+We can retrieve all files related with Celso's PPA publications.
 
     >>> cprov_files = publishing_set.getFilesForSources(
     ...     cprov_sources)
@@ -780,6 +780,90 @@ check that they unpack as specified, a 3-element tuple.
 
     >>> print ordered_filenames[-1]
     firefox-0.9.2.orig.tar.gz
+
+getPackageDiffsForSources() is also provided by `IPublishingSet`. This
+method allows callsites to retrieve all related `PackageDiff` records
+based on a collection os source publications.
+
+The sampledata does not contain any PackageDiff, thus nothing is
+returned for the Celso's sources.
+
+    >>> cprov_diffs = publishing_set.getPackageDiffsForSources(
+    ...     cprov_sources)
+
+    >>> cprov_diffs.count()
+    0
+
+For testing purposes we will create a `PackageDiff` for Celso's 'pmount'.
+
+    >>> a_source = cprov_sources[-2]
+    >>> print a_source.displayname
+    iceweasel 1.0 in warty
+
+    >>> to_source = cprov_sources[-1]
+    >>> print to_source.displayname
+    pmount 0.1-1 in warty
+
+    >>> pmount_diff = a_source.sourcepackagerelease.requestDiffTo(
+    ...     cprov, to_source.sourcepackagerelease)
+    >>> print pmount_diff.title
+    1.0 (in Ubuntu) to 0.1-1
+
+    >>> iceweasel_diff = to_source.sourcepackagerelease.requestDiffTo(
+    ...     cprov, a_source.sourcepackagerelease)
+    >>> print iceweasel_diff.title
+    0.1-1 (in Ubuntu) to 1.0
+
+
+getPackageDiffsForSources() only returns fulfilled (diffs), which is
+not the case of the just created `PackageDiff`s.
+
+    >>> cprov_diffs.count()
+    0
+
+Once we make the `PackageDiff` records 'fulfilled', by storing a
+'diff_content' it shows up in the getPackageDiffsForSources()
+results.
+
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+    >>> naked_diff = removeSecurityProxy(pmount_diff)
+    >>> naked_diff.diff_content = getUtility(ILibraryFileAliasSet)[1]
+
+    >>> naked_diff = removeSecurityProxy(iceweasel_diff)
+    >>> naked_diff.diff_content = getUtility(ILibraryFileAliasSet)[1]
+
+    >>> flush_database_updates()
+
+    >>> cprov_diffs.count()
+    2
+
+getPackageDiffsForSources() returns a list of 4-element tuple, ordered
+by descending `PackageDiff` creation date, containing:
+
+ * `SourcePackagePublishingHistory`;
+ * `PackageDiff`;
+ * `LibraryFileAlias`;
+ * `LibraryFileContent`.
+
+    >>> [iceweasel_diff, pmount_diff] = cprov_diffs
+
+    >>> source_pub, diff, file, content = pmount_diff
+
+    >>> print source_pub.displayname
+    pmount 0.1-1 in warty
+
+    >>> print diff.title
+    1.0 (in Ubuntu) to 0.1-1
+
+    >>> print file.filename
+    netapplet-1.0.0.tar.gz
+
+    >>> print content.md5
+    01234567890123456789012345678900
 
 Last but not least the publishing set class allows for the bulk deletion
 of publishing history records.
@@ -932,7 +1016,8 @@ information to be cached in the decorated objects:
 
   * getBuildsBySource;
   * getFilesBySource;
-  * getBinariesBySource.
+  * getBinariesBySource;
+  * getPackageDiffsBySource.
 
 They exclude the extra references ('prejoins') returned  from the
 corresponding `IPublishingSet` methods and group the wanted results as
@@ -975,6 +1060,18 @@ user-visible method (filename) before comparing.
     ...     real_pub.getSourceAndBinaryLibraryFiles(), ordered_files)
     Matches
 
+Package diffs by source.
+
+    >>> pub_with_diff = cprov_published_sources[-1]
+
+    >>> diffs_by_source = decorated_set.getPackageDiffsBySource()
+
+    >>> compare_ids(
+    ...     pub_with_diff.sourcepackagerelease.package_diffs,
+    ...     diffs_by_source.get(pub_with_diff, []))
+    Matches
+
+
 Enough internals! What really matters for callsites is that, when
 iterated, `ArchiveSourcePublications`returns `ArchiveSourcePublication`
 objects that decorates `ISourcePackagePublishingHistory` and have
@@ -992,7 +1089,7 @@ publications.
 
 `ArchiveSourcePublication` caches the returned values for following
 methods:
-
+  * sourcepackagerelease;
   * getBuilds;
   * getSourceAndBinaryLibraryFiles;
   * getPublishedBinaries.
@@ -1008,4 +1105,25 @@ methods:
     >>> compare_ids(
     ...     real_pub.getSourceAndBinaryLibraryFiles(),
     ...     decorated_pub.getSourceAndBinaryLibraryFiles())
+    Matches
+
+The 'sourcepackagerelease' attribute from a decorated
+`ArchiveSourcePublication` object is also another decorated object,
+this way we can cache information refered to
+`ISourcePackageRelease.package_diffs`.
+
+    >>> decorated_pub_with_diff = list(decorated_set)[-1]
+    >>> print decorated_pub_with_diff.sourcepackagerelease
+    <...ArchiveSourcePackageRelease ...>
+
+    >>> from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ...     ISourcePackageRelease)
+    >>> verifyObject(
+    ...     ISourcePackageRelease,
+    ...     decorated_pub_with_diff.sourcepackagerelease)
+    True
+
+    >>> compare_ids(
+    ...     pub_with_diff.sourcepackagerelease.package_diffs,
+    ...     decorated_pub_with_diff.sourcepackagerelease.package_diffs)
     Matches

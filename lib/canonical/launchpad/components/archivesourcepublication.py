@@ -19,7 +19,27 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.publishing import (
     IPublishingSet, ISourcePackagePublishingHistory)
+from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ISourcePackageRelease)
 from canonical.lazr import decorates
+
+
+class ArchiveSourcePackageRelease:
+    """Decorates `SourcePackageRelease`
+
+    It recieves the related `PackageDiff` records, so they don't need
+    to be recalculated.
+    """
+    decorates(ISourcePackageRelease)
+
+    def __init__(self, context, packagediffs):
+        self.context = context
+        self._packagediffs = packagediffs
+
+    @property
+    def package_diffs(self):
+        """See `ISourcePackageRelease`."""
+        return self._packagediffs
 
 
 class ArchiveSourcePublication:
@@ -31,11 +51,17 @@ class ArchiveSourcePublication:
     decorates(ISourcePackagePublishingHistory)
 
     def __init__(self, context, sourceandbinarylibraryfiles,
-                 publishedbinaries, builds):
+                 publishedbinaries, builds, packagediffs):
         self.context = context
         self._sourceandbinarylibraryfiles = sourceandbinarylibraryfiles
         self._publishedbinaries = publishedbinaries
         self._builds = builds
+        self._packagediffs = packagediffs
+
+    @property
+    def sourcepackagerelease(self):
+        return ArchiveSourcePackageRelease(
+            self.context.sourcepackagerelease, self._packagediffs)
 
     def getSourceAndBinaryLibraryFiles(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -105,12 +131,22 @@ class ArchiveSourcePublications:
             for source, binary, binary_release, name, arch in binary_set]
         return self.groupBySource(source_and_binaries)
 
+    def getPackageDiffsBySource(self):
+        """PackageDiffs for sources."""
+        publishing_set = getUtility(IPublishingSet)
+        packagediff_set = publishing_set.getPackageDiffsForSources(
+            self._source_publications)
+        source_and_packagediffs = [
+            (source, packagediff)
+            for source, packagediff, file, content in packagediff_set]
+        return self.groupBySource(source_and_packagediffs)
+
     def __nonzero__(self):
         """Are there any sources to iterate?"""
         return self.has_sources
 
     def __iter__(self):
-        """`ArchiveSourcePublication` iterator"""
+        """`ArchiveSourcePublication` iterator."""
         results = []
         if not self.has_sources:
             return iter(results)
@@ -119,15 +155,18 @@ class ArchiveSourcePublications:
         builds_by_source = self.getBuildsBySource()
         files_by_source = self.getFilesBySource()
         binaries_by_source = self.getBinariesBySource()
+        packagediffs_by_source = self.getPackageDiffsBySource()
 
         # Build the decorated object with the information we have.
         for pub in self._source_publications:
             builds = builds_by_source.get(pub, [])
             files = files_by_source.get(pub, [])
             binaries = binaries_by_source.get(pub, [])
+            packagediffs = packagediffs_by_source.get(pub, [])
             complete_pub = ArchiveSourcePublication(
                 pub, sourceandbinarylibraryfiles=files,
-                publishedbinaries=binaries, builds=builds)
+                publishedbinaries=binaries, builds=builds,
+                packagediffs=packagediffs)
             results.append(complete_pub)
 
         return iter(results)
