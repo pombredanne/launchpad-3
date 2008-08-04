@@ -39,6 +39,7 @@ But once Sample Person is made a mailing list expert, he can view the page.
     >>> admin_browser.getControl('New member').value = 'name12'
     >>> admin_browser.getControl('Add Member').click()
 
+    >>> PageTestLayer.resetStores()
     >>> sample_browser.open('http://launchpad.dev/+mailinglists')
     >>> sample_browser.title
     'Pending mailing lists requests'
