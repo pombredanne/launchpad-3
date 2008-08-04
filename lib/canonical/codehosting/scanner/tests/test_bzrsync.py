@@ -33,6 +33,23 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
 
 
+class FakeRevision:
+    """Fake Bazaar `Revision` object used in tests."""
+
+    def __init__(self, revision_id, parent_ids, committer, message, timestamp,
+                 timezone, properties):
+        self.revision_id = revision_id
+        self.parent_ids = parent_ids
+        self.committer = committer
+        self.message = message
+        self.timestamp = timestamp
+        self.timezone = timezone
+        self.properties = properties
+
+    def get_apparent_author(self):
+        return self.committer
+
+
 class BzrSyncTestCase(TestCaseWithTransport):
     """Common base for BzrSync test cases."""
 
@@ -520,27 +537,20 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
         old_timestamp = -0.5
         old_date = datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC)
 
-        class FakeRevision:
-            """A revision with a negative, fractional timestamp.
-            """
-            revision_id = 'rev42'
-            parent_ids = ['rev1', 'rev2']
-            committer = self.AUTHOR
-            message = self.LOG
-            timestamp = old_timestamp
-            timezone = 0
-            properties = {}
-            def get_apparent_author(self):
-                return self.committer
+        # Fake revision with negative timestamp.
+        fake_rev = FakeRevision(
+            revision_id='rev42', parent_ids=['rev1', 'rev2'],
+            committer=self.AUTHOR, message=self.LOG, timestamp=old_timestamp,
+            timezone=0, properties={})
 
         # Sync the revision.  The second parameter is a dict of revision ids
         # to revnos, and will error if the revision id is not in the dict.
-        self.bzrsync.syncOneRevision(FakeRevision(), {'rev42': None})
+        self.bzrsync.syncOneRevision(fake_rev, {'rev42': None})
 
         # Find the revision we just synced and check that it has the correct
         # date.
         revision = getUtility(IRevisionSet).getByRevisionId(
-            FakeRevision.revision_id)
+            fake_rev.revision_id)
         self.assertEqual(old_date, revision.revision_date)
 
 
@@ -554,20 +564,13 @@ class TestBzrSyncModified(BzrSyncTestCase):
 
     def test_revision_modified(self):
         # test that modifications to the list of parents get caught.
-        class FakeRevision:
-            revision_id = 'rev42'
-            parent_ids = ['rev1', 'rev2']
-            committer = self.AUTHOR
-            message = self.LOG
-            timestamp = 1000000000.0
-            timezone = 0
-            properties = {}
-            def get_apparent_author(self):
-                return self.committer
 
         # Synchronise the fake revision:
         counts = self.getCounts()
-        fake_revision = FakeRevision()
+        fake_revision = FakeRevision(
+            revision_id='rev42', parent_ids=['rev1', 'rev2'],
+            committer=self.AUTHOR, message=self.LOG, timestamp=1000000000.0,
+            timezone=0, properties={})
         fake_revision_dict = {'rev42': None}
         self.bzrsync.syncOneRevision(fake_revision, fake_revision_dict)
         self.assertCounts(
