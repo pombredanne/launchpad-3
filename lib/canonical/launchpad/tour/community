@@ -37,7 +37,7 @@
                 <img src="images/community/main-image.jpg" alt="Collaborate with free software communities." />
             </p>
             <p class="intro-text">
-                <strong>Find and work with the right people</strong> by using Launchpad to build a social network of individuals and teams around projects. Each action in Launchpad - a bug reported, a branch updated, a package published - is attributed to to the person responsible, making it easy to get in touch with people whose work interests you.
+                <strong>Find and work with the right people</strong> by using Launchpad to build a social network of individuals and teams around projects. Each action in Launchpad &mdash; a bug reported, a branch updated, a package published &mdash; is attributed to the person responsible, making it easy to get in touch with people whose work interests you.
 <br /><br />
 Launchpad also helps you organise the social structure of your community with a simple teams system, complete with mailing lists. Through teams you can share work and responsibilities, such as commit rights to a branch or supervising a project&rsquo;s bug reports.
             </p>
@@ -55,7 +55,7 @@ Launchpad also helps you organise the social structure of your community with a 
                 <div class="furthur-information-block-mid">
                     <div class="block">
                         <h3>Mailing lists</h3>
-                        <h4>Mailing lists are the heart of free software discussion and consensus building.</h4>
+                        <h4>Mailing lists are at the heart of free software discussion and consensus building.</h4>
                         <p class="screen-holder">
                             <img src="images/community/1.png" alt="Mailing Lists" />                        </p>
                         <p>
@@ -90,7 +90,7 @@ Launchpad also helps you organise the social structure of your community with a 
                     </div>
                     <div class="block odd">
                         <h3>Mentoring</h3>
-                        <h4>Grow your community through mentoring eager new contributors.</h4>
+                        <h4>Grow your community by mentoring eager new contributors.</h4>
                         <p class="screen-holder">
                             <img src="images/community/4.png" alt="Mentoring"  />                        </p>
                         <p>
@@ -125,7 +125,7 @@ Karma gives you a quick way to separate the heavy contributors from the newcomer
                 <a href="ppa" accesskey="d" tabindex="3">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2008 Canonical Ltd. <a href="#" accesskey="e" tabindex="4">Terms of Use</a> &#124; <a href="#" accesskey="f" tabindex="5">Feedback</a> &#124; <a href="#" accesskey="g" tabindex="6">FAQ</a>
+                &copy; 2004-2008 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="https://help.launchpad.net/FAQ" accesskey="h" tabindex="6">FAQ</a>
             </li>
         </ul>
     </div>

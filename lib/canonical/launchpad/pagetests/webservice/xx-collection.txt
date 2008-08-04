@@ -135,8 +135,6 @@ The elements of a collection can be looked up by unique identifier:
   expired_members_collection_link: http://.../~admins/expired_members
   hide_email_addresses: False
   homepage_content: None
-  indirect_participations_collection_link:
-      http://.../~admins/indirect_participations
   invited_members_collection_link: http://.../~admins/invited_members
   irc_nicknames_collection_link: http://.../~admins/irc_nicknames
   is_team: True
@@ -155,7 +153,6 @@ The elements of a collection can be looked up by unique identifier:
   open_membership_invitations_collection_link:
       http://.../~admins/open_membership_invitations
   participants_collection_link: http://.../~admins/participants
-  participations_collection_link: http://.../~admins/participations
   preferred_email_address_link: None
   proposed_members_collection_link: http://.../~admins/proposed_members
   renewal_policy: invite them to apply for renewal
