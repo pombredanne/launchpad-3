@@ -562,52 +562,70 @@ class TestBzrSyncModified(BzrSyncTestCase):
         BzrSyncTestCase.setUp(self)
         self.bzrsync = self.makeBzrSync(self.db_branch)
 
+    def makeFakeRevision(self, revision_id, parent_ids):
+        """Make a fake Bazaar revision for testing `syncOneRevision`."""
+        return FakeRevision(
+            revision_id=revision_id, parent_ids=parent_ids,
+            committer=self.AUTHOR, message=self.LOG, timestamp=1000000000.0,
+            timezone=0, properties={})
+
+    def syncFakeRevision(self, revision):
+        """Synchronize the fake revision."""
+        return self.bzrsync.syncOneRevision(
+            revision, {revision.revision_id: None})
+
+    def makeSyncedRevision(self, parent_ids):
+        """Return a fake revison that has already been synced.
+
+        :param parent_ids: The list of parent IDs for the revision.
+        """
+        revision_id = self.factory.getUniqueString()
+        fake_revision = self.makeFakeRevision(
+            revision_id, parent_ids=parent_ids)
+        counts = self.getCounts()
+        self.syncFakeRevision(fake_revision)
+        self.assertCounts(
+            counts, new_revisions=1, new_numbers=0,
+            new_parents=len(parent_ids), new_authors=0)
+        return fake_revision
+
     def test_revision_modified(self):
         # test that modifications to the list of parents get caught.
 
         # Synchronise the fake revision:
-        counts = self.getCounts()
-        fake_revision = FakeRevision(
-            revision_id='rev42', parent_ids=['rev1', 'rev2'],
-            committer=self.AUTHOR, message=self.LOG, timestamp=1000000000.0,
-            timezone=0, properties={})
-        fake_revision_dict = {'rev42': None}
-        self.bzrsync.syncOneRevision(fake_revision, fake_revision_dict)
-        self.assertCounts(
-            counts, new_revisions=1, new_numbers=0,
-            new_parents=2, new_authors=0)
+        fake_revision = self.makeSyncedRevision(['rev1', 'rev2'])
 
         # Verify that synchronising the revision twice passes and does
         # not create a second revision object:
         counts = self.getCounts()
-        self.bzrsync.syncOneRevision(fake_revision, fake_revision_dict)
+        self.syncFakeRevision(fake_revision)
         self.assertCounts(
             counts, new_revisions=0, new_numbers=0,
             new_parents=0, new_authors=0)
 
         # Verify that adding a parent gets caught:
-        fake_revision.parent_ids.append('rev3')
+        fake_revision = self.makeFakeRevision(
+            fake_revision.revision_id, ['rev1', 'rev2', 'rev3'])
         self.assertRaises(
             RevisionModifiedError,
-            self.bzrsync.syncOneRevision,
-            fake_revision,
-            fake_revision_dict)
+            self.syncFakeRevision,
+            fake_revision)
 
         # Verify that removing a parent gets caught:
-        fake_revision.parent_ids = ['rev1']
+        fake_revision = self.makeFakeRevision(
+            fake_revision.revision_id, ['rev1'])
         self.assertRaises(
             RevisionModifiedError,
-            self.bzrsync.syncOneRevision,
-            fake_revision,
-            fake_revision_dict)
+            self.syncFakeRevision,
+            fake_revision)
 
         # Verify that reordering the parents gets caught:
-        fake_revision.parent_ids = ['rev2', 'rev1']
+        fake_revision = self.makeFakeRevision(
+            fake_revision.revision_id, ['rev2', 'rev1'])
         self.assertRaises(
             RevisionModifiedError,
-            self.bzrsync.syncOneRevision,
-            fake_revision,
-            fake_revision_dict)
+            self.syncFakeRevision,
+            fake_revision)
 
 
 class TestBzrSyncEmail(BzrSyncTestCase):
