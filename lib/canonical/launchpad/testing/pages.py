@@ -617,6 +617,7 @@ def setUpGlobs(test):
     test.globs['print_ppa_packages'] = print_ppa_packages
     test.globs['print_self_link_of_entries'] = print_self_link_of_entries
     test.globs['print_tag_with_id'] = print_tag_with_id
+    test.globs['PageTestLayer'] = PageTestLayer
 
 
 class PageStoryTestCase(unittest.TestCase):

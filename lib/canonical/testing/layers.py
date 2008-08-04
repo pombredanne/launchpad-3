@@ -1182,6 +1182,19 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     def testTearDown(cls):
         pass
 
+    @classmethod
+    def resetStores(cls):
+        """Reset all the Storm stores.
+
+        Requests in pagetests may end up using different Stores with
+        different caches due to load balancing that is being done
+        between master and slave databases. These caches are not being
+        flushed between requests. You need to flush the Storm stores
+        if browser objects are not seeing changes made earlier in the
+        pagetest.
+        """
+        for name, store in getUtility(IZStorm).iterstores():
+            store.reset()
 
 class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
     """A layer for cleaning up the Twisted thread pool."""
