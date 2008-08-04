@@ -1,18 +1,23 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Tests for the internal codehosting API."""
 
 __metaclass__ = type
 
+import datetime
+import pytz
 import unittest
 
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import IBranchSet
+from canonical.launchpad.interfaces import IBranchSet, IScriptActivitySet
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.xmlrpc.codehosting import BranchDetailsStorageAPI
 from canonical.testing import DatabaseFunctionalLayer
+
+
+UTC = pytz.timezone('UTC')
 
 
 class BranchDetailsStorageTest(TestCaseWithFactory):
@@ -124,24 +129,20 @@ class BranchDetailsStorageTest(TestCaseWithFactory):
         self.assertMirrorSucceeded(branch, revision_id)
 
     def test_recordSuccess(self):
-        # recordSuccess must insert the given data into BranchActivity.
+        # recordSuccess must insert the given data into ScriptActivity.
         started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
         completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
         started_tuple = tuple(started.utctimetuple())
         completed_tuple = tuple(completed.utctimetuple())
-        success = self.storage._recordSuccessInteraction(
+        success = self.storage.recordSuccess(
             'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
-        self.assertEqual(success, True, '_recordSuccessInteraction failed')
+        self.assertEqual(success, True)
 
-        cur = cursor()
-        cur.execute("""
-            SELECT name, hostname, date_started, date_completed
-                FROM ScriptActivity where name = 'test-recordsuccess'""")
-        row = cur.fetchone()
-        self.assertEqual(row[0], 'test-recordsuccess')
-        self.assertEqual(row[1], 'vostok')
-        self.assertEqual(row[2], started.replace(tzinfo=None))
-        self.assertEqual(row[3], completed.replace(tzinfo=None))
+        activity = getUtility(IScriptActivitySet).getLastActivity(
+            'test-recordsuccess')
+        self.assertEqual('vostok', activity.hostname)
+        self.assertEqual(started, activity.date_started)
+        self.assertEqual(completed, activity.date_completed)
 
 
 def test_suite():
