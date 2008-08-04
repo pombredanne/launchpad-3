@@ -144,12 +144,6 @@ class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
     xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
 
     @cachedproperty
-    def person_url(self):
-        """The absolute URL for the person's Launchpad profile."""
-        person = getUtility(IPersonSet).getByAccount(self.context.account)
-        return canonical_url(person, rootsite='mainsite')
-
-    @cachedproperty
     def openid_identity_url(self):
         """The person's persistent OpenID identity URL."""
         return canonical_url(self.context)

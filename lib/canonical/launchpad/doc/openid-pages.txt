@@ -56,7 +56,7 @@ to test if the format of the identity URL is supported.
 
 The PersistentIdentityView displays an OpenIDPersistentIdentity.
 It is used by OpenID Discovery process to represent a user's
-identity end point. It provides three URLs for navigation.
+identity end point. It provides two URLs for navigation.
 
     >>> from openid.yadis.constants import YADIS_CONTENT_TYPE
     >>> from zope.component import getMultiAdapter
@@ -79,11 +79,6 @@ The URL for the server:
 
     >>> identity_view.openid_server_url
     'http://openid.launchpad.dev/+openid'
-
-And the URL for the user who owns the identity:
-
-    >>> identity_view.person_url
-    u'http://launchpad.dev/~name12'
 
 The view supports XRDS discovery. When the YADIS content type is in
 the HTTP_ACCEPT header, XRDS XML is rendered.
