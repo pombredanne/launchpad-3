@@ -21,6 +21,7 @@ __all__ = [
 from datetime import datetime, timedelta
 import pytz
 
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
@@ -29,7 +30,9 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
+from storm.expr import And, LeftJoin, Not, Or
 from storm.store import Store
+from storm.zope.interfaces import IZStorm
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -86,10 +89,9 @@ from canonical.launchpad.interfaces.mailinglist import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
-    InvalidName, IPerson, IPersonSet, ITeam, IHasPersonNavigationMenu,
-    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
-    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
+    InvalidName, IPerson, IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
+    PersonCreationRationale, PersonVisibility, PersonalStanding,
+    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -180,8 +182,7 @@ def validate_person_visibility(person, attr, value):
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
-    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot,
-               IHasPersonNavigationMenu)
+    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -2409,6 +2410,7 @@ class PersonSet:
                 defaultmembershipperiod=defaultmembershipperiod,
                 defaultrenewalperiod=defaultrenewalperiod,
                 subscriptionpolicy=subscriptionpolicy)
+        notify(ObjectCreatedEvent(team))
         # Here we add the owner as a team admin manually because we know what
         # we're doing (so we don't need to do any sanity checks) and we don't
         # want any email notifications to be sent.
@@ -2535,13 +2537,6 @@ class PersonSet:
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def getAllValidPersons(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        return Person.select(
-                Person.q.id == ValidPersonCache.q.id, orderBy=orderBy)
-
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
@@ -2555,9 +2550,23 @@ class PersonSet:
 
     def getAllValidPersonsAndTeams(self):
         """See `IPersonSet`."""
-        return self.getAllTeams().union(
-            self.getAllValidPersons(),
-            orderBy=Person._sortingColumnsForSetOperations)
+        store = getUtility(IZStorm).get('main')
+        tables = [
+            Person,
+            LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+            LeftJoin(Account, EmailAddress.account == Account.id),
+            ]
+        result = store.using(*tables).find(
+            Person,
+            And(
+                Person.merged == None,
+                Or(# A valid person-or-team is either a team...
+                   Not(Person.teamowner == None), # 'Not' due to Bug 244768
+
+                   # or has an active account and a preferred email address.
+                   And(Account.status == AccountStatus.ACTIVE,
+                       EmailAddress.status == EmailAddressStatus.PREFERRED))))
+        return result.order_by(Person.sortingColumns)
 
     def find(self, text, orderBy=None):
         """See `IPersonSet`."""
@@ -3397,6 +3406,13 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_person, team_id))
 
+        # Transfer the OpenIDRPSummaries to the new account.
+        cur.execute("""
+            UPDATE OpenIDRPSummary
+            SET account = %s
+            WHERE account = %s
+            """ % sqlvalues(to_person.account, from_person.account))
+
         # Flag the account as merged
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
@@ -3469,7 +3485,7 @@ class PersonSet:
             Person.id in (%s)
             ''' % branch_clause)
 
-    def getSubscribersForTargets(self, targets, recipients=None):
+    def getSubscribersForTargets(self, targets, recipients=None, level=None):
         """See `IPersonSet`. """
         if len(targets) == 0:
             return set()
@@ -3486,6 +3502,10 @@ class PersonSet:
                 else:
                     target_criteria_clauses.append(
                         '%s IS NULL' % key)
+            if level is not None:
+                target_criteria_clauses.append('bug_notification_level >= %s'
+                    % quote(level.value))
+
             target_criteria.append(
                 '(%s)' % ' AND '.join(target_criteria_clauses))
 

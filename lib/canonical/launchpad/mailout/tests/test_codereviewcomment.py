@@ -53,6 +53,11 @@ class TestCodeReviewComment(TestCaseWithFactory):
             body=body, as_reply=as_reply, vote=vote, vote_tag=vote_tag)
         return CodeReviewCommentMailer.forCreation(comment), subscriber
 
+    def assertRecipientsMatches(self, recipients, mailer):
+        """Assert that `mailer` will send to the people in `recipients`."""
+        persons = zip(*(mailer._recipients.getRecipientPersons()))[1]
+        self.assertEqual(set(recipients), set(persons))
+
     def test_forCreation(self):
         """Ensure that forCreation produces a mailer with expected values."""
         comment, subscriber = self.makeCommentAndSubscriber()
@@ -62,9 +67,9 @@ class TestCodeReviewComment(TestCaseWithFactory):
         bmp = comment.branch_merge_proposal
         # The branch owners are implicitly subscribed to their branches
         # when the branches are created.
-        self.assertEqual(set([subscriber, bmp.source_branch.owner,
-                              bmp.target_branch.owner]),
-                         mailer._recipients.getRecipientPersons())
+        self.assertRecipientsMatches(
+            [subscriber, bmp.source_branch.owner, bmp.target_branch.owner],
+            mailer)
         self.assertEqual(
             comment.branch_merge_proposal, mailer.merge_proposal)
         sender = comment.message.owner
@@ -81,9 +86,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         bmp = comment.branch_merge_proposal
         # The branch owners are implicitly subscribed to their branches
         # when the branches are created.
-        self.assertEqual(set([bmp.source_branch.owner,
-                              bmp.target_branch.owner]),
-                         mailer._recipients.getRecipientPersons())
+        self.assertRecipientsMatches(
+            [bmp.source_branch.owner, bmp.target_branch.owner], mailer)
 
     def test_forCreationStatusNoEmail(self):
         """Ensure that subscriptions with NOEMAIL aren't used."""
@@ -93,9 +97,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         bmp = comment.branch_merge_proposal
         # The branch owners are implicitly subscribed to their branches
         # when the branches are created.
-        self.assertEqual(set([bmp.source_branch.owner,
-                              bmp.target_branch.owner]),
-                         mailer._recipients.getRecipientPersons())
+        self.assertRecipientsMatches(
+            [bmp.source_branch.owner, bmp.target_branch.owner], mailer)
 
     def test_subjectWithStringExpansions(self):
         # The mailer should not attempt to expand templates in the subject.
@@ -104,7 +107,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer = CodeReviewCommentMailer.forCreation(comment)
         self.assertEqual(
             'A %(carefully)s constructed subject',
-            mailer._getSubject(recipient=None))
+            mailer._getSubject(email=None))
 
     def test_getReplyAddress(self):
         """Ensure that the reply-to address is reasonable."""
@@ -129,6 +132,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         rationale = mailer._recipients.getReason('subscriber@example.com')[1]
         expected = {'X-Launchpad-Branch': source_branch.unique_name,
                     'X-Launchpad-Message-Rationale': rationale,
+                    'X-Launchpad-Project': source_branch.product.name,
                     'Message-Id': message.rfc822msgid,
                     'Reply-To': mailer._getReplyToAddress(),
                     'In-Reply-To': message.parent.rfc822msgid}

@@ -51,11 +51,10 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
-    NoCanonicalUrl)
+    IPrimaryContext, NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import (
-    canonical_url, nearest_context_with_adapter, nearest_adapter)
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
@@ -64,6 +63,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
+from canonical.lazr.canonicalurl import (nearest_adapter,
+    nearest_context_with_adapter)
 
 def escape(text, quote=True):
     """Escape text for insertion into HTML.
@@ -165,7 +166,13 @@ class MenuAPI:
     def facet(self):
         """Return the IFacetMenu related to the context."""
         try:
-            menu = nearest_adapter(self._context, IFacetMenu)
+            try:
+                context = IPrimaryContext(self._context).context
+            except TypeError:
+                # Could not adapt raises a type error.  If there was no
+                # way to adapt, then just use self._context.
+                context = self._context
+            menu = nearest_adapter(context, IFacetMenu)
         except NoCanonicalUrl:
             menu = None
 
@@ -205,7 +212,11 @@ class MenuAPI:
             # facet name from the layer implemented by the request.
             view = get_current_view(self._request)
             selectedfacetname = get_facet(view)
-        menu = queryAdapter(context, INavigationMenu, name=selectedfacetname)
+        try:
+            menu = nearest_adapter(
+                context, INavigationMenu, name=selectedfacetname)
+        except NoCanonicalUrl:
+            menu = None
         if menu is None:
             return {}
         else:
@@ -2522,6 +2533,7 @@ class PageMacroDispatcher:
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                applicationtabs=True,
                 globalsearch=True,
                 pageheading=False,
                 heading=True),

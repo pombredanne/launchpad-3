@@ -28,10 +28,8 @@ Neither any input widget:
     >>> for input in main_content.findAll('input'):
     ...     print 'Found input:\n%s' % input
 
-However, in Welsh, No Privileges Person DOES have the ability to edit
+However, in Welsh, No Privileges Person does have the ability to edit
 directly.
-
-First, we show that the message 148 is not translated.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
@@ -40,12 +38,14 @@ First, we show that the message 148 is not translated.
     >>> print browser.url
     http://.../ubuntu/.../evolution/+pots/evolution-2.2/cy/19/+translate
 
+No Privileges is going to do some translation here.  Right now, message
+number 148 is not translated.
+
     >>> tag = find_tag_by_id(browser.contents, 'msgset_148_cy_translation_0')
     >>> print tag.renderContents()
     (no translation yet)
 
-Now, we need to show that it is translated after a post. Let's go ahead
-and POST and see that all goes well:
+After No posts a translation, however, it is.
 
     >>> browser.getControl(
     ...     name='msgset_148_cy_translation_0_radiobutton').value = [

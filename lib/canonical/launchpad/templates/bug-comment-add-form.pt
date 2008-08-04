@@ -10,20 +10,20 @@
       Remember, this bug report is a duplicate.
       Comment here only if you think the duplicate status is wrong.
     </div>
-
-        <table>
-          <tal:subject
-              tal:define="widget nocall:view/widgets/subject|nothing"
-              tal:condition="widget">
-            <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-          </tal:subject>
-
-          <tal:comment
-              tal:define="widget nocall:view/widgets/comment|nothing"
-              tal:condition="widget">
-            <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-          </tal:comment>
-        </table>
+    <input
+      tal:define="widget nocall:view/widgets/subject|nothing"
+      tal:condition="widget"
+      tal:attributes="name widget/name; value context/bug/followup_subject"
+      type="hidden"
+    />
+    <tal:comment
+      define="widget nocall:view/widgets/comment|nothing"
+      condition="widget"
+    >
+      <metal:widget
+        metal:use-macro="context/@@launchpad_widget_macros/display_raw_widget"
+      />
+    </tal:comment>
 
         <tal:email_me
              tal:define="widget nocall:view/widgets/email_me|nothing"

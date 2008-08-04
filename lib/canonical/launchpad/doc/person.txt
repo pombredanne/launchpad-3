@@ -360,6 +360,20 @@ is raised.
     ...
     NameAlreadyTaken:...
 
+PersonSet.newTeam() will also fire an ObjectCreatedEvent for the newly
+created team.
+
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from zope.app.event.interfaces import IObjectCreatedEvent
+    >>> def print_event(team, event):
+    ...     print "ObjectCreatedEvent fired for team '%s'" % team.name
+
+    >>> listener = TestEventListener(
+    ...     ITeam, IObjectCreatedEvent, print_event)
+    >>> another_team = personset.newTeam(ddaa, 'new3', 'Another a new team')
+    ObjectCreatedEvent fired for team 'new3'
+    >>> listener.unregister()
+
 
 === Turning people into teams ===
 

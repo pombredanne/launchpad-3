@@ -1,6 +1,23 @@
 /* = Launchpad style sheet = */
+
+/* == Contents == */
 /*
-Guidelines:
+ * Guidelines
+ * Stuff browsers should do but don't
+ * Overall presentation
+...
+ * Application-specific styles
+  - Overview
+  - Code
+  - Bugs
+  - Blueprints
+  - Translations
+  - Answers
+...
+*/
+
+/* == Guidelines == */
+/*
  * Use absolute units (e.g. px, pt) only when image sizes or CSS limitations
    demand it. Otherwise, use relative units (%, em).
 */
@@ -25,7 +42,7 @@ Guidelines:
 abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
 address {font-style: inherit;}
 * html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
-aside {display: block;}
+div.aside {display: block;}
 caption {caption-side: bottom; text-align: left;}
 dt dfn {font-style: normal; font-weight: bold;}
 dd {margin-bottom: 1em;}
@@ -58,7 +75,7 @@ legend legend {font-weight: normal;}
   border-width: 0 0 1px 0;
   display: block;
 }
-section {display: block; margin-bottom: 1em;}
+div.section {display: block; margin-bottom: 1em;}
 table {border-collapse: collapse;}
 textarea {display: block;}
 thead {vertical-align: bottom;}
@@ -90,8 +107,9 @@ body {margin: 0; padding: 10px 20px;}
 
 h1, h2, h3, h4, h5, h6 {
   background: none;
+  clear: left;
   padding: 0;
-  margin: 0;
+  margin: 0 0 0.5em;
   /* Content headings are highlighted using a different color (the color is
      overriden per-application in subsequent rules) instead of bold text. */
   color: #83ad23;
@@ -101,14 +119,14 @@ h1 { font-size: 2.2em; }
 h2 { font-size: 1.5em; }
 h3 { font-size: 1.1em; }
 h4, h5, h6 { font-size: 1em; }
-h1, h2, h3, h4, h5, h6 { margin-bottom: 0.5em; }
 /* H1 is only used at the top the maincontent, maybe below a short description
    of the displayed object. It must have zero margin-top. */
 h2, h3, h4, h5, h6 { margin-top: 1em; }
-ul{padding-left:0; list-style-position: inside;}
+/* Browsers indent lists inconsistently, so we override them completely: */
+ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
 
 .exception {color: #cc0000;}
-.discreet, .lesser {font-size: 80%;}
+.discreet, .lesser {font-size: 90%;}
 .offline {text-align: center; margin: 2em 20px;}
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 .unavailable {color: #999; background: none;}
@@ -185,10 +203,9 @@ table.listing div.field>label, table.listing div.field>div>label,
 table.listing div.actions {
   display: block; margin-top: 1em;
 }
-/* XXX 20080110 mpt: We make textareas slightly narrower in IE to avoid the
-right side being clipped (bug 156202). This should be rechecked post-2.0. */
-textarea {width: 100%;}
-/* This is currently overridden for Internet Explorer in main-template.pt. */
+/* Text fields occupy as much of the page width as possible, minus a safety
+margin for Internet Explorer, and up to a reasonable maximum: */
+textarea {width: 90%; max-width: 60em;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
 table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
@@ -273,7 +290,10 @@ img {
 }
 img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
 .collapsible legend a span {text-decoration: underline;}
-.collapsible {padding: 0; margin: 0;}
+.collapsible {
+  margin: 0;
+  padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
+}
 .collapsed {border: none; margin-bottom: 0;}
 fieldset .collapsed {display: none;}
 fieldset .expanded {display: block;}
@@ -323,11 +343,13 @@ hr {
 
 /* All pages begin with a global header or a topline. */
 #globalheader {
+  clear: both;
   position: relative;
   width: 100%;
   height: 21px;
   overflow: hidden;
-  margin: 0 0 1em;
+  margin: 0;
+  padding: 0;
   background-color: #EEE;
   background-image:  url(globalheader_bg.gif);
   background-repeat: repeat-x;
@@ -345,27 +367,12 @@ hr {
 }
 /* Site-specific message. */
 #globalheader .sitemessage {
-  position: absolute;
-  top: 2px;
-  left: 10px;
-  display: inline;
+  text-align: center;
   color: #FFF;
   font-size: 13px;
+  padding-top: 2px;
 }
 
-/* Next is a location bar. */
-
-#locationbar {
-  width: 100%;
-  height: 26px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  background-color: #AFDB1F;
-  font-size: 11px;
-  font-weight: bold;
-  color: #FFF;
-}
 ul#menuroot a#homebreadcrumb span {
   background: url(home-low-high.gif) left top no-repeat;
   padding-left: 16px; /* space between home icon and the word "Home" */
@@ -574,20 +581,33 @@ ul#menuroot li.selected a.breadcrumb {
   white-space: pre;
 }
 
+/* === Location bar === */
+/* The location bar consists of three element: the login control, the location
+hierarchy, and the application tabs. */
+#locationbar {margin-bottom: 30px;}
+
 /* === Login control === */
 /* At the top right of the page is a link to log in or a button to log out: */
-#logincontrol {float: right;}
+#logincontrol {
+    float: right;
+}
+#logincontrol a:hover {
+    text-decoration: none;
+}
+
+/* push image a little bit down to make it line up better with the text */
+#logincontrol img {
+    margin-bottom: -2px;
+}
 /* The 'Log Out' button lacks the right margin that buttons usually have: */
 #logincontrol input[type='submit'] {
   font-size: smaller;
   margin-right: 0;
-  vertical-align: bottom;
 }
 
 /* === Location hierarchy === */
 /*
   # XXX mpt 20080710 bug=247420: Known issues with the hierarchy:
-  - The left border and bevel of the 'Launchpad' segment is missing.
   - The top border and bevel of the last segment is missing.
   - The right border and bevel of the last segment is missing.
   - The border between the last segment and the spine should not be present.
@@ -598,44 +618,48 @@ ul#menuroot li.selected a.breadcrumb {
   your location in the hierarchy of people and projects:
 */
 #lp-hierarchy {
-  background: #eee url(navigation-hierarchy-bg) repeat-x;
-  clear: left;
+  float: left;
+  width: auto;
+  background: #eee url(navigation-hierarchy-bg) top left no-repeat;
+  margin-bottom: -1px;
   min-height: 25px;
+}
+/* The first segment has a rounded top left corner:*/
+.first-rounded {
+  background: url(navigation-hierarchy-nw) top left no-repeat;
+  min-height: 25px;
+  display: block;
+  width: 6px;
   float: left;
 }
 /* The segments have '>' separators for the benefit of those without CSS: */
 #lp-hierarchy small {display: none;}
 /* The last segment is darker (on the front page, this is the only item): */
-#lp-hierarchy.home {background: #ddd;}
-/* The first segment has a rounded top left corner: */
-#lp-hierarchy:before {
-  vertical-align: top;
-  float: left;
-  content: url(navigation-hierarchy-nw);
+#lp-hierarchy.home {
+  background: url(navigation-hierarchy-home-bg) no-repeat;
+  padding: 0 0 2px 6px;
+  width:110px;
 }
-#lp-hierarchy.home:before {content: url(navigation-hierarchy-nw-home);}
 /* Each segment appears as a clickable button: */
-#lp-hierarchy a {color: #000; display: inline-block; padding: 4px 22px 0 8px;}
+#lp-hierarchy a {
+  color: #000; float:left; display: block; padding: 6px 22px 0 8px;
+}
 /* The segments have chevrons to convey their parent-child relationship: */
 #lp-hierarchy .item {
   background: url(navigation-hierarchy-chevron-normal) no-repeat right;
-  display: inline-block;
+  float: left;
   min-height: 25px;
+  padding-bottom: 2px;
   vertical-align: middle;
 }
 /* The penultimate segment leads into the dark color of the last segment: */
 #lp-hierarchy .before-last {
-  background-image: url(navigation-hierarchy-chevron-selected);
+  background:url(navigation-hierarchy-chevron-selected) no-repeat right;
 }
-#lp-hierarchy .last a {font-weight: bold; padding-right: 4px;}
 /* The last segment is dark, and has a rounded top right corner: */
-#lp-hierarchy .last {background: #ddd;}
-.last-rounded {
-  background: #ddd url(navigation-hierarchy-ne) no-repeat top right;
-  min-height: 25px;
-  display: block;
-  width: 6px;
-  float: left;
+#lp-hierarchy .last a {font-weight: bold; padding-right: 10px;}
+#lp-hierarchy .last {
+  background: #ddd url(navigation-hierarchy-ne) top right no-repeat;
 }
 
 /* === Location spine === */
@@ -650,19 +674,17 @@ ul#menuroot li.selected a.breadcrumb {
   margin: 0;
   padding: 0;
   background: #ddd;
-  border-top: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
+  border: 1px solid #ccc;
 }
 
 /* === Location application tabs === */
 /* In most pages, the location bar includes six centered application tabs: */
 #lp-apps {
   position: relative;
-  width: 100%;
-  max-width: 72em;
+  width: 98%; /* leaves a minimum explanatory margin at the left and right */
+  max-width: 72em; /* prevents each tab from being more than 12em wide */
   padding: 0;
-  text-align: center;
-  margin: 0 auto;
+  margin: 0 auto; /* centers the tabs */
 }
 /* The tabs have text separators for the benefit of those without CSS: */
 #lp-apps small {display: none;}
@@ -670,10 +692,9 @@ ul#menuroot li.selected a.breadcrumb {
 #lp-apps span {
   position: relative;
   float: left;
-  width: 16.3%; /* = (100% - 1%) / 6 */
-  max-width: 12em;
-  margin: 0;
-  margin-right: 0.2em;
+  width: 16.16%; /* = (100% / 6) - 0.5% left over */
+  margin: 0 0.25%; /* = the leftover 0.5%, half each on the left and right */
+    /* This is overridden in main-template.pt for Internet Explorer */
   padding: 0;
   text-align: center;
   color: #333;
@@ -810,11 +831,11 @@ Inline help is contained in a <div> and dynamically positioned by JavaScript.
 */
 #help-pane {
   position: absolute;
-  border: 5px solid black;
-  padding: 10px;
+  border: 1px solid black;
+  padding: 1px 1px 5px 10px;
   z-index: 3000;  /* This should appear above all other content. */
   background-color: #fff;
-  width: 25em;
+  width: 600px; /* based on the help wiki, should change later */
 }
 /* We want the hidden pane to have dimensions so that we can position the
 frame with them.  This works because the element an absolute position, taking
@@ -830,10 +851,7 @@ it out of the page flow. */
 #help-body {
     background: url(spinner.gif) no-repeat center center;
 }
-#help-pane iframe {
-    width: 100%;
-    height: 18em;
-}
+#help-pane iframe {width: 100%; height: 300px; border: 0;}
 #help-pane iframe.invisible {
     visibility: hidden;
     display: block;
@@ -920,21 +938,24 @@ span.help {font-weight: normal;}
   background-image: url(/+icing/navigation-se-selected.png);
 }
 
-/* Immediately above the global footer, on most pages, is a search field: */
 #globalsearch {
-  font-size: small;
-  margin: 1em 0;
-  text-align: center;
-  padding: 0.5em 1em 1em;
-  background: #e7effc;
-  color: #000;
-  border: solid #c1c9d6;
-  border-width: 1px 0;
+  float: right;
+  display: inline;
+  font-weight: normal;
+  margin-right: 1em;
 }
-#globalsearch label {display: block; font-weight: normal;}
-#globalsearch input {display: block; margin: 0.5em auto 0;}
+
+#globalsearch input {
+  font-size: small;
+}
+
 /* The last element on every page is a standard footer. */
-#globalfooter {clear: both; margin: 0.5em 0;}
+#globalfooter {
+    clear: both; 
+    border: solid #c1c9d6;
+    border-width: 1px 0 0 0;
+    margin: 0.5em 0;
+}
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
@@ -948,7 +969,7 @@ body.freeform #globalfooter {
 /* === Specific page layouts === */
 
 /*- App home pages and pillar indexes both have a heading and app buttons. -*/
-table#applications {margin-bottom: -0.5em;}
+table#applications {margin: 1em 0 -0.5em;}
 table#applications th, table#applications td {vertical-align: bottom;}
 table#applications th {padding-left: 60px; text-align: left;}
 table#applications th h1 {margin: 0; padding: 0;}
@@ -979,7 +1000,7 @@ partly (but not visibly) overlaps the rounded border of the main area. */
 /* Display the pillar image above mainarea, so the image does not appear
    cropped in wide windows on browsers that do not support transparent
    background. */
-#structuralobjectheading img { 
+#structuralobjectheading img {
   z-index: 2;
 }
 
@@ -1023,31 +1044,32 @@ top left (y), and top right (z) of the rounded border. */
 #mainarea {clear: both; position: relative;}
 
 /* Inside those is a container for the main content, and the portlets if any. */
-#container {
-  margin-top: 30px;
-  padding: 0 0 40px;
-  position: relative;
-}
+#container {margin: 0 0 40px;}
 * html #container {margin-top: 0; position: static;} /* fixes in IE6 */
 
-/*
-  To let the main content width = 100% - 220px for the portlets,
-  we apply a negative right margin so the portlets can float on the right:
-*/
-#maincontent, #maincontentsub {float: left; margin-right: -220px; width: 100%;}
-/* (maincontentsub is used for a two-column section in bugtask-index.pt.) */
-/* To avoid overlap, we need an extra container with positive right margin: */
+/* A two-column layout with portlets is achieved using floats: */
+#maincontent, #maincontentsub, #portlets {float: left;}
+/* ("maincontentsub" is used for a two-column section in bugtask-index.pt.) */
+/* The main column should take the full width available, minus 200px for the
+portlets. We achieve this using a negative right margin: */
+#maincontent, #maincontentsub {width: 100%; margin-right: -200px;}
+/* And the portlets use exactly this 200px: */
+#portlets {width: 200px; margin: 0;}
+/* Inside, the main column itself keeps 20px clear of the 200px column: */
 #nonportlets {margin-right: 220px;}
-#portlets .portlet {width: 200px;}
-/* Pages using the one-column layout can construct portlets using <aside>: */
-aside {clear: right; float: right; width: 200px;}
+/* One-column pages can construct portlets using <div class="aside">: */
+div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 
 /* -- Pillar indexes -- */
 
 /* Distributions, projects, and people have two-column main pages. */
-/* Most of the information is in the second column: */
-.pillar {margin-left: 212px;}
-/* But the main heading, subheadings, and the logo are in the first column: */
+/* The main heading and most of the information is in the second column: */
+.pillar {
+  margin-left: 212px;
+  zoom: 1; /* sets hasLayout in IE, ensuring correct mugshot/heading layout */
+}
+.pillar h1 {clear: none;}
+/* But the mugshot and the subheadings are in the first column: */
 .pillar h2, .pillar .mugshot {
   clear: left;
   float: left;
@@ -1056,28 +1078,15 @@ aside {clear: right; float: right; width: 200px;}
   width: 192px;
 }
 /* There is a margin between each section and the previous one: */
-.pillar div.portlet, .pillar div.section {clear: left; padding-top: 2em;}
+.pillar div.portlet, .pillar div.section {clear: both; margin-bottom: 2em;}
 .pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
 
+
 /* === Portlets === */
-/* The two-column layout includes a column of portlets: */
-#portlets {
-  display: inline;
-  float: right;
-  width: 200px;
-  overflow: hidden;
-  margin-left: -220px; /* negates -220px right margin of #maincontent */
-  padding-left: 20px; /* 20px margin between main content and portlets */
-  list-style: none;
-}
-/* Alternatively, individual portlets can be put in an <aside> element: */
-aside {margin-left: 20px;}
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
 * html #portlets {left: 20px;}
-/* IE7 gets the padding right but overcalculates the left margin, so we use
-a conditional comment in main-template.pt to work around the above rule. */
-/* Portlets look the same whether as <div class="portlet"> or <aside>: */
-#portlets .portlet, aside {
+/* Portlets look the same whether as class="portlet" or class="aside": */
+#portlets .portlet, div.aside {
   background-color: #fafafa;
   border:1px solid #d6d6d6;
   margin: 0 0 0.5em 0;
@@ -1094,8 +1103,10 @@ highlighting menu items, so padding is handled by the contents instead: */
 #portlets #actions {
   padding: 4px 0; width: 198px; /* 200px column - 2*1px vertical border */
 }
-#portlets .portlet, aside, #portlets .portlet h2, aside h2 {font-size: 12px;}
-#portlets .portlet h2, aside h2 {
+#portlets .portlet, div.aside, #portlets .portlet h2, div.aside h2 {
+  font-size: 12px;
+}
+#portlets .portlet h2, div.aside h2 {
   border-bottom: 1px solid #ccc;
   color: inherit !important;
     /* http://launchpad.dev/ubuntu/+source/pmount/+filebug-advanced */
@@ -1203,7 +1214,7 @@ ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
-/* === Application-specific styles === */
+/* == Application-specific styles == */
 
 #application-footer strong {font-weight: normal;}
 
@@ -1257,7 +1268,13 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   color: #83ad23;
 }
 
+/* The top-most Person portlet, Contact Details, is allowed to float up and
+beside the mugshot. */
+#contact-details {clear: none;}
+
 .product.series, .project {margin-bottom: 1em;}
+#packages h1, #projects h1 {margin-top: 1.2em;}
+
 
 /* --- Code --- */
 
@@ -1420,7 +1437,7 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 .specdeliveryIMPLEMENTED        {color: green;}
 .specdeliveryINFORMATIONAL      {color: green;}
 
-/* --- Translations --- */
+/* === Translations === */
 
 body.tab-translations #applications {
   background: url(app-translations-wm.gif) no-repeat;
@@ -1464,8 +1481,11 @@ body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
   padding: 0 4px; /* should be half the width of /@@/translation-space */
   white-space: pre; /* stops consecutive spaces from collapsing */
 }
+/* In translation forms, single-line text fields occupy nearly all of the
+available width, just like multi-line fields (see "textarea" above): */
+input.translate {width: 90%; max-width: 60em;}
 
-/* --- Answers --- */
+/* === Answers === */
 
 body.tab-answers #applications {background: url(app-answers-wm.gif) no-repeat;}
 body.tab-answers #mainarea #portlets .portlet.active h2 a,
@@ -1650,7 +1670,7 @@ table.contributions td {vertical-align: middle; width: 16px;}
 
 /* --- Listing tables --- */
 
-table.listing {margin: 0; width: 100%; font-size: 8.5pt;}
+table.listing {margin: 0; width: 100%; font-size: 90%;}
 table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
 table.listing thead, table.listing thead th, table.listing tfoot tr {
   border: 1px solid #d2d2d2;

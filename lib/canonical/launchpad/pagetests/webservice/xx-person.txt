@@ -16,7 +16,6 @@ for teams (as they're defined in the ITeam interface).
     expired_members_collection_link: http://.../~salgado/expired_members
     hide_email_addresses: False
     homepage_content: None
-    indirect_participations_collection_link: http://.../~salgado/indirect_participations
     invited_members_collection_link: http://.../~salgado/invited_members
     irc_nicknames_collection_link: http://.../~salgado/irc_nicknames
     is_team: False
@@ -34,7 +33,6 @@ for teams (as they're defined in the ITeam interface).
     name: salgado
     open_membership_invitations_collection_link: http://.../~salgado/open_membership_invitations
     participants_collection_link: http://.../~salgado/participants
-    participations_collection_link: http://.../~salgado/participations
     preferred_email_address_link: http://.../~salgado/+email/guilherme.salgado@canonical.com
     proposed_members_collection_link: http://.../~salgado/proposed_members
     resource_type_link: http://api.launchpad.dev/beta/#person
@@ -59,7 +57,6 @@ for teams (as they're defined in the ITeam interface).
     expired_members_collection_link: http://.../~ubuntu-team/expired_members
     hide_email_addresses: False
     homepage_content: None
-    indirect_participations_collection_link: http://.../~ubuntu-team/indirect_participations
     invited_members_collection_link: http://.../~ubuntu-team/invited_members
     irc_nicknames_collection_link: http://.../~ubuntu-team/irc_nicknames
     is_team: True
@@ -77,7 +74,6 @@ for teams (as they're defined in the ITeam interface).
     name: ubuntu-team
     open_membership_invitations_collection_link: http://.../~ubuntu-team/open_membership_invitations
     participants_collection_link: http://.../~ubuntu-team/participants
-    participations_collection_link: http://.../~ubuntu-team/participations
     preferred_email_address_link: http://.../~ubuntu-team/+email/support@ubuntu.com
     proposed_members_collection_link: http://.../~ubuntu-team/proposed_members
     renewal_policy: invite them to apply for renewal
@@ -238,22 +234,26 @@ All participants (direct or indirect members):
 
 A person/team is also linked to all teams in which they participate.
 
-    >>> salgado['participations_collection_link']
-    u'http://.../~salgado/participations'
-    >>> print_self_link_of_entries(webservice.get(
-    ...     salgado['participations_collection_link']).jsonBody())
-    http://.../~admins
-    http://.../~landscape-developers
-    http://.../~mailing-list-experts
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> salgado['participations_collection_link']
+    # u'http://.../~salgado/participations'
+    # >>> print_self_link_of_entries(webservice.get(
+    # ...     salgado['participations_collection_link']).jsonBody())
+    # http://.../~admins
+    # http://.../~landscape-developers
+    # http://.../~mailing-list-experts
 
 And to the teams in which they're indirect members.
 
-    >>> link = salgado['indirect_participations_collection_link']
-    >>> link
-    u'http://.../~salgado/indirect_participations'
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> link = salgado['indirect_participations_collection_link']
+    # >>> link
+    # u'http://.../~salgado/indirect_participations'
 
-    >>> print_self_link_of_entries(webservice.get(link).jsonBody())
-    http://.../~mailing-list-experts
+    # >>> print_self_link_of_entries(webservice.get(link).jsonBody())
+    # http://.../~mailing-list-experts
 
 There are also links to proposed, invited, deactivated and expired
 members.
@@ -325,6 +325,31 @@ to, obviously.
     >>> print webservice.get("/beta/~salgado/+wikiname/12")
     HTTP/1.1 404 Not Found
     ...
+
+Wiki names can be modified.
+
+    >>> from simplejson import dumps
+    >>> patch = {
+    ...    u'wiki': u'http://www.example.com/',
+    ...    u'wikiname': 'MrExample'}
+    >>> response = webservice.patch(
+    ...     wiki_name['self_link'], 'application/json', dumps(patch))
+    >>> wiki_name = sorted(webservice.get(wikis_link).jsonBody()['entries'])[0]
+    >>> print wiki_name['url']
+    http://www.example.com/MrExample
+
+But only if we supply valid data.
+
+  >>> patch = {
+  ...    u'wiki': u'javascript:void/**/',
+  ...    u'wikiname': 'MrExample'}
+  >>> response = webservice.patch(
+  ...     wiki_name['self_link'], 'application/json', dumps(patch))
+  >>> print response.getOutput()
+  HTTP/1.1 400 Bad Request
+  ...
+  wiki: The URI scheme "javascript" is not allowed.
+  Only URIs with the following schemes may be used: http, https
 
 
 === Jabber IDs ===
@@ -455,24 +480,28 @@ Accepting or declining a membership invitation:
 To check whether or not a given person is a participant in a team, use the
 'inTeam' custom operation.
 
-    >>> print webservice.named_get(
-    ...     '/beta/~salgado', 'inTeam', team=ubuntu_team['self_link']
-    ...     ).jsonBody()
-    False
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> print webservice.named_get(
+    # ...     '/beta/~salgado', 'inTeam', team=ubuntu_team['self_link']
+    # ...     ).jsonBody()
+    # False
 
-    >>> print webservice.named_get(
-    ...     '/beta/~cprov', 'inTeam', team=ubuntu_team['self_link']
-    ...     ).jsonBody()
-    True
+    # >>> print webservice.named_get(
+    # ...     '/beta/~cprov', 'inTeam', team=ubuntu_team['self_link']
+    # ...     ).jsonBody()
+    # True
 
 To find the path from a given person to a team that person is a
 participant, use the 'findPathToTeam' custom operation.
 
-    >>> ml_experts = webservice.get("/beta/~mailing-list-experts").jsonBody()
-    >>> json = webservice.named_get(
-    ...     '/beta/~salgado', 'findPathToTeam', team=ml_experts['self_link']
-    ...     ).jsonBody()
-    >>> for entry in json:
-    ...     print entry['self_link']
-    http://api.launchpad.dev/beta/~admins
-    http://api.launchpad.dev/beta/~mailing-list-experts
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> ml_experts = webservice.get("/beta/~mailing-list-experts").jsonBody()
+    # >>> json = webservice.named_get(
+    # ...     '/beta/~salgado', 'findPathToTeam', team=ml_experts['self_link']
+    # ...     ).jsonBody()
+    # >>> for entry in json['entries']:
+    # ...     print entry['self_link']
+    # http://api.launchpad.dev/beta/~admins
+    # http://api.launchpad.dev/beta/~mailing-list-experts

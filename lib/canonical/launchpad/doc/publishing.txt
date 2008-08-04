@@ -781,6 +781,64 @@ check that they unpack as specified, a 3-element tuple.
     >>> print ordered_filenames[-1]
     firefox-0.9.2.orig.tar.gz
 
+Last but not least the publishing set class allows for the bulk deletion
+of publishing history records.
+
+    >>> import operator
+    >>> cprov_sources = sorted(list(
+    ...     cprov.archive.getPublishedSources(
+    ...     status=PackagePublishingStatus.PUBLISHED)),
+    ...     key=operator.attrgetter('id'))
+    >>> print len(cprov_sources)
+    6
+
+We will delete the first two source publishing history records and
+need to know the number of associated binary publishing history
+records.
+
+    >>> cprov_binaries = publishing_set.getBinaryPublicationsForSources(
+    ...     cprov_sources)
+    >>> cprov_binaries.count()
+    9
+
+This is the published binary that will get deleted.
+
+    >>> cprov_binaries = publishing_set.getBinaryPublicationsForSources(
+    ...     cprov_sources[:2])
+    >>> cprov_binaries.count()
+    1
+
+Let's get rid of the first two source publishing history records and their
+associated binary publishing records now.
+
+    >>> deleted = publishing_set.requestDeletion(
+    ...     cprov_sources[:2], cprov, 'OOPS-934EC47')
+
+The number of published sources will decrease by two as expected.
+
+    >>> cprov_sources = list(
+    ...     cprov.archive.getPublishedSources(
+    ...     status=PackagePublishingStatus.PUBLISHED))
+    >>> print len(cprov_sources)
+    4
+
+Analogously, the number of associated published binaries will be less
+by one.
+
+    >>> cprov_binaries = publishing_set.getBinaryPublicationsForSources(
+    ...     cprov_sources)
+    >>> cprov_binaries.count()
+    8
+
+Please note also that the source publishing records to be deleted must
+be passed as a list. Otherwise an exception will be raised.
+
+    >>> deleted = publishing_set.requestDeletion(
+    ...     tuple(cprov_sources[:2]), cprov, 'OOPS-934EC47')
+    Traceback (most recent call last):
+    ...
+    AssertionError: The 'sources' parameter must be a list.
+
 
 == ArchiveSourcePublications ==
 
@@ -825,10 +883,10 @@ The size of the `ArchiveSourcePublications` always matches the given
 source publication set size:
 
     >>> cprov_published_sources.count()
-    6
+    4
 
     >>> len(list(decorated_set))
-    6
+    4
 
 The decorated objects are returned in the same order used in the given
 'source_publications'.
@@ -844,14 +902,15 @@ The decorated objects are returned in the same order used in the given
     >>> compare_ids(cprov_published_sources, decorated_set)
     Matches
 
-Now we will shuffle the order of the given publications and check if
-the order is respected:
+Now we will shuffle the order of the given publications, ensure they are
+different, and check if the order is respected:
 
     >>> original_sources_list = list(cprov_published_sources)
     >>> shuffled_sources_list = list(cprov_published_sources)
 
     >>> import random
-    >>> random.shuffle(shuffled_sources_list)
+    >>> while shuffled_sources_list == original_sources_list:
+    ...     random.shuffle(shuffled_sources_list)
 
     >>> shuffled_decorated_list = ArchiveSourcePublications(
     ...      shuffled_sources_list)

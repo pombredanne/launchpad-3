@@ -47,6 +47,12 @@
 
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+      factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBranchContainer"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
       factory="canonical.launchpad.browser.BranchSOP"
       />
@@ -57,6 +63,21 @@
       factory="canonical.launchpad.browser.BranchBadges"
       />
 
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+      factory="canonical.launchpad.browser.branch.BranchPrimaryContext"
+      />
+
+  <!-- hierarchy -->
+  <browser:page
+      for="canonical.launchpad.interfaces.IBranch"
+      name="+hierarchy"
+      class="canonical.launchpad.browser.branch.BranchHierarchy"
+      attribute="__call__"
+      permission="zope.Public"
+      />
+
   <subscriber
       for="canonical.launchpad.interfaces.IBranch
            canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
@@ -65,7 +86,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser"
-        classes="BranchContextMenu" />
+        classes="BranchContextMenu BranchNavigationMenu" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBranch"
@@ -102,7 +123,10 @@
         <browser:page
             name="+landing-candidates"
             template="../templates/branch-landing-candidates.pt" />
-    </browser:pages>
+        <browser:page
+            name="+merges"
+            template="../templates/branch-merges.pt" />
+   </browser:pages>
 
   <browser:pages
       for="canonical.launchpad.interfaces.IBranch"
@@ -113,6 +137,9 @@
     <browser:page
         name="+portlet-specifications"
         template="../templates/branch-portlet-specifications.pt" />
+    <browser:page
+        name="+heading"
+        template="../templates/branch-heading.pt" />
   </browser:pages>
 
   <browser:page

@@ -20,6 +20,7 @@ __all__ = [
     'IResourcePOSTOperation',
     'IScopedCollection',
     'IServiceRootResource',
+    'IUnmarshallingDoesntNeedValue',
     'LAZR_WEBSERVICE_NAME',
     'LAZR_WEBSERVICE_NS',
     'WebServiceLayer',
@@ -111,11 +112,17 @@ class IResourceOperation(Interface):
         as application/json.
         """
 
+    send_modification_event = Attribute(
+        "Whether or not to send out an event when this operation completes.")
+
+
 class IResourceGETOperation(IResourceOperation):
     """A one-off operation invoked through GET.
 
     This might be a search or lookup operation.
     """
+    return_type = Attribute(
+        "The type of the resource returned by this operation, if any.")
 
 
 class IResourcePOSTOperation(IResourceOperation):
@@ -239,3 +246,12 @@ class IFieldMarshaller(Interface):
 
         :return: A value that can be serialized as part of a JSON hash.
         """
+
+
+class IUnmarshallingDoesntNeedValue(Interface):
+    """A marker interface for unmarshallers that work without values.
+
+    Most marshallers transform the value they're given, but some work
+    entirely on the field name. If they use this marker interface
+    we'll save time because we won't have to calculate the value.
+    """
