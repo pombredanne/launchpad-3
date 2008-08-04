@@ -213,6 +213,55 @@ Bug aliases can also be used to request remote bugs.
     status: NEW
     summary: Collect unknown persons in docking bay 2.
 
+Specifying a 'changed_since' parameter when calling Launchpad.get_bugs()
+will cause the method to only return bugs that have changed since that
+date / time. This acts as an intersection with the 'ids' parameter,
+allowing Launchpad to get only the recently-updated subset of a given
+set of remote bugs.
+
+    >>> from xmlrpclib import DateTime
+
+    >>> changed_since = datetime(2008, 6, 11, 9, 0, 0)
+    >>> changed_since = DateTime(changed_since.timetuple())
+    >>> return_value = server.Launchpad.get_bugs(
+    ...     {'ids': [1, 2], 'changed_since': changed_since,
+    ...      'permissive': True})
+
+    >>> bug_dicts = return_value['bugs']
+    >>> for bug_dict in bug_dicts:
+    ...     for key in sorted(bug_dict):
+    ...         print "%s: %s" % (key, bug_dict[key])
+    ...     print
+    alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    is_open: True
+    last_change_time: 20080611T09:24:29
+    priority: P1
+    product: HeartOfGold
+    resolution: 
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.
+    <BLANKLINE>
+
+Setting changed_since to a date in the future will mean that no bugs are
+returned.
+
+    >>> from datetime import timedelta
+    >>> changed_since = datetime.now() + timedelta(days=42)
+    >>> changed_since = DateTime(changed_since.timetuple())
+    >>> return_value = server.Launchpad.get_bugs(
+    ...     {'ids': [1, 2], 'changed_since': changed_since,
+    ...      'permissive': True})
+
+    >>> bug_dicts = return_value['bugs']
+    >>> print len(bug_dicts)
+    0
+
 
 == Launchpad.comments() ==
 
