@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
     ControlFormat, IBranchSet, IPersonSet, IRevisionSet, RepositoryFormat)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
-    BzrSync, RevisionModifiedError, get_diff, get_revision_message)
+    BzrSync, get_diff, get_revision_message)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
 
