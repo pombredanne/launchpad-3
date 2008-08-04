@@ -6,12 +6,15 @@ __metaclass__ = type
 
 import datetime
 import pytz
+import transaction
 import unittest
 
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import IBranchSet, IScriptActivitySet
+from canonical.database.sqlbase import cursor
+from canonical.launchpad.interfaces import (
+    BranchType, IBranchSet, IScriptActivitySet)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.xmlrpc.codehosting import BranchDetailsStorageAPI
 from canonical.testing import DatabaseFunctionalLayer
@@ -143,6 +146,70 @@ class BranchDetailsStorageTest(TestCaseWithFactory):
         self.assertEqual('vostok', activity.hostname)
         self.assertEqual(started, activity.date_started)
         self.assertEqual(completed, activity.date_completed)
+
+
+class BranchPullQueueTest(TestCaseWithFactory):
+    """Tests for the pull queue methods of `IBranchDetailsStorage`."""
+
+    layer = DatabaseFunctionalLayer
+
+    # XXX:
+    # - Was it right to remove the switch to a more restrictive security
+    #   proxy?
+    # - Making these tests pass has made the xmlrpc-branch-details.txt fail,
+    #   probably need to get rid of the sample data.
+
+    def setUp(self):
+        super(BranchPullQueueTest, self).setUp()
+        self.emptyPullQueues()
+        self.storage = BranchDetailsStorageAPI(None, None)
+
+    def assertBranchQueues(self, hosted, mirrored, imported):
+        expected_hosted = [
+            self.storage._getBranchPullInfo(branch) for branch in hosted]
+        expected_mirrored = [
+            self.storage._getBranchPullInfo(branch) for branch in mirrored]
+        expected_imported = [
+            self.storage._getBranchPullInfo(branch) for branch in imported]
+        self.assertEqual(
+            expected_hosted, self.storage.getBranchPullQueue('HOSTED'))
+        self.assertEqual(
+            expected_mirrored, self.storage.getBranchPullQueue('MIRRORED'))
+        self.assertEqual(
+            expected_imported, self.storage.getBranchPullQueue('IMPORTED'))
+
+    def emptyPullQueues(self):
+        transaction.begin()
+        cursor().execute("UPDATE Branch SET next_mirror_time = NULL")
+        transaction.commit()
+
+    def test_pullQueuesEmpty(self):
+        """getBranchPullQueue returns an empty list when there are no branches
+        to pull.
+        """
+        self.assertBranchQueues([], [], [])
+
+    def makeBranchAndRequestMirror(self, branch_type):
+        """Make a branch of the given type and call requestMirror on it."""
+        transaction.begin()
+        try:
+            branch = self.factory.makeBranch(branch_type)
+            branch.requestMirror()
+            return branch
+        finally:
+            transaction.commit()
+
+    def test_requestMirrorPutsBranchInQueue_hosted(self):
+        branch = self.makeBranchAndRequestMirror(BranchType.HOSTED)
+        self.assertBranchQueues([branch], [], [])
+
+    def test_requestMirrorPutsBranchInQueue_mirrored(self):
+        branch = self.makeBranchAndRequestMirror(BranchType.MIRRORED)
+        self.assertBranchQueues([], [branch], [])
+
+    def test_requestMirrorPutsBranchInQueue_imported(self):
+        branch = self.makeBranchAndRequestMirror(BranchType.IMPORTED)
+        self.assertBranchQueues([], [], [branch])
 
 
 def test_suite():

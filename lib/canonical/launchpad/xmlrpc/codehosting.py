@@ -15,7 +15,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.branch import IBranchSet
+from canonical.launchpad.interfaces.branch import (
+    BranchType, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.codehosting import (
     IBranchDetailsStorage)
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
@@ -30,9 +31,31 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
 
     implements(IBranchDetailsStorage)
 
+    def _getBranchPullInfo(self, branch):
+        """Return information the branch puller needs to pull this branch.
+
+        This is outside of the IBranch interface so that the authserver can
+        access the information without logging in as a particular user.
+
+        :return: (id, url, unique_name), where `id` is the branch database ID,
+            `url` is the URL to pull from and `unique_name` is the
+            `unique_name` property without the initial '~'.
+        """
+        branch = removeSecurityProxy(branch)
+        if branch.branch_type == BranchType.REMOTE:
+            raise AssertionError(
+                'Remote branches should never be in the pull queue.')
+        return (branch.id, branch.getPullURL(), branch.unique_name)
+
     def getBranchPullQueue(self, branch_type):
         """See `IBranchDetailsStorage`."""
-        return []
+        try:
+            branch_type = BranchType.items[branch_type]
+        except KeyError:
+            raise UnknownBranchTypeError(
+                'Unknown branch type: %r' % (branch_type,))
+        branches = getUtility(IBranchSet).getPullQueue(branch_type)
+        return [self._getBranchPullInfo(branch) for branch in branches]
 
     def mirrorComplete(self, branch_id, last_revision_id):
         """See `IBranchDetailsStorage`."""
