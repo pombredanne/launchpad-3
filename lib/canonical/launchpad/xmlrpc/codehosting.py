@@ -25,9 +25,6 @@ from canonical.launchpad.webapp import LaunchpadXMLRPCView
 UTC = pytz.timezone('UTC')
 
 
-# XXX:
-# - removeSecurityProxy still needed?
-# - branchID -> branch_id
 class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
     """See `IBranchDetailsStorage`."""
 
@@ -37,18 +34,18 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
         """See `IBranchDetailsStorage`."""
         return []
 
-    def mirrorComplete(self, branchID, lastRevisionID):
+    def mirrorComplete(self, branch_id, last_revision_id):
         """See `IBranchDetailsStorage`."""
-        branch = getUtility(IBranchSet).get(branchID)
+        branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
             return False
         # See comment in startMirroring.
-        removeSecurityProxy(branch).mirrorComplete(lastRevisionID)
+        removeSecurityProxy(branch).mirrorComplete(last_revision_id)
         return True
 
-    def mirrorFailed(self, branchID, reason):
+    def mirrorFailed(self, branch_id, reason):
         """See `IBranchDetailsStorage`."""
-        branch = getUtility(IBranchSet).get(branchID)
+        branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
             return False
         # See comment in startMirroring.
@@ -64,9 +61,9 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
             date_completed=date_completed, hostname=hostname)
         return True
 
-    def startMirroring(self, branchID):
+    def startMirroring(self, branch_id):
         """See `IBranchDetailsStorage`."""
-        branch = getUtility(IBranchSet).get(branchID)
+        branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
             return False
         # The puller runs as no user and may pull private branches. We need to
