@@ -276,11 +276,11 @@ class LaunchpadObjectFactory:
         if displayname is None:
             displayname = self.getUniqueString('displayname')
         if summary is None:
-            summary=self.getUniqueString('summary')
+            summary = self.getUniqueString('summary')
         if description is None:
-            description=self.getUniqueString('description')
+            description = self.getUniqueString('description')
         if title is None:
-            title=self.getUniqueString('title')
+            title = self.getUniqueString('title')
         return getUtility(IProjectSet).new(
             name=name,
             displayname=displayname,

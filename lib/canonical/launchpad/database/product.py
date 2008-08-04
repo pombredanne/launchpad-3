@@ -968,7 +968,8 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       license_reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=(), license_info=None, registrant=None):
+                      icon=None, licenses=(), license_info=None,
+                      registrant=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
