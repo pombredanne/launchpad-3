@@ -20,3 +20,6 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
 
     implements(IBranchDetailsStorage)
 
+    def getBranchPullQueue(self, branch_type):
+        """See `IBranchDetailsStorage`."""
+        return []
