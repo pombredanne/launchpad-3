@@ -18,6 +18,10 @@ from canonical.launchpad.interfaces.codehosting import (
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
+# XXX:
+# - removeSecurityProxy still needed?
+# - branchID -> branch_id
+
 class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
     """See `IBranchDetailsStorage`."""
 
