@@ -8,11 +8,14 @@ __all__ = [
     ]
 
 
+from zope.component import getUtility
+from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.launchpad.interfaces.branch import IBranchSet
 from canonical.launchpad.interfaces.codehosting import (
     IBranchDetailsStorage)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
-
-from zope.interface import implements
 
 
 class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
@@ -23,3 +26,13 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
     def getBranchPullQueue(self, branch_type):
         """See `IBranchDetailsStorage`."""
         return []
+
+    def startMirroring(self, branchID):
+        """See `IBranchDetailsStorage`."""
+        branch = getUtility(IBranchSet).get(branchID)
+        if branch is None:
+            return False
+        # The puller runs as no user and may pull private branches. We need to
+        # bypass Zope's security proxy to set the mirroring information.
+        removeSecurityProxy(branch).startMirroring()
+        return True
