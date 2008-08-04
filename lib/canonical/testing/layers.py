@@ -933,12 +933,20 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        # Connect Storm
+        reconnect_stores()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        getUtility(IOpenLaunchBag).clear()
+
+        # If tests forget to logout, we can do it for them.
+        if is_logged_in():
+            logout()
+
+        # Disconnect Storm so it doesn't get in the way of database resets
+        disconnect_stores()
 
 
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
