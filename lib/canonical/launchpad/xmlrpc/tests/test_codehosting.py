@@ -156,12 +156,9 @@ class BranchPullQueueTest(TestCaseWithFactory):
     # XXX:
     # - Was it right to remove the switch to a more restrictive security
     #   proxy?
-    # - Making these tests pass has made the xmlrpc-branch-details.txt fail,
-    #   probably need to get rid of the sample data.
 
     def setUp(self):
         super(BranchPullQueueTest, self).setUp()
-        self.emptyPullQueues()
         self.storage = BranchDetailsStorageAPI(None, None)
 
     def assertBranchQueues(self, hosted, mirrored, imported):
@@ -177,11 +174,6 @@ class BranchPullQueueTest(TestCaseWithFactory):
             expected_mirrored, self.storage.getBranchPullQueue('MIRRORED'))
         self.assertEqual(
             expected_imported, self.storage.getBranchPullQueue('IMPORTED'))
-
-    def emptyPullQueues(self):
-        transaction.begin()
-        cursor().execute("UPDATE Branch SET next_mirror_time = NULL")
-        transaction.commit()
 
     def test_pullQueuesEmpty(self):
         """getBranchPullQueue returns an empty list when there are no branches
