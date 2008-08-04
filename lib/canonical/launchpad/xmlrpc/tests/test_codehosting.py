@@ -24,14 +24,23 @@ class BranchDetailsStorageTest(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.storage = BranchDetailsStorageAPI(None, None)
 
+    def assertUnmirrored(self, branch):
+        """Assert that `branch` has not yet been mirrored.
+
+        Asserts that last_mirror_attempt, last_mirrored and
+        mirror_status_message are all None, and that mirror_failures is 0.
+        """
+        self.assertIs(None, branch.last_mirror_attempt)
+        self.assertIs(None, branch.last_mirrored)
+        self.assertEqual(0, branch.mirror_failures)
+        self.assertIs(None, branch.mirror_status_message)
+
     def test_startMirroring(self):
         # startMirroring updates last_mirror_attempt to 'now', leaves
         # last_mirrored alone and returns True when passed the id of an
         # existing branch.
-
         branch = self.factory.makeBranch()
-        self.assertIs(None, branch.last_mirror_attempt)
-        self.assertIs(None, branch.last_mirrored)
+        self.assertUnmirrored(branch)
 
         success = self.storage.startMirroring(branch.id)
         self.assertEqual(success, True)
@@ -52,10 +61,7 @@ class BranchDetailsStorageTest(TestCaseWithFactory):
 
     def test_mirrorFailed(self):
         branch = self.factory.makeBranch()
-        self.assertIs(None, branch.last_mirror_attempt)
-        self.assertIs(None, branch.last_mirrored)
-        self.assertIs(0, branch.mirror_failures)
-        self.assertIs(None, branch.mirror_status_message)
+        self.assertUnmirrored(branch)
 
         self.storage.startMirroring(branch.id)
         failure_message = self.factory.getUniqueString()
