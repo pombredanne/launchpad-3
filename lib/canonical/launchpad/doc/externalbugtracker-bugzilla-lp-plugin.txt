@@ -184,8 +184,11 @@ The bug data is stored as a list of dicts:
     <BLANKLINE>
 
 initializeRemoteBugDB() will only store a bug once, even if it is
-requested both by alias and ID.
+requested both by alias and ID. We'll reset the test BugzillaLPPlugin's
+bugs and bug_aliases dicts to demonstrate this.
 
+    >>> bugzilla.bugs = {}
+    >>> bugzilla.bug_aliases = {}
     >>> bugzilla.initializeRemoteBugDB([2, 'bug-two'])
     CALLED Launchpad.get_bugs({'ids': [2, 'bug-two'], 'permissive': True})
 
@@ -242,8 +245,8 @@ remote server and passing it a 'changed_since' parameter.
     >>> bugzilla.xmlrpc_transport.print_method_calls = True
     >>> changed_since = datetime(2008, 6, 11, 9, 0, 0, 0)
     >>> bug_ids = bugzilla.getModifiedRemoteBugs([1, 2], changed_since)
-    CALLED Launchpad.get_bugs({
-        'changed_since': <DateTime '20080611T09:00:00' at...>,
+    CALLED Launchpad.get_bugs({'changed_since':
+        <DateTime u'20080611T09:00:00' at...>,
         'ids': [1, 2],
         'permissive': True})
 
@@ -255,8 +258,8 @@ both bugs 1 and 2 back from getModifiedRemoteBugs()
 
     >>> changed_since = datetime(2008, 6, 10, 9, 0, 0, 0)
     >>> bug_ids = bugzilla.getModifiedRemoteBugs([1, 2], changed_since)
-    CALLED Launchpad.get_bugs({
-        'changed_since': <DateTime '20080610T09:00:00' at...>,
+    CALLED Launchpad.get_bugs({'changed_since':
+        <DateTime u'20080610T09:00:00' at...>,
         'ids': [1, 2],
         'permissive': True})
 

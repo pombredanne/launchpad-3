@@ -593,6 +593,10 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
                 bug_dict = dict(self.bugs[int(id)])
             except ValueError:
                 bug_dict = dict(self.bugs[self.bug_aliases[id]])
+            except KeyError:
+                # We ignore KeyErrors (since permissive == True, which
+                # means that we ignore invalid bug IDs).
+                continue
 
             # If changed_since is specified, discard all the bugs whose
             # last_change_time is < changed_since.
