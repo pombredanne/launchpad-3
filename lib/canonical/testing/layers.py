@@ -23,6 +23,7 @@ __metaclass__ = type
 __all__ = [
     'AppServerLayer',
     'BaseLayer',
+    'DatabaseFunctionalLayer',
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
     'FunctionalLayer',
@@ -913,6 +914,30 @@ class GoogleServiceLayer(BaseLayer):
     def testTearDown(self):
         # We need to override BaseLayer.testTearDown(), or else we will
         # get a LayerIsolationError.
+        pass
+
+
+class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
+    """Provides the database and the Zope3 application server environment."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
         pass
 
 
