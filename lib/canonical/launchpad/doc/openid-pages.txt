@@ -11,33 +11,25 @@ as a permanent identity usable for OpenID authentication. This
 object is responsible to providing user's OpenID Login URL.
 
 OpenIDPersistentIdentity implements IOpenIDPersistentIdentity.
+An account object can be adapted to an OpenIDPersistentIdentity by
+casting the account to the IOpenIDPersistentIdentity interface.
 
     >>> from zope.interface.verify import verifyObject
 
-    >>> from canonical.launchpad.components.openidserver import (
-    ...     OpenIDPersistentIdentity)
     >>> from canonical.launchpad.interfaces.account import IAccountSet
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDPersistentIdentity)
 
-    >>> personset = getUtility(IAccountSet)
-    >>> sample_account = personset.getByEmail('test@canonical.com')
-    >>> sample_identity = OpenIDPersistentIdentity(sample_account)
+    >>> accountset = getUtility(IAccountSet)
+    >>> sample_account = accountset.getByEmail('test@canonical.com')
+    >>> sample_identity = IOpenIDPersistentIdentity(sample_account)
     >>> verifyObject(IOpenIDPersistentIdentity, sample_identity)
     True
 
-OpenIDPersistentIdentity provides access to the person that owns the
-account.
+OpenIDPersistentIdentity provides access to the account and the
+openid_identifier.
 
-    >>> sample_identity.person
-    <Person ...>
-    >>> sample_identity.person.name
-    u'name12'
-
-OpenIDPersistentIdentity provides access to the account's displayname
-and openid_identifier.
-
-    >>> sample_identity.displayname
+    >>> sample_identity.account.displayname
     u'Sample Person'
     >>> sample_identity.openid_identifier
     u'+id/name12_oid'
@@ -51,6 +43,9 @@ openid_identity_url.
 It is possible for an account to have more than one identity URL. The
 OpenIDPersistentIdentity class provides the supportsURL() staticmethod
 to test if the format of the identity URL is supported.
+
+    >>> from canonical.launchpad.components.openidserver import (
+    ...     OpenIDPersistentIdentity)
 
     >>> OpenIDPersistentIdentity.supportsURL(
     ...     'http://openid.launchpad.dev/+id/name12_oid')
@@ -91,7 +86,7 @@ And the URL for the user who owns the identity:
     u'http://launchpad.dev/~name12'
 
 The view supports XRDS discovery. When the YADIS content type is in
-the HTTP_ACCEPT header, XRDS XML is rendered
+the HTTP_ACCEPT header, XRDS XML is rendered.
 
     >>> identity_view.enable_xrds_discovery
     True
@@ -149,7 +144,7 @@ It provides the OpenID server URL.
     'http://openid.launchpad.dev/+openid'
 
 The view supports XRDS discovery. When the YADIS content type is in
-the HTTP_ACCEPT header, XRDS XML is rendered
+the HTTP_ACCEPT header, XRDS XML is rendered.
 
     >>> app_view.enable_xrds_discovery
     True

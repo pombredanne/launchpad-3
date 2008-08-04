@@ -25,21 +25,13 @@ class OpenIDPersistentIdentity:
 
     def __init__(self, account):
         self.account = account
-        self.person = getUtility(IPersonSet).getByAccount(self.account)
 
     @property
     def openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
-        # The account is very restricted
+        # The account is very restricted.
         from zope.security.proxy import removeSecurityProxy
         return '+id/' + removeSecurityProxy(self.account).openid_identifier
-
-    @property
-    def displayname(self):
-        """See `IOpenIDPersistentIdentity`."""
-        # The account is very restricted
-        from zope.security.proxy import removeSecurityProxy
-        return removeSecurityProxy(self.account).displayname
 
     @property
     def openid_identity_url(self):
@@ -50,7 +42,11 @@ class OpenIDPersistentIdentity:
     @staticmethod
     def supportsURL(identity_url):
         """See `IOpenIDPersistentIdentity`."""
-        # XXX sinzui 2008-07-21: This method should also check the old URL
-        # if it exists.
         identity_url_root = allvhosts.configs['openid'].rooturl
         return identity_url.startswith(identity_url_root + '+id/')
+
+
+def account_to_openidpersistentidentity(account):
+    """Adapts an `IAccount` into an `IOpenIDPersistentIdentity`."""
+    return OpenIDPersistentIdentity(account)
+

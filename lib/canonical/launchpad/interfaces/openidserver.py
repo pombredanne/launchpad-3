@@ -206,9 +206,7 @@ class IOpenIDPersistentIdentity(Interface):
     This interface is generally needed by the UI.
     """
     account = Attribute('The `IAccount` for the user.')
-    person = Attribute('The `IPerson` that represents the user.')
     openid_identifier = Attribute('The openid_identifier for the `IAccount`.')
-    displayname = Attribute('The display name for the `IAccount`.')
     openid_identity_url = Attribute("The OpenID identity URL for the user.")
 
     def supportsURL(identity_url):

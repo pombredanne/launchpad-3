@@ -180,15 +180,15 @@ class IAccountPublic(Interface):
     """Public information on an `IAccount`."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
+    displayname = StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+                description=_("Your name as you would like it displayed."))
+
 
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
     date_created = Datetime(
             title=_('Date Created'), required=True, readonly=True)
-
-    displayname = StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-                description=_("Your name as you would like it displayed."))
 
     creation_rationale = Choice(
             title=_("Rationale for this account's creation."), required=True,

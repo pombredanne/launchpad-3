@@ -15,12 +15,13 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.components.openidserver import (
-    OpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.account import IAccountSet
-from canonical.launchpad.interfaces import (
-    ILoginTokenSet, IOpenIdApplication,
-    IOpenIDRPConfigSet, IPersonSet, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import (
+    IOpenIdApplication, NotFoundError)
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.openidserver import (
+    IOpenIDRPConfigSet, IOpenIDPersistentIdentity)
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import (
@@ -49,7 +50,7 @@ class OpenIdApplicationNavigation(Navigation):
         """Traverse to persistent OpenID identity URLs."""
         account = getUtility(IAccountSet).getByOpenIdIdentifier(name)
         if account is not None:
-            return OpenIDPersistentIdentity(account)
+            return IOpenIDPersistentIdentity(account)
         else:
             return None
 
@@ -69,7 +70,7 @@ class OpenIdApplicationNavigation(Navigation):
         """Redirect person names to equivalent persistent identity URLs."""
         person = getUtility(IPersonSet).getByName(name)
         if person is not None and person.is_openid_enabled:
-            openid_identity = OpenIDPersistentIdentity(person.account)
+            openid_identity = IOpenIDPersistentIdentity(person.account)
             target = openid_identity.openid_identity_url
             return RedirectionView(target, self.request, 303)
         else:
@@ -145,7 +146,8 @@ class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
     @cachedproperty
     def person_url(self):
         """The absolute URL for the person's Launchpad profile."""
-        return canonical_url(self.context.person, rootsite='mainsite')
+        person = getUtility(IPersonSet).getByAccount(self.context.account)
+        return canonical_url(person, rootsite='mainsite')
 
     @cachedproperty
     def openid_identity_url(self):
