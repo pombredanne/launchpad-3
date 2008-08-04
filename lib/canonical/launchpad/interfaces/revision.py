@@ -39,6 +39,9 @@ class IRevision(Interface):
     def getProperties():
         """Return the revision properties as a dict."""
 
+    def allocateKarma(branch):
+        """Allocate karma to the revision_author for this revision."""
+
 
 class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
