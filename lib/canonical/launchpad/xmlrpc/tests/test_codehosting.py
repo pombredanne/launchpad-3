@@ -12,12 +12,13 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.xmlrpc.codehosting import BranchDetailsStorageAPI
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
+
 
 class BranchDetailsStorageTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchDetailsStorage`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
