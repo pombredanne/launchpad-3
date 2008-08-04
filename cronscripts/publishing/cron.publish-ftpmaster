@@ -222,8 +222,9 @@ if [ "$SECURITY_PUBLISHER" != "yes" ]; then
     find $ARCHIVEROOT -type d -empty | xargs -r rmdir
     find $ARCHIVEROOT_PARTNER -type d -empty | xargs -r rmdir
 
-    # Invoke cron.germinate to fill ubuntu tasks.
-    cron.germinate
+    # Invoke cron.germinate to fill ubuntu tasks and ignore failures,
+    # the mirrors should be always triggered.
+    cron.germinate || echo "cron.germinate failed with exit code $?" >&2
 
 # End of block skipped by security publishing.
 fi

@@ -15,18 +15,22 @@ __all__ = [
     'BranchUniqueNameConflict',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
-    'InvalidBranchUrl',
     'InvalidBranchIdentifier',
-    'NoSuchBranch',
+    'InvalidBranchName',
+    'InvalidProductIdentifier',
+    'InvalidBranchUrl',
     'NoBranchForSeries',
+    'NoDefaultBranchForPillar',
+    'NoSuchBranch',
     'NoSuchBug',
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
-    'NoSuchPersonWithUsername',
+    'NoSuchPersonWithName',
     'NoSuchProduct',
     'NoSuchSeries',
     'NoSuchTeamMailingList',
+    'NotInTeam',
     'RequiredParameterMissing',
     'UnexpectedStatusReport',
     ]
@@ -40,13 +44,6 @@ class LaunchpadFault(xmlrpclib.Fault):
     Subclasses should define a unique error_code and a msg_template,
     which will be interpolated with the given keyword arguments.
     """
-
-    def __new__(cls, *args, **kw):
-        """Work around bug 52033: all faults must be plain Fault objects."""
-        # pylint: disable-msg=E1002
-        obj = super(LaunchpadFault, cls).__new__(cls, *args, **kw)
-        obj.__init__(*args, **kw)
-        return xmlrpclib.Fault(obj.faultCode, obj.faultString)
 
     error_code = None
     msg_template = None
@@ -64,7 +61,7 @@ class NoSuchProduct(LaunchpadFault):
     """There's no such product registered in Launchpad."""
 
     error_code = 10
-    msg_template = "No such product: %(product_name)s"
+    msg_template = "No such project: %(product_name)s"
 
     def __init__(self, product_name):
         LaunchpadFault.__init__(self, product_name=product_name)
@@ -194,6 +191,7 @@ class BranchUniqueNameConflict(LaunchpadFault):
     def __init__(self, unique_name):
         LaunchpadFault.__init__(self, unique_name=unique_name)
 
+
 class NoSuchTeamMailingList(LaunchpadFault):
     """There is no such team mailing list with the given name."""
 
@@ -265,14 +263,14 @@ class InvalidBranchIdentifier(LaunchpadFault):
         LaunchpadFault.__init__(self, branch_path=branch_path)
 
 
-class NoSuchPersonWithUsername(LaunchpadFault):
-    """There's no Person with the specified login registered in Launchpad."""
+class NoSuchPersonWithName(LaunchpadFault):
+    """There's no Person with the specified name registered in Launchpad."""
 
     error_code = 200
-    msg_template = 'No such person: %(username)s'
+    msg_template = 'No such person or team: %(person_name)s'
 
-    def __init__(self, username):
-        LaunchpadFault.__init__(self, username=username)
+    def __init__(self, person_name):
+        LaunchpadFault.__init__(self, person_name=person_name)
 
 
 class BranchNameInUse(LaunchpadFault):
@@ -283,3 +281,65 @@ class BranchNameInUse(LaunchpadFault):
 
     def __init__(self, error):
         LaunchpadFault.__init__(self, error=error)
+
+
+class NoDefaultBranchForPillar(LaunchpadFault):
+    """Raised we try to get a default branch for a pillar that can't have any.
+
+    An example of this is trying to get lp:bazaar, where 'bazaar' is a project
+    group, or lp:ubuntu, where 'ubuntu' is a distro.
+    """
+
+    error_code = 230
+    msg_template = (
+        "%(pillar_name)s is a %(pillar_type)s, and a %(pillar_type)s doesn't "
+        "have a default branch.")
+
+    def __init__(self, pillar_name, pillar_type):
+        LaunchpadFault.__init__(
+            self, pillar_name=pillar_name, pillar_type=pillar_type)
+
+
+class InvalidProductIdentifier(LaunchpadFault):
+    """Raised when we are passed an invalid name for a product.
+
+    This is for when users try to specify a product using a silly name
+    like 'flop$y,mop$y&cott0ntail'.
+    """
+
+    error_code = 240
+    msg_template = "%(name)s cannot be the name for a project."
+
+    def __init__(self, name):
+        LaunchpadFault.__init__(self, name=name)
+
+
+class NotInTeam(LaunchpadFault):
+    """Raised when a person needs to be a member of a team, but is not.
+
+    In particular, this is used when a user tries to register a branch as
+    being owned by a team that they themselves are not a member of.
+    """
+
+    error_code = 250
+    msg_template = '%(person_name)s is not a member of %(team_name)s.'
+
+    def __init__(self, person_name, team_name):
+        LaunchpadFault.__init__(
+            self, person_name=person_name, team_name=team_name)
+
+
+class InvalidBranchName(LaunchpadFault):
+    """The branch name is not allowed by Launchpad.
+
+    Raised when the user tries to register a branch with forbidden characters
+    in it.
+    """
+
+    error_code = 260
+    # The actual exception is rather friendly, so we just wrap it in a Fault.
+    msg_template = '%(error)s'
+
+    def __init__(self, error):
+        error_message = error.args[0].encode('utf-8', 'replace')
+        LaunchpadFault.__init__(self, error=error_message)

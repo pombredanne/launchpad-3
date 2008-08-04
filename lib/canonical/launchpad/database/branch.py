@@ -10,7 +10,6 @@ __all__ = [
 
 from datetime import datetime
 import re
-import os
 
 import pytz
 
@@ -26,7 +25,6 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
-from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -49,6 +47,7 @@ from canonical.launchpad.interfaces import (
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
     IProduct, IProject, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
     NotFoundError, RepositoryFormat)
+from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -63,7 +62,7 @@ from canonical.launchpad.webapp import urlappend
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranch)
+    implements(IBranch, IBranchNavigationMenu)
     _table = 'Branch'
     _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
 
@@ -161,7 +160,7 @@ class Branch(SQLBase):
 
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
-                         date_created=None):
+                         date_created=None, needs_review=False):
         """See `IBranch`."""
         if self.product is None:
             raise InvalidBranchMergeProposal(
@@ -210,10 +209,16 @@ class Branch(SQLBase):
         self.date_last_modified = date_created
         target_branch.date_last_modified = date_created
 
+        if needs_review:
+            queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
+        else:
+            queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
-            whiteboard=whiteboard, date_created=date_created)
+            whiteboard=whiteboard, date_created=date_created,
+            queue_status=queue_status)
         notify(SQLObjectCreatedEvent(bmp))
         return bmp
 
@@ -299,8 +304,7 @@ class Branch(SQLBase):
     @property
     def warehouse_url(self):
         """See `IBranch`."""
-        root = config.supermirror.warehouse_root_url
-        return "%s%08x" % (root, self.id)
+        return 'lp-mirrored:///%s' % self.unique_name
 
     @property
     def product_name(self):
@@ -590,8 +594,7 @@ class Branch(SQLBase):
         elif self.branch_type == BranchType.HOSTED:
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
-            prefix = config.codehosting.branches_root
-            return os.path.join(prefix, branch_id_to_path(self.id))
+            return 'lp-hosted:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 

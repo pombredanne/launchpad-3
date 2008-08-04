@@ -20,6 +20,9 @@ __all__ = [
     'IResourcePOSTOperation',
     'IScopedCollection',
     'IServiceRootResource',
+    'IUnmarshallingDoesntNeedValue',
+    'LAZR_WEBSERVICE_NAME',
+    'LAZR_WEBSERVICE_NS',
     'WebServiceLayer',
     ]
 
@@ -29,6 +32,14 @@ from zope.interface import Attribute, Interface
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+
+
+# The namespace prefix for LAZR web service-related tags.
+LAZR_WEBSERVICE_NS = 'lazr.webservice'
+
+# The namespace for LAZR web service tags having to do with the names
+# of things.
+LAZR_WEBSERVICE_NAME = '%s.name' % LAZR_WEBSERVICE_NS
 
 
 class IHTTPResource(Interface):
@@ -101,11 +112,17 @@ class IResourceOperation(Interface):
         as application/json.
         """
 
+    send_modification_event = Attribute(
+        "Whether or not to send out an event when this operation completes.")
+
+
 class IResourceGETOperation(IResourceOperation):
     """A one-off operation invoked through GET.
 
     This might be a search or lookup operation.
     """
+    return_type = Attribute(
+        "The type of the resource returned by this operation, if any.")
 
 
 class IResourcePOSTOperation(IResourceOperation):
@@ -229,3 +246,12 @@ class IFieldMarshaller(Interface):
 
         :return: A value that can be serialized as part of a JSON hash.
         """
+
+
+class IUnmarshallingDoesntNeedValue(Interface):
+    """A marker interface for unmarshallers that work without values.
+
+    Most marshallers transform the value they're given, but some work
+    entirely on the field name. If they use this marker interface
+    we'll save time because we won't have to calculate the value.
+    """

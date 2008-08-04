@@ -5,12 +5,14 @@ The anchorpiece of the "upstream" world is the Product, which is a piece of
 software. It can be part of a Project or it can be standalone.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.database.product import (
+    ...     get_allowed_default_stacking_names)
     >>> from canonical.launchpad.interfaces import (
     ...     IHasTranslationImports, IProductSet, IProduct, IPersonSet,
     ...     NotFoundError)
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.webapp.testing import verifyObject
 
 Let's log in as Foo Bar to ensure we have the privileges to do what we're
 going to demonstrate.
@@ -76,7 +78,6 @@ primary_translatable is nonexistent:
 Now, to test the active flag. If we disabled a product:
 
     >>> a52dec.active = False
-    >>> flush_database_updates()
 
 It should no longer be retrievable via ProductSet's __getitem__:
 
@@ -119,12 +120,51 @@ ILaunchpadStatisticSet is stored in the 'stats' attribute.
     >>> print FakeStatsProductSet().count_reviewed()
     3000
 
-It provides information on all the translatables available, too:
+
+== Translatable Products ==
+
+IProductSet will also tell us which products can be translated:
 
     >>> for product in productset.getTranslatables():
     ...    print product.name
     alsa-utils
     evolution
+
+A similar list of "featured translatables" picks a random set of these,
+so we can present a short list of arbitrary projects that a user can
+help translate.
+
+XXX JeroenVermeulen 2008-07-31 bug-253583: We're not using this method
+at the moment.  Remove it or start using it?
+
+    >>> for product in productset.featuredTranslatables():
+    ...     print product.name
+    alsa-utils
+    evolution
+
+In featuredTranslatables() we can also set how many products we want to
+show at maximum.  We can pick just one random translatable product, for
+example.
+
+    >>> features = [
+    ...     product.name for product in productset.featuredTranslatables(1)]
+    >>> len(features)
+    1
+    >>> features[0] in ('alsa-utils', 'evolution')
+    True
+
+Only active products are listed as translatables.
+
+    >>> evo.active = False
+    >>> for product in productset.getTranslatables():
+    ...    print product.name
+    alsa-utils
+
+    >>> for product in productset.featuredTranslatables():
+    ...    print product.name
+    alsa-utils
+
+    >>> evo.active = True
 
 
 == Package links ==
@@ -332,7 +372,6 @@ Only milestones which have visible=True are returned by the .milestones
 property.
 
     >>> firefox_milestone.visible = False
-    >>> flush_database_updates()
     >>> [milestone.name for milestone in firefox.milestones]
     [u'1.0']
 
@@ -384,7 +423,6 @@ no longer appear in the result set.
     ...     # away from SQLObject.
     ...     branch = getUtility(IBranchSet).get(branch_view.id)
     ...     branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
-    >>> flush_database_updates()
 
     >>> for product in productset.getProductsWithBranches():
     ...     print product.name
@@ -465,7 +503,6 @@ And set that product as using translations officially. We need it so
 translations are available.
 
     >>> firefox.official_rosetta = True
-    >>> flush_database_updates()
 
 The primary_translatable now points at firefox 1.0:
 
@@ -524,22 +561,51 @@ view to see the data change reflected.
 
 = Stacking policy =
 
-Launchpad stacks branches that are uploaded to a product. Each created branch
-is 'stacked' on to a default base branch, called the 'default stacked-on
-branch' in Bazaar terminology.
+Launchpad stacks branches that are uploaded to a product. Each created
+branch is 'stacked' on to a default base branch, called the 'default
+stacked-on branch' in Bazaar terminology. This default stacked-on branch
+is the development focus branch of a product.
 
-This default stacked-on branch is the development focus branch of a product.
+For the initial rollout of default stacking, only certain projects will
+have default stacked on branches. These projects are:
 
-In the sample data, Firefox has no development focus branch set, so it has no
-default stacked-on branch:
+    >>> for name in get_allowed_default_stacking_names():
+    ...     print name
+    evolution
+    firefox
+
+This is determined by the allow_default_stacking configuration variable:
+
+    >>> print config.codehosting.allow_default_stacking
+    evolution,firefox
+
+Bazaar is not yet allowed to have default stacking enabled, so it cannot
+have a default stacked-on branch, whether or not it has a development
+focus set.
+
+    >>> bazaar = getUtility(IProductSet).getByName('bzr')
+    >>> print bazaar.development_focus.series_branch
+    None
+    >>> print bazaar.default_stacked_on_branch
+    None
+    >>> branch = getUtility(IBranchSet).get(1)
+    >>> bazaar.development_focus.user_branch = branch
+    >>> print bazaar.development_focus.series_branch is not None
+    True
+    >>> print bazaar.default_stacked_on_branch
+    None
+
+In the sample data, Firefox has no development focus branch set, so it
+has no default stacked-on branch:
 
     >>> print firefox.development_focus.series_branch
     None
     >>> print firefox.default_stacked_on_branch
     None
 
-However, Evolution has a branch for its development focus in the sample data,
-so it has a default stacked-on branch.
+However, Evolution has a branch for its development focus in the sample
+data and it is explicitly whitelisted in the allow_default_stacking
+configuration variable so it has a default stacked-on branch.
 
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> print evolution.development_focus.series_branch.unique_name

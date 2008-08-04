@@ -6,7 +6,7 @@ contributors.
     ...     'evolution-2.2/es')
     >>> print extract_text(find_main_content(anon_browser.contents)).encode(
     ...     'ascii', 'backslashreplace')
-    Description / Translate / Upload a file / Download
+    Description / Translate / Download
     Template "evolution-2.2" in Evolution trunk
     Overview for Spanish translation
     Contributors to this translation
@@ -18,7 +18,8 @@ contributors.
     ...
 
 This page has a navigation menu for translating, importing translations
-into, or exporting translations from the template.
+into, or exporting translations from the template.  (The import option
+is not available to users without edit rights on the translation).
 
     >>> navigation_tabs = find_tag_by_id(
     ...     anon_browser.contents, 'context-navigation-tabs')
@@ -26,8 +27,6 @@ into, or exporting translations from the template.
     ...     print "%s:\n%s" % (extract_text(link), link['href'])
     Translate:
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
-    Upload a file:
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
     Download:
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
 

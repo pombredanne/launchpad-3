@@ -45,6 +45,13 @@ class InvalidBatchSizeError(AssertionError):
     __lazr_webservice_error__ = 400
 
 
+class ILaunchpadContainer(Interface):
+    """Marker interface for objects used as the context of something."""
+
+    def isWithin(scope):
+        """Return True if this context is within the given scope."""
+
+
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 

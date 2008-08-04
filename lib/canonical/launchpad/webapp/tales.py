@@ -54,8 +54,7 @@ from canonical.launchpad.webapp.interfaces import (
     NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import (
-    canonical_url, nearest_context_with_adapter, nearest_adapter)
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
@@ -64,6 +63,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
+from canonical.lazr.canonicalurl import (nearest_adapter,
+    nearest_context_with_adapter)
 
 def escape(text, quote=True):
     """Escape text for insertion into HTML.
@@ -205,7 +206,11 @@ class MenuAPI:
             # facet name from the layer implemented by the request.
             view = get_current_view(self._request)
             selectedfacetname = get_facet(view)
-        menu = queryAdapter(context, INavigationMenu, name=selectedfacetname)
+        try:
+            menu = nearest_adapter(
+                context, INavigationMenu, name=selectedfacetname)
+        except NoCanonicalUrl:
+            menu = None
         if menu is None:
             return {}
         else:
@@ -2416,7 +2421,6 @@ class PageMacroDispatcher:
         view/macro:pagehas/heading
         view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
-        view/macro:pagehas/structuralheaderobject
 
         view/macro:pagetype
 
@@ -2479,7 +2483,6 @@ class PageMacroDispatcher:
             heading=False,
             pageheading=True,
             portlets=False,
-            structuralheaderobject=False,
             pagetypewasset=True,
             actionsmenu=True,
             navigationtabs=False
@@ -2496,15 +2499,13 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
-                structuralheaderobject=True,
                 pagetypewasset=False),
         'default':
             LayoutElements(
                 applicationborder=True,
                 applicationtabs=True,
                 globalsearch=True,
-                portlets=True,
-                structuralheaderobject=True),
+                portlets=True),
         'default2.0':
             LayoutElements(
                 actionsmenu=False,
@@ -2512,7 +2513,6 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
-                structuralheaderobject=True,
                 navigationtabs=True),
         'onecolumn':
             # XXX 20080130 mpt: Should eventually become the new 'default'.
@@ -2522,20 +2522,20 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 navigationtabs=True,
-                portlets=False,
-                structuralheaderobject=True),
+                portlets=False),
         'applicationhome':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                applicationtabs=True,
+                globalsearch=True,
                 pageheading=False,
-                globalsearch=False,
                 heading=True),
         'pillarindex':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
-                globalsearch=False,
+                globalsearch=True,
                 heading=True,
                 pageheading=False,
                 portlets=True),
@@ -2547,8 +2547,7 @@ class PageMacroDispatcher:
                 globalsearch=False,
                 heading=False,
                 pageheading=False,
-                portlets=False,
-                structuralheaderobject=False),
+                portlets=False),
        'freeform':
             LayoutElements(),
         }

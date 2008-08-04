@@ -72,7 +72,7 @@ class Voucher:
         if self.project is None:
             project_name = "unassigned"
         else:
-            project_name = self.project.displayname
+            project_name = self.project.name
         return "%s,%s,%s,%s" % (self.voucher_id,
                                 self.status,
                                 self.term_months,
@@ -132,21 +132,24 @@ class SalesforceVoucherProxy:
         status = self.server.redeemVoucher(voucher_id,
                                            user.openid_identifier,
                                            project.id,
-                                           project.displayname)
+                                           project.name)
         return status
 
     @fault_mapper
     def updateProjectName(self, project):
         """See `ISalesforceVoucherProxy`."""
         num_updated = self.server.updateProjectName(project.id,
-                                                    project.displayname)
+                                                    project.name)
         return num_updated
 
     @fault_mapper
     def grantVoucher(self, admin, approver, recipient, term_months):
         """See `ISalesforceVoucherProxy`."""
+        from zope.security.proxy import removeSecurityProxy
+        # Bypass zope's security because IEmailAddress.email is not public.
+        naked_email = removeSecurityProxy(recipient.preferredemail)
         voucher_id = self.server.grantVoucher(
             admin.openid_identifier, approver.openid_identifier,
             recipient.openid_identifier, recipient.name,
-            recipient.preferredemail.email, term_months)
+            naked_email.email, term_months)
         return voucher_id

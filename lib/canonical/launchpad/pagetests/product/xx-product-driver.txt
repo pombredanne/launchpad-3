@@ -4,15 +4,17 @@ Appoint Sample Person as the driver of Firefox product.
 
   >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox')
-  >>> browser.getLink('Appoint driver').click()
-
+  >>> browser.getLink('Change details').click()
   >>> browser.url
-  'http://launchpad.dev/firefox/+driver'
+  'http://launchpad.dev/firefox/+edit'
+  >>> browser.getLink('People').click()
+  >>> browser.url
+  'http://launchpad.dev/firefox/+edit-people'
   >>> browser.title
-  'Appoint the driver for Mozilla Firefox'
+  'Change the roles of people'
 
   >>> browser.getControl('Driver').value = 'name12'
-  >>> browser.getControl('Change').click()
+  >>> browser.getControl('Save changes').click()
 
 After changing the driver, the user is redirected to the overview page where a
 message inform him of the driver change.
@@ -22,10 +24,10 @@ message inform him of the driver change.
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     tag.renderContents()
-  'Successfully changed the driver to test@canonical.com'
+  'Successfully changed the driver to Sample Person'
 
 Sample Person is listed as the driver of the product.
 
-  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
-  ...     tag.find(text='Driver:').findNext('a').string
-  u'Sample Person'
+  >>> main = find_main_content(browser.contents)
+  >>> extract_text(main.find(id='driver'))
+  u'Driver: Sample Person'
