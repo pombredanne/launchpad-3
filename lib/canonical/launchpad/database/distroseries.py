@@ -1315,7 +1315,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug on an IDistroSeries,
         # because internally bugs are reported against IDistroSeries only when
-        # targetted to be fixed in that series, which is rarely the case for a
+        # targeted to be fixed in that series, which is rarely the case for a
         # brand new bug report.
         raise NotImplementedError(
             "A new bug cannot be filed directly on a distribution series, "

@@ -43,16 +43,20 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        url_prefix = 'lp-internal:///'
-        def fake_transport_factory(url):
-            self.assertTrue(url.startswith(url_prefix))
-            return self.get_transport(url[len(url_prefix):])
-        register_transport(url_prefix, fake_transport_factory)
+        # The lp-mirrored transport is set up by the branch_scanner module.
+        # Here we set up a fake so that we can test without worrying about
+        # authservers and the like.
+        self._url_prefix = 'lp-mirrored:///'
+        register_transport(self._url_prefix, self._fakeTransportFactory)
         self.factory = LaunchpadObjectFactory()
         self.makeFixtures()
         self.lp_db_user = config.launchpad.dbuser
         self.switchDbUser(config.branchscanner.dbuser)
         self._setUpAuthor()
+
+    def _fakeTransportFactory(self, url):
+        self.assertTrue(url.startswith(self._url_prefix))
+        return self.get_transport(url[len(self._url_prefix):])
 
     def switchDbUser(self, user):
         """We need to reset the config warehouse root after a switch."""
@@ -60,7 +64,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.txn = LaunchpadZopelessLayer.txn
 
     def tearDown(self):
-        unregister_transport('lp-internal:///', self.get_transport)
+        unregister_transport('lp-mirrored:///', self._fakeTransportFactory)
         TestCaseWithTransport.tearDown(self)
 
     def makeFixtures(self):

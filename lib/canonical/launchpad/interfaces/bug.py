@@ -14,6 +14,7 @@ __all__ = [
     'IBugDelta',
     'IBugAddForm',
     'IFrontPageBugAddForm',
+    'InvalidBugTargetType',
     'IProjectBugAddForm',
     ]
 
@@ -41,7 +42,7 @@ from canonical.launchpad.validators.bugattachment import (
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_write_operation, exported,
-    operation_parameters, rename_parameters_as)
+    operation_parameters, rename_parameters_as, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
 
@@ -693,3 +694,6 @@ class IBugSet(Interface):
             description
         """
 
+class InvalidBugTargetType(Exception):
+    """Bug target's type is not valid."""
+    webservice_error(400)

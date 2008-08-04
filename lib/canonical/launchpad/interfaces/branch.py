@@ -563,7 +563,7 @@ class IBranch(IHasOwner):
                       "successfully scanned."))
     revision_count = Int(
         title=_("Revision count"),
-        description=_("The number of revisions in the branch")
+        description=_("The revision number of the tip of the branch.")
         )
 
     warehouse_url = Attribute(
@@ -1026,7 +1026,7 @@ class IBranchSet(Interface):
         """
 
     def getTargetBranchesForUsersMergeProposals(user, product):
-        """Return a sequence of branches the user has targetted before."""
+        """Return a sequence of branches the user has targeted before."""
 
     def isBranchNameAvailable(owner, product, branch_name):
         """Is the specified branch_name valid for the owner and product.

@@ -148,6 +148,12 @@ run: inplace stop
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,google-webservice -C $(CONFFILE)
 
+start-gdb: inplace stop bzr_version_info
+	rm -f thread*.request
+	$(APPSERVER_ENV) nohup gdb -x run.gdb --args $(PYTHON) -t $(STARTSCRIPT) \
+		-r librarian,restricted-librarian,google-webservice -C $(CONFFILE) \
+		> ${LPCONFIG}-nohup.out 2>&1 &
+
 run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \

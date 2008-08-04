@@ -603,18 +603,30 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                           "(to join a team) sent to this person."),
             readonly=True, required=False,
             value_type=Reference(schema=ITeamMembership)))
-    teams_participated_in = exported(
-        CollectionField(
-            title=_('All teams in which this person is a participant.'),
-            readonly=True, required=False,
-            value_type=Reference(schema=Interface)),
-        exported_as='participations')
-    teams_indirectly_participated_in = exported(
-        CollectionField(
-            title=_('All teams in which this person is an indirect member.'),
-            readonly=True, required=False,
-            value_type=Reference(schema=Interface)),
-        exported_as='indirect_participations')
+    # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
+    # into account whether or not a team's memberships are private.
+    # teams_participated_in = exported(
+    #     CollectionField(
+    #         title=_('All teams in which this person is a participant.'),
+    #         readonly=True, required=False,
+    #         value_type=Reference(schema=Interface)),
+    #     exported_as='participations')
+    teams_participated_in = CollectionField(
+        title=_('All teams in which this person is a participant.'),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
+    # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
+    # into account whether or not a team's memberships are private.
+    # teams_indirectly_participated_in = exported(
+    #     CollectionField(
+    #         title=_('All teams in which this person is an indirect member.'),
+    #         readonly=True, required=False,
+    #         value_type=Reference(schema=Interface)),
+    #     exported_as='indirect_participations')
+    teams_indirectly_participated_in = CollectionField(
+        title=_('All teams in which this person is an indirect member.'),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
     teams_with_icons = Attribute(
         "Iterable of all Teams that this person is active in that have "
         "icons")
@@ -840,9 +852,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         The product_name may be None.
         """
 
-    @operation_parameters(team=copy_field(ITeamMembership['team']))
-    @operation_returns_collection_of(Interface) # Really IPerson
-    @export_read_operation()
+    # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
+    # into account whether or not a team's memberships are private.
+    # @operation_parameters(team=copy_field(ITeamMembership['team']))
+    # @operation_returns_collection_of(Interface) # Really IPerson
+    # @export_read_operation()
     def findPathToTeam(team):
         """Return the teams that cause this person to be a participant of the
         given team.
@@ -922,8 +936,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         Iterate no more than the given limit.
         """
 
-    @operation_parameters(team=copy_field(ITeamMembership['team']))
-    @export_read_operation()
+    # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
+    # into account whether or not a team's memberships are private.
+    # @operation_parameters(team=copy_field(ITeamMembership['team']))
+    # @export_read_operation()
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
 
@@ -2002,13 +2018,16 @@ for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
 IPersonPublic['super_teams'].value_type.schema = ITeam
-IPersonPublic['teams_participated_in'].value_type.schema = ITeam
-IPersonPublic['teams_indirectly_participated_in'].value_type.schema = ITeam
+# XXX: salgado, 2008-08-01: Uncomment these when teams_*participated_in are
+# exported again.
+# IPersonPublic['teams_participated_in'].value_type.schema = ITeam
+# IPersonPublic['teams_indirectly_participated_in'].value_type.schema = ITeam
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
-    (IPersonPublic['findPathToTeam'], 'team'),
-    (IPersonPublic['inTeam'], 'team'),
+    # XXX: salgado, 2008-08-01: Uncomment these when they are exported again.
+    # (IPersonPublic['findPathToTeam'], 'team'),
+    # (IPersonPublic['inTeam'], 'team'),
     (IPersonEditRestricted['join'], 'team'),
     (IPersonEditRestricted['leave'], 'team'),
     (IPersonEditRestricted['addMember'], 'person'),
@@ -2020,8 +2039,9 @@ for method, name in params_to_fix:
         'lazr.webservice.exported')['params'][name].schema = IPerson
 
 # Fix schema of operation return values.
-IPersonPublic['findPathToTeam'].queryTaggedValue(
-    'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
+# XXX: salgado, 2008-08-01: Uncomment when findPathToTeam is exported again.
+# IPersonPublic['findPathToTeam'].queryTaggedValue(
+#     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 
