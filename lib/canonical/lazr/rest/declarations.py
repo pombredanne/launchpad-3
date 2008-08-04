@@ -733,6 +733,9 @@ def generate_operation_adapter(method):
              '_export_info': tag,
              '_method_name': method.__name__,
              '__doc__': method.__doc__}
+
+    if tag['type'] == 'write_operation':
+        class_dict['send_modification_event'] = True
     factory = type(name, bases, class_dict)
     classImplements(factory, provides)
     protect_schema(factory, provides)

@@ -902,14 +902,15 @@ The decorated objects are returned in the same order used in the given
     >>> compare_ids(cprov_published_sources, decorated_set)
     Matches
 
-Now we will shuffle the order of the given publications and check if
-the order is respected:
+Now we will shuffle the order of the given publications, ensure they are
+different, and check if the order is respected:
 
     >>> original_sources_list = list(cprov_published_sources)
     >>> shuffled_sources_list = list(cprov_published_sources)
 
     >>> import random
-    >>> random.shuffle(shuffled_sources_list)
+    >>> while shuffled_sources_list == original_sources_list:
+    ...     random.shuffle(shuffled_sources_list)
 
     >>> shuffled_decorated_list = ArchiveSourcePublications(
     ...      shuffled_sources_list)
