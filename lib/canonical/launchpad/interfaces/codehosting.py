@@ -85,7 +85,11 @@ class IBranchDetailsStorage(Interface):
         """
 
 
-class IHostedBranchStorage(Interface):
+class IBranchFileSystemApplication(ILaunchpadApplication):
+    """Blah."""
+
+
+class IBranchFileSystem(Interface):
     """An interface for dealing with hosted branches in Launchpad.
 
     Published at `...`.
