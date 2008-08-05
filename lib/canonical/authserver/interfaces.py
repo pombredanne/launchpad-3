@@ -241,8 +241,8 @@ class IBranchDetailsStorage(Interface):
         :raise UnknownBranchTypeError: if the branch type is unrecognized.
 
         :returns: a list of (branch_id, pull_url, unique_name) triples, where
-        unique_name is owner_name/product_name/branch_name, and product_name is
-        '+junk' if there is no product associated with the branch.
+        unique_name is ~owner_name/product_name/branch_name, and product_name
+        is '+junk' if there is no product associated with the branch.
         """
 
     def startMirroring(branchID):

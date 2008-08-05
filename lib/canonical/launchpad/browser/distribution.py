@@ -92,7 +92,7 @@ class UsesLaunchpadMixin:
             url = canonical_url(self.context, rootsite='bugs')
             uses.append(href_template % (url, 'Bug Tracking'))
         if IProduct.providedBy(self.context):
-            if self.context.official_rosetta:
+            if self.context.official_codehosting:
                 url = canonical_url(self.context, rootsite='code')
                 uses.append(href_template % (url, 'Code'))
         if self.context.official_rosetta:

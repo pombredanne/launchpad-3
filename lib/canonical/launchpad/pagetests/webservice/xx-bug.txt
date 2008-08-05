@@ -75,6 +75,58 @@ Bugs have relationships to other bugs, like "duplicate_of".
   >>> bug_six['duplicate_of_link']
   u'http://api.launchpad.dev/beta/bugs/5'
 
+To create a new bug we use the createBug operation.  That operation
+takes a target parameter which must be a either a Product, a
+Distribution or a DistributionSourcePackage.
+
+    >>> print webservice.named_post(
+    ...     '/beta/bugs', 'createBug',
+    ...     title='Test bug', description='Test bug',
+    ...     target='http://api.launchpad.dev/beta/firefox')
+    HTTP/1.1 201 Created
+    ...
+    Location: http://api.launchpad.dev/beta/bugs/...
+    <BLANKLINE>
+
+    >>> print webservice.named_post(
+    ...     '/beta/bugs', 'createBug',
+    ...     title='Test bug', description='Test bug',
+    ...     target='http://api.launchpad.dev/beta/ubuntu')
+    HTTP/1.1 201 Created
+    ...
+    Location: http://api.launchpad.dev/beta/bugs/...
+    <BLANKLINE>
+
+    >>> print webservice.named_post(
+    ...     '/beta/bugs', 'createBug',
+    ...     title='Test bug', description='Test bug',
+    ...     target='http://api.launchpad.dev/beta/ubuntu/+source/evolution')
+    HTTP/1.1 201 Created
+    ...
+    Location: http://api.launchpad.dev/beta/bugs/...
+    <BLANKLINE>
+
+A ProductSeries can't be the target of a new bug.
+
+    >>> print webservice.named_post(
+    ...     '/beta/bugs', 'createBug',
+    ...     title='Test bug', description='Test bug',
+    ...     target='http://api.launchpad.dev/beta/firefox/1.0')
+    HTTP/1.1 400 Bad Request
+    ...
+    A bug target must be a Project, a Distribution or a
+    DistributionSourcePackage.  Got <ProductSeries...
+
+That operation will fail if the client doesn't specify the product or
+distribution in which the bug exists.
+
+    >>> print webservice.named_post(
+    ...     '/beta/bugs', 'createBug',
+    ...     title='Test bug', description='Test bug')
+    HTTP/1.1 400 Bad Request
+    ...
+    target: Required input is missing.
+
 
 == Bugs as message targets ==
 

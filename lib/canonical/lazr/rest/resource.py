@@ -30,7 +30,8 @@ from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import (
     adapts, getAdapters, getMultiAdapter, getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
-from zope.interface import implements, implementedBy
+from zope.event import notify
+from zope.interface import implements, implementedBy, providedBy
 from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
@@ -43,12 +44,15 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
-# canonical_url and BatchNavigator code should be moved into lazr.
+# canonical_url, BatchNavigator, and event code should be moved into lazr.
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData, ILaunchBag)
 from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
@@ -707,11 +711,23 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.request.response.setHeader('Content-type', 'text/plain')
             return "\n".join(errors)
 
+        # Make a snapshot of the entry to use in a notification event.
+        entry_before_modification = Snapshot(
+            self.entry.context, providing=providedBy(self.entry.context))
+
         # Store the entry's current URL so we can see if it changes.
         original_url = canonical_url(self.context)
         # Make the changes.
         for name, value in validated_changeset.items():
             setattr(self.entry, name, value)
+
+        # Send a notification event.
+        event = SQLObjectModifiedEvent(
+            object=self.entry.context,
+            object_before_modification=entry_before_modification,
+            edited_fields=validated_changeset.keys(),
+            user=getUtility(ILaunchBag).user)
+        notify(event)
 
         # If the modification caused the entry's URL to change, tell
         # the client about the new URL.

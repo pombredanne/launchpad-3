@@ -307,36 +307,6 @@ To check if a person is an Ubuntero, use IPerson.is_ubuntero:
     True
 
 
-=== Looking Up Users by OpenID Identifier ===
-
-Each Launchpad user is assigned an unchanging OpenID identity URL. The
-last component of this URL is specific to the user, and can be used to
-look up the user:
-
-    >>> person = personset.getByOpenIdIdentifier('name12_oid')
-    >>> print person.displayname
-    Sample Person
-
-If we look up a string not associated with any user, None is returned:
-
-    >>> print personset.getByOpenIdIdentifier('no-such-identifier')
-    None
-
-Accounts that have not been validated are not returned either:
-
-    >>> person, email = personset.createPersonAndEmail(
-    ...     email='whatever@example.com', name='whatever',
-    ...     rationale=PersonCreationRationale.SOURCEPACKAGEIMPORT)
-    >>> person.is_valid_person
-    False
-
-    >>> person.openid_identifier is not None
-    True
-
-    >>> print personset.getByOpenIdIdentifier(person.openid_identifier)
-    None
-
-
 == Teams ==
 
 As we said above, the Person class is overloaded to represent teams so
@@ -389,6 +359,20 @@ is raised.
     Traceback (most recent call last):
     ...
     NameAlreadyTaken:...
+
+PersonSet.newTeam() will also fire an ObjectCreatedEvent for the newly
+created team.
+
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from zope.app.event.interfaces import IObjectCreatedEvent
+    >>> def print_event(team, event):
+    ...     print "ObjectCreatedEvent fired for team '%s'" % team.name
+
+    >>> listener = TestEventListener(
+    ...     ITeam, IObjectCreatedEvent, print_event)
+    >>> another_team = personset.newTeam(ddaa, 'new3', 'Another a new team')
+    ObjectCreatedEvent fired for team 'new3'
+    >>> listener.unregister()
 
 
 === Turning people into teams ===

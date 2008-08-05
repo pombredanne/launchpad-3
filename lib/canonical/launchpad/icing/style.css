@@ -407,6 +407,7 @@ hierarchy, and the application tabs. */
   float: left;
   width: auto;
   background: #eee url(navigation-hierarchy-bg) top left no-repeat;
+  margin-bottom: -1px;
   min-height: 25px;
 }
 /* The first segment has a rounded top left corner:*/
@@ -422,6 +423,7 @@ hierarchy, and the application tabs. */
 /* The last segment is darker (on the front page, this is the only item): */
 #lp-hierarchy.home {
   background: url(navigation-hierarchy-home-bg) no-repeat;
+  padding: 0 0 2px 6px;
   width:110px;
 }
 /* Each segment appears as a clickable button: */
@@ -433,6 +435,7 @@ hierarchy, and the application tabs. */
   background: url(navigation-hierarchy-chevron-normal) no-repeat right;
   float: left;
   min-height: 25px;
+  padding-bottom: 2px;
   vertical-align: middle;
 }
 /* The penultimate segment leads into the dark color of the last segment: */
@@ -457,19 +460,17 @@ hierarchy, and the application tabs. */
   margin: 0;
   padding: 0;
   background: #ddd;
-  border-top: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
+  border: 1px solid #ccc;
 }
 
 /* === Location application tabs === */
 /* In most pages, the location bar includes six centered application tabs: */
 #lp-apps {
   position: relative;
-  width: 100%;
-  max-width: 72em;
+  width: 98%; /* leaves a minimum explanatory margin at the left and right */
+  max-width: 72em; /* prevents each tab from being more than 12em wide */
   padding: 0;
-  text-align: center;
-  margin: 0 auto;
+  margin: 0 auto; /* centers the tabs */
 }
 /* The tabs have text separators for the benefit of those without CSS: */
 #lp-apps small {display: none;}
@@ -477,10 +478,9 @@ hierarchy, and the application tabs. */
 #lp-apps span {
   position: relative;
   float: left;
-  width: 16.3%; /* = (100% - 1%) / 6 */
-  max-width: 12em;
-  margin: 0;
-  margin-right: 0.2em;
+  width: 16.16%; /* = (100% / 6) - 0.5% left over */
+  margin: 0 0.25%; /* = the leftover 0.5%, half each on the left and right */
+    /* This is overridden in main-template.pt for Internet Explorer */
   padding: 0;
   text-align: center;
   color: #333;
