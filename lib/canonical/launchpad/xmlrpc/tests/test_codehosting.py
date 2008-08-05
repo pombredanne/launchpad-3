@@ -397,16 +397,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertFaultEqual(
             NOT_FOUND_FAULT_CODE, message, fault)
 
-    def test_fetchProductID(self):
-        product = self.factory.makeProduct()
-        product_id = self.branchfs.fetchProductID(product.name)
-        self.assertEqual(product.id, product_id)
-
-    def test_fetchProductID_no_product(self):
-        # Invalid product names are signalled by a return value of ''
-        product_id = self.branchfs.fetchProductID('no-such-product')
-        self.assertEqual('', product_id)
-
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own branches (i.e.
         # owned by us or by a team we are on), we get the database id of the

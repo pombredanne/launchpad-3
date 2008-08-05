@@ -178,11 +178,3 @@ class BranchFileSystemAPI(LaunchpadXMLRPCView):
             return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
         else:
             return branch.id
-
-    def fetchProductID(self, productName):
-        """See `IHostedBranchStorage`."""
-        product = getUtility(IProductSet).getByName(productName)
-        if product is None:
-            return ''
-        else:
-            return product.id
