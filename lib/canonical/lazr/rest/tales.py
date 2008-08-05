@@ -28,8 +28,7 @@ from canonical.lazr.interfaces.fields import (
 from canonical.lazr.interfaces.rest import (
     LAZR_WEBSERVICE_NAME, WebServiceLayer)
 from canonical.lazr.rest import (
-    CollectionResource, EntryAdapterUtility, EntryResource, IObjectLink,
-    RESTUtilityBase)
+    CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
 
 
 class WadlAPI(RESTUtilityBase):

@@ -29,7 +29,7 @@ from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import (
     adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
-    getUtility, getUtilitiesFor, queryAdapter)
+    getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.interface import implements, implementedBy, providedBy
