@@ -311,6 +311,18 @@ If a bug can't be found a BugNotFound error will be raised.
       ...
     BugNotFound: no-such-bug
 
+If the data we've imported from Bugzilla is incomplete and doesn't
+contain either the bug's status or its resolution an UnparseableBugData
+error will be raised. We can add a sample bug to demonstrate this.
+
+    >>> bugzilla.bugs[999] = {}
+    >>> bugzilla.getRemoteStatus(999)
+    Traceback (most recent call last):
+      ...
+    UnparseableBugData
+
+    >>> del bugzilla.bugs[999]
+
 
 == Retrieving remote comments ==
 

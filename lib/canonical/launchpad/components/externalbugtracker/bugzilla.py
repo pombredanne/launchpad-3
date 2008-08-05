@@ -507,8 +507,13 @@ class BugzillaLPPlugin(Bugzilla):
         """See `IExternalBugTracker`."""
         actual_bug_id = self._getActualBugId(bug_id)
 
-        status = self.bugs[actual_bug_id]['status']
-        resolution = self.bugs[actual_bug_id]['resolution']
+        # Attempt to get the status and resolution from the bug. If
+        # we don't have the data for either of them, raise an error.
+        try:
+            status = self.bugs[actual_bug_id]['status']
+            resolution = self.bugs[actual_bug_id]['resolution']
+        except KeyError, error:
+            raise UnparseableBugData()
 
         if resolution != '' and resolution is not None:
             return "%s %s" % (status, resolution)
