@@ -135,6 +135,7 @@ databases.  To do this, we'll use a helper, but first we need to stop Mailman.
     >>> from canonical.testing.layers import AppServerLayer
     >>> runmailman.stop_mailman(
     ...     quiet=True, config=AppServerLayer.appserver_config)
+    >>> qrunner_watcher.wait_for_shutdown()
 
 In a typical synchronization situation, the production Launchpad database is
 copied to staging at a different time than when the production Mailman data is
@@ -223,3 +224,4 @@ web_page_url attributes for these lists should not point to 'prod'.
     >>> shutil.rmtree(source_dir)
     >>> runmailman.start_mailman(
     ...     quiet=True, config=AppServerLayer.appserver_config)
+    >>> qrunner_watcher.wait_for_restart()

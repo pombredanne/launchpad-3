@@ -34,6 +34,7 @@ def setUp(testobj):
     testobj.globs['smtpd_watcher'] = MailmanLayer.smtpd_watcher
     testobj.globs['vette_watcher'] = MailmanLayer.vette_watcher
     testobj.globs['xmlrpc_watcher'] = MailmanLayer.xmlrpc_watcher
+    testobj.globs['qrunner_watcher'] = MailmanLayer.qrunner_watcher
 
 
 def tearDown(testobj):

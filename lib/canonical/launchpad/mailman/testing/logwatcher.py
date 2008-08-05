@@ -136,3 +136,35 @@ class VetteWatcher(LogWatcher):
     def wait_for_hold(self, message_id):
         return self._wait(
             'Holding message for LP approval: <%s>' % message_id)
+
+
+class QrunnerWatcher(LogWatcher):
+    """Watch logs/qrunner."""
+
+    FILENAME = 'qrunner'
+
+    def _wait_for_runner_startup(self):
+        return self._wait('qrunner started.')
+
+    def wait_for_restart(self):
+        # Wait for the master qrunner to start 6 runners, in no deterministic
+        # order: ArchRunner, BounceRunner, RetryRunner, VirginRunner,
+        # IncomingRunner, OutgoingRunner.
+        for runner in range(6):
+            result = self._wait_for_runner_startup()
+            if result is not None:
+                return result
+        return None
+
+    def _wait_for_runner_exit(self):
+        return self._wait('Master qrunner detected subprocess exit')
+
+    def wait_for_shutdown(self):
+        # Wait for the master qrunner to detect 6 runner exits, in no
+        # deterministic order: ArchRunner, BounceRunner, RetryRunner,
+        # VirginRunner, IncomingRunner, OutgoingRunner.
+        for runner in range(6):
+            result = self._wait_for_runner_exit()
+            if result is not None:
+                return result
+        return None

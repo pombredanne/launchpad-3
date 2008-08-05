@@ -24,6 +24,7 @@ class MailmanLayer(AppServerLayer):
     smtpd_watcher = None
     vette_watcher = None
     xmlrpc_watcher = None
+    qrunner_watcher = None
 
     @classmethod
     def setUp(cls):
@@ -48,6 +49,7 @@ class MailmanLayer(AppServerLayer):
         cls.smtpd_watcher = logwatcher.SMTPDWatcher()
         cls.vette_watcher = logwatcher.VetteWatcher()
         cls.xmlrpc_watcher = logwatcher.XMLRPCWatcher()
+        cls.qrunner_watcher = logwatcher.QrunnerWatcher()
 
     @classmethod
     def testTearDown(cls):
@@ -56,7 +58,9 @@ class MailmanLayer(AppServerLayer):
         cls.smtpd_watcher.close()
         cls.vette_watcher.close()
         cls.xmlrpc_watcher.close()
+        cls.qrunner_watcher.close()
         cls.mhonarc_watcher = None
         cls.smtpd_watcher = None
         cls.vette_watcher = None
         cls.xmlrpc_watcher = None
+        cls.qrunner_watcher = None

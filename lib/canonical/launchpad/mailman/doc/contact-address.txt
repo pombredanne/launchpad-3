@@ -312,6 +312,7 @@ delivered since the mailing list is still active.
     ... Hi, I am a member of Launchpad.
     ... """)
     >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
+    >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
     >>> messages = smtpd.getMessages()
 
 Anne (as the only member of the mailing list) and the archive submission
