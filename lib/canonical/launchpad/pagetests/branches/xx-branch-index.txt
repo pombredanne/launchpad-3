@@ -207,7 +207,7 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
     Status: Development
     Location: http://example.com/gnome-terminal/main
     Last mirrored: Not mirrored yet
-    Next mirror: As soon as possible
+    Next mirror: Disabled
 
 If next_mirror_time is NULL, then mirroring of the branch is disabled.
 

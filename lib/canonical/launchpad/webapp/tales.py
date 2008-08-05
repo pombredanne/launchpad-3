@@ -383,7 +383,6 @@ class NoneFormatter:
     allowed_names = set([
         'approximatedate',
         'approximateduration',
-        'breadcrumbs',
         'break-long-words',
         'date',
         'datetime',

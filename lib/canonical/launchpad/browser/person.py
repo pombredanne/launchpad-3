@@ -26,7 +26,6 @@ __all__ = [
     'PersonCodeSummaryView',
     'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
-    'PersonDynMenu',
     'PersonEditEmailsView',
     'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
@@ -161,7 +160,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.browser.openiddiscovery import (
-    OpenIDPersistentIdentity, XRDSContentNegotiationMixin)
+    XRDSContentNegotiationMixin)
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -169,11 +168,13 @@ from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
+from canonical.launchpad.components.openidserver import (
+    OpenIDPersistentIdentity)
+
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
@@ -342,26 +343,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         if irc_nick is None or irc_nick.person != self.context:
             return None
         return irc_nick
-
-
-class PersonDynMenu(DynMenu):
-
-    menus = {
-        'contributions': 'contributionsMenu',
-        }
-
-    @neverempty
-    def contributionsMenu(self):
-        L = [self.makeBreadcrumbLink(item)
-             for item in self.context.iterTopProjectsContributedTo()]
-        L.sort(key=lambda item: item.text.lower())
-        if L:
-            for obj in L:
-                yield obj
-        else:
-            yield self.makeLink(
-                'Projects you contribute to go here.', target=None)
-        yield self.makeLink('See all projects...', target='/products')
 
 
 class TeamNavigation(PersonNavigation):

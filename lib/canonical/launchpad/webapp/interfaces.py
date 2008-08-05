@@ -239,8 +239,6 @@ class IBreadcrumb(Interface):
 
     text = Attribute('Text of this breadcrumb.')
 
-    has_menu = Attribute('Whether this breadcrumb has a drop-down menu.')
-
 
 #
 # Canonical URLs

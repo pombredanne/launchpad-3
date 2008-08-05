@@ -591,7 +591,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "Branches to which this person " "subscribes.")
     myactivememberships = exported(
         CollectionField(
-            title=_("All `ITeamMembership`s for Teams this Person is an "
+            title=_("All TeamMemberships for Teams this Person is an "
                     "active member of."),
             value_type=Reference(schema=ITeamMembership),
             readonly=True, required=False),
@@ -1225,7 +1225,7 @@ class IPersonViewRestricted(Interface):
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
         CollectionField(
-            title=_("Active `ITeamMembership`s for this object's members."),
+            title=_("Active TeamMemberships for this object's members."),
             description=_(
                 "Active TeamMemberships are the ones with the ADMIN or "
                 "APPROVED status.  The results are ordered using "
@@ -1278,6 +1278,7 @@ class IPersonEditRestricted(Interface):
 
         Join the given team according to the policies and defaults of that
         team:
+
         - If the team subscriptionpolicy is OPEN, the user is added as
           an APPROVED member with a NULL TeamMembership.reviewer.
         - If the team subscriptionpolicy is MODERATED, the user is added as
@@ -1689,8 +1690,8 @@ class IPersonSet(Interface):
         Return None if there is no person with the given name.
         """
 
-    def getByOpenIdIdentifier(openid_identity):
-        """Return the person with the given OpenID identifier, or None."""
+    def getByAccount(account):
+        """Return the `IPerson` with the given account, or None."""
 
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
