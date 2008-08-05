@@ -3,11 +3,12 @@
 Only Launchpad members are allowed to post to team mailing lists.  A message
 by a sender who is not a Launchpad member will be summarily discarded.
 
-First, create the mailing list, which will send a notification messages
-to all the members of the mailing list.  We can ignore these messages.
+A team mailing list is created.
 
-    >>> import itest_helper
-    >>> list_one = itest_helper.create_list('itest-one')
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> list_one = helpers.create_list('itest-one')
+
+    # Ignore the list creation notification message.
     >>> smtpd.reset()
 
 
@@ -16,10 +17,8 @@ to all the members of the mailing list.  We can ignore these messages.
 Postings from addresses that are not registered and verified with Launchpad
 are summarily discarded.
 
-    # Watch Mailman's logs/vette for possible log messages.
-    >>> vette_watcher = itest_helper.LogWatcher('vette')
-
-Inject a message from a non-member into Mailman's incoming queue.
+A non-Launchpad member sends a message to the mailing list.  This message is
+discarded immediately.
 
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
@@ -30,11 +29,7 @@ Inject a message from a non-member into Mailman's incoming queue.
     ...
     ... Hi, I am not a member of Launchpad (yet).
     ... """)
-    >>> vette_watcher.wait()
-
-Message from non-members who are in unknown standing do not get posted to the
-mailing list.
-
+    >>> vette_watcher.wait_for_discard('aardvark')
     >>> len(smtpd.getMessages())
     0
 
@@ -42,24 +37,28 @@ mailing list.
 == Unvalidated member postings ==
 
 Similarly, an address that has been registered with Launchpad but not verified
-will also be summarily discarded.  To demonstrate this, we'll add Anne as a
-normal Launchpad user, but de-certify her alternative address.  This is
-equivalent to making it unvalidated.
+will also be summarily discarded.  Anne registers with Launchpad but does not
+validate her alternative address.
 
+    >>> import transaction
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
-    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+
     >>> login('foo.bar@canonical.com')
     >>> anne = new_person('Anne')
     >>> alternative_email = get_alternative_email(anne)
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+
+    # Simulate Anne not having validated her alternative address.
     >>> alternative_email.status = EmailAddressStatus.NEW
-    >>> commit()
+    >>> transaction.commit()
     >>> print alternative_email.email, alternative_email.status.title
     aperson@example.org New Email Address
 
-    >>> vette_watcher.resync()
+Anne sends a message from her unvalidated alternative address.  This message
+gets discarded.
+
     >>> inject('itest-one', """\
     ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -68,10 +67,7 @@ equivalent to making it unvalidated.
     ...
     ... Hi, I am not a verified member of Launchpad (yet).
     ... """)
-    >>> vette_watcher.wait()
-
-As above, this message got summarily discarded.
-
+    >>> vette_watcher.wait_for_discard('beaver')
     >>> len(smtpd.getMessages())
     0
 
@@ -85,7 +81,9 @@ administrator.
 
     >>> print anne.preferredemail.email, anne.preferredemail.status.title
     anne.person@example.com Preferred Email Address
-    >>> vette_watcher.resync()
+    >>> smtpd.reset()
+    >>> smtpd.getMailboxSize()
+    0
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -94,8 +92,11 @@ administrator.
     ...
     ... Hi, I am not a member of this team's list (yet).
     ... """)
+    >>> vette_watcher.wait_for_hold('caribou')
 
-    >>> vette_watcher.wait()
+The team administrator will receive a notification of the held message.
+
+    >>> smtpd_watcher.wait_for_personal_traffic('no-priv@canonical.com')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
@@ -112,7 +113,7 @@ administrator.
     <BLANKLINE>
         Subject: An unsubscribed post
         Author name: Anne Person
-        Author url: http://launchpad.dev/~anne
+        Author url: http://launchpad.dev:8085/~anne
         Date: ...
         Message-ID: <caribou>
     <BLANKLINE>
@@ -123,7 +124,7 @@ administrator.
     <BLANKLINE>
     To review all messages pending approval, visit:
     <BLANKLINE>
-        http://launchpad.dev/~itest-one/+mailinglist-moderate
+        http://launchpad.dev:8085/~itest-one/+mailinglist-moderate
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -132,10 +133,10 @@ administrator.
 
 The message is held for moderation by the team administrator.
 
-    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     1
-    >>> itest_helper.print_mailman_hold('itest-one', holds[0])
+    >>> helpers.print_mailman_hold('itest-one', holds[0])
     From: anne.person@example.com
     To: itest-one@lists.launchpad.dev
     Subject: An unsubscribed post
@@ -143,26 +144,24 @@ The message is held for moderation by the team administrator.
     <BLANKLINE>
     Hi, I am not a member of this team's list (yet).
     <BLANKLINE>
-    
+
 The team administrator can accept, decline or discard this posting.  By
 declining the message, Launchpad forgets about it, while Mailman sends a
 rejection notice to Anne.
 
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist-moderate')
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> browser.open(
+    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Ccaribou%3E').value = [
     ...     'reject']
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
-
     >>> browser.getControl('Moderate').click()
-    >>> serial_watcher.wait()
+    >>> xmlrpc_watcher.wait_for_reject('caribou')
 
-    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     0
 
-    >>> smtp_watcher.wait()
+    >>> smtpd_watcher.wait_for_personal_traffic('anne.person@example.com')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
@@ -193,11 +192,10 @@ rejection notice to Anne.
     <BLANKLINE>
     <BLANKLINE>
 
-Anne posts another message to the mailing list that she is not subscribed to.
-The team administrator deems this message to be spam and discards it.  No
-rejection notice is sent to Anne.
+Anne posts another message to the mailing list, but she is still not
+subscribed to it.  The team administrator deems this message to be spam and
+discards it.  No rejection notice is sent to Anne.
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -207,7 +205,7 @@ rejection notice is sent to Anne.
     ... Hi, do you want to buy something?
     ... """)
 
-    >>> vette_watcher.wait()
+    >>> vette_watcher.wait_for_hold('donkey')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
@@ -224,32 +222,27 @@ rejection notice is sent to Anne.
     <BLANKLINE>
         Subject: Wanna buy something?
         Author name: Anne Person
-        Author url: http://launchpad.dev/~anne
+        Author url: http://launchpad.dev:8085/~anne
         Date: ...
         Message-ID: <donkey>
     ...
 
-    >>> smtp_watcher.resync()
-    >>> serial_watcher.resync()
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist-moderate')
+    >>> browser.open(
+    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Cdonkey%3E').value = [
     ...     'discard']
     >>> browser.getControl('Moderate').click()
-    >>> serial_watcher.wait()
-    >>> smtp_watcher.wait()
-    'Timed out'
+    >>> xmlrpc_watcher.wait_for_discard('donkey')
 
-    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     0
-
     >>> len(smtpd.getMessages())
     0
 
 Now Anne posts another message to the mailing list she is not subscribed to.
 This time, her message is on topic and is accepted.
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -259,7 +252,7 @@ This time, her message is on topic and is accepted.
     ... Hi, I am still not yet a member of this team's list.
     ... """)
 
-    >>> vette_watcher.wait()
+    >>> vette_watcher.wait_for_hold('elephant')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
@@ -276,15 +269,15 @@ This time, her message is on topic and is accepted.
     <BLANKLINE>
         Subject: Another unsubscribed post
         Author name: Anne Person
-        Author url: http://launchpad.dev/~anne
+        Author url: http://launchpad.dev:8085/~anne
         Date: ...
         Message-ID: <elephant>
     ...
 
-    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     1
-    >>> itest_helper.print_mailman_hold('itest-one', holds[0])
+    >>> helpers.print_mailman_hold('itest-one', holds[0])
     From: anne.person@example.com
     To: itest-one@lists.launchpad.dev
     Subject: Another unsubscribed post
@@ -292,20 +285,19 @@ This time, her message is on topic and is accepted.
     <BLANKLINE>
     Hi, I am still not yet a member of this team's list.
     <BLANKLINE>
-    
-    >>> smtp_watcher.resync()
-    >>> serial_watcher.resync()
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist-moderate')
+
+    >>> browser.open(
+    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Celephant%3E').value = [
     ...     'approve']
     >>> browser.getControl('Moderate').click()
-    >>> serial_watcher.wait()
-    >>> smtp_watcher.wait()
+    >>> xmlrpc_watcher.wait_for_approval('elephant')
 
-    >>> holds = itest_helper.pending_hold_ids('itest-one')
+    >>> holds = helpers.pending_hold_ids('itest-one')
     >>> len(holds)
     0
 
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
@@ -324,8 +316,8 @@ This time, her message is on topic and is accepted.
     List-Archive: <http://lists.launchpad.dev/itest-one>
     List-Owner: <http://launchpad.dev/~itest-one>
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am still not yet a member of this team's list.
@@ -343,23 +335,10 @@ This time, her message is on topic and is accepted.
 Anne now joins the team and subscribes to the mailing list.  She can now post
 to the mailing list.
 
-    # Subscribe Anne with her preferred address.
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.database.sqlbase import commit
-    >>> login('foo.bar@canonical.com')
-    >>> team_one = getUtility(IPersonSet).getByName('itest-one')
-    >>> anne.join(team_one)
-    >>> list_one.subscribe(anne)
-    >>> logout()
-    >>> serial_watcher.resync()
-    >>> commit()
-    >>> serial_watcher.wait()
+    >>> helpers.subscribe('Anne', 'itest-one')
+    >>> helpers.ensure_addresses_are_enabled(
+    ...     'itest-one', 'anne.person@example.com')
 
-    >>> print anne.preferredemail.email, anne.preferredemail.status.title
-    anne.person@example.com Preferred Email Address
-    >>> archive_watcher = itest_helper.LogWatcher('mhonarc')
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -368,13 +347,14 @@ to the mailing list.
     ...
     ... Hi, I am now a member of this team's list!
     ... """)
-    >>> smtp_watcher.wait()
 
 Anne's message got posted to the mailing list.  Two copies were sent; one to
 Anne herself as a member of the mailing list, and another to the
 mail-archive.com archiving recipient.  These copies are very similar,
 differing only in the headers used to do VERP bounce detection.
 
+    >>> smtpd_watcher.wait_for_mbox_delivery('falcon')
+    >>> smtpd_watcher.wait_for_mbox_delivery('falcon')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     2
@@ -410,8 +390,8 @@ Here's the copy sent to Anne...
     Message-ID: <falcon>
     Subject: [Itest-one] A member post
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am now a member of this team's list!
@@ -425,20 +405,13 @@ Here's the copy sent to Anne...
 
 In addition, the in-house MHonArc archiver has archived this message.
 
-    # There might have been messages already in the archive queue waiting to
-    # be processed when the watcher was create.  Wait twice, the second of
-    # which should time out.
-    >>> archive_watcher.wait()
-    >>> archive_watcher.wait()
-    'Timed out'
-    >>> from itest_helper import collect_archive_message_ids
-    >>> collect_archive_message_ids('itest-one')
+    >>> mhonarc_watcher.wait_for_message_number(2)
+    >>> helpers.collect_archive_message_ids('itest-one')
     ['elephant', 'falcon']
 
-Anne cannot post from her alternative email address because it has not been
-validated yet.
+Anne cannot post from her alternative email address because it has still not
+been validated yet.
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -447,28 +420,29 @@ validated yet.
     ...
     ... Hi, I am not a verified member of this team (yet).
     ... """)
-
-    >>> vette_watcher.wait()
+    >>> vette_watcher.wait_for_discard('giraffe')
     >>> len(smtpd.getMessages())
     0
 
 However, once she validates this address, she can post from it.
 
+    >>> login('foo.bar@canonical.com')
     >>> alternative_email.status = EmailAddressStatus.VALIDATED
-    >>> serial_watcher.resync()
-    >>> commit()
-    >>> serial_watcher.wait()
+    >>> logout()
+    >>> transaction.commit()
+    >>> helpers.ensure_membership('itest-one', anne)
 
-    >>> smtp_watcher.resync()
     >>> inject('itest-one', """\
     ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
     ... Subject: A member post
-    ... Message-ID: <giraffe>
+    ... Message-ID: <gerbil>
     ...
     ... Hi, I am now a verified member of this team!
     ... """)
-    >>> smtp_watcher.wait()
+
+    >>> smtpd_watcher.wait_for_mbox_delivery('gerbil')
+    >>> smtpd_watcher.wait_for_mbox_delivery('gerbil')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     2
@@ -477,7 +451,7 @@ However, once she validates this address, she can post from it.
     >>> print messages[0].as_string()
     From: aperson@example.org
     To: itest-one@lists.launchpad.dev
-    Message-ID: <giraffe>
+    Message-ID: <gerbil>
     Subject: [Itest-one] A member post
     ...
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
@@ -496,11 +470,11 @@ However, once she validates this address, she can post from it.
     >>> print messages[1].as_string()
     From: aperson@example.org
     To: itest-one@lists.launchpad.dev
-    Message-ID: <giraffe>
+    Message-ID: <gerbil>
     Subject: [Itest-one] A member post
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am now a verified member of this team!
@@ -514,8 +488,7 @@ However, once she validates this address, she can post from it.
 
 There should also be no held requests pending.
 
-    # Use a helper for complete safety.
-    >>> len(itest_helper.pending_hold_ids('itest-one'))
+    >>> len(helpers.pending_hold_ids('itest-one'))
     0
 
 
@@ -524,15 +497,16 @@ There should also be no held requests pending.
 Anne now leaves the team, but she does not unsubscribe from the mailing list.
 
     >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.leave(team_one)
     >>> logout()
-    >>> serial_watcher.resync()
-    >>> commit()
-    >>> serial_watcher.wait()
+    >>> transaction.commit()
+    >>> helpers.ensure_nonmembership('itest-one', anne)
 
 Because she is not a team member, her message is held for moderation.
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -541,7 +515,7 @@ Because she is not a team member, her message is held for moderation.
     ...
     ... Hi, I am not a team member.
     ... """)
-    >>> vette_watcher.wait()
+    >>> vette_watcher.wait_for_hold('horse')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
@@ -552,17 +526,19 @@ Because she is not a team member, her message is held for moderation.
     ...
         Subject: A non-team member post
         Author name: Anne Person
-        Author url: http://launchpad.dev/~anne
+        Author url: http://launchpad.dev:8085/~anne
         Date: ...
         Message-ID: <horse>
     ...
 
 The team administrator discards the message.
 
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist-moderate')
+    >>> browser.open(
+    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
     >>> browser.getControl(name='field.%3Chorse%3E').value = [
     ...     'discard']
     >>> browser.getControl('Moderate').click()
+    >>> xmlrpc_watcher.wait_for_discard('horse')
 
 Anne re-joins the team and once again can post to the mailing list.  She does
 not need to re-subscribe to the mailing list.
@@ -570,11 +546,9 @@ not need to re-subscribe to the mailing list.
     >>> login('foo.bar@canonical.com')
     >>> anne.join(team_one)
     >>> logout()
-    >>> serial_watcher.resync()
-    >>> commit()
-    >>> serial_watcher.wait()
+    >>> transaction.commit()
+    >>> helpers.ensure_membership('itest-one', anne)
 
-    >>> smtp_watcher.resync()
     >>> inject('itest-one', """\
     ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -583,8 +557,10 @@ not need to re-subscribe to the mailing list.
     ...
     ... Hi, I am a team member again!
     ... """)
-    >>> smtp_watcher.wait()
 
+    # Wait for mailing list deliveries to both recipients.
+    >>> smtpd_watcher.wait_for_mbox_delivery('iguana')
+    >>> smtpd_watcher.wait_for_mbox_delivery('iguana')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     2
@@ -594,7 +570,7 @@ not need to re-subscribe to the mailing list.
     ...     print message['subject']
     itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     [Itest-one] A posting from a member once again
-    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     [Itest-one] A posting from a member once again
 
 
@@ -605,7 +581,7 @@ have their posts held for moderation.
 
     >>> login('foo.bar@canonical.com')
     >>> bart = new_person('Bart')
-    >>> commit()
+    >>> transaction.commit()
     >>> bart.personal_standing
     <DBItem PersonalStanding.UNKNOWN...
 
@@ -618,7 +594,6 @@ have their posts held for moderation.
     ...         print '   ', message['from']
     ...         print '   ', message['subject']
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: bperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -627,7 +602,7 @@ have their posts held for moderation.
     ...
     ... Hi, I am not a member of the mailing list.
     ... """)
-    >>> vette_watcher.wait()
+    >>> vette_watcher.wait_for_hold('jackal')
     >>> print_message_summaries()
     Number of messages: 1
     bounces@canonical.com
@@ -641,7 +616,7 @@ list.
     >>> from canonical.launchpad.interfaces import PersonalStanding
     >>> login('foo.bar@canonical.com')
     >>> bart.personal_standing = PersonalStanding.GOOD
-    >>> commit()
+    >>> transaction.commit()
 
     >>> inject('itest-one', """\
     ... From: bart.person@example.com
@@ -651,14 +626,17 @@ list.
     ...
     ... Hi, I am a Launchpad member in good standing!
     ... """)
-    >>> smtp_watcher.wait()
+
+    # Wait for mailing list deliveries to both recipients.
+    >>> smtpd_watcher.wait_for_mbox_delivery('kestrel')
+    >>> smtpd_watcher.wait_for_mbox_delivery('kestrel')
     >>> print_message_summaries()
     Number of messages: 2
     itest-one-bounces+anne.person=example.com@lists.launchpad.dev
         <kestrel>
         bart.person@example.com
         [Itest-one] A member in good standing
-    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
         <kestrel>
         bart.person@example.com
         [Itest-one] A member in good standing
@@ -666,7 +644,7 @@ list.
 A member in excellent standing can of course also post to the list.
 
     >>> bart.personal_standing = PersonalStanding.EXCELLENT
-    >>> commit()
+    >>> transaction.commit()
 
     >>> inject('itest-one', """\
     ... From: bart.person@example.com
@@ -676,14 +654,17 @@ A member in excellent standing can of course also post to the list.
     ...
     ... Hi, I am a Launchpad member in excellent standing!
     ... """)
-    >>> smtp_watcher.wait()
+
+    # Wait for mailing list deliveries to both recipients.
+    >>> smtpd_watcher.wait_for_mbox_delivery('llama')
+    >>> smtpd_watcher.wait_for_mbox_delivery('llama')
     >>> print_message_summaries()
     Number of messages: 2
     itest-one-bounces+anne.person=example.com@lists.launchpad.dev
         <llama>
         bart.person@example.com
         [Itest-one] A member in excellent standing
-    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
         <llama>
         bart.person@example.com
         [Itest-one] A member in excellent standing
@@ -691,9 +672,8 @@ A member in excellent standing can of course also post to the list.
 But a person in poor standing will have their messages held for approval.
 
     >>> bart.personal_standing = PersonalStanding.POOR
-    >>> commit()
+    >>> transaction.commit()
 
-    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: bperson@example.org
     ... To: itest-one@lists.launchpad.dev
@@ -702,7 +682,7 @@ But a person in poor standing will have their messages held for approval.
     ...
     ... Hi, I am not a member of the mailing list.
     ... """)
-    >>> vette_watcher.wait()
+    >>> vette_watcher.wait_for_hold('mongoose')
     >>> print_message_summaries()
     Number of messages: 1
     bounces@canonical.com
@@ -722,8 +702,7 @@ messages to the list.
 
     >>> from canonical.config import config
     >>> config.mailman.archive_address
-    'archive@mail-archive.com'
-    >>> vette_watcher.resync()
+    'archive@mail-archive.dev'
     >>> inject('itest-one', """\
     ... From: %s
     ... To: itest-one@lists.launchpad.dev
@@ -733,6 +712,6 @@ messages to the list.
     ... Hi, I am forging me some spam!
     ... """ % config.mailman.archive_address)
 
-    >>> vette_watcher.wait()
+    >>> vette_watcher.wait_for_discard('narwhale')
     >>> len(smtpd.getMessages())
     0

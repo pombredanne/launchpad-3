@@ -1,48 +1,25 @@
 = Using a mailing list as a team's contact address =
 
-Mailing lists hosted by Launchpad can be used as the contact address of any
-team in Launchpad.  When this feature is used, all notifications sent by
-Launchpad to the team will be sent to the mailing list's address, in fact.
+The contact address for any team can be set the team's mailing list, in which
+case all notifications sent by Launchpad to the team will be sent to the
+mailing list's address.
 
-We'll now register and approve the mailing list we'll be using as the contact
-address of our new team.  When the mailing lists are created, messages get
-sent to the members of the team informing them of their new list.  We can
-ignore these (there's only one, currently).
+Create a mailing list for the contact address of our new team.
 
-    >>> import itest_helper
-    >>> list_one = itest_helper.create_list('itest-one')
-    >>> from operator import itemgetter
-    >>> for message in sorted(smtpd.getMessages(), key=itemgetter('sender')):
-    ...     print message['subject']
-    New Mailing List for Itest One
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> list_one = helpers.create_list('itest-one')
 
-Subscribe someone to the team and mailing list so that these messages can get
-delivered.
+    # Ignore the new list notification message.
+    >>> smtpd.reset()
 
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
-    >>> person_set = getUtility(IPersonSet)
-    >>> team_one = person_set.getByName('itest-one')
+Anne subscribes to the team and its mailing list.
 
-    # Subscribe Anne with her preferred address.
-    >>> anne = new_person('Anne')
-    >>> anne.join(team_one)
-    >>> from canonical.launchpad.ftests import sync
-    >>> sync(list_one)
-    >>> list_one.subscribe(anne)
-    >>> from canonical.database.sqlbase import commit
-    >>> logout()
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
-    >>> commit()
-    >>> serial_watcher.wait()
+    >>> helpers.subscribe('Anne', 'itest-one')
 
-It's possible to set the team as a project's answer contact.
+The team is set as the project's answer contact.
 
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/~itest-one/+contactaddress')
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev:8085/~itest-one/+contactaddress')
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()
 
@@ -50,31 +27,33 @@ It's possible to set the team as a project's answer contact.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0The Launchpad mailing list for this team...]
 
-    >>> browser.open('http://answers.launchpad.dev/firefox/+answer-contact')
+    >>> browser.open(
+    ...     'http://answers.launchpad.dev:8085/firefox/+answer-contact')
     >>> browser.getControl(name='field.answer_contact_teams').displayValue = [
     ...     'Itest One']
     >>> browser.getControl('Continue').click()
 
-When the contact address for the team is its mailing list, creating new
-questions will email the mailing list.
+Now that the contact address for the team is its mailing list, a new questions
+will be delivered to the mailing list.
 
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
-
-    >>> browser.open('http://answers.launchpad.dev/firefox/+addquestion')
+    >>> browser.open('http://answers.launchpad.dev:8085/firefox/+addquestion')
     >>> browser.getControl('Summary').value = 'A new question'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Description').value = 'More detail.'
     >>> browser.getControl('Add').click()
 
 There are now three messages in the mailbox.  One message goes to
-no-priv@canonical.com because he added the question.  The other two are copies
-of the same message which was posted to the mailing list.  We get two copies
-because we're VERPing delivery (i.e. sending each recipient an individual
-message marked with headers to track bounces).  One copy goes to Anne and the
-other goes to the archive submission address.  The way to distinguish and sort
-these messages is by the Sender header, which will be unique in all cases.
+no-priv@canonical.com because he added the question, one goes to the mailing
+list's archive, and one goes to Anne because she is the mailing list's only
+member.
 
-    >>> smtp_watcher.wait()
+    # The three messages addressed to the mailing list seen on the smtp server
+    # are 1) the original posted message on the +addquestion, 2) the message
+    # as sent to Anne, 3) the message as sent to the archiver.
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     3
@@ -100,7 +79,7 @@ Here is the message to the person who added the question.
     Received: by smtp2mbox
     <BLANKLINE>
     New question #... on Mozilla Firefox:
-    http://answers.launchpad.dev/firefox/+question/...
+    http://answers.launchpad.dev:8085/firefox/+question/...
     <BLANKLINE>
     More detail.
     <BLANKLINE>
@@ -111,7 +90,7 @@ Here is the message to the person who added the question.
     <BLANKLINE>
     <BLANKLINE>
 
-Here is the message to Anne, a member of the mailing list.
+Here is the message to Anne, the mailing list member.
 
     >>> print messages[1].as_string()
     MIME-Version: 1.0
@@ -139,7 +118,7 @@ Here is the message to Anne, a member of the mailing list.
     Received: by smtp2mbox
     <BLANKLINE>
     New question #... on Mozilla Firefox:
-    http://answers.launchpad.dev/firefox/+question/...
+    http://answers.launchpad.dev:8085/firefox/+question/...
     <BLANKLINE>
     More detail.
     <BLANKLINE>
@@ -160,24 +139,30 @@ Here is the message to the archive submission address.
     >>> print messages[2].as_string()
     MIME-Version: 1.0
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     ...
     <BLANKLINE>
     <BLANKLINE>
 
-Similarly, if we subscribe our new team to a blueprint, a notification will be
-sent to Anne and to the archive via the mailing list.
+Similarly, when the team is subscribed to a blueprint, a notification will be
+sent to Anne and to the archive, via the mailing list.
 
     >>> browser.open(
-    ...     'http://launchpad.dev/firefox/+spec/canvas/+addsubscriber')
+    ...     'http://launchpad.dev:8085/firefox/+spec/canvas/+addsubscriber')
     >>> browser.getControl('Subscriber').value = 'itest-one'
     >>> browser.getControl('Continue').click()
 
-    >>> smtp_watcher.wait()
+    # The three messages addressed to the mailing list seen on the smtp server
+    # are 1) the original posted message on the +addquestion, 2) the message
+    # as sent to Anne, 3) the message as sent to the archiver.
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     2
+    >>> from operator import itemgetter
     >>> messages.sort(key=itemgetter('sender'))
 
 This one gets sent to Anne...
@@ -198,7 +183,7 @@ This one gets sent to Anne...
     Objects.
     <BLANKLINE>
     --
-      http://blueprints.launchpad.dev/firefox/+spec/canvas
+      http://blueprints.launchpad.dev:8085/firefox/+spec/canvas
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
@@ -217,15 +202,15 @@ This one gets sent to Anne...
     Subject: [Itest-one] [Blueprint canvas] Support <canvas> Objects
     X-BeenThere: itest-one@lists.launchpad.dev
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     You are now subscribed to the blueprint canvas - Support <canvas>
     Objects.
     <BLANKLINE>
     --
-      http://blueprints.launchpad.dev/firefox/+spec/canvas
+      http://blueprints.launchpad.dev:8085/firefox/+spec/canvas
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
@@ -234,11 +219,10 @@ This one gets sent to Anne...
     <BLANKLINE>
     <BLANKLINE>
 
-If we change the team's contact address to something other than the
-launchpad-hosted mailing list, though, the notifications won't be sent to the
-mailing list, they'll be sent to the team members individually.
+The team's contact address is set to each team member individually.
+Notifications will no longer be sent to the mailing list.
 
-    >>> browser.open('http://launchpad.dev/~itest-one/+contactaddress')
+    >>> browser.open('http://launchpad.dev:8085/~itest-one/+contactaddress')
     >>> browser.getControl('Each member individually').selected = True
     >>> browser.getControl('Change').click()
 
@@ -246,16 +230,16 @@ mailing list, they'll be sent to the team members individually.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0Each member individually']
 
-    >>> browser.open('http://answers.launchpad.dev/firefox/+addquestion')
+    >>> browser.open('http://answers.launchpad.dev:8085/firefox/+addquestion')
     >>> browser.getControl('Summary').value = 'Another question'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Description').value = 'More detail.'
     >>> browser.getControl('Add').click()
 
-    >>> smtp_watcher.wait()
+    >>> smtpd_watcher.wait_for_list_traffic('itest-one')
     'Timed out'
 
-There are now two messages in the mailbox.  One message goes to
+There are two messages in the mailbox.  One message was sent to
 no-priv@canonical.com because he added the question.  The other goes to Anne
 as a member of the team, since the team's contact address is not set.  Nothing
 is sent to the archive because the mailing list was not used.
@@ -279,7 +263,7 @@ This message goes to the submitter of the question.
     ...
     <BLANKLINE>
     New question #... on Mozilla Firefox:
-    http://answers.launchpad.dev/firefox/+question/...
+    http://answers.launchpad.dev:8085/firefox/+question/...
     <BLANKLINE>
     More detail.
     <BLANKLINE>
@@ -304,7 +288,7 @@ member.
     ...
     <BLANKLINE>
     New question #... on Mozilla Firefox:
-    http://answers.launchpad.dev/firefox/+question/...
+    http://answers.launchpad.dev:8085/firefox/+question/...
     <BLANKLINE>
     More detail.
     <BLANKLINE>
@@ -320,14 +304,14 @@ delivered since the mailing list is still active.
 
     >>> from Mailman.Post import inject
     >>> inject('itest-one', """\
-    ... From: %s
+    ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
     ... Subject: A member post
     ... Message-ID: <first-injection>
     ...
     ... Hi, I am a member of Launchpad.
-    ... """ % anne.preferredemail.email)
-    >>> smtp_watcher.wait()
+    ... """)
+    >>> smtpd_watcher.wait_for_mbox_delivery('first-injection')
     >>> messages = smtpd.getMessages()
 
 Anne (as the only member of the mailing list) and the archive submission
@@ -364,8 +348,8 @@ address both get copies of the message.
     Subject: [Itest-one] A member post
     X-BeenThere: itest-one@lists.launchpad.dev
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am a member of Launchpad.
