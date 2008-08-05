@@ -15,6 +15,7 @@ from canonical.launchpad.components.packagelocation import (
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -362,10 +363,10 @@ class TestCopyPackage(unittest.TestCase):
     def _setupSecurityPropagationContext(self, sourcename):
         """Setup a security propagation publishing context.
 
-        Assert there is not previous publication with the given sourcename
-        in the ubuntu archive.
+        Assert there is no previous publication with the given sourcename
+        in the Ubuntu archive.
 
-        Then publish a corresponding source in hoary-security context with
+        Publish a corresponding source in hoary-security context with
         builds for i386 and hppa. Only one i386 binary is published, so the
         hppa build will remain NEEDSBUILD.
 
@@ -374,7 +375,7 @@ class TestCopyPackage(unittest.TestCase):
         """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
-        # There is no previous source publications for the given
+        # There are no previous source publications for the given
         # sourcename.
         existing_sources = ubuntu.main_archive.getPublishedSources(
             name=sourcename, exact_match=True)
@@ -388,7 +389,7 @@ class TestCopyPackage(unittest.TestCase):
         test_publisher = self.getTestPublisher(hoary)
 
         # Ensure hoary/i386 is official and hoary/hppa unofficial before
-        # continue with the test.
+        # continuing with the test.
         self.assertTrue(hoary['i386'].official)
         self.assertFalse(hoary['hppa'].official)
 
@@ -401,8 +402,8 @@ class TestCopyPackage(unittest.TestCase):
             pocket=PackagePublishingPocket.SECURITY,
             status=PackagePublishingStatus.PUBLISHED)
 
-        # Create builds and upload and published one binary package
-        # in i386 architecture.
+        # Create builds and upload and publish one binary package
+        # in the i386 architecture.
         [build_hppa, build_i386] = security_source.createMissingBuilds()
         lazy_bin = test_publisher.uploadBinaryForBuild(
             build_i386, 'lazy-bin')
@@ -410,6 +411,10 @@ class TestCopyPackage(unittest.TestCase):
             lazy_bin, ubuntu.main_archive,
             pocket=PackagePublishingPocket.SECURITY,
             status=PackagePublishingStatus.PUBLISHED)
+
+        # The i386 build is completed and the hppa one pending.
+        self.assertEqual(build_hppa.buildstate, BuildStatus.NEEDSBUILD)
+        self.assertEqual(build_i386.buildstate, BuildStatus.FULLYBUILT)
 
         return test_publisher, security_source
 
@@ -422,18 +427,21 @@ class TestCopyPackage(unittest.TestCase):
         Assert that no build was created during the copy, first because
         the copy was 'including binaries'.
 
-        Addionally, check that no builds will be created in future runs of
-        `buildd-queue-builder`, because a source version can only be build
+        Additionally, check that no builds will be created in future runs of
+        `buildd-queue-builder`, because a source version can only be built
         once in a distroarchseries, independent of its targeted pocket.
         """
         sources = archive.getPublishedSources(
             name=sourcename, exact_match=True,
             status=active_publishing_status)
 
-        self.assertEqual(
-            [pub.pocket.name for pub in sources], ['UPDATES', 'SECURITY'])
-
         [copied_source, original_source] = sources
+
+        self.assertEqual(
+            copied_source.pocket, PackagePublishingPocket.UPDATES)
+        self.assertEqual(
+            original_source.pocket, PackagePublishingPocket.SECURITY)
+
         self.assertEqual(
             copied_source.getBuilds(), original_source.getBuilds())
 
@@ -475,6 +483,11 @@ class TestCopyPackage(unittest.TestCase):
             from_suite='hoary-security', to_suite='hoary-updates')
         copied = copy_helper.mainTask()
 
+        [source_copy, i386_copy] = copied
+        self.assertEqual(
+            source_copy.displayname, 'lazy-building 1.0 in hoary')
+        self.assertEqual(i386_copy.displayname, 'lazy-bin 1.0 in hoary i386')
+
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
 
@@ -482,7 +495,7 @@ class TestCopyPackage(unittest.TestCase):
             security_source.archive, sourcename)
 
         # Upload a hppa binary but keep it unpublished. When attempting
-        # to re-copy 'lazy-bulding' to -updates the copy succeeds but
+        # to re-copy 'lazy-building' to -updates the copy succeeds but
         # nothing gets copied. Everything built and published from this
         # source is already copied.
         [build_hppa, build_i386] = security_source.getBuilds()
@@ -510,15 +523,15 @@ class TestCopyPackage(unittest.TestCase):
         [hppa_copy] = copied_increment
         self.assertEqual(hppa_copy.displayname, 'lazy-bin 1.0 in hoary hppa')
 
-        # Source and its 2 binaries are now available in both, hoary-security
-        # and hoary-updates suites.
+        # The source and its 2 binaries are now available in both
+        # hoary-security and hoary-updates suites.
         currently_copied = copied + copied_increment
         self.checkCopies(currently_copied, target_archive, 3)
 
         self._checkSecurityPropagationContext(
             security_source.archive, sourcename)
 
-        # At this point, try to copy stuff from -security to -updates will
+        # At this point, trying to copy stuff from -security to -updates will
         # not copy anything again.
         copy_helper = self.getCopier(
             sourcename=sourcename, include_binaries=True,

@@ -144,6 +144,8 @@ def check_archive_conflicts(source, archive, pocket, include_binaries):
     :param source: context `ISourcePackagePublishingHistory`;
     :param archive: destination `IArchive`.
     :param pocket: destination `PackagePublishingPocket`.
+    :param include_binaries: boolean indicating whether or not binaries
+        are considered in the copy.
 
     :raise CannotCopy: when a copy is not allowed to be performed
         containing the reason of the error.
@@ -212,7 +214,7 @@ def check_copy(source, archive, series, pocket, include_binaries):
     Check possible conflicting publications in the destination archive.
     See `check_archive_conflicts()`.
 
-    Also hecks if the version of the source being copied is equal or higher
+    Also checks if the version of the source being copied is equal or higher
     than any version of the same source present in the destination suite
     (series + pocket).
 
@@ -270,7 +272,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
         else:
             destination_series = series
 
-        # Copy source if it's yet copied.
+        # Copy source if it's not yet copied.
         source_in_destination = archive.getPublishedSources(
             name=source.sourcepackagerelease.name, exact_match=True,
             version=source.sourcepackagerelease.version,
