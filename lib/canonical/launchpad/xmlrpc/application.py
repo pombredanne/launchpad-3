@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IPrivateApplication,
     IPrivateMaloneApplication)
 from canonical.launchpad.interfaces.codehosting import (
-    IBranchDetailsStorageApplication)
+    IBranchDetailsStorageApplication, IBranchFileSystemApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
@@ -44,6 +44,11 @@ class PrivateApplication:
     def branchdetails(self):
         """See `IPrivateApplication`."""
         return getUtility(IBranchDetailsStorageApplication)
+
+    @property
+    def branchfilesystem(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IBranchFileSystemApplication)
 
     @property
     def codeimportscheduler(self):

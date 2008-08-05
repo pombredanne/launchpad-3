@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BranchDetailsStorageAPI',
+    'BranchFileSystemAPI',
     ]
 
 import datetime
@@ -18,7 +19,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces.branch import (
     BranchType, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.codehosting import (
-    IBranchDetailsStorage)
+    IBranchDetailsStorage, IBranchFileSystem)
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
@@ -105,3 +106,13 @@ def datetime_from_tuple(time_tuple):
         time_tuple)
     return datetime.datetime(
         year, month, day, hour, minute, second, tzinfo=UTC)
+
+
+class BranchFileSystemAPI(LaunchpadXMLRPCView):
+    """See `IBranchFileSystem`."""
+
+    implements(IBranchFileSystem)
+
+    def getBranchesForUser(self, personID):
+        """See `IBranchFileSystem`."""
+        return []

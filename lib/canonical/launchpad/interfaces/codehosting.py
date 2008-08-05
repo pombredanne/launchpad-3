@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = [
     'IBranchDetailsStorage',
     'IBranchDetailsStorageApplication',
+    'IBranchFileSystem',
+    'IBranchFileSystemApplication',
     ]
 
 from zope.interface import Interface

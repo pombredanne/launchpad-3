@@ -37,6 +37,19 @@
     />
 
   <securedutility
+    class="canonical.launchpad.systemhomes.BranchFileSystemApplication"
+    provides="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication">
+    <allow interface="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication"
+    interface="canonical.launchpad.interfaces.codehosting.IBranchFileSystem"
+    class="canonical.launchpad.xmlrpc.codehosting.BranchFileSystemAPI"
+    permission="zope.Public"
+    />
+
+  <securedutility
     class="canonical.launchpad.systemhomes.CodeImportSchedulerApplication"
     provides="canonical.launchpad.interfaces.ICodeImportSchedulerApplication">
     <allow interface="canonical.launchpad.interfaces.ICodeImportSchedulerApplication"/>

@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
     IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
     IWebServiceApplication)
 from canonical.launchpad.interfaces.codehosting import (
-    IBranchDetailsStorageApplication)
+    IBranchDetailsStorageApplication, IBranchFileSystemApplication)
 from canonical.lazr.rest import ServiceRootResource
 
 
@@ -52,6 +52,12 @@ class BranchDetailsStorageApplication:
 
     title = "Branch Details"
 
+
+class BranchFileSystemApplication:
+    """BranchFileSystem End-Point."""
+    implements(IBranchFileSystemApplication)
+
+    title = "Branch File System"
 
 class CodeImportSchedulerApplication:
     """CodeImportScheduler End-Point."""
