@@ -167,9 +167,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.DONE, name="bar",
@@ -212,20 +212,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-10 "
-            "(Accepted)",
-            "OK: bar_1.0.orig.tar.gz",
-            "OK: bar_1.0-10.diff.gz",
-            "OK: bar_1.0-10.dsc",
-            "-> Component: universe Section: devel",
-            "universe/devel optional bar_1.0-10.dsc",
-            "universe/devel optional bar_1.0-10.diff.gz",
-            "You are receiving this email because you are the uploader of "
-                "the above",
-            "PPA package."
-            ]
-        self.assertEmail(contents)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         pub_sources = self.name16.archive.getPublishedSources(name='bar')
         [pub_bar_10, pub_bar] = pub_sources
@@ -248,10 +237,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-2", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-2_source.changes rejected",
-            "Version older than that in the archive. 1.0-2 <= 1.0-10"]
-        self.assertEmail(contents)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            u'bar_1.0-2.dsc: Version older than that in the archive. '
+            u'1.0-2 <= 1.0-10')
 
     def testPPAPublisherOverrides(self):
         """Check that PPA components override to main at publishing time,
@@ -264,9 +253,12 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # bar_1.0-1_universe is targeted to universe.
         upload_dir = self.queueUpload("bar_1.0-1_universe", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
+        # Consume the test email so the assertion futher down does not fail.
+        _from_addr, _to_addrs, _raw_msg = stub.test_emails.pop()
 
         # The SourcePackageRelease still has a component of universe:
         pub_sources = self.name16.archive.getPublishedSources(name="bar")
@@ -308,9 +300,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Source upload.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         # Source publication and build record for breezy-i386
         # distroarchseries were created as expected. The source is ready
@@ -350,9 +343,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Source upload to name16 PPA.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         # Copy source uploaded to name16 PPA to cprov's PPA.
         pub_sources = self.name16.archive.getPublishedSources(name='bar')
@@ -409,10 +403,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~spiv/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "Could not find PPA for 'spiv'"]
-        self.assertEmail(contents, ppa_header=None)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "Could not find PPA for 'spiv'\nFurther error processing not "
+            "possible because of a critical previous error.")
 
     def testUploadToDisabledPPA(self):
         """Upload to a disabled PPA.
@@ -431,14 +425,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~spiv/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "PPA for Andrew Bennetts is disabled",
-            "If you don't understand why your files were rejected please "
-                 "send an email",
-            "to launchpad-users@lists.canonical.com for help."
-            ]
-        self.assertEmail(contents, ppa_header=None)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            'PPA for Andrew Bennetts is disabled\nFurther error processing '
+            'not possible because of a critical previous error.')
 
     def testPPADistroSeriesOverrides(self):
         """It's possible to override target distroserieses of PPA uploads.
@@ -457,9 +447,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "bar_1.0-1", "~name16/ubuntu/hoary")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: [PPA name16] [ubuntu/hoary] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         queue_items = hoary.getQueueItems(
             status=PackageUploadStatus.DONE, name="bar",
@@ -489,9 +479,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~ubuntu-team/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: [PPA ubuntu-team] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents, ppa_header='ubuntu-team')
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.DONE, name="bar",
@@ -526,9 +516,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "bar_1.0-1", "~ubuntu-translators/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [""]
-        self.assertEmail(contents, ppa_header='ubuntu-translators')
-
         pending_ppas = self.ubuntu.getPendingPublicationPPAs()
         self.assertEqual(pending_ppas.count(), 0)
 
@@ -543,20 +530,18 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~kinnison/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "Signer has no upload rights to this PPA."]
-        self.assertEmail(contents, ppa_header=None)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "Signer has no upload rights to this PPA.")
 
     def testPPAPartnerUploadFails(self):
         """Upload a partner package to a PPA and ensure it's rejected."""
         upload_dir = self.queueUpload("foocomm_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "foocomm_1.0-1_source.changes rejected",
-            "PPA does not support partner uploads."]
-        self.assertEmail(contents, [self.name16_recipient])
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "PPA does not support partner uploads.")
 
     def testUploadSignedByNonUbuntero(self):
         """Check if a non-ubuntero can upload to his PPA."""
@@ -566,10 +551,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "PPA uploads must be signed by an 'ubuntero'."]
-        self.assertEmail(contents)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "PPA uploads must be signed by an 'ubuntero'.")
         self.assertTrue(self.name16.archive is not None)
 
     def testUploadSignedByBetaTesterMember(self):
@@ -588,52 +572,50 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
     def testUploadToAMismatchingDistribution(self):
         """Check if we only accept uploads to the Archive.distribution."""
         upload_dir = self.queueUpload("bar_1.0-1", "~cprov/ubuntutest")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "PPA for Celso Providelo only supports uploads to 'ubuntu'"]
-        self.assertEmail(contents, ppa_header=None)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "PPA for Celso Providelo only supports uploads to "
+            "'ubuntu'\nFurther error processing not possible because of a "
+            "critical previous error.")
 
     def testUploadToUnknownDistribution(self):
         """Upload to unknown distribution gets proper rejection email."""
         upload_dir = self.queueUpload("bar_1.0-1", "biscuit")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "Could not find distribution 'biscuit'"]
-        self.assertEmail(
-            contents,
-            recipients=[self.name16_recipient, self.kinnison_recipient],
-            ppa_header=None)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "Could not find distribution 'biscuit'\nFurther error "
+            "processing not possible because of a critical previous error.")
 
     def testUploadWithMismatchingPPANotation(self):
         """Upload with mismatching PPA notation results in rejection email."""
         upload_dir = self.queueUpload("bar_1.0-1", "biscuit/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "PPA upload path must start with '~'."]
-        self.assertEmail(contents, ppa_header=None)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "PPA upload path must start with '~'.\nFurther error "
+            "processing not possible because of a critical previous error.")
 
     def testUploadToUnknownPerson(self):
         """Upload to unknown person gets proper rejection email."""
         upload_dir = self.queueUpload("bar_1.0-1", "~orange/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "Could not find person 'orange'"]
-        self.assertEmail(contents, ppa_header=None)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+             "Could not find person 'orange'\nFurther error processing not "
+             "possible because of a critical previous error.")
 
     def testUploadWithMismatchingPath(self):
         """Upload with mismating path gets proper rejection email."""
@@ -641,14 +623,12 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "bar_1.0-1", "ubuntu/one/two/three/four")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "Path mismatch 'ubuntu/one/two/three/four'. "
-            "Use ~<person>/<distro>/[distroseries]/[files] for PPAs "
-            "and <distro>/[files] for normal uploads."]
-        self.assertEmail(
-            contents, ppa_header=None,
-            recipients=[self.name16_recipient, self.kinnison_recipient])
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "Path mismatch 'ubuntu/one/two/three/four'. Use "
+            "~<person>/<distro>/[distroseries]/[files] for PPAs and "
+            "<distro>/[files] for normal uploads.\nFurther error processing "
+            "not possible because of a critical previous error.")
 
     def testUploadWithBadComponent(self):
         """Test uploading with a bad component.
@@ -659,17 +639,14 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload(
             "bar_1.0-1_bad_component", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected\n"
-            "Rejected:\n"
-            "bar_1.0-1.dsc: Component 'badcomponent' is not valid\n"
-            "bar_1.0.orig.tar.gz: Component 'badcomponent' is not valid\n"
-            "bar_1.0-1.diff.gz: Component 'badcomponent' is not valid\n"
-            "Further error processing not possible because of a "
-                "critical previous error.\n"
-            ]
 
-        self.assertEmail(contents, ppa_header=None)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "bar_1.0-1.dsc: Component 'badcomponent' is not "
+            "valid\nbar_1.0.orig.tar.gz: Component 'badcomponent' is not "
+            "valid\nbar_1.0-1.diff.gz: Component 'badcomponent' is not "
+            "valid\nFurther error processing not possible because of a "
+            "critical previous error.")
 
     def testUploadWithBadDistroseries(self):
         """Test uploading with a bad distroseries in the changes file.
@@ -681,16 +658,11 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload(
             "bar_1.0-1_bad_distroseries", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected\n"
-            "Rejected:\n"
-            "Unable to find distroseries: flangetrousers\n"
-            "Further error processing not possible because of a "
-                "critical previous error.\n"
-            ]
-        self.assertEmail(
-            contents,ppa_header=None,
-            recipients=[self.name16_recipient, self.kinnison_recipient])
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            'Unable to find distroseries: flangetrousers\nFurther error '
+            'processing not possible because of a critical previous error.')
 
     def testUploadWithBadSection(self):
         """Uploads with a bad section are rejected."""
@@ -698,12 +670,13 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "bar_1.0-1_bad_section", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "bar_1.0-1.dsc: Section 'badsection' is not valid",
-            "bar_1.0.orig.tar.gz: Section 'badsection' is not valid",
-            "bar_1.0-1.diff.gz: Section 'badsection' is not valid"]
-        self.assertEmail(contents)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "bar_1.0-1.dsc: Section 'badsection' is not "
+            "valid\nbar_1.0.orig.tar.gz: Section 'badsection' is not "
+            "valid\nbar_1.0-1.diff.gz: Section 'badsection' is not "
+            "valid\nFurther error processing not possible because of a "
+            "critical previous error.")
 
     def testMixedUpload(self):
         """Mixed PPA uploads are rejected with a appropriate message."""
@@ -711,14 +684,12 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "bar_1.0-1-mixed", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: bar_1.0-1_i386.changes rejected",
-            "Upload rejected because it contains binary packages. "
-            "Ensure you are using `debuild -S`, or an equivalent command, "
-            "to generate only the source package before re-uploading. "
-            "See https://help.launchpad.net/PPAQuickStart/ for more "
-            "information."]
-        self.assertEmail(contents)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            'Upload rejected because it contains binary packages. Ensure '
+            'you are using `debuild -S`, or an equivalent command, to '
+            'generate only the source package before re-uploading. See '
+            'https://help.launchpad.net/PPAQuickStart/ for more information.')
 
     def testPGPSignatureNotPreserved(self):
         """Email notifications should remove the PGP signature from the
@@ -917,12 +888,10 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         """
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [ubuntu/breezy] bar 1.0-1 (New)"]
-        ubuntu_recipients = [
-            self.name16_recipient, self.kinnison_recipient]
-        self.assertEmail(contents, recipients=ubuntu_recipients,
-                         ppa_header=None)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.NEW)
 
         [queue_item] = self.breezy.getQueueItems(
             status=PackageUploadStatus.NEW, name="bar",
@@ -948,9 +917,10 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Discard the announcement email and check the acceptance message
         # content.
         announcement = stub.test_emails.pop()
-        contents = [
-            "Subject: [ubuntu/breezy] bar 1.0-10 (Accepted)"]
-        self.assertEmail(contents, ppa_header=None)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
     def testPPAReusingOrigFromUbuntu(self):
         """Official 'orig.tar.gz' can be reused for PPA uploads."""
@@ -961,9 +931,10 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # availability of orig.tar.gz published in ubuntu.
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-10 (Accepted)"]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         # Cleanup queue directory in order to re-upload the same source.
         shutil.rmtree(
@@ -988,9 +959,10 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # the upload).
         upload_dir = self.queueUpload("bar_1.0-3_valid", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-3 (Accepted)"]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         # The published section should be "devel" and not "web".
         pub_sources = self.name16.archive.getPublishedSources(name='bar')
@@ -1018,9 +990,10 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # file contents.
         upload_dir = self.queueUpload("bar_1.0-1-ppa-orig", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         # Make the official bar orig.tar.gz available in the system.
         self.uploadNewBarToUbuntu()
@@ -1029,9 +1002,10 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # availability of orig.tar.gz published in the PPA itself.
         upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-10 (Accepted)"]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         # Upload a higher version of bar that relies on the official
         # orig.tar.gz availability.
@@ -1054,26 +1028,24 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # 'orig.tar.gz' contents.
         upload_dir = self.queueUpload("bar_1.0-1-ppa-orig", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "MD5 sum of uploaded file does not match existing file "
-                 "in archive",
-            "Files specified in DSC are broken or missing, skipping package "
-                 "unpack verification."]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            'MD5 sum of uploaded file does not match existing file in '
+            'archive\nFiles specified in DSC are broken or missing, skipping '
+            'package unpack verification.')
 
         self.log.lines = []
         # The happens with higher versions of 'bar' depending on the
         # unofficial 'orig.tar.gz'.
         upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: bar_1.0-10_source.changes rejected",
-            "MD5 sum of uploaded file does not match existing file "
-                 "in archive",
-            "Files specified in DSC are broken or missing, skipping package "
-                 "unpack verification."]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            'MD5 sum of uploaded file does not match existing file in '
+            'archive\nFiles specified in DSC are broken or missing, skipping '
+            'package unpack verification.')
 
         # Cleanup queue directory in order to re-upload the same source.
         shutil.rmtree(
@@ -1083,15 +1055,17 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # be accepted.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-10 (Accepted)"]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
 
 class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
@@ -1184,9 +1158,10 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         """
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
         # Retrieve the build record for source bar in breezy-i386
         # distroarchseries, and setup a appropriate upload policy
