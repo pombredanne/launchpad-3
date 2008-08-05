@@ -1689,8 +1689,8 @@ class IPersonSet(Interface):
         Return None if there is no person with the given name.
         """
 
-    def getByOpenIdIdentifier(openid_identity):
-        """Return the person with the given OpenID identifier, or None."""
+    def getByAccount(account):
+        """Return the `IPerson` with the given account, or None."""
 
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
