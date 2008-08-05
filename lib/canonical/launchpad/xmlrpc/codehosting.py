@@ -152,10 +152,6 @@ class BranchFileSystemAPI(LaunchpadXMLRPCView):
 
     implements(IBranchFileSystem)
 
-    def getBranchesForUser(self, personID):
-        """See `IBranchFileSystem`."""
-        return []
-
     @run_as_requester
     def createBranch(self, requester, personName, productName, branchName):
         """See `IBranchFileSystem`."""

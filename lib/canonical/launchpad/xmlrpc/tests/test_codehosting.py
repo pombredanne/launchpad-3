@@ -407,66 +407,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product_id = self.branchfs.fetchProductID('no-such-product')
         self.assertEqual('', product_id)
 
-    def test_getBranchesForUser(self):
-        # getBranchesForUser returns all of the hosted branches that a user
-        # may write to. The branches are grouped by product, and are specified
-        # by name and id. The name and id of the products are also included.
-        transaction.begin()
-        no_priv = getUtility(IPersonSet).getByName('no-priv')
-        firefox = getUtility(IProductSet).getByName('firefox')
-        new_branch = getUtility(IBranchSet).new(
-            BranchType.HOSTED, 'branch2', no_priv, no_priv, firefox, None)
-        # We only create new_branch so that we can test getBranchesForUser.
-        # Zope's security is not relevant and only gets in the way, because
-        # there's no logged in user.
-        new_branch = removeSecurityProxy(new_branch)
-        transaction.commit()
-
-        fetched_branches = self.branchfs.getBranchesForUser(no_priv.id)
-
-        self.assertEqual(
-            [(no_priv.id,
-              [((firefox.id, firefox.name),
-                [(new_branch.id, new_branch.name)])])],
-            fetched_branches)
-
-    def test_getBranchesForUserNullProduct(self):
-        # getBranchesForUser returns branches for hosted branches with no
-        # product.
-        login(ANONYMOUS)
-        try:
-            person = getUtility(IPersonSet).get(12)
-            login_email = removeSecurityProxy(person.preferredemail).email
-        finally:
-            logout()
-
-        transaction.begin()
-        login(login_email)
-        try:
-            branch = getUtility(IBranchSet).new(
-                BranchType.HOSTED, 'foo-branch', person, person, None, None,
-                None)
-        finally:
-            logout()
-            transaction.commit()
-
-        branchInfo = self.branchfs.getBranchesForUser(12)
-
-        for person_id, by_product in branchInfo:
-            if person_id == 12:
-                for (product_id, product_name), branches in by_product:
-                    if product_id == '':
-                        self.assertEqual('', product_name)
-                        self.assertEqual(1, len(branches))
-                        branch_id, branch_name = branches[0]
-                        self.assertEqual('foo-branch', branch_name)
-                        break
-                else:
-                    self.fail("Couldn't find +junk branch")
-                break
-        else:
-            self.fail("Couldn't find user 12")
-
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own branches (i.e.
         # owned by us or by a team we are on), we get the database id of the
