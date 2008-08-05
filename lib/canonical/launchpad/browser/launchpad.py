@@ -893,6 +893,20 @@ class LaunchpadTourFolder(ExportedFolder):
             return self, ()
 
 
+class LaunchpadAPIDocFolder(ExportedFolder):
+    """Export the API documentation."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../apidoc/')
+
+    def browserDefault(self, request):
+        """Traverse to index.html if the directory itself is requested."""
+        if len(self.names) == 0:
+            return self, ('index.html', )
+        else:
+            return self, ()
+
+
 class StructuralHeaderPresentationView(LaunchpadView):
 
     def initialize(self):
