@@ -183,3 +183,10 @@ class BranchFileSystemAPI(LaunchpadXMLRPCView):
         else:
             return branch.id
 
+    def fetchProductID(self, productName):
+        """See `IHostedBranchStorage`."""
+        product = getUtility(IProductSet).getByName(productName)
+        if product is None:
+            return ''
+        else:
+            return product.id

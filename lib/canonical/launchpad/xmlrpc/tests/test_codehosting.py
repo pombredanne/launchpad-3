@@ -398,12 +398,14 @@ class BranchFileSystemTest(TestCaseWithFactory):
             NOT_FOUND_FAULT_CODE, message, fault)
 
     def test_fetchProductID(self):
-        productID = self.branchfs.fetchProductID('firefox')
-        self.assertEqual(4, productID)
+        product = self.factory.makeProduct()
+        product_id = self.branchfs.fetchProductID(product.name)
+        self.assertEqual(product.id, product_id)
 
+    def test_fetchProductID_no_product(self):
         # Invalid product names are signalled by a return value of ''
-        productID = self.branchfs.fetchProductID('xxxxx')
-        self.assertEqual('', productID)
+        product_id = self.branchfs.fetchProductID('no-such-product')
+        self.assertEqual('', product_id)
 
     def test_getBranchesForUser(self):
         # getBranchesForUser returns all of the hosted branches that a user
