@@ -353,7 +353,7 @@ Check the email recipient for displayname containing special chars,
   To:
     "Foo B. Bar" <foo.bar@canonical.com>,
     Celso Providelo <celso.providelo@canonical.com>
-  Subject: [ubuntutest/breezy-RELEASE] bar 1.0-4 (Accepted)
+  Subject: [ubuntutest/breezy] bar 1.0-4 (Accepted)
   ...
 
 Revert changes:
@@ -370,7 +370,7 @@ changer.
   >>> simulate_upload('bar_1.0-5', upload_policy='sync')
   >>> read_email()
   To: Celso Providelo <celso.providelo@canonical.com>
-  Subject: [ubuntutest/breezy-RELEASE] bar 1.0-5 (Accepted)
+  Subject: [ubuntutest/breezy] bar 1.0-5 (Accepted)
   ...
 
 
@@ -417,13 +417,13 @@ will get compared in this case (see bug #85201):
   >>> simulate_upload('bar_1.0-7', upload_policy='sync')
   >>> read_email()
   To: ...
-  Subject: [ubuntutest/breezy-RELEASE] bar 1.0-6 (Accepted)
+  Subject: [ubuntutest/breezy] bar 1.0-6 (Accepted)
   ...
 
   >>> simulate_upload('bar_1.0-8', upload_policy='sync')
   >>> read_email()
   To: ...
-  Subject: [ubuntutest/breezy-RELEASE] bar 1:1.0-8 (Accepted)
+  Subject: [ubuntutest/breezy] bar 1:1.0-8 (Accepted)
   ...
 
 == Pocket Version Consistency ==
