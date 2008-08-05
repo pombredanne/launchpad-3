@@ -225,6 +225,20 @@ class BranchDetailsStorageTest(TestCaseWithFactory):
         # Confirm that it succeeded.
         self.assertMirrorSucceeded(branch, revision_id)
 
+    def test_mirrorComplete_resets_mirror_request(self):
+        # After successfully mirroring a hosted branch, next_mirror_time
+        # should be set to NULL.
+        branch = self.factory.makeBranch(BranchType.HOSTED)
+
+        # Request that branch be mirrored. This sets next_mirror_time.
+        branch.requestMirror()
+
+        # Simulate successfully mirroring the branch.
+        self.storage.startMirroring(branch.id)
+        self.storage.mirrorComplete(branch.id, self.factory.getUniqueString())
+
+        self.assertIs(None, branch.next_mirror_time)
+
     def test_recordSuccess(self):
         # recordSuccess must insert the given data into ScriptActivity.
         started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
@@ -246,10 +260,6 @@ class BranchPullQueueTest(TestCaseWithFactory):
     """Tests for the pull queue methods of `IBranchDetailsStorage`."""
 
     layer = DatabaseFunctionalLayer
-
-    # XXX:
-    # - Was it right to remove the switch to a more restrictive security
-    #   proxy?
 
     def setUp(self):
         super(BranchPullQueueTest, self).setUp()
@@ -639,27 +649,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertTrue(
             current_db_time < self.getNextMirrorTime(branch_id),
             "Branch next_mirror_time not updated.")
-
-
-    def test_mirrorComplete_resets_mirror_request(self):
-        # After successfully mirroring a branch, next_mirror_time should be
-        # set to NULL.
-
-        # An arbitrary hosted branch.
-        hosted_branch_id = 25
-
-        # The user id of a person who can see the hosted branch.
-        user_id = 1
-
-        # Request that 25 (a hosted branch) be mirrored. This sets
-        # next_mirror_time.
-        self.branchfs.requestMirror(user_id, hosted_branch_id)
-
-        # Simulate successfully mirroring branch 25
-        self.branchfs.startMirroring(hosted_branch_id)
-        self.branchfs.mirrorComplete(hosted_branch_id, 'rev-1')
-
-        self.assertEqual(None, self.getNextMirrorTime(hosted_branch_id))
 
 
 def test_suite():
