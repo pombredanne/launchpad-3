@@ -10,6 +10,7 @@ import transaction
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor
@@ -21,7 +22,7 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
@@ -398,20 +399,26 @@ class BranchFileSystemTest(TestCaseWithFactory):
             NOT_FOUND_FAULT_CODE, message, fault)
 
     def test_getBranchInformation_owned(self):
-        # When we get the branch information for one of our own branches (i.e.
-        # owned by us or by a team we are on), we get the database id of the
-        # branch, and a flag saying that we can write to that branch.
+        # When we get the branch information for one of our own hosted
+        # branches (i.e. owned by us or by a team we are on), we get the
+        # database id of the branch, and a flag saying that we can write to
+        # that branch.
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=requester)
         branch_id, permissions = self.branchfs.getBranchInformation(
-            12, 'name12', 'gnome-terminal', 'pushed')
-        self.assertEqual(25, branch_id)
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
         self.assertEqual(WRITABLE, permissions)
 
     def test_getBranchInformation_nonexistent(self):
         # When we get the branch information for a non-existent branch, we get
         # a tuple of two empty strings (the empty string being an
         # approximation of 'None').
+        requester_id = self.factory.getUniqueInteger()
         branch_id, permissions = self.branchfs.getBranchInformation(
-            12, 'name12', 'gnome-terminal', 'doesnt-exist')
+            12, 'some-name', 'some-product', 'doesnt-exist')
+        login(ANONYMOUS)
         self.assertEqual('', branch_id)
         self.assertEqual('', permissions)
 
@@ -419,93 +426,80 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # When we get the branch information for a branch that we don't own,
         # we get the database id and a flag saying that we can only read that
         # branch.
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
         branch_id, permissions = self.branchfs.getBranchInformation(
-            12, 'sabdfl', 'firefox', 'release-0.8')
-        self.assertEqual(13, branch_id)
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
     def test_getBranchInformation_mirrored(self):
         # Mirrored branches cannot be written to by the smartserver or SFTP
         # server.
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.MIRRORED, owner=requester)
         branch_id, permissions = self.branchfs.getBranchInformation(
-            12, 'name12', 'firefox', 'main')
-        self.assertEqual(1, branch_id)
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
     def test_getBranchInformation_imported(self):
         # Imported branches cannot be written to by the smartserver or SFTP
         # server.
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.IMPORTED, owner=requester)
         branch_id, permissions = self.branchfs.getBranchInformation(
-            12, 'vcs-imports', 'gnome-terminal', 'import')
-        self.assertEqual(75, branch_id)
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
     def test_getBranchInformation_remote(self):
         # Remote branches are not accessible by the smartserver or SFTP
         # server.
-        no_priv = getUtility(IPersonSet).getByName('no-priv')
-        firefox = getUtility(IProductSet).getByName('firefox')
-        branch = getUtility(IBranchSet).new(
-            BranchType.REMOTE, 'remote', no_priv, no_priv, firefox, None)
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.REMOTE, owner=requester)
         branch_id, permissions = self.branchfs.getBranchInformation(
-            12, 'no-priv', 'firefox', 'remote')
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
         self.assertEqual('', branch_id)
         self.assertEqual('', permissions)
 
     def test_getBranchInformation_private(self):
         # When we get the branch information for a private branch that is
         # hidden to us, it is an if the branch doesn't exist at all.
-        # salgado is a member of landscape-developers.
-        person_set = getUtility(IPersonSet)
-        salgado = person_set.getByName('salgado')
-        landscape_dev = person_set.getByName('landscape-developers')
-        self.assertTrue(
-            salgado.inTeam(landscape_dev),
-            "salgado should be in landscape-developers team, but isn't.")
-
-        self.branchfs.createBranch(
-            'salgado', 'landscape-developers', 'landscape',
-            'some-branch')
-        # ddaa is not an admin, not a Landscape developer.
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(self.factory.makeBranch(private=True))
         branch_id, permissions = self.branchfs.getBranchInformation(
-            'ddaa', 'landscape-developers', 'landscape', 'some-branch')
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
         self.assertEqual('', branch_id)
         self.assertEqual('', permissions)
 
     def test_getBranchInformationAsLaunchpadServices(self):
         # The LAUNCHPAD_SERVICES special "user" has read-only access to all
         # branches.
+        branch = self.factory.makeBranch()
         branch_id, permissions = self.branchfs.getBranchInformation(
-            LAUNCHPAD_SERVICES, 'name12', 'gnome-terminal', 'pushed')
-        self.assertEqual(25, branch_id)
+            LAUNCHPAD_SERVICES, branch.owner.name, branch.product.name,
+            branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
     def test_getBranchInformationForPrivateAsLaunchpadServices(self):
         # The LAUNCHPAD_SERVICES special "user" has read-only access to all
         # branches, even private ones.
         # salgado is a member of landscape-developers.
-        person_set = getUtility(IPersonSet)
-        salgado = person_set.getByName('salgado')
-        landscape_dev = person_set.getByName('landscape-developers')
-        self.assertTrue(
-            salgado.inTeam(landscape_dev),
-            "salgado should be in landscape-developers team, but isn't.")
-
-        branch_id = self.branchfs.createBranch(
-            'salgado', 'landscape-developers', 'landscape',
-            'some-branch')
-        login(ANONYMOUS)
-        try:
-            branch = getUtility(IBranchSet).get(branch_id)
-            self.assertTrue(
-                removeSecurityProxy(branch).private,
-                "%r not private" % (branch,))
-        finally:
-            logout()
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(self.factory.makeBranch(private=True))
         branch_info = self.branchfs.getBranchInformation(
-            LAUNCHPAD_SERVICES, 'landscape-developers', 'landscape',
-            'some-branch')
-        self.assertEqual((branch_id, 'r'), branch_info)
+            LAUNCHPAD_SERVICES, branch.owner.name, branch.product.name,
+            branch.name)
+        login(ANONYMOUS)
+        self.assertEqual((branch.id, READ_ONLY), branch_info)
 
     def _makeProductWithPrivateDevFocus(self):
         """Make a product with a private development focus.

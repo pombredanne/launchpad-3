@@ -11,6 +11,8 @@ __all__ = [
     'LAUNCHPAD_SERVICES',
     'NOT_FOUND_FAULT_CODE',
     'PERMISSION_DENIED_FAULT_CODE',
+    'READ_ONLY',
+    'WRITABLE',
     ]
 
 from zope.interface import Interface
@@ -25,6 +27,11 @@ from canonical.launchpad.validators.name import valid_name
 LAUNCHPAD_SERVICES = '+launchpad-services'
 assert not valid_name(LAUNCHPAD_SERVICES), (
     "%r should *not* be a valid name." % (LAUNCHPAD_SERVICES,))
+
+# These are used as permissions for getBranchInformation.
+READ_ONLY = 'r'
+WRITABLE = 'w'
+
 
 class IBranchDetailsStorageApplication(ILaunchpadApplication):
     """Branch details application root."""
@@ -128,20 +135,20 @@ class IBranchFileSystem(Interface):
     ##         [(product id, product name, [(branch id, branch name), ...]), ...]
     ##     """
 
-    ## def getBranchInformation(loginID, personName, productName, branchName):
-    ##     """Return the database ID and permissions for a branch.
+    def getBranchInformation(loginID, personName, productName, branchName):
+        """Return the database ID and permissions for a branch.
 
-    ##     :param loginID: The login ID for the person asking for the branch
-    ##         information. This is used for branch privacy checks.
-    ##     :param personName: The owner of the branch.
-    ##     :param productName: The product that the branch belongs to. '+junk' is
-    ##         allowed.
-    ##     :param branchName: The name of the branch.
+        :param loginID: The login ID for the person asking for the branch
+            information. This is used for branch privacy checks.
+        :param personName: The owner of the branch.
+        :param productName: The product that the branch belongs to. '+junk' is
+            allowed.
+        :param branchName: The name of the branch.
 
-    ##     :returns: (branch_id, permissions), where 'permissions' is 'w' if the
-    ##         user represented by 'loginID' can write to the branch, and 'r' if
-    ##         they cannot. If the branch doesn't exist, return ('', '').
-    ##     """
+        :returns: (branch_id, permissions), where 'permissions' is 'w' if the
+            user represented by 'loginID' can write to the branch, and 'r' if
+            they cannot. If the branch doesn't exist, return ('', '').
+        """
 
     ## def getDefaultStackedOnBranch(login_id, product_name):
     ##     """Return the URL for the default stacked-on branch of a product.

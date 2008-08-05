@@ -16,6 +16,7 @@ import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
@@ -23,7 +24,7 @@ from canonical.launchpad.interfaces.branch import (
     BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.codehosting import (
     IBranchDetailsStorage, IBranchFileSystem, LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
@@ -178,3 +179,33 @@ class BranchFileSystemAPI(LaunchpadXMLRPCView):
             return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
         else:
             return branch.id
+
+    def _canWriteToBranch(self, requester, branch):
+        """Can `requester` write to `branch`?"""
+        if requester == LAUNCHPAD_SERVICES:
+            return False
+        return (branch.branch_type == BranchType.HOSTED
+                and requester.inTeam(branch.owner))
+
+    @run_as_requester
+    def getBranchInformation(self, requester, userName, productName,
+                             branchName):
+        """See `IBranchFileSystem`."""
+        branch = getUtility(IBranchSet).getByUniqueName(
+            '~%s/%s/%s' % (userName, productName, branchName))
+        if branch is None:
+            return '', ''
+        if requester == LAUNCHPAD_SERVICES:
+            branch = removeSecurityProxy(branch)
+        try:
+            branch_id = branch.id
+        except Unauthorized:
+            return '', ''
+        if branch.branch_type == BranchType.REMOTE:
+            # Can't even read remote branches.
+            return '', ''
+        if self._canWriteToBranch(requester, branch):
+            permissions = WRITABLE
+        else:
+            permissions = READ_ONLY
+        return branch_id, permissions
