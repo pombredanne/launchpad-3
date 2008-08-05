@@ -2569,91 +2569,85 @@ class PersonView(LaunchpadView, FeedsMixin):
         else:
             return None
 
-    @property
-    def email_address_observation(self):
-        """What a user many know of another user's email address.
+    class EmailAddressVisibleState:
+        """The state of a person's email addresses w.r.t. the logged in user.
 
-        There are five states that describe what one user may know of
-        another user or team's email addresses:
+        There are five states that describe the visibility of a person or
+        team's addresses to a logged in user, only one will be True:
 
-            * are-private: The user is unknown; email addresses are
-              not shown.
-            * are-unknown: There are no email addresses to show to the
-              known user.
-            * are-public: There are email addresses and any known user
-              can see them.
-            * are-hidden: There are email addresses, but the known user
-              does not have permission to see them.
-            * are-visible: There are email addresses and the known user
-              has permission to see them.
-
-        :return: The state that summarises what a user may know of another
-            user or team's email addresses.
+        * LOGIN_REQUIRED: The user is anonymous; email addresses are never
+          visible to anonymous users.
+        * NONE_AVAILABLE: The person has no validated email addresses or the
+          team has no contact address registered, so there is nothing to show.
+        * PUBLIC: The person is not hiding their email addresses, or the team
+          has a contact address, so any logged in user may view them.
+        * HIDDEN: The person is hiding their email address, so even logged in
+          users cannot view them.  Teams cannot hide their contact address.
+        * ALLOWED: The person is hiding their email address, but the logged in
+          user has permission to see them.  This is either because the user is
+          viewing their own page or because the user is a privileged
+          administrator.
         """
-        if self.user is None:
-            return 'are-private'
-        if self.context.preferredemail is None:
-            return 'are-unknown'
-        if not self.context.hide_email_addresses:
-            return 'are-public'
-        if check_permission('launchpad.View',  self.context.preferredemail):
-            return 'are-visible'
-        else:
-            return 'are-hidden'
+        LOGIN_REQUIRED = False
+        NONE_AVAILABLE = False
+        PUBLIC = False
+        HIDDEN = False
+        ALLOWED = False
 
-    @property
-    def email_addresses_are_private(self):
-        """The observing user is anonymous; do not show email addresses."""
-        return self.email_address_observation == 'are-private'
+        def __init__(self, view):
+            if view.user is None:
+                self.LOGIN_REQUIRED = True
+            elif view.context.preferredemail is None:
+                self.NONE_AVAILABLE = True
+            elif not view.context.hide_email_addresses:
+                self.PUBLIC = True
+            elif check_permission(
+                'launchpad.View',  view.context.preferredemail):
+                self.ALLOWED = True
+            else:
+                self.HIDDEN = True
 
-    @property
-    def email_addresses_are_unknown(self):
-        """There are no email addresses to show to the known user."""
-        return self.email_address_observation == 'are-unknown'
+    @cachedproperty
+    def email_address_visibility(self):
+        """The EmailAddressVisibleState of this person or team.
 
-    @property
-    def email_addresses_are_hidden(self):
-        """The known user dis not permitted to see the email addresses."""
-        return self.email_address_observation == 'are-hidden'
-
-    @property
-    def email_addresses_are_visible(self):
-        """The known user does have permission to see the email addresses."""
-        return self.email_address_observation == 'are-visible'
-
-    @property
-    def email_addresses_are_public(self):
-        """The known user can see the email addresses."""
-        return self.email_address_observation == 'are-public'
-
-    @property
-    def observable_email_addresses(self):
-        """The list of email address that can be shown, or None.
-
-        The list contains email addresses when the email_address_observation
-        property is 'are-public' or 'are-visible'. The preferred email
-        address is the first in the list of validated email addresses.
-
-        :return: A list of email address strings or None if the no email
-            addresses are observable.
+        :rtype: `EmailAddressVisibleState`
+        :return: The state of what a logged in user may know of a
+            person or team's email addresses.
         """
-        if self.email_address_observation in ('are-public', 'are-visible'):
-            emails = [email.email for email in self.context.validatedemails]
+        return self.EmailAddressVisibleState(self)
+
+    @property
+    def visible_email_addresses(self):
+        """The list of email address that can be shown.
+
+        The list contains email addresses when the EmailAddressVisibleState's
+        PUBLIC or ALLOWED attributes are True. The preferred email
+        address is the first in the list, the other validated email addresses
+        are not ordered.
+
+        :return: A list of email address strings that can be seen.
+        """
+        visible_state = self.email_address_visibility
+        if visible_state.PUBLIC or visible_state.ALLOWED :
+            emails = sorted(
+                email.email for email in self.context.validatedemails)
             emails.insert(0, self.context.preferredemail.email)
             return emails
         else:
-            return None
+            return []
 
     @property
-    def observable_email_address_description(self):
+    def visible_email_address_description(self):
         """A description of who can see a user's email addresses.
 
         :return: A string, or None if the email addresses cannot be viewed
             by any user.
         """
-        if self.email_address_observation == 'are-public':
+        visible_state = self.email_address_visibility
+        if visible_state.PUBLIC:
             return 'This email address is only visible to Launchpad users.'
-        elif self.email_address_observation == 'are-visible':
+        elif visible_state.ALLOWED:
             return 'This email address is not disclosed to others.'
         else:
             return None

@@ -10,13 +10,11 @@ PersonView is the base for many views for Person objects, including the
 default view. It provides several properties to help display email
 addresses.
 
-There are five states for PersonView.email_address_observation:
-are-private, are-unknown, are-hidden, are-visible, are-public. Templates
-may use the five states to determine which message to show to the user.
-PersonView.email_addresses is None for all states accept for are-visible
-or are-public. The observable_email_address_description property
-describes who can see the email addresses when email_address_observation
-is are-visible or are-public.
+Templates may use the state of the email_address_visibility property to
+determine which message to show to the user. When the state is PUBLIC or
+ALLOWED, the email_addresses property contains a list of the viewable
+email addresses and the visible_email_address_description summarises who
+can see them
 
 Mark has a registered email address, and he has chosen to disclose it to
 the world.
@@ -30,39 +28,39 @@ the world.
     >>> mark.hide_email_addresses
     False
 
-Anonymous users cannot see Mark's email addresses. The email addresses
-state is are-private, there is no description, nor are there any
-email addresses.
+Anonymous users cannot see any Launchpad user's email addresses. The
+email addresses state is LOGIN_REQUIRED, there is no description, nor
+are there any email addresses.
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-    >>> request = LaunchpadTestRequest()
-    >>> view = getMultiAdapter((mark, request), name='+index')
-    >>> view.initialize()
-    >>> view.email_address_observation
-    'are-private'
-    >>> view.email_addresses_are_private
+    >>> def request_person_view(person):
+    ...     """Return a the Person +index view."""
+    ...     request = LaunchpadTestRequest()
+    ...     view = getMultiAdapter((person, request), name='+index')
+    ...     view.initialize()
+    ...     return view
+
+    >>> view = request_person_view(mark)
+    >>> view.email_address_visibility.LOGIN_REQUIRED
     True
-    >>> print view.observable_email_address_description
+    >>> print view.visible_email_address_description
     None
-    >>> print view.observable_email_addresses
-    None
+    >>> view.visible_email_addresses
+    []
 
 Logged in user can see Mark's email addresses. The email addresses
-state is are-public. There is a description of who can see the list of
+state is PUBLIC. There is a description of who can see the list of
 email addresses.
 
     >>> login('test@canonical.com')
-    >>> view = getMultiAdapter((mark, request), name='+index')
-    >>> view.initialize()
-    >>> view.email_address_observation
-    'are-public'
-    >>> view.email_addresses_are_public
+    >>> view = request_person_view(mark)
+    >>> view.email_address_visibility.PUBLIC
     True
-    >>> view.observable_email_address_description
+    >>> view.visible_email_address_description
     'This email address is only visible to Launchpad users.'
-    >>> view.observable_email_addresses
+    >>> view.visible_email_addresses
     [u'mark@hbd.com']
 
 As for Sample Person, he has chosen not to disclose his email addresses.
@@ -72,58 +70,46 @@ As for Sample Person, he has chosen not to disclose his email addresses.
     >>> sample_person.hide_email_addresses
     True
 
-Anonymous users can't see them because the state is are-private.
+Anonymous users can't see them because the state is LOGIN_REQUIRED.
 
-    >>> view = getMultiAdapter((sample_person, request), name='+index')
-    >>> view.initialize()
-    >>> view.email_address_observation
-    'are-private'
-    >>> view.email_addresses_are_private
+    >>> view = request_person_view(sample_person)
+    >>> view.email_address_visibility.LOGIN_REQUIRED
     True
-    >>> print view.observable_email_addresses
-    None
+    >>> view.visible_email_addresses
+    []
 
 No Privileges Person cannot see them either because the state is
-are-hidden. There is no description for the email addresses because
+HIDDEN. There is no description for the email addresses because
 he cannot view them.
 
     >>> login('no-priv@canonical.com')
-    >>> view = getMultiAdapter((sample_person, request), name='+index')
-    >>> view.initialize()
-    >>> view.email_address_observation
-    'are-hidden'
-    >>> view.email_addresses_are_hidden
+    >>> view = request_person_view(sample_person)
+    >>> view.email_address_visibility.HIDDEN
     True
-    >>> print view.observable_email_address_description
+    >>> print view.visible_email_address_description
     None
-    >>> print view.observable_email_addresses
-    None
+    >>> view.visible_email_addresses
+    []
 
 Admins and commercial admins, like Foo Bar and Commercial Member, can
-see Sample Person's email addresses because the state is are-visible.
+see Sample Person's email addresses because the state is ALLOWED.
 The description states that the email addresses are not disclosed to
 others.
 
     >>> login('foo.bar@canonical.com')
-    >>> view = getMultiAdapter((sample_person, request), name='+index')
-    >>> view.initialize()
-    >>> view.email_address_observation
-    'are-visible'
-    >>> view.email_addresses_are_visible
+    >>> view = request_person_view(sample_person)
+    >>> view.email_address_visibility.ALLOWED
     True
-    >>> view.observable_email_address_description
+    >>> view.visible_email_address_description
     'This email address is not disclosed to others.'
-    >>> view.observable_email_addresses
+    >>> view.visible_email_addresses
     [u'test@canonical.com', u'testing@canonical.com']
 
     >>> login('commercial-member@canonical.com')
-    >>> view = getMultiAdapter((sample_person, request), name='+index')
-    >>> view.initialize()
-    >>> view.email_address_observation
-    'are-visible'
-    >>> view.email_addresses_are_visible
+    >>> view = request_person_view(sample_person)
+    >>> view.email_address_visibility.ALLOWED
     True
-    >>> view.observable_email_addresses
+    >>> view.visible_email_addresses
     [u'test@canonical.com', u'testing@canonical.com']
 
 Teams are like Persons. No email address is disclosed when the user is
@@ -131,41 +117,33 @@ anonymous.
 
     >>> login(ANONYMOUS)
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> view = getMultiAdapter((ubuntu_team, request), name='+index')
-    >>> view.initialize()
-    >>> view.email_address_observation
-    'are-private'
-    >>> view.email_addresses_are_private
+    >>> view = request_person_view(ubuntu_team)
+    >>> view.email_address_visibility.LOGIN_REQUIRED
     True
-    >>> print view.observable_email_addresses
-    None
+    >>> view.visible_email_addresses
+    []
 
-Logged in user can see team addresses.
+A logged in user can see the team's contact address because it cannot
+be hidden.
 
     >>> login('no-priv@canonical.com')
-    >>> view = getMultiAdapter((ubuntu_team, request), name='+index')
-    >>> view.initialize()
-    >>> view.email_address_observation
-    'are-public'
-    >>> view.email_addresses_are_public
+    >>> view = request_person_view(ubuntu_team)
+    >>> view.email_address_visibility.PUBLIC
     True
-    >>> view.observable_email_addresses
+    >>> view.visible_email_addresses
     [u'support@ubuntu.com']
 
 When the user or team does not have a validated contact address, the
-email addresses state is are-unknown.
+email addresses state is NONE_AVAILABLE.
 
     >>> landscape_developers = personset.getByName('landscape-developers')
-    >>> view = getMultiAdapter((landscape_developers, request), name='+index')
-    >>> view.initialize()
-    >>> view.email_address_observation
-    'are-unknown'
-    >>> view.email_addresses_are_unknown
+    >>> view = request_person_view(landscape_developers)
+    >>> view.email_address_visibility.NONE_AVAILABLE
     True
-    >>> print view.observable_email_address_description
+    >>> print view.visible_email_address_description
     None
-    >>> print view.observable_email_addresses
-    None
+    >>> view.visible_email_addresses
+    []
 
 
 == Person Packages ==

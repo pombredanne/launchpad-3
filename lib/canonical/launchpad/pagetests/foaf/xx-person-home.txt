@@ -26,7 +26,7 @@ the world. Anonymous users cannot see Mark's address
     Email: Log in for email information.
     ...
 
-Logged in user, such as Sample Person, can.
+A logged in user such as Sample Person, can see Mark's addresses.
 
     >>> sample_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> sample_browser.open('http://launchpad.dev/~sabdfl')
@@ -44,7 +44,7 @@ unprivileged users like No Privileges Person cannot see his addresses:
     Email: No public address provided.
     ...
 
-But good Foo Bar can:
+But Foo Bar can:
 
     >>> admin_browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(
