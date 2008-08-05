@@ -164,7 +164,7 @@ class LaunchpadObjectFactory:
         if password is None:
             password = self.getUniqueString('password')
         # By default, make the email address preferred.
-        if (email_address_status is None 
+        if (email_address_status is None
                 or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
         # Set the password to test in order to allow people that have
@@ -359,6 +359,24 @@ class LaunchpadObjectFactory:
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
+
+    def makeRevision(self, author=None, revision_date=None, parent_ids=None,
+                     rev_id=None, log_body=None):
+        """Create a single `Revision`."""
+        if author is None:
+            author = self.getUniqueString('author')
+        if revision_date is None:
+            revision_date = datetime.now(pytz.UTC)
+        if parent_ids is None:
+            parent_ids = []
+        if rev_id is None:
+            rev_id = self.getUniqueString('revision-id')
+        if log_body is None:
+            log_body = self.getUniqueString('log-body')
+        return getUtility(IRevisionSet).new(
+            revision_id=rev_id, log_body=log_body,
+            revision_date=revision_date, revision_author=author,
+            parent_ids=parent_ids, properties={})
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
