@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import email
 
 import pytz
-from storm.expr import And, Asc, Desc, Not, Select
+from storm.expr import And, Asc, Count, Desc, Not, Select, SQL
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
@@ -145,22 +145,20 @@ class RevisionAuthor(SQLBase):
 
         This method generates historical karma events for this user.
         """
-        # Avoiding circular imports.
-        from canonical.launchpad.database.branchrevision import BranchRevision
-
         if self.person is None:
             # Nothing to do here.
             return
-        store = Store.of(self)
-        # Only claim revisions that are currently associated with branches.
-        revisions = store.find(
+
+        from canonical.launchpad.database.branchrevision import BranchRevision
+        revisions = Store.of(self).find(
             Revision,
             Revision.revision_author == self,
             Not(Revision.karma_allocated),
             Revision.id.is_in(Select(
                     Revision.id, BranchRevision.revision == Revision.id)))
+
+        # Find the appropriate branch, and allocate karma to it.
         for revision in revisions:
-            # Get the associated branch.
             branch = revision.getBranch(allow_private=True)
             revision.allocateKarma(branch)
 

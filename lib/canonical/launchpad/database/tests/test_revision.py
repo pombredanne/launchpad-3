@@ -61,16 +61,30 @@ class TestRevisionKarma(TestCaseWithFactory):
         self.assertEqual(karma.datecreated, rev.revision_date)
         self.assertEqual(karma.product, branch.product)
 
-    def test_checkNewVerifiedEmailClaimsRevisionKarma(self):
-        # Revisions that exist already, but without allocated karma will get
-        # karma events created when we work out who the Launchpad person is.
+    def _setupRevisionBranchAndPerson(self):
         email = self.factory.getUniqueEmailAddress()
         rev = self.factory.makeRevision(author=email)
         branch = self.factory.makeBranch()
         branch.createBranchRevision(1, rev)
         self.assertEqual(False, rev.karma_allocated)
         author = self.factory.makePerson(email=email)
+        return rev, branch, author
 
+    def test_linkToPersonClaimsRevisionKarma(self):
+        # Revisions that exist already, but without allocated karma will get
+        # karma events created when we work out who the Launchpad person is.
+        rev, branch, author = self._setupRevisionBranchAndPerson()
+        rev.revision_author.linkToLaunchpadPerson()
+
+        self.assertEqual(True, rev.karma_allocated)
+        [karma] = list(author.latestKarma(1))
+        self.assertEqual(karma.datecreated, rev.revision_date)
+        self.assertEqual(karma.product, branch.product)
+
+    def test_checkNewVerifiedEmailClaimsRevisionKarma(self):
+        # Revisions that exist already, but without allocated karma will get
+        # karma events created when we work out who the Launchpad person is.
+        rev, branch, author = self._setupRevisionBranchAndPerson()
         RevisionSet().checkNewVerifiedEmail(author.preferredemail)
 
         self.assertEqual(True, rev.karma_allocated)
