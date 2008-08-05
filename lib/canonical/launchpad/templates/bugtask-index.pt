@@ -1,52 +1,36 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:tal="http://xml.zope.org/namespaces/tal"
-    xmlns:metal="http://xml.zope.org/namespaces/metal"
-    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-    xml:lang="en"
-    lang="en"
-    dir="ltr"
-    metal:use-macro="view/macro:page/default2.0"
-    i18n:domain="malone"
-    >
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+>
   <body>
-    <metal:portlets fill-slot="portlets">
-
-      <div tal:replace="structure context/bug/@@+portlet-duplicates" />
-      <div tal:replace="structure context/bug/@@+portlet-subscribers" />
-      <div tal:replace="structure context/bug/@@+portlet-questions" />
-      <div tal:replace="structure context/bug/@@+portlet-specs" />
-      <div tal:replace="structure context/bug/@@+portlet-attachments" />
-      <div tal:replace="structure context/bug/@@+portlet-watch" />
-      <div tal:replace="structure context/@@+portlet-search" />
-
-      <div
-          tal:replace="structure context/target/@@+portlet-details | nothing"
-          />
-    </metal:portlets>
-
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
-      <div style="clear: both">
-        <div style="float: right; width: 65%; text-align: right">
-          <tal:activitylog
-              define="link context_menu/activitylog"
-              condition="link/enabled"
-              replace="structure link/render" />
-          &mdash;
-          reported
+      <p class="clearfix">
+        <span class="object timestamp">
+          Reported
+          by <tal:reporter replace="structure context/bug/owner/fmt:link" />
           <span
               tal:attributes="title context/bug/datecreated/fmt:datetime"
               tal:content="context/bug/datecreated/fmt:displaydate" />
-          by <tal:reporter replace="structure context/bug/owner/fmt:link" />
-        </div>
-        <div style="float: left; width: 25%;">
+          <tal:activitylog
+            define="link context_menu/activitylog"
+            condition="link/enabled"
+          >(<tal:link replace="structure link/render" />)</tal:activitylog>
+        </span>
+        <span class="object identifier">
           <tal:icon replace="structure context/image:icon" />
-          Bug #<tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
+          Bug <tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
           condition="context/bug/name">
-          (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>
-        </div>
-      </div>
-      <h1 style="clear: both;">
+          (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>:
+        </span>
+      </p>
+      <tal:privacy replace="structure context/bug/@@+portlet-privacy" />
+      <h1>
         <tal:summary replace="context/bug/title" />
         <a href="+edit">
           <img src="/@@/edit" alt="[edit]" title="Edit this summary" />
@@ -62,7 +46,7 @@
         Reported this bug as also occurring in upstream firefox
       </p>
 
-      <p class="informational message"
+      <p
          id="can-expire"
          tal:condition="context/bug/can_expire"
          >
@@ -70,7 +54,7 @@
         (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
       </p>
 
-      <p class="informational message"
+      <p
          id="number_of_dupes"
          tal:condition="context/bug/duplicates"
          tal:define="number_of_dupes context/bug/duplicates/count"
@@ -80,18 +64,20 @@
                      >2 duplicates</tal:num-dupes>
       </p>
 
-      <tal:duplicate-of define="duplicateof context/bug/duplicateof"
-                        condition="duplicateof">
-        <p class="informational message">
+      <p
+        tal:define="duplicateof context/bug/duplicateof"
+        tal:condition="duplicateof"
+        id="duplicate-of"
+      >
+
           This report is a duplicate of
           <a tal:condition="duplicateof/required:launchpad.View"
              tal:attributes="href duplicateof/fmt:url; title duplicateof/title"
              tal:content="string:bug #${duplicateof/id}">bug #42</a>
           <span tal:condition="not:duplicateof/required:launchpad.View"
                 tal:replace="string:bug #${duplicateof/id}" />
-        </p>
-      </tal:duplicate-of>
 
+      </p>
 
       <p id="bug-is-question" class="informational message"
          tal:condition="context/bug/getQuestionCreatedFromBug"
@@ -101,6 +87,10 @@
         <a href=""
            tal:attributes="href question/fmt:url"
            tal:content="question/title">%s</a>.
+        <tal:XXX condition="nothing">
+          # XXX mpt 20080716 bug=249094: This should be an alert only when
+          # you have just now converted the report into a question.
+        </tal:XXX>
       </p>
       <form
           tal:condition="not:view/isReportedInContext"
@@ -131,21 +121,14 @@
 
       <table style="width: 100%; margin-bottom: 0.33em;">
         <tr>
-          <td style="text-align: left; width: 33%;">
+          <td style="text-align: left; width: 50%;">
             <tal:markduplicate
                 define="link context_menu/markduplicate"
                 condition="link/enabled"
                 replace="structure link/render" />
           </td>
 
-          <td style="text-align: center; width: 34%;">
-            <tal:visibility
-                define="link context_menu/visibility"
-                condition="link/enabled"
-                replace="structure link/render" />
-          </td>
-
-          <td style="text-align: right; width: 33%;">
+          <td style="text-align: right; width: 50%;">
             <tal:createquestion
                 define="link context_menu/createquestion"
                 condition="link/enabled"
@@ -161,6 +144,9 @@
 
       <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
+      <div id="maincontentsub">
+        <div id="nonportlets">
+
       <div class="report">
         <tal:user condition="view/user">
           <tal:description
@@ -171,31 +157,26 @@
               define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
         </tal:not-user>
 
-        <div id="bug-description"
-             tal:content="structure description" />
+        <div id="bug-description" tal:content="structure description" />
 
-        <div style="margin-bottom: 1em; text-align: center; clear: both">
-          <span tal:condition="view/wasDescriptionModified">
-          This description was updated. <a href="comments/0">View original description</a>.</span>
-        </div>
-
-        <div style="width: 100%; clear: both;">
           <div id="bug-tags" tal:define="tags context/bug/tags" tal:condition="tags"
-               style="width: 45%: text-align: left; float: left;">
+               style="width: 45%: text-align: left; float: right;">
             Tags:
             <a tal:repeat="tag tags"
                tal:content="tag"
                tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
           </div>
 
-          <div style="width: 45%: text-align: right; float: right;">
+          <div style="width: 45%: text-align: right; float: left;" class="clearfix">
             <tal:editdescription
                 define="link context_menu/editdescription"
                 condition="link/enabled"
                 replace="structure link/render" />
+            <span tal:condition="view/wasDescriptionModified" class="discreet"
+            >(see <a href="comments/0">original description</a>)</span>
           </div>
-        </div>
-        <div style="clear:both; height: 1em;"></div>
+
+        <div class="clearfix"></div>
       </div>
 
       <tal:branches define="bug_branches view/bug_branches"
@@ -217,7 +198,7 @@
                  tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
                                  onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
                 <tal:bug_branch_status replace="bug_branch/status/title"/>
-                <img src="/@@/expand"/>
+                <img src="/@@/bug-status-expand"/>
               </a>
               <dl tal:condition="bug_branch/whiteboard"
                   tal:attributes="id string:bugbranch${bug_branch/id}-wb">
@@ -247,7 +228,7 @@
             replace="structure link/render" />
       </p>
 
-      <div condition="context/bug/cves">
+      <div tal:condition="context/bug/cves">
         <h2>CVE References</h2>
         <ul>
           <li class="cve" tal:repeat="cve context/bug/cves">
@@ -258,8 +239,7 @@
           </li>
         </ul>
       </div>
-
-      <p>
+      <div class="actions">
         <tal:linktocve
             define="link context_menu/linktocve"
             condition="link/enabled"
@@ -268,38 +248,14 @@
             define="link context_menu/unlinkcve"
             condition="link/enabled"
             replace="structure link/render" />
-      </p>
-
-      <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
-                   condition="mentoring_offers">
-        <p>
-          <img src="/@@/mentoring" alt="Mentoring"
-               title="People have offered to mentor this work" />
-          <b>Mentors:</b>
-          <tal:block repeat="mentoring_offer mentoring_offers">
-            <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
-          </tal:block>
-        </p>
-        <tal:block condition="not: context/bug/is_complete">
-          <div tal:condition="view/userIsMentor"
-               class="action">
-            <img class="inlineLinkIcon" src="/@@/remove" alt=""/><a href="+retractmentoring">Retract my offer of mentorship</a>
-          </div>
-        </tal:block>
-      </tal:mentors>
-      <div tal:define="link context_menu/offermentoring"
-           tal:condition="link/enabled"
-           class="action">
-        <img class="inlineLinkIcon" src="/@@/add" alt=""/><a tal:attributes="href link/url">Offer to mentor someone fixing this bug</a>
       </div>
+
       <tal:comment repeat="comment view/getBugCommentsForDisplay">
         <tal:comment-box condition="comment/can_be_shown">
           <metal:comment-box
               metal:use-macro="context/@@bugcomment-macros/comment-box" />
         </tal:comment-box>
       </tal:comment>
-
-      <div style="clear:both; height: 1em;">&nbsp;</div>
 
       <tal:logged-in condition="view/user">
         <fieldset class="collapsible collapsed">
@@ -312,7 +268,26 @@
           To post a comment you must <a href="+login">log in</a>.
         </div>
       </tal:not-logged-in>
-
+      <div id="mentoring" style="margin-top: 2em;">
+        <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
+                     condition="mentoring_offers">
+          <p>
+            <b>Mentors:</b>
+            <tal:block repeat="mentoring_offer mentoring_offers">
+              <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
+            </tal:block>
+          </p>
+          <tal:block condition="not: context/bug/is_complete">
+            <div tal:condition="view/userIsMentor" class="actions">
+              <img class="inlineLinkIcon" src="/@@/remove" alt=""/><a href="+retractmentoring">Retract my offer of mentorship</a>
+            </div>
+          </tal:block>
+        </tal:mentors>
+        <p tal:define="link context_menu/offermentoring"
+             tal:condition="link/enabled"
+             tal:content="structure link/render"
+        />
+      </div>
       <div class="related">
         <h2>What next?</h2>
         <ul>
@@ -329,6 +304,18 @@
             for <tal:context replace="context/target/displayname" />
           </li>
         </ul>
+      </div>
+
+        </div><!-- id="nonportlets"-->
+      </div><!--- id="maincontentsub"-->
+      <div id="portlets">
+        <div tal:replace="structure context/bug/@@+portlet-duplicates" />
+        <div tal:replace="structure context/bug/@@+portlet-subscribers" />
+        <div tal:replace="structure context/bug/@@+portlet-questions" />
+        <div tal:replace="structure context/bug/@@+portlet-specs" />
+        <div tal:replace="structure context/bug/@@+portlet-attachments" />
+        <div tal:replace="structure context/bug/@@+portlet-watch" />
+        <div tal:replace="structure context/@@+portlet-search" />
       </div>
     </div>
   </body>

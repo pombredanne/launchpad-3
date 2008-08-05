@@ -10,6 +10,7 @@ __all__ = [
     'get_bug_tags_open_count']
 
 
+import mimetypes
 import operator
 import re
 from cStringIO import StringIO
@@ -33,6 +34,8 @@ from canonical.launchpad.interfaces import (
     IMessage, IPersonSet, IProduct, IProductSeries, IQuestionTarget,
     ISourcePackage, IStructuralSubscriptionTarget, NominationError,
     NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    BugNotificationLevel)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -61,6 +64,15 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.snapshot import Snapshot
+
+
+# XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
+# for Intrepid, to add .debdiff to /etc/mime.types, so we may be able
+# to remove this setting once a new /etc/mime.types has been installed
+# on the app servers. Additionally, Firefox does not display content
+# of type text/x-diff inline, so making this text/plain because
+# viewing .debdiff inline is the most common use-case.
+mimetypes.add_type('text/plain', '.debdiff')
 
 
 _bug_tag_query_template = """
@@ -390,7 +402,7 @@ class Bug(SQLBase):
                 recipients.addDirectSubscriber(subscriber)
         return subscribers
 
-    def getIndirectSubscribers(self, recipients=None):
+    def getIndirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 
         See the comment in getDirectSubscribers for a description of the
@@ -399,8 +411,8 @@ class Bug(SQLBase):
         # "Also notified" and duplicate subscribers are mutually
         # exclusive, so return both lists.
         indirect_subscribers = (
-            self.getAlsoNotifiedSubscribers(recipients) +
-            self.getSubscribersFromDuplicates(recipients))
+            self.getAlsoNotifiedSubscribers(recipients, level) +
+            self.getSubscribersFromDuplicates(recipients, level))
 
         return sorted(
             indirect_subscribers, key=operator.attrgetter("displayname"))
@@ -414,7 +426,7 @@ class Bug(SQLBase):
             BugSubscription.select("""
                 BugSubscription.bug = Bug.id AND
                 Bug.duplicateof = %d""" % self.id,
-                clauseTables=["Bug"]))
+                prejoins=["person"], clauseTables=["Bug"]))
 
         # Direct and "also notified" subscribers take precedence
         # over subscribers from duplicates.
@@ -442,7 +454,7 @@ class Bug(SQLBase):
 
         return sorted(subscriptions, key=get_person_displayname)
 
-    def getSubscribersFromDuplicates(self, recipients=None):
+    def getSubscribersFromDuplicates(self, recipients=None, level=None):
         """See `IBug`.
 
         See the comment in getDirectSubscribers for a description of the
@@ -462,7 +474,7 @@ class Bug(SQLBase):
         # subscribers from dupes. Note that we don't supply recipients
         # here because we are doing this to /remove/ subscribers.
         dupe_subscribers -= set(self.getDirectSubscribers())
-        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
+        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers(level=level))
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
@@ -471,7 +483,7 @@ class Bug(SQLBase):
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
 
-    def getAlsoNotifiedSubscribers(self, recipients=None):
+    def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 
         See the comment in getDirectSubscribers for a description of the
@@ -517,7 +529,8 @@ class Bug(SQLBase):
 
         person_set = getUtility(IPersonSet)
         target_subscribers = person_set.getSubscribersForTargets(
-            structural_subscription_targets, recipients=recipients)
+            structural_subscription_targets, recipients=recipients,
+            level=level)
 
         also_notified_subscribers.update(target_subscribers)
 
@@ -528,7 +541,8 @@ class Bug(SQLBase):
             (also_notified_subscribers - direct_subscribers),
             key=operator.attrgetter('displayname'))
 
-    def getBugNotificationRecipients(self, duplicateof=None, old_bug=None):
+    def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
+                                     level=None):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
         self.getDirectSubscribers(recipients)
@@ -537,7 +551,7 @@ class Bug(SQLBase):
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
         else:
-            self.getIndirectSubscribers(recipients)
+            self.getIndirectSubscribers(recipients, level=level)
             if self.duplicateof:
                 # This bug is a public duplicate of another bug, so include
                 # the dupe target's subscribers in the recipient list. Note
@@ -546,7 +560,7 @@ class Bug(SQLBase):
                 # targets.
                 dupe_recipients = (
                     self.duplicateof.getBugNotificationRecipients(
-                        duplicateof=self.duplicateof))
+                        duplicateof=self.duplicateof, level=level))
                 recipients.update(dupe_recipients)
         # XXX Tom Berger 2008-03-18:
         # We want to look up the recipients for `old_bug` too,
@@ -571,7 +585,8 @@ class Bug(SQLBase):
     def addCommentNotification(self, message, recipients=None):
         """See `IBug`."""
         if recipients is None:
-            recipients = self.getBugNotificationRecipients()
+            recipients = self.getBugNotificationRecipients(
+                level=BugNotificationLevel.COMMENTS)
         getUtility(IBugNotificationSet).addNotification(
              bug=self, is_comment=True,
              message=message, recipients=recipients)
@@ -628,10 +643,13 @@ class Bug(SQLBase):
             Store.of(bug_watch).flush()
         return bug_watch
 
-    def addAttachment(self, owner, file_, comment, filename,
-                      is_patch=False, content_type=None, description=None):
+    def addAttachment(self, owner, data, comment, filename, is_patch=False,
+                      content_type=None, description=None):
         """See `IBug`."""
-        filecontent = file_.read()
+        if isinstance(data, str):
+            filecontent = data
+        else:
+            filecontent = data.read()
 
         if is_patch:
             attach_type = BugAttachmentType.PATCH

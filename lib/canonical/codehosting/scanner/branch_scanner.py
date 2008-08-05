@@ -13,10 +13,12 @@ __all__ = ['BranchScanner']
 import sys
 
 from bzrlib.errors import NotBranchError, ConnectionError
+from bzrlib.transport import get_transport
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.codehosting.scanner.bzrsync import BzrSync
+from canonical.codehosting.transport import get_scanner_server
 from canonical.launchpad.webapp import canonical_url, errorlog
 
 
@@ -33,18 +35,24 @@ class BranchScanner:
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
         self.log.info('Starting branch scanning')
-        for branch in getUtility(IBranchSet).getBranchesToScan():
-            try:
-                self.scanOneBranch(branch)
-            except (KeyboardInterrupt, SystemExit):
-                # If either was raised, something really wants us to finish.
-                # Any other Exception is an error condition and must not
-                # terminate the script.
-                raise
-            except:
-                # Yes, bare except. Bugs or error conditions when scanning any
-                # given branch must not prevent scanning the other branches.
-                self.logScanFailure(branch)
+        server = get_scanner_server()
+        server.setUp()
+        try:
+            for branch in getUtility(IBranchSet).getBranchesToScan():
+                try:
+                    self.scanOneBranch(branch)
+                except (KeyboardInterrupt, SystemExit):
+                    # If either was raised, something really wants us to
+                    # finish. Any other Exception is an error condition and
+                    # must not terminate the script.
+                    raise
+                except:
+                    # Yes, bare except. Bugs or error conditions when scanning
+                    # any given branch must not prevent scanning the other
+                    # branches.
+                    self.logScanFailure(branch)
+        finally:
+            server.tearDown()
         self.log.info('Finished branch scanning')
 
     def scanOneBranch(self, branch):

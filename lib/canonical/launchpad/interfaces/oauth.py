@@ -15,10 +15,10 @@ __all__ = [
     'IOAuthRequestToken',
     'IOAuthRequestTokenSet',
     'NonceAlreadyUsed',
-    'OAuthPermission']
+    ]
 
 from zope.schema import Bool, Choice, Datetime, Object, TextLine
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
@@ -129,6 +129,13 @@ class IOAuthToken(Interface):
         title=_('Secret'), required=True, readonly=True,
         description=_('The secret associated with this token.  It is used '
                       'by the consumer to sign its requests.'))
+    product = Choice(title=_('Project'), required=False, vocabulary='Product')
+    project = Choice(title=_('Project'), required=False, vocabulary='Project')
+    sourcepackagename = Choice(
+        title=_("Package"), required=False, vocabulary='SourcePackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=False, vocabulary='Distribution')
+    context = Attribute("FIXME")
 
 
 class IOAuthAccessToken(IOAuthToken):
@@ -180,8 +187,12 @@ class IOAuthRequestToken(IOAuthToken):
         description=_('A reviewed request token can only be exchanged for an '
                       'access token (in case the user granted access).'))
 
-    def review(user, permission):
+    def review(user, permission, context=None):
         """Grant `permission` as `user` to this token's consumer.
+
+        :param context: An IProduct, IProject, IDistribution or
+            IDistributionSourcePackage in which the permission is valid. If
+            None, the permission will be valid everywhere.
 
         Set this token's person, permission and date_reviewed.  This will also
         cause this token to be marked as used, meaning it can only be

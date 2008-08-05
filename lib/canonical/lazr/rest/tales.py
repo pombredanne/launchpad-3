@@ -23,8 +23,10 @@ from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollection, IEntry, IResourceGETOperation, IResourceOperation,
     IResourcePOSTOperation, IScopedCollection)
-from canonical.lazr.interfaces.fields import ICollectionField
-from canonical.lazr.interfaces.rest import WebServiceLayer
+from canonical.lazr.interfaces.fields import (
+    ICollectionField, IReferenceChoice)
+from canonical.lazr.interfaces.rest import (
+    LAZR_WEBSERVICE_NAME, WebServiceLayer)
 from canonical.lazr.rest import (
     CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
 
@@ -195,6 +197,22 @@ class WadlResourceAdapterAPI(WadlAPI):
         return ops
 
 
+class WadlEntryInterfaceAdapterAPI(WadlResourceAdapterAPI):
+    """Namespace for WADL functions that operate on entry interfaces.
+
+    That is, IEntry subclasses.
+    """
+    def __init__(self, entry_interface):
+        super(WadlEntryInterfaceAdapterAPI, self).__init__(
+            entry_interface, IEntry)
+        self.utility = EntryAdapterUtility.forEntryInterface(entry_interface)
+
+    @property
+    def entry_page_representation_link(self):
+        "The URL to the description of a collection of this kind of object."
+        return self.utility.entry_page_representation_link
+
+
 class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
     """Namespace for WADL functions that operate on entry adapter classes.
 
@@ -243,11 +261,6 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
         return self.utility.entry_page_representation_id
 
     @property
-    def entry_page_representation_link(self):
-        "The URL to the description of a collection of this kind of object."
-        return self.utility.entry_page_representation_link
-
-    @property
     def all_fields(self):
         "Return all schema fields for the object."
         return getFields(self.adapter.schema).values()
@@ -271,7 +284,8 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
     @property
     def collection_type(self):
         """The name of this kind of resource."""
-        return self.adapter.__name__
+        tag = self.entry_schema.queryTaggedValue(LAZR_WEBSERVICE_NAME)
+        return tag['plural']
 
     @property
     def type_link(self):
@@ -313,7 +327,8 @@ class WadlFieldAPI(WadlAPI):
         name = self.field.__name__
         if ICollectionField.providedBy(self.field):
             return name + '_collection_link'
-        elif IObject.providedBy(self.field) or IBytes.providedBy(self.field):
+        elif (IObject.providedBy(self.field) or IBytes.providedBy(self.field)
+              or IReferenceChoice.providedBy(self.field)):
             return name + '_link'
         else:
             return name
@@ -344,6 +359,7 @@ class WadlFieldAPI(WadlAPI):
     def is_represented_as_link(self):
         """Is this field represented as a link to another resource?"""
         return (IObject.providedBy(self.field) or
+                IReferenceChoice.providedBy(self.field) or
                 ICollectionField.providedBy(self.field) or
                 IBytes.providedBy(self.field) or
                 self.is_link)
@@ -377,10 +393,13 @@ class WadlFieldAPI(WadlAPI):
         if ICollectionField.providedBy(self.field):
             schema = self.field.value_type.schema
         elif (IObject.providedBy(self.field)
-              or IObjectLink.providedBy(self.field)):
+              or IObjectLink.providedBy(self.field)
+              or IReferenceChoice.providedBy(self.field)):
             schema = self.field.schema
         else:
             raise TypeError("Field is not of a supported type.")
+        assert schema is not IObject, (
+            "Null schema provided for %s" % self.field.__name__)
         return EntryAdapterUtility.forSchemaInterface(schema)
 
 
@@ -413,6 +432,11 @@ class WadlOperationAPI(WadlAPI):
             return "POST"
         else:
             raise AssertionError("Named operations must use GET or POST.")
+
+    @property
+    def is_get(self):
+        """Whether or not the operation is a GET operation."""
+        return self.http_method == "GET"
 
     @property
     def doc(self):

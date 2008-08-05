@@ -10,13 +10,18 @@
   i18n:domain="launchpad"
 >
 <body>
-    <div metal:fill-slot="main">
-      <h1>Code review comment</h1>
-      <tal:content replace="structure context/@@+fragment"/>
-      <a href="#" tal:attributes="href view/reply_link"
-         ><img src="/@@/add"/>Reply</a>
-      <p>&laquo;&nbsp;<a href="#" tal:attributes="href context/branch_merge_proposal/fmt:url">Back to merge
-      proposal</a></p>
-    </div>
+
+  <metal:heading fill-slot="before_nav_menu"
+                 tal:content="structure context/branch_merge_proposal/source_branch/@@+heading"/>
+
+  <div metal:fill-slot="main">
+
+    <tal:proposal-heading tal:replace="structure context/branch_merge_proposal/@@+heading"/>
+
+    <h1>Code review comment</h1>
+    <tal:content replace="structure context/@@+fragment"/>
+    <p>&laquo;&nbsp;<a href="#" tal:attributes="href context/branch_merge_proposal/fmt:url">Back to merge
+    proposal</a></p>
+  </div>
 </body>
 </html>

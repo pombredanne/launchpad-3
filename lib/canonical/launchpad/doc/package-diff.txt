@@ -86,6 +86,12 @@ request.
     >>> print package_diff.title
     0.1-1 to 0.1-2
 
+IPackageDiff has a property which indicates whether a diff content
+should be private or not. See section 'PackageDiff privacy' below.
+
+    >>> print package_diff.private
+    False
+
 An attempt to record an already recorded DiffRequest will result in an
 error:
 
@@ -326,6 +332,9 @@ with a proper mimetype.
     >>> print diff.diff_content.mimetype
     application/gzipped-patch
 
+    >>> print diff.diff_content.restricted
+    False
+
 Since it stores the diff results in the librarian we need to commit the
 transaction before we can access the file.
 
@@ -418,6 +427,22 @@ the list length.
     >>> r = packagediff_set.getPendingDiffs(limit=2)
     >>> len(list(r))
     2
+
+All package diffs targeting a set of source package releases can also
+be requested.  The results are ordered by the source package release
+ID:
+
+    >>> sprs = [biscuit_eight_pub.sourcepackagerelease,
+    ...         biscuit_nine_pub.sourcepackagerelease]
+    >>> print_diffs(packagediff_set.getDiffsToReleases(sprs))
+    biscuit 1.0-1 to 1.0-8 True 0
+    biscuit 1.0-8 to 1.0-9 False 1
+
+The method will return an empty result if no source package releases
+are passed to it:
+
+    >>> packagediff_set.getDiffsToReleases([]).count()
+    0
 
 A arbitrary PackageDiff object can be easily retrieved by database ID
 if necessary.
@@ -560,3 +585,53 @@ the diff was properly generated.
     @@ -2,0 +3 @@
     +I am evil.
     <BLANKLINE>
+
+
+== PackageDiff privacy ==
+
+Packagediff decides whether the 'diff_content' file should be
+in the restricted librarian or not according to the privacy of the
+archive where the targeted SourcePackageRelease ('to_source') were
+originally uploaded to.
+
+Let's use one of the diffs already requested in this test setup to
+explain how this mechanism works.
+
+    >>> [diff] = biscuit_two_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+     1.0-8 (in Ubuntu) to 1.0-2
+
+The chosen diff is for a source uploaded to a public PPA.
+
+    >>> print diff.to_source.upload_archive.title
+    PPA for Foo Bar
+
+    >>> print diff.to_source.upload_archive.private
+    False
+
+Thus it's also considered public and the generated 'diff_content' is
+stored in the public librarian.
+
+    >>> print diff.private
+    False
+
+    >>> diff.performDiff()
+    >>> transaction.commit()
+
+    >>> print diff.diff_content.restricted
+    False
+
+When we make FooBar's PPA private, the diff becomes 'private' and the
+new 'diff_content' is stored in the restricted librarian instance.
+
+    >>> diff.to_source.upload_archive.buildd_secret = 'nhack!'
+    >>> diff.to_source.upload_archive.private = True
+
+    >>> print diff.private
+    True
+
+    >>> diff.performDiff()
+    >>> transaction.commit()
+
+    >>> print diff.diff_content.restricted
+    True

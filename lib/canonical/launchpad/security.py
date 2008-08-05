@@ -10,8 +10,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.announcement import IAnnouncement
-from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, IArchive)
+from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.archiverebuild import IArchiveRebuild
@@ -554,6 +553,32 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return can_edit_team(self.obj.team, user)
+
+
+# XXX: 2008-08-01, salgado: At some point we should protect ITeamMembership
+# with launchpad.View so that this adapter is used.  For now, though, it's
+# going to be used only on the webservice (which explicitly checks for
+# launchpad.View) so that we don't leak memberships of private teams.
+class ViewTeamMembership(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = ITeamMembership
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can only view public memberships."""
+        return self.obj.team.visibility == PersonVisibility.PUBLIC
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can view the team's membership.
+
+        Anyone can see a public team's membership. Only a team member or
+        a Launchpad admin can view a private membership.
+        """
+        if self.obj.team.visibility == PersonVisibility.PUBLIC:
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admins) or user.inTeam(self.obj.team):
+            return True
+        return False
 
 
 class EditPersonBySelfOrAdmins(AuthorizationBase):
@@ -1137,9 +1162,13 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
              user.inTeam(translation_group.owner)))
 
 
-class EditBugTracker(EditByRegistryExpertsOrOwnersOrAdmins):
+class EditBugTracker(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
+
+    def checkAuthenticated(self, user):
+        """Any logged-in user can edit a bug tracker."""
+        return True
 
 
 class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
@@ -1159,7 +1188,7 @@ class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        """Allow who added the entry, experts and admis.
+        """Allow who added the entry, experts and admins.
         """
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
@@ -1250,28 +1279,22 @@ class EditBuildRecord(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
     usedfor = IBuild
 
-    def _ppaCheckAuthenticated(self, user):
-        """Allow only BuilddAdmins and PPA owner."""
-        if AdminByBuilddAdmin.checkAuthenticated(self, user):
-            return True
-
-        if self.obj.archive.owner and user.inTeam(self.obj.archive.owner):
-            return True
-
-        return False
-
     def checkAuthenticated(self, user):
         """Check write access for user and different kinds of archives.
 
         Allow
-        
-            * BuilddAdmins and PPA owner for PPAs
+            * BuilddAdmins, for any archive.
+            * The PPA owner for PPAs
             * users with upload permissions (for the respective distribution)
               otherwise.
         """
-        # Is this a PPA? Call the respective method if so.
-        if self.obj.archive.purpose == ArchivePurpose.PPA:
-            return self._ppaCheckAuthenticated(user)
+        if AdminByBuilddAdmin.checkAuthenticated(self, user):
+            return True
+
+        # If it's a PPA only allow its owner.
+        if self.obj.archive.is_ppa:
+            return (self.obj.archive.owner and
+                    user.inTeam(self.obj.archive.owner))
 
         # Primary or partner section here: is the user in question allowed
         # to upload to the respective component? Allow user to retry build
@@ -1757,6 +1780,10 @@ class ViewEmailAddress(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IEmailAddress
 
+    def checkUnauthenticated(self):
+        """See `AuthorizationBase`."""
+        return not self.obj.person.hide_email_addresses
+
     def checkAuthenticated(self, user):
         """Can the user see the details of this email address?
 
@@ -1767,6 +1794,6 @@ class ViewEmailAddress(AuthorizationBase):
         if not self.obj.person.hide_email_addresses:
             return True
         celebrities = getUtility(ILaunchpadCelebrities)
-        return (user == self.obj.person
+        return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.admin))

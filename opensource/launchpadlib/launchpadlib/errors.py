@@ -19,6 +19,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BrowserNotFoundError',
     'CredentialsError',
     'CredentialsFileError',
     'HTTPError',
@@ -62,3 +63,7 @@ class HTTPError(ResponseError):
     def __str__(self):
         return 'HTTP Error %s: %s' % (
             self.response.status, self.response.reason)
+
+
+class BrowserNotFoundError(LaunchpadError):
+    """No web browser found."""

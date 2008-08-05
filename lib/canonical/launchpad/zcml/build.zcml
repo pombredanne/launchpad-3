@@ -13,7 +13,7 @@
        <require
             permission="zope.Public"
             set_attributes="buildlog datebuilt buildduration builder
-                            buildstate dependencies"/>
+                            buildstate dependencies upload_log"/>
     </content>
 
     <browser:defaultView
@@ -70,8 +70,8 @@
     </browser:pages>
 
     <browser:pages
-      for="canonical.launchpad.interfaces.IBuild"
-      class="canonical.launchpad.browser.BuildView"
+      for="canonical.launchpad.interfaces.build.IBuild"
+      class="canonical.launchpad.browser.build.BuildRescoringView"
       permission="launchpad.Admin">
       <browser:page
         name="+rescore"

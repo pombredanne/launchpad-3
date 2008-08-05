@@ -14,7 +14,7 @@ service interface.  The set of people is available from the service root.
     >>> from launchpadlib.testing.helpers import salgado_with_full_permissions
     >>> launchpad = salgado_with_full_permissions.login()
     >>> len(launchpad.people)
-    63
+    59
 
 You can find a person by name.
 
@@ -26,32 +26,29 @@ You can find a person by name.
     >>> salgado.is_team
     False
 
+You can find a person by email.
+
+    >>> email = salgado.preferred_email_address.email
+    >>> salgado = launchpad.people.getByEmail(email=email)
+    >>> salgado.name
+    u'salgado'
+
 You can iterate through all the people in the set.
 
     >>> names = sorted(person.name for person in launchpad.people)
     >>> len(names)
-    63
+    59
     >>> names
-    [u'andrelop', u'barbier', u'bug-importer', u'bug-watch-updater',
+    [u'admins', u'bac', u'bazaar-experts', u'bug-importer',
      ...
-     u'stub', u'thumper', u'tsukimi', u'ubuntu-team', u'valyag']
+     u'ubuntu-translators', u'vcs-imports', u'warty-gnome']
 
-But if no person by that name is registered, you get the expected KeyError...
+But if no person by that name is registered, you get the expected KeyError.
 
     >>> launchpad.people['not-a-registered-person']
     Traceback (most recent call last):
     ...
     KeyError: 'not-a-registered-person'
-
-...unless of course, you use the `get()` interface, which acts just like
-`dict.get()`.
-
-    >>> launchpad.people.get('salgado').display_name
-    u'Guilherme Salgado'
-    >>> print launchpad.people.get('not-a-registered-person')
-    None
-    >>> launchpad.people.get('not-a-registered-person', 'missing')
-    'missing'
 
 Besides a name and a display name, a person has many other attributes that you
 can read.
@@ -101,6 +98,15 @@ You also access teams using the same interface.
     >>> team.is_team
     True
 
+You can find out how a person has membership in a team.
+
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> path = salgado.findPathToTeam(
+    # ...     team=launchpad.people['mailing-list-experts'])
+    # >>> [team.name for team in path]
+    # [u'admins', u'mailing-list-experts']
+
 You can create a new team through the web interface.  The simplest case of
 this requires only the new team's name, owner and display name.
 
@@ -110,7 +116,7 @@ this requires only the new team's name, owner and display name.
     KeyError: 'bassists'
 
     >>> bassists = launchpad.people.newTeam(
-    ...     'bassists', 'Awesome Rock Bass Players')
+    ...     name='bassists', display_name='Awesome Rock Bass Players')
     >>> bassists.name
     u'bassists'
     >>> bassists.display_name
@@ -128,7 +134,7 @@ And of course, that team is now accessible directly.
 
 You cannot create the same team twice.
 
-    >>> launchpad.people.newTeam('bassists', 'Bass Gods')
+    >>> launchpad.people.newTeam(name='bassists', display_name='Bass Gods')
     Traceback (most recent call last):
     ...
     HTTPError: HTTP Error 400: Bad Request
@@ -137,7 +143,8 @@ Actually, the exception contains other useful information.
 
     >>> from launchpadlib.errors import HTTPError
     >>> try:
-    ...     launchpad.people.newTeam('bassists', 'Bass Gods')
+    ...     launchpad.people.newTeam(
+    ...         name='bassists', display_name='Bass Gods')
     ... except HTTPError, error:
     ...     pass
     >>> sorted(error.response.items())

@@ -11,14 +11,13 @@ import pytz
 
 import transaction
 
-from canonical.config import config
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
+from canonical.launchpad.ftests import (
+    login, login_person, logout, ANONYMOUS, syncUpdate)
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
-    BranchCreationException,
     BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchLifecycleStatus, BranchType, BranchVisibilityRule, IBranchSet,
@@ -90,7 +89,7 @@ class TestBranchSet(TestCase):
         urls that are owned by that person, or a team that the person is in.
         """
         branch_owner = getUtility(IPersonSet).get(12)
-        login(branch_owner.preferredemail.email)
+        login_person(branch_owner)
         try:
             branch_set = getUtility(IBranchSet)
             branches = sorted(

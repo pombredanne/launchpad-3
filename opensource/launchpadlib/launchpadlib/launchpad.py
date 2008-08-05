@@ -22,30 +22,24 @@ __all__ = [
     'Launchpad',
     ]
 
+import os
+import sys
 
 from launchpadlib._browser import Browser
 from launchpadlib._utils.uri import URI
-from launchpadlib.collection import Collection, Entry
-from launchpadlib.credentials import AccessToken, Consumer, Credentials
-from launchpadlib.person import People
+from launchpadlib.errors import BrowserNotFoundError
+from launchpadlib.resource import Resource
+from launchpadlib.credentials import AccessToken, Credentials
 
 
-# XXX BarryWarsaw 05-Jun-2008 this is a placeholder to satisfy the interface
-# required by the Launchpad.bugs property below.  It is temporary and will go
-# away when we flesh out the bugs interface.
-class _FakeBugCollection(Collection):
-    def _entry(self, entry_dict):
-        return Entry(entry_dict)
-
-
-class Launchpad:
+class Launchpad(Resource):
     """Root Launchpad API class.
 
     :ivar credentials: The credentials instance used to access Launchpad.
     :type credentials: `Credentials`
     """
 
-    SERVICE_ROOT = 'http://api.launchpad.net/beta'
+    SERVICE_ROOT = 'https://api.edge.launchpad.net/beta/'
 
     def __init__(self, credentials):
         """Root access to the Launchpad API.
@@ -55,15 +49,15 @@ class Launchpad:
         """
         self._root = URI(self.SERVICE_ROOT)
         self.credentials = credentials
-        # Get the root resource.
+        # Get the WADL definition.
         self._browser = Browser(self.credentials)
-        response = self._browser.get(self._root)
-        person_set_link = response.get(
-            'PersonSetCollectionAdapter_collection_link')
-        bug_set_link = response.get(
-            'MaloneApplicationCollectionAdapter_collection_link')
-        self._people = People(self._browser, URI(person_set_link))
-        self._bugs = _FakeBugCollection(self._browser, URI(bug_set_link))
+        self._wadl = self._browser.get_wadl_application(self._root)
+
+        # Get the root resource.
+        root_resource = self._wadl.get_resource_by_path('')
+        bound_root = root_resource.bind(
+            self._browser.get(root_resource), 'application/json')
+        super(Launchpad, self).__init__(None, bound_root)
 
     @classmethod
     def login(cls, consumer_name, token_string, access_secret):
@@ -85,15 +79,49 @@ class Launchpad:
         :return: The web service root
         :rtype: `Launchpad`
         """
-        consumer = Consumer(consumer_name)
         access_token = AccessToken(token_string, access_secret)
-        credentials = Credentials(consumer, access_token)
+        credentials = Credentials(
+            consumer_name=consumer_name, access_token=access_token)
         return cls(credentials)
 
-    @property
-    def people(self):
-        return self._people
+    @classmethod
+    def get_token_and_login(cls, consumer_name):
+        """Get credentials from Launchpad and log into the service root.
 
-    @property
-    def bugs(self):
-        return self._bugs
+        This method will negotiate an OAuth access token with the service
+        provider, but to complete it we will need the user to log into
+        Launchpad and authorize us, so we'll open the authorization page in
+        a web browser and ask the user to come back here and tell us when they
+        finished the authorization process.
+        """
+        credentials = Credentials(consumer_name)
+        authorization_url = credentials.get_request_token()
+        try:
+            open_url_in_browser(authorization_url)
+            print ("The authorization page (%s) should be opening in your "
+                   "browser. After you have authorized this program to "
+                   "access Launchpad on your behalf you should come back "
+                   "here and press <Enter> to finish the authentication "
+                   "process." % authorization_url)
+        except BrowserNotFoundError:
+            print ("Please open %s in your browser to authorize this program "
+                   "to access Launchpad on your behalf. Once that is done "
+                   "you should press <Enter> here to finish the "
+                   "authentication process." % authorization_url)
+        sys.stdin.readline()
+        credentials.exchange_request_token_for_access_token()
+        return cls(credentials)
+
+
+def open_url_in_browser(url):
+    """Open the given URL in a web browser."""
+    if os.environ.get('DISPLAY'):
+        # Use x-www-browser if it exists, falling back to firefox.
+        browsers = ['x-www-browser', 'firefox']
+    else:
+        # Use www-browser if it exists, falling back to links.
+        browsers = ['www-browser', 'w3m', 'links', 'lynx']
+    for browser in browsers:
+        if not os.system('%s "%s" &' % (browser, url)):
+            return
+    raise BrowserNotFoundError("Could not find browser to open %s" % url)

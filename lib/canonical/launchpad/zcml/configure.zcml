@@ -168,7 +168,6 @@
     <include file="archiverebuild.zcml" />
 
     <include file="fields.zcml" />
-    <include file="resources.zcml" />
     <include file="widgets.zcml" />
 
     <!-- System homepages -->

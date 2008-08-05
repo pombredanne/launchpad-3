@@ -1,0 +1,80 @@
+= Person Pages =
+
+There are many views that wrap the Person object to display the
+person's information.
+
+== Person Packages ==
+
+The page at ~user/+packages contains three sections,
+"Maintained Packages", "Uploaded Packages" and "PPA Packages".
+
+Each section is limited to displaying at most 50 packages so that
+the page does not time out before Zope can render it.
+
+Before continuing, create lots of packages that will appear in each
+section of Foo Bar's +packages page, such that there's more available
+that we're willing to display.
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+    >>> name16 = getUtility(IPersonSet).getByName('name16')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> warty = ubuntu['warty']
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_pub = SoyuzTestPublisher()
+    >>> test_pub.person = name16
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> view = getMultiAdapter(
+    ...     (name16, LaunchpadTestRequest()), name='+related-software')
+    >>> view.initialize()
+
+    >>> for count in range(0, view.PACKAGE_LIMIT + 3):
+    ...     source_name = "foo" + str(count)
+    ...     # Add the PPA packages.
+    ...     discard = test_pub.getPubSource(
+    ...         sourcename=source_name,
+    ...         status=PackagePublishingStatus.PUBLISHED,
+    ...         archive=sabdfl.archive,
+    ...         distroseries=warty)
+    ...     # Add the maintained packages.
+    ...     discard = test_pub.getPubSource(
+    ...         sourcename=source_name,
+    ...         status=PackagePublishingStatus.PUBLISHED,
+    ...         distroseries=warty)
+    ...     # Add the uploaded packages.
+    ...     discard = test_pub.getPubSource(
+    ...         maintainer=sabdfl,
+    ...         sourcename=source_name,
+    ...         status=PackagePublishingStatus.PUBLISHED,
+    ...         distroseries=warty)
+    >>> import transaction
+    >>> transaction.commit()
+
+There are many more new packages to be displayed on the page now:
+
+    >>> name16.getLatestUploadedPPAPackages().count() > 50
+    True
+
+    >>> name16.getLatestMaintainedPackages().count() > 50
+    True
+
+    >>> name16.getLatestUploadedButNotMaintainedPackages().count() > 50
+    True
+
+The view enforces the limit.
+
+    >>> len(view.get_latest_uploaded_ppa_packages_with_stats)
+    50
+
+    >>> len(view.get_latest_maintained_packages_with_stats)
+    50
+
+    >>> len(view.get_latest_uploaded_but_not_maintained_packages_with_stats)
+    50

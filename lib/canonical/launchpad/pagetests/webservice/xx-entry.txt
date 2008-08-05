@@ -60,28 +60,6 @@ capabilities.
   'application/vd.sun.wadl+xml'
 
 
-== Partial visibility ==
-
-Some parts of an entry may not be visible. Here we see a public bug
-that's assigned to a private team. A non-privileged user can see the
-bug but not the team. Ordinarily this would cause a problem because
-the representation of the bug is supposed to contain a link to a
-team. Instead of denying access completely, that part of the
-representation is omitted from the team.
-
-   >>> authorized_view = webservice.get('/beta/~myteam').jsonBody()
-   >>> authorized_view['members_collection_link']
-   u'http://api.launchpad.dev/beta/~myteam/members'
-   >>> authorized_view['members_details_collection_link']
-   u'http://api.launchpad.dev/beta/~myteam/members_details'
-
-   >>> unauthorized_view = user_webservice.get('/beta/~myteam').jsonBody()
-   >>> unauthorized_view['members_collection_link']
-   u'tag:launchpad.net:2008:redacted'
-   >>> unauthorized_view['members_details_collection_link']
-   u'tag:launchpad.net:2008:redacted'
-
-
 == Custom operations ==
 
 Some entries support custom operations through GET. The custom
@@ -102,7 +80,7 @@ bug's status by invoking a custom operation.
   u'Confirmed'
 
   >>> print webservice.named_post(
-  ...     bugtask_path, 'change_status', {}, status='Invalid')
+  ...     bugtask_path, 'transitionToStatus', {}, status='Invalid')
   HTTP/1.1 200 Ok
   ...
 
@@ -118,13 +96,13 @@ Custom operations may have error handling.
   status: Invalid value "NoSuchStatus". Acceptable values are: ...
 
   >>> print webservice.named_post(
-  ...     bugtask_path, 'change_status', {}, status='NoSuchStatus')
+  ...     bugtask_path, 'transitionToStatus', {}, status='NoSuchStatus')
   HTTP/1.1 400 Bad Request
   ...
   status: Invalid value "NoSuchStatus". Acceptable values are: ...
 
   >>> print webservice.named_post(
-  ...     bugtask_path, 'change_status', {}, status='Triaged')
+  ...     bugtask_path, 'transitionToStatus', {}, status='Triaged')
   HTTP/1.1 401 Unauthorized
   ...
   Only Bug Supervisors may change status to Triaged.

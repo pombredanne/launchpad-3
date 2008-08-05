@@ -8,6 +8,7 @@ __all__ = [
     'BinaryPackageFilePublishing',
     'BinaryPackagePublishingHistory',
     'IndexStanzaFields',
+    'PublishingSet',
     'SecureBinaryPackagePublishingHistory',
     'SecureSourcePackagePublishingHistory',
     'SourcePackageFilePublishing',
@@ -16,20 +17,30 @@ __all__ = [
 
 
 from datetime import datetime
+import operator
 import os
 import pytz
 from warnings import warn
 
+from zope.component import getUtility
 from zope.interface import implements
+
 from sqlobject import ForeignKey, StringCol, BoolCol
+
+from storm.expr import Desc, In
 from storm.store import Store
+from storm.zope.interfaces import IZStorm
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.files import (
+    BinaryPackageFile, SourcePackageReleaseFile)
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
@@ -37,6 +48,8 @@ from canonical.launchpad.interfaces import (
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
+from canonical.launchpad.interfaces.publishing import (
+    IPublishingSet, active_publishing_status)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
@@ -256,7 +269,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
-    def selectBy(cls, *args, **kwargs):
+    def selectBy(cls, **kwargs):
         """Prevent selecting embargo packages by default"""
         if 'embargo' in kwargs:
             if kwargs['embargo']:
@@ -265,7 +278,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
                      stacklevel=2)
         kwargs['embargo'] = False
         return super(SecureSourcePackagePublishingHistory,
-                     cls).selectBy(*args, **kwargs)
+                     cls).selectBy(**kwargs)
 
     @classmethod
     def selectByWithEmbargoedEntries(cls, *args, **kwargs):
@@ -304,7 +317,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
-    def selectBy(cls, *args, **kwargs):
+    def selectBy(cls, **kwargs):
         """Prevent selecting embargo packages by default"""
         if 'embargo' in kwargs:
             if kwargs['embargo']:
@@ -313,7 +326,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
                      stacklevel=2)
         kwargs['embargo'] = False
         return super(SecureBinaryPackagePublishingHistory,
-                     cls).selectBy(*args, **kwargs)
+                     cls).selectBy(**kwargs)
 
     @classmethod
     def selectByWithEmbargoedEntries(cls, *args, **kwargs):
@@ -340,14 +353,14 @@ class ArchivePublisherBase:
         return fields.makeOutput()
 
     def supersede(self):
-        """See `IArchivePublisher`."""
+        """See `IPublishing`."""
         current = self.secure_record
         current.status = PackagePublishingStatus.SUPERSEDED
         current.datesuperseded = UTC_NOW
         return current
 
     def requestDeletion(self, removed_by, removal_comment=None):
-        """See `IArchivePublisher`."""
+        """See `IPublishing`."""
         current = self.secure_record
         current.status = PackagePublishingStatus.DELETED
         current.datesuperseded = UTC_NOW
@@ -437,17 +450,17 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
-    def _getPublishingBinariesBaseClause(self):
-        """Base query to reach binary publications for the context source.
+    def getPublishedBinaries(self):
+        """See `ISourcePackagePublishingHistory`."""
+        publishing_set = getUtility(IPublishingSet)
+        result_set = publishing_set.getBinaryPublicationsForSources(self)
 
-         The query follows every `BinaryPackageRelease` ever published in
-         the context `IArchive` and Pocket built from the context
-         `SourcePackageRelease` in any `DistroArchSeries` for the context
-         `DistroSeries`.
+        return [binary_pub
+                for source, binary_pub, binary, binary_name, arch
+                in result_set]
 
-        :return: a tuple containing, in this order, a list of clauses and
-            a list clauseTables;
-        """
+    def getBuiltBinaries(self):
+        """See `ISourcePackagePublishingHistory`."""
         clauses = ["""
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
@@ -462,39 +475,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                         self.archive, self.pocket)]
 
         clauseTables = ['Build', 'BinaryPackageRelease', 'DistroArchSeries']
-
-        return (clauses, clauseTables)
-
-    def getPublishedBinaries(self):
-        """See `ISourcePackagePublishingHistory`."""
-        clauses, clauseTables = self._getPublishingBinariesBaseClause()
-
-        published_status = [
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED,
-            ]
-        clauses.append("""
-            BinaryPackageRelease.binarypackagename=
-                BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.status IN %s
-        """ % sqlvalues(published_status))
-
-        clauseTables.append('BinaryPackageName')
-
-        orderBy = ['BinaryPackageName.name',
-                   'DistroArchSeries.architecturetag',
-                   '-BinaryPackagePublishingHistory.id']
-
-        preJoins = ['binarypackagerelease',
-                    'binarypackagerelease.binarypackagename']
-
-        return BinaryPackagePublishingHistory.select(
-            " AND ".join(clauses), orderBy=orderBy, clauseTables=clauseTables,
-            prejoins=preJoins)
-
-    def getBuiltBinaries(self):
-        """See `ISourcePackagePublishingHistory`."""
-        clauses, clauseTables = self._getPublishingBinariesBaseClause()
         orderBy = ['-BinaryPackagePublishingHistory.id']
         preJoins = ['binarypackagerelease']
 
@@ -520,27 +500,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def getBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
-        clause = """
-            Build.distroarchseries = DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            Build.sourcepackagerelease = %s AND
-            Build.archive = %s
-        """ % sqlvalues(self.distroseries, self.sourcepackagerelease,
-                        self.archive)
+        publishing_set = getUtility(IPublishingSet)
+        result_set = publishing_set.getBuildsForSources(self)
 
-        orderBy = ['DistroArchSeries.architecturetag']
-
-        clauseTables = ['DistroArchSeries']
-
-        prejoins = ['distroarchseries',
-                    'sourcepackagerelease']
-
-        # Import Build locally to avoid circular imports.
-        from canonical.launchpad.database.build import Build
-
-        return Build.select(
-            clause, orderBy=orderBy, clauseTables=clauseTables,
-            prejoins=prejoins)
+        return [build for source, build, arch in result_set]
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
@@ -610,41 +573,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def getSourceAndBinaryLibraryFiles(self):
         """See `IPublishing`."""
-        sourcesClause = """
-            LibraryFileAlias.id = SourcePackageReleaseFile.libraryfile AND
-            SourcePackageReleaseFile.sourcepackagerelease = %s
-            """ % sqlvalues(self.sourcepackagerelease)
-        sourcesClauseTables = ['SourcePackageReleaseFile']
+        publishing_set = getUtility(IPublishingSet)
+        result_set = publishing_set.getFilesForSources(self)
+        libraryfiles = [file for source, file, content in result_set]
 
-        binariesClause = """
-            LibraryFileAlias.id = BinaryPackageFile.libraryfile AND
-            BinaryPackageFile.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.build=Build.id AND
-            BinaryPackagePublishingHistory.binarypackagerelease=
-                BinaryPackageRelease.id AND
-            Build.sourcepackagerelease=%s AND
-            BinaryPackagePublishingHistory.archive=%s
-            """ % sqlvalues(self.sourcepackagerelease, self.archive)
-
-        binariesClauseTables = [
-            'BinaryPackageFile', 'BinaryPackagePublishingHistory',
-            'BinaryPackageRelease', 'Build']
-
-        preJoins = ['content']
-
-        sourcesQuery = LibraryFileAlias.select(
-            sourcesClause, clauseTables=sourcesClauseTables,
-            prejoins=preJoins)
-        binariesQuery = LibraryFileAlias.select(
-            binariesClause, clauseTables=binariesClauseTables,
-            prejoins=preJoins, distinct=True)
-
-        # I would like to use UNION here to merge the two result sets, but
-        # that silently drops the preJoins.
-        results = list(sourcesQuery)
-        results.extend(list(binariesQuery))
-        return results
+        # XXX cprov 20080710: UNIONs cannot be ordered appropriately.
+        # See IPublishing.getFilesForSources().
+        return sorted(libraryfiles, key=operator.attrgetter('filename'))
 
     @property
     def meta_sourcepackage(self):
@@ -967,3 +902,207 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             pocket=pocket,
             embargo=False)
         return BinaryPackagePublishingHistory.get(secure_copy.id)
+
+
+class PublishingSet:
+    """Utilities for manipulating publications in batches."""
+
+    implements(IPublishingSet)
+
+    def _extractIDs(self, one_or_more_source_publications):
+        """Return a list of database IDs for the given list or single object.
+
+        :param one_or_more_source_publications: an single object or a list of
+            `ISourcePackagePublishingHistory` objects.
+
+        :return: a list of database IDs corresponding to the give set of
+            objects.
+        """
+        try:
+            source_publications = tuple(one_or_more_source_publications)
+        except TypeError:
+            source_publications = (one_or_more_source_publications,)
+
+        return [source_publication.id
+                for source_publication in source_publications]
+
+    def getBuildsForSources(self, one_or_more_source_publications):
+        """See `PublishingSet`."""
+        # Import Build and DistroArchSeries locally to avoid circular
+        # imports, since that Build uses SourcePackagePublishingHistory
+        # and DistroArchSeries uses BinaryPackagePublishingHistory.
+        from canonical.launchpad.database.build import Build
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IZStorm).get('main')
+        result_set = store.find(
+            (SourcePackagePublishingHistory, Build, DistroArchSeries),
+            Build.distroarchseriesID == DistroArchSeries.id,
+            SourcePackagePublishingHistory.archiveID == Build.archiveID,
+            SourcePackagePublishingHistory.distroseriesID ==
+                DistroArchSeries.distroseriesID,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        result_set.order_by(
+            SourcePackagePublishingHistory.id,
+            DistroArchSeries.architecturetag)
+
+        return result_set
+
+    def getFilesForSources(self, one_or_more_source_publications):
+        """See `IPublishingSet`."""
+        # Import Build and BinaryPackageRelease locally to avoid circular
+        # imports, since that Build already imports
+        # SourcePackagePublishingHistory and BinaryPackageRelease imports
+        # Build.
+        from canonical.launchpad.database.binarypackagerelease import (
+            BinaryPackageRelease)
+        from canonical.launchpad.database.build import Build
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IZStorm).get('main')
+        source_result = store.find(
+            (SourcePackagePublishingHistory, LibraryFileAlias,
+             LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
+            SourcePackageReleaseFile.sourcepackagerelease ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        binary_result = store.find(
+            (SourcePackagePublishingHistory, LibraryFileAlias,
+             LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            BinaryPackageFile.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.buildID == Build.id,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID ==
+                SourcePackagePublishingHistory.archiveID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        result_set = source_result.union(
+            binary_result.config(distinct=True))
+
+        return result_set
+
+    def getBinaryPublicationsForSources(
+        self, one_or_more_source_publications):
+        """See `IPublishingSet`."""
+        # Import Build, BinaryPackageRelease and DistroArchSeries locally
+        # to avoid circular imports, since Build uses
+        # SourcePackagePublishingHistory, BinaryPackageRelease uses Build
+        # and DistroArchSeries uses BinaryPackagePublishingHistory.
+        from canonical.launchpad.database.binarypackagerelease import (
+            BinaryPackageRelease)
+        from canonical.launchpad.database.build import Build
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IZStorm).get('main')
+        result_set = store.find(
+            (SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
+             BinaryPackageRelease, BinaryPackageName, DistroArchSeries),
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            BinaryPackageRelease.build == Build.id,
+            BinaryPackageRelease.binarypackagenameID ==
+                BinaryPackageName.id,
+            SourcePackagePublishingHistory.distroseriesID ==
+                DistroArchSeries.distroseriesID,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.pocket ==
+               SourcePackagePublishingHistory.pocket,
+            BinaryPackagePublishingHistory.archiveID ==
+               SourcePackagePublishingHistory.archiveID,
+            In(BinaryPackagePublishingHistory.status,
+               [enum.value for enum in active_publishing_status]),
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        result_set.order_by(
+            SourcePackagePublishingHistory.id,
+            BinaryPackageName.name,
+            DistroArchSeries.architecturetag,
+            Desc(BinaryPackagePublishingHistory.id))
+
+        return result_set
+
+    def requestDeletion(self, sources, removed_by, removal_comment=None):
+        """See `IPublishingSet`."""
+
+        # The 'sources' parameter could actually be any kind of sequence
+        # (e.g. even a ResultSet) and the method would still work correctly.
+        # This is problematic when it comes to the type of the return value
+        # however.
+        # Apparently the caller anticipates that we return the sequence of
+        # instances "deleted" adhering to the original type of the 'sources'
+        # parameter.
+        # Since this is too messy we prescribe that the type of 'sources'
+        # must be a list and we return the instances manipulated as a list.
+        # This may not be an ideal solution but this way we at least achieve
+        # consistency.
+        assert isinstance(sources, list), (
+            "The 'sources' parameter must be a list.")
+
+        if len(sources) == 0:
+            return []
+
+        # The following piece of query "boiler plate" will be used for
+        # both the source and the binary package publishing history table.
+        query_boilerplate = '''
+            SET status = %s,
+                datesuperseded = %s,
+                removed_by = %s,
+                removal_comment = %s
+            WHERE id IN
+            ''' % sqlvalues(PackagePublishingStatus.DELETED, UTC_NOW,
+                            removed_by, removal_comment)
+
+        store = getUtility(IZStorm).get('main')
+
+        # First update the source package publishing history table.
+        source_ids = [source.id for source in sources]
+        if len(source_ids) > 0:
+            query = 'UPDATE SecureSourcePackagePublishingHistory '
+            query += query_boilerplate
+            query += ' %s' % sqlvalues(source_ids)
+            store.execute(query)
+
+        # Prepare the list of associated *binary* packages publishing
+        # history records.
+        binary_packages = []
+        for source in sources:
+            binary_packages.extend(source.getPublishedBinaries())
+
+        if len(binary_packages) == 0:
+            return sources
+
+        # Now run the query that marks the binary packages as deleted
+        # as well.
+        if len(binary_packages) > 0:
+            query = 'UPDATE SecureBinaryPackagePublishingHistory '
+            query += query_boilerplate
+            query += ' %s' % sqlvalues(
+                [binary.id for binary in binary_packages])
+            store.execute(query)
+
+        return sources + binary_packages

@@ -4,10 +4,10 @@
 
 
 __metaclass__ = type
-__all__ = ['RebuildArchiveCreator']
+__all__ = [
+    'RebuildArchiveCreator',
+    ]
 
-
-import sys
 
 from zope.component import getUtility
 
@@ -49,7 +49,7 @@ class RebuildArchiveCreator(SoyuzScript):
 
     def createRebuildArchive(
         self, component, rebuild_archive_name, suite, distro, rebuild_reason,
-        user_name):
+        user_name, arch_tags=None):
         """Create rebuild archive, populate with packages and builds.
 
         :type component: `str`
@@ -67,6 +67,9 @@ class RebuildArchiveCreator(SoyuzScript):
         :type user_name: `str`
         :param user_name: the name of the user who is creating the rebuild
             archive.
+        :type arch_tags: list of strings
+        :param arch_tags: the list of architecture tags for which to
+            create builds (optional).
         """
 
         if not valid_name(rebuild_archive_name):
@@ -101,7 +104,7 @@ class RebuildArchiveCreator(SoyuzScript):
 
         # Create builds for the cloned packages.
         self._createMissingBuilds(
-            destination.distroseries, destination.archive)
+            destination.distroseries, destination.archive, arch_tags)
 
     def mainTask(self):
         """Main function entry point.
@@ -129,37 +132,58 @@ class RebuildArchiveCreator(SoyuzScript):
         self.createRebuildArchive(
             self.options.component, self.options.rebuildarchivename,
             self.options.suite, self.options.distribution_name,
-            self.options.rebuildreason, self.options.username)
+            self.options.rebuildreason, self.options.username,
+            self.options.arch_tags)
 
     def add_my_options(self):
         """Parse command line arguments and trigger rebuild archive creation.
         """
         SoyuzScript.add_my_options(self)
+
+        # Remove the '-a' option defined by the base class since it needs
+        # to be redefined.
+        self.parser.remove_option('-a')
+        self.parser.add_option(
+            "-a", "--architecture", dest="arch_tags", action="append",
+            help="The architecture tag for which to create rebuilds, "
+                 "repeat for each architecture required.")
+
         self.parser.add_option(
             "-r", "--rebuildarchive", dest="rebuildarchivename",
-            help="rebuild archive name")
+            help="The rebuild archive name.")
         self.parser.add_option(
-            "-t", "--text", dest="rebuildreason", help="rebuild reason text")
+            "-t", "--text", dest="rebuildreason",
+            help="The rebuild reason text.")
         self.parser.add_option(
             "-u", "--user", dest="username",
-            help="the user creating the rebuild archive")
+            help="The user creating the rebuild archive.")
 
-    def _createMissingBuilds(self, distroseries, archive):
+    def _createMissingBuilds(
+        self, distroseries, archive, arch_tags=None):
         """Create builds for all source packages in 'location'.
 
         :type distroseries: `DistroSeries`
         :param distroseries: the distro series for which to create builds.
         :type archive: `Archive`
         :param archive: the archive for which to create builds.
+        :type arch_tags: list of strings
+        :param arch_tags: the list of architecture tags for
+            which to create builds (optional).
         """
         self.logger.info("Processing %s." % distroseries.name)
 
         # Listify the architectures to avoid hitting this MultipleJoin
         # multiple times.
         architectures = list(distroseries.architectures)
+        if arch_tags is not None:
+            # Filter the list of DistroArchSeries so that only the ones
+            # specified on the command line remain.
+            architectures = [architecture for architecture in architectures
+                 if architecture.architecturetag in arch_tags]
+
         if len(architectures) == 0:
             self.logger.info(
-                "No architectures defined for %s, done." % distroseries.name)
+                "No DistroArchSeries left for %s, done." % distroseries.name)
             return
 
         self.logger.info(
@@ -192,4 +216,3 @@ class RebuildArchiveCreator(SoyuzScript):
                 continue
             self.logger.info("%s has %s build(s)." %
                              (get_spn(pubrec), len(builds)))
-            self.txn.commit()

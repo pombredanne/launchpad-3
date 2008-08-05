@@ -26,11 +26,41 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, PackagePublishingPocket, PackagePublishingPriority,
     PackagePublishingStatus, SourcePackageUrgency)
 from canonical.launchpad.scripts import FakeLogger
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
 class SoyuzTestPublisher:
     """Helper class able to publish coherent source and binaries in Soyuz."""
+
+    def __init__(self):
+        self.factory = LaunchpadObjectFactory()
+        self.default_package_name = 'foo'
+
+    def setUpDefaultDistroSeries(self, distroseries=None):
+        """Set up a distroseries that will be used by default.
+
+        This distro series is used to publish packages in, if you don't
+        specify any when using the publishing methods.
+
+        It also sets up a person that can act as the default uploader,
+        and makes sure that the default package name exists in the
+        database.
+
+        :param distroseries: The `IDistroSeries` to use as default. If
+            it's None, one will be created.
+        :return: The `IDistroSeries` that got set as default.
+        """
+        if distroseries is None:
+            distroseries = self.factory.makeDistroRelease()
+        self.distroseries = distroseries
+        # Set up a person that has a GPG key.
+        self.person = getUtility(IPersonSet).getByName('name16')
+        # Make sure the name exists in the database, to make it easier
+        # to get packages from distributions and distro series.
+        name_set = getUtility(ISourcePackageNameSet)
+        name_set.getOrCreateByName(self.default_package_name)
+        return self.distroseries
 
     def prepareBreezyAutotest(self):
         """Prepare ubuntutest/breezy-autotest for publications.
@@ -39,7 +69,7 @@ class SoyuzTestPublisher:
         """
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
-        self.person = getUtility(IPersonSet).getByName('name16')
+        self.setUpDefaultDistroSeries(self.breezy_autotest)
         self.breezy_autotest_i386 = self.breezy_autotest.newArch(
             'i386', ProcessorFamily.get(1), False, self.person,
             supports_virtualized=True)
@@ -49,6 +79,14 @@ class SoyuzTestPublisher:
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         self.breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
         self.breezy_autotest_hppa.addOrUpdateChroot(fake_chroot)
+
+    def addFakeChroots(self, distroseries=None):
+        """Add fake chroots for all the architectures in distroseries."""
+        if distroseries is None:
+            distroseries = self.distroseries
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        for arch in distroseries.architectures:
+            arch.addOrUpdateChroot(fake_chroot)
 
     def regetBreezyAutotest(self): 
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
@@ -67,7 +105,7 @@ class SoyuzTestPublisher:
             'application/text', restricted=restricted)
         return library_file
 
-    def getPubSource(self, sourcename='foo', version='666', component='main',
+    def getPubSource(self, sourcename=None, version='666', component='main',
                      filename=None, section='base',
                      filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
@@ -79,21 +117,26 @@ class SoyuzTestPublisher:
                      dsc_standards_version='3.6.2', dsc_format='1.0',
                      dsc_binaries='foo-bin', build_conflicts=None,
                      build_conflicts_indep=None,
-                     dsc_maintainer_rfc822='Foo Bar <foo@bar.com>'):
+                     dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
+                     maintainer=None, date_uploaded=UTC_NOW):
         """Return a mock source publishing record."""
+        if sourcename is None:
+            sourcename = self.default_package_name
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
 
         component = getUtility(IComponentSet)[component]
         section = getUtility(ISectionSet)[section]
 
         if distroseries is None:
-            distroseries = self.breezy_autotest
+            distroseries = self.distroseries
         if archive is None:
             archive = distroseries.main_archive
+        if maintainer is None:
+            maintainer = self.person
 
         spr = distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
-            maintainer=self.person,
+            maintainer=maintainer,
             creator=self.person,
             component=component,
             section=section,
@@ -112,7 +155,7 @@ class SoyuzTestPublisher:
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
-            archive=archive)
+            archive=archive, dateuploaded=date_uploaded)
 
         if filename is None:
             filename = "%s.dsc" % sourcename
@@ -126,7 +169,7 @@ class SoyuzTestPublisher:
             component=spr.component,
             section=spr.section,
             status=status,
-            datecreated=UTC_NOW,
+            datecreated=date_uploaded,
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
@@ -151,49 +194,54 @@ class SoyuzTestPublisher:
                        pub_source=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
-            distroseries = self.breezy_autotest
-        sourcename = "%s" % binaryname.split('-')[0]
+            distroseries = self.distroseries
+
+        if archive is None:
+            archive = distroseries.main_archive
+
         if pub_source is None:
+            sourcename = "%s" % binaryname.split('-')[0]
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
                 archive=archive, distroseries=distroseries)
+        else:
+            archive = pub_source.archive
 
         builds = pub_source.createMissingBuilds()
         published_binaries = []
         for build in builds:
-            pub_binaries = self.buildAndPublishBinaryForSource(
-                build, archive, status, pocket, scheduleddeletiondate,
-                dateremoved, filecontent, binaryname, summary, description,
+            binarypackagerelease = self.uploadBinaryForBuild(
+                build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
                 provides, pre_depends, enhances, breaks)
+            pub_binaries = self.publishBinaryInArchive(
+                binarypackagerelease, archive, status, pocket,
+                scheduleddeletiondate, dateremoved)
             published_binaries.extend(pub_binaries)
 
         return sorted(
             published_binaries, key=operator.attrgetter('id'), reverse=True)
 
-    def buildAndPublishBinaryForSource(
-        self, build, archive=None, status=PackagePublishingStatus.PENDING,
-        pocket=PackagePublishingPocket.RELEASE, scheduleddeletiondate=None,
-        dateremoved=None, filecontent="anything", binaryname="foo-bin",
+    def uploadBinaryForBuild(
+        self, build, binaryname, filecontent="anything",
         summary="summary", description="description", shlibdep=None,
         depends=None, recommends=None, suggests=None, conflicts=None,
         replaces=None, provides=None, pre_depends=None, enhances=None,
         breaks=None):
-        """Return the corresponding BinaryPackagePublishingHistory."""
+        """Return the corresponding `BinaryPackageRelease`."""
         sourcepackagerelease = build.sourcepackagerelease
         distroarchseries = build.distroarchseries
-        if archive is None:
-            archive = build.archive
-
-        # Create a BinaryPackageRelease
-        bpn = getUtility(IBinaryPackageNameSet).getOrCreateByName(binaryname)
         architecturespecific = (
             not sourcepackagerelease.architecturehintlist == 'all')
-        bpr = build.createBinaryPackageRelease(
+
+        binarypackagename = getUtility(
+            IBinaryPackageNameSet).getOrCreateByName(binaryname)
+
+        binarypackagerelease = build.createBinaryPackageRelease(
             version=sourcepackagerelease.version,
-            component=sourcepackagerelease.component.id,
-            section=sourcepackagerelease.section.id,
-            binarypackagename=bpn.id,
+            component=sourcepackagerelease.component,
+            section=sourcepackagerelease.section,
+            binarypackagename=binarypackagename,
             summary=summary,
             description=description,
             shlibdeps=shlibdep,
@@ -212,9 +260,6 @@ class SoyuzTestPublisher:
             binpackageformat=BinaryPackageFormat.DEB,
             priority=PackagePublishingPriority.STANDARD)
 
-        # Going from pending to succeeded is an invalid build state
-        # transition. That's why we are forcing it here.
-        build.forceState(BuildStatus.FULLYBUILT)
         # Create the corresponding DEB file.
         if architecturespecific:
             filearchtag = distroarchseries.architecturetag
@@ -222,11 +267,24 @@ class SoyuzTestPublisher:
             filearchtag = 'all'
         filename = '%s_%s.deb' % (binaryname, filearchtag)
         alias = self.addMockFile(
-            filename, filecontent=filecontent, restricted=archive.private)
-        bpr.addFile(alias)
+            filename, filecontent=filecontent,
+            restricted=build.archive.private)
+        binarypackagerelease.addFile(alias)
+
+        build.buildstate = BuildStatus.FULLYBUILT
+
+        return binarypackagerelease
+
+    def publishBinaryInArchive(
+        self, binarypackagerelease, archive,
+        status=PackagePublishingStatus.PENDING,
+        pocket=PackagePublishingPocket.RELEASE,
+        scheduleddeletiondate=None, dateremoved=None):
+        """Return the corresponding BinaryPackagePublishingHistory."""
+        distroarchseries = binarypackagerelease.build.distroarchseries
 
         # Publish the binary.
-        if architecturespecific:
+        if binarypackagerelease.architecturespecific:
             archs = [distroarchseries]
         else:
             archs = distroarchseries.distroseries.architectures
@@ -235,10 +293,10 @@ class SoyuzTestPublisher:
         for arch in archs:
             pub = SecureBinaryPackagePublishingHistory(
                 distroarchseries=arch,
-                binarypackagerelease=bpr,
-                component=bpr.component,
-                section=bpr.section,
-                priority=bpr.priority,
+                binarypackagerelease=binarypackagerelease,
+                component=binarypackagerelease.component,
+                section=binarypackagerelease.section,
+                priority=binarypackagerelease.priority,
                 status=status,
                 scheduleddeletiondate=scheduleddeletiondate,
                 dateremoved=dateremoved,
@@ -255,6 +313,10 @@ class SoyuzTestPublisher:
 class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
     layer = LaunchpadZopelessLayer
     dbuser = config.archivepublisher.dbuser
+
+    def __init__(self, methodName='runTest'):
+        unittest.TestCase.__init__(self, methodName=methodName)
+        SoyuzTestPublisher.__init__(self)
 
     def setUp(self):
         """Setup a pool dir, the librarian, and instantiate the DiskPool."""

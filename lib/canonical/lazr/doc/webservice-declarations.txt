@@ -68,6 +68,8 @@ elements.
     ...             "%s: %s" %(key, format_value(value))
     ...             for key, value in sorted(tag.items()))
     >>> print_export_tag(IBook)
+    plural_name: 'books'
+    singular_name: 'book'
     type: 'entry'
     >>> print_export_tag(IBook['title'])
     as: 'title'
@@ -307,7 +309,6 @@ operation returns a collection of entries.
     ...     operation_returns_entry, operation_returns_collection_of,
     ...     rename_parameters_as)
     >>> from canonical.lazr.interface import copy_field
-    >>> from canonical.lazr.fields import Reference
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
     ...     export_as_webservice_collection(IBook)
@@ -705,7 +706,6 @@ base interface isn't exported itself.
     type: 'write_operation'
 
 
-
 == Generating the webservice ==
 
 === Entry ==
@@ -744,6 +744,13 @@ The field __name__ attribute contains the exported name:
 
     >>> print entry_interface['price'].__name__
     price
+
+Associated with the interface through tags are automatically-generated
+'singular' and 'plural' names for the interface.
+
+    >>> from canonical.lazr.interfaces import LAZR_WEBSERVICE_NAME
+    >>> sorted(entry_interface.queryTaggedValue(LAZR_WEBSERVICE_NAME).items())
+    [('plural', 'books'), ('singular', 'book')]
 
 It's an error to use generate_entry_interface() on an interface that
 wasn't marked for export:
@@ -936,7 +943,7 @@ parameters accepted by the operation.
     >>> print_params(read_method_adapter_factory.params)
     text: TextLine
 
-The call() method calls the underlying method and return its result.
+The call() method calls the underlying method and returns its result.
 
     >>> class BookSetOnSteroids(BookSet):
     ...     implements(IBookSetOnSteroids)
@@ -955,10 +962,16 @@ The call() method calls the underlying method and return its result.
     ...     BookSetOnSteroids(), request)
     >>> verifyObject(IResourceGETOperation, read_method_adapter)
     True
+    >>> read_method_adapter.send_modification_event
+    False
 
     >>> read_method_adapter.context.result = []
+
+Since the method is declared as returning a list of objects, the
+return value is a dictionary containing a batched list.
+
     >>> print read_method_adapter.call(text='')
-    []
+    {"total_size": 0, "start": null, "entries": []}
 
 Methods exported as a write operations generates an adapter providing
 IResourcePOSTOperation.
@@ -992,6 +1005,8 @@ The adapter's params property also contains the available parameters
 
     >>> verifyObject(IResourcePOSTOperation, write_method_adapter)
     True
+    >>> write_method_adapter.send_modification_event
+    True
 
 The call() method invokes the exported method on the context object. In
 this case, the underlying parameters were set using call_with. The
@@ -1013,6 +1028,8 @@ IResourcePOSTOperation.
     ...     BookSetOnSteroids(), FakeRequest())
     >>> verifyObject(IResourcePOSTOperation, factory_method_adapter)
     True
+    >>> factory_method_adapter.send_modification_event
+    False
 
 The generated adapter class name is also POST_<interface>_<operation>.
 
@@ -1095,15 +1112,15 @@ the underlying content security checker will still apply.)
 
     >>> print debug_proxy(ProxyFactory(read_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: __call__
+        public: __call__, return_type, send_modification_event
 
     >>> print debug_proxy(ProxyFactory(write_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: __call__
+        public: __call__, send_modification_event
 
     >>> print debug_proxy(ProxyFactory(factory_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: __call__
+        public: __call__, send_modification_event
 
 
 == ZCML Registration ==
