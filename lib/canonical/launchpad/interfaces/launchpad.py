@@ -203,6 +203,8 @@ class IPrivateApplication(ILaunchpadApplication):
 
     branchdetails = Attribute("""Branch details end point.""")
 
+    branchfilesystem = Attribute("""The branch filesystem end point.""")
+
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
     bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")

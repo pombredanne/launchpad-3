@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = [
     'IBranchDetailsStorage',
     'IBranchDetailsStorageApplication',
+    'IBranchFileSystem',
+    'IBranchFileSystemApplication',
     ]
 
 from zope.interface import Interface
@@ -81,3 +83,22 @@ class IBranchDetailsStorage(Interface):
     ##         tuple.
     ##     :returns: True if the ScriptActivity record was successfully inserted.
     ##     """
+
+
+class IBranchFileSystemApplication(ILaunchpadApplication):
+    """Branch filesystem application root."""
+
+
+class IBranchFileSystem(Interface):
+    """An interface for dealing with hosted branches in Launchpad.
+
+    The code hosting service uses this to register branches, to
+    retrieve information about a user's branches, and to update their status.
+    """
+
+    def getBranchesForUser(personID):
+        """Return all branches owned by a particular user, grouped by product.
+
+        :returns: a list like::
+            [(product id, product name, [(branch id, branch name), ...]), ...]
+        """

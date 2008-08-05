@@ -5,11 +5,12 @@
 __metaclass__ = type
 __all__ = [
     'BranchDetailsStorageAPI',
+    'BranchFileSystemAPI',
     ]
 
 
 from canonical.launchpad.interfaces.codehosting import (
-    IBranchDetailsStorage)
+    IBranchDetailsStorage, IBranchFileSystem)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 from zope.interface import implements
@@ -22,4 +23,14 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
 
     def getBranchPullQueue(self, branch_type):
         """See `IBranchDetailsStorage`."""
+        return []
+
+
+class BranchFileSystemAPI(LaunchpadXMLRPCView):
+    """See `IBranchFileSystem`."""
+
+    implements(IBranchFileSystem)
+
+    def getBranchesForUser(self, personID):
+        """See `IBranchFileSystem`."""
         return []
