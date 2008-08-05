@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import email
 
 import pytz
-from storm.expr import And, Asc, Count, Desc, Not, Select, SQL
+from storm.expr import And, Asc, Desc, Not, Select
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
