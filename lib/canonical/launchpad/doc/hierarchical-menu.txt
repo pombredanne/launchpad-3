@@ -1,0 +1,83 @@
+= Hierarchical menus =
+
+The location bar aids users in navigating the depths of Launchpad.  It is
+built from a series of Breadcrumb objects after Zope's object traversal
+step.
+
+== Discovering breadcrumbs ==
+
+The Hierarchy class builds the breadcrumbs by looking at each object in
+the request.traversed_objects attribute.  If a traversed object can be
+adapted to IBreadcrumb, then it is added to the breadcrumbs list.
+
+    >>> from zope.component import getMultiAdapter, provideAdapter
+    >>> from canonical.launchpad.webapp.server import LaunchpadTestRequest
+    >>> from canonical.launchpad.browser.launchpad import Hierarchy
+
+    >>> request = LaunchpadTestRequest()
+    >>> context = object()
+    >>> hierarchy = getMultiAdapter((context, request), name='+hierarchy')
+
+First, we need a hierarchy of objects.
+
+    >>> from zope.interface import Interface, implements
+
+    >>> class ICookbook(Interface):
+    ...     """A cookbook for holding recipes."""
+
+    >>> class IRecipe(Interface):
+    ...     """A recipe in a cookbook."""
+
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+    >>> class BaseContent:
+    ...     implements(ICanonicalUrlData)
+    ...
+    ...     def __init__(self, name, parent):
+    ...         self.name = name
+    ...         self.path = name
+    ...         self.inside = parent
+    ...         self.rootsite = None
+
+    >>> class Root(BaseContent):
+    ...     """ The site root."""
+
+    >>> class Cookbook(BaseContent):
+    ...     implements(ICookbook)
+
+    >>> class Recipe(BaseContent):
+    ...     implements(IRecipe)
+
+Next, we add the objects to the request's list of traversed objects, so
+the hierarchy will discover them.
+
+    >>> root = Root('', None)
+    >>> cookbook = Cookbook('joy-of-cooking', root)
+    >>> recipe = Recipe('spam', cookbook)
+    >>> request.traversed_objects = [root, cookbook, recipe]
+
+The Hierarchy's list of breadcrumbs is empty since none of the objects
+have an IBreadcrumb adapter.
+
+    >>> hierarchy.items()
+    []
+
+Adding the adapters causes the Cookbook and Recipe objects to show up
+in the hierarchy.
+
+    >>> from canonical.launchpad.webapp.publisher import Breadcrumb
+
+    >>> def cookbook_to_breadcrumb(cookbook):
+    ...     return Breadcrumb(cookbook.name, canonical_url(cookbook))
+
+    >>> provideAdapter(cookbook_to_breadcrumb, [ICookbook], IBreadcrumb)
+
+    >>> hierarchy.items()
+    xxx
+
+
+== Rendering the list ==
+
+Each Breadcrumb object can display itself.
+
+XXX
