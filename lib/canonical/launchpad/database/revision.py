@@ -22,7 +22,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet,
+    EmailAddressStatus, IEmailAddressSet, IProduct, IProject,
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
     IRevisionSet)
 from canonical.launchpad.helpers import shortlist
@@ -258,4 +258,34 @@ class RevisionSet:
                 Select(BranchRevision.revisionID,
                        And(BranchRevision.branch == Branch.id,
                            Not(Branch.private)))))
+        return result_set.order_by(Desc(Revision.revision_date))
+
+    @staticmethod
+    def getPublicRevisionsForProject(project):
+        """See `IRevisionSet`."""
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.product import Product
+        from canonical.launchpad.database.branchrevision import BranchRevision
+
+        store = Store.of(project)
+
+        if IProduct.providedBy(project):
+            project_query = Branch.product == project
+        elif IProject.providedBy(project):
+            project_query = And(
+                Product.project == project,
+                Branch.product == Product.id)
+        else:
+            raise AssertionError(
+                "project must provide either IProduct or IProject")
+
+        result_set = store.find(
+            Revision,
+            Revision.revision_author == RevisionAuthor.id,
+            Revision.id.is_in(
+                Select(BranchRevision.revisionID,
+                       And(BranchRevision.branch == Branch.id,
+                           Not(Branch.private),
+                           project_query))))
         return result_set.order_by(Desc(Revision.revision_date))
