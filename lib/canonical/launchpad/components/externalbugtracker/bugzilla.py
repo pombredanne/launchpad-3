@@ -418,18 +418,18 @@ class BugzillaLPPlugin(Bugzilla):
             # IDs. We use the aliases dict to look up the correct ID for
             # a bug. This allows us to reference a bug by either ID or
             # alias.
-            if remote_bug['alias']:
+            if remote_bug['alias'] != '':
                 self.bug_aliases[remote_bug['alias']] = remote_bug['id']
 
     def getModifiedRemoteBugs(self, bug_ids, last_checked):
-        """Return the IDs of bugs that have changed since a given time.
-
-        See `IExternalBugTracker`.
-        """
+        """See `IExternalBugTracker`."""
         # We marshal last_checked into an xmlrpclib.DateTime since
         # xmlrpclib can't do so cleanly itself.
         changed_since = xmlrpclib.DateTime(last_checked.timetuple())
 
+        # Create the arguments that we're going to send to the remote
+        # server. We pass permissive=True to ensure that Bugzilla won't
+        # error if we ask for a bug that doesn't exist.
         request_args = {
             'ids': bug_ids,
             'changed_since': changed_since,
@@ -456,6 +456,8 @@ class BugzillaLPPlugin(Bugzilla):
                 bug_ids_to_retrieve.append(bug_id)
 
         # Next, grab the bugs we still need from the remote server.
+        # We pass permissive=True to ensure that Bugzilla won't error if
+        # we ask for a bug that doesn't exist.
         request_args = {
             'ids': bug_ids_to_retrieve,
             'permissive': True,
