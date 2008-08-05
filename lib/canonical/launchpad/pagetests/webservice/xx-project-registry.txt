@@ -19,11 +19,75 @@ Projects are available at their canonical URL on the API virtual host.
 
     >>> firefox = webservice.get('/beta/firefox').jsonBody()
     >>> pprint_entry(firefox)
+    date_created: u'2004-09-24T20:58:02.185708+00:00'
+    description: u'The Mozilla Firefox web browser'
+    display_name: u'Mozilla Firefox'
+    driver_link: None
+    homepage_url: None
     name: u'firefox'
-    project_group_link: u'http://.../beta/mozilla'
+    owner_link: u'http://api.launchpad.dev/beta/~name12'
+    project_group_link: u'http://api.launchpad.dev/beta/mozilla'
     resource_type_link: u'...'
-    self_link: u'http://.../beta/firefox'
+    self_link: u'http://api.launchpad.dev/beta/firefox'
+    summary: u'The Mozilla Firefox web browser'
+    title: u'Mozilla Firefox'
 
+    >>> from simplejson import dumps
+    >>> patch = {
+    ...     u'driver_link': u'http://api.launchpad.dev/beta/~sabdfl',
+    ...     u'homepage_url': u'http://sf.net/firefox',
+    ...     }
+    >>> response = webservice.patch(
+    ...     '/beta/firefox', 'application/json', dumps(patch))
+
+    >>> firefox = webservice.get('/beta/firefox').jsonBody()
+    >>> firefox['driver_link']
+    u'http://api.launchpad.dev/beta/~sabdfl'
+    >>> firefox['homepage_url']
+    u'http://sf.net/firefox'
+
+    >>> webservice.get(firefox['driver_link']).jsonBody()['self_link']
+    u'http://api.launchpad.dev/beta/~sabdfl'
+    >>> webservice.get(firefox['owner_link']).jsonBody()['self_link']
+    u'http://api.launchpad.dev/beta/~name12'
+
+== Project collection ==
+
+  >>> project_collection = webservice.get("/beta/projects").jsonBody()
+  >>> project_collection['resource_type_link']
+  u'http://api.launchpad.dev/beta/#projects'
+  >>> project_collection['total_size']
+  22
+  >>> project_collection['next_collection_link']
+  u'http://api.launchpad.dev/beta/projects?ws.start=5&ws.size=5'
+  >>> project_collection.get('prev_collection_link') is None
+  True
+
+  >>> from operator import itemgetter
+  >>> project_entries = sorted(
+  ...     project_collection['entries'], key=itemgetter('name'))
+  >>> len(project_entries)
+  5
+  >>> project_entries[0]['display_name']
+  u'Arch mirrors'
+  >>> project_entries[0]['self_link']
+  u'http://api.launchpad.dev/beta/arch-mirrors'
+  >>> project_entries[-1]['display_name']
+  u'Tomcat'
+
+You can get other pages of the collection by following links:
+
+  >>> result = webservice.get("/beta/projects?ws.start=5&ws.size=5")
+  >>> second_batch = result.jsonBody()
+  >>> second_batch['next_collection_link']
+  u'http://api.launchpad.dev/beta/projects?ws.start=10&ws.size=5'
+  >>> second_batch['prev_collection_link']
+  u'http://api.launchpad.dev/beta/projects?ws.start=0&ws.size=5'
+
+  >>> project_entries = sorted(
+  ...     second_batch['entries'], key=itemgetter('name'))
+  >>> project_entries[0]['name']
+  u'applets'
 
 == Project series entry ==
 

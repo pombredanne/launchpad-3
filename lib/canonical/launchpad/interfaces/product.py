@@ -45,7 +45,8 @@ from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.rest.declarations import (
-     export_as_webservice_entry, exported)
+    collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, exported)
 
 
 class LicenseStatus(DBEnumeratedType):
@@ -118,7 +119,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry('project', 'projects')
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
@@ -140,22 +141,24 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                 'preferences and decisions around bug tracking, translation '
                 'and security policy will apply to this project.')),
         exported_as='project_group')
-    owner = PublicPersonChoice(
-        title=_('Owner'),
-        required=True,
-        vocabulary='ValidOwner',
-        description=_("""Project owner, it can either a valid Person or Team
-            inside Launchpad context."""))
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'),
+            required=True,
+            vocabulary='ValidOwner',
+            description=_("""Project owner, it can either a valid Person
+                or Team inside Launchpad context.""")))
 
-    driver = PublicPersonChoice(
-        title=_("Driver"),
-        description=_(
-            "This person or team will be able to set feature goals for "
-            "and approve bug targeting or backporting for ANY major series "
-            "in this project. You might want to leave this blank and just "
-            "appoint a team for each specific series, rather than having "
-            "one project team that does it all."),
-        required=False, vocabulary='ValidPersonOrTeam')
+    driver = exported(
+        PublicPersonChoice(
+            title=_("Driver"),
+            description=_(
+                "This person or team will be able to set feature goals for "
+                "and approve bug targeting or backporting for ANY major "
+                "series in this project. You might want to leave this blank "
+                "and just appoint a team for each specific series, rather "
+                "than having one project team that does it all."),
+            required=False, vocabulary='ValidPersonOrTeam'))
 
     drivers = Attribute(
         "Presents the drivers of this project as a list. A list is "
@@ -169,35 +172,44 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                 "At least one lowercase letter or number, followed by "
                 "letters, dots, hyphens or plusses. "
                 "Keep this name short, as it is used in URLs.")))
-    displayname = TextLine(
-        title=_('Display Name'),
-        description=_("""The name of the project as it would appear in a
-            paragraph."""))
+    displayname = exported(
+        TextLine(
+            title=_('Display Name'),
+            description=_("""The name of the project as it would appear in a
+                paragraph.""")),
+        exported_as='display_name')
 
-    title = Title(
-        title=_('Title'),
-        description=_("""The project title. Should be just a few words."""))
+    title = exported(
+        Title(
+            title=_('Title'),
+            description=_("The project title. Should be just a few words.")))
 
-    summary = Summary(
-        title=_('Summary'),
-        description=_("""The summary should be a single short paragraph."""))
+    summary = exported(
+        Summary(
+            title=_('Summary'),
+            description=_("The summary should be a single short paragraph.")))
 
-    description = Description(
-        title=_('Description'),
-        required=False,
-        description=_("""Include information on how to get involved with
-            development. Don't repeat anything from the Summary."""))
+    description = exported(
+        Description(
+            title=_('Description'),
+            required=False,
+            description=_("""Include information on how to get involved with
+                development. Don't repeat anything from the Summary.""")))
 
-    datecreated = TextLine(
-        title=_('Date Created'),
-        description=_("""The date this project was created in Launchpad."""))
+    datecreated = exported(
+        TextLine(
+            title=_('Date Created'),
+            description=_("The date this project was created in Launchpad.")),
+        exported_as='date_created')
 
-    homepageurl = URIField(
-        title=_('Homepage URL'),
-        required=False,
-        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The project home page. Please include
-            the http://"""))
+    homepageurl = exported(
+        URIField(
+            title=_('Homepage URL'),
+            required=False,
+            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+            description=_("""The project home page. Please include
+                the http://""")),
+        exported_as="homepage_url")
 
     wikiurl = URIField(
         title=_('Wiki URL'),
@@ -431,6 +443,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
 class IProductSet(Interface):
     """The collection of products."""
+    export_as_webservice_collection(IProduct)
 
     title = Attribute("The set of Products registered in the Launchpad")
 
@@ -488,6 +501,7 @@ class IProductSet(Interface):
     def forReview():
         """Return an iterator over products that need to be reviewed."""
 
+    @collection_default_content()
     def search(text=None, soyuz=None,
                rosetta=None, malone=None,
                bazaar=None):
