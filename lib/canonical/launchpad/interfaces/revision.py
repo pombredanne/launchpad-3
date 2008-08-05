@@ -43,8 +43,9 @@ class IRevision(Interface):
         that has landed on the trunk branch.  A branch owned by the revision
         author is chosen over a branch not owned by the author.  A branch with
         the revision in the history is chosen over a branch that just has the
-        revision in the ancestry, and a branch with the revision earlier in
-        the history is chosen over one with a later history.
+        revision in the ancestry.
+
+        :return: A `Branch` or None if an appropriate branch cannot be found.
         """
 
 class IRevisionAuthor(Interface):

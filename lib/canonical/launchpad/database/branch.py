@@ -513,7 +513,7 @@ class Branch(SQLBase):
                           revision_id=None):
         """See `IBranch`."""
         params = (sequence, revision, revision_id)
-        if len(filter(lambda x: x, [p is not None for p in params])) != 1:
+        if len([p for p in params if p is not None]) != 1:
             raise AssertionError(
                 "One and only one of sequence, revision, or revision_id "
                 "should have a value.")

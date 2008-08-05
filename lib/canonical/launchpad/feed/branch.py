@@ -158,7 +158,7 @@ class PersonBranchFeed(BranchListingFeed):
 
 
 class RevisionFeedContentView(LaunchpadView):
-    """View for a bug feed contents."""
+    """View for a revision feed contents."""
 
     def __init__(self, context, request, feed):
         super(RevisionFeedContentView, self).__init__(context, request)
@@ -269,10 +269,9 @@ class PersonRevisionFeed(RevisionListingFeed):
             return 'Revisions by %s' % self.context.displayname
 
     def _getRawItems(self):
-        """See `RevisionFeedBase._getRawItems`.
+        """See `RevisionListingFeed._getRawItems`.
 
-        Return the branches for this context sorted by date_created in
-        descending order.
+        Return the public revisions by this person, or by people in this team.
         """
         query = getUtility(IRevisionSet).getPublicRevisionsForPerson(
             self.context)
