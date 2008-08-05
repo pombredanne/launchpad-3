@@ -1754,10 +1754,6 @@ class PersonSpecWorkloadView(LaunchpadView):
     batching with their individual specifications.
     """
 
-    def initialize(self):
-        assert IPerson.providedBy(self.context), (
-            'PersonSpecWorkloadView should be used only on an IPerson.')
-
     @cachedproperty
     def members(self):
         """Return a batch navigator for all members.
@@ -1778,10 +1774,6 @@ class PersonSpecWorkloadTableView(LaunchpadView):
     It shows the set of specifications with which this person has a role
     in a single table.
     """
-
-    def initialize(self):
-        assert IPerson.providedBy(self.context), (
-            'PersonSpecWorkloadTableView should be used only on an IPerson.')
 
     class PersonSpec:
         """One record from the workload list."""
