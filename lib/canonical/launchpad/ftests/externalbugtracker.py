@@ -578,6 +578,8 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
         # If a changed_since argument is specified, marshall it into a
         # datetime so that we can use it for comparisons.
+        # XXX 2008-08-05 gmb (bug 254999):
+        #     We can remove these lines once we upgrade to python 2.5.
         changed_since = arguments.get('changed_since')
         if changed_since is not None:
             changed_since_timetuple = time.strptime(

@@ -606,6 +606,8 @@ class BugzillaLPPlugin(Bugzilla):
 
         # Turn the time in the comment, which is an XML-RPC datetime
         # into something more useful to us.
+        # XXX 2008-08-05 gmb (bug 254999):
+        #     We can remove these lines once we upgrade to python 2.5.
         comment_timestamp = time.mktime(
             time.strptime(str(comment['time']), '%Y%m%dT%H:%M:%S'))
         comment_datetime = datetime.fromtimestamp(comment_timestamp)

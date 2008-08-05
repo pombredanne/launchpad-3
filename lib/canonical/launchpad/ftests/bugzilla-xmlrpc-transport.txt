@@ -262,13 +262,19 @@ returned.
 
     >>> from datetime import timedelta
     >>> changed_since = datetime.now() + timedelta(days=42)
+
+    >>> # XXX 2008-08-05 gmb (bug 254999):
+    >>> #     We can remove this once we upgrade to python 2.5.
     >>> changed_since = DateTime(changed_since.timetuple())
-    >>> return_value = server.Launchpad.get_bugs(
-    ...     {'ids': [1, 2], 'changed_since': changed_since,
-    ...      'permissive': True})
+
+    >>> return_value = server.Launchpad.get_bugs({
+    ...     'ids': [1, 2],
+    ...     'changed_since': changed_since,
+    ...     'permissive': True,
+    ...     })
 
     >>> bug_dicts = return_value['bugs']
-    >>> print len(bug_dicts)
+    >>> len(bug_dicts)
     0
 
 
