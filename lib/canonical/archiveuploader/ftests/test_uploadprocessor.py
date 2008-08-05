@@ -549,11 +549,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
 
-        contents = [
-            "Subject: foocomm_1.0-1_i386.changes rejected",
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message,
             "Attempt to upload binaries specifying build 31, "
-            "where they don't fit."]
-        self.assertEmail(contents)
+            "where they don't fit.")
 
         # Reset upload queue directory for a new upload and the
         # uploadprocessor buildid option.
@@ -750,9 +749,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.processUpload(uploadprocessor, upload_dir)
 
         # Check it is accepted and the section is converted to misc.
-        contents = [
-            "Subject: [ubuntu/breezy] bar 1.0-1 (New)"]
-        self.assertEmail(contents=contents, recipients=[])
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.NEW)
 
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.NEW, name="bar",
