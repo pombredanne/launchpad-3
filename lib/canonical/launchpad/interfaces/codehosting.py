@@ -142,6 +142,9 @@ class IBranchFileSystem(Interface):
             user represented by 'loginID' can write to the branch, and 'r' if
             they cannot. If the branch doesn't exist, return ('', '').
         """
+        # XXX: JonathanLange 2008-08-05 spec=package-branches: This
+        # method will need to change to support source package
+        # branches.
 
     def getDefaultStackedOnBranch(login_id, product_name):
         """Return the URL for the default stacked-on branch of a product.
@@ -152,6 +155,9 @@ class IBranchFileSystem(Interface):
         :return: An absolute path to a branch on Launchpad. If there is no
             default stacked-on branch configured, return the empty string.
         """
+        # XXX: JonathanLange 2008-08-05 spec=package-branches: This
+        # method will need to change to support source package
+        # branches.
 
     def createBranch(loginID, personName, productName, branchName):
         """Register a new hosted branch in Launchpad.
