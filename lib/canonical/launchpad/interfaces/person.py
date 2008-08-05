@@ -1743,6 +1743,7 @@ class IPersonSet(Interface):
 
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
+    @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
