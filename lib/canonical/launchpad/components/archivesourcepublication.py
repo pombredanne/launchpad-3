@@ -25,9 +25,9 @@ from canonical.lazr import decorates
 
 
 class ArchiveSourcePackageRelease:
-    """Decorates `SourcePackageRelease`
+    """Decorated `SourcePackageRelease` with cached 'package_diffs'.
 
-    It recieves the related `PackageDiff` records, so they don't need
+    It receives the related `PackageDiff` records, so they don't need
     to be recalculated.
     """
     decorates(ISourcePackageRelease)

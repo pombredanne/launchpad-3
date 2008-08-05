@@ -785,7 +785,7 @@ getPackageDiffsForSources() is also provided by `IPublishingSet`, it
 allows callsites to retrieve all related `PackageDiff` records based
 on a collection of source publications.
 
-The sampledata does not contain any PackageDiff, thus nothing is
+The sampledata does not contain any `PackageDiff`s, thus nothing is
 returned for the Celso's sources.
 
     >>> cprov_diffs = publishing_set.getPackageDiffsForSources(
@@ -815,8 +815,8 @@ For testing purposes we will create a `PackageDiff` for Celso's
     >>> print iceweasel_diff.title
     0.1-1 (in Ubuntu) to 1.0
 
-getPackageDiffsForSources() only returns fulfilled (diffs), which is
-not the case of the just created `PackageDiff`s.
+getPackageDiffsForSources() only returns fulfilled `PackageDiff`s, which is
+not the case of the just created ones.
 
     >>> cprov_diffs.count()
     0
