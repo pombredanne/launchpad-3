@@ -56,7 +56,6 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, StandardLaunchpadFacets, stepthrough, structured)
-from canonical.launchpad.helpers import shortlist
 
 
 class ProjectNavigation(Navigation):
