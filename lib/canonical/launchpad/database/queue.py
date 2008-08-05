@@ -565,7 +565,7 @@ class PackageUpload(SQLBase):
             body = message.template % message.__dict__
 
             # Weed out duplicate name entries.
-            names = ', '.join(set(self.displayname.split()))
+            names = ', '.join(set(self.displayname.split(', ')))
 
             # Construct the suite name according to Launchpad/Soyuz
             # convention.
