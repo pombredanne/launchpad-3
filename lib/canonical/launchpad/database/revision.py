@@ -293,7 +293,8 @@ class RevisionSet:
             Revision,
             Revision.revision_author == RevisionAuthor.id,
             person_query,
-            Revision.id == BranchRevision.revisionID,
-            BranchRevision.branchID == Branch.id,
-            Not(Branch.private))
+            Revision.id.is_in(
+                Select(BranchRevision.revisionID,
+                       And(BranchRevision.branch == Branch.id,
+                           Not(Branch.private)))))
         return result_set.order_by(Desc(Revision.revision_date))

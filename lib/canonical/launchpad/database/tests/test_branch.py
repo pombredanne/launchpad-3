@@ -62,7 +62,7 @@ class TestCodeImport(TestCase):
 
 
 class TestBranchGetRevision(TestCaseWithFactory):
-    """Test basic properties about Launchpad database branches."""
+    """Make sure that `Branch.getBranchRevision` works as expected."""
 
     layer = LaunchpadFunctionalLayer
 

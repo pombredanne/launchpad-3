@@ -4,7 +4,6 @@ Atom feeds produce XML not HTML.  Therefore we must parse the output as XML
 using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
 
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
-    >>> from BeautifulSoup import SoupStrainer
     >>> from canonical.launchpad.ftests.feeds_helper import (
     ...     parse_ids, parse_links, validate_feed)
 
