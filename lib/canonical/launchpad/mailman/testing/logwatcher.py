@@ -46,7 +46,7 @@ class LogWatcher:
         self._log_path = os.path.join(LOG_DIR, self.FILENAME)
         log_file = open(self._log_path, 'a+')
         try:
-            print >> log_file, 'Watching'
+            print >> log_file, datetime.datetime.now(), 'LogWatcher created'
         finally:
             log_file.close()
         self._log_file = open(self._log_path)

@@ -20,7 +20,7 @@ from canonical.launchpad.mailman.config import configure_prefix
 from canonical.launchpad.mailman.monkeypatches import monkey_patch
 
 
-def mailmanctl(command, quiet=False, config=None):
+def mailmanctl(command, quiet=False, config=None, *additional_arguments):
     """Run mailmanctl command.
 
     :param command: the command to use.
@@ -28,13 +28,17 @@ def mailmanctl(command, quiet=False, config=None):
         happens.
     :param config: The CanonicalConfig object to take configuration from.
         Defaults to the global one.
+    :param additional_arguments: additional command arguments to pass to the
+        mailmanctl program.
     :raises RuntimeError: when quiet is True and the command failed.
     """
     if config is None:
         config = canonical.config.config
     mailman_path = configure_prefix(config.mailman.build_prefix)
     mailman_bin  = os.path.join(mailman_path, 'bin')
-    args = ['./mailmanctl', command]
+    args = ['./mailmanctl']
+    args.extend(additional_arguments)
+    args.append(command)
     if quiet:
         stdout = subprocess.PIPE
         stderr = subprocess.STDOUT
@@ -57,7 +61,7 @@ def mailmanctl(command, quiet=False, config=None):
 
 def stop_mailman(quiet=False, config=None):
     """Alias for mailmanctl('stop')."""
-    mailmanctl('stop', quiet=quiet, config=config)
+    mailmanctl('stop', quiet, config)
     return #punt for now
     # Further, if the Mailman master pid file was not removed, then the
     # master watcher, and probably one of its queue runners, did not die.
@@ -117,4 +121,7 @@ def start_mailman(quiet=False, config=None):
 
     # Monkey-patch the installed Mailman 2.1 tree.
     monkey_patch(mailman_path, config)
-    mailmanctl('start', quiet=quiet, config=config)
+    # Start Mailman.  Pass in the -s flag so that any stale master pid files
+    # will get deleted.  "Stale" means the process that owned the pid no
+    # longer exists, so this can't hurt anything.
+    mailmanctl('start', quiet, config, '-s')

@@ -161,6 +161,7 @@ class XMLRPCRunner(Runner):
                         if list_name <> mm_cfg.MAILMAN_SITE_LIST]
         try:
             info = self._proxy.getMembershipInformation(active_lists)
+            syslog('xmlrpc', 'membership info: %s', info)
         except (xmlrpclib.ProtocolError, socket.error), error:
             syslog('xmlrpc', 'Cannot talk to Launchpad: %s', error)
             return
@@ -168,27 +169,40 @@ class XMLRPCRunner(Runner):
             syslog('xmlrpc', 'Launchpad exception: %s', error)
             return
         for list_name in info:
-            mlist = MailList(list_name)
+            # Start with an unlocked list.
+            mlist = MailList(list_name, lock=False)
+            # Create a mapping of email address to the member's real name,
+            # flags, and status.  Note that flags is currently unused.
+            member_map = dict((address, (realname, flags, status))
+                              for address, realname, flags, status
+                              in info[list_name])
+            # Calculate a few membership sets: one is the set of new members
+            # who need to be added to the mailing list. Another is the set of
+            # old members who need to be removed from the mailing list.  A
+            # third is the set of members who are getting their settings
+            # modified.
+            current_members = set(
+                mlist.getMemberCPAddresses(mlist.getMembers()))
+            future_members = set(member_map)
+            adds = future_members - current_members
+            deletes = current_members - future_members
+            updates = current_members & future_members
+            # If there's nothing to do, just skip this list.
+            if not adds and not deletes and not updates:
+                # Why did we get here?  This list should not have shown up in
+                # getMembershipInformation().
+                syslog('xmlrpc',
+                       'Strange subscription information for list: %s',
+                       list_name)
+                continue
+            # A little extra debugging.
+            if adds or deletes:
+                syslog('xmlrpc', 'adds: %s', adds)
+                syslog('xmlrpc', 'deletes: %s', deletes)
+                syslog('xmlrpc', 'Membership changes for: %s', list_name)
+            # Lock the list and make the modifications.
+            mlist.Lock()
             try:
-                # Create a mapping of email address to the member's real name,
-                # flags, and status.  Note that flags is currently unused.
-                member_map = dict((address, (realname, flags, status))
-                                  for address, realname, flags, status
-                                  in info[list_name])
-                # Start by calculating two sets: one is the set of new members
-                # who need to be added to the mailing list, and the other is
-                # the set of old members who need to be removed from the
-                # mailing list.
-                current_members = set(
-                    mlist.getMemberCPAddresses(mlist.getMembers()))
-                future_members = set(member_map)
-                adds = future_members - current_members
-                deletes = current_members - future_members
-                updates = current_members & future_members
-                if adds or deletes:
-                    syslog('xmlrpc', 'adds: %s', adds)
-                    syslog('xmlrpc', 'deletes: %s', deletes)
-                    syslog('xmlrpc', 'Membership changes for: %s', list_name)
                 # Handle additions first.
                 for address in adds:
                     realname, flags, status = member_map[address]
