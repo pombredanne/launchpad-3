@@ -42,6 +42,6 @@ This method can be accessed over XMLRPC.
     >>> from canonical.functional import XMLRPCTestTransport
     >>> branchdetails = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc-private.launchpad.dev:8087/branchfilesystem',
-    ...     transport=XMLRPCTetTransport())
+    ...     transport=XMLRPCTestTransport())
     >>> branchdetails.getBranchesForUser('whoever')
     []
