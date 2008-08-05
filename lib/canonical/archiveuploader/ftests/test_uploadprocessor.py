@@ -751,7 +751,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check it is accepted and the section is converted to misc.
         contents = [
-            "Subject: [ubuntu/breezy-RELEASE] bar 1.0-1 (New)"]
+            "Subject: [ubuntu/breezy] bar 1.0-1 (New)"]
         self.assertEmail(contents=contents, recipients=[])
 
         queue_items = self.breezy.getQueueItems(
