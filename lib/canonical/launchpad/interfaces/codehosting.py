@@ -128,13 +128,6 @@ class IBranchFileSystem(Interface):
     information about a user's branches, and to update their status.
     """
 
-    ## def getBranchesForUser(personID):
-    ##     """Return all branches owned by a particular user, grouped by product.
-
-    ##     :returns: a list like::
-    ##         [(product id, product name, [(branch id, branch name), ...]), ...]
-    ##     """
-
     def getBranchInformation(loginID, personName, productName, branchName):
         """Return the database ID and permissions for a branch.
 
