@@ -11,7 +11,7 @@ import random
 import time
 import unittest
 
-from bzrlib.revision import NULL_REVISION
+from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
 from bzrlib.uncommit import uncommit
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import register_transport, unregister_transport
@@ -31,23 +31,6 @@ from canonical.codehosting.scanner.bzrsync import (
     BzrSync, get_diff, get_revision_message)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
-
-
-class FakeRevision:
-    """Fake Bazaar `Revision` object used in tests."""
-
-    def __init__(self, revision_id, parent_ids, committer, message, timestamp,
-                 timezone, properties):
-        self.revision_id = revision_id
-        self.parent_ids = parent_ids
-        self.committer = committer
-        self.message = message
-        self.timestamp = timestamp
-        self.timezone = timezone
-        self.properties = properties
-
-    def get_apparent_author(self):
-        return self.committer
 
 
 class BzrSyncTestCase(TestCaseWithTransport):
@@ -521,7 +504,7 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
         old_date = datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC)
 
         # Fake revision with negative timestamp.
-        fake_rev = FakeRevision(
+        fake_rev = BzrRevision(
             revision_id='rev42', parent_ids=['rev1', 'rev2'],
             committer=self.AUTHOR, message=self.LOG, timestamp=old_timestamp,
             timezone=0, properties={})
@@ -545,28 +528,25 @@ class TestBzrSyncModified(BzrSyncTestCase):
         BzrSyncTestCase.setUp(self)
         self.bzrsync = self.makeBzrSync(self.db_branch)
 
-    def makeFakeRevision(self, revision_id, parent_ids):
+    def makeRevision(self, parent_ids):
         """Make a fake Bazaar revision for testing `syncOneRevision`."""
-        return FakeRevision(
-            revision_id=revision_id, parent_ids=parent_ids,
+        return BzrRevision(
+            revision_id=self.factory.getUniqueString(), parent_ids=parent_ids,
             committer=self.AUTHOR, message=self.LOG, timestamp=1000000000.0,
             timezone=0, properties={})
 
-    def syncFakeRevision(self, revision):
-        """Synchronize the fake revision."""
-        return self.bzrsync.syncOneRevision(
-            revision, {revision.revision_id: None})
-
-    def makeSyncedRevision(self, parent_ids):
-        """Return a fake revison that has already been synced.
+    def makeSyncedRevision(self):
+        """Return a fake revision that has already been synced.
 
         :param parent_ids: The list of parent IDs for the revision.
         """
         revision_id = self.factory.getUniqueString()
-        fake_revision = self.makeFakeRevision(
-            revision_id, parent_ids=parent_ids)
+        parent_ids = [
+            self.factory.getUniqueString(), self.factory.getUniqueString()]
+        fake_revision = self.makeRevision(parent_ids)
         counts = self.getCounts()
-        self.syncFakeRevision(fake_revision)
+        self.bzrsync.syncOneRevision(
+            fake_revision, {fake_revision.revision_id: None})
         self.assertCounts(
             counts, new_revisions=1, new_numbers=0,
             new_parents=len(parent_ids), new_authors=0)
@@ -576,9 +556,10 @@ class TestBzrSyncModified(BzrSyncTestCase):
         # Synchronise the fake revision:
         # Verify that synchronising the revision twice passes and does
         # not create a second revision object:
-        fake_revision = self.makeSyncedRevision(['rev1', 'rev2'])
+        fake_revision = self.makeSyncedRevision()
         counts = self.getCounts()
-        self.syncFakeRevision(fake_revision)
+        self.bzrsync.syncOneRevision(
+            fake_revision, {fake_revision.revision_id: None})
         self.assertCounts(
             counts, new_revisions=0, new_numbers=0,
             new_parents=0, new_authors=0)
