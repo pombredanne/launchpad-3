@@ -62,6 +62,18 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    facet="branches"
+    permission="launchpad.View">
+    <browser:page
+        name="+heading"
+        template="../templates/branchmergeproposal-heading.pt" />
+    <browser:page
+        name="+heading-links"
+        template="../templates/branchmergeproposal-heading-links.pt" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
     class="canonical.launchpad.browser.BranchMergeProposalView"
     facet="branches"
     permission="launchpad.View">
@@ -79,6 +91,14 @@
       name="+votes"
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       class="canonical.launchpad.browser.BranchMergeProposalVoteView"
+      facet="branches"
+      permission="launchpad.View"
+      template="../templates/branchmergeproposal-votes.pt" />
+
+  <browser:page
+      name="+votes-with-links"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalVoteLinkView"
       facet="branches"
       permission="launchpad.View"
       template="../templates/branchmergeproposal-votes.pt" />
@@ -173,6 +193,22 @@
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branchmergeproposal-edit.pt" />
+
+  <browser:page
+    name="+link-summary"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeCandidateView"
+    facet="branches"
+    permission="zope.Public"
+    template="../templates/branch-merge-link-summary.pt" />
+
+  <browser:page
+      name="+pagelet-subscribers"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalSubscribersView"
+      facet="branches"
+      permission="launchpad.View"
+      template="../templates/branchmergeproposal-pagelet-subscribers.pt" />
 
   <browser:url
       for="canonical.launchpad.interfaces.IBranchMergeProposal"

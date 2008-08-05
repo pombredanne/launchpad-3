@@ -40,14 +40,15 @@
         alt=""
         tal:attributes="src view/bugtask_icon"
       />
-      <a
-        tal:attributes="href context/target/fmt:url"
+      <a tal:attributes="
+            href context/target/fmt:url;
+            title view/target_link_title"
         tal:content="context/bugtargetdisplayname"
       />
     </td>
 
     <tal:conjoined-task condition="is_conjoined_slave">
-    <td colspan="4" style="vertical-align: middle">
+    <td colspan="5" style="vertical-align: middle">
       <span class="discreet lesser" style="font-size: 100%">
         Status tracked in
         <tal:master tal:replace="view/getConjoinedMasterName">
@@ -100,6 +101,12 @@
         </tal:has_assignee>
       </tal:has_no_watch>
     </td>
+
+      <tal:milestoned condition="context/milestone">
+        <td tal:define="expander_link_text context/milestone/name"
+        ><metal:expander metal:use-macro="template/macros/expander" /></td>
+      </tal:milestoned>
+      <td tal:condition="not:context/milestone"></td>
     </tal:not-conjoined-task>
   </tr>
   <tal:form condition="view/displayEditForm">
@@ -108,7 +115,7 @@
       tal:condition="expandable"
       style="display: none"
     >
-     <td colspan="6" tal:content="structure view/edit_view" />
+     <td colspan="7" tal:content="structure view/edit_view" />
     </tr>
   </tal:form>
 </tal:bugtask>

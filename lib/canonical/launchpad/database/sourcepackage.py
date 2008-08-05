@@ -190,7 +190,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             order_by = '-datepublished'
 
         return SourcePackagePublishingHistory.select(
-            query, orderBy=order_by, clauseTables=['SourcePackageRelease'])
+            query, orderBy=order_by, clauseTables=['SourcePackageRelease'],
+            prejoinClauseTables=['SourcePackageRelease'])
 
     def _getFirstPublishingHistory(self, version=None, include_status=None,
                                    exclude_status=None, order_by=None):
@@ -205,11 +206,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def currentrelease(self):
-        latest_package = self._getFirstPublishingHistory()
-        if latest_package:
-            return DistroSeriesSourcePackageRelease(
-                    self.distroseries, latest_package.sourcepackagerelease)
-        return None
+        releases = self.distroseries.getCurrentSourceReleases(
+            [self.sourcepackagename])
+        return releases.get(self)
 
     def __getitem__(self, version):
         """See `ISourcePackage`."""
@@ -421,7 +420,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs
-        # targetted to be fixed in a specific distroseries + sourcepackage.
+        # targeted to be fixed in a specific distroseries + sourcepackage.
         raise NotImplementedError(
             "A new bug cannot be filed directly on a source package in a "
             "specific distribution series, because series are meant for "

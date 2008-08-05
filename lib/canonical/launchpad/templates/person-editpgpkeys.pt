@@ -12,24 +12,18 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>OpenPGP keys</h1> 
-    </metal:heading>
-
-  <metal:leftportlets fill-slot="portlets_two">
-  </metal:leftportlets>
-
   <div metal:fill-slot="main">
+    <h1>Change your OpenPGP keys</h1>
 
-    <p tal:condition="view/error_message" 
+    <p tal:condition="view/error_message"
        tal:content="structure view/error_message" class="error message"
       >Error message.</p>
 
-    <p tal:condition="view/info_message" 
+    <p tal:condition="view/info_message"
        tal:content="structure view/info_message" class="informational message"
       >Informational message.</p>
 
@@ -59,7 +53,7 @@
         </li>
 
         <li>Have you published your key to a public key
-        server? You can do that by by entering in a terminal: 
+        server? You can do that by by entering in a terminal:
         <blockquote>
         <kbd>gpg --keyserver keyserver.ubuntu.com --send-keys</kbd>
         </blockquote>
@@ -120,7 +114,7 @@
       and to build and upload packages using <abbr>Soyuz</abbr>.
     </p>
 
-    <form tal:condition="context/gpgkeys/count" 
+    <form tal:condition="context/gpgkeys/count"
           name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="deactivate_gpg" />
 
@@ -144,7 +138,7 @@
 
     </form>
 
-    <form tal:condition="context/pendinggpgkeys" name="gpg_actions" 
+    <form tal:condition="context/pendinggpgkeys" name="gpg_actions"
           action="" method="POST">
       <input type="hidden" name="action" value="remove_gpgtoken" />
 

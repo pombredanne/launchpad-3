@@ -46,6 +46,34 @@ class SubsystemOnlySession(session.SSHSession, object):
         # the base class of SSHSession.
         channel.SSHChannel.loseConnection(self)
 
+    def stopWriting(self):
+        """See `session.SSHSession.stopWriting`.
+
+        When the client can't keep up with us, we ask the child process to
+        stop giving us data.
+        """
+        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
+        # self.client.transport is entirely paranoia inspired by the comment
+        # in `loseConnection` above.  It would be good to know if and why it
+        # is necessary.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.pauseProducing()
+
+    def startWriting(self):
+        """See `session.SSHSession.startWriting`.
+
+        The client is ready for data again, so ask the child to start
+        producing data again.
+        """
+        # XXX: MichaelHudson 2008-06-27: Being cagey about whether
+        # self.client.transport is entirely paranoia inspired by the comment
+        # in `loseConnection` above.  It would be good to know if and why it
+        # is necessary.
+        transport = getattr(self.client, 'transport', None)
+        if transport is not None:
+            transport.resumeProducing()
+
 
 class LaunchpadAvatar(avatar.ConchUser):
     """An account on the SSH server, corresponding to a Launchpad person.

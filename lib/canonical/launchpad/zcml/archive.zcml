@@ -15,7 +15,7 @@
     <require
       permission="launchpad.Admin"
       set_attributes="authorized_size buildd_secret distribution enabled
-                      private require_virtualized"
+                      private name require_virtualized"
       />
   </content>
 
@@ -23,6 +23,12 @@
       for="canonical.launchpad.interfaces.IArchive"
       provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
       factory="canonical.launchpad.browser.archive_to_structuralheading"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IArchive"
+      provides="canonical.launchpad.interfaces.IPerson"
+      factory="canonical.launchpad.browser.archive_to_person"
       />
 
   <adapter
@@ -55,9 +61,9 @@
 
   <browser:page
    for="*"
-   name="+form-macros"
+   name="+macros"
    permission="zope.Public"
-   template="../templates/archive-form-macros.pt"
+   template="../templates/archive-macros.pt"
    />
 
   <browser:pages
@@ -88,6 +94,10 @@
     <browser:page
       name="+builds-list"
       template="../templates/builds-list.pt"
+      />
+    <browser:page
+      name="+portlet-privacy"
+      template="../templates/archive-portlet-privacy.pt"
       />
   </browser:pages>
 

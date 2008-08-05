@@ -20,8 +20,8 @@ from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
-    ISourcePackagePublishingHistory, PackagePublishingPocket,
-    PackagePublishingStatus)
+    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
+    PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.ftpmasterbase import SoyuzScriptError
 from canonical.launchpad.scripts.packagecopier import (
@@ -226,6 +226,70 @@ class TestCopyPackage(unittest.TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 5)
 
+    def testCopyAncestryLookup(self):
+        """Check the ancestry lookup used in copy-package.
+
+        This test case exercises the 'ancestry lookup' mechanism used to
+        verify if the copy candidate version is higher than the currently
+        published version of the same source/binary in the destination
+        context.
+
+        We emulate a conflict with a pre-existing version of 'firefox-3.0'
+        in hardy-updates, a version of 'firefox' present in hardy and a copy
+        copy candidate 'firefox' from hardy-security.
+
+        As described in bug #245416, the ancestry lookup was erroneously
+        considering the 'firefox-3.0' as an ancestor to the 'firefox' copy
+        candidate. It was caused because the lookup was not restricted to
+        'exact_match' names. See `scripts/packagecopier.py`.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
+
+        # Create the described publishing scenario.
+        ancestry_source = test_publisher.getPubSource(
+            sourcename='firefox', version='1.0',
+            archive=ubuntu.main_archive, distroseries=hoary,
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        noise_source = test_publisher.getPubSource(
+            sourcename='firefox-3.0', version='1.2',
+            archive=ubuntu.main_archive, distroseries=hoary,
+            pocket=PackagePublishingPocket.UPDATES,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        candidate_source = test_publisher.getPubSource(
+            sourcename='firefox', version='1.1',
+            archive=ubuntu.main_archive, distroseries=hoary,
+            pocket=PackagePublishingPocket.SECURITY,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Perform the copy.
+        copy_helper = self.getCopier(
+            sourcename='firefox', include_binaries=False,
+            from_suite='hoary-security', to_suite='hoary-updates')
+        copied = copy_helper.mainTask()
+
+        # Check if the copy was performed as expected.
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 1)
+
+        # Verify the resulting publishing scenario.
+        [updates, security,
+         release] = ubuntu.main_archive.getPublishedSources(
+            name='firefox', exact_match=True)
+
+        # Context publications remain the same.
+        self.assertEqual(release, ancestry_source)
+        self.assertEqual(security, candidate_source)
+
+        # The copied source is published in the 'updates' pocket as expected.
+        self.assertEqual(updates.displayname, 'firefox 1.1 in hoary')
+        self.assertEqual(updates.pocket, PackagePublishingPocket.UPDATES)
+        self.assertEqual(len(updates.getBuilds()), 1)
+
     def testCannotCopyTwice(self):
         """When invoked twice, copy package doesn't re-copy publications.
 
@@ -315,13 +379,13 @@ class TestCopyPackage(unittest.TestCase):
 
         [copy] = copied
         self.assertEqual(copy.displayname, 'foo 1.0 in hoary')
-        self.assertEqual(copy.getPublishedBinaries().count(), 0)
-        self.assertEqual(copy.getBuilds().count(), 1)
+        self.assertEqual(len(copy.getPublishedBinaries()), 0)
+        self.assertEqual(len(copy.getBuilds()), 1)
 
     def testCopySourceAndBinariesFromPPA(self):
         """Check the copy operation from PPA to PRIMARY Archive.
 
-        Source and binaries can get copied from PPA to the PRIMARY archive.
+        Source and binaries can be copied from PPA to the PRIMARY archive.
 
         This action is typically used to copy invariant/harmless packages
         built in PPA context, as language-packs.
@@ -355,8 +419,8 @@ class TestCopyPackage(unittest.TestCase):
         [copied_source] = ubuntu.main_archive.getPublishedSources(
             name='boing')
         self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
-        self.assertEqual(copied_source.getPublishedBinaries().count(), 2)
-        self.assertEqual(copied_source.getBuilds().count(), 0)
+        self.assertEqual(len(copied_source.getPublishedBinaries()), 2)
+        self.assertEqual(len(copied_source.getBuilds()), 0)
 
     def testCopyAcrossPPAs(self):
         """Check the copy operation across PPAs.
@@ -515,26 +579,6 @@ class TestCopyPackage(unittest.TestCase):
             "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
 
-    def testBinaryCopyFromPpaToPrimaryWorks(self):
-        """Check whether copying binaries from PPA to PRIMARY archive works.
-        """
-        copy_helper = self.getCopier(
-            sourcename='iceweasel', from_ppa='cprov',
-            from_suite='warty', to_suite='hoary')
-        copied = copy_helper.mainTask()
-
-        self.assertEqual(
-            str(copy_helper.location),
-            'cprov: warty-RELEASE')
-        self.assertEqual(
-            str(copy_helper.destination),
-            'Primary Archive for Ubuntu Linux: hoary-RELEASE')
-
-        # 'iceweasel' has only one binary built for it
-        # The source and the binary got copied.
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 2)
-
     def testUnembargoing(self):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
         # Set up a private PPA.
@@ -553,16 +597,41 @@ class TestCopyPackage(unittest.TestCase):
             archive=cprov.archive, version='1.1',
             distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
+        other_source = test_publisher.getPubSource(
+            archive=cprov.archive, version='1.1',
+            sourcename="sourcefordiff", distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
+        test_publisher.addFakeChroots(warty)
         ppa_binaries = test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
 
-        # Also create a PackageUpload item with a fake changesfile.
+        # Give the new source a private package diff.
+        sourcepackagerelease = ppa_source.sourcepackagerelease
+        diff_file = test_publisher.addMockFile("diff_file", restricted=True)
+        package_diff = sourcepackagerelease.requestDiffTo(
+            cprov, other_source.sourcepackagerelease)
+        package_diff.diff_content = diff_file
+
+        # Also create a PackageUpload item with a fake changesfile,
+        # one for the source and one for the builds.
         ppa_queue_item = warty.createQueueEntry(
             pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
             changesfilename='foo_source.changes', changesfilecontent='x')
         ppa_queue_item.addSource(ppa_source.sourcepackagerelease)
         ppa_queue_item.setDone()
+        binary_queue_item = warty.createQueueEntry(
+            pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
+            changesfilename="foo_binary.changes", changesfilecontent='x')
+
+        # Prepare a *restricted* buildlog file for the Build instances.
+        fake_buildlog = test_publisher.addMockFile(
+            'foo_source.buildlog', restricted=True)
+
+        for build in ppa_source.getBuilds():
+            build.buildlog = fake_buildlog
+            binary_queue_item.addBuild(build)
+        binary_queue_item.setDone()
 
         # Create ancestry environment in the primary archive, so we can
         # test unembargoed overrides.
@@ -623,6 +692,17 @@ class TestCopyPackage(unittest.TestCase):
                 queue = published.sourcepackagerelease.getQueueRecord(
                     distroseries=published.distroseries)
                 self.assertFalse(queue.changesfile.restricted)
+                # Check the source's package diff.
+                diffs = published.sourcepackagerelease.package_diffs
+                for diff in diffs:
+                    self.assertFalse(diffs[0].diff_content.restricted)
+            # Check the binary changesfile and the buildlog.
+            if IBinaryPackagePublishingHistory.providedBy(published):
+                package = published.binarypackagerelease
+                changesfile = package.build.changesfile
+                self.assertFalse(changesfile.restricted)
+                buildlog = package.build.buildlog
+                self.assertFalse(buildlog.restricted)
 
 
 def test_suite():

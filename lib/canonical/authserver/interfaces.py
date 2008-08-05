@@ -17,6 +17,7 @@ __all__ = [
     'IHostedBranchStorage',
     'IUserDetailsStorage',
     'IUserDetailsStorageV2',
+    'LAUNCHPAD_SERVICES',
     'NOT_FOUND_FAULT_CODE',
     'PERMISSION_DENIED_FAULT_CODE',
     'READ_ONLY',
@@ -25,6 +26,16 @@ __all__ = [
 
 
 from zope.interface import Interface
+from canonical.launchpad.validators.name import valid_name
+
+
+# When this is provided as a login ID to getBranchInformation, the method
+# bypasses the normal security checks and returns the branch ID and the
+# READ_ONLY permission bit. This allows Launchpad services like the puller and
+# branch scanner to access private branches.
+LAUNCHPAD_SERVICES = '+launchpad-services'
+assert not valid_name(LAUNCHPAD_SERVICES), (
+    "%r should *not* be a valid name." % (LAUNCHPAD_SERVICES,))
 
 
 READ_ONLY = 'r'
@@ -168,6 +179,16 @@ class IHostedBranchStorage(Interface):
             they cannot. If the branch doesn't exist, return ('', '').
         """
 
+    def getDefaultStackedOnBranch(login_id, product_name):
+        """Return the URL for the default stacked-on branch of a product.
+
+        :param login_id: The login ID for the person asking for the branch
+            information. This is used for branch privacy checks.
+        :param product_name: The name of a `Product`.
+        :return: An absolute path to a branch on Launchpad. If there is no
+            default stacked-on branch configured, return the empty string.
+        """
+
     def fetchProductID(productName):
         """Return the database ID for a product name.
 
@@ -220,8 +241,8 @@ class IBranchDetailsStorage(Interface):
         :raise UnknownBranchTypeError: if the branch type is unrecognized.
 
         :returns: a list of (branch_id, pull_url, unique_name) triples, where
-        unique_name is owner_name/product_name/branch_name, and product_name is
-        '+junk' if there is no product associated with the branch.
+        unique_name is ~owner_name/product_name/branch_name, and product_name
+        is '+junk' if there is no product associated with the branch.
         """
 
     def startMirroring(branchID):

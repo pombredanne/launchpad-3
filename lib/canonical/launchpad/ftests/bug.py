@@ -1,4 +1,4 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 """Helper functions for bug-related doctests and pagetests."""
 
@@ -15,8 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_portlet, find_tag_by_id,
-    find_tags_by_class)
+    extract_text, find_tag_by_id, find_main_content, find_tags_by_class)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
@@ -28,35 +27,33 @@ from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 
 
-DIRECT_SUBS_PORTLET_INDEX = 0
-INDIRECT_SUBS_PORTLET_INDEX = 1
-
 def print_direct_subscribers(bug_page):
     """Print the direct subscribers listed in a portlet."""
-    print_subscribers(bug_page, DIRECT_SUBS_PORTLET_INDEX)
+    print_subscribers(bug_page, 'subscribers-direct')
 
 
 def print_indirect_subscribers(bug_page):
     """Print the indirect subscribers listed in a portlet."""
-    print_subscribers(bug_page, INDIRECT_SUBS_PORTLET_INDEX)
+    print 'From duplicates:'
+    print_subscribers(bug_page, 'subscribers-from-duplicates')
+    print 'Also notified:'
+    print_subscribers(bug_page, 'subscribers-indirect')
 
 
-def print_subscribers(bug_page, subscriber_portlet_index):
+def print_subscribers(bug_page, subscriber_list_id):
     """Print the subscribers listed in the subscriber portlet."""
-    subscriber_portlet = find_portlet(bug_page, 'Subscribers')
-    try:
-        portlet = subscriber_portlet.fetch(
-            'ul', "person")[subscriber_portlet_index]
-    except IndexError:
-        # No portlet with this index, as can happen if there are
-        # no indirect subscribers, so just print an empty string
+    subscriber_list = find_tag_by_id(bug_page, subscriber_list_id)
+    if subscriber_list is None:
+        # No list with this ID (as can happen if there are
+        # no indirect subscribers), so just print an empty string.
         print ""
     else:
-        for li in portlet.fetch('li'):
-            if li.a:
-                sub_display = li.a.renderContents()
-                if li.a.has_key('title'):
-                    sub_display += (' (%s)' % li.a['title'])
+        for subscriber in subscriber_list.findAll('div'):
+            anchor = subscriber.a
+            if anchor is not None:
+                sub_display = extract_text(anchor)
+                if anchor.has_key('title'):
+                    sub_display += (' (%s)' % anchor['title'])
                 print sub_display
 
 

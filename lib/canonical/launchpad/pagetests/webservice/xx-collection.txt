@@ -13,9 +13,9 @@ collection.
 
   >>> people_collection = webservice.get("/beta/people").jsonBody()
   >>> people_collection['resource_type_link']
-  u'http://api.launchpad.dev/beta/#PersonSetCollectionAdapter'
+  u'http://api.launchpad.dev/beta/#people'
   >>> people_collection['total_size']
-  63
+  59
   >>> people_collection['next_collection_link']
   u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
   >>> people_collection.get('prev_collection_link') is None
@@ -26,12 +26,12 @@ collection.
   ...     people_collection['entries'], key=itemgetter('name'))
   >>> len(people_entries)
   5
-  >>> people_entries[0]['name']
-  u'andrelop'
+  >>> people_entries[0]['display_name']
+  u'Brad Crittenden'
   >>> people_entries[0]['self_link']
-  u'http://api.launchpad.dev/beta/~andrelop'
-  >>> people_entries[-1]['name']
-  u'spiv'
+  u'http://api.launchpad.dev/beta/~bac'
+  >>> people_entries[-1]['display_name']
+  u'Carlos Perell\xf3 Mar\xedn'
 
 You can get other pages of the collection by following links:
 
@@ -45,7 +45,7 @@ You can get other pages of the collection by following links:
   >>> people_entries = sorted(
   ...     second_batch['entries'], key=itemgetter('name'))
   >>> people_entries[0]['name']
-  u'bug-watch-updater'
+  u'commercial-admins'
 
 You can also get a larger batch than the default:
 
@@ -57,7 +57,7 @@ You can also get a larger batch than the default:
 
   >>> bigger_batch = webservice.get("/beta/people?ws.size=75").jsonBody()
   >>> len(bigger_batch['entries'])
-  63
+  59
   >>> bigger_batch.get('next_collection_link') is None
   True
 
@@ -135,8 +135,6 @@ The elements of a collection can be looked up by unique identifier:
   expired_members_collection_link: http://.../~admins/expired_members
   hide_email_addresses: False
   homepage_content: None
-  indirect_participations_collection_link:
-      http://.../~admins/indirect_participations
   invited_members_collection_link: http://.../~admins/invited_members
   irc_nicknames_collection_link: http://.../~admins/irc_nicknames
   is_team: True
@@ -155,11 +153,10 @@ The elements of a collection can be looked up by unique identifier:
   open_membership_invitations_collection_link:
       http://.../~admins/open_membership_invitations
   participants_collection_link: http://.../~admins/participants
-  participations_collection_link: http://.../~admins/participations
   preferred_email_address_link: None
   proposed_members_collection_link: http://.../~admins/proposed_members
   renewal_policy: invite them to apply for renewal
-  resource_type_link: http://api.launchpad.dev/beta/#TeamEntryAdapter
+  resource_type_link: http://api.launchpad.dev/beta/#team
   self_link: http://.../~admins
   sub_teams_collection_link: http://.../~admins/sub_teams
   subscription_policy: Moderated Team
@@ -174,7 +171,7 @@ A collection may be scoped to an element:
 
   >>> result = webservice.get("/beta/~admins/members").jsonBody()
   >>> result['resource_type_link']
-  u'http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource'
+  u'http://api.launchpad.dev/beta/#person-page-resource'
   >>> team_members = sorted(
   ...     result['entries'], key=itemgetter('name'))
   >>> len(team_members)

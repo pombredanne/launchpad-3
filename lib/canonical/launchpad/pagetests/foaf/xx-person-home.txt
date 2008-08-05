@@ -47,7 +47,6 @@ If you are not logged in, you will not be able to see it:
 
     >>> anon_browser.open('http://launchpad.dev/~sabdfl')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
-    Contact details
     Email: Log in for email information.
     ...
 
@@ -56,16 +55,14 @@ If you log in, however, you will:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~sabdfl')
     >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
-    Contact details
     Email: mark@hbd.com
     ...
 
-As for Sample Person, he has chosen not to disclose his email address.
-Anonymous users can't see it:
+As for Sample Person, he has chosen not to disclose his email addresses.
+Anonymous users can't see them:
 
     >>> anon_browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
-    Contact details
     Email: Log in for email information.
     ...
 
@@ -74,7 +71,6 @@ And neither can unprivileged users:
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
-    Contact details
     Email: No public address provided.
     ...
 
@@ -82,8 +78,8 @@ But good ole Foo Bar can:
 
     >>> admin_browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'contact-details'))
-    Contact details
     Email: test@canonical.com
+           testing@canonical.com
     ...
 
 And so can the Commercial Admins team:
@@ -93,12 +89,12 @@ And so can the Commercial Admins team:
     >>> commercial_browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(find_tag_by_id(commercial_browser.contents,
     ...                    'contact-details'))
-    Contact details
     Email: test@canonical.com
+           testing@canonical.com
     ...
 
-In the case of teams, it works similarly. No email address is disclosed if
-you're not logged in:
+In the case of teams, it works similarly. No email address is disclosed
+if you're not logged in:
 
     >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
@@ -165,11 +161,11 @@ Details portlet.
     >>> admin_browser.open('http://launchpad.dev/~name16')
     >>> print extract_text(find_tag_by_id(
     ...     admin_browser.contents, 'contact-details'))
-    Contact details
+    Email: ...
     ...
-    OpenID login:
+    OpenID login: http://openid.launchpad.dev/+id/name16_oid
     (What&rsquo;s this?)
-    http://openid.launchpad.dev/+id/name16_oid
+    ...
 
 Foo Bar can learn about OpenID from the 'What's this?' link.
 
@@ -189,17 +185,13 @@ Other users who visit the page do not see the URL.
 
 == Summary Pagelets ==
 
-A person's homepage also lists time zone, Karma and status information:
+A person's homepage also lists Karma and status information:
 
     >>> browser.open('http://launchpad.dev/~sabdfl')
     >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
-    Summary
-    Karma: 130
-    Timezone: None given
+    Bragging rights
     Member since: 2005-06-06
-    SSH Keys:
-      Private key in lib/canonical/codehosting/tests/id_dsa
-      (view key text)
+    Karma: 130
 
 Negative Ubuntero status is only displayed for yourself; others won't
 see it:
@@ -210,10 +202,9 @@ see it:
     >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://launchpad.dev/~sabdfl')
     >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
-    Summary
+    Bragging rights
     ...
-    Ubuntero: No (apply now)
-    ...
+    Ubuntero: No
 
 You can grab certain bits of information programatically:
 
@@ -227,6 +218,31 @@ Teams don't have member-since; they have created-date:
     >>> browser.open('http://launchpad.dev/~guadamen')
     >>> print extract_text(find_tag_by_id(browser.contents, 'created-date'))
     2005-06-06
+
+
+=== Time zones ===
+
+The user's time zone is displayed next to their contact details:
+
+    >>> browser.open('http://launchpad.dev/~sabdfl')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'contact-details'))
+    Email: mark@hbd.com
+    Wiki: .../MarkShuttleworth
+    IRC: mark ...
+    Jabber: ...
+    SSH Keys: ...
+    OpenID login: ...
+    Time zone: None given
+
+Teams don't have a time zone field.
+
+    >>> browser.open('http://launchpad.dev/~guadamen')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'contact-details'))
+    Contact details
+    Email: No contact address ...
+    Wiki: .../Guadamen
 
 
 == Table of contributions ==

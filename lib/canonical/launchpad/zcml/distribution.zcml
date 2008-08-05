@@ -63,13 +63,20 @@
         attributes="setBugSupervisor" />
   </content>
 
+  <adapter
+      for="canonical.launchpad.interfaces.IDistribution"
+      provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+      factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
+      />
+
   <browser:menus
     module="canonical.launchpad.browser.distribution"
     classes="
       DistributionFacets DistributionOverviewMenu DistributionBugsMenu
       DistributionBountiesMenu DistributionSpecificationsMenu
       DistributionTranslationsMenu DistributionSetFacets
-      DistributionSetContextMenu
+      DistributionSetContextMenu DistributionNavigationMenu
+      DistributionMirrorsNavigationMenu
       "
     />
 
@@ -301,6 +308,15 @@
     template="../templates/distribution-cvereport.pt"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionView"
+    permission="zope.Public"
+    name="+series-and-milestones"
+    facet="overview"
+    template="../templates/distribution-series-and-milestones.pt"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistribution"
     permission="zope.Public" >
@@ -372,15 +388,6 @@
     name="+edit"
     facet="overview"
     template="../templates/distribution-edit.pt"
-    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IDistribution"
-    permission="launchpad.Edit"
-    class="canonical.launchpad.browser.DistributionBrandingView"
-    name="+branding"
-    facet="overview"
-    template="../templates/object-branding.pt"
     />
 
   <browser:editform

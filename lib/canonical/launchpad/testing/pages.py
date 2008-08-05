@@ -16,6 +16,7 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
+from urllib import urlencode
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
@@ -154,8 +155,7 @@ class WebServiceCaller:
 
     def named_post(self, path, operation_name, headers=None, **kwargs):
         kwargs['ws.op'] = operation_name
-        data = '&'.join(['%s=%s' % (key, value)
-                         for key, value in kwargs.items()])
+        data = urlencode(kwargs)
         return self.post(path, 'application/x-www-form-urlencoded', data,
                          headers)
 
@@ -408,20 +408,9 @@ def parse_relationship_section(content):
             print 'TEXT: "%s"' % content
 
 
-def print_tab_links(content):
-    """Print tabs url or 'Unavailable' if there isn't one."""
-    chooser = find_tag_by_id(content, 'applicationchooser')
-    tabs = chooser.findAll('li')
-    for tab in tabs:
-        if 'current' in tab['class']:
-            print '%s: %s' % (tab.a.string, tab.a['href'])
-        else:
-            print '%s: Unavailable' % (tab.string,)
-
-
 def print_action_links(content):
     """Print action menu urls."""
-    actions = find_portlet(content, 'Actions')
+    actions = find_tag_by_id(content, 'actions')
     if actions is None:
         print "No actions portlet"
         return
@@ -525,22 +514,17 @@ def print_ppa_packages(contents):
         print extract_text(empty_section)
 
 
-def print_navigation(contents):
-    """Print the location, tabs, and page title of the page."""
+def print_location(contents):
+    """Print the hierarchy, application tabs, and main heading of the page."""
     doc = find_tag_by_id(contents, 'document')
-    breadcrumbs = doc.find(attrs={'id': 'menuroot'}).findAll('a')
-    print "Location: %s" % " > ".join(
-        extract_text(tag).encode('us-ascii', 'replace') for tag in breadcrumbs
-        if tag.get('id') != 'homebreadcrumb')
-    print "Structural title: %s" % extract_text(
-        doc.find(id='structuralobject')).encode('us-ascii', 'replace')
+    hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(
+        recursive=False)
+    segments = [extract_text(step).encode('us-ascii', 'replace')
+                for step in hierarchy
+                if step.name != 'small']
+    print 'Location:', ' > '.join(segments[2:])
     print 'Tabs:'
-    for tab in doc.find(id='applicationchooser').findAll('li'):
-        if tab.a:
-            link = tab.a['href']
-        else:
-            link = 'Not active'
-        print "* %s (%s)" % (extract_text(tab), link)
+    print_location_apps(contents)
     main_heading = doc.h1
     if main_heading:
         main_heading = extract_text(main_heading).encode(
@@ -548,6 +532,17 @@ def print_navigation(contents):
     else:
         main_heading = '(No main heading)'
     print "Main heading: %s" % main_heading
+
+
+def print_location_apps(contents):
+    """Print the application tabs' text and URL."""
+    location_apps = find_tag_by_id(contents, 'lp-apps')
+    for tab in location_apps.findAll('span'):
+        if tab.a:
+            link = tab.a['href']
+        else:
+            link = 'Not active'
+        print "* %s (%s)" % (extract_text(tab), link)
 
 
 def print_tag_with_id(contents, id):
@@ -610,9 +605,9 @@ def setUpGlobs(test):
     test.globs['login'] = login
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
-    test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
-    test.globs['print_navigation'] = print_navigation
+    test.globs['print_location'] = print_location
+    test.globs['print_location_apps'] = print_location_apps
     test.globs['print_navigation_links'] = print_navigation_links
     test.globs['print_portlet_links'] = print_portlet_links
     test.globs['print_comments'] = print_comments

@@ -85,8 +85,8 @@ class UserDetailsResourceV2(LoggingResource):
             print 'authUser(%r, %r)' % (loginID, password)
         return self.storage.authUser(loginID, password)
 
-    def xmlrpc_getDefaultStackedOnBranch(self, project_name):
-        return self.storage.getDefaultStackedOnBranch(project_name)
+    def xmlrpc_getDefaultStackedOnBranch(self, login_id, project_name):
+        return self.storage.getDefaultStackedOnBranch(login_id, project_name)
 
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user

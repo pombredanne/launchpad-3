@@ -30,7 +30,8 @@ from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import (
     adapts, getAdapters, getMultiAdapter, getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import implements, implementedBy, providedBy
 from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
@@ -43,19 +44,22 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
-# canonical_url and BatchNavigator code should be moved into lazr.
+# canonical_url, BatchNavigator, and event code should be moved into lazr.
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData, ILaunchBag)
 from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
-    IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
+    IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
+    IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
-
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -413,7 +417,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                                           IFieldMarshaller)
             repr_name = marshaller.representation_name
             try:
-                value = getattr(self.entry, name)
+                if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
+                    value = None
+                else:
+                    value = getattr(self.entry, name)
                 repr_value = marshaller.unmarshall(self.entry, value)
             except Unauthorized:
                 # Either the client doesn't have permission to see
@@ -526,10 +533,12 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     @property
     def type_url(self):
         "The URL to the resource type for this resource."
+        adapter = EntryAdapterUtility(self.entry.__class__)
+
         return "%s#%s" % (
             canonical_url(self.request.publication.getApplication(
                     self.request)),
-            self.entry.__class__.__name__)
+            adapter.singular_type)
 
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
@@ -702,11 +711,23 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.request.response.setHeader('Content-type', 'text/plain')
             return "\n".join(errors)
 
+        # Make a snapshot of the entry to use in a notification event.
+        entry_before_modification = Snapshot(
+            self.entry.context, providing=providedBy(self.entry.context))
+
         # Store the entry's current URL so we can see if it changes.
         original_url = canonical_url(self.context)
         # Make the changes.
         for name, value in validated_changeset.items():
             setattr(self.entry, name, value)
+
+        # Send a notification event.
+        event = SQLObjectModifiedEvent(
+            object=self.entry.context,
+            object_before_modification=entry_before_modification,
+            edited_fields=validated_changeset.keys(),
+            user=getUtility(ILaunchBag).user)
+        notify(event)
 
         # If the modification caused the entry's URL to change, tell
         # the client about the new URL.
@@ -770,19 +791,18 @@ class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
     @property
     def type_url(self):
         "The URL to the resource type for the object."
+
         if IScopedCollection.providedBy(self.collection):
             # Scoped collection. The type URL depends on what type of
             # entry the collection holds.
-            adapter = EntryAdapterUtility.forSchemaInterface(
-                self.context.relationship.value_type.schema)
+            schema = self.context.relationship.value_type.schema
+            adapter = EntryAdapterUtility.forSchemaInterface(schema)
             return adapter.entry_page_type_link
         else:
             # Top-level collection.
-            base_url = canonical_url(
-                self.request.publication.getApplication(self.request))
-            class_name = self.collection.__class__.__name__
-            return "%s#%s" % (base_url, class_name)
-
+            schema = self.collection.entry_schema
+            adapter = EntryAdapterUtility.forEntryInterface(schema)
+            return adapter.collection_type_link
 
 
 class ServiceRootResource(HTTPResource):
@@ -897,8 +917,9 @@ class ServiceRootResource(HTTPResource):
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
-                    link_name = ("%s_collection_link"
-                                 % registration.value.__name__)
+                    adapter = EntryAdapterUtility.forEntryInterface(
+                        registration.value.entry_schema)
+                    link_name = ("%s_collection_link" % adapter.plural_type)
                     top_level_resources[link_name] = utility
         return top_level_resources
 
@@ -966,30 +987,71 @@ class EntryAdapterUtility(RESTUtilityBase):
     """
 
     @classmethod
-    def forSchemaInterface(cls, model_schema):
-        """Retrieve an entry adapter for a model interface.
+    def forSchemaInterface(cls, entry_interface):
+        """Create an entry adapter utility, given a schema interface.
 
-        This method locates the IEntry subclass corresponding to the
-        model interface, and creates an EntryAdapterUtility for it.
+        A schema interface is one that can be annotated to produce a
+        subclass of IEntry.
         """
         entry_class = zapi.getGlobalSiteManager().adapters.lookup(
-            (model_schema,), IEntry)
+            (entry_interface,), IEntry)
         return EntryAdapterUtility(entry_class)
+
+    @classmethod
+    def forEntryInterface(cls, entry_interface):
+        """Create an entry adapter utility, given a subclass of IEntry."""
+        registrations = zapi.getGlobalSiteManager().registrations()
+        entry_classes = [
+            registration.value for registration in registrations
+            if (IInterface.providedBy(registration.provided)
+                and registration.provided.isOrExtends(IEntry)
+                and entry_interface.implementedBy(registration.value))]
+        assert not len(entry_classes) > 1, (
+            "%s provides more than one IEntry subclass." %
+            entry_interface.__name__)
+        assert not len(entry_classes) < 1, (
+            "%s does not provide any IEntry subclass." %
+            entry_interface.__name__)
+        return EntryAdapterUtility(entry_classes[0])
 
     def __init__(self, entry_class):
         """Initialize with a class that implements IEntry."""
         self.entry_class = entry_class
 
     @property
+    def entry_interface(self):
+        """The IEntry subclass implemented by this entry type."""
+        interfaces = implementedBy(self.entry_class)
+        entry_ifaces = [interface for interface in interfaces
+                        if interface.extends(IEntry)]
+        assert len(entry_ifaces) == 1, ("There must be one and only one "
+                                        "IEntry implementation "
+                                        "for %s" % self.entry_class)
+        return entry_ifaces[0]
+
+    @property
     def singular_type(self):
         """Return the singular name for this object type."""
-        return self.entry_class.__name__
+        interface = self.entry_interface
+        return interface.queryTaggedValue(LAZR_WEBSERVICE_NAME)['singular']
+
+    @property
+    def plural_type(self):
+        """Return the plural name for this object type."""
+        interface = self.entry_interface
+        return interface.queryTaggedValue(LAZR_WEBSERVICE_NAME)['plural']
 
     @property
     def type_link(self):
         """The URL to the type definition for this kind of entry."""
         return "%s#%s" % (
             self._service_root_url(), self.singular_type)
+
+    @property
+    def collection_type_link(self):
+        """The definition of a top-level collection of this kind of object."""
+        return "%s#%s" % (
+            self._service_root_url(), self.plural_type)
 
     @property
     def entry_page_type(self):

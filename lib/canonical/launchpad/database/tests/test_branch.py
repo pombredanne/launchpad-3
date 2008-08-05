@@ -35,7 +35,8 @@ from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch,
     )
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import (
+    LaunchpadObjectFactory, TestCaseWithFactory)
 
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
@@ -58,6 +59,38 @@ class TestCodeImport(TestCase):
         self.assertEqual(code_import, branch.code_import)
         CodeImportSet().delete(code_import)
         self.assertEqual(None, branch.code_import)
+
+
+class TestBranch(TestCaseWithFactory):
+    """Test basic properties about Launchpad database branches."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_pullURLHosted(self):
+        # Hosted branches are pulled from internal Launchpad URLs.
+        branch = self.factory.makeBranch(branch_type=BranchType.HOSTED)
+        self.assertEqual(
+            'lp-hosted:///%s' % branch.unique_name, branch.getPullURL())
+
+    def test_pullURLMirrored(self):
+        # Mirrored branches are pulled from their actual URLs -- that's the
+        # point.
+        branch = self.factory.makeBranch(branch_type=BranchType.MIRRORED)
+        self.assertEqual(branch.url, branch.getPullURL())
+
+    def test_pullURLImported(self):
+        # Imported branches are pulled from the import servers at locations
+        # corresponding to the hex id of the branch being mirrored.
+        import_server = config.launchpad.bzr_imports_root_url
+        branch = self.factory.makeBranch(branch_type=BranchType.IMPORTED)
+        self.assertEqual(
+            '%s/%08x' % (import_server, branch.id), branch.getPullURL())
+
+    def test_pullURLRemote(self):
+        # We cannot mirror remote branches. getPullURL raises an
+        # AssertionError.
+        branch = self.factory.makeBranch(branch_type=BranchType.REMOTE)
+        self.assertRaises(AssertionError, branch.getPullURL)
 
 
 class TestBranchDeletion(TestCase):

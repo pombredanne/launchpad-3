@@ -44,6 +44,19 @@ class BadMessage(Exception):
             self, 'Received unrecognized message: %r' % bad_netstring)
 
 
+class UnexpectedStderr(Exception):
+    """Raised when the worker prints to stderr."""
+
+    def __init__(self, stderr):
+        if stderr:
+            last_line = stderr.splitlines()[-1]
+        else:
+            last_line = stderr
+        Exception.__init__(
+            self, "Unexpected standard error from subprocess: %s" % last_line)
+        self.error = stderr
+
+
 class BranchStatusClient:
     """Twisted client for the branch status methods on the authserver."""
 
@@ -197,7 +210,7 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
         failed to do either of these things, we should fail noisily."""
         stderr = self._stderr.getvalue()
         if stderr:
-            fail = failure.Failure(Exception())
+            fail = failure.Failure(UnexpectedStderr(stderr))
             fail.error = stderr
             return fail
         if not self.reported_mirror_finished:
@@ -211,11 +224,12 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
         If the worker process exited uncleanly, it probably didn't report
         success or failure, so we should report failure.  If there was output
         on stderr, it's probably a traceback, so we use the last line of that
-        as a failure reason."""
+        as a failure reason.
+        """
         if not self.reported_mirror_finished:
             stderr = self._stderr.getvalue()
             reason.error = stderr
-            if error:
+            if stderr:
                 errorline = stderr.splitlines()[-1]
             else:
                 errorline = str(reason.value)
@@ -297,8 +311,7 @@ class PullerMaster:
         self.branch_id = branch_id
         self.source_url = source_url.strip()
         path = branch_id_to_path(branch_id)
-        self.destination_url = os.path.join(
-            config.supermirror.branchesdest, path)
+        self.destination_url = 'lp-mirrored:///%s' % (unique_name,)
         self.unique_name = unique_name
         self.branch_type = branch_type
         self.logger = logger
@@ -369,11 +382,11 @@ class PullerMaster:
             ('dest', self.destination_url),
             ('error-explanation', failure.getErrorMessage())])
         request.URL = get_canonical_url_for_branch_name(self.unique_name)
-        # If the subeprocess exited abnormally, the stderr it produced is
+        # If the sub-process exited abnormally, the stderr it produced is
         # probably a much more interesting traceback than the one attached to
         # the Failure we've been passed.
         tb = None
-        if failure.check(error.ProcessTerminated):
+        if failure.check(error.ProcessTerminated, UnexpectedStderr):
             tb = getattr(failure, 'error', None)
         if tb is None:
             tb = failure.getTraceback()
