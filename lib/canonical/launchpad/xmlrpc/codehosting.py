@@ -209,3 +209,21 @@ class BranchFileSystemAPI(LaunchpadXMLRPCView):
         else:
             permissions = READ_ONLY
         return branch_id, permissions
+
+    @run_as_requester
+    def getDefaultStackedOnBranch(self, requester, project_name):
+        if project_name == '+junk':
+            return ''
+        product = getUtility(IProductSet).getByName(project_name)
+        if product is None:
+            return Fault(
+                NOT_FOUND_FAULT_CODE,
+                "Project %r does not exist." % project_name)
+        branch = product.default_stacked_on_branch
+        if branch is None:
+            return ''
+        try:
+            unique_name = branch.unique_name
+        except Unauthorized:
+            return ''
+        return '/' + unique_name

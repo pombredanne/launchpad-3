@@ -12,9 +12,10 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
     BranchType, IBranchSet, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
@@ -501,13 +502,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertEqual((branch.id, READ_ONLY), branch_info)
 
-    def _makeProductWithPrivateDevFocus(self):
-        """Make a product with a private development focus.
-
-        :return: The new Product and the new Branch.
-        """
-        login(ANONYMOUS)
-        product = self.factory.makeProduct()
+    def _enableDefaultStacking(self, product):
         # Only products that are explicitly specified in
         # allow_default_stacking will have values for default stacked-on. Here
         # we add the just-created product to allow_default_stacking so we can
@@ -519,27 +514,39 @@ class BranchFileSystemTest(TestCaseWithFactory):
         handle = self.factory.getUniqueString()
         config.push(handle, section)
         self.addCleanup(lambda: config.pop(handle))
-        branch = self.factory.makeBranch(product=product)
+
+    def _makeProductWithStacking(self):
+        product = self.factory.makeProduct()
+        self._enableDefaultStacking(product)
+        return product
+
+    def _makeProductWithDevFocus(self, private=False):
+        """Make a stacking-enabled product with a development focus.
+
+        :param private: Whether the development focus branch should be
+            private.
+        :return: The new Product and the new Branch.
+        """
+        product = self._makeProductWithStacking()
+        branch = self.factory.makeBranch(product=product, private=private)
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = branch
-        removeSecurityProxy(branch).private = True
-        transaction.commit()
-        logout()
         return product, branch
 
     def test_getDefaultStackedOnBranch_invisible(self):
         # When the default stacked-on branch for a product is not visible to
         # the requesting user, then we return the empty string.
-        product, branch = self._makeProductWithPrivateDevFocus()
+        requester = self.factory.makePerson()
+        product, branch = self._makeProductWithDevFocus(private=True)
         stacked_on_url = self.branchfs.getDefaultStackedOnBranch(
-            self.arbitrary_person.id, product.name)
+            requester.id, product.name)
         self.assertEqual('', stacked_on_url)
 
     def test_getDefaultStackedOnBranch_private(self):
         # When the default stacked-on branch for a product is private but
         # visible to the requesting user, we return the URL to the branch
         # relative to the host.
-        product, branch = self._makeProductWithPrivateDevFocus()
+        product, branch = self._makeProductWithDevFocus(private=True)
         # We want to know who owns it and what its name is. We are a test and
         # should be allowed to know such things.
         branch = removeSecurityProxy(branch)
@@ -550,33 +557,38 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
     def test_getDefaultStackedOnBranch_junk(self):
         # getDefaultStackedOnBranch returns the empty string for '+junk'.
+        requester = self.factory.makePerson()
         branch = self.branchfs.getDefaultStackedOnBranch(
-            self.arbitrary_person.id, '+junk')
+            requester.id, '+junk')
         self.assertEqual('', branch)
 
     def test_getDefaultStackedOnBranch_none_set(self):
         # getDefaultStackedOnBranch returns the empty string when there is no
         # branch set.
+        requester = self.factory.makePerson()
         branch = self.branchfs.getDefaultStackedOnBranch(
-            self.arbitrary_person.id, 'firefox')
+            requester.id, 'firefox')
         self.assertEqual('', branch)
 
     def test_getDefaultStackedOnBranch_no_product(self):
         # getDefaultStackedOnBranch raises a Fault if there is no such
         # product.
+        requester = self.factory.makePerson()
         product = 'no-such-product'
-        self.assertRaisesFault(
-            NOT_FOUND_FAULT_CODE,
-            'Project %r does not exist.' % (product,),
-            self.branchfs.getDefaultStackedOnBranch,
-            self.arbitrary_person.id, product)
+        fault = self.branchfs.getDefaultStackedOnBranch(requester.id, product)
+        self.assertFaultEqual(
+            NOT_FOUND_FAULT_CODE, 'Project %r does not exist.' % (product,),
+            fault)
 
     def test_getDefaultStackedOnBranch(self):
         # getDefaultStackedOnBranch returns the relative URL of the default
         # stacked-on branch for the named product.
-        branch = self.branchfs.getDefaultStackedOnBranch(
-            self.arbitrary_person.id, 'evolution')
-        self.assertEqual('/~vcs-imports/evolution/main', branch)
+        requester = self.factory.makePerson()
+        product, branch = self._makeProductWithDevFocus(private=False)
+        branch_location = self.branchfs.getDefaultStackedOnBranch(
+            requester.id, product.name)
+        login(ANONYMOUS)
+        self.assertEqual('/' + branch.unique_name, branch_location)
 
     def test_initialMirrorRequest(self):
         # The default 'next_mirror_time' for a newly created hosted branch
