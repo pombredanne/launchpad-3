@@ -401,8 +401,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # When we get the branch information for one of our own branches (i.e.
         # owned by us or by a team we are on), we get the database id of the
         # branch, and a flag saying that we can write to that branch.
-        store = DatabaseUserDetailsStorageV2(None)
-        branch_id, permissions = store._getBranchInformationInteraction(
+        branch_id, permissions = self.branchfs.getBranchInformation(
             12, 'name12', 'gnome-terminal', 'pushed')
         self.assertEqual(25, branch_id)
         self.assertEqual(WRITABLE, permissions)
@@ -411,8 +410,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # When we get the branch information for a non-existent branch, we get
         # a tuple of two empty strings (the empty string being an
         # approximation of 'None').
-        store = DatabaseUserDetailsStorageV2(None)
-        branch_id, permissions = store._getBranchInformationInteraction(
+        branch_id, permissions = self.branchfs.getBranchInformation(
             12, 'name12', 'gnome-terminal', 'doesnt-exist')
         self.assertEqual('', branch_id)
         self.assertEqual('', permissions)
@@ -421,8 +419,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # When we get the branch information for a branch that we don't own,
         # we get the database id and a flag saying that we can only read that
         # branch.
-        store = DatabaseUserDetailsStorageV2(None)
-        branch_id, permissions = store._getBranchInformationInteraction(
+        branch_id, permissions = self.branchfs.getBranchInformation(
             12, 'sabdfl', 'firefox', 'release-0.8')
         self.assertEqual(13, branch_id)
         self.assertEqual(READ_ONLY, permissions)
@@ -430,8 +427,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_getBranchInformation_mirrored(self):
         # Mirrored branches cannot be written to by the smartserver or SFTP
         # server.
-        store = DatabaseUserDetailsStorageV2(None)
-        branch_id, permissions = store._getBranchInformationInteraction(
+        branch_id, permissions = self.branchfs.getBranchInformation(
             12, 'name12', 'firefox', 'main')
         self.assertEqual(1, branch_id)
         self.assertEqual(READ_ONLY, permissions)
@@ -439,8 +435,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_getBranchInformation_imported(self):
         # Imported branches cannot be written to by the smartserver or SFTP
         # server.
-        store = DatabaseUserDetailsStorageV2(None)
-        branch_id, permissions = store._getBranchInformationInteraction(
+        branch_id, permissions = self.branchfs.getBranchInformation(
             12, 'vcs-imports', 'gnome-terminal', 'import')
         self.assertEqual(75, branch_id)
         self.assertEqual(READ_ONLY, permissions)
@@ -452,8 +447,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         firefox = getUtility(IProductSet).getByName('firefox')
         branch = getUtility(IBranchSet).new(
             BranchType.REMOTE, 'remote', no_priv, no_priv, firefox, None)
-        store = DatabaseUserDetailsStorageV2(None)
-        branch_id, permissions = store._getBranchInformationInteraction(
+        branch_id, permissions = self.branchfs.getBranchInformation(
             12, 'no-priv', 'firefox', 'remote')
         self.assertEqual('', branch_id)
         self.assertEqual('', permissions)
@@ -461,8 +455,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_getBranchInformation_private(self):
         # When we get the branch information for a private branch that is
         # hidden to us, it is an if the branch doesn't exist at all.
-        store = DatabaseUserDetailsStorageV2(None)
-
         # salgado is a member of landscape-developers.
         person_set = getUtility(IPersonSet)
         salgado = person_set.getByName('salgado')
@@ -471,11 +463,11 @@ class BranchFileSystemTest(TestCaseWithFactory):
             salgado.inTeam(landscape_dev),
             "salgado should be in landscape-developers team, but isn't.")
 
-        store._createBranchInteraction(
+        self.branchfs.createBranch(
             'salgado', 'landscape-developers', 'landscape',
             'some-branch')
         # ddaa is not an admin, not a Landscape developer.
-        branch_id, permissions = store._getBranchInformationInteraction(
+        branch_id, permissions = self.branchfs.getBranchInformation(
             'ddaa', 'landscape-developers', 'landscape', 'some-branch')
         self.assertEqual('', branch_id)
         self.assertEqual('', permissions)
@@ -483,8 +475,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_getBranchInformationAsLaunchpadServices(self):
         # The LAUNCHPAD_SERVICES special "user" has read-only access to all
         # branches.
-        store = DatabaseUserDetailsStorageV2(None)
-        branch_id, permissions = store._getBranchInformationInteraction(
+        branch_id, permissions = self.branchfs.getBranchInformation(
             LAUNCHPAD_SERVICES, 'name12', 'gnome-terminal', 'pushed')
         self.assertEqual(25, branch_id)
         self.assertEqual(READ_ONLY, permissions)
@@ -492,8 +483,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_getBranchInformationForPrivateAsLaunchpadServices(self):
         # The LAUNCHPAD_SERVICES special "user" has read-only access to all
         # branches, even private ones.
-        store = DatabaseUserDetailsStorageV2(None)
-
         # salgado is a member of landscape-developers.
         person_set = getUtility(IPersonSet)
         salgado = person_set.getByName('salgado')
@@ -502,7 +491,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             salgado.inTeam(landscape_dev),
             "salgado should be in landscape-developers team, but isn't.")
 
-        branch_id = store._createBranchInteraction(
+        branch_id = self.branchfs.createBranch(
             'salgado', 'landscape-developers', 'landscape',
             'some-branch')
         login(ANONYMOUS)
@@ -513,7 +502,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
                 "%r not private" % (branch,))
         finally:
             logout()
-        branch_info = store._getBranchInformationInteraction(
+        branch_info = self.branchfs.getBranchInformation(
             LAUNCHPAD_SERVICES, 'landscape-developers', 'landscape',
             'some-branch')
         self.assertEqual((branch_id, 'r'), branch_info)
@@ -548,8 +537,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # When the default stacked-on branch for a product is not visible to
         # the requesting user, then we return the empty string.
         product, branch = self._makeProductWithPrivateDevFocus()
-        store = DatabaseUserDetailsStorageV2(None)
-        stacked_on_url = store._getDefaultStackedOnBranchInteraction(
+        stacked_on_url = self.branchfs.getDefaultStackedOnBranch(
             self.arbitrary_person.id, product.name)
         self.assertEqual('', stacked_on_url)
 
@@ -561,43 +549,38 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # We want to know who owns it and what its name is. We are a test and
         # should be allowed to know such things.
         branch = removeSecurityProxy(branch)
-        store = DatabaseUserDetailsStorageV2(None)
         unique_name = branch.unique_name
-        stacked_on_url = store._getDefaultStackedOnBranchInteraction(
+        stacked_on_url = self.branchfs.getDefaultStackedOnBranch(
             branch.owner.id, product.name)
         self.assertEqual('/' + unique_name, stacked_on_url)
 
     def test_getDefaultStackedOnBranch_junk(self):
         # getDefaultStackedOnBranch returns the empty string for '+junk'.
-        store = DatabaseUserDetailsStorageV2(None)
-        branch = store._getDefaultStackedOnBranchInteraction(
+        branch = self.branchfs.getDefaultStackedOnBranch(
             self.arbitrary_person.id, '+junk')
         self.assertEqual('', branch)
 
     def test_getDefaultStackedOnBranch_none_set(self):
         # getDefaultStackedOnBranch returns the empty string when there is no
         # branch set.
-        store = DatabaseUserDetailsStorageV2(None)
-        branch = store._getDefaultStackedOnBranchInteraction(
+        branch = self.branchfs.getDefaultStackedOnBranch(
             self.arbitrary_person.id, 'firefox')
         self.assertEqual('', branch)
 
     def test_getDefaultStackedOnBranch_no_product(self):
         # getDefaultStackedOnBranch raises a Fault if there is no such
         # product.
-        store = DatabaseUserDetailsStorageV2(None)
         product = 'no-such-product'
         self.assertRaisesFault(
             NOT_FOUND_FAULT_CODE,
             'Project %r does not exist.' % (product,),
-            store._getDefaultStackedOnBranchInteraction,
+            self.branchfs.getDefaultStackedOnBranch,
             self.arbitrary_person.id, product)
 
     def test_getDefaultStackedOnBranch(self):
         # getDefaultStackedOnBranch returns the relative URL of the default
         # stacked-on branch for the named product.
-        store = DatabaseUserDetailsStorageV2(None)
-        branch = store._getDefaultStackedOnBranchInteraction(
+        branch = self.branchfs.getDefaultStackedOnBranch(
             self.arbitrary_person.id, 'evolution')
         self.assertEqual('/~vcs-imports/evolution/main', branch)
 
@@ -628,7 +611,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
     def test_requestMirror_private(self):
         # requestMirror can be used to request the mirror of a private branch.
-        store = DatabaseUserDetailsStorageV2(None)
 
         # salgado is a member of landscape-developers.
         person_set = getUtility(IPersonSet)
@@ -638,7 +620,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             salgado.inTeam(landscape_dev),
             "salgado should be in landscape-developers team, but isn't.")
 
-        branch_id = store._createBranchInteraction(
+        branch_id = self.branchfs.createBranch(
             'salgado', 'landscape-developers', 'landscape',
             'some-branch')
 
@@ -647,7 +629,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         [current_db_time] = cur.fetchone()
         transaction.commit()
 
-        store._requestMirrorInteraction(salgado.id, branch_id)
+        self.branchfs.requestMirror(salgado.id, branch_id)
         self.assertTrue(
             current_db_time < self.getNextMirrorTime(branch_id),
             "Branch next_mirror_time not updated.")
@@ -668,8 +650,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.branchfs.requestMirror(user_id, hosted_branch_id)
 
         # Simulate successfully mirroring branch 25
-        storage = DatabaseBranchDetailsStorage(None)
-        cur = cursor()
         self.branchfs.startMirroring(hosted_branch_id)
         self.branchfs.mirrorComplete(hosted_branch_id, 'rev-1')
 
