@@ -35,9 +35,8 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         self.revision = self.factory.makeRevision(
             author=self.author.preferredemail.email)
 
-    def makeBranchWithRevision(self, sequence, branch=None):
-        if branch is None:
-            branch = self.factory.makeBranch()
+    def makeBranchWithRevision(self, sequence, owner=None):
+        branch = self.factory.makeBranch(owner=owner)
         branch.createBranchRevision(sequence, self.revision)
         return branch
 
@@ -45,8 +44,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # If a revision is on the mainline history of two (or more) different
         # branches, then choose one owned by the revision author.
         self.makeBranchWithRevision(1)
-        b = self.makeBranchWithRevision(
-            1, self.factory.makeBranch(owner=self.author))
+        b = self.makeBranchWithRevision(1, owner=self.author)
         self.assertEqual(b, self.revision.getBranch())
 
     def testPreferMainlineRevisionBranch(self):
@@ -61,15 +59,13 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # owner, but in the ancestry of a branch owned by the revision owner,
         # choose the branch owned by the revision author.
         self.makeBranchWithRevision(1)
-        b = self.makeBranchWithRevision(
-            None, self.factory.makeBranch(owner=self.author))
+        b = self.makeBranchWithRevision(None, owner=self.author)
         self.assertEqual(b, self.revision.getBranch())
 
     def testPublicBranchTrumpsOwner(self):
         # Only public branches are returned.
         b1 = self.makeBranchWithRevision(1)
-        b2 = self.makeBranchWithRevision(
-            1, self.factory.makeBranch(owner=self.author))
+        b2 = self.makeBranchWithRevision(1, owner=self.author)
         b2.private = True
         self.assertEqual(b1, self.revision.getBranch())
 
