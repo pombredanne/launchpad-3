@@ -580,7 +580,7 @@ class PackageUpload(SQLBase):
                 self.displayversion, message.STATUS)
 
             if self.isPPA():
-                subject = "[PPA %s] " % self.archive.owner.name + subject
+                subject = "[PPA %s] %s" % (self.archive.owner.name, subject)
 
             self._sendMail(recipients, subject, body, dry_run,
                            from_addr=from_addr, bcc=bcc)
@@ -860,7 +860,9 @@ class PackageUpload(SQLBase):
         if self.signing_key:
             # This is a signed upload.
             signer = self.signing_key.owner
-            extra_headers['X-Launchpad-Signer'] = signer.displayname
+            signer_line = 'Changes file signed by: %s (%s)' % (
+                signer.displayname, signer.preferredemail)
+            mail_text = '%s\n%s' % (signer_line, mail_text)
 
         if from_addr is None:
             from_addr = format_address(

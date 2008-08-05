@@ -178,7 +178,7 @@ header however.
   >>> notification['X-Launchpad-Component']
   'component=universe, section=devel'
 
-    Let's perform and PPA upload to verify the PPA header presence.
+A PPA upload will contain the X-Launchpad-PPA header.
 
   >>> from canonical.launchpad.interfaces import (
   ...     ArchivePurpose, IArchiveSet, IDistributionSet, IPersonSet)
