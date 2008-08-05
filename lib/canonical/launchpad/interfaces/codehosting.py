@@ -153,11 +153,11 @@ class IBranchFileSystem(Interface):
     ##         default stacked-on branch configured, return the empty string.
     ##     """
 
-    ## def fetchProductID(productName):
-    ##     """Return the database ID for a product name.
+    def fetchProductID(productName):
+        """Return the database ID for a product name.
 
-    ##     :returns: a product ID.
-    ##     """
+        :returns: a product ID.
+        """
 
     def createBranch(loginID, personName, productName, branchName):
         """Register a new hosted branch in Launchpad.
