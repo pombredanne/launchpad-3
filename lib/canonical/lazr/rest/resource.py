@@ -28,7 +28,8 @@ import simplejson
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import (
-    adapts, getAdapters, getMultiAdapter, getUtility, queryAdapter)
+    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
+    getUtility, getUtilitiesFor, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.interface import implements, implementedBy, providedBy
@@ -57,7 +58,7 @@ from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 
@@ -900,13 +901,10 @@ class ServiceRootResource(HTTPResource):
         return data_for_json
 
     def getTopLevelPublications(self):
-        """Return a mapping of top-level link names to published objects.
-
-        This method assumes that only collections are exposed at the top
-        level.
-        """
+        """Return a mapping of top-level link names to published objects."""
         top_level_resources = {}
         site_manager = zapi.getGlobalSiteManager()
+        # First, collect the top-level collections.
         for registration in site_manager.registrations():
             provided = registration.provided
             if IInterface.providedBy(provided):
@@ -921,6 +919,11 @@ class ServiceRootResource(HTTPResource):
                         registration.value.entry_schema)
                     link_name = ("%s_collection_link" % adapter.plural_type)
                     top_level_resources[link_name] = utility
+        # Now, collect the top-level entries.
+        for utility in getAllUtilitiesRegisteredFor(ITopLevelEntryLink):
+            link_name = ("%s_link" % utility.link_name)
+            top_level_resources[link_name] = utility
+
         return top_level_resources
 
 

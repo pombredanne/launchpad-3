@@ -22,13 +22,14 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollection, IEntry, IResourceGETOperation, IResourceOperation,
-    IResourcePOSTOperation, IScopedCollection)
+    IResourcePOSTOperation, IScopedCollection, ITopLevelEntryLink)
 from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import (
     LAZR_WEBSERVICE_NAME, WebServiceLayer)
 from canonical.lazr.rest import (
-    CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
+    CollectionResource, EntryAdapterUtility, EntryResource, IObjectLink,
+    RESTUtilityBase)
 
 
 class WadlAPI(RESTUtilityBase):
@@ -142,8 +143,13 @@ class WadlServiceRootResourceAPI(WadlAPI):
         resource_dicts = []
         top_level = self.resource.getTopLevelPublications()
         for link_name, publication in top_level.items():
-            # We only expose collection resources for now.
-            resource = CollectionResource(publication, self.resource.request)
+            if ITopLevelEntryLink.providedBy(publication):
+                # It's an entry resource
+                resource = publication
+            else:
+                # It's a collection resources.
+                resource = CollectionResource(
+                    publication, self.resource.request)
             resource_dicts.append({'name' : link_name,
                                    'path' : "$['%s']" % link_name,
                                    'resource' : resource})
@@ -414,6 +420,17 @@ class WadlFieldAPI(WadlAPI):
             IEnumeratedType.providedBy(self.field.vocabulary)):
             return self.field.vocabulary.items
         return None
+
+
+class WadlTopLevelEntryLinkAPI(WadlAPI):
+    """Namespace for WADL functions that operate on top-level entry links."""
+
+    def __init__(self, entry_link):
+        self.entry_link = entry_link
+
+    def type_link(self):
+        return EntryAdapterUtility.forSchemaInterface(
+            self.entry_link.entry_type).type_link
 
 
 class WadlOperationAPI(WadlAPI):
