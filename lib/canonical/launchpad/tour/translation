@@ -61,7 +61,7 @@
                             You choose how open your project is to new translators, using one of several ready-made policies:
                             <br />
                             <strong>Open&#58;</strong> everyone can translate, inviting spontaneous translations.<br />
-                            <strong>Partly restricted and structured&#58;</strong> anyone can make suggest translations, while trusted community members review and approve new work.<br />
+                             <strong>Partly restricted and structured&#58;</strong> anyone can suggest translations, while trusted community members review and approve new work.<br />
                             <strong>Closed&#58;</strong> only approved translators may make suggestions. Ideal if your project requires copyright assignment.<br />
                         </p>
                     </div>
@@ -70,7 +70,7 @@
                         <h4>Launchpad makes it easy to integrate translations into your software by supporting the popular GNU GetText file formats.</h4>
                         <p class="screen-holder"><img src="images/translation/2.png" alt="Supports open standards" /></p>
                         <p>
-                            Import and export GetText files - pot, po and mo - for offline as well as online translation. You can also import Mozilla&rsquo;s XPI format translations.
+                            Import and export GetText files - pot, po and mo - for offline as well as online translation. You can also import translations in Mozilla&rsquo;s XPI format.
                         </p>
                     </div>
                     <div class="clear"></div>

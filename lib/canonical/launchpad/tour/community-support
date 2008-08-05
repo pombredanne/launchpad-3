@@ -58,16 +58,16 @@
                         <h4>Although most development and planning happens in English, people use free software in hundreds of languages.</h4>
                         <p class="screen-holder"><img src="images/answers/1.png" alt="Support in your language" /></p>
                         <p>
-                            Rather than ask people to describe their problem in an unfamiliar language, Launchpad lets them ask for help and get a reply also in their own language.
+                            Rather than ask people to describe their problem in an unfamiliar language, Launchpad lets them ask for help and get a reply in their own language.
                         </p>
                     </div>
                     <div class="block odd">
                         <h3>Track questions like bugs</h3>
-                        <h4>Launchpad tracks help requests just like bugs: each question has a status, comment history and subscribers.</h4>
+                        <h4>Launchpad tracks help requests just like bugs: each question has a status, comment history and list of subscribers.</h4>
                         <p class="screen-holder">
                             <img src="images/answers/2.png" alt="Track questions like bugs" />                        </p>
                         <p>
-                            Members of your community can volunteer to be support contacts &mdash; in effect your help triage team &mdash; and receive notification of all new questions in their chosen languages. Throughout the question&rsquo;s life, the person looking for help and the people offering advice can set its status from unanswered through to solved.
+                            Members of your community can volunteer to be support contacts &mdash; in effect your help triage team &mdash; and receive notification of all new questions in their chosen languages.  Throughout a question&rsquo;s life, the person looking for help and the people offering advice can set its status from unanswered through to solved.
                         </p>
                     </div>
                     <div class="clear"></div>
@@ -86,7 +86,7 @@
                             Launchpad provides a repository for your community&rsquo;s knowledge, which builds organically as people ask and answer questions.
                         </p>
                         <p>
-                            When someone asks for help, Launchpad searches solved questions to find a likely answer. Similarly, when support contacts come across a frequently asked question they can select the best answer and make it available as a template for future use.
+                            When someone asks for help Launchpad searches solved questions to find a likely answer. Similarly, when support contacts come across a frequently asked question they can select the best answer and make it available as a template for future use.
                         </p>
                     </div>
                     <div class="clear"></div>
@@ -98,7 +98,7 @@
                 <a href="feature-tracking" tabindex="3" accesskey="e">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2008 Canonical Ltd. <a href="#" tabindex="4" accesskey="f">Terms of Use</a> &#124; <a href="#" tabindex="5" accesskey="g">Feedback</a> &#124; <a href="#" tabindex="6" accesskey="h">FAQ</a>
+                &copy; 2004-2008 Canonical Ltd. <a href="https://help.launchpad.net/Legal" tabindex="4" accesskey="f">Terms of Use</a> &#124; <a href="https://help.launchpad.net/Feedback" tabindex="5" accesskey="g">Feedback</a> &#124; <a href="https://help.launchpad.net/FAQ" tabindex="6" accesskey="h">FAQ</a>
             </li>
         </ul>
     </div>

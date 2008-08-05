@@ -237,13 +237,16 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
+    def getElements(self):
+        return list(self.request.breadcrumbs)
+
     def render(self):
         """Render the hierarchy HTML.
 
         The hierarchy elements are taken from the request.breadcrumbs list.
         For each element, element.text is cgi escaped.
         """
-        elements = list(self.request.breadcrumbs)
+        elements = self.getElements()
 
         if config.launchpad.site_message:
             site_message = (
@@ -282,8 +285,6 @@ class Hierarchy(LaunchpadView):
                 before_last_element = None
             for element in elements:
                 cssclass = 'item'
-                if element.has_menu:
-                    cssclass = ' '.join([cssclass, 'container'])
                 if element is before_last_element:
                     cssclass = ' '.join(['before-last', cssclass])
                 elif element is last_element:

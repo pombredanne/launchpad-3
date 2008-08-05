@@ -100,10 +100,12 @@ You also access teams using the same interface.
 
 You can find out how a person has membership in a team.
 
-    >>> path = salgado.findPathToTeam(
-    ...     team=launchpad.people['mailing-list-experts'])
-    >>> [team.name for team in path]
-    [u'admins', u'mailing-list-experts']
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> path = salgado.findPathToTeam(
+    # ...     team=launchpad.people['mailing-list-experts'])
+    # >>> [team.name for team in path]
+    # [u'admins', u'mailing-list-experts']
 
 You can create a new team through the web interface.  The simplest case of
 this requires only the new team's name, owner and display name.
