@@ -143,10 +143,10 @@ class WadlServiceRootResourceAPI(WadlAPI):
         top_level = self.resource.getTopLevelPublications()
         for link_name, publication in top_level.items():
             if ITopLevelEntryLink.providedBy(publication):
-                # It's an entry resource
+                # It's a link to an entry resource.
                 resource = publication
             else:
-                # It's a collection resources.
+                # It's a collection resource.
                 resource = CollectionResource(
                     publication, self.resource.request)
             resource_dicts.append({'name' : link_name,

@@ -324,10 +324,10 @@ This is saying that applying the JSONPath expression
 something interesting: a variable we like to call
 'people_collection_link'. Applying the JSONPath expression
 '$['people_collection_link']' will give you a variable we like to call
-"me_link".
+'me_link'.
 
 What's special about these variables? Well, they're links to other
-resource. This is represented in WADL by giving the <param> tag a
+resources. This is represented in WADL by giving the <param> tag a
 child <link> tag. The <link> tag explains what sort of resource is at
 the other end of the link.
 
