@@ -852,7 +852,7 @@ class IStoreSelector(Interface):
         DEFAULT_FLAVOR flavor should assume they have a MASTER and that
         a higher level will catch the exception raised if an attempt is
         made to write changes to a read only store. DEFAULT_FLAVOR exists
-        for backwards compatilibity, and new code should explicity state
+        for backwards compatibility, and new code should explicitly state
         if they want a master or a slave.
 
         :raises MasterUnavailable: A master database was requested but

@@ -43,7 +43,7 @@ if dbname is None:
     dbname = match.group(1)
 
 if dbhost is None:
-    match = re.search(r'dbhost=(\S*)', dbconfig.main_master)
+    match = re.search(r'host=(\S*)', dbconfig.main_master)
     if match is not None:
         dbhost = match.group(1)
 

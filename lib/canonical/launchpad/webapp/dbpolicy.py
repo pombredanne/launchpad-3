@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
-        'LaunchpadDatabasePolicy',
-        ]
+    'LaunchpadDatabasePolicy',
+    ]
 
 from datetime import datetime, timedelta
 from textwrap import dedent
@@ -18,8 +18,8 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp import LaunchpadView
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import (
-        IDatabasePolicy, IStoreSelector,
-        MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR, SLAVE_FLAVOR)
+    IDatabasePolicy, IStoreSelector,
+    MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR, SLAVE_FLAVOR)
 
 
 def _now():
@@ -72,11 +72,11 @@ class LaunchpadDatabasePolicy:
 
         This method is invoked by LaunchpadBrowserPublication.endRequest.
         """
-        if not self.read_only and not WebServiceLayer.providedBy(self.request):
-            # A non-readonly request has been made. Store this fact
-            # in the session. Precision is hard coded at 1 minute.
-            # Note that webservice clients may not support cookies, so
-            # don't mess with their session.
+        if not (self.read_only or WebServiceLayer.providedBy(self.request)):
+            # A non-readonly request or a webservice request has been
+            # made. Store this fact in the session. Precision is hard
+            # coded at 1 minute. Note that webservice clients may not
+            # support cookies, so don't mess with their session.
             session_data = ISession(self.request)['lp.dbpolicy']
             last_write = session_data.get('last_write', None)
             now = _now()
