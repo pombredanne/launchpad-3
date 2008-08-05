@@ -461,7 +461,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def getBuiltBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
-        clauses = ["""
+        clauses = """
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
             BinaryPackagePublishingHistory.distroarchseries=
@@ -472,14 +472,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.pocket=%s
         """ % sqlvalues(self.sourcepackagerelease, self.distroseries,
-                        self.archive, self.pocket)]
+                        self.archive, self.pocket)
 
         clauseTables = ['Build', 'BinaryPackageRelease', 'DistroArchSeries']
         orderBy = ['-BinaryPackagePublishingHistory.id']
         preJoins = ['binarypackagerelease']
 
         results = BinaryPackagePublishingHistory.select(
-            " AND ".join(clauses), orderBy=orderBy, clauseTables=clauseTables,
+            clauses, orderBy=orderBy, clauseTables=clauseTables,
             prejoins=preJoins)
         binary_publications = list(results)
 
