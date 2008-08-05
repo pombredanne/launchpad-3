@@ -39,14 +39,15 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.hwdb import (HWBus, HWMainClass,
-    HWSubClass, HWSubmissionFormat, HWSubmissionKeyNotUnique,
-    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceClass,
-    IHWDeviceClassSet, IHWDeviceDriverLink, IHWDeviceDriverLinkSet,
-    IHWDeviceNameVariant, IHWDeviceNameVariantSet, IHWDeviceSet, IHWDriver,
-    IHWDriverSet, IHWSubmission, IHWSubmissionDevice, IHWSubmissionDeviceSet,
-    IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
-    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet)
+from canonical.launchpad.interfaces.hwdb import (
+    HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
+    HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
+    IHWDeviceClass, IHWDeviceClassSet, IHWDeviceDriverLink,
+    IHWDeviceDriverLinkSet, IHWDeviceNameVariant, IHWDeviceNameVariantSet,
+    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionDevice,
+    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
+    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
+    IHWVendorNameSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
