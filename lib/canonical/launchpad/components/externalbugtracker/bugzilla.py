@@ -353,8 +353,8 @@ class BugzillaLPPlugin(Bugzilla):
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
         super(BugzillaLPPlugin, self).__init__(baseurl)
-        self.bugs = {}
-        self.bug_aliases = {}
+        self._bugs = {}
+        self._bug_aliases = {}
 
         self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
 
@@ -412,14 +412,14 @@ class BugzillaLPPlugin(Bugzilla):
     def _storeBugs(self, remote_bugs):
         """Store remote bugs in the local `bugs` dict."""
         for remote_bug in remote_bugs:
-            self.bugs[remote_bug['id']] = remote_bug
+            self._bugs[remote_bug['id']] = remote_bug
 
             # The bug_aliases dict is a mapping between aliases and bug
             # IDs. We use the aliases dict to look up the correct ID for
             # a bug. This allows us to reference a bug by either ID or
             # alias.
             if remote_bug['alias'] != '':
-                self.bug_aliases[remote_bug['alias']] = remote_bug['id']
+                self._bug_aliases[remote_bug['alias']] = remote_bug['id']
 
     def getModifiedRemoteBugs(self, bug_ids, last_checked):
         """See `IExternalBugTracker`."""
@@ -484,7 +484,7 @@ class BugzillaLPPlugin(Bugzilla):
     def _getActualBugId(self, bug_id):
         """Return the actual bug id for an alias or id."""
         # See if bug_id is actually an alias.
-        actual_bug_id = self.bug_aliases.get(bug_id)
+        actual_bug_id = self._bug_aliases.get(bug_id)
 
         # bug_id isn't an alias, so try turning it into an int and
         # looking the bug up by ID.
@@ -500,7 +500,7 @@ class BugzillaLPPlugin(Bugzilla):
 
             # Check that the bug does actually exist. That way we're
             # treating integer bug IDs and aliases in the same way.
-            if actual_bug_id not in self.bugs:
+            if actual_bug_id not in self._bugs:
                 raise BugNotFound(bug_id)
 
             return actual_bug_id
@@ -512,8 +512,8 @@ class BugzillaLPPlugin(Bugzilla):
         # Attempt to get the status and resolution from the bug. If
         # we don't have the data for either of them, raise an error.
         try:
-            status = self.bugs[actual_bug_id]['status']
-            resolution = self.bugs[actual_bug_id]['resolution']
+            status = self._bugs[actual_bug_id]['status']
+            resolution = self._bugs[actual_bug_id]['resolution']
         except KeyError, error:
             raise UnparseableBugData()
 
@@ -527,7 +527,7 @@ class BugzillaLPPlugin(Bugzilla):
         actual_bug_id = self._getActualBugId(bug_watch.remotebug)
 
         # Check that the bug exists, first.
-        if actual_bug_id not in self.bugs:
+        if actual_bug_id not in self._bugs:
             raise BugNotFound(bug_watch.remotebug)
 
         # Get only the remote comment IDs and store them in the
@@ -573,7 +573,7 @@ class BugzillaLPPlugin(Bugzilla):
         bug_comments = dict(
             (comment['id'], comment) for comment in comment_list)
 
-        self.bugs[actual_bug_id]['comments'] = bug_comments
+        self._bugs[actual_bug_id]['comments'] = bug_comments
 
     def getPosterForComment(self, bug_watch, comment_id):
         """See `ISupportsCommentImport`."""
@@ -584,7 +584,7 @@ class BugzillaLPPlugin(Bugzilla):
         # bug 248938).
         comment_id = int(comment_id)
 
-        comment = self.bugs[actual_bug_id]['comments'][comment_id]
+        comment = self._bugs[actual_bug_id]['comments'][comment_id]
         display_name, email = parseaddr(comment['author'])
 
         # If the name is empty then we return None so that
@@ -602,7 +602,7 @@ class BugzillaLPPlugin(Bugzilla):
         # BugWatchUpdater.importBugComments() will pass us a string (see
         # bug 248938).
         comment_id = int(comment_id)
-        comment = self.bugs[actual_bug_id]['comments'][comment_id]
+        comment = self._bugs[actual_bug_id]['comments'][comment_id]
 
         # Turn the time in the comment, which is an XML-RPC datetime
         # into something more useful to us.

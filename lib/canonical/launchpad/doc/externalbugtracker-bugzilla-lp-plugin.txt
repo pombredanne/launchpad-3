@@ -144,10 +144,10 @@ system.
 
 The bug data is stored as a list of dicts:
 
-    >>> for bug in sorted(bugzilla.bugs.keys()):
+    >>> for bug in sorted(bugzilla._bugs.keys()):
     ...     print "Bug %s:" % bug
-    ...     for key in sorted(bugzilla.bugs[bug].keys()):
-    ...         print "    %s: %s" % (key, bugzilla.bugs[bug][key])
+    ...     for key in sorted(bugzilla._bugs[bug].keys()):
+    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
     ...     print "\n"
     Bug 1:
         alias: 
@@ -185,17 +185,17 @@ The bug data is stored as a list of dicts:
 
 initializeRemoteBugDB() will only store a bug once, even if it is
 requested both by alias and ID. We'll reset the test BugzillaLPPlugin's
-bugs and bug_aliases dicts to demonstrate this.
+_bugs and _bug_aliases dicts to demonstrate this.
 
-    >>> bugzilla.bugs = {}
-    >>> bugzilla.bug_aliases = {}
+    >>> bugzilla._bugs = {}
+    >>> bugzilla._bug_aliases = {}
     >>> bugzilla.initializeRemoteBugDB([2, 'bug-two'])
     CALLED Launchpad.get_bugs({'ids': [2, 'bug-two'], 'permissive': True})
 
-    >>> for bug in sorted(bugzilla.bugs.keys()):
+    >>> for bug in sorted(bugzilla._bugs.keys()):
     ...     print "Bug %r:" % bug
-    ...     for key in sorted(bugzilla.bugs[bug].keys()):
-    ...         print "    %s: %s" % (key, bugzilla.bugs[bug][key])
+    ...     for key in sorted(bugzilla._bugs[bug].keys()):
+    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
     ...     print "\n"
     Bug 2:
         alias: bug-two
@@ -218,7 +218,7 @@ bugs and bug_aliases dicts to demonstrate this.
 Aliases are stored in a separate dict, which contains a mapping between
 the alias and the bug's actual ID.
 
-    >>> for alias, bug_id in bugzilla.bug_aliases.items():
+    >>> for alias, bug_id in bugzilla._bug_aliases.items():
     ...     print "%s: %s" % (alias, bug_id)
     bug-two: 2
 
@@ -270,10 +270,10 @@ Bugzilla's Launchpad.get_bugs() method returns all the data for each
 bug it returns. getModifiedRemoteBugs() saves this information into the
 BugzillaLPPlugin instance's bugs dict.
 
-    >>> for bug in sorted(bugzilla.bugs):
+    >>> for bug in sorted(bugzilla._bugs):
     ...     print "Bug %s:" % bug
-    ...     for key in sorted(bugzilla.bugs[bug]):
-    ...         print "    %s: %s" % (key, bugzilla.bugs[bug][key])
+    ...     for key in sorted(bugzilla._bugs[bug]):
+    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
     ...     print "\n"
     Bug 1:
         alias: 
@@ -315,13 +315,13 @@ If the data we've imported from Bugzilla is incomplete and doesn't
 contain either the bug's status or its resolution an UnparseableBugData
 error will be raised. We can add a sample bug to demonstrate this.
 
-    >>> bugzilla.bugs[999] = {}
+    >>> bugzilla._bugs[999] = {}
     >>> bugzilla.getRemoteStatus(999)
     Traceback (most recent call last):
       ...
     UnparseableBugData
 
-    >>> del bugzilla.bugs[999]
+    >>> del bugzilla._bugs[999]
 
 
 == Retrieving remote comments ==
@@ -399,7 +399,7 @@ and a list of the comment IDs to retrieve for that bug watch.
 The comments will be stored in the bugs dict as a dict of comment id =>
 comment dict mappings under the key 'comments'.
 
-    >>> comments = bugzilla.bugs[1]['comments']
+    >>> comments = bugzilla._bugs[1]['comments']
     >>> for comment_id in sorted(comments.keys()):
     ...     print "Comment %s:" % comment_id
     ...     comment = comments[comment_id]
@@ -457,7 +457,7 @@ Sample Person as our poster.
 The datecreated attribute of the Message will be the same as the 'time'
 field on the imported comment.
 
-    >>> print bugzilla.bugs[2]['comments'][2]['time']
+    >>> print bugzilla._bugs[2]['comments'][2]['time']
     20080616T13:08:08
 
     >>> print message.datecreated
