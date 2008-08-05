@@ -11,11 +11,6 @@
   >
 <body>
 
-<metal:portlets fill-slot="portlets">
-  <tal:portlet
-    replace="structure view/distribution/@@+portlet-ppa-architectures" />
-</metal:portlets>
-
 <div metal:fill-slot="main">
 
   <h1>Personal Package Archive Activation</h1>
