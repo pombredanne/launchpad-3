@@ -861,7 +861,7 @@ class PackageUpload(SQLBase):
             # This is a signed upload.
             signer = self.signing_key.owner
             signer_line = 'Changes file signed by: %s (%s)' % (
-                signer.displayname, signer.preferredemail)
+                signer.displayname, signer.preferredemail.email)
             mail_text = '%s\n%s' % (signer_line, mail_text)
 
         if from_addr is None:
