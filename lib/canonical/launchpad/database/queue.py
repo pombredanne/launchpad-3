@@ -571,7 +571,7 @@ class PackageUpload(SQLBase):
             # convention.
             pocket_suffix = pocketsuffix[self.pocket]
             if pocket_suffix:
-                suite = '%s-%s' % (self.distroseries.name, pocket_suffix)
+                suite = '%s%s' % (self.distroseries.name, pocket_suffix)
             else:
                 suite = self.distroseries.name
 
