@@ -13,14 +13,106 @@ from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, IScriptActivitySet)
+from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
+from canonical.launchpad.interfaces.branch import (
+    BranchType, IBranchSet, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.scriptactivity import (
+    IScriptActivitySet)
+from canonical.launchpad.interfaces.codehosting import (
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.xmlrpc.codehosting import BranchDetailsStorageAPI
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.xmlrpc.codehosting import (
+    BranchDetailsStorageAPI, BranchFileSystemAPI, LAUNCHPAD_SERVICES,
+    run_as_requester)
 from canonical.testing import DatabaseFunctionalLayer
 
 
 UTC = pytz.timezone('UTC')
+
+
+def get_logged_in_username():
+    """Return the username of the logged in person.
+
+    Used by `TestRunAsRequester`.
+    """
+    user = getUtility(ILaunchBag).user
+    if user is None:
+        return None
+    return user.name
+
+
+class TestRunAsRequester(TestCaseWithFactory):
+    """Tests for the `run_as_requester` decorator."""
+
+    layer = DatabaseFunctionalLayer
+
+    class UsesLogin:
+        """Example class used for testing `run_as_requester`."""
+
+        @run_as_requester
+        def getLoggedInUsername(self, requester):
+            return get_logged_in_username()
+
+        @run_as_requester
+        def getRequestingUser(self, requester):
+            """Return the requester."""
+            return requester
+
+        @run_as_requester
+        def raiseException(self, requester):
+            raise RuntimeError("Deliberately raised error.")
+
+    def setUp(self):
+        super(TestRunAsRequester, self).setUp()
+        self.person = self.factory.makePerson()
+        transaction.commit()
+        self.example = self.UsesLogin()
+
+    def test_loginAsRequester(self):
+        # run_as_requester logs in as user given as the first argument to the
+        # method being decorated.
+        username = self.example.getLoggedInUsername(self.person.id)
+        self.assertEqual(self.person.name, username)
+
+    def test_logoutAtEnd(self):
+        # run_as_requester logs out once the decorated method is finished.
+        self.example.getLoggedInUsername(self.person.id)
+        self.assertEqual(None, get_logged_in_username())
+
+    def test_logoutAfterException(self):
+        # run_as_requester logs out even if the decorated method raises an
+        # exception.
+        try:
+            self.example.raiseException(self.person.id)
+        except RuntimeError:
+            pass
+        self.assertEqual(None, get_logged_in_username())
+
+    def test_passesRequesterInAsPerson(self):
+        # run_as_requester passes in the Launchpad Person object of the
+        # requesting user.
+        user = self.example.getRequestingUser(self.person.id)
+        self.assertEqual(self.person.name, user.name)
+
+    def test_invalidRequester(self):
+        # A method wrapped with run_as_requester raises NotFoundError if there
+        # is no person with the passed in id.
+        self.assertRaises(
+            NotFoundError, self.example.getRequestingUser, -1)
+
+    def test_cheatsForLaunchpadServices(self):
+        # Various Launchpad services need to use the authserver to get
+        # information about branches, unencumbered by petty restrictions of
+        # ownership or privacy. `run_as_requester` detects the special
+        # username `LAUNCHPAD_SERVICES` and passes that through to the
+        # decorated function without logging in.
+        username = self.example.getRequestingUser(LAUNCHPAD_SERVICES)
+        self.assertEqual(LAUNCHPAD_SERVICES, username)
+        login_id = self.example.getLoggedInUsername(LAUNCHPAD_SERVICES)
+        self.assertEqual(None, login_id)
 
 
 class BranchDetailsStorageTest(TestCaseWithFactory):
@@ -202,6 +294,454 @@ class BranchPullQueueTest(TestCaseWithFactory):
     def test_requestMirrorPutsBranchInQueue_imported(self):
         branch = self.makeBranchAndRequestMirror(BranchType.IMPORTED)
         self.assertBranchQueues([], [], [branch])
+
+
+class BranchFileSystemTest(TestCaseWithFactory):
+    """Tests for the implementation of `IBranchFileSystem`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(BranchFileSystemTest, self).setUp()
+        self.arbitrary_person = self.factory.makePerson()
+        self.branchfs = BranchFileSystemAPI(None, None)
+
+    def assertFaultEqual(self, faultCode, faultString, fault):
+        """Assert that `fault` has the passed-in attributes."""
+        self.assertEqual(fault.faultCode, faultCode)
+        self.assertEqual(fault.faultString, faultString)
+
+    def test_createBranch(self):
+        # createBranch creates a branch with the supplied details and the
+        # caller as registrant.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        name = self.factory.getUniqueString()
+        branch_id = self.branchfs.createBranch(
+            owner.id, owner.name, product.name, name)
+        login(ANONYMOUS)
+        branch = getUtility(IBranchSet).get(branch_id)
+        self.assertEqual(owner, branch.owner)
+        self.assertEqual(product, branch.product)
+        self.assertEqual(name, branch.name)
+        self.assertEqual(owner, branch.registrant)
+
+    def test_createBranch_junk(self):
+        # createBranch can create +junk branches.
+        owner = self.factory.makePerson()
+        name = self.factory.getUniqueString()
+        branch_id = self.branchfs.createBranch(
+            owner.id, owner.name, '+junk', name)
+        login(ANONYMOUS)
+        branch = getUtility(IBranchSet).get(branch_id)
+        self.assertEqual(owner, branch.owner)
+        self.assertEqual(None, branch.product)
+        self.assertEqual(name, branch.name)
+        self.assertEqual(owner, branch.registrant)
+
+    def test_createBranch_bad_product(self):
+        # Creating a branch for a non-existant product fails.
+        owner = self.factory.makePerson()
+        name = self.factory.getUniqueString()
+        message = "Project 'no-such-product' does not exist."
+        fault = self.branchfs.createBranch(
+            owner.id, owner.name, 'no-such-product', name)
+        self.assertFaultEqual(
+            NOT_FOUND_FAULT_CODE, message, fault)
+
+    def test_createBranch_other_user(self):
+        # Creating a branch under another user's directory fails.
+        creator = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        name = self.factory.getUniqueString()
+        message = ("%s cannot create branches owned by %s"
+                   % (creator.displayname, other_person.displayname))
+        fault = self.branchfs.createBranch(
+            creator.id, other_person.name, product.name, name)
+        self.assertFaultEqual(
+            PERMISSION_DENIED_FAULT_CODE, message, fault)
+
+    def test_createBranch_bad_name(self):
+        # Creating a branch with an invalid name fails.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        invalid_name = 'invalid name!'
+        message = ("Invalid branch name %r. %s"
+                   % (invalid_name, BRANCH_NAME_VALIDATION_ERROR_MESSAGE))
+        fault = self.branchfs.createBranch(
+            owner.id, owner.name, product.name, invalid_name)
+        self.assertFaultEqual(
+            PERMISSION_DENIED_FAULT_CODE, message, fault)
+
+    def test_createBranch_bad_user(self):
+        # Creating a branch under a non-existent user fails.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        name = self.factory.getUniqueString()
+        message = "User/team 'no-one' does not exist."
+        fault = self.branchfs.createBranch(
+            owner.id, 'no-one', product.name, name)
+        self.assertFaultEqual(
+            NOT_FOUND_FAULT_CODE, message, fault)
+
+    def test_createBranch_bad_user_bad_product(self):
+        # If both the user and the product are not found, then the missing
+        # user "wins" the error reporting race (as the url reads
+        # ~user/product/branch).
+        owner = self.factory.makePerson()
+        name = self.factory.getUniqueString()
+        message = "User/team 'no-one' does not exist."
+        fault = self.branchfs.createBranch(
+            owner.id, 'no-one', 'no-product', name)
+        self.assertFaultEqual(
+            NOT_FOUND_FAULT_CODE, message, fault)
+
+    def test_fetchProductID(self):
+        productID = self.branchfs.fetchProductID('firefox')
+        self.assertEqual(4, productID)
+
+        # Invalid product names are signalled by a return value of ''
+        productID = self.branchfs.fetchProductID('xxxxx')
+        self.assertEqual('', productID)
+
+    def test_getBranchesForUser(self):
+        # getBranchesForUser returns all of the hosted branches that a user
+        # may write to. The branches are grouped by product, and are specified
+        # by name and id. The name and id of the products are also included.
+        transaction.begin()
+        no_priv = getUtility(IPersonSet).getByName('no-priv')
+        firefox = getUtility(IProductSet).getByName('firefox')
+        new_branch = getUtility(IBranchSet).new(
+            BranchType.HOSTED, 'branch2', no_priv, no_priv, firefox, None)
+        # We only create new_branch so that we can test getBranchesForUser.
+        # Zope's security is not relevant and only gets in the way, because
+        # there's no logged in user.
+        new_branch = removeSecurityProxy(new_branch)
+        transaction.commit()
+
+        fetched_branches = self.branchfs.getBranchesForUser(no_priv.id)
+
+        self.assertEqual(
+            [(no_priv.id,
+              [((firefox.id, firefox.name),
+                [(new_branch.id, new_branch.name)])])],
+            fetched_branches)
+
+    def test_getBranchesForUserNullProduct(self):
+        # getBranchesForUser returns branches for hosted branches with no
+        # product.
+        login(ANONYMOUS)
+        try:
+            person = getUtility(IPersonSet).get(12)
+            login_email = removeSecurityProxy(person.preferredemail).email
+        finally:
+            logout()
+
+        transaction.begin()
+        login(login_email)
+        try:
+            branch = getUtility(IBranchSet).new(
+                BranchType.HOSTED, 'foo-branch', person, person, None, None,
+                None)
+        finally:
+            logout()
+            transaction.commit()
+
+        branchInfo = self.branchfs.getBranchesForUser(12)
+
+        for person_id, by_product in branchInfo:
+            if person_id == 12:
+                for (product_id, product_name), branches in by_product:
+                    if product_id == '':
+                        self.assertEqual('', product_name)
+                        self.assertEqual(1, len(branches))
+                        branch_id, branch_name = branches[0]
+                        self.assertEqual('foo-branch', branch_name)
+                        break
+                else:
+                    self.fail("Couldn't find +junk branch")
+                break
+        else:
+            self.fail("Couldn't find user 12")
+
+    def test_getBranchInformation_owned(self):
+        # When we get the branch information for one of our own branches (i.e.
+        # owned by us or by a team we are on), we get the database id of the
+        # branch, and a flag saying that we can write to that branch.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'name12', 'gnome-terminal', 'pushed')
+        self.assertEqual(25, branch_id)
+        self.assertEqual(WRITABLE, permissions)
+
+    def test_getBranchInformation_nonexistent(self):
+        # When we get the branch information for a non-existent branch, we get
+        # a tuple of two empty strings (the empty string being an
+        # approximation of 'None').
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'name12', 'gnome-terminal', 'doesnt-exist')
+        self.assertEqual('', branch_id)
+        self.assertEqual('', permissions)
+
+    def test_getBranchInformation_unowned(self):
+        # When we get the branch information for a branch that we don't own,
+        # we get the database id and a flag saying that we can only read that
+        # branch.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'sabdfl', 'firefox', 'release-0.8')
+        self.assertEqual(13, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_mirrored(self):
+        # Mirrored branches cannot be written to by the smartserver or SFTP
+        # server.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'name12', 'firefox', 'main')
+        self.assertEqual(1, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_imported(self):
+        # Imported branches cannot be written to by the smartserver or SFTP
+        # server.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'vcs-imports', 'gnome-terminal', 'import')
+        self.assertEqual(75, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_remote(self):
+        # Remote branches are not accessible by the smartserver or SFTP
+        # server.
+        no_priv = getUtility(IPersonSet).getByName('no-priv')
+        firefox = getUtility(IProductSet).getByName('firefox')
+        branch = getUtility(IBranchSet).new(
+            BranchType.REMOTE, 'remote', no_priv, no_priv, firefox, None)
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'no-priv', 'firefox', 'remote')
+        self.assertEqual('', branch_id)
+        self.assertEqual('', permissions)
+
+    def test_getBranchInformation_private(self):
+        # When we get the branch information for a private branch that is
+        # hidden to us, it is an if the branch doesn't exist at all.
+        store = DatabaseUserDetailsStorageV2(None)
+
+        # salgado is a member of landscape-developers.
+        person_set = getUtility(IPersonSet)
+        salgado = person_set.getByName('salgado')
+        landscape_dev = person_set.getByName('landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be in landscape-developers team, but isn't.")
+
+        store._createBranchInteraction(
+            'salgado', 'landscape-developers', 'landscape',
+            'some-branch')
+        # ddaa is not an admin, not a Landscape developer.
+        branch_id, permissions = store._getBranchInformationInteraction(
+            'ddaa', 'landscape-developers', 'landscape', 'some-branch')
+        self.assertEqual('', branch_id)
+        self.assertEqual('', permissions)
+
+    def test_getBranchInformationAsLaunchpadServices(self):
+        # The LAUNCHPAD_SERVICES special "user" has read-only access to all
+        # branches.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            LAUNCHPAD_SERVICES, 'name12', 'gnome-terminal', 'pushed')
+        self.assertEqual(25, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformationForPrivateAsLaunchpadServices(self):
+        # The LAUNCHPAD_SERVICES special "user" has read-only access to all
+        # branches, even private ones.
+        store = DatabaseUserDetailsStorageV2(None)
+
+        # salgado is a member of landscape-developers.
+        person_set = getUtility(IPersonSet)
+        salgado = person_set.getByName('salgado')
+        landscape_dev = person_set.getByName('landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be in landscape-developers team, but isn't.")
+
+        branch_id = store._createBranchInteraction(
+            'salgado', 'landscape-developers', 'landscape',
+            'some-branch')
+        login(ANONYMOUS)
+        try:
+            branch = getUtility(IBranchSet).get(branch_id)
+            self.assertTrue(
+                removeSecurityProxy(branch).private,
+                "%r not private" % (branch,))
+        finally:
+            logout()
+        branch_info = store._getBranchInformationInteraction(
+            LAUNCHPAD_SERVICES, 'landscape-developers', 'landscape',
+            'some-branch')
+        self.assertEqual((branch_id, 'r'), branch_info)
+
+    def _makeProductWithPrivateDevFocus(self):
+        """Make a product with a private development focus.
+
+        :return: The new Product and the new Branch.
+        """
+        login(ANONYMOUS)
+        product = self.factory.makeProduct()
+        # Only products that are explicitly specified in
+        # allow_default_stacking will have values for default stacked-on. Here
+        # we add the just-created product to allow_default_stacking so we can
+        # test stacking with private branches.
+        section = (
+            "[codehosting]\n"
+            "allow_default_stacking: %s,%s"
+            % (config.codehosting.allow_default_stacking, product.name))
+        handle = self.factory.getUniqueString()
+        config.push(handle, section)
+        self.addCleanup(lambda: config.pop(handle))
+        branch = self.factory.makeBranch(product=product)
+        series = removeSecurityProxy(product.development_focus)
+        series.user_branch = branch
+        removeSecurityProxy(branch).private = True
+        transaction.commit()
+        logout()
+        return product, branch
+
+    def test_getDefaultStackedOnBranch_invisible(self):
+        # When the default stacked-on branch for a product is not visible to
+        # the requesting user, then we return the empty string.
+        product, branch = self._makeProductWithPrivateDevFocus()
+        store = DatabaseUserDetailsStorageV2(None)
+        stacked_on_url = store._getDefaultStackedOnBranchInteraction(
+            self.arbitrary_person.id, product.name)
+        self.assertEqual('', stacked_on_url)
+
+    def test_getDefaultStackedOnBranch_private(self):
+        # When the default stacked-on branch for a product is private but
+        # visible to the requesting user, we return the URL to the branch
+        # relative to the host.
+        product, branch = self._makeProductWithPrivateDevFocus()
+        # We want to know who owns it and what its name is. We are a test and
+        # should be allowed to know such things.
+        branch = removeSecurityProxy(branch)
+        store = DatabaseUserDetailsStorageV2(None)
+        unique_name = branch.unique_name
+        stacked_on_url = store._getDefaultStackedOnBranchInteraction(
+            branch.owner.id, product.name)
+        self.assertEqual('/' + unique_name, stacked_on_url)
+
+    def test_getDefaultStackedOnBranch_junk(self):
+        # getDefaultStackedOnBranch returns the empty string for '+junk'.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch = store._getDefaultStackedOnBranchInteraction(
+            self.arbitrary_person.id, '+junk')
+        self.assertEqual('', branch)
+
+    def test_getDefaultStackedOnBranch_none_set(self):
+        # getDefaultStackedOnBranch returns the empty string when there is no
+        # branch set.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch = store._getDefaultStackedOnBranchInteraction(
+            self.arbitrary_person.id, 'firefox')
+        self.assertEqual('', branch)
+
+    def test_getDefaultStackedOnBranch_no_product(self):
+        # getDefaultStackedOnBranch raises a Fault if there is no such
+        # product.
+        store = DatabaseUserDetailsStorageV2(None)
+        product = 'no-such-product'
+        self.assertRaisesFault(
+            NOT_FOUND_FAULT_CODE,
+            'Project %r does not exist.' % (product,),
+            store._getDefaultStackedOnBranchInteraction,
+            self.arbitrary_person.id, product)
+
+    def test_getDefaultStackedOnBranch(self):
+        # getDefaultStackedOnBranch returns the relative URL of the default
+        # stacked-on branch for the named product.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch = store._getDefaultStackedOnBranchInteraction(
+            self.arbitrary_person.id, 'evolution')
+        self.assertEqual('/~vcs-imports/evolution/main', branch)
+
+    def test_initialMirrorRequest(self):
+        # The default 'next_mirror_time' for a newly created hosted branch
+        # should be None.
+        branchID = self.branchfs.createBranch(
+            1, 'sabdfl', '+junk', 'foo')
+        self.assertEqual(self.getNextMirrorTime(branchID), None)
+
+    def test_requestMirror(self):
+        # requestMirror should set the next_mirror_time field to be the
+        # current time.
+        hosted_branch_id = 25
+        # make sure the sample data is sane
+        self.assertEqual(None, self.getNextMirrorTime(hosted_branch_id))
+
+        cur = cursor()
+        cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+        [current_db_time] = cur.fetchone()
+        transaction.commit()
+
+        self.branchfs.requestMirror(1, hosted_branch_id)
+
+        self.assertTrue(
+            current_db_time < self.getNextMirrorTime(hosted_branch_id),
+            "Branch next_mirror_time not updated.")
+
+    def test_requestMirror_private(self):
+        # requestMirror can be used to request the mirror of a private branch.
+        store = DatabaseUserDetailsStorageV2(None)
+
+        # salgado is a member of landscape-developers.
+        person_set = getUtility(IPersonSet)
+        salgado = person_set.getByName('salgado')
+        landscape_dev = person_set.getByName('landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be in landscape-developers team, but isn't.")
+
+        branch_id = store._createBranchInteraction(
+            'salgado', 'landscape-developers', 'landscape',
+            'some-branch')
+
+        cur = cursor()
+        cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+        [current_db_time] = cur.fetchone()
+        transaction.commit()
+
+        store._requestMirrorInteraction(salgado.id, branch_id)
+        self.assertTrue(
+            current_db_time < self.getNextMirrorTime(branch_id),
+            "Branch next_mirror_time not updated.")
+
+
+    def test_mirrorComplete_resets_mirror_request(self):
+        # After successfully mirroring a branch, next_mirror_time should be
+        # set to NULL.
+
+        # An arbitrary hosted branch.
+        hosted_branch_id = 25
+
+        # The user id of a person who can see the hosted branch.
+        user_id = 1
+
+        # Request that 25 (a hosted branch) be mirrored. This sets
+        # next_mirror_time.
+        self.branchfs.requestMirror(user_id, hosted_branch_id)
+
+        # Simulate successfully mirroring branch 25
+        storage = DatabaseBranchDetailsStorage(None)
+        cur = cursor()
+        self.branchfs.startMirroring(hosted_branch_id)
+        self.branchfs.mirrorComplete(hosted_branch_id, 'rev-1')
+
+        self.assertEqual(None, self.getNextMirrorTime(hosted_branch_id))
 
 
 def test_suite():

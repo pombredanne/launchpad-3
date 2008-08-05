@@ -8,7 +8,9 @@ __all__ = [
     'BranchFileSystemAPI',
     ]
 
+
 import datetime
+from xmlrpclib import Fault
 
 import pytz
 
@@ -16,12 +18,18 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.branch import (
-    BranchType, IBranchSet, UnknownBranchTypeError)
+    BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.codehosting import (
-    IBranchDetailsStorage, IBranchFileSystem)
+    IBranchDetailsStorage, IBranchFileSystem, LAUNCHPAD_SERVICES,
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 UTC = pytz.timezone('UTC')
@@ -108,6 +116,37 @@ def datetime_from_tuple(time_tuple):
         year, month, day, hour, minute, second, tzinfo=UTC)
 
 
+def run_as_requester(function):
+    """Decorate 'function' by logging in as the user identified by its first
+    parameter, the `Person` object is then passed in to the function instead
+    of the login ID.
+
+    The exception is when the requesting login ID is `LAUNCHPAD_SERVICES`. In
+    that case, we'll pass through the `LAUNCHPAD_SERVICES` variable and the
+    method will do whatever security proxy hackery is required to provide read
+    privileges to the Launchpad services.
+
+    Assumes that 'function' is on an object that implements a '_getPerson'
+    method similar to `UserDetailsStorageMixin._getPerson`.
+    """
+    def as_user(self, loginID, *args, **kwargs):
+        if loginID == LAUNCHPAD_SERVICES:
+            # Don't pass in an actual user. Instead pass in LAUNCHPAD_SERVICES
+            # and expect `function` to use `removeSecurityProxy` or similar.
+            return function(self, LAUNCHPAD_SERVICES, *args, **kwargs)
+        requester = getUtility(IPersonSet).get(loginID)
+        if requester is None:
+            raise NotFoundError("No person with id %s." % loginID)
+        login_person(requester)
+        try:
+            return function(self, requester, *args, **kwargs)
+        finally:
+            logout()
+    as_user.__name__ = function.__name__
+    as_user.__doc__ = function.__doc__
+    return as_user
+
+
 class BranchFileSystemAPI(LaunchpadXMLRPCView):
     """See `IBranchFileSystem`."""
 
@@ -116,3 +155,31 @@ class BranchFileSystemAPI(LaunchpadXMLRPCView):
     def getBranchesForUser(self, personID):
         """See `IBranchFileSystem`."""
         return []
+
+    @run_as_requester
+    def createBranch(self, requester, personName, productName, branchName):
+        """See `IBranchFileSystem`."""
+        owner = getUtility(IPersonSet).getByName(personName)
+        if owner is None:
+            return Fault(
+                NOT_FOUND_FAULT_CODE,
+                "User/team %r does not exist." % personName)
+
+        if productName == '+junk':
+            product = None
+        else:
+            product = getUtility(IProductSet).getByName(productName)
+            if product is None:
+                return Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "Project %r does not exist." % productName)
+
+        try:
+            branch = getUtility(IBranchSet).new(
+                BranchType.HOSTED, branchName, requester, owner,
+                product, None, None, author=requester)
+        except (BranchCreationException, LaunchpadValidationError), e:
+            return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
+        else:
+            return branch.id
+
