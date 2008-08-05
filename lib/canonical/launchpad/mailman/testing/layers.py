@@ -11,7 +11,6 @@ __all__ = [
 import os
 import atexit
 
-from canonical.config import config
 from canonical.testing.layers import AppServerLayer
 from canonical.launchpad.mailman.runmailman import start_mailman, stop_mailman
 from canonical.launchpad.mailman.testing import logwatcher

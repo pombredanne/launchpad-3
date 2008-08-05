@@ -12,7 +12,6 @@ import errno
 import shutil
 import socket
 import tarfile
-import itertools
 import traceback
 import xmlrpclib
 

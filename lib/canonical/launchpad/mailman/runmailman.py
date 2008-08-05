@@ -62,7 +62,6 @@ def mailmanctl(command, quiet=False, config=None, *additional_arguments):
 def stop_mailman(quiet=False, config=None):
     """Alias for mailmanctl('stop')."""
     mailmanctl('stop', quiet, config)
-    return #punt for now
     # Further, if the Mailman master pid file was not removed, then the
     # master watcher, and probably one of its queue runners, did not die.
     # Kill it hard and clean up after it.

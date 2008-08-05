@@ -14,7 +14,6 @@ __all__ = [
 
 import os
 import time
-import errno
 import datetime
 
 from Mailman.mm_cfg import LOG_DIR

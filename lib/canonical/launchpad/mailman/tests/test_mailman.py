@@ -9,7 +9,6 @@ import shutil
 import unittest
 
 from Mailman.mm_cfg import QUEUE_DIR, VAR_PREFIX
-from canonical.config import config
 from canonical.launchpad.mailman.testing import helpers
 from canonical.launchpad.mailman.testing.layers import MailmanLayer
 from canonical.launchpad.mailman.testing.smtpcontrol import SMTPControl
