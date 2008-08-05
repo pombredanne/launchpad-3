@@ -353,6 +353,8 @@ class BugzillaLPPlugin(Bugzilla):
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
         super(BugzillaLPPlugin, self).__init__(baseurl)
+        self.bugs = {}
+        self.bug_aliases = {}
 
         self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
 
@@ -407,20 +409,8 @@ class BugzillaLPPlugin(Bugzilla):
 
         return '; '.join(cookies)
 
-    def initializeRemoteBugDB(self, bug_ids):
-        """See `IExternalBugTracker`."""
-        self.bugs = {}
-        self.bug_aliases = {}
-
-        # First, grab the bugs from the remote server.
-        request_args = {
-            'ids': bug_ids,
-            'permissive': True,
-            }
-        response_dict = self.xmlrpc_proxy.Launchpad.get_bugs(request_args)
-        remote_bugs = response_dict['bugs']
-
-        # Now copy them into the local bugs dict.
+    def _storeBugs(self, remote_bugs):
+        """Store remote bugs in the local `bugs` dict."""
         for remote_bug in remote_bugs:
             self.bugs[remote_bug['id']] = remote_bug
 
@@ -428,8 +418,52 @@ class BugzillaLPPlugin(Bugzilla):
             # IDs. We use the aliases dict to look up the correct ID for
             # a bug. This allows us to reference a bug by either ID or
             # alias.
-            if remote_bug['alias'] and remote_bug['alias'] in bug_ids:
+            if remote_bug['alias']:
                 self.bug_aliases[remote_bug['alias']] = remote_bug['id']
+
+    def getModifiedRemoteBugs(self, bug_ids, last_checked):
+        """Return the IDs of bugs that have changed since a given time.
+
+        See `IExternalBugTracker`.
+        """
+        # We marshal last_checked into an xmlrpclib.DateTime since
+        # xmlrpclib can't do so cleanly itself.
+        changed_since = xmlrpclib.DateTime(last_checked.timetuple())
+
+        request_args = {
+            'ids': bug_ids,
+            'changed_since': changed_since,
+            'permissive': True,
+            }
+        response_dict = self.xmlrpc_proxy.Launchpad.get_bugs(request_args)
+        remote_bugs = response_dict['bugs']
+
+        # Store the bugs we've imported and return only their IDs.
+        self._storeBugs(remote_bugs)
+        bug_ids = [remote_bug['id'] for remote_bug in remote_bugs]
+
+        return bug_ids
+
+    def initializeRemoteBugDB(self, bug_ids):
+        """See `IExternalBugTracker`."""
+        # First, discard all those bug IDs about which we already have
+        # data.
+        bug_ids_to_retrieve = []
+        for bug_id in bug_ids:
+            try:
+                actual_bug_id = self._getActualBugId(bug_id)
+            except BugNotFound:
+                bug_ids_to_retrieve.append(bug_id)
+
+        # Next, grab the bugs we still need from the remote server.
+        request_args = {
+            'ids': bug_ids_to_retrieve,
+            'permissive': True,
+            }
+        response_dict = self.xmlrpc_proxy.Launchpad.get_bugs(request_args)
+        remote_bugs = response_dict['bugs']
+
+        self._storeBugs(remote_bugs)
 
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
@@ -454,27 +488,30 @@ class BugzillaLPPlugin(Bugzilla):
             return actual_bug_id
         else:
             try:
-                return int(bug_id)
+                actual_bug_id = int(bug_id)
             except ValueError:
                 # If bug_id can't be int()'d then it's likely an alias
                 # that doesn't exist, so raise BugNotFound.
                 raise BugNotFound(bug_id)
 
+            # Check that the bug does actually exist. That way we're
+            # treating integer bug IDs and aliases in the same way.
+            if actual_bug_id not in self.bugs:
+                raise BugNotFound(bug_id)
+
+            return actual_bug_id
+
     def getRemoteStatus(self, bug_id):
         """See `IExternalBugTracker`."""
         actual_bug_id = self._getActualBugId(bug_id)
 
-        try:
-            status = self.bugs[actual_bug_id]['status']
-            resolution = self.bugs[actual_bug_id]['resolution']
+        status = self.bugs[actual_bug_id]['status']
+        resolution = self.bugs[actual_bug_id]['resolution']
 
-            if resolution != '' and resolution is not None:
-                return "%s %s" % (status, resolution)
-            else:
-                return status
-
-        except KeyError:
-            raise BugNotFound(bug_id)
+        if resolution != '' and resolution is not None:
+            return "%s %s" % (status, resolution)
+        else:
+            return status
 
     def getCommentIds(self, bug_watch):
         """See `ISupportsCommentImport`."""
