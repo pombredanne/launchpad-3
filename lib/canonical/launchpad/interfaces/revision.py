@@ -87,6 +87,9 @@ class IRevisionSet(Interface):
             parent_ids, properties):
         """Create a new Revision with the given revision ID."""
 
+    def newFromBazaarRevision(bzr_revision):
+        """Create a new Revision from the given Bazaar Revision object."""
+
     def checkNewVerifiedEmail(email):
         """See if this email address has been used to commit revisions.
 

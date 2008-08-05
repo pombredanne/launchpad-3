@@ -4,11 +4,15 @@
 
 __metaclass__ = type
 
+import datetime
+import time
 from unittest import TestCase, TestLoader
 
 import psycopg2
+import pytz
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -91,6 +95,25 @@ class TestTipRevisionsForBranches(TestCase):
             # revision author has in fact been retrieved already.
             revision_author = revision.revision_author
             self.assertTrue(revision_author is not None)
+
+    def test_timestampToDatetime_with_negative_fractional(self):
+        # timestampToDatetime should convert a negative, fractional timestamp
+        # into a valid, sane datetime object.
+        revision_set = removeSecurityProxy(getUtility(IRevisionSet))
+        UTC = pytz.timezone('UTC')
+        timestamp = -0.5
+        date = revision_set._timestampToDatetime(timestamp)
+        self.assertEqual(
+            date, datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC))
+
+    def test_timestampToDatetime(self):
+        # timestampTODatetime should convert a regular timestamp into a valid,
+        # sane datetime object.
+        revision_set = removeSecurityProxy(getUtility(IRevisionSet))
+        UTC = pytz.timezone('UTC')
+        timestamp = time.time()
+        date = datetime.datetime.fromtimestamp(timestamp, tz=UTC)
+        self.assertEqual(date, revision_set._timestampToDatetime(timestamp))
 
 
 def test_suite():

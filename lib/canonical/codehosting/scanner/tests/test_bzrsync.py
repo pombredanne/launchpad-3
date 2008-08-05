@@ -511,23 +511,6 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
         BzrSyncTestCase.setUp(self)
         self.bzrsync = self.makeBzrSync(self.db_branch)
 
-    def test_timestampToDatetime_with_negative_fractional(self):
-        # timestampToDatetime should convert a negative, fractional timestamp
-        # into a valid, sane datetime object.
-        UTC = pytz.timezone('UTC')
-        timestamp = -0.5
-        date = self.bzrsync._timestampToDatetime(timestamp)
-        self.assertEqual(
-            date, datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC))
-
-    def test_timestampToDatetime(self):
-        # timestampTODatetime should convert a regular timestamp into a valid,
-        # sane datetime object.
-        UTC = pytz.timezone('UTC')
-        timestamp = time.time()
-        date = datetime.datetime.fromtimestamp(timestamp, tz=UTC)
-        self.assertEqual(date, self.bzrsync._timestampToDatetime(timestamp))
-
     def test_ancient_revision(self):
         # Test that we can sync revisions with negative, fractional
         # timestamps.
