@@ -3,6 +3,7 @@
 """Functional tests for XPI file format"""
 __metaclass__ = type
 
+import re
 import unittest
 
 from zope.component import getUtility
@@ -20,6 +21,11 @@ from canonical.launchpad.translationformat.tests.xpi_helpers import (
     command_key_source_comment,
     get_en_US_xpi_file_to_import,
     )
+
+
+def unwrap(text):
+    """Remove line breaks and any other wrapping artifacts from text."""
+    return re.sub('\s+', ' ', text.strip())
 
 
 class XpiTestCase(unittest.TestCase):
@@ -118,7 +124,7 @@ class XpiTestCase(unittest.TestCase):
                 self.assertEquals(message.singular_text, u'FooZilla!')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar!/test1.dtd(foozilla.name)')
+                    u'jar:chrome/en-US.jar!/test1.dtd(foozilla.name)')
                 self.assertEquals(message.sourcecomment, None)
 
             elif message.msgid_singular.msgid == u'foozilla.play.fire':
@@ -128,8 +134,7 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'Do you want to play with fire?')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar!/test1.dtd' +
-                        u'(foozilla.play.fire)')
+                    u'jar:chrome/en-US.jar!/test1.dtd(foozilla.play.fire)')
                 self.assertEquals(
                     message.sourcecomment,
                     u" Translators, don't play with fire! \n")
@@ -141,7 +146,7 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'\u0414\u0430\u043d=Day')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar!/test1.properties:5' +
+                    u'jar:chrome/en-US.jar!/test1.properties:5' +
                         u'(foozilla.utf8)')
                 self.assertEquals(message.sourcecomment, None)
             elif message.msgid_singular.msgid == u'foozilla.menu.accesskey':
@@ -151,12 +156,13 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'M')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd' +
+                    u'jar:chrome/en-US.jar!/subdir/test2.dtd' +
                         u'(foozilla.menu.accesskey)')
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
                 self.assertEquals(
-                    message.sourcecomment.strip(), access_key_source_comment)
+                    unwrap(message.sourcecomment),
+                    unwrap(access_key_source_comment))
             elif message.msgid_singular.msgid == u'foozilla.menu.commandkey':
                 # command key is a special notation that is supposed to be
                 # translated with a key shortcut.
@@ -164,12 +170,13 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'm')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd' +
+                    u'jar:chrome/en-US.jar!/subdir/test2.dtd' +
                         u'(foozilla.menu.commandkey)')
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
                 self.assertEquals(
-                    message.sourcecomment.strip(), command_key_source_comment)
+                    unwrap(message.sourcecomment),
+                    unwrap(command_key_source_comment))
 
         # Check that we got all messages.
         self.assertEquals(
@@ -259,7 +266,8 @@ class XpiTestCase(unittest.TestCase):
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            potmsgset.sourcecomment.strip(), access_key_source_comment)
+            unwrap(potmsgset.sourcecomment),
+            unwrap(access_key_source_comment))
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(
@@ -275,7 +283,8 @@ class XpiTestCase(unittest.TestCase):
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            potmsgset.sourcecomment.strip(), command_key_source_comment)
+            unwrap(potmsgset.sourcecomment),
+            unwrap(command_key_source_comment))
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(

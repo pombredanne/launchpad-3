@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'Breadcrumb',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
@@ -732,9 +733,12 @@ class RenamedView:
         self.rootsite = rootsite
 
     def __call__(self):
-        target_url = "%s/%s" % (
-            canonical_url(self.context, rootsite=self.rootsite),
-            self.new_name)
+        context_url = canonical_url(self.context, rootsite=self.rootsite)
+        # Prevents double slashes on the root object.
+        if context_url.endswith('/'):
+            target_url = "%s%s" % (context_url, self.new_name)
+        else:
+            target_url = "%s/%s" % (context_url, self.new_name)
 
         query_string = self.request.get('QUERY_STRING', '')
         if query_string:
