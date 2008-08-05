@@ -174,9 +174,9 @@ class IBranchFileSystem(Interface):
         # method will need to change to support source package
         # branches.
 
-    ## def requestMirror(loginID, branchID):
-    ##     """Mark a branch as needing to be mirrored.
+    def requestMirror(loginID, branchID):
+        """Mark a branch as needing to be mirrored.
 
-    ##     :param loginID: the person ID of the user requesting the mirror.
-    ##     :param branchID: a branch ID.
-    ##     """
+        :param loginID: the person ID of the user requesting the mirror.
+        :param branchID: a branch ID.
+        """

@@ -227,3 +227,11 @@ class BranchFileSystemAPI(LaunchpadXMLRPCView):
         except Unauthorized:
             return ''
         return '/' + unique_name
+
+    @run_as_requester
+    def requestMirror(self, requester, branchID):
+        """See `IBranchFileSystem`."""
+        branch = getUtility(IBranchSet).get(branchID)
+        # We don't really care who requests a mirror of a branch.
+        branch.requestMirror()
+        return True

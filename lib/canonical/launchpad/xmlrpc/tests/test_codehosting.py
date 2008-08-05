@@ -603,52 +603,26 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_initialMirrorRequest(self):
         # The default 'next_mirror_time' for a newly created hosted branch
         # should be None.
-        branchID = self.branchfs.createBranch(
-            1, 'sabdfl', '+junk', 'foo')
-        self.assertEqual(self.getNextMirrorTime(branchID), None)
+        branch = self.factory.makeBranch(BranchType.HOSTED)
+        self.assertIs(None, branch.next_mirror_time)
 
     def test_requestMirror(self):
         # requestMirror should set the next_mirror_time field to be the
         # current time.
-        hosted_branch_id = 25
-        # make sure the sample data is sane
-        self.assertEqual(None, self.getNextMirrorTime(hosted_branch_id))
-
-        cur = cursor()
-        cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
-        [current_db_time] = cur.fetchone()
-        transaction.commit()
-
-        self.branchfs.requestMirror(1, hosted_branch_id)
-
-        self.assertTrue(
-            current_db_time < self.getNextMirrorTime(hosted_branch_id),
-            "Branch next_mirror_time not updated.")
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.HOSTED)
+        self.branchfs.requestMirror(requester.id, branch.id)
+        self.assertSqlAttributeEqualsDate(
+            branch, 'next_mirror_time', UTC_NOW)
 
     def test_requestMirror_private(self):
         # requestMirror can be used to request the mirror of a private branch.
-
-        # salgado is a member of landscape-developers.
-        person_set = getUtility(IPersonSet)
-        salgado = person_set.getByName('salgado')
-        landscape_dev = person_set.getByName('landscape-developers')
-        self.assertTrue(
-            salgado.inTeam(landscape_dev),
-            "salgado should be in landscape-developers team, but isn't.")
-
-        branch_id = self.branchfs.createBranch(
-            'salgado', 'landscape-developers', 'landscape',
-            'some-branch')
-
-        cur = cursor()
-        cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
-        [current_db_time] = cur.fetchone()
-        transaction.commit()
-
-        self.branchfs.requestMirror(salgado.id, branch_id)
-        self.assertTrue(
-            current_db_time < self.getNextMirrorTime(branch_id),
-            "Branch next_mirror_time not updated.")
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(owner=requester, private=True)
+        branch = removeSecurityProxy(branch)
+        self.branchfs.requestMirror(requester.id, branch.id)
+        self.assertSqlAttributeEqualsDate(
+            branch, 'next_mirror_time', UTC_NOW)
 
 
 def test_suite():
