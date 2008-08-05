@@ -32,9 +32,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.encoding import (
     guess as guess_encoding, ascii_smash)
 from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory,
+    BinaryPackagePublishingHistory,
     SecureBinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
+    SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
@@ -563,11 +563,20 @@ class PackageUpload(SQLBase):
                         bcc=None):
             """Perform substitutions on a template and send the email."""
             body = message.template % message.__dict__
+
             # Weed out duplicate name entries.
             names = ', '.join(set(self.displayname.split()))
-            subject = '[%s/%s-%s] %s %s (%s)' % (
-                self.distroseries.distribution.name,
-                self.distroseries.name, self.pocket.name, names,
+
+            # Construct the suite name according to Launchpad/Soyuz
+            # convention.
+            pocket_suffix = pocketsuffix[self.pocket]
+            if pocket_suffix:
+                suite = '%s-%s' % (self.distroseries.name, pocket_suffix)
+            else:
+                suite = self.distroseries.name
+
+            subject = '[%s/%s] %s %s (%s)' % (
+                self.distroseries.distribution.name, suite, names,
                 self.displayversion, message.STATUS)
 
             if self.isPPA():
