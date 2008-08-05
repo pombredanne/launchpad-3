@@ -425,6 +425,8 @@ class BugzillaLPPlugin(Bugzilla):
         """See `IExternalBugTracker`."""
         # We marshal last_checked into an xmlrpclib.DateTime since
         # xmlrpclib can't do so cleanly itself.
+        # XXX 2008-08-05 gmb (bug 254999):
+        #     We can remove this once we upgrade to python 2.5.
         changed_since = xmlrpclib.DateTime(last_checked.timetuple())
 
         # Create the arguments that we're going to send to the remote
@@ -515,7 +517,7 @@ class BugzillaLPPlugin(Bugzilla):
         except KeyError, error:
             raise UnparseableBugData()
 
-        if resolution != '' and resolution is not None:
+        if resolution != '':
             return "%s %s" % (status, resolution)
         else:
             return status

@@ -239,7 +239,7 @@ accepts a list of bug IDs and a datetime as a parameter and returns the
 list of all the bug IDs in the passed set that have been changed since
 that datetime.
 
-This is done acheived by calling the Launchpad.get_bugs() method on the
+This is acheived by calling the Launchpad.get_bugs() method on the
 remote server and passing it a 'changed_since' parameter.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = True
@@ -270,9 +270,9 @@ Bugzilla's Launchpad.get_bugs() method returns all the data for each
 bug it returns. getModifiedRemoteBugs() saves this information into the
 BugzillaLPPlugin instance's bugs dict.
 
-    >>> for bug in sorted(bugzilla.bugs.keys()):
+    >>> for bug in sorted(bugzilla.bugs):
     ...     print "Bug %s:" % bug
-    ...     for key in sorted(bugzilla.bugs[bug].keys()):
+    ...     for key in sorted(bugzilla.bugs[bug]):
     ...         print "    %s: %s" % (key, bugzilla.bugs[bug][key])
     ...     print "\n"
     Bug 1:
