@@ -130,6 +130,10 @@
     <strong>Driver:</strong> <tal:link replace="structure view/effective_driver/fmt:link" />
   </p>
 
+  <p id="driver" tal:condition="not: view/effective_driver">
+    <strong>Driver:</strong> Not yet appointed
+  </p>
+
   <div>
     <strong>Licenses:</strong>
     <tal:licenses repeat="license context/licenses">
