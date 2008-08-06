@@ -703,7 +703,8 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = extract_changes_of_interest(
+                guess_encoding("".join(changes_lines)))
 
 
         # The template is ready.  The remainder of this function deals with
