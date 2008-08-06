@@ -25,8 +25,7 @@ from canonical.launchpad.interfaces.codehosting import (
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
-    BranchDetailsStorageAPI, BranchFileSystemAPI, LAUNCHPAD_SERVICES,
-    run_with_login)
+    BranchFileSystem, LAUNCHPAD_SERVICES, PullerAPI, run_with_login)
 from canonical.testing import DatabaseFunctionalLayer
 
 
@@ -100,14 +99,14 @@ class TestRunWithLogin(TestCaseWithFactory):
         self.assertEqual(None, login_id)
 
 
-class BranchDetailsStorageTest(TestCaseWithFactory):
-    """Tests for the implementation of `IBranchDetailsStorage`."""
+class PullerAPITest(TestCaseWithFactory):
+    """Tests for the implementation of `IPullerAPI`."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.storage = BranchDetailsStorageAPI(None, None)
+        self.storage = PullerAPI(None, None)
 
     def assertMirrorFailed(self, branch, failure_message, num_failures=1):
         """Assert that `branch` failed to mirror.
@@ -240,13 +239,13 @@ class BranchDetailsStorageTest(TestCaseWithFactory):
 
 
 class BranchPullQueueTest(TestCaseWithFactory):
-    """Tests for the pull queue methods of `IBranchDetailsStorage`."""
+    """Tests for the pull queue methods of `IPullerAPI`."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(BranchPullQueueTest, self).setUp()
-        self.storage = BranchDetailsStorageAPI(None, None)
+        self.storage = PullerAPI(None, None)
 
     def assertBranchQueues(self, hosted, mirrored, imported):
         expected_hosted = [
@@ -299,7 +298,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def setUp(self):
         super(BranchFileSystemTest, self).setUp()
         self.arbitrary_person = self.factory.makePerson()
-        self.branchfs = BranchFileSystemAPI(None, None)
+        self.branchfs = BranchFileSystem(None, None)
 
     def assertFaultEqual(self, faultCode, faultString, fault):
         """Assert that `fault` has the passed-in attributes."""
