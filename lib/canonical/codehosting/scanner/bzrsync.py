@@ -543,8 +543,9 @@ class BzrSync:
         """Import the revision with the given revision_id.
 
         :param bzr_revision: the revision to import
-        :param branchrevisions_to_insert: a dict of revision ids to revno
         :type bzr_revision: bzrlib.revision.Revision
+        :param branchrevisions_to_insert: a dict of revision ids to integer
+            revno.  (Non-mainline revisions will not be present).
         """
         revision_id = bzr_revision.revision_id
         revision_set = getUtility(IRevisionSet)
