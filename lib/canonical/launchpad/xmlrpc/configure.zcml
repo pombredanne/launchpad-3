@@ -24,15 +24,15 @@
     />
 
   <securedutility
-    class="canonical.launchpad.systemhomes.BranchDetailsStorageApplication"
-    provides="canonical.launchpad.interfaces.codehosting.IBranchDetailsStorageApplication">
-    <allow interface="canonical.launchpad.interfaces.codehosting.IBranchDetailsStorageApplication"/>
+    class="canonical.launchpad.systemhomes.PullerAPIApplication"
+    provides="canonical.launchpad.interfaces.codehosting.IPullerAPIApplication">
+    <allow interface="canonical.launchpad.interfaces.codehosting.IPullerAPIApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="canonical.launchpad.interfaces.codehosting.IBranchDetailsStorageApplication"
-    interface="canonical.launchpad.interfaces.codehosting.IBranchDetailsStorage"
-    class="canonical.launchpad.xmlrpc.codehosting.BranchDetailsStorageAPI"
+    for="canonical.launchpad.interfaces.codehosting.IPullerAPIApplication"
+    interface="canonical.launchpad.interfaces.codehosting.IPullerAPI"
+    class="canonical.launchpad.xmlrpc.codehosting.PullerAPI"
     permission="zope.Public"
     />
 
@@ -45,7 +45,7 @@
   <xmlrpc:view
     for="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication"
     interface="canonical.launchpad.interfaces.codehosting.IBranchFileSystem"
-    class="canonical.launchpad.xmlrpc.codehosting.BranchFileSystemAPI"
+    class="canonical.launchpad.xmlrpc.codehosting.BranchFileSystem"
     permission="zope.Public"
     />
 

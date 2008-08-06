@@ -1,32 +1,32 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""The branch details XML-RPC API."""
+"""Implementations of the XML-RPC APIs for codehosting."""
 
 __metaclass__ = type
 __all__ = [
-    'BranchDetailsStorageAPI',
-    'BranchFileSystemAPI',
+    'PullerAPI',
+    'BranchFileSystem',
     ]
 
 
 from canonical.launchpad.interfaces.codehosting import (
-    IBranchDetailsStorage, IBranchFileSystem)
+    IPullerAPI, IBranchFileSystem)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 from zope.interface import implements
 
 
-class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
-    """See `IBranchDetailsStorage`."""
+class PullerAPI(LaunchpadXMLRPCView):
+    """See `IPullerAPI`."""
 
-    implements(IBranchDetailsStorage)
+    implements(IPullerAPI)
 
     def getBranchPullQueue(self, branch_type):
-        """See `IBranchDetailsStorage`."""
+        """See `IPullerAPI`."""
         return []
 
 
-class BranchFileSystemAPI(LaunchpadXMLRPCView):
+class BranchFileSystem(LaunchpadXMLRPCView):
     """See `IBranchFileSystem`."""
 
     implements(IBranchFileSystem)
