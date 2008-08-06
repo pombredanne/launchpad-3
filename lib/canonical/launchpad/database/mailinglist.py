@@ -428,20 +428,17 @@ class MailingList(SQLBase):
         # Import here to avoid circular imports.
         from canonical.launchpad.database.emailaddress import EmailAddress
         return EmailAddress.select("""
-            EmailAddress.person = MailingListSubscription.person AND
-            MailingList.id = MailingListSubscription.mailing_list AND
-            TeamParticipation.person = MailingListSubscription.person AND
-            MailingListSubscription.mailing_list = %s AND
             TeamParticipation.team = %s AND
+            TeamParticipation.person = EmailAddress.person AND
+            EmailAddress.person = Person.id AND
+            Person.teamowner is NULL AND
             MailingList.status <> %s AND
             EmailAddress.status IN %s
-            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE,
+            """ % sqlvalues(self.team, MailingListStatus.INACTIVE,
                             (EmailAddressStatus.VALIDATED,
                              EmailAddressStatus.PREFERRED)),
             distinct=True, prejoins=['person'],
-            clauseTables=['MailingListSubscription',
-                          'TeamParticipation',
-                          'MailingList'])
+            clauseTables=['MailingList', 'TeamParticipation', 'Person'])
 
     def holdMessage(self, message):
         """See `IMailingList`."""
