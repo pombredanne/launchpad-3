@@ -9,7 +9,7 @@ from unittest import TestLoader
 
 from zope.security.proxy import isinstance
 
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import login_person
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.database.branchmergequeue import (
     BranchMergeQueueSet, MultiBranchMergeQueue, SingleBranchMergeQueue)
@@ -69,7 +69,7 @@ class TestBranchMergeQueueSet(TestCaseWithFactory):
         new_queue = self.factory.makeBranchMergeQueue()
         branch = self.factory.makeBranch()
         # Login the branch owner to allow launchpad.Edit on the branch.
-        login(branch.owner.preferredemail.email)
+        login_person(branch.owner)
         branch.merge_queue = new_queue
         queue = BranchMergeQueueSet.getForBranch(branch)
         self.assertEqual(new_queue, queue)
@@ -115,7 +115,7 @@ class TestSingleBranchMergeQueue(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         # Login the branch owner to make the proposals.  ANONYMOUS is not
         # good enough as the date_last_modified needs launchpad.AnyPerson.
-        login(branch.owner.preferredemail.email)
+        login_person(branch.owner)
         queue = SingleBranchMergeQueue(branch)
         first_item = self.factory.makeBranchMergeProposal(
             target_branch=branch, set_state=BranchMergeProposalStatus.QUEUED)
@@ -139,7 +139,7 @@ class TestMultiBranchMergeQueue(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             merge_control_status=BranchMergeControlStatus.ROBOT)
         # Login the branch owner to allow launchpad.Edit on merge_queue.
-        login(branch.owner.preferredemail.email)
+        login_person(branch.owner)
         branch.merge_queue = queue
         return branch
 
@@ -161,10 +161,10 @@ class TestMultiBranchMergeQueue(TestCaseWithFactory):
         branch2 = self._make_branch_and_associate_with_queue(queue)
         # Login the branch owner to make the proposals.  ANONYMOUS is not
         # good enough as the date_last_modified needs launchpad.AnyPerson.
-        login(branch1.owner.preferredemail.email)
+        login_person(branch1.owner)
         first_item = self.factory.makeBranchMergeProposal(
             target_branch=branch1, set_state=BranchMergeProposalStatus.QUEUED)
-        login(branch2.owner.preferredemail.email)
+        login_person(branch2.owner)
         second_item = self.factory.makeBranchMergeProposal(
             target_branch=branch2, set_state=BranchMergeProposalStatus.QUEUED)
         non_queued_item = self.factory.makeBranchMergeProposal(
