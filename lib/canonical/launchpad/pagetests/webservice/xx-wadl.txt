@@ -45,6 +45,9 @@ this point on.
 
     >>> tree.tag
     '{http://research.sun.com/wadl/2006/10}application'
+    >>> def wadl_tag(tag):
+    ...     """Return a WADL tag name properly namespace-qualified."""
+    ...     return '{http://research.sun.com/wadl/2006/10}%s' % tag
 
 The <application> tag for a WADL representation of an entry contains a
 single <resources> tag.
@@ -227,7 +230,10 @@ resources. It's a big document.
 
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
-    >>> wadl_schema.validate(wadl)
+
+    # We need to replace the nbsp entity, because the validator
+    # doesn't support embedded definition.
+    >>> wadl_schema.validate(wadl.replace('&nbsp;', '&#160;'))
     True
     >>> wadl_schema.error_log
     ''
@@ -509,7 +515,7 @@ addition to any custom operations.  This particular collection
 resource is the top-level list of people, and it exposes a few other
 custom operations.
 
-    >>> methods = list(resource_type)
+    >>> methods = resource_type.findall(wadl_tag('method'))
     >>> sorted((method.attrib['name'], method.attrib['id'])
     ...        for method in methods)
     [('GET', 'people-find'),
@@ -546,7 +552,8 @@ The <method> tag for a named operation will contain one or more
 <parameter> tags describing the parameters the operation accepts. The
 'newTeam' custom operation takes a number of parameters.
 
-    >>> new_team_request, new_team_response = newTeam
+    >>> new_team_request = newTeam.find(wadl_tag('request'))
+    >>> new_team_response = newTeam.find(wadl_tag('response'))
     >>> new_team_representation = single_list_value(new_team_request)
     >>> [param.attrib['name'] for param in new_team_representation]
     ['ws.op', 'display_name', 'name', 'default_membership_period',
@@ -577,7 +584,8 @@ Location header.
 The 'find' custom operation accepts one parameter in addition to
 'ws.op'.
 
-    >>> find_request, find_response = find
+    >>> find_request = find.find(wadl_tag('request'))
+    >>> find_response = find.find(wadl_tag('response'))
     >>> [param.attrib['name'] for param in find_request]
     ['ws.op', 'text']
 
@@ -599,7 +607,7 @@ resources.
 
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
-    ['bug', 'bug_attachment', 'bug_subscription', ...]
+    ['branch', 'bug', 'bug_attachment', 'bug_subscription', ...]
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.
@@ -667,9 +675,10 @@ name for the parameter and an optional short description.
     >>> doc = full_params[2][0]
     >>> doc.tag
     '...doc'
-    >>> print doc.text
-    Date Closed: The date on which this task was
-    marked either Fix Committed or Fix Released.
+    >>> print "\n".join([node.text for node in doc])
+    Date Closed
+    The date on which this task was marked either Fix Committed or Fix
+    Released.
 
 Some parameters are links to other resources. These parameters have a
 child tag called 'link' with information about what's on the other end
@@ -759,7 +768,8 @@ is kept in the <resource_type> tag.
 
     >>> def sort_by_id(method):
     ...     return method.attrib['id']
-    >>> methods = sorted(list(entry_type), key=sort_by_id)
+    >>> methods = sorted(
+    ...     entry_type.findall(wadl_tag('method')), key=sort_by_id)
     >>> (get, patch, put, transitionToAssignee,
     ...     transitionToImportance, transitionToStatus) = methods
 
@@ -790,7 +800,7 @@ representations of a bug task: the JSON one described above as
 "BugTask-full", and a WADL document--the sort of document shown in the
 very first section of this test.
 
-    >>> response = single_list_value(get)
+    >>> response = get.find(wadl_tag('response'))
     >>> response.tag
     '...response'
     >>> full, wadl = list(response)
@@ -827,15 +837,15 @@ link to them instead of describing them every time.
 
 Custom operations activated with GET may have URL parameters.
 
-    >>> get_request = single_list_value(findPerson)
+    >>> get_request = findPerson.find(wadl_tag('request'))
     >>> [param.attrib['name'] for param in get_request]
     ['ws.op', 'text']
 
 Custom operations activated with POST may have a form-encoded
 representation.
 
-    >>> post_request = single_list_value(transitionToStatus)
-    >>> post_representation = single_list_value(post_request)
+    >>> post_request = transitionToStatus.find(wadl_tag('request'))
+    >>> post_representation = post_request.find(wadl_tag('representation'))
     >>> post_representation.attrib['mediaType']
     'application/x-www-form-urlencoded'
     >>> [param.attrib['name'] for param in post_representation]

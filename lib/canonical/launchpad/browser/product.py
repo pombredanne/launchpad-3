@@ -23,7 +23,6 @@ __all__ = [
     'ProductCodeIndexView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
-    'ProductDynMenu',
     'ProductEditNavigationMenu',
     'ProductEditPeopleView',
     'ProductEditView',
@@ -94,9 +93,6 @@ from canonical.launchpad.browser.launchpad import (
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.browser.seriesrelease import (
-    SeriesOrReleasesMixinDynMenu)
-from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -105,7 +101,6 @@ from canonical.launchpad.webapp import (
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.date import DateWidget
@@ -1328,24 +1323,6 @@ class ProductRdfView:
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
-
-
-class ProductDynMenu(
-        DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
-
-    menus = {
-        '': 'mainMenu',
-        'meetings': 'meetingsMenu',
-        'series': 'seriesMenu',
-        }
-
-    @neverempty
-    def mainMenu(self):
-        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
-        yield self.makeLink('Milestones', page='+milestones')
-        yield self.makeLink('Series', page='+series', submenu='series')
-        yield self.makeLink(
-            'Related', submenu='related', context=self.context.project)
 
 
 class Icon:

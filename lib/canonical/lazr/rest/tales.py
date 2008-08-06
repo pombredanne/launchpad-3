@@ -9,6 +9,7 @@ all = ['entry_adapter_for_schema']
 import textwrap
 import urllib
 
+from epydoc.markup import DocstringLinker
 from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
@@ -31,26 +32,53 @@ from canonical.lazr.rest import (
     CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
 
 
-class WadlAPI(RESTUtilityBase):
-    """Base class for WADL-related function namespaces."""
+class WadlDocstringLinker(DocstringLinker):
+    """DocstringLinker used during WADL geneneration.
 
-    def docstringToXHTML(self, doc):
-        """Convert an epydoc docstring to XHTML."""
-        if doc is None:
-            return None
-        doc = textwrap.dedent(doc)
-        if doc == '':
-            return None
-        errors = []
-        parsed = parse_docstring(doc, errors)
-        if len(errors) > 0:
-            messages = [str(error) for error in errors]
-            raise AssertionError(
-                "Invalid docstring %s:\n %s" % (doc, "\n ".join(messages)))
-        return parsed.to_html(None)
+    epydoc uses this object to turn index and identifier references
+    like `DocstringLinker` into an appropriate markup in the output
+    format.
+
+    We don't want to generate links in the WADL file so we basically
+    return the identifier without any special linking markup.
+    """
+
+    def translate_identifier_xref(self, identifier, label=None):
+        """See `DocstringLinker`."""
+        if label:
+            return label
+        return identifier
+
+    def translate_indexterm(self, indexterm):
+        """See `DocstringLinker`."""
+        return indexterm
 
 
-class WadlResourceAPI(WadlAPI):
+WADL_DOC_TEMPLATE = (
+    '<wadl:doc xmlns="http://www.w3.org/1999/xhtml">\n%s\n</wadl:doc>')
+
+
+def generate_wadl_doc(doc):
+    """Create a wadl:doc element wrapping a docstring."""
+    if doc is None:
+        return None
+    # Our docstring convention prevents dedent from working correctly, we need
+    # to dedent all but the first line.
+    lines = doc.strip().splitlines()
+    if not len(lines):
+        return None
+    doc = "%s\n%s" % (lines[0], textwrap.dedent("\n".join(lines[1:])))
+    errors = []
+    parsed = parse_docstring(doc, errors)
+    if len(errors) > 0:
+        messages = [str(error) for error in errors]
+        raise AssertionError(
+            "Invalid docstring %s:\n %s" % (doc, "\n ".join(messages)))
+
+    return WADL_DOC_TEMPLATE % parsed.to_html(WadlDocstringLinker())
+
+
+class WadlResourceAPI(RESTUtilityBase):
     "Namespace for WADL functions that operate on resources."
 
     def __init__(self, resource):
@@ -117,7 +145,7 @@ class WadlByteStorageResourceAPI(WadlResourceAPI):
         return "%s#HostedFile" % self._service_root_url()
 
 
-class WadlServiceRootResourceAPI(WadlAPI):
+class WadlServiceRootResourceAPI(RESTUtilityBase):
     """Namespace for functions that operate on the service root resource.
 
     This class doesn't subclass WadlResourceAPI because that class
@@ -150,7 +178,7 @@ class WadlServiceRootResourceAPI(WadlAPI):
         return resource_dicts
 
 
-class WadlResourceAdapterAPI(WadlAPI):
+class WadlResourceAdapterAPI(RESTUtilityBase):
     """Namespace for functions that operate on resource adapter classes."""
 
     def __init__(self, adapter, adapter_interface):
@@ -161,7 +189,7 @@ class WadlResourceAdapterAPI(WadlAPI):
     @property
     def doc(self):
         """Human-readable XHTML documentation for this object type."""
-        return self.docstringToXHTML(self.adapter.__doc__)
+        return generate_wadl_doc(self.adapter.__doc__)
 
     @property
     def named_operations(self):
@@ -299,7 +327,7 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
         return self.adapter.entry_schema
 
 
-class WadlFieldAPI(WadlAPI):
+class WadlFieldAPI(RESTUtilityBase):
     "Namespace for WADL functions that operate on schema fields."
 
     def __init__(self, field):
@@ -336,14 +364,7 @@ class WadlFieldAPI(WadlAPI):
     @property
     def doc(self):
         """The docstring for this field."""
-        title = self.field.title
-        if title != '':
-            title = "<strong>%s</strong>" % title
-            if self.field.description != '':
-                return "%s: %s" % (self.field.title, self.field.description)
-            else:
-                return title
-        return self.field.description
+        return generate_wadl_doc(self.field.__doc__)
 
     @property
     def path(self):
@@ -416,7 +437,7 @@ class WadlFieldAPI(WadlAPI):
         return None
 
 
-class WadlOperationAPI(WadlAPI):
+class WadlOperationAPI(RESTUtilityBase):
     "Namespace for WADL functions that operate on named operations."
 
     def __init__(self, operation):
@@ -441,7 +462,7 @@ class WadlOperationAPI(WadlAPI):
     @property
     def doc(self):
         """Human-readable documentation for this operation."""
-        return self.docstringToXHTML(self.operation.__doc__)
+        return generate_wadl_doc(self.operation.__doc__)
 
     @property
     def has_return_type(self):
