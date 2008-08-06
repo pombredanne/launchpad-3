@@ -11,6 +11,7 @@ from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.error import ConchError
 from twisted.conch.ssh import userauth
 from twisted.conch.ssh.common import getNS, NS
+from twisted.conch.ssh.keys import BadKeyError
 from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
 from twisted.internet import defer
 from twisted.python import failure
@@ -21,9 +22,9 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting import sshserver
 from canonical.config import config
 from canonical.launchpad.daemons.sftp import (
-    getPrivateKeyObject, getPublicKeyString)
+    getPublicKeyString)
 from canonical.testing.layers import TwistedLayer
-
+from canonical.twistedsupport import suppress_stderr
 
 class MockRealm:
     """A mock realm for testing userauth.SSHUserAuthServer.
@@ -347,10 +348,15 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
             username, 'ssh-dss', public_key, '', None)
 
     def makeChecker(self, do_signature_checking=False):
+        """Construct a PublicKeyFromLaunchpadChecker.
+
+        :param do_signature_checking: if False, as is the default, monkeypatch
+            the returned instance to not verify the signatures of the keys.
+        """
         checker = sshserver.PublicKeyFromLaunchpadChecker(
             self.authserver)
-        # We don't need to validate the SSH key signing here.
-        checker._cbRequestAvatarId = self._cbRequestAvatarId
+        if not do_signature_checking:
+            checker._cbRequestAvatarId = self._cbRequestAvatarId
         return checker
 
     def _cbRequestAvatarId(self, is_key_valid, credentials):
@@ -360,21 +366,38 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
 
     def setUp(self):
         self.authserver = self.FakeAuthenticationEndpoint()
-        self.valid_login = self.authserver.valid_user
-        self.public_key = self.authserver.valid_key
 
     def test_successful(self):
-        # We should be able to login with the correct public and private
-        # key-pair. This test exists primarily as a control to ensure our
-        # other tests are checking the right error conditions.
-        creds = self.makeCredentials(self.valid_login, self.public_key)
+        # Attempting to log in with a username and key known to the
+        # authentication end-point succeeds.
+        creds = self.makeCredentials(
+            self.authserver.valid_user, self.authserver.valid_key)
         checker = self.makeChecker()
         d = checker.requestAvatarId(creds)
-        return d.addCallback(self.assertEqual, self.valid_login)
+        return d.addCallback(self.assertEqual, self.authserver.valid_user)
+
+    @suppress_stderr
+    def test_invalid_signature(self):
+        # The checker requests attempts to authenticate if the requests have
+        # an invalid signature.
+        creds = self.makeCredentials(
+            self.authserver.valid_user, self.authserver.valid_key)
+        creds.signature = 'a'
+        checker = self.makeChecker(True)
+        d = checker.requestAvatarId(creds)
+        def flush_errback(f):
+            self.flushLoggedErrors(BadKeyError)
+            return f
+        d.addErrback(flush_errback)
+        return self.assertFailure(d, UnauthorizedLogin)
 
     def assertLoginError(self, checker, creds, error_message):
-        """Assert that logging in with 'creds' fails with 'message'.
+        """Logging in with 'creds' against 'checker' fails with 'message'.
 
+        In particular, this tests that the login attempt fails in a way that
+        is sent to the client.
+
+        :param checker: The `ICredentialsChecker` used.
         :param creds: SSHPrivateKey credentials.
         :param error_message: String excepted to match the exception's message.
         :return: Deferred. You must return this from your test.
@@ -391,27 +414,32 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         # that. The usual security issues don't apply here because the list of
         # Launchpad user names is public.
         checker = self.makeChecker()
-        creds = self.makeCredentials('no-such-user', self.public_key)
+        creds = self.makeCredentials(
+            'no-such-user', self.authserver.valid_key)
         return self.assertLoginError(
             checker, creds, 'No such Launchpad account: no-such-user')
 
     def test_noKeys(self):
         # When you sign into an existing account with no SSH keys, the SSH
-        # server should inform you that the account has no keys.
+        # server informs you that the account has no keys.
         checker = self.makeChecker()
-        no_key_user = self.FakeAuthenticationEndpoint.no_key_user
-        creds = self.makeCredentials(no_key_user, self.public_key)
+        creds = self.makeCredentials(
+            self.authserver.no_key_user, self.authserver.valid_key)
         return self.assertLoginError(
             checker, creds,
             "Launchpad user %r doesn't have a registered SSH key"
-            % no_key_user)
+            % self.authserver.no_key_user)
 
     def test_wrongKey(self):
         # When you sign into an existing account using the wrong key, you
-        # should *not* be informed of the wrong key. This is because SSH often
+        # are *not* informed of the wrong key. This is because SSH often
         # tries several keys as part of normal operation.
         checker = self.makeChecker()
-        creds = self.makeCredentials(self.valid_login, 'invalid key')
+        creds = self.makeCredentials(
+            self.authserver.valid_user, 'invalid key')
+        # We cannot use assertLoginError because we are checking that we fail
+        # with UnauthorizedLogin and not its subclass
+        # UserDisplayedUnauthorizedLogin.
         d = self.assertFailure(
             checker.requestAvatarId(creds),
             UnauthorizedLogin)
