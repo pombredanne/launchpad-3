@@ -515,7 +515,7 @@ class BugzillaLPPlugin(Bugzilla):
             status = self._bugs[actual_bug_id]['status']
             resolution = self._bugs[actual_bug_id]['resolution']
         except KeyError, error:
-            raise UnparseableBugData()
+            raise UnparseableBugData
 
         if resolution != '':
             return "%s %s" % (status, resolution)

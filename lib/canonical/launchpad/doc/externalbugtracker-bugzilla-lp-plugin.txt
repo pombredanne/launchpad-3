@@ -144,9 +144,9 @@ system.
 
 The bug data is stored as a list of dicts:
 
-    >>> for bug in sorted(bugzilla._bugs.keys()):
+    >>> for bug in sorted(bugzilla._bugs):
     ...     print "Bug %s:" % bug
-    ...     for key in sorted(bugzilla._bugs[bug].keys()):
+    ...     for key in sorted(bugzilla._bugs[bug]):
     ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
     ...     print "\n"
     Bug 1:
@@ -192,9 +192,9 @@ _bugs and _bug_aliases dicts to demonstrate this.
     >>> bugzilla.initializeRemoteBugDB([2, 'bug-two'])
     CALLED Launchpad.get_bugs({'ids': [2, 'bug-two'], 'permissive': True})
 
-    >>> for bug in sorted(bugzilla._bugs.keys()):
+    >>> for bug in sorted(bugzilla._bugs):
     ...     print "Bug %r:" % bug
-    ...     for key in sorted(bugzilla._bugs[bug].keys()):
+    ...     for key in sorted(bugzilla._bugs[bug]):
     ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
     ...     print "\n"
     Bug 2:
@@ -400,10 +400,10 @@ The comments will be stored in the bugs dict as a dict of comment id =>
 comment dict mappings under the key 'comments'.
 
     >>> comments = bugzilla._bugs[1]['comments']
-    >>> for comment_id in sorted(comments.keys()):
+    >>> for comment_id in sorted(comments):
     ...     print "Comment %s:" % comment_id
     ...     comment = comments[comment_id]
-    ...     for key in sorted(comment.keys()):
+    ...     for key in sorted(comment):
     ...         print "    %s: %s" % (key, comment[key])
     Comment 1:
         author: trillian
