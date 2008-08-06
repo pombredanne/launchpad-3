@@ -8,6 +8,7 @@ Project groups are available at their canonical URL on the API virtual host.
 
     >>> mozilla_project = webservice.get('/beta/mozilla').jsonBody()
     >>> pprint_entry(mozilla_project)
+    active: True
     name: u'mozilla'
     resource_type_link: u'...'
     self_link: u'http://.../beta/mozilla'
@@ -19,6 +20,7 @@ Projects are available at their canonical URL on the API virtual host.
 
     >>> firefox = webservice.get('/beta/firefox').jsonBody()
     >>> pprint_entry(firefox)
+    active: True
     date_created: u'2004-09-24T20:58:02.185708+00:00'
     description: u'The Mozilla Firefox web browser'
     display_name: u'Mozilla Firefox'
