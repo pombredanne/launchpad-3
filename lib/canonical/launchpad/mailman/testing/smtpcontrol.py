@@ -35,7 +35,7 @@ class SMTPControl:
     mbox file format so that they can be easily accessed for correctness.
     """
     def __init__(self):
-        # Calculate a temporary file for the mbox.  This will be communicated
+        # Create a temporary file for the mbox.  This will be communicated
         # to the smtp2mbox subprocess when it gets started up.
         descriptor, mbox_filename = tempfile.mkstemp()
         os.close(descriptor)

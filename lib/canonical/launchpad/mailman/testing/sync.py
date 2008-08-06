@@ -74,7 +74,7 @@ def prepare_for_sync():
         os.makedirs(os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc', 'fake-team'))
     finally:
         mlist.Unlock()
-    # Calculate a directory in which to put the simulated production database,
+    # Create a directory in which to put the simulated production database,
     # then copy our current Mailman stuff to it, lock, stock, and barrel.
     tempdir = tempfile.mkdtemp()
     source_dir = os.path.join(tempdir, 'production')

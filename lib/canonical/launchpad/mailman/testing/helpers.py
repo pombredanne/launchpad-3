@@ -72,16 +72,15 @@ def get_size(path):
 
 def review_list(list_name, status='approve'):
     """Helper for approving a mailing list."""
-    # Circular import.
     browser = Browser('foo.bar@canonical.com:test')
     browser.open('http://launchpad.dev:8085/+mailinglists')
     browser.getControl(name='field.' + list_name).value = [status]
     browser.getControl('Submit').click()
     result = MailmanLayer.xmlrpc_watcher.wait_for_create(list_name)
     if result is not None:
-        # The watch timed out
+        # The watch timed out.
         print result
-        return
+        return None
     login('foo.bar@canonical.com')
     mailing_list = getUtility(IMailingListSet).get(list_name)
     logout()
@@ -235,7 +234,23 @@ def apply_for_list(browser, team_name):
 
 
 def _membership_test(team_name, people, predicate):
-    """Test membership via the predicate."""
+    """Test membership via the predicate.
+
+    :param team_name: the name of the team/mailing list to test
+    :type team_name: string
+    :param people: the sequence of IPersons to check.  All validated emails
+        from all persons are collected and checked for membership.
+    :type people: sequence of IPersons
+    :param predicate: A function taking two arguments.  The first argument is
+        the sent of member addresses found in the Mailman MailList
+        data structure.  The second argument is the set of validated email
+        addresses for all the `people`.  The function should return a boolean
+        indicating whether the condition being tested is satisfied or not.
+    :type predicate: function
+    :return: the string 'Timed out' if the predicate never succeeded, or None
+        if it did.
+    :rtype: string or None
+    """
     member_addresses = set()
     for person in people:
         if isinstance(person, basestring):
@@ -248,10 +263,10 @@ def _membership_test(team_name, people, predicate):
     while True:
         members = set(mailing_list.getMembers())
         if predicate(members, member_addresses):
-            # Every address in the arguments was a member.  For doctest
-            # success convenience, return None.
+            # The predicate test passed.  For doctest success convenience,
+            # return None.
             return None
-        # At least one address was not a member.  See if we timed out.
+        # The predicate test failed.  See if we timed out.
         if datetime.datetime.now() > until:
             return 'Timed out'
         time.sleep(SECONDS_TO_SNOOZE)
@@ -262,7 +277,7 @@ def _membership_test(team_name, people, predicate):
 def ensure_membership(team_name, *people):
     """Ensure that all the addresses are members of the mailing list."""
     def all_are_members(list_members, wanted_members):
-        return list_members >= wanted_members
+        return list_members.issuperset(wanted_members)
     return _membership_test(team_name, people, all_are_members)
 
 

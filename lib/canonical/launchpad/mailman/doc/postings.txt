@@ -34,7 +34,7 @@ discarded immediately.
     0
 
 
-== Unvalidated member postings ==
+== Non-validated member postings ==
 
 Similarly, an address that has been registered with Launchpad but not verified
 will also be summarily discarded.  Anne registers with Launchpad but does not
@@ -56,7 +56,7 @@ validate her alternative address.
     >>> print alternative_email.email, alternative_email.status.title
     aperson@example.org New Email Address
 
-Anne sends a message from her unvalidated alternative address.  This message
+Anne sends a message from her non-validated alternative address.  This message
 gets discarded.
 
     >>> inject('itest-one', """\

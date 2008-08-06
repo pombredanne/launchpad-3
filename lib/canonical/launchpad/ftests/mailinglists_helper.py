@@ -186,14 +186,12 @@ def new_list_for_team(team):
     return team_list
 
 
-def apply_for_list(browser, team_name, rooturl=None):
+def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/'):
     """Create a team and apply for its mailing list.
 
     This should only be used in page tests.
     """
     displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
-    if rooturl is None:
-        rooturl = 'http://launchpad.dev/'
     browser.open(rooturl + 'people/+newteam')
     browser.getControl(name='field.name').value = team_name
     browser.getControl('Display Name').value = displayname

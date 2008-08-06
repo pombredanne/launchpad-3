@@ -29,6 +29,7 @@ except AttributeError:
 
 LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=5)
 SECONDS_TO_SNOOZE = 0.1
+Empty = object()
 
 
 class LogWatcher:
@@ -36,13 +37,25 @@ class LogWatcher:
 
     You MUST open the LogWatcher before any data you're interested in could
     get written to the log.
+
+    This class (and its subclasses) are how we ensure synchronization among
+    the various independent processes involved in the tests.  Without this
+    synchronization, our tests are subject to highly unstable race conditions.
+
+    The various wait*() methods in the subclasses are called to wait for an
+    expected landmark written to a log file.  For example, if we're waiting
+    for the delivery of an email message with the Message-ID: <zulu>, we never
+    know exactly when the other process will write this.  We /do/ know that
+    once that landmark is written, the state we expect to test will exist.
+
+    This is safe because we have only one process writing to any particular
+    log file, and that process is single threaded.  Further, the messages it
+    writes will always be in a predictable order, so this is a reliable
+    synchronization point.
     """
     FILENAME = None
 
     def __init__(self):
-        # Import this here since sys.path isn't set up properly when this
-        # module is imported.
-        # pylint: disable-msg=F0401
         self._log_path = os.path.join(LOG_DIR, self.FILENAME)
         log_file = open(self._log_path, 'a+')
         try:
@@ -51,6 +64,21 @@ class LogWatcher:
             log_file.close()
         self._log_file = open(self._log_path)
         self._log_file.seek(0, SEEK_END)
+        self._line_cache = []
+
+    @property
+    def lines(self):
+        # Keep a cache of the lines read from the file.
+        while True:
+            if len(self._line_cache) == 0:
+                # The cache is empty, so first return a special marker telling
+                # the consumer that there are no more lines available.
+                yield Empty
+                # Read all newly available lines from the file, between the
+                # current file position and the current EOF.
+                self._line_cache = self._log_file.readlines()
+            else:
+                yield self._line_cache.pop(0)
 
     def _wait(self, landmark):
         """Wait until the landmark string has been seen.
@@ -59,14 +87,20 @@ class LogWatcher:
         on each line of the file.
         """
         until = datetime.datetime.now() + LOG_GROWTH_WAIT_INTERVAL
-        while True:
-            line = self._log_file.readline()
-            if landmark in line:
+        for line in self.lines:
+            if line is Empty:
+                # There's nothing in the file for us.  See if we timed out and
+                # if not, sleep for a little while.
+                if datetime.datetime.now() > until:
+                    return 'Timed out'
+                time.sleep(SECONDS_TO_SNOOZE)
+            elif landmark in line:
                 # Return None on success for doctest convenience.
                 return None
-            if datetime.datetime.now() > until:
-                return 'Timed out'
-            time.sleep(SECONDS_TO_SNOOZE)
+            else:
+                # This line did not match our landmark.  Try again with the
+                # next line.
+                pass
 
     def close(self):
         self._log_file.close()

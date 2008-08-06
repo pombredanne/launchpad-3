@@ -1,7 +1,7 @@
 = Using a mailing list as a team's contact address =
 
-The contact address for any team can be set the team's mailing list, in which
-case all notifications sent by Launchpad to the team will be sent to the
+The contact address for any team can be set to the team's mailing list, in
+which case all notifications sent by Launchpad to the team will be sent to the
 mailing list's address.
 
 Create a mailing list for the contact address of our new team.
@@ -153,10 +153,15 @@ sent to Anne and to the archive, via the mailing list.
     >>> browser.getControl('Subscriber').value = 'itest-one'
     >>> browser.getControl('Continue').click()
 
-    # The three messages addressed to the mailing list seen on the smtp server
-    # are 1) the original posted message on the +addquestion, 2) the message
-    # as sent to Anne, 3) the message as sent to the archiver.
+Launchpad sends a message to the team's contact address.  This message is
+delivered directly to Mailman and is not available for viewing in the smtp
+server.
+
     >>> smtpd_watcher.wait_for_list_traffic('itest-one')
+
+Mailman then delivers two messages's to the team mailing list's recipients.
+One is sent to Anne and the other is sent to the archiver.
+
     >>> smtpd_watcher.wait_for_list_traffic('itest-one')
     >>> smtpd_watcher.wait_for_list_traffic('itest-one')
     >>> messages = smtpd.getMessages()
