@@ -241,6 +241,10 @@ def _membership_test(team_name, people, predicate):
         else:
             for email in person.validatedemails:
                 member_addresses.add(removeSecurityProxy(email).email.lower())
+            # Also add the preferred address.
+            preferred = removeSecurityProxy(person.preferredemail).email
+            member_addresses.add(preferred.lower())
+    assert len(member_addresses) > 0, 'No valid addresses found'
     mailing_list = MailList(team_name, lock=False)
     until = datetime.datetime.now() + MAILING_LIST_CHECK_INTERVAL
     while True:

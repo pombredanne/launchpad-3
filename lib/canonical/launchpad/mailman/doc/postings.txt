@@ -342,15 +342,16 @@ the mailing list, she will not get a copy of the message.
     >>> anne.join(team_one)
     >>> transaction.commit()
     >>> helpers.ensure_membership('itest-one', anne)
+    >>> logout()
 
     >>> inject('itest-one', """\
-    ... From: %s
+    ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
     ... Subject: A member post
     ... Message-ID: <otter>
     ...
     ... Hi, I have just joined this team.
-    ... """ % anne.preferredemail.email)
+    ... """)
     >>> smtpd_watcher.wait_for_mbox_delivery('otter')
 
 Only the archiver gets the message delivery.
@@ -378,11 +379,7 @@ Only the archiver gets the message delivery.
 
 In addition, the in-house MHonArc archiver has archived this message.
 
-    # There might have been messages already in the archive queue waiting to
-    # be processed when the watcher was create.  Wait twice, the second of
-    # which should time out.  We actually don't care though.
-    >>> ignore = archive_watcher.wait()
-    >>> ignore = archive_watcher.wait()
+    >>> mhonarc_watcher.wait_for_message_number(2)
     >>> helpers.collect_archive_message_ids('itest-one')
     ['elephant', 'otter']
 
@@ -462,7 +459,7 @@ Here's the copy sent to Anne...
 
 In addition, the in-house MHonArc archiver has archived this message.
 
-    >>> mhonarc_watcher.wait_for_message_number(2)
+    >>> mhonarc_watcher.wait_for_message_number(3)
     >>> helpers.collect_archive_message_ids('itest-one')
     ['elephant', 'falcon', 'otter']
 
