@@ -322,14 +322,6 @@
       permission="zope.Public"
       />
 
-  <!-- breadcrumbs -->
-  <browser:page
-      for="zope.interface.Interface"
-      name="+breadcrumbs"
-      class="canonical.launchpad.browser.launchpad.Breadcrumbs"
-      attribute="__call__"
-      permission="zope.Public"
-      />
   <!-- hierarchy -->
   <browser:page
       for="zope.interface.Interface"
