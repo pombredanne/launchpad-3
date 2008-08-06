@@ -408,6 +408,8 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG:     Subject: [ubuntu/hoary-backports] bar 1.0-4 (Accepted)
   DEBUG:     Recipients: Celso Providelo <celso.providelo@canonical.com>
   DEBUG:     Body:
+  DEBUG: -> component=universe, section=devel
+  DEBUG:
   DEBUG:  bar (1.0-4) breezy; urgency=low
   DEBUG:
   DEBUG:    * Changer using non-preferred email
@@ -456,6 +458,8 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG:     Subject: [ubuntu/hoary-security] bar 1.0-2 (Accepted)
   DEBUG:     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
   DEBUG:     Body:
+  DEBUG: -> component=universe, section=devel
+  DEBUG:
   DEBUG:  bar (1.0-2) breezy; urgency=low
   DEBUG:
   DEBUG:    * A second upload to ensure that binary overrides of _all work
@@ -469,6 +473,8 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG:     Subject: [ubuntu/hoary-security] bar 1.0-2 (Accepted)
   DEBUG:     Recipients: hoary-announce@lists.ubuntu.com
   DEBUG:     Body:
+  DEBUG: -> component=universe, section=devel
+  DEBUG:
   DEBUG:  bar (1.0-2) breezy; urgency=low
   DEBUG:
   DEBUG:    * A second upload to ensure that binary overrides of _all work
@@ -762,7 +768,9 @@ in the MIME encoding. Please note also that the person that signed the
 changes file is mentioned at the beginning of the email.
 
   >>> print msgs[0].get_payload() # doctest: -NORMALIZE_WHITESPACE
-  Changes file signed by: Foo Bar (foo.bar@canonical.com)
+  -> changes file signed by: Foo Bar (foo.bar@canonical.com)
+  -> component=3Duniverse, section=3Ddevel
+  <BLANKLINE>
    bar (1.0-10) breezy; urgency=3Dlow
   <BLANKLINE>
      * Changes file that contains UTF-8

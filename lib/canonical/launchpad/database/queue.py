@@ -930,14 +930,15 @@ class PackageUpload(SQLBase):
             xlp_component_header = 'component=%s, section=%s' % (
                 spr.component.name, spr.section.name)
             extra_headers['X-Launchpad-Component'] = xlp_component_header
+            mail_text = '-> %s\n\n%s' % (xlp_component_header, mail_text)
 
         # Include a 'X-Launchpad-Signer' header if this is a signed upload.
         if self.signing_key:
             # This is a signed upload.
             signer = self.signing_key.owner
-            signer_line = 'Changes file signed by: %s (%s)' % (
+            signer_line = 'changes file signed by: %s (%s)' % (
                 signer.displayname, signer.preferredemail.email)
-            mail_text = '%s\n%s' % (signer_line, mail_text)
+            mail_text = '-> %s\n%s' % (signer_line, mail_text)
 
         if from_addr is None:
             from_addr = format_address(

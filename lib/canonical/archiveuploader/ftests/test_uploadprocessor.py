@@ -370,7 +370,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
         self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
-        self.assertTrue("This upload awaits approval" in raw_msg,
+        self.assertTrue("(Waiting for approval)" in raw_msg,
                         "Expected an 'upload awaits approval' email.\n"
                         "Got:\n%s" % raw_msg)
 
