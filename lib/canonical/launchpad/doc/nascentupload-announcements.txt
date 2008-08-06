@@ -589,14 +589,7 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
   DEBUG:    * A second upload to ensure that binary overrides of _all work
   DEBUG:
   DEBUG: -- Daniel Silverstone <daniel.silverstone@canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
-  DEBUG:
-  DEBUG: ==
-  DEBUG:
-  DEBUG: Announcing to hoary-announce@lists.ubuntu.com
-  DEBUG:
-  DEBUG: Thank you for your contribution to Ubuntu Linux.
-  DEBUG:
-  DEBUG: --
+  ...
   DEBUG: You are receiving this email because you are the uploader, maintainer or
   DEBUG: signer of the above package.
 
@@ -727,14 +720,7 @@ the INFO level what it /would/ have sent.
   INFO:    * A second upload to ensure that binary overrides of _all work
   INFO:
   INFO: -- Daniel Silverstone <daniel.silverstone@canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
-  INFO:
-  INFO: ==
-  INFO:
-  INFO: Announcing to None
-  INFO:
-  INFO: Thank you for your contribution to Ubuntu Linux.
-  INFO:
-  INFO: --
+  ...
   INFO: You are receiving this email because you are the uploader, maintainer or
   INFO: signer of the above package.
 

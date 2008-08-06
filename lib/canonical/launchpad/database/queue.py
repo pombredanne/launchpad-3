@@ -603,7 +603,7 @@ class PackageUpload(SQLBase):
                         content.append('')
                     continue
 
-                # The stanza has started extract the bits of interest.
+                # The stanza has started, extract the bits of interest.
                 if author_line_re.match(line):
                     # Ignore embedded author lines.
                     pass
