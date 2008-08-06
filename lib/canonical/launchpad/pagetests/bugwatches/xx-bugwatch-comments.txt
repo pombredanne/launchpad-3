@@ -39,7 +39,6 @@ member of Launchpad Developers in order to demonstrate this.
     False
 
     >>> logout()
-    >>> PageTestLayer.resetStores()
 
 As we can see, sabdfl cannot see the comments yet:
 
@@ -51,7 +50,6 @@ As we can see, sabdfl cannot see the comments yet:
 After joining the launchpad developers team, sabdfl can now see the
 comments.
 
-    >>> PageTestLayer.resetStores()
     >>> login('foo.bar@canonical.com')
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
@@ -62,7 +60,6 @@ comments.
     True
 
     >>> logout()
-    >>> PageTestLayer.resetStores()
 
     >>> sabdfl_browser.open(
     ...     'http://launchpad.dev/bugs/15/+watch/11/+comments')
@@ -118,7 +115,6 @@ Launchpad.
 If sabdfl leaves the Launchpad Developers team the comment will no longer
 be visible to him:
 
-    >>> PageTestLayer.resetStores()
     >>> login('foo.bar@canonical.com')
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> sabdfl.leave(launchpad_developers)
@@ -126,7 +122,6 @@ be visible to him:
     False
 
     >>> logout()
-    >>> PageTestLayer.resetStores()
 
     >>> sabdfl_browser.open(
     ...     'http://launchpad.dev/redfish/+bug/15/comments/1')

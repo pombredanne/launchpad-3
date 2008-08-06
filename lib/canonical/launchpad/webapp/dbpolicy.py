@@ -75,8 +75,11 @@ class LaunchpadDatabasePolicy:
         if not (self.read_only or WebServiceLayer.providedBy(self.request)):
             # A non-readonly request or a webservice request has been
             # made. Store this fact in the session. Precision is hard
-            # coded at 1 minute. Note that webservice clients may not
-            # support cookies, so don't mess with their session.
+            # coded at 1 minute (so we don't update the timestamp if it
+            # is # no more than 1 minute out of date to avoid
+            # unnecessary and expensive write operations). Note that
+            # webservice clients may not support cookies, so don't mess
+            # with their session.
             session_data = ISession(self.request)['lp.dbpolicy']
             last_write = session_data.get('last_write', None)
             now = _now()

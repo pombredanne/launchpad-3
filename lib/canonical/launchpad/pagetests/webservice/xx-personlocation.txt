@@ -46,6 +46,5 @@ provided by the user themselves.
     ...     latitude='-34.6', longitude='157.0', time_zone='Australia/Sydney')
     HTTP/1.1 200 Ok
     ...
-    >>> PageTestLayer.resetStores()
     >>> webservice.get("/beta/~jdub").jsonBody()['time_zone']
     u'Australia/Sydney'

@@ -568,8 +568,6 @@ Reset our Storm stores, because our test environment doesn't do this for
 us, and we need to ensure that the MAIN SLAVE store sees the changes just
 committed to the database.
 
-    >>> PageTestLayer.resetStores()
-
     >>> salgado_browser.open('http://launchpad.dev/~bassists')
     >>> print extract_link_from_tag(
     ...     find_tag_by_id(salgado_browser.contents, 'mailing-list-archive'))
@@ -584,7 +582,6 @@ sure the address is reserved for the team which owns the ML) when a
 team's contact address is changed from a hosted ML to an external
 address.
 
-    >>> PageTestLayer.resetStores()
     >>> list_set = MailingListSet()
     >>> mailing_list = list_set.get('landscape-developers')
 

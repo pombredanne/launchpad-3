@@ -476,9 +476,11 @@ class LaunchpadBrowserPublication(
 
         # Reset all Storm stores when not running the test suite. We could
         # reset them when running the test suite but that'd make writing tests
-        # a much more painful task.
-        if threading.currentThread().getName() != 'MainThread':
-            for name, store in getUtility(IZStorm).iterstores():
+        # a much more painful task. We still reset the slave stores though
+        # to minimize stale cache issues.
+        thread_name = threading.currentThread().getName()
+        for name, store in getUtility(IZStorm).iterstores():
+            if thread_name != 'MainThread' or name.endswith('-slave'):
                 store.reset()
 
     def startProfilingHook(self):
