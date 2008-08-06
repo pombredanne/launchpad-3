@@ -20,12 +20,12 @@
           <td
             tal:attributes="title view/visible_email_address_description">
             <tal:not_logged_in
-              condition="view/email_address_visibility/LOGIN_REQUIRED">
+              condition="view/email_address_visibility/is_login_required">
               <a href="+login">Log in</a> for email information.
             </tal:not_logged_in>
 
             <tal:no_preferredemail
-              condition="view/email_address_visibility/NONE_AVAILABLE">
+              condition="view/email_address_visibility/are_none_available">
               <tal:is-team condition="context/isTeam">
                 No contact address <br /><small>(Launchpad notifications are
                 sent to all team members)</small>
@@ -36,7 +36,7 @@
             </tal:no_preferredemail>
 
             <tal:cant-view-hidden-emails
-              condition="view/email_address_visibility/HIDDEN">
+              condition="view/email_address_visibility/are_hidden">
               No public address provided.
             </tal:cant-view-hidden-emails>
 
@@ -44,9 +44,9 @@
               repeat="email view/visible_email_addresses">
               <span style="white-space: nowrap">
                 <img src="/@@/private" alt=""
-                  tal:condition="view/email_address_visibility/ALLOWED"/>
+                  tal:condition="view/email_address_visibility/are_allowed"/>
                 <img src="/@@/mail" alt=""
-                  tal:condition="view/email_address_visibility/PUBLIC"/>
+                  tal:condition="view/email_address_visibility/are_public"/>
                 <tal:email replace="email">foo2@bar.com</tal:email>
                 <br tal:omit-tag="repeat/email/end" />
               </span>

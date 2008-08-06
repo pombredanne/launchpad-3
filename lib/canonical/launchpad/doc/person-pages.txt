@@ -43,7 +43,7 @@ are there any email addresses.
     ...     return view
 
     >>> view = request_person_view(mark)
-    >>> view.email_address_visibility.LOGIN_REQUIRED
+    >>> view.email_address_visibility.is_login_required
     True
     >>> print view.visible_email_address_description
     None
@@ -56,7 +56,7 @@ email addresses.
 
     >>> login('test@canonical.com')
     >>> view = request_person_view(mark)
-    >>> view.email_address_visibility.PUBLIC
+    >>> view.email_address_visibility.are_public
     True
     >>> view.visible_email_address_description
     'This email address is only visible to Launchpad users.'
@@ -73,7 +73,7 @@ As for Sample Person, he has chosen not to disclose his email addresses.
 Anonymous users can't see them because the state is LOGIN_REQUIRED.
 
     >>> view = request_person_view(sample_person)
-    >>> view.email_address_visibility.LOGIN_REQUIRED
+    >>> view.email_address_visibility.is_login_required
     True
     >>> view.visible_email_addresses
     []
@@ -84,7 +84,7 @@ he cannot view them.
 
     >>> login('no-priv@canonical.com')
     >>> view = request_person_view(sample_person)
-    >>> view.email_address_visibility.HIDDEN
+    >>> view.email_address_visibility.are_hidden
     True
     >>> print view.visible_email_address_description
     None
@@ -98,7 +98,7 @@ others.
 
     >>> login('foo.bar@canonical.com')
     >>> view = request_person_view(sample_person)
-    >>> view.email_address_visibility.ALLOWED
+    >>> view.email_address_visibility.are_allowed
     True
     >>> view.visible_email_address_description
     'This email address is not disclosed to others.'
@@ -107,7 +107,7 @@ others.
 
     >>> login('commercial-member@canonical.com')
     >>> view = request_person_view(sample_person)
-    >>> view.email_address_visibility.ALLOWED
+    >>> view.email_address_visibility.are_allowed
     True
     >>> view.visible_email_addresses
     [u'test@canonical.com', u'testing@canonical.com']
@@ -118,7 +118,7 @@ anonymous.
     >>> login(ANONYMOUS)
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> view = request_person_view(ubuntu_team)
-    >>> view.email_address_visibility.LOGIN_REQUIRED
+    >>> view.email_address_visibility.is_login_required
     True
     >>> view.visible_email_addresses
     []
@@ -128,7 +128,7 @@ be hidden.
 
     >>> login('no-priv@canonical.com')
     >>> view = request_person_view(ubuntu_team)
-    >>> view.email_address_visibility.PUBLIC
+    >>> view.email_address_visibility.are_public
     True
     >>> view.visible_email_addresses
     [u'support@ubuntu.com']
@@ -138,7 +138,7 @@ email addresses state is NONE_AVAILABLE.
 
     >>> landscape_developers = personset.getByName('landscape-developers')
     >>> view = request_person_view(landscape_developers)
-    >>> view.email_address_visibility.NONE_AVAILABLE
+    >>> view.email_address_visibility.are_none_available
     True
     >>> print view.visible_email_address_description
     None
