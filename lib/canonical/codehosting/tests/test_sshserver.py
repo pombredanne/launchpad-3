@@ -12,17 +12,17 @@ from twisted.conch.error import ConchError
 from twisted.conch.ssh import keys, userauth
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
-
 from twisted.python import failure
 from twisted.python.util import sibpath
 
 from twisted.trial.unittest import TestCase as TrialTestCase
+from twisted.web.xmlrpc import Proxy
 
-from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.codehosting import sshserver
 from canonical.codehosting.tests.servers import AuthserverWithKeysInProcess
 from canonical.config import config
-from canonical.launchpad.daemons.sftp import getPublicKeyString
+from canonical.launchpad.daemons.sftp import (
+    getPublicKeyString)
 from canonical.testing.layers import (
     TwistedLaunchpadZopelessLayer, TwistedLayer)
 
@@ -326,8 +326,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         self.authserver = AuthserverWithKeysInProcess(
             self.valid_login, 'testteam')
         self.authserver.setUp()
-        self.authserver_client = TwistedAuthServer(
-            config.codehosting.authserver)
+        self.authserver_client = Proxy(config.codehosting.authserver)
         self.checker = sshserver.PublicKeyFromLaunchpadChecker(
             self.authserver_client)
         self.public_key = self.authserver.getPublicKey()

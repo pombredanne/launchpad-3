@@ -10,12 +10,12 @@ __all__ = ['SSHService']
 
 import os
 
-from twisted.cred.portal import Portal
-from twisted.conch.ssh import keys
 from twisted.application import service, strports
+from twisted.conch.ssh import keys
+from twisted.cred.portal import Portal
+from twisted.web.xmlrpc import Proxy
 
 from canonical.config import config
-from canonical.authserver.client.twistedclient import TwistedAuthServer
 
 from canonical.codehosting import sshserver
 from canonical.codehosting.transport import set_up_logging
@@ -43,17 +43,12 @@ class SSHService(service.Service):
     def __init__(self):
         self.service = self.makeService()
 
-    def makeRealm(self):
-        """Create and return an authentication realm for the authserver."""
-        authserver = TwistedAuthServer(config.codehosting.authserver)
-        return sshserver.Realm(authserver)
-
     def makeFactory(self, hostPublicKey, hostPrivateKey):
         """Create and return an SFTP server that uses the given public and
         private keys.
         """
-        authserver = TwistedAuthServer(config.codehosting.authserver)
-        portal = Portal(self.makeRealm())
+        authserver = Proxy(config.codehosting.authentication_endpoint)
+        portal = Portal(sshserver.Realm(authserver))
         portal.registerChecker(
             sshserver.PublicKeyFromLaunchpadChecker(authserver))
         sftpfactory = sshserver.Factory(hostPublicKey, hostPrivateKey)
