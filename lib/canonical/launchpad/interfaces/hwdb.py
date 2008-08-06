@@ -19,6 +19,8 @@ __all__ = [
     'IHWDriver',
     'IHWDriverSet',
     'IHWSubmission',
+    'IHWSubmissionBug',
+    'IHWSubmissionBugSet',
     'IHWSubmissionForm',
     'IHWSubmissionSet',
     'IHWSubmissionDevice',
@@ -542,4 +544,25 @@ class IHWSubmissionDeviceSet(Interface):
             is mentioned in.
         :param parent: The parent of this device in the device tree in
             the submission.
+        """
+
+
+class IHWSubmissionBug(Interface):
+    """Link a HWDB submission to a bug."""
+
+    submission = Attribute(u'The HWDB submission referenced in a bug '
+                              'report.')
+
+    bug = Attribute(u'The bug the HWDB submission is referenced in.')
+
+
+class IHWSubmissionBugSet(Interface):
+    """The set of IHWSubmissionBugs."""
+
+    def create(hwsubmission, bug):
+        """Create a new IHWSubmissionBug instance.
+
+        :return: The new IHWSubmissionBug instance.
+        :param hwsubmission: An IHWSubmission instance.
+        :param bug: An IBug instance.
         """

@@ -13,6 +13,8 @@ __all__ = [
     'HWDriver',
     'HWDriverSet',
     'HWSubmission',
+    'HWSubmissionBug',
+    'HWSubmissionBugSet',
     'HWSubmissionSet',
     'HWSubmissionDevice',
     'HWSubmissionDeviceSet',
@@ -40,10 +42,11 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
     HWSubmissionProcessingStatus, IHWDevice, IHWDeviceDriverLink,
     IHWDeviceDriverLinkSet, IHWDeviceNameVariant, IHWDeviceNameVariantSet,
-    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionDevice,
-    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
-    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
-    IHWVendorNameSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet)
+    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionBug,
+    IHWSubmissionBugSet, IHWSubmissionDevice, IHWSubmissionDeviceSet,
+    IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
+    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet)
 from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators.person import validate_public_person
 
@@ -587,3 +590,23 @@ class HWSubmissionDeviceSet:
         return HWSubmissionDevice(device_driver_link=device_driver_link,
                                   submission=submission,
                                   parent=parent)
+
+
+class HWSubmissionBug(SQLBase):
+    """See `IHWSubmissionBug`."""
+
+    implements(IHWSubmissionBug)
+    _table = 'HWSubmissionBug'
+
+    submission = ForeignKey(dbName='submission', foreignKey='HWSubmission',
+                              notNull=True)
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+
+class HWSubmissionBugSet:
+    """See `IHWSubmissionBugSet`."""
+
+    implements(IHWSubmissionBugSet)
+
+    def create(self, submission, bug):
+        """See `IHWSubmissionBugSet`."""
+        return HWSubmissionBug(submission=submission, bug=bug)
