@@ -75,23 +75,6 @@ This page presents the current PPA-ToS (terms of service) with a
 mandatory checkbox ('accepted') indicating that the user has read and
 accepted the conditions and an optional 'description' text-area.
 
-It also contains a portlet with all the distroseries and corresponding
-architectures supported for PPA.
-
-    >>> print extract_text(
-    ...    find_portlet(sample_browser.contents, 'PPA supported series'))
-    PPA supported series
-    5.04
-    "Hoary"
-    - development
-    i386
-    (official)
-    4.10
-    "Warty"
-    - current
-    i386
-    (official)
-
 The 'accepted' checkbox is unchecked by default:
 
     >>> sample_browser.getControl(name="field.accepted").value

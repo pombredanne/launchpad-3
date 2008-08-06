@@ -797,8 +797,6 @@ do with 'None/fmt:foo'.
     ''
     >>> test_tales('foo/fmt:break-long-words', foo=None)
     ''
-    >>> test_tales('foo/fmt:breadcrumbs', foo=None)
-    ''
     >>> test_tales('foo/fmt:date', foo=None)
     ''
     >>> test_tales('foo/fmt:time', foo=None)
