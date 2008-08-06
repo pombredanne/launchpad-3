@@ -30,11 +30,14 @@ from canonical.codehosting.tests.servers import (
 from canonical.codehosting import branch_id_to_path
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
+from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
-from canonical.testing import TwistedLaunchpadZopelessLayer
+from canonical.testing import TwistedAppServerLayer
 from canonical.testing.layers import disconnect_stores, reconnect_stores
 from canonical.twistedsupport import defer_to_thread
+from zope.security.management import setSecurityPolicy
+from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 
 def db_defer_to_thread(function):
@@ -58,7 +61,7 @@ def db_defer_to_thread(function):
 
 class SSHTestCase(ServerTestCase):
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedAppServerLayer
     server = None
 
     def installServer(self, server):
@@ -67,6 +70,8 @@ class SSHTestCase(ServerTestCase):
         self.default_team = server.authserver.testTeam
 
     def setUp(self):
+        setSecurityPolicy(PermissiveSecurityPolicy)
+        login(ANONYMOUS)
         super(SSHTestCase, self).setUp()
         self._main_thread_id = thread.get_ident()
 

@@ -26,6 +26,7 @@ from twisted.conch.ssh import filetransfer
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
 from twisted.internet import defer
 from twisted.python import util
+from twisted.web.xmlrpc import Proxy
 from zope.interface import implements
 
 from canonical.codehosting.transport import (
@@ -203,7 +204,7 @@ def _get_transport_for_dir(directory):
 
 def avatar_to_sftp_server(avatar):
     user_id = avatar.user_id
-    authserver = avatar.authserver
+    authserver = Proxy(config.codehosting.authserver)
     hosted_transport = _get_transport_for_dir(
         config.codehosting.branches_root)
     mirror_transport = _get_transport_for_dir(
