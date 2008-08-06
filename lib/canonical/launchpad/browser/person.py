@@ -2608,9 +2608,9 @@ class PersonView(LaunchpadView, FeedsMixin):
             by any user.
         """
         state = self.email_address_visibility.state
-        if state == EmailAddressVisibleState.PUBLIC:
+        if state is EmailAddressVisibleState.PUBLIC:
             return 'This email address is only visible to Launchpad users.'
-        elif state == EmailAddressVisibleState.ALLOWED:
+        elif state is EmailAddressVisibleState.ALLOWED:
             return 'This email address is not disclosed to others.'
         else:
             return None
