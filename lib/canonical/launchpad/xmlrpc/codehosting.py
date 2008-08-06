@@ -117,35 +117,29 @@ def datetime_from_tuple(time_tuple):
         year, month, day, hour, minute, second, tzinfo=UTC)
 
 
-def run_as_requester(function):
-    """Decorate 'function' by logging in as the user identified by its first
-    parameter, the `Person` object is then passed in to the function instead
-    of the login ID.
+def run_with_login(login_id, function, *args, **kwargs):
+    """Run 'function' logged in with 'login_id'.
+
+    The first argument passed to 'function' will be the Launchpad
+    `Person` object corresponding to 'login_id'.
 
     The exception is when the requesting login ID is `LAUNCHPAD_SERVICES`. In
     that case, we'll pass through the `LAUNCHPAD_SERVICES` variable and the
     method will do whatever security proxy hackery is required to provide read
     privileges to the Launchpad services.
-
-    Assumes that 'function' is on an object that implements a '_getPerson'
-    method similar to `UserDetailsStorageMixin._getPerson`.
     """
-    def as_user(self, loginID, *args, **kwargs):
-        if loginID == LAUNCHPAD_SERVICES:
-            # Don't pass in an actual user. Instead pass in LAUNCHPAD_SERVICES
-            # and expect `function` to use `removeSecurityProxy` or similar.
-            return function(self, LAUNCHPAD_SERVICES, *args, **kwargs)
-        requester = getUtility(IPersonSet).get(loginID)
-        if requester is None:
-            raise NotFoundError("No person with id %s." % loginID)
-        login_person(requester)
-        try:
-            return function(self, requester, *args, **kwargs)
-        finally:
-            logout()
-    as_user.__name__ = function.__name__
-    as_user.__doc__ = function.__doc__
-    return as_user
+    if login_id == LAUNCHPAD_SERVICES:
+        # Don't pass in an actual user. Instead pass in LAUNCHPAD_SERVICES
+        # and expect `function` to use `removeSecurityProxy` or similar.
+        return function(LAUNCHPAD_SERVICES, *args, **kwargs)
+    requester = getUtility(IPersonSet).get(login_id)
+    if requester is None:
+        raise NotFoundError("No person with id %s." % login_id)
+    login_person(requester)
+    try:
+        return function(requester, *args, **kwargs)
+    finally:
+        logout()
 
 
 class BranchFileSystemAPI(LaunchpadXMLRPCView):
@@ -153,32 +147,33 @@ class BranchFileSystemAPI(LaunchpadXMLRPCView):
 
     implements(IBranchFileSystem)
 
-    @run_as_requester
-    def createBranch(self, requester, personName, productName, branchName):
+    def createBranch(self, login_id, personName, productName, branchName):
         """See `IBranchFileSystem`."""
-        owner = getUtility(IPersonSet).getByName(personName)
-        if owner is None:
-            return Fault(
-                NOT_FOUND_FAULT_CODE,
-                "User/team %r does not exist." % personName)
-
-        if productName == '+junk':
-            product = None
-        else:
-            product = getUtility(IProductSet).getByName(productName)
-            if product is None:
+        def create_branch(requester):
+            owner = getUtility(IPersonSet).getByName(personName)
+            if owner is None:
                 return Fault(
                     NOT_FOUND_FAULT_CODE,
-                    "Project %r does not exist." % productName)
+                    "User/team %r does not exist." % personName)
 
-        try:
-            branch = getUtility(IBranchSet).new(
-                BranchType.HOSTED, branchName, requester, owner,
-                product, None, None, author=requester)
-        except (BranchCreationException, LaunchpadValidationError), e:
-            return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
-        else:
-            return branch.id
+            if productName == '+junk':
+                product = None
+            else:
+                product = getUtility(IProductSet).getByName(productName)
+                if product is None:
+                    return Fault(
+                        NOT_FOUND_FAULT_CODE,
+                        "Project %r does not exist." % productName)
+
+            try:
+                branch = getUtility(IBranchSet).new(
+                    BranchType.HOSTED, branchName, requester, owner,
+                    product, None, None, author=requester)
+            except (BranchCreationException, LaunchpadValidationError), e:
+                return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
+            else:
+                return branch.id
+        return run_with_login(login_id, create_branch)
 
     def _canWriteToBranch(self, requester, branch):
         """Can `requester` write to `branch`?"""
@@ -187,51 +182,54 @@ class BranchFileSystemAPI(LaunchpadXMLRPCView):
         return (branch.branch_type == BranchType.HOSTED
                 and requester.inTeam(branch.owner))
 
-    @run_as_requester
-    def getBranchInformation(self, requester, userName, productName,
+    def getBranchInformation(self, login_id, userName, productName,
                              branchName):
         """See `IBranchFileSystem`."""
-        branch = getUtility(IBranchSet).getByUniqueName(
-            '~%s/%s/%s' % (userName, productName, branchName))
-        if branch is None:
-            return '', ''
-        if requester == LAUNCHPAD_SERVICES:
-            branch = removeSecurityProxy(branch)
-        try:
-            branch_id = branch.id
-        except Unauthorized:
-            return '', ''
-        if branch.branch_type == BranchType.REMOTE:
-            # Can't even read remote branches.
-            return '', ''
-        if self._canWriteToBranch(requester, branch):
-            permissions = WRITABLE
-        else:
-            permissions = READ_ONLY
-        return branch_id, permissions
+        def get_branch_information(requester):
+            branch = getUtility(IBranchSet).getByUniqueName(
+                '~%s/%s/%s' % (userName, productName, branchName))
+            if branch is None:
+                return '', ''
+            if requester == LAUNCHPAD_SERVICES:
+                branch = removeSecurityProxy(branch)
+            try:
+                branch_id = branch.id
+            except Unauthorized:
+                return '', ''
+            if branch.branch_type == BranchType.REMOTE:
+                # Can't even read remote branches.
+                return '', ''
+            if self._canWriteToBranch(requester, branch):
+                permissions = WRITABLE
+            else:
+                permissions = READ_ONLY
+            return branch_id, permissions
+        return run_with_login(login_id, get_branch_information)
 
-    @run_as_requester
-    def getDefaultStackedOnBranch(self, requester, project_name):
-        if project_name == '+junk':
-            return ''
-        product = getUtility(IProductSet).getByName(project_name)
-        if product is None:
-            return Fault(
-                NOT_FOUND_FAULT_CODE,
-                "Project %r does not exist." % project_name)
-        branch = product.default_stacked_on_branch
-        if branch is None:
-            return ''
-        try:
-            unique_name = branch.unique_name
-        except Unauthorized:
-            return ''
-        return '/' + unique_name
+    def getDefaultStackedOnBranch(self, login_id, project_name):
+        def get_default_stacked_on_branch(requester):
+            if project_name == '+junk':
+                return ''
+            product = getUtility(IProductSet).getByName(project_name)
+            if product is None:
+                return Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "Project %r does not exist." % project_name)
+            branch = product.default_stacked_on_branch
+            if branch is None:
+                return ''
+            try:
+                unique_name = branch.unique_name
+            except Unauthorized:
+                return ''
+            return '/' + unique_name
+        return run_with_login(login_id, get_default_stacked_on_branch)
 
-    @run_as_requester
-    def requestMirror(self, requester, branchID):
+    def requestMirror(self, login_id, branchID):
         """See `IBranchFileSystem`."""
-        branch = getUtility(IBranchSet).get(branchID)
-        # We don't really care who requests a mirror of a branch.
-        branch.requestMirror()
-        return True
+        def request_mirror(requester):
+            branch = getUtility(IBranchSet).get(branchID)
+            # We don't really care who requests a mirror of a branch.
+            branch.requestMirror()
+            return True
+        return run_with_login(login_id, request_mirror)
