@@ -1,11 +1,11 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""The branch details XML-RPC API."""
+"""Implementations of the XML-RPC APIs for codehosting."""
 
 __metaclass__ = type
 __all__ = [
-    'BranchDetailsStorageAPI',
-    'BranchFileSystemAPI',
+    'PullerAPI',
+    'BranchFileSystem',
     ]
 
 
@@ -23,7 +23,7 @@ from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.branch import (
     BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.codehosting import (
-    IBranchDetailsStorage, IBranchFileSystem, LAUNCHPAD_SERVICES,
+    IBranchFileSystem, IPullerAPI, LAUNCHPAD_SERVICES,
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
@@ -36,10 +36,10 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 UTC = pytz.timezone('UTC')
 
 
-class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
-    """See `IBranchDetailsStorage`."""
+class PullerAPI(LaunchpadXMLRPCView):
+    """See `IPullerAPI`."""
 
-    implements(IBranchDetailsStorage)
+    implements(IPullerAPI)
 
     def _getBranchPullInfo(self, branch):
         """Return information the branch puller needs to pull this branch.
@@ -58,7 +58,7 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
         return (branch.id, branch.getPullURL(), branch.unique_name)
 
     def getBranchPullQueue(self, branch_type):
-        """See `IBranchDetailsStorage`."""
+        """See `IPullerAPI`."""
         try:
             branch_type = BranchType.items[branch_type]
         except KeyError:
@@ -68,7 +68,7 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
         return [self._getBranchPullInfo(branch) for branch in branches]
 
     def mirrorComplete(self, branch_id, last_revision_id):
-        """See `IBranchDetailsStorage`."""
+        """See `IPullerAPI`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
             return False
@@ -77,7 +77,7 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
         return True
 
     def mirrorFailed(self, branch_id, reason):
-        """See `IBranchDetailsStorage`."""
+        """See `IPullerAPI`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
             return False
@@ -86,7 +86,7 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
         return True
 
     def recordSuccess(self, name, hostname, started_tuple, completed_tuple):
-        """See `IBranchDetailsStorage`."""
+        """See `IPullerAPI`."""
         date_started = datetime_from_tuple(started_tuple)
         date_completed = datetime_from_tuple(completed_tuple)
         getUtility(IScriptActivitySet).recordSuccess(
@@ -95,7 +95,7 @@ class BranchDetailsStorageAPI(LaunchpadXMLRPCView):
         return True
 
     def startMirroring(self, branch_id):
-        """See `IBranchDetailsStorage`."""
+        """See `IPullerAPI`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
             return False
@@ -142,7 +142,7 @@ def run_with_login(login_id, function, *args, **kwargs):
         logout()
 
 
-class BranchFileSystemAPI(LaunchpadXMLRPCView):
+class BranchFileSystem(LaunchpadXMLRPCView):
     """See `IBranchFileSystem`."""
 
     implements(IBranchFileSystem)

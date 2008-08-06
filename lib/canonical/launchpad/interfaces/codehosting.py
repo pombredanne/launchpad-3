@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'IBranchDetailsStorage',
-    'IBranchDetailsStorageApplication',
+    'IPullerAPI',
+    'IPullerAPIApplication',
     'IBranchFileSystem',
     'IBranchFileSystemApplication',
     'LAUNCHPAD_SERVICES',
@@ -33,14 +33,14 @@ READ_ONLY = 'r'
 WRITABLE = 'w'
 
 
-class IBranchDetailsStorageApplication(ILaunchpadApplication):
-    """Branch details application root."""
+class IPullerAPIApplication(ILaunchpadApplication):
+    """Puller API application root."""
 
 
-class IBranchDetailsStorage(Interface):
-    """An interface for updating the status of branches in Launchpad.
+class IPullerAPI(Interface):
+    """The puller's interface to the rest of Launchpad.
 
-    Published at `XXX`.
+    Published at 'puller_api' on the private XML-RPC server.
     """
 
     def getBranchPullQueue(branch_type):
