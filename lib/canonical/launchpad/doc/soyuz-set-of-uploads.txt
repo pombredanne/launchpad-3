@@ -354,6 +354,8 @@ Check the email recipient for displayname containing special chars,
     "Foo B. Bar" <foo.bar@canonical.com>,
     Celso Providelo <celso.providelo@canonical.com>
   Subject: [ubuntutest/breezy] bar 1.0-4 (Accepted)
+  -> changes file signed by: Foo B. Bar (foo.bar@canonical.com)
+  -> component=3Duniverse, section=3Ddevel
   ...
 
 Revert changes:
