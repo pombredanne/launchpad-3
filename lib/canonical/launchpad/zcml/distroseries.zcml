@@ -85,14 +85,6 @@
     template="../templates/specification-add.pt"
   />
 
-  <browser:page
-      for="canonical.launchpad.interfaces.IDistroSeries"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.DistroSeriesDynMenu"
-      attribute="__call__"
-      name="+menudata"
-      />
-
   <browser:url
     for="canonical.launchpad.interfaces.IDistroSeries"
     path_expression="name"

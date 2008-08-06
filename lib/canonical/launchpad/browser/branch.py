@@ -32,7 +32,7 @@ import pytz
 from zope.app.traversing.interfaces import IPathAdapter
 from zope.component import getUtility, queryAdapter
 from zope.formlib import form
-from zope.interface import Interface
+from zope.interface import Interface, implements
 from zope.publisher.interfaces import NotFound
 from zope.schema import Choice
 
@@ -47,7 +47,8 @@ from canonical.lazr.interface import use_template
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.launchpad import (
+    Hierarchy, StructuralObjectPresentation)
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
@@ -76,15 +77,44 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import Breadcrumb
 from canonical.launchpad.webapp.uri import URI
-
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
 
 def quote(text):
     return cgi.escape(text, quote=True)
+
+
+class BranchPrimaryContext:
+    """The primary context is the product if there is one."""
+
+    implements(IPrimaryContext)
+
+    def __init__(self, branch):
+        if branch.product is not None:
+            self.context = branch.product
+        else:
+            self.context = branch.owner
+
+
+class BranchHierarchy(Hierarchy):
+    """The hierarchy for a branch should be the product if there is one."""
+
+    def getElements(self):
+        """See `Hierarchy`."""
+        if self.context.product is not None:
+            breadcrumb = self.context.product
+        else:
+            breadcrumb = self.context.owner
+
+        url = canonical_url(breadcrumb)
+        text = breadcrumb.displayname
+
+        return [Breadcrumb(url, text)]
 
 
 class BranchSOP(StructuralObjectPresentation):
