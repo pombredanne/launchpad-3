@@ -566,7 +566,7 @@ class IBranch(IHasOwner):
                       "successfully scanned."))
     revision_count = Int(
         title=_("Revision count"),
-        description=_("The number of revisions in the branch")
+        description=_("The revision number of the tip of the branch.")
         )
 
     warehouse_url = Attribute(
@@ -730,16 +730,15 @@ class IBranch(IHasOwner):
         :return: An SQLObject query result.
         """
 
-    def getBranchRevision(sequence):
-        """Get the `BranchRevision` for the given sequence number.
+    def getBranchRevision(sequence=None, revision=None, revision_id=None):
+        """Get the associated `BranchRevision`.
 
-        If no such `BranchRevision` exists, None is returned.
-        """
+        One and only one parameter is to be not None.
 
-    def getBranchRevisionByRevisionId(revision_id):
-        """Get the `BranchRevision for the given revision id.
-
-        If no such `BranchRevision` exists, None is returned.
+        :param sequence: The revno of the revision in the mainline history.
+        :param revision: A `Revision` object.
+        :param revision_id: A revision id string.
+        :return: A `BranchRevision` or None.
         """
 
     def createBranchRevision(sequence, revision):
