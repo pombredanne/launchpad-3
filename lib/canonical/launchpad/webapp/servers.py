@@ -46,7 +46,7 @@ import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication, IPerson,
     IPersonSet, IShipItApplication, IWebServiceApplication,
-    IOAuthConsumerSet, OAuthPermission, NonceAlreadyUsed)
+    IOAuthConsumerSet, NonceAlreadyUsed)
 import canonical.launchpad.versioninfo
 
 from canonical.launchpad.webapp.adapter import (
@@ -57,7 +57,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
     INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData,
-    IPlacelessLoginSource)
+    IPlacelessLoginSource, OAuthPermission)
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
@@ -1064,7 +1064,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
             # Everything is fine, let's return the principal.
             pass
         principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            token.person.id, access_level=token.permission)
+            token.person.id, access_level=token.permission,
+            scope=token.context)
 
         # Make sure the principal is a member of the beta test team.
         # XXX leonardr 2008-05-22 blueprint=api-bugs-remote

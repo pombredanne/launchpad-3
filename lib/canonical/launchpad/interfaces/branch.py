@@ -30,6 +30,7 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchListingFilter',
+    'IBranchNavigationMenu',
     'IBranchPersonSearchContext',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
@@ -425,6 +426,10 @@ class IBranchBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate branch listings."""
 
 
+class IBranchNavigationMenu(Interface):
+    """A marker interface to indicate the need to show the branch menu."""
+
+
 class IBranch(IHasOwner):
     """A Bazaar branch."""
     export_as_webservice_entry()
@@ -628,7 +633,8 @@ class IBranch(IHasOwner):
         "Only active merge proposals are returned (those that have not yet "
         "been merged).")
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
-                         whiteboard=None, date_created=None):
+                         whiteboard=None, date_created=None,
+                         needs_review=False):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the dependent_branch, if it is there,
@@ -645,6 +651,8 @@ class IBranch(IHasOwner):
             pertinant to the landing such as testing notes.
         :param date_created: Used to specify the date_created value of the
             merge request.
+        :param needs_review: Used to specify the the proposal is ready for
+            review right now.
         """
 
     def getMergeQueue():
@@ -1022,7 +1030,7 @@ class IBranchSet(Interface):
         """
 
     def getTargetBranchesForUsersMergeProposals(user, product):
-        """Return a sequence of branches the user has targetted before."""
+        """Return a sequence of branches the user has targeted before."""
 
     def isBranchNameAvailable(owner, product, branch_name):
         """Is the specified branch_name valid for the owner and product.

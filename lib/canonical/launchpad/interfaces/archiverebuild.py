@@ -164,7 +164,7 @@ class IArchiveRebuildSet(Interface):
         """
 
     def getByDistroSeries(distroseries):
-        """All `IArchiveRebuild` targetted to the given `IDistroSeries`.
+        """All `IArchiveRebuild` targeted to the given `IDistroSeries`.
 
         The result is ordered by ascending 'status' and then descending
         'datecreated'.

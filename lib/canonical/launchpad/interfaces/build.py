@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BuildStatus',
     'IBuild',
+    'IBuildRescoreForm',
     'IBuildSet',
     'IHasBuildRecords',
     'incomplete_building_status',
@@ -390,3 +391,12 @@ class IHasBuildRecords(Interface):
         "user" is the requesting user and if specified can be used in
         permission checks to see if he is allowed to view the build.
         """
+
+
+class IBuildRescoreForm(Interface):
+    """Form for rescoring a build."""
+
+    priority = Int(
+        title=_("Priority"), required=True, max=((2 ** 31) - 1),
+        description=_("Build priority, the build with the highest value will "
+                      "be dispatched first."))

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import cgi
+import simplejson
 
 from zope.interface import Attribute, implements, Interface
 from zope.app import zapi
@@ -164,6 +165,8 @@ class ISinglePopupView(Interface):
     def hasMoreThanOnePage(self):
         """Return True if there's more than one page with results."""
 
+    field = Attribute("The field parameter, sanitized.")
+
 
 class SinglePopupView(object):
     implements(ISinglePopupView)
@@ -215,6 +218,11 @@ class SinglePopupView(object):
     def hasMoreThanOnePage(self):
         """See ISinglePopupView"""
         return len(self.batch.batchPageURLs()) > 1
+
+    @property
+    def field(self):
+        """See ISinglePopupView"""
+        return simplejson.dumps(self.request.form.get('field', None))
 
 
 class SearchForUpstreamPopupWidget(SinglePopupWidget):

@@ -14,7 +14,7 @@ from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
-from zope.interface import implements, alsoProvides
+from zope.interface import implements
 
 
 from canonical.archivepublisher.config import Config as PubConfig
@@ -28,7 +28,10 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
-from canonical.launchpad.database.librarian import LibraryFileContent
+from canonical.launchpad.database.files import (
+    BinaryPackageFile, SourcePackageReleaseFile)
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
@@ -40,11 +43,11 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
+from storm.zope.interfaces import IZStorm
 
 
 class Archive(SQLBase):
@@ -188,16 +191,6 @@ class Archive(SQLBase):
         return urlappend(config.archivepublisher.base_url,
             self.distribution.name + postfix)
 
-    def _init(self, *args, **kwargs):
-        """Mark PPA archives with the IHasPersonNavigationMenu interface.
-
-        Called when the object is created or fetched from the database.
-        """
-        SQLBase._init(self, *args, **kwargs)
-
-        if self.is_ppa:
-            alsoProvides(self, IHasPersonNavigationMenu)
-
     def getPubConfig(self):
         """See `IArchive`."""
         pubconf = PubConfig(self.distribution)
@@ -304,7 +297,12 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.pocket = %s
             """ % sqlvalues(pocket))
 
-        preJoins = ['sourcepackagerelease']
+        preJoins = [
+            'sourcepackagerelease.creator',
+            'sourcepackagerelease.dscsigningkey',
+            'distroseries',
+            'section',
+            ]
 
         sources = SourcePackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
@@ -380,22 +378,25 @@ class Archive(SQLBase):
     @property
     def sources_size(self):
         """See `IArchive`."""
-        cur = cursor()
-        query = """
-            SELECT SUM(filesize) FROM LibraryFileContent WHERE id IN (
-               SELECT DISTINCT(lfc.id) FROM
-                   LibraryFileContent lfc, LibraryFileAlias lfa,
-                   SourcePackageFilePublishing spfp
-               WHERE
-                   lfc.id=lfa.content AND
-                   lfa.id=spfp.libraryfilealias AND
-                   spfp.archive=%s);
-        """ % sqlvalues(self)
-        cur.execute(query)
-        size = cur.fetchall()[0][0]
-        if size is None:
-            return 0
-        return int(size)
+        store = getUtility(IZStorm).get('main')
+        result = store.find(
+            (LibraryFileContent),
+            SourcePackagePublishingHistory.archive == self.id,
+            SourcePackagePublishingHistory.dateremoved == None,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                SourcePackageReleaseFile.sourcepackagereleaseID,
+            SourcePackageReleaseFile.libraryfileID == LibraryFileAlias.id,
+            LibraryFileAlias.contentID == LibraryFileContent.id)
+
+        # We need to select distinct `LibraryFileContent`s because that how
+        # they end up published in the archive disk. Duplications may happen
+        # because of the publishing records join, the same `LibraryFileAlias`
+        # gets logically re-published in several locations and the fact that
+        # the same `LibraryFileContent` can be shared by multiple
+        # `LibraryFileAlias.` (librarian-gc).
+        result = result.config(distinct=True)
+        size = sum([lfc.filesize for lfc in result])
+        return size
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
@@ -534,23 +535,18 @@ class Archive(SQLBase):
     @property
     def binaries_size(self):
         """See `IArchive`."""
-        query = """
-             LibraryFileContent.id=LibraryFileAlias.content AND
-             LibraryFileAlias.id=
-                 BinaryPackageFilePublishing.libraryfilealias AND
-             BinaryPackageFilePublishing.archive=%s
-        """ % sqlvalues(self)
+        store = getUtility(IZStorm).get('main')
+        result = store.find(
+            (LibraryFileContent),
+            BinaryPackagePublishingHistory.archive == self.id,
+            BinaryPackagePublishingHistory.dateremoved == None,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageFile.binarypackagereleaseID,
+            BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
+            LibraryFileAlias.contentID == LibraryFileContent.id)
 
-        clauseTables = ['LibraryFileAlias', 'BinaryPackageFilePublishing']
-        # We are careful to use DISTINCT here to eliminate files that
-        # are published in more than one place.
-        result = LibraryFileContent.select(query, clauseTables=clauseTables,
-            distinct=True)
-
-        # XXX 2008-01-16 Julian.  Unfortunately SQLObject has got a bug
-        # where it ignores DISTINCT on a .sum() operation, so resort to
-        # Python addition.  Revert to using result.sum('filesize') when
-        # SQLObject gets dropped.
+        # See `IArchive.sources_size`.
+        result = result.config(distinct=True)
         size = sum([lfc.filesize for lfc in result])
         return size
 

@@ -43,6 +43,11 @@
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     factory="canonical.launchpad.components.answertracker.distrosourcepackage_to_faqtarget"
     />
+  <adapter
+      for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+      provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+      factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"
+      />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     name="+index" />

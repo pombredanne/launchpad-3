@@ -30,8 +30,8 @@ from canonical.launchpad.interfaces.branchvisibilitypolicy import (
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
-    IHasOwner, IHasSecurityContact, ILaunchpadUsage)
+    IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
@@ -53,14 +53,16 @@ class LicenseStatus(DBEnumeratedType):
 
     OPEN_SOURCE = DBItem(
         10, "Open Source",
-        u"This project&lsquo;s license is open source.")
+        u"This project&rsquo;s license is open source.")
     PROPRIETARY = DBItem(
         20, "Proprietary",
-        u"This project&lsquo;s license is proprietary.")
+        u"This project&rsquo;s license is proprietary.")
     UNREVIEWED = DBItem(
         30, "Unreviewed",
-        u"This project&lsquo;s license has not been reviewed.")
-
+        u"This project&rsquo;s license has not been reviewed.")
+    UNSPECIFIED = DBItem(
+        40, "Unspecified",
+        u"This project&rsquo;s license has not been specified.")
 
 class License(DBEnumeratedType):
     """Licenses under which a project's code can be released."""
@@ -104,11 +106,11 @@ class License(DBEnumeratedType):
 
 
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
-               IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
-               IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
-               IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
-               IPillar):
+               IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
+               IHasMentoringOffers, IHasMilestones, IHasMugshot,
+               IMakesAnnouncements, IHasOwner, IHasSecurityContact,
+               IHasSprints, IHasTranslationGroup, IKarmaContext,
+               ILaunchpadUsage, ISpecificationTarget, IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -295,14 +297,6 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         description=_(
             "Description of licenses that do not appear in the list above."))
 
-    def getExternalBugTracker():
-        """Return the external bug tracker used by this bug tracker.
-
-        If the product uses Launchpad, return None.
-        If the product doesn't have a bug tracker specified, return the
-        project bug tracker instead.
-        """
-
     bugtracker = ProductBugTracker(
         title=_('Bugs are tracked'),
         vocabulary="BugTracker")
@@ -378,8 +372,10 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     license_approved = Bool(
         title=_("License approved"),
-        description=_("Whether a license is manually approved for free "
-                      "hosting after automatic approval fails."))
+        description=_(
+            "Whether a license is manually approved for free "
+            "hosting after automatic approval fails.  May only "
+            "be applied to licenses of 'Other/Open Source'."))
 
     license_status = Attribute("""
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
@@ -505,15 +501,24 @@ class IProductSet(Interface):
         """Return the latest products registered in the Launchpad."""
 
     def getTranslatables():
-        """Return an iterator over products that have resources translatables.
+        """Return an iterator over products that have translatable resources.
+
+        Skips products that are not configured to be translated in
+        Launchpad, as well as non-active ones.
         """
 
     def featuredTranslatables(maximumproducts=8):
-        """Return an iterator over a sample of translatable products.
+        """Return an iterator over a random sample of translatable products.
 
-        maximum_products is a maximum number of products to be displayed
-        on the front page (it will be less if there are no enough products).
+        Similar to `getTranslatables`, except the number of results is
+        limited and they are randomly chosen.
+
+        :param maximum_products: Maximum number of products to be
+            returned.
+        :return: An iterator over active, translatable products.
         """
+        # XXX JeroenVermeulen 2008-07-31 bug=253583: this is not
+        # currently used!
 
     def count_all():
         """Return a count of the total number of products registered in

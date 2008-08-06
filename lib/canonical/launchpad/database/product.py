@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
@@ -189,8 +189,27 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     license_info = StringCol(dbName='license_info', default=None,
                              storm_validator=_validate_license_info)
+
+    def _validate_license_approved(self, attr, value):
+        """Ensure license approved is only applied to the correct licenses."""
+        # XXX: BradCrittenden 2008-07-16 Is the check for _SO_creating still
+        # needed for storm?
+        if not self._SO_creating:
+            licenses = self.licenses
+            if value:
+                assert (
+                    License.OTHER_OPEN_SOURCE in licenses and
+                    License.OTHER_PROPRIETARY not in licenses), (
+                    "Only licenses of 'Other/Open Source' and not "
+                    "'Other/Proprietary' may be marked as license_approved.")
+                # Approving a license implies it has been reviewed.  Force
+                # `license_reviewed` to be True.
+                self.license_reviewed = True
+        return value
+
     license_approved = BoolCol(dbName='license_approved',
-                               notNull=True, default=False)
+                               notNull=True, default=False,
+                               storm_validator=_validate_license_approved)
 
     @property
     def default_stacked_on_branch(self):
@@ -321,6 +340,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         :return: A LicenseStatus enum value.
         """
+        # A project can only be marked 'license_approved' if it is
+        # OTHER_OPEN_SOURCE.  So, if it is 'license_approved' we return
+        # OPEN_SOURCE, which means one of our admins has determined it is good
+        # enough for us for the project to freely use Launchpad.
         if self.license_approved:
             return LicenseStatus.OPEN_SOURCE
         # Since accesses to the licenses property performs a query on
@@ -329,7 +352,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         licenses = self.licenses
         if len(licenses) == 0:
             # We don't know what the license is.
-            return LicenseStatus.UNREVIEWED
+            return LicenseStatus.UNSPECIFIED
         elif License.OTHER_PROPRIETARY in licenses:
             # Notice the difference between the License and LicenseStatus.
             return LicenseStatus.PROPRIETARY
@@ -398,7 +421,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return "BugTask.product = %d" % self.id
 
     def getExternalBugTracker(self):
-        """See `IProduct`."""
+        """See `IHasExternalBugTracker`."""
         if self.official_malone:
             return None
         elif self.bugtracker is not None:
@@ -1117,6 +1140,7 @@ class ProductSet:
     def getTranslatables(self):
         """See `IProductSet`"""
         upstream = Product.select('''
+            Product.active AND
             Product.id = ProductSeries.product AND
             POTemplate.productseries = ProductSeries.id AND
             Product.official_rosetta
@@ -1124,22 +1148,28 @@ class ProductSet:
             clauseTables=['ProductSeries', 'POTemplate'],
             orderBy='Product.title',
             distinct=True)
-        return upstream
+        return upstream.prejoin(['owner'])
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""
-        randomresults = Product.select('''id IN
-            (SELECT Product.id FROM Product, ProductSeries, POTemplate
-               WHERE Product.id = ProductSeries.product AND
-                     POTemplate.productseries = ProductSeries.id AND
-                     Product.official_rosetta
-               ORDER BY random())
-            ''',
-            distinct=True)
-
-        results = list(randomresults[:maximumproducts])
-        results.sort(lambda a, b: cmp(a.title, b.title))
-        return results
+        return Product.select('''
+            id IN (
+                SELECT DISTINCT product_id AS id
+                FROM (
+                    SELECT Product.id AS product_id, random() AS place
+                    FROM Product
+                    JOIN ProductSeries ON
+                        ProductSeries.Product = Product.id
+                    JOIN POTemplate ON
+                        POTemplate.productseries = ProductSeries.id
+                    WHERE Product.active AND Product.official_rosetta
+                    ORDER BY place
+                ) AS randomized_products
+                LIMIT %s
+            )
+            ''' % quote(maximumproducts),
+            distinct=True,
+            orderBy='Product.title')
 
     @cachedproperty
     def stats(self):
