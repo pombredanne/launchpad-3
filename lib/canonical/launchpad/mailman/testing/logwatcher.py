@@ -16,6 +16,7 @@ import os
 import time
 import datetime
 
+# pylint: disable-msg=F0401
 from Mailman.mm_cfg import LOG_DIR
 
 try:

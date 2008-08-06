@@ -39,6 +39,7 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.mailman.testing.layers import MailmanLayer
 from canonical.launchpad.testing.browser import Browser
 
+# pylint: disable-msg=F0401
 from Mailman import mm_cfg
 from Mailman.Errors import NotAMemberError
 from Mailman.MailList import MailList
@@ -227,7 +228,8 @@ def collect_archive_message_ids(team_name):
 
 
 def apply_for_list(browser, team_name):
-    """Like mailinglists_helper.apply_for_list() but with the right rooturl."""
+    """Like mailinglists_helper.apply_for_list() but with the right rooturl.
+    """
     mailinglists_helper.apply_for_list(
         browser, team_name, 'http://launchpad.dev:8085/')
 

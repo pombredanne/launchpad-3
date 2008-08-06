@@ -86,7 +86,8 @@ class Server(smtpd.SMTPServer):
         # to an existing mailing list, drop the message into Mailman's
         # incoming queue.
         log.debug('msgid: %s, to: %s, beenthere: %s',
-                  message['message-id'], message['to'], message['x-beenthere'])
+                  message['message-id'], message['to'],
+                  message['x-beenthere'])
         try:
             local, hostname = message['to'].split('@', 1)
         except ValueError:
@@ -98,6 +99,7 @@ class Server(smtpd.SMTPServer):
         # tested first).  If the local part indicates that the message is
         # destined for a Mailman mailing list, deliver it to Mailman's
         # incoming queue.  Otherwise, deliver it to the upstream SMTPd.
+        # pylint: disable-msg=F0401
         from Mailman.Utils import list_names
         if 'x-beenthere' in message:
             # It came from Mailman and goes to the mbox.
@@ -112,9 +114,11 @@ class Server(smtpd.SMTPServer):
 
     def _deliver_to_mailman(self, listname, message):
         """Deliver the message to Mailman's incoming queue."""
+        # pylint: disable-msg=F0401
         from Mailman.Post import inject
         inject(listname, message)
-        log.debug('delivered to mailman: %s', message.get('message-id', 'n/a'))
+        log.debug(
+            'delivered to mailman: %s', message.get('message-id', 'n/a'))
 
     def _deliver_to_mbox(self, message):
         """Store the message in the mbox."""
