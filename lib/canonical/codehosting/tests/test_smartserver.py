@@ -222,7 +222,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
         self.session = smartserver.RestrictedExecOnlySession(
-            self.avatar, self.reactor, 'foo', 'bar baz %(username)s')
+            self.avatar, self.reactor, 'foo', 'bar baz %(user_id)s')
 
     def test_makeRestrictedExecOnlySession(self):
         # A RestrictedExecOnlySession is constructed with an avatar, a reactor
@@ -234,7 +234,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         self.assertEqual(self.avatar, self.session.avatar)
         self.assertEqual(self.reactor, self.session.reactor)
         self.assertEqual('foo', self.session.allowed_command)
-        self.assertEqual('bar baz %(username)s',
+        self.assertEqual('bar baz %(user_id)s',
                          self.session.executed_command_template)
 
     def test_execCommandRejectsUnauthorizedCommands(self):
@@ -256,7 +256,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         executable, arguments = self.session.getCommandToRun('foo')
         self.assertEqual('bar', executable)
         self.assertEqual(
-            ['bar', 'baz', self.avatar.username], list(arguments))
+            ['bar', 'baz', str(self.avatar.user_id)], list(arguments))
 
     def test_getAvatarAdapter(self):
         # getAvatarAdapter is a convenience classmethod so that
@@ -306,7 +306,7 @@ class TestSessionIntegration(AvatarTestCase):
         self.assertEqual(sys.executable, executable)
         self.assertEqual(
             [sys.executable, smartserver.get_bzr_path(), 'lp-serve', '--inet',
-             self.avatar.username],
+             str(self.avatar.user_id)],
             list(arguments))
         self.assertRaises(smartserver.ForbiddenCommand,
                           session.getCommandToRun, 'rm -rf /')

@@ -59,8 +59,8 @@ class cmd_launchpad_server(Command):
 
         :param branchfs_client: An `xmlrpclib.ServerProxy` (or equivalent) for the
             branch file system end-point.
-        :param user_id: A unique ID of the user whose branches are being
-            served. This can be a database ID, a nickname or an email address.
+        :param user_id: A unique database ID of the user whose branches are
+            being served.
         :param hosted_url: Where the branches are uploaded to.
         :param mirror_url: Where all Launchpad branches are mirrored.
         :return: A `LaunchpadTransport`.
@@ -71,8 +71,6 @@ class cmd_launchpad_server(Command):
         # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
         hosted_transport = transport.get_chrooted_transport(hosted_url)
         mirror_transport = transport.get_chrooted_transport(mirror_url)
-        # Translate the given 'id' into an actual database id.
-        user_id = branchfs_client.getUser(user_id)['id']
         lp_server = transport.LaunchpadServer(
             transport.BlockingProxy(branchfs_client), user_id, hosted_transport,
             mirror_transport)
@@ -112,16 +110,12 @@ class cmd_launchpad_server(Command):
 
     def run(self, user_id, port=None, upload_directory=None,
             mirror_directory=None, branchfs_endpoint_url=None, inet=False):
-        from canonical.codehosting import transport
         if upload_directory is None:
             upload_directory = config.codehosting.branches_root
         if mirror_directory is None:
             mirror_directory = config.supermirror.branchesdest
         if branchfs_endpoint_url is None:
             branchfs_endpoint_url = config.codehosting.branchfs_endpoint
-
-        debug_log = transport.set_up_logging()
-        debug_log.debug('Running smart server for %s', user_id)
 
         upload_url = urlutils.local_path_to_url(upload_directory)
         mirror_url = urlutils.local_path_to_url(mirror_directory)
