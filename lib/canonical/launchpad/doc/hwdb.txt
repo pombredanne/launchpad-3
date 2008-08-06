@@ -373,6 +373,10 @@ IHWSubmissionBugSet.create().
 Links between a bug and a submission must be unique.
 
     >>> submission_bug_set.create(submission_no_owner, bug_one)
+    <HWSubmissionBug at ...>
     >>> transaction.commit()
-    xxx
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ... violates unique constraint
+    "hwsubmissionbug__submission__bug__key"
 
