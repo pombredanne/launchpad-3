@@ -204,13 +204,13 @@ def _get_transport_for_dir(directory):
 
 def avatar_to_sftp_server(avatar):
     user_id = avatar.user_id
-    authserver = Proxy(config.codehosting.authserver)
+    branchfs_client = Proxy(config.codehosting.branchfs_endpoint)
     hosted_transport = _get_transport_for_dir(
         config.codehosting.branches_root)
     mirror_transport = _get_transport_for_dir(
         config.supermirror.branchesdest)
     server = LaunchpadServer(
-        authserver, user_id, hosted_transport, mirror_transport)
+        branchfs_client, user_id, hosted_transport, mirror_transport)
     server.setUp()
     transport = AsyncLaunchpadTransport(server, server.get_url())
     return TransportSFTPServer(transport)
