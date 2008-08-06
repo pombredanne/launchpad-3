@@ -45,5 +45,10 @@ DROP SEQUENCE projectbugtracker_id_seq;
 -- Can't use is_team as a constraint as the result is mutable.
 ALTER TABLE Poll DROP CONSTRAINT is_team;
 
+-- Drop the foreign key constraint on OAuthNonce so it can live in the
+-- authdb replication set. This constraint should be reinstated if
+-- the OAuthAccessToken table is moved too.
+ALTER TABLE OauthNonce DROP CONSTRAINT oauthnonce_access_token_fkey;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 71, 0);
 
