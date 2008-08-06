@@ -16,7 +16,7 @@ __all__ = [
 import sets
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int, Set, Text, TextLine
+from zope.schema import Bool, Choice, Date, Int, Object, Set, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary
 
 
@@ -35,6 +35,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
+from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -44,9 +45,11 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+from canonical.lazr.fields import CollectionField
 from canonical.lazr.rest.declarations import (
     collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters)
 
 
 class LicenseStatus(DBEnumeratedType):
@@ -119,7 +122,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others.
     """
-    export_as_webservice_entry('project', 'projects')
+    export_as_webservice_entry('project')
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
@@ -141,6 +144,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                 'preferences and decisions around bug tracking, translation '
                 'and security policy will apply to this project.')),
         exported_as='project_group')
+
     owner = exported(
         PublicPersonChoice(
             title=_('Owner'),
@@ -164,6 +168,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         "Presents the drivers of this project as a list. A list is "
         "required because there might be a project driver and also a "
         "driver appointed in the overarching project group.")
+
     name = exported(
         ProductNameField(
             title=_('Name'),
@@ -172,6 +177,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                 "At least one lowercase letter or number, followed by "
                 "letters, dots, hyphens or plusses. "
                 "Keep this name short, as it is used in URLs.")))
+
     displayname = exported(
         TextLine(
             title=_('Display Name'),
@@ -211,41 +217,55 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                 the http://""")),
         exported_as="homepage_url")
 
-    wikiurl = URIField(
-        title=_('Wiki URL'),
-        required=False,
-        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The full URL of this project's wiki, if it has one.
-            Please include the http://"""))
+    wikiurl = exported(
+        URIField(
+            title=_('Wiki URL'),
+            required=False,
+            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+            description=_("""The full URL of this project's wiki, if it has
+                one. Please include the http://""")),
+        exported_as='wiki_url')
 
-    screenshotsurl = URIField(
-        title=_('Screenshots URL'),
-        required=False,
-        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The full URL for screenshots of this project,
-            if available. Please include the http://"""))
+    screenshotsurl = exported(
+        URIField(
+            title=_('Screenshots URL'),
+            required=False,
+            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+            description=_("""The full URL for screenshots of this project,
+                if available. Please include the http://""")),
+        exported_as='screenshot_url')
 
-    downloadurl = URIField(
-        title=_('Download URL'),
-        required=False,
-        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The full URL where downloads for this project
-            are located, if available. Please include the http://"""))
+    downloadurl = exported(
+        URIField(
+            title=_('Download URL'),
+            required=False,
+            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+            description=_("""The full URL where downloads for this project
+                are located, if available. Please include the http://""")),
+        exported_as='download_url')
 
-    programminglang = TextLine(
-        title=_('Programming Language'),
-        required=False,
-        description=_("""A comma delimited list of programming
-            languages used for this project."""))
+    programminglang = exported(
+        TextLine(
+            title=_('Programming Language'),
+            required=False,
+            description=_("""A comma delimited list of programming
+                languages used for this project.""")),
+        exported_as='programming_language')
 
-    sourceforgeproject = TextLine(title=_('Sourceforge Project'),
-        required=False,
-        description=_("""The SourceForge project name for
-            this project, if it is in sourceforge."""))
+    sourceforgeproject = exported(
+        TextLine(
+            title=_('Sourceforge Project'),
+            required=False,
+            description=_("""The SourceForge project name for
+                this project, if it is in sourceforge.""")),
+        exported_as='sourceforge_project')
 
-    freshmeatproject = TextLine(title=_('Freshmeat Project'),
-        required=False, description=_("""The Freshmeat project name for
-            this project, if it is in freshmeat."""))
+    freshmeatproject = exported(
+        TextLine(
+            title=_('Freshmeat Project'),
+            required=False, description=_("""The Freshmeat project name for
+                this project, if it is in freshmeat.""")),
+        exported_as='freshmeat_project')
 
     homepage_content = Text(
         title=_("Homepage Content"), required=False,
@@ -299,15 +319,17 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             "Notes on the project's license, editable only by reviewers "
             "(Admins & Commercial Admins)."))
 
-    licenses = Set(
-        title=_('Licenses'),
-        value_type=Choice(vocabulary=License))
+    licenses = exported(
+        Set(title=_('Licenses'),
+            value_type=Choice(vocabulary=License)))
 
-    license_info = Description(
-        title=_('Description of additional licenses'),
-        required=False,
-        description=_(
-            "Description of licenses that do not appear in the list above."))
+    license_info = exported(
+        Description(
+            title=_('Description of additional licenses'),
+            required=False,
+            description=_(
+                "Description of licenses that do not appear in the list "
+                "above.")))
 
     bugtracker = ProductBugTracker(
         title=_('Bugs are tracked'),
@@ -318,8 +340,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
-    serieses = Attribute(_("""An iterator over the ProductSeries for this
-        product"""))
+    serieses = exported(
+        CollectionField(value_type=Object(schema=IProductSeries)),
+        exported_as='series')
 
     development_focus = Choice(
         title=_('Development focus'), required=True,
@@ -502,6 +525,8 @@ class IProductSet(Interface):
         """Return an iterator over products that need to be reviewed."""
 
     @collection_default_content()
+    @operation_parameters(text=TextLine())
+    @export_read_operation()
     def search(text=None, soyuz=None,
                rosetta=None, malone=None,
                bazaar=None):

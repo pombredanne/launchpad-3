@@ -22,24 +22,61 @@ Projects are available at their canonical URL on the API virtual host.
     date_created: u'2004-09-24T20:58:02.185708+00:00'
     description: u'The Mozilla Firefox web browser'
     display_name: u'Mozilla Firefox'
+    download_url: None
     driver_link: None
+    freshmeat_project: None
     homepage_url: None
+    license_info: None
+    licenses: []
     name: u'firefox'
     owner_link: u'http://api.launchpad.dev/beta/~name12'
+    programming_language: None
     project_group_link: u'http://api.launchpad.dev/beta/mozilla'
-    resource_type_link: u'...'
+    resource_type_link: u'http://api.launchpad.dev/beta/#project'
+    screenshot_url: None
     self_link: u'http://api.launchpad.dev/beta/firefox'
+    series_collection_link: u'http://api.launchpad.dev/beta/firefox/series'
+    sourceforge_project: None
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
+    wiki_url: None
+
+
+The project group can be accessed through the project_group_link.
+
+    >>> webservice.get(firefox['project_group_link']).jsonBody()['self_link']
+    u'http://api.launchpad.dev/beta/mozilla'
+
+A list of series can be accessed through the series_collection_link.
+
+    >>> response = webservice.get(firefox['series_collection_link'])
+    >>> serieses = response.jsonBody()
+    >>> print serieses['total_size']
+    2
+    >>> for series in serieses['entries']:
+    ...     pprint_entry(series)
+    name: u'1.0'
+    project_link: u'http://api.launchpad.dev/beta/firefox'
+    resource_type_link: u'http://api.launchpad.dev/beta/#product_series'
+    self_link: u'http://api.launchpad.dev/beta/firefox/1.0'
+    name: u'trunk'
+    project_link: u'http://api.launchpad.dev/beta/firefox'
+    resource_type_link: u'http://api.launchpad.dev/beta/#product_series'
+    self_link: u'http://api.launchpad.dev/beta/firefox/trunk'
+
+
+Attributes can be edited via the webservice.patch() method.
 
     >>> from simplejson import dumps
     >>> patch = {
     ...     u'driver_link': u'http://api.launchpad.dev/beta/~sabdfl',
     ...     u'homepage_url': u'http://sf.net/firefox',
+    ...     u'licenses': [u'Python License', u'GNU GPL v2'],
     ...     }
-    >>> response = webservice.patch(
+    >>> print webservice.patch(
     ...     '/beta/firefox', 'application/json', dumps(patch))
-
+    HTTP/1.1 200 Ok
+    ...
     >>> firefox = webservice.get('/beta/firefox').jsonBody()
     >>> firefox['driver_link']
     u'http://api.launchpad.dev/beta/~sabdfl'
@@ -53,41 +90,36 @@ Projects are available at their canonical URL on the API virtual host.
 
 == Project collection ==
 
-  >>> project_collection = webservice.get("/beta/projects").jsonBody()
-  >>> project_collection['resource_type_link']
-  u'http://api.launchpad.dev/beta/#projects'
-  >>> project_collection['total_size']
-  22
-  >>> project_collection['next_collection_link']
-  u'http://api.launchpad.dev/beta/projects?ws.start=5&ws.size=5'
-  >>> project_collection.get('prev_collection_link') is None
-  True
+It is possible to get a batched list of all the projects.
 
-  >>> from operator import itemgetter
-  >>> project_entries = sorted(
-  ...     project_collection['entries'], key=itemgetter('name'))
-  >>> len(project_entries)
-  5
-  >>> project_entries[0]['display_name']
-  u'Arch mirrors'
-  >>> project_entries[0]['self_link']
-  u'http://api.launchpad.dev/beta/arch-mirrors'
-  >>> project_entries[-1]['display_name']
-  u'Tomcat'
+    >>> project_collection = webservice.get("/beta/projects").jsonBody()
+    >>> project_collection['resource_type_link']
+    u'http://api.launchpad.dev/beta/#projects'
+    >>> project_collection['total_size']
+    22
 
-You can get other pages of the collection by following links:
+    >>> from operator import itemgetter
+    >>> project_entries = sorted(
+    ...     project_collection['entries'], key=itemgetter('name'))
+    >>> len(project_entries)
+    5
+    >>> project_entries[0]['self_link']
+    u'http://api.launchpad.dev/beta/arch-mirrors'
+    >>> for project in project_entries:
+    ...   print project['display_name']
+    Arch mirrors
+    Mozilla Firefox
+    The Landscape Project
+    Redfish
+    Tomcat
 
-  >>> result = webservice.get("/beta/projects?ws.start=5&ws.size=5")
-  >>> second_batch = result.jsonBody()
-  >>> second_batch['next_collection_link']
-  u'http://api.launchpad.dev/beta/projects?ws.start=10&ws.size=5'
-  >>> second_batch['prev_collection_link']
-  u'http://api.launchpad.dev/beta/projects?ws.start=0&ws.size=5'
+It is possible to search for projects by a text string by adding
+the ws.op=search parameter.
 
-  >>> project_entries = sorted(
-  ...     second_batch['entries'], key=itemgetter('name'))
-  >>> project_entries[0]['name']
-  u'applets'
+    >>> project_collection = webservice.get(
+    ...   "/beta/projects?ws.op=search&text=gnome").jsonBody()
+    >>> project_collection['total_size']
+    4
 
 == Project series entry ==
 
