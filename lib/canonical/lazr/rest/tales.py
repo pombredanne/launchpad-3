@@ -442,7 +442,7 @@ class WadlFieldAPI(RESTUtilityBase):
         return None
 
 
-class WadlTopLevelEntryLinkAPI(WadlAPI):
+class WadlTopLevelEntryLinkAPI(RESTUtilityBase):
     """Namespace for WADL functions that operate on top-level entry links."""
 
     def __init__(self, entry_link):
