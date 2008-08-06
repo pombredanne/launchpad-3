@@ -21,6 +21,8 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
+XSLTPROC=xsltproc
+
 APPSERVER_ENV = \
   LPCONFIG=${LPCONFIG} \
   PYTHONPATH=$(PYTHONPATH) \
@@ -36,6 +38,14 @@ schema: build clean_codehosting
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
+
+# XXX flacoste 2008/07/31 This is not automatically run and the
+# generated file is stored in the revision control, until IS installs
+# xsltproc on all required machine.
+apidoc:
+	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
+		$(XSLTPROC) ./lib/canonical/lazr/rest/wadl-to-refhtml.xsl - \
+		> ./lib/canonical/launchpad/apidoc/index.html
 
 check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
 

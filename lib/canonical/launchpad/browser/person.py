@@ -26,7 +26,6 @@ __all__ = [
     'PersonCodeSummaryView',
     'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
-    'PersonDynMenu',
     'PersonEditEmailsView',
     'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
@@ -56,7 +55,8 @@ __all__ = [
     'PersonSOP',
     'PersonSpecFeedbackView',
     'PersonSpecsMenu',
-    'PersonSpecWorkLoadView',
+    'PersonSpecWorkloadView',
+    'PersonSpecWorkloadTableView',
     'PersonSubscribedBranchesView',
     'PersonTeamBranchesView',
     'PersonTranslationView',
@@ -161,7 +161,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.browser.openiddiscovery import (
-    OpenIDPersistentIdentity, XRDSContentNegotiationMixin)
+    XRDSContentNegotiationMixin)
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -169,11 +169,13 @@ from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
+from canonical.launchpad.components.openidserver import (
+    OpenIDPersistentIdentity)
+
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
@@ -342,26 +344,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         if irc_nick is None or irc_nick.person != self.context:
             return None
         return irc_nick
-
-
-class PersonDynMenu(DynMenu):
-
-    menus = {
-        'contributions': 'contributionsMenu',
-        }
-
-    @neverempty
-    def contributionsMenu(self):
-        L = [self.makeBreadcrumbLink(item)
-             for item in self.context.iterTopProjectsContributedTo()]
-        L.sort(key=lambda item: item.text.lower())
-        if L:
-            for obj in L:
-                yield obj
-        else:
-            yield self.makeLink(
-                'Projects you contribute to go here.', target=None)
-        yield self.makeLink('See all projects...', target='/products')
 
 
 class TeamNavigation(PersonNavigation):
@@ -1755,15 +1737,34 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
-class PersonSpecWorkLoadView(LaunchpadView):
-    """View used to render the specification workload for a particular person.
+class PersonSpecWorkloadView(LaunchpadView):
+    """View to render the specification workload for a person or team.
 
-    It shows the set of specifications with which this person has a role.
+    It shows the set of specifications with which this person has a role.  If
+    the person is a team, then all members of the team are presented using
+    batching with their individual specifications.
     """
 
-    def initialize(self):
-        assert IPerson.providedBy(self.context), (
-            'PersonSpecWorkLoadView should be used only on an IPerson.')
+    @cachedproperty
+    def members(self):
+        """Return a batch navigator for all members.
+
+        This batch does not test for whether the person has specifications or
+        not.
+        """
+        assert self.context.isTeam, (
+            "PersonSpecWorkloadView.members can only be called on a team.")
+        members = self.context.allmembers
+        batch_nav = BatchNavigator(members, self.request)
+        return batch_nav
+
+
+class PersonSpecWorkloadTableView(LaunchpadView):
+    """View to render the specification workload table for a person.
+
+    It shows the set of specifications with which this person has a role
+    in a single table.
+    """
 
     class PersonSpec:
         """One record from the workload list."""
@@ -1782,7 +1783,7 @@ class PersonSpecWorkLoadView(LaunchpadView):
         Return a structure that lists the specs for which this person is the
         approver, the assignee or the drafter.
         """
-        return [PersonSpecWorkLoadView.PersonSpec(spec, self.context)
+        return [PersonSpecWorkloadTableView.PersonSpec(spec, self.context)
                 for spec in self.context.specifications()]
 
 
