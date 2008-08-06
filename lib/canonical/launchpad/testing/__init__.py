@@ -22,7 +22,8 @@ class TestCase(unittest.TestCase):
         # double underscores in Python 2.4. There are no direct
         # implementations of these methods in this class. We use the double
         # underscore syntax without expansion because this class has the same
-        # __name__ as its base class.
+        # __name__ as its base class. In Python 2.5 these elements have single
+        # underscores.
         self._testMethodName = self.__testMethodName
         self._exc_info = self.__exc_info
 
