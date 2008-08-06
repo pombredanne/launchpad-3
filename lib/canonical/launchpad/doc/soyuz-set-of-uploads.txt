@@ -473,12 +473,13 @@ Upload a newer version of source package "foo" to breezy-backports:
   >>> simulate_upload(
   ...     'foo_2.9-1', upload_policy='sync', loglevel=logging.DEBUG)
   log> ...
-  log> Distribution: breezy-backports
-  ...
-  log> OK: foo_2.9.orig.tar.gz
-  log> OK: foo_2.9-1.diff.gz
-  log> OK: foo_2.9-1.dsc
-  log> -> Component: universe Section: devel
+  log> Sent a mail:
+  log>     Subject: [ubuntutest/breezy-backports] foo 2.9-1 (Accepted)
+  log>     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
+  log>     Body:
+  log> -> component=universe, section=devel
+  log>
+  log>  foo (2.9-1) breezy-backports; urgency=low
   ...
   Upload complete.
 
@@ -517,13 +518,16 @@ live with this inconsistency.
   >>> simulate_upload(
   ...     'foo_2.9-2', upload_policy='sync', loglevel=logging.DEBUG)
   log> ...
-  log> OK: foo_2.9-2.diff.gz
-  log> OK: foo_2.9-2.dsc
-  log> -> Component: universe Section: devel
-  ...
-  log> Distribution: breezy-updates
+  log> Sent a mail:
+  log>     Subject: [ubuntutest/breezy-updates] foo 2.9-2 (Accepted)
+  log>     Recipients: breezy-changes@ubuntu.com
+  log>     Body:
+  log> -> component=universe, section=devel
+  log>
+  log>  foo (2.9-2) breezy-updates; urgency=low
   ...
   Upload complete.
+
 
 Same behaviour is expected for a version in SECURITY lower than that
 in PROPOSED:
@@ -531,24 +535,29 @@ in PROPOSED:
   >>> simulate_upload(
   ...     'foo_2.9-4', upload_policy='sync', loglevel=logging.DEBUG)
   log> ...
-  log> OK: foo_2.9-4.diff.gz
-  log> OK: foo_2.9-4.dsc
-  log> -> Component: universe Section: devel
-  ...
-  log> Distribution: breezy-proposed
+  log> Sent a mail:
+  log>     Subject: [ubuntutest/breezy-proposed] foo 2.9-4 (Accepted)
+  log>     Recipients: breezy-changes@ubuntu.com
+  log>     Body:
+  log> -> component=universe, section=devel
+  log>
+  log>  foo (2.9-4) breezy-proposed; urgency=low
   ...
   Upload complete.
 
   >>> simulate_upload(
   ...     'foo_2.9-3', upload_policy='sync', loglevel=logging.DEBUG)
   log> ...
-  log> OK: foo_2.9-3.diff.gz
-  log> OK: foo_2.9-3.dsc
-  log> -> Component: universe Section: devel
-  ...
-  log> Distribution: breezy-security
+  log> Sent a mail:
+  log>     Subject: [ubuntutest/breezy-security] foo 2.9-3 (Accepted)
+  log>     Recipients: breezy-changes@ubuntu.com
+  log>     Body:
+  log> -> component=universe, section=devel
+  log>
+  log>  foo (2.9-3) breezy-security; urgency=low
   ...
   Upload complete.
+
 
 However, the source upload of a smaller version than the one already
 published inside the target pocket should be rejected:
