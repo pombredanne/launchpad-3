@@ -7,6 +7,7 @@ __all__ = [
     'apply_for_list',
     'collect_archive_message_ids',
     'create_list',
+    'ensure_addresses_are_disabled',
     'ensure_addresses_are_enabled',
     'ensure_membership',
     'ensure_nonmembership',
@@ -42,7 +43,7 @@ from canonical.launchpad.testing.browser import Browser
 from Mailman import mm_cfg
 from Mailman.Errors import NotAMemberError
 from Mailman.MailList import MailList
-from Mailman.MemberAdaptor import ENABLED
+from Mailman.MemberAdaptor import BYUSER, ENABLED
 from Mailman.Utils import list_names
 
 
@@ -153,8 +154,15 @@ def unsubscribe(first_name, team_name):
     mailing_list = getUtility(IMailingListSet).get(team_name)
     mailing_list.unsubscribe(person)
     transaction.commit()
+    # Unsubscribing does not make the person a non-member, but it does disable
+    # all their addresses.
+    addresses = [
+        removeSecurityProxy(email).email
+        for email in person.validatedemails
+        ]
+    addresses.append(removeSecurityProxy(person.preferredemail).email)
     logout()
-    return ensure_nonmembership(team_name, person)
+    return ensure_addresses_are_disabled(team_name, *addresses)
 
 
 def pending_hold_ids(list_name):
@@ -276,24 +284,35 @@ def ensure_nonmembership(team_name, *people):
     return _membership_test(team_name, people, none_are_members)
 
 
-def ensure_addresses_are_enabled(team_name, *addresses):
-    """Ensure that addresses are both subscribed and enabled."""
+def _ensure_addresses_are_in_state(team_name, state, addresses):
+    """Ensure that addresses are in the specified state."""
     mailing_list = MailList(team_name, lock=False)
     until = datetime.datetime.now() + MAILING_LIST_CHECK_INTERVAL
     while True:
         for address in addresses:
             try:
-                if mailing_list.getDeliveryStatus(address) != ENABLED:
+                if mailing_list.getDeliveryStatus(address) != state:
                     break
             except NotAMemberError:
-                # The address can't be enabled because its not a member.
+                # The address is not a member, so it can't be in the state.
                 break
         else:
-            # All addresses are enabled.For doctest success convenience,
-            # return None.
+            # All addresses are in the specified state.  For doctest success
+            # convenience, return None.
             return None
         if datetime.datetime.now() > until:
             return 'Timed out'
         time.sleep(SECONDS_TO_SNOOZE)
         # Reload the mailing list data and go around again.
         mailing_list.Load()
+
+
+def ensure_addresses_are_enabled(team_name, *addresses):
+    _ensure_addresses_are_in_state(team_name, ENABLED, addresses)
+
+
+def ensure_addresses_are_disabled(team_name, *addresses):
+    """Ensure that addresses are subscribed but disabled."""
+    # Use BYUSER because that's the non-enabled state that the implementation
+    # uses to represent an unsubscribed team member.
+    _ensure_addresses_are_in_state(team_name, BYUSER, addresses)
