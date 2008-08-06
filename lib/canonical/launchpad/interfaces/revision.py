@@ -131,3 +131,11 @@ class IRevisionSet(Interface):
             the revision author is in the team.  The results are ordered
             with the most recent revision_date first.
         """
+
+    def getPublicRevisionsForProject(project):
+        """Get the public revisions for the product or project specified.
+
+        :return: ResultSet containing all revisions that are in a public
+            branch associated with the product, or a product that is
+            associated with the project.
+        """

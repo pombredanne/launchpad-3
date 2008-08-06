@@ -30,7 +30,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
-        TestCaseWithFactory.setUp(self, "foo.bar@canonical.com")
+        TestCaseWithFactory.setUp(self, "admin@canonical.com")
         self.author = self.factory.makePerson()
         self.revision = self.factory.makeRevision(
             author=self.author.preferredemail.email)
@@ -77,7 +77,7 @@ class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
-        TestCaseWithFactory.setUp(self, "foo.bar@canonical.com")
+        TestCaseWithFactory.setUp(self, "admin@canonical.com")
         self.author = self.factory.makePerson()
         self.revision = self.factory.makeRevision(
             author=self.author.preferredemail.email)
@@ -137,7 +137,7 @@ class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
             list(RevisionSet.getPublicRevisionsForPerson(self.author)))
 
     def testTeamRevisions(self):
-        # Revisions owned by all members of a team are returnded.
+        # Revisions owned by all members of a team are returned.
         team = self.factory.makeTeam(self.author)
         team_member = self.factory.makePerson()
         team.addMember(team_member, self.author)
@@ -163,6 +163,111 @@ class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
         self.assertEqual(
             [rev3, rev2, rev1],
             list(RevisionSet.getPublicRevisionsForPerson(self.author)))
+
+
+class TestGetPublicRevisonsForProject(TestCaseWithFactory):
+    """Test the `getPublicRevisionsForProject` method of `RevisionSet`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Use an administrator to set branch privacy easily.
+        TestCaseWithFactory.setUp(self, "admin@canonical.com")
+        self.date_generator = time_counter(
+            datetime(2007, 1, 1, tzinfo=pytz.UTC),
+            delta=timedelta(days=1))
+        self.project = self.factory.makeProject()
+        self.product = self.factory.makeProduct(project=self.project)
+
+    def _makeRevision(self):
+        """Make a revision using the date generator."""
+        return self.factory.makeRevision(
+            revision_date=self.date_generator.next())
+
+    def _addRevisionsToBranch(self, branch, *revs):
+        # Add the revisions to the the branch.
+        for sequence, rev in enumerate(revs):
+            branch.createBranchRevision(sequence, rev)
+
+    def testParameterMustBeProductOrProject(self):
+        # The method must be called with a product or project.
+        self.assertEqual(
+            [],
+            list(RevisionSet.getPublicRevisionsForProject(self.product)))
+        self.assertEqual(
+            [],
+            list(RevisionSet.getPublicRevisionsForProject(self.project)))
+        # Every other type of parameter will raise an AssertionError.
+        self.assertRaises(
+            AssertionError,
+            RevisionSet.getPublicRevisionsForProject,
+            self.factory.makePerson())
+
+    def _makeRevisionInBranch(self, product=None):
+        # Make a revision, and associate it with a branch.  The branch is made
+        # with the product passed in, which means that if there was no product
+        # passed in, the factory makes a new one.
+        if product is None:
+            product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        rev = self._makeRevision()
+        branch.createBranchRevision(1, rev)
+        return rev
+
+    def testRevisionsMustBeInABranchOfProduct(self):
+        # The revision must be in a branch for the product.
+        # returned.
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        rev2 = self._makeRevisionInBranch()
+        self.assertEqual(
+            [rev1],
+            list(RevisionSet.getPublicRevisionsForProject(self.product)))
+
+    def testRevisionsMustBeInAPublicBranch(self):
+        # A revision for the project must be in a public branch to be
+        # returned.
+        rev1 = self._makeRevision()
+        b = self.factory.makeBranch(product=self.product)
+        b.createBranchRevision(1, rev1)
+        b.private = True
+        self.assertEqual(
+            [],
+            list(RevisionSet.getPublicRevisionsForProject(self.product)))
+
+    def testNewestRevisionFirst(self):
+        # The revisions are ordered with the newest first.
+        rev1 = self._makeRevision()
+        rev2 = self._makeRevision()
+        rev3 = self._makeRevision()
+        branch = self.factory.makeBranch(product=self.product)
+        self._addRevisionsToBranch(branch, rev1, rev2, rev3)
+        self.assertEqual(
+            [rev3, rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForProject(self.product)))
+
+    def testProjectRevisions(self):
+        # Revisions in all products that are part of the project are returned.
+        another_product = self.factory.makeProduct(project=self.project)
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        rev2 = self._makeRevisionInBranch(product=another_product)
+        rev3 = self._makeRevisionInBranch()
+        self.assertEqual(
+            [rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForProject(self.project)))
+
+    def testRevisionsOnlyReturnedOnce(self):
+        # If the revisions appear in multiple branches, they are only returned
+        # once.
+        rev1 = self._makeRevision()
+        rev2 = self._makeRevision()
+        rev3 = self._makeRevision()
+        self._addRevisionsToBranch(
+            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
+        self._addRevisionsToBranch(
+            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
+        self.assertEqual(
+            [rev3, rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForProject(self.product)))
 
 
 class TestTipRevisionsForBranches(TestCase):

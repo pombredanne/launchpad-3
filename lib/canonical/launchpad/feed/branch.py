@@ -9,7 +9,9 @@ __all__ = [
     'PersonBranchFeed',
     'PersonRevisionFeed',
     'ProductBranchFeed',
+    'ProductRevisionFeed',
     'ProjectBranchFeed',
+    'ProjectRevisionFeed',
     ]
 
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -264,9 +266,10 @@ class PersonRevisionFeed(RevisionListingFeed):
     def title(self):
         """See `IFeed`."""
         if self.context.is_team:
-            return 'Revisions by members of %s' % self.context.displayname
+            return 'Latest Revisions by members of %s' % (
+                self.context.displayname)
         else:
-            return 'Revisions by %s' % self.context.displayname
+            return 'Latest Revisions by %s' % self.context.displayname
 
     def _getRawItems(self):
         """See `RevisionListingFeed._getRawItems`.
@@ -276,6 +279,37 @@ class PersonRevisionFeed(RevisionListingFeed):
         query = getUtility(IRevisionSet).getPublicRevisionsForPerson(
             self.context)
         return list(query[:self.quantity])
+
+
+class ProjectRevisionFeedBase(RevisionListingFeed):
+    """Defines a common access method to get the revisions."""
+
+    @property
+    def title(self):
+        """See `IFeed`."""
+        return 'Latest Revisions for %s' % self.context.displayname
+
+    def _getRawItems(self):
+        """See `RevisionListingFeed._getRawItems`.
+
+        Return the public revisions in this product, or in products that are
+        part of this project.
+        """
+        query = getUtility(IRevisionSet).getPublicRevisionsForProject(
+            self.context)
+        return list(query[:self.quantity])
+
+
+class ProductRevisionFeed(ProjectRevisionFeedBase):
+    """Feed for a project's revisions."""
+
+    usedfor = IProduct
+
+
+class ProjectRevisionFeed(ProjectRevisionFeedBase):
+    """Feed for a project's revisions."""
+
+    usedfor = IProject
 
 
 class RevisionPerson:
