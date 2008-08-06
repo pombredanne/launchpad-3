@@ -23,6 +23,9 @@ from bzrlib.workingtree import WorkingTree
 
 from twisted.python.util import mergeFunctionMetadata
 
+from zope.security.management import setSecurityPolicy
+from zope.security.simplepolicies import PermissiveSecurityPolicy
+
 from canonical.codehosting.tests.helpers import (
     adapt_suite, ServerTestCase)
 from canonical.codehosting.tests.servers import (
@@ -36,8 +39,6 @@ from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 from canonical.testing import TwistedAppServerLayer
 from canonical.testing.layers import disconnect_stores, reconnect_stores
 from canonical.twistedsupport import defer_to_thread
-from zope.security.management import setSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 
 def db_defer_to_thread(function):
