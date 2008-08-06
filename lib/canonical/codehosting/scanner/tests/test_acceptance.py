@@ -18,29 +18,31 @@ from bzrlib.urlutils import local_path_from_url
 
 import transaction
 from zope.component import getUtility
+from zope.security.management import setSecurityPolicy
+from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.tests.helpers import (
     BranchTestCase, create_branch_with_one_revision)
-from canonical.codehosting.tests.servers import AuthserverOutOfProcess
 from canonical.config import config
+from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.interfaces import IBranchSet
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import AppServerLayer
 
 
 class BranchScannerTest(BranchTestCase):
     """Tests for cronscripts/branch-scanner.py."""
 
-    layer = LaunchpadZopelessLayer
+    layer = AppServerLayer
+
     # Branch to install branch-scanner test data on.
     branch_id = 7
 
     def setUp(self):
+        setSecurityPolicy(PermissiveSecurityPolicy)
+        login(ANONYMOUS)
         BranchTestCase.setUp(self)
-        authserver = AuthserverOutOfProcess()
-        authserver.setUp()
-        self.addCleanup(authserver.tearDown)
         self.db_branch = getUtility(IBranchSet)[self.branch_id]
         assert self.db_branch.revision_history.count() == 0
 
