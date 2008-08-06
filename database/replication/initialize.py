@@ -60,6 +60,7 @@ def main():
             cur, [
                 ('public', 'account'),
                 ('public', 'openidassociations'),
+                ('public', 'oauthnonce'),
                 ])
     lpmain_tables, lpmain_sequences = replication_set(
             cur, [
@@ -159,7 +160,7 @@ def main():
         """]
 
     entry_id = 1
-    for table in authdb_tables:
+    for table in sorted(authdb_tables):
         script.append("""
             echo 'Adding %(table)s to replication set @authdb_set_id';
             set add table (
@@ -169,7 +170,7 @@ def main():
                 fully qualified name='%(table)s');
             """ % vars())
         entry_id += 1
-    for sequence in authdb_sequences:
+    for sequence in sorted(authdb_sequences):
         script.append("""
             echo 'Adding %(sequence)s to replication set @authdb_set_id';
             set add sequence (
@@ -188,7 +189,7 @@ def main():
             comment='Launchpad tables and sequences');
         """)
 
-    for table in lpmain_tables:
+    for table in sorted(lpmain_tables):
         script.append("""
             echo 'Adding %(table)s to replication set @lpmain_set_id';
             set add table (
@@ -198,7 +199,7 @@ def main():
                 fully qualified name='%(table)s');
             """ % vars())
         entry_id += 1
-    for sequence in lpmain_sequences:
+    for sequence in sorted(lpmain_sequences):
         script.append("""
             echo 'Adding %(sequence)s to replication set @lpmain_set_id';
             set add sequence (
@@ -237,6 +238,7 @@ def main():
         wait for event (
             origin=@master_id, confirmed=@slave1_id, wait on=@master_id);
         """)
+    log.info('Synchronized.')
 
 
 if __name__ == '__main__':
