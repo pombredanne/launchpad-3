@@ -78,7 +78,6 @@ def node_overview_report(cur, options):
 
 
 def paths_report(cur, options):
-
     report = HtmlReport()
     table = Table(["From client node", "To server node", "Via connection"])
 
@@ -90,6 +89,70 @@ def paths_report(cur, options):
     for row in cur.fetchall():
         table.rows.append(row)
 
+    return report.table(table)
+
+
+def listen_report(cur, options):
+    report = HtmlReport()
+    table = Table(["Node", "Listens To", "Via"])
+
+    cur.execute("""
+        SELECT li_receiver, li_origin, li_provider
+        FROM sl_listen ORDER BY li_receiver
+        """)
+    for row in cur.fetchall():
+        table.rows.append('Node %s' % node for node in row)
+    return report.table(table)
+
+
+def subscribe_report(cur, options):
+    report = HtmlReport()
+    table = Table([
+        "Set", "Is Privided By", "Is Received By",
+        "Is Forwardable", "Is Active"])
+    cur.execute("""
+        SELECT sub_set, sub_provider, sub_receiver, sub_forward, sub_active
+        FROM sl_subscribe ORDER BY sub_set, sub_provider, sub_receiver
+        """)
+    for set_, provider, receiver, forward, active in cur.fetchall():
+        if active:
+            active_text = 'Active'
+        else:
+            active_text = report.alert('Inactive')
+        table.rows.append([
+            "Set %d" % set_, "Node %d" % provider, "Node %d" % receiver,
+            str(forward), active_text])
+    return report.table(table)
+
+
+def tables_report(cur, options):
+    report = HtmlReport()
+    table = Table(["Set", "Schema", "Table", "Table Id", "Key", "Comment"])
+    cur.execute("""
+        SELECT tab_set, nspname, relname, tab_id, tab_idxname, tab_comment
+        FROM sl_table, pg_class, pg_namespace
+        WHERE tab_reloid = pg_class.oid AND relnamespace = pg_namespace.oid
+        ORDER BY tab_set, nspname, relname
+        """)
+    for set_, namespace, tablename, table_id, key, comment in cur.fetchall():
+        table.rows.append([
+            "Set %d" % set_, namespace, tablename, str(table_id),
+            key, comment])
+    return report.table(table)
+
+
+def sequences_report(cur, options):
+    report = HtmlReport()
+    table = Table(["Set", "Schema", "Sequence", "Sequence Id", "Comment"])
+    cur.execute("""
+        SELECT seq_set, nspname, relname, seq_id, seq_comment
+        FROM sl_sequence, pg_class, pg_namespace
+        WHERE seq_reloid = pg_class.oid AND relnamespace = pg_namespace.oid
+        ORDER BY seq_set, nspname, relname
+        """)
+    for set_, namespace, tablename, table_id, comment in cur.fetchall():
+        table.rows.append([
+            "Set %d" % set_, namespace, tablename, str(table_id), comment])
     return report.table(table)
 
 
@@ -127,6 +190,10 @@ def main():
 
     print node_overview_report(cur, options)
     print paths_report(cur, options)
+    print listen_report(cur, options)
+    print subscribe_report(cur, options)
+    print tables_report(cur, options)
+    print sequences_report(cur, options)
 
 
 if __name__ == '__main__':
