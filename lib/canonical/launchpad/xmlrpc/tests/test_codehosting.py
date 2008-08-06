@@ -26,17 +26,17 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
     BranchDetailsStorageAPI, BranchFileSystemAPI, LAUNCHPAD_SERVICES,
-    run_as_requester)
+    run_with_login)
 from canonical.testing import DatabaseFunctionalLayer
 
 
 UTC = pytz.timezone('UTC')
 
 
-def get_logged_in_username():
+def get_logged_in_username(requester=None):
     """Return the username of the logged in person.
 
-    Used by `TestRunAsRequester`.
+    Used by `TestRunWithLogin`.
     """
     user = getUtility(ILaunchBag).user
     if user is None:
@@ -44,74 +44,59 @@ def get_logged_in_username():
     return user.name
 
 
-class TestRunAsRequester(TestCaseWithFactory):
-    """Tests for the `run_as_requester` decorator."""
+class TestRunWithLogin(TestCaseWithFactory):
+    """Tests for the `run_with_login` decorator."""
 
     layer = DatabaseFunctionalLayer
 
-    class UsesLogin:
-        """Example class used for testing `run_as_requester`."""
-
-        @run_as_requester
-        def getLoggedInUsername(self, requester):
-            return get_logged_in_username()
-
-        @run_as_requester
-        def getRequestingUser(self, requester):
-            """Return the requester."""
-            return requester
-
-        @run_as_requester
-        def raiseException(self, requester):
-            raise RuntimeError("Deliberately raised error.")
-
     def setUp(self):
-        super(TestRunAsRequester, self).setUp()
+        super(TestRunWithLogin, self).setUp()
         self.person = self.factory.makePerson()
         transaction.commit()
-        self.example = self.UsesLogin()
 
     def test_loginAsRequester(self):
-        # run_as_requester logs in as user given as the first argument to the
-        # method being decorated.
-        username = self.example.getLoggedInUsername(self.person.id)
+        # run_with_login logs in as user given as the first argument
+        # to the method being decorated.
+        username = run_with_login(self.person.id, get_logged_in_username)
         self.assertEqual(self.person.name, username)
 
     def test_logoutAtEnd(self):
-        # run_as_requester logs out once the decorated method is finished.
-        self.example.getLoggedInUsername(self.person.id)
+        # run_with_login logs out once the decorated method is
+        # finished.
+        run_with_login(self.person.id, get_logged_in_username)
         self.assertEqual(None, get_logged_in_username())
 
     def test_logoutAfterException(self):
-        # run_as_requester logs out even if the decorated method raises an
-        # exception.
-        try:
-            self.example.raiseException(self.person.id)
-        except RuntimeError:
-            pass
+        # run_with_login logs out even if the decorated method raises
+        # an exception.
+        def raise_exception(requester, exc_factory, *args):
+            raise exc_factory(*args)
+        self.assertRaises(
+            RuntimeError, run_with_login, self.person.id, raise_exception,
+            RuntimeError, 'error message')
         self.assertEqual(None, get_logged_in_username())
 
     def test_passesRequesterInAsPerson(self):
-        # run_as_requester passes in the Launchpad Person object of the
+        # run_with_login passes in the Launchpad Person object of the
         # requesting user.
-        user = self.example.getRequestingUser(self.person.id)
+        user = run_with_login(self.person.id, lambda x: x)
         self.assertEqual(self.person.name, user.name)
 
     def test_invalidRequester(self):
-        # A method wrapped with run_as_requester raises NotFoundError if there
-        # is no person with the passed in id.
+        # A method wrapped with run_with_login raises NotFoundError if
+        # there is no person with the passed in id.
         self.assertRaises(
-            NotFoundError, self.example.getRequestingUser, -1)
+            NotFoundError, run_with_login, -1, lambda x: None)
 
     def test_cheatsForLaunchpadServices(self):
         # Various Launchpad services need to use the authserver to get
-        # information about branches, unencumbered by petty restrictions of
-        # ownership or privacy. `run_as_requester` detects the special
-        # username `LAUNCHPAD_SERVICES` and passes that through to the
-        # decorated function without logging in.
-        username = self.example.getRequestingUser(LAUNCHPAD_SERVICES)
+        # information about branches, unencumbered by petty
+        # restrictions of ownership or privacy. `run_with_login`
+        # detects the special username `LAUNCHPAD_SERVICES` and passes
+        # that through to the decorated function without logging in.
+        username = run_with_login(LAUNCHPAD_SERVICES, lambda x: x)
         self.assertEqual(LAUNCHPAD_SERVICES, username)
-        login_id = self.example.getLoggedInUsername(LAUNCHPAD_SERVICES)
+        login_id = run_with_login(LAUNCHPAD_SERVICES, get_logged_in_username)
         self.assertEqual(None, login_id)
 
 

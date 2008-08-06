@@ -33,8 +33,9 @@ implements the IBranchFileSystem class.
 The IBranchFileSystem interface defines some methods, for which
 see the unit tests.  One of these is the 'getBranchesForUser'.
 
-    >>> branchdetails_api.getBranchesForUser('whoever')
-    []
+    >>> branchdetails_api.getBranchInformation(
+    ...     12, 'vcs-imports', 'evolution', 'doesntexist')
+    ('', '')
 
 This method can be accessed over XMLRPC.
 
@@ -43,5 +44,6 @@ This method can be accessed over XMLRPC.
     >>> branchdetails = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc-private.launchpad.dev:8087/branchfilesystem',
     ...     transport=XMLRPCTestTransport())
-    >>> branchdetails.getBranchesForUser('whoever')
-    []
+    >>> branchdetails.getBranchInformation(
+    ...     12, 'vcs-imports', 'evolution', 'doesntexist')
+    ['', '']
