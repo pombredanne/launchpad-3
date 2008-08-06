@@ -342,22 +342,9 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
             return defer.succeed(
                 [('DSA', self.valid_key.encode('base64'))])
 
-    def getPrivateKey(self):
-        """Return the private key object used by 'testuser' for auth."""
-        return getPrivateKeyObject(
-            data=open(sibpath(__file__, 'id_dsa'), 'rb').read())
-
-    def getPublicKey(self):
-        """Return the public key string used by 'testuser' for auth."""
-        return getPublicKeyString(
-            data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
-
-    def makeSignatureData(self, username, public_key):
-        sig_data = (
-            NS('') + chr(userauth.MSG_USERAUTH_REQUEST)
-            + NS(username) + NS('none') + NS('publickey') + '\xff'
-            + NS('ssh-dss') + NS(public_key))
-        return sig_data
+    def makeCredentials(self, username, public_key):
+        return SSHPrivateKey(
+            username, 'ssh-dss', public_key, '', None)
 
     def _cbRequestAvatarId(self, is_key_valid, credentials):
         if is_key_valid:
@@ -372,15 +359,12 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         self.checker._cbRequestAvatarId = self._cbRequestAvatarId
         self.valid_login = authserver.valid_user
         self.public_key = authserver.valid_key
-        self.sigData = self.makeSignatureData(self.valid_login, self.public_key)
-        self.signature = self.getPrivateKey().sign(self.sigData)
 
     def test_successful(self):
         # We should be able to login with the correct public and private
         # key-pair. This test exists primarily as a control to ensure our
         # other tests are checking the right error conditions.
-        creds = SSHPrivateKey(self.valid_login, 'ssh-dss', self.public_key,
-                              self.sigData, self.signature)
+        creds = self.makeCredentials(self.valid_login, self.public_key)
         d = self.checker.requestAvatarId(creds)
         return d.addCallback(self.assertEqual, self.valid_login)
 
@@ -402,8 +386,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         # When someone signs in with a non-existent user, they should be told
         # that. The usual security issues don't apply here because the list of
         # Launchpad user names is public.
-        creds = SSHPrivateKey('no-such-user', 'ssh-dss', self.public_key,
-                              self.sigData, self.signature)
+        creds = self.makeCredentials('no-such-user', self.public_key)
         return self.assertLoginError(
             creds, 'No such Launchpad account: no-such-user')
 
@@ -411,9 +394,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         # When you sign into an existing account with no SSH keys, the SSH
         # server should inform you that the account has no keys.
         no_key_user = self.FakeAuthenticationEndpoint.no_key_user
-        creds = SSHPrivateKey(
-            no_key_user, 'ssh-dss', self.public_key, self.sigData,
-            self.signature)
+        creds = self.makeCredentials(no_key_user, self.public_key)
         return self.assertLoginError(
             creds,
             "Launchpad user %r doesn't have a registered SSH key"
@@ -424,11 +405,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         # should *not* be informed of the wrong key. This is because SSH often
         # tries several keys as part of normal operation.
 
-        # Cheat a little and also don't provide a valid signature. This is OK
-        # because the "no matching public key" failure occurs before the
-        # "bad signature" failure.
-        creds = SSHPrivateKey(self.valid_login, 'ssh-dss', 'invalid key',
-                              None, None)
+        creds = self.makeCredentials(self.valid_login, 'invalid key')
         d = self.assertFailure(
             self.checker.requestAvatarId(creds),
             UnauthorizedLogin)
