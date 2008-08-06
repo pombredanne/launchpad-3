@@ -9,22 +9,20 @@ from twisted.cred.portal import IRealm, Portal
 
 from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.error import ConchError
-from twisted.conch.ssh import keys, userauth
+from twisted.conch.ssh import userauth
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
+from twisted.internet import defer
 from twisted.python import failure
 from twisted.python.util import sibpath
 
 from twisted.trial.unittest import TestCase as TrialTestCase
-from twisted.web.xmlrpc import Proxy
 
 from canonical.codehosting import sshserver
-from canonical.codehosting.tests.servers import AuthserverWithKeysInProcess
 from canonical.config import config
 from canonical.launchpad.daemons.sftp import (
-    getPublicKeyString)
-from canonical.testing.layers import (
-    TwistedLaunchpadZopelessLayer, TwistedLayer)
+    getPrivateKeyObject, getPublicKeyString)
+from canonical.testing.layers import TwistedLayer
 
 
 class MockRealm:
@@ -319,33 +317,63 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
     MSG_USERAUTH_BANNER message.
     """
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedLayer
+
+    class FakeAuthenticationEndpoint:
+
+        valid_user = 'valid_user'
+        no_key_user = 'no_key_user'
+        valid_key = 'valid_key'
+
+        def callRemote(self, function_name, *args, **kwargs):
+            return getattr(
+                self, 'xmlrpc_%s' % function_name)(*args, **kwargs)
+
+        def xmlrpc_getUser(self, username):
+            if username in (self.valid_user, self.no_key_user):
+                return defer.succeed({
+                    'name': username,
+                    })
+            return defer.succeed({})
+
+        def xmlrpc_getSSHKeys(self, username):
+            if username != self.valid_user:
+                return defer.succeed([])
+            return defer.succeed(
+                [('DSA', self.valid_key.encode('base64'))])
+
+    def getPrivateKey(self):
+        """Return the private key object used by 'testuser' for auth."""
+        return getPrivateKeyObject(
+            data=open(sibpath(__file__, 'id_dsa'), 'rb').read())
+
+    def getPublicKey(self):
+        """Return the public key string used by 'testuser' for auth."""
+        return getPublicKeyString(
+            data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
+
+    def makeSignatureData(self, username, public_key):
+        sig_data = (
+            NS('') + chr(userauth.MSG_USERAUTH_REQUEST)
+            + NS(username) + NS('none') + NS('publickey') + '\xff'
+            + NS('ssh-dss') + NS(public_key))
+        return sig_data
+
+    def _cbRequestAvatarId(self, is_key_valid, credentials):
+        if is_key_valid:
+            return credentials.username
+        return failure.Failure(UnauthorizedLogin())
 
     def setUp(self):
-        self.valid_login = 'testuser'
-        self.authserver = AuthserverWithKeysInProcess(
-            self.valid_login, 'testteam')
-        self.authserver.setUp()
-        self.authserver_client = Proxy(config.codehosting.authserver)
+        authserver = self.FakeAuthenticationEndpoint()
         self.checker = sshserver.PublicKeyFromLaunchpadChecker(
-            self.authserver_client)
-        self.public_key = self.authserver.getPublicKey()
-        if not isinstance(self.public_key, str):
-            self.public_key = self.public_key.blob()
-        self.sigData = (
-            NS('') + chr(userauth.MSG_USERAUTH_REQUEST)
-            + NS(self.valid_login) + NS('none') + NS('publickey') + '\xff'
-            + NS('ssh-dss') + NS(self.public_key))
-        Key = getattr(keys, 'Key', None)
-        if Key is None:
-            self.signature = keys.signData(
-                self.authserver.getPrivateKey(), self.sigData)
-        else:
-            self.signature = self.authserver.getPrivateKey().sign(
-                self.sigData)
-
-    def tearDown(self):
-        return self.authserver.tearDown()
+            authserver)
+        # We don't need to validate the SSH key signing here.
+        self.checker._cbRequestAvatarId = self._cbRequestAvatarId
+        self.valid_login = authserver.valid_user
+        self.public_key = authserver.valid_key
+        self.sigData = self.makeSignatureData(self.valid_login, self.public_key)
+        self.signature = self.getPrivateKey().sign(self.sigData)
 
     def test_successful(self):
         # We should be able to login with the correct public and private
@@ -382,12 +410,14 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
     def test_noKeys(self):
         # When you sign into an existing account with no SSH keys, the SSH
         # server should inform you that the account has no keys.
-        creds = SSHPrivateKey('lifeless', 'ssh-dss', self.public_key,
-                              self.sigData, self.signature)
+        no_key_user = self.FakeAuthenticationEndpoint.no_key_user
+        creds = SSHPrivateKey(
+            no_key_user, 'ssh-dss', self.public_key, self.sigData,
+            self.signature)
         return self.assertLoginError(
             creds,
             "Launchpad user %r doesn't have a registered SSH key"
-            % 'lifeless')
+            % no_key_user)
 
     def test_wrongKey(self):
         # When you sign into an existing account using the wrong key, you

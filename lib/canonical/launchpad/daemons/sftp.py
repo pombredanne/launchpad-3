@@ -11,7 +11,7 @@ __all__ = ['SSHService']
 import os
 
 from twisted.application import service, strports
-from twisted.conch.ssh import keys
+from twisted.conch.ssh.keys import Key
 from twisted.cred.portal import Portal
 from twisted.web.xmlrpc import Proxy
 
@@ -23,17 +23,11 @@ from canonical.codehosting.transport import set_up_logging
 
 def getPublicKeyString(data):
     """Compatibility wrapper to get a public key string."""
-    Key = getattr(keys, 'Key', None)
-    if Key is None:
-        return keys.getPublicKeyString(data=data)
     return Key.fromString(data)
 
 
 def getPrivateKeyObject(data):
     """Compatibility wrapper to get a private key object."""
-    Key = getattr(keys, 'Key', None)
-    if Key is None:
-        return keys.getPrivateKeyObject(data=data)
     return Key.fromString(data)
 
 
