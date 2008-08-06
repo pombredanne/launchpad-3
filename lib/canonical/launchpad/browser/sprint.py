@@ -17,7 +17,6 @@ __all__ = [
     'SprintSetNavigation',
     'SprintSetSOP',
     'SprintSetView',
-    'SprintsMixinDynMenu',
     'SprintSpecificationsMenu',
     'SprintTopicSetView',
     'SprintView',
@@ -44,7 +43,6 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.dynmenu import neverempty
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
@@ -69,20 +67,6 @@ class SprintNavigation(Navigation):
 
     def breadcrumb(self):
         return self.context.title
-
-
-class SprintsMixinDynMenu:
-
-    @neverempty
-    def meetingsMenu(self):
-        coming_sprints = shortlist(self.context.coming_sprints, 20)
-        if coming_sprints:
-            for sprint in coming_sprints:
-                yield self.makeLink(sprint.title, context=sprint)
-        else:
-            yield self.makeLink('No meetings planned', target=None)
-        if self.context.past_sprints:
-            yield self.makeLink('Show all meetings...', page='+sprints')
 
 
 class SprintOverviewMenu(ApplicationMenu):

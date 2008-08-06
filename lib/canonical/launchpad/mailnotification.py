@@ -766,8 +766,8 @@ def notify_bug_modified(modified_bug, event):
         old_bug=event.object_before_modification,
         new_bug=event.object, user=event.user)
 
-    assert bug_delta is not None
-    add_bug_change_notifications(bug_delta)
+    if bug_delta is not None:
+        add_bug_change_notifications(bug_delta)
 
 
 def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
@@ -781,6 +781,9 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
     If `recipients` is present, add the subscribers to the set of
     bug notification recipients.
     """
+    if bugtask.bug.private:
+        return set()
+
     also_notified_subscribers = set()
 
     # Assignees are indirect subscribers.

@@ -96,8 +96,9 @@ from canonical.launchpad.interfaces import (
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
     IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
     IPerson, IPersonSet, IPillarName, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification, ITeam,
-    IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
+    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification,
+    SpecificationFilter, ITeam, IUpstreamBugTask, LanguagePackType,
+    MailingListStatus, PersonVisibility)
 from canonical.launchpad.interfaces.account import AccountStatus
 
 from canonical.launchpad.webapp.vocabulary import (
@@ -811,6 +812,9 @@ class ValidPersonOrTeamVocabulary(
                 )
             )
         result.config(distinct=True)
+        # XXX: salgado, 2008-07-23: Sorting by Person.sortingColumns would
+        # make this run a lot faster, but I couldn't find how to do that
+        # because this query uses distinct=True.
         return result.order_by(Person.displayname, Person.name)
 
     def search(self, text):
@@ -1558,7 +1562,9 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
                                  candidate_specs)
 
     def _all_specs(self):
-        return self._filter_specs(self.context.target.specifications())
+        all_specs = self.context.target.specifications(
+            filter=[SpecificationFilter.ALL])
+        return self._filter_specs(all_specs)
 
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())

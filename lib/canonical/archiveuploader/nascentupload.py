@@ -517,22 +517,24 @@ class NascentUpload:
         # override it later.  Consequently, if an uploader has no rights
         # at all to any component, we reject the upload right now even if it's
         # NEW.
+
+        # Check if the user has package-specific rights.
+        source_name = getUtility(
+            ISourcePackageNameSet).queryByName(self.changes.dsc.package)
+        if (source_name is not None and
+            archive.canUpload(signer, source_name)):
+            return
+
+        # If source_name is None then the package must be new, but we
+        # kick it out anyway because it's impossible to look up
+        # any permissions for it.
         possible_components = self._components_valid_for(signer)
         if not possible_components:
-            # Check if the user has package-specific rights.
-            source_name = getUtility(
-                ISourcePackageNameSet).queryByName(self.changes.dsc.package)
-            # If source_name is None then the package must be new, but we
-            # kick it out anyway because it's impossible to look up
-            # any permissions for it.
-            if (source_name is None or
-                (source_name is not None and
-                 not archive.canUpload(signer, source_name))):
-                # The user doesn't have package-specific rights so
-                # kick him out entirely.
-                self.reject(
-                    "Signer has no upload rights at all to this "
-                    "distribution.")
+            # The user doesn't have package-specific rights or
+            # component rights, so kick him out entirely.
+            self.reject(
+                "Signer has no upload rights at all to this "
+                "distribution.")
             return
 
         # New packages go straight to the upload queue; we only check upload
@@ -541,7 +543,7 @@ class NascentUpload:
             return
 
         component = self.changes.dsc.component
-        if not archive.canUpload(signer, component):
+        if component not in possible_components:
             # The uploader has no rights to the component.
             self.reject(
                 "Signer is not permitted to upload to the component "

@@ -30,6 +30,7 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchListingFilter',
+    'IBranchNavigationMenu',
     'IBranchPersonSearchContext',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
@@ -75,6 +76,8 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_write_operation)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -423,8 +426,13 @@ class IBranchBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate branch listings."""
 
 
+class IBranchNavigationMenu(Interface):
+    """A marker interface to indicate the need to show the branch menu."""
+
+
 class IBranch(IHasOwner):
     """A Bazaar branch."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
@@ -558,7 +566,7 @@ class IBranch(IHasOwner):
                       "successfully scanned."))
     revision_count = Int(
         title=_("Revision count"),
-        description=_("The number of revisions in the branch")
+        description=_("The revision number of the tip of the branch.")
         )
 
     warehouse_url = Attribute(
@@ -625,7 +633,8 @@ class IBranch(IHasOwner):
         "Only active merge proposals are returned (those that have not yet "
         "been merged).")
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
-                         whiteboard=None, date_created=None):
+                         whiteboard=None, date_created=None,
+                         needs_review=False):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the dependent_branch, if it is there,
@@ -642,6 +651,8 @@ class IBranch(IHasOwner):
             pertinant to the landing such as testing notes.
         :param date_created: Used to specify the date_created value of the
             merge request.
+        :param needs_review: Used to specify the the proposal is ready for
+            review right now.
         """
 
     def getMergeQueue():
@@ -719,16 +730,15 @@ class IBranch(IHasOwner):
         :return: An SQLObject query result.
         """
 
-    def getBranchRevision(sequence):
-        """Get the `BranchRevision` for the given sequence number.
+    def getBranchRevision(sequence=None, revision=None, revision_id=None):
+        """Get the associated `BranchRevision`.
 
-        If no such `BranchRevision` exists, None is returned.
-        """
+        One and only one parameter is to be not None.
 
-    def getBranchRevisionByRevisionId(revision_id):
-        """Get the `BranchRevision for the given revision id.
-
-        If no such `BranchRevision` exists, None is returned.
+        :param sequence: The revno of the revision in the mainline history.
+        :param revision: A `Revision` object.
+        :param revision_id: A revision id string.
+        :return: A `BranchRevision` or None.
         """
 
     def createBranchRevision(sequence, revision):
@@ -774,6 +784,7 @@ class IBranch(IHasOwner):
     def getPullURL():
         """Return the URL used to pull the branch into the mirror area."""
 
+    @export_write_operation()
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
@@ -1018,7 +1029,7 @@ class IBranchSet(Interface):
         """
 
     def getTargetBranchesForUsersMergeProposals(user, product):
-        """Return a sequence of branches the user has targetted before."""
+        """Return a sequence of branches the user has targeted before."""
 
     def isBranchNameAvailable(owner, product, branch_name):
         """Is the specified branch_name valid for the owner and product.

@@ -6,140 +6,135 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/freeform"
+  metal:use-macro="view/macro:page/search"
   i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
 
-  <div class="informational message" tal:condition="view/canRedirect">
-    <tal:redirect_inhibited condition="view/isRedirectInhibited">
-      <p>As a member of the Launchpad Beta Testers team, you would
-      normally be redirected to the beta site when viewing Launchpad
-      pages.  However, you currently have this disabled.</p>
-      <p><button onclick="setBetaRedirect(true)">Enable beta site
-      redirection</button></p>
-    </tal:redirect_inhibited>
-    <tal:redirect_enabled condition="not:view/isRedirectInhibited">
-      <p>As a member of the Launchpad Beta Testers team, you will be
-      redirected to the beta site when viewing Launchpad pages other
-      than the front page.</p>
-      <p><button onclick="setBetaRedirect(false)">Disable redirection
-      for 2 hours</button></p>
-    </tal:redirect_enabled>
-  </div>
+      <div class="informational message" tal:condition="view/canRedirect">
+        <tal:redirect_inhibited condition="view/isRedirectInhibited">
+          <p>As a member of the Launchpad Beta Testers team, you would
+          normally be redirected to the beta site when viewing Launchpad
+          pages.  However, you currently have this disabled.</p>
+          <p><button onclick="setBetaRedirect(true)">Enable beta site
+          redirection</button></p>
+        </tal:redirect_inhibited>
+        <tal:redirect_enabled condition="not:view/isRedirectInhibited">
+          <p>As a member of the Launchpad Beta Testers team, you will be
+          redirected to the beta site when viewing Launchpad pages other
+          than the front page.</p>
+          <p><button onclick="setBetaRedirect(false)">Disable redirection
+          for 2 hours</button></p>
+        </tal:redirect_enabled>
+      </div>
 
-      <div id="applications" tal:content="structure context/@@+applicationbuttons/main" />
+      <tal:comment replace="nothing">
+        Do not replace the line below: "Is your project registered yet?"
+        without contacting the IS team. It's used by Nagios to verify
+        the app servers are running.
+      </tal:comment>
+      <!-- Is your project registered yet? -->
+
       <form
-        id="project-search"
-        class="central front_page"
-        style="text-align: center;"
-        action="/projects/"
+        xml:lang="en" lang="en" dir="ltr"
+        tal:attributes="action string:${rooturl}+search"
         method="get"
         accept-charset="UTF-8"
+        style="text-align: center"
       >
-        <tal:comment replace="nothing">
-          Do not replace the line below: "Is your project registered yet?"
-          without contacting the IS team. It's used by Nagios to verify
-          the app servers are running.
-        </tal:comment>
-        <label for="text">Is your project registered yet?</label>
-        <input id="text" type="text" name="text" size="20" />
+        <img src="/@@/launchpad-logo-and-name.png" 
+             style="margin-bottom: 1em"/>
+        <br />
+
+        <input id="text" type="text" name="field.text" size="20" />
         <input type="submit" value="Search" />
       </form>
 
-        <div class="three column left">
-          <h2>What is Launchpad?</h2>
-          <p id="application-summary">
-            Launchpad is a free software hosting and development
-            website. We make it easy to <strong>collaborate
-            across multiple projects</strong>.
-            <br />
-            <center>
-              <a href="/+about">
-                <img
-                  alt="Take a tour"
-                  src="/+icing/but-lrg-takeatour.gif"
-                />
-              </a>
-            </center>
-          </p>
-          <tal:not-beta-team-member condition="not: view/isBetaUser">
-           <h2>Join the Launchpad beta team</h2>
-           <p id="beta-test">
-            Get first access to new features and take part in the Launchpad development process.
-            Join the <a href="https://help.launchpad.net/BetaTesting">beta team</a> today!
-           </p>
-          </tal:not-beta-team-member>
+      <div class="three column left">
+
+        <h2>What is Launchpad?</h2>
+        <p id="application-summary">
+          Launchpad is hosting service for open source projects that's
+          big on collaboration.
+          <a href="/+tour">Take a tour...</a>
+            <span style="font-size: small; color: red">(new!)</span>
+        </p>
+
+        <h2>Start here:</h2>
+        <ul style="font-size: larger">
+          <li><a href="/projects">Projects</a></li>
+          <li><a href="/distros">Distributions</a></li>
+          <li><a href="/people">People and Teams</a></li>
+        </ul>
+
+      </div>
+
+      <div class="three column middle">
+        <h2>What&#8217;s new?</h2>
+        <ul>
+          <li class="news">
+            <a href="http://news.launchpad.net/?p=105">
+              <strong>New simpler web interface</strong><br />
+              Learn more about Launchpad's new layout and navigation
+            </a>
+         </li>
+         <li class="news">
+            <a href="http://news.launchpad.net/?p=106">
+
+              <strong>Help test Launchpad's new API!</strong><br />
+              Our new internet-services API is now in beta test.
+            </a>
+         </li>
+         <li class="news">
+            <a href="http://news.launchpad.net/?p=107">
+              <strong>Closer Bugzilla and Trac integration</strong><br />
+              New GPLed plugins allow comment sharing between Launchpad
+              and external trackers.
+            </a>
+
+         </li>
+        </ul>
+        <div class="discreet" style="text-align: right">
+          Updated 2008-07-28.
+          <a href="http://news.launchpad.net">More...</a>
         </div>
-        <div class="three column middle">
-          <h2>What&#8217;s new here?</h2>
-          <ul>
-           <li class="news">
-              <a href="http://news.launchpad.net/?p=94">
-                <strong>More control over your code imports</strong><br />
-                Get more information on the status of code imports CVS and Subversion.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/?p=91">
-                <strong>Code review by email</strong><br />
-                Use email to vote and add your comments to code reviews in Launchpad.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/?p=92">
-                <strong>Redesigned pages for bugs, translations, and distributions</strong><br />
-                We're making Launchpad easier to navigate.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/cool-new-stuff/review-branch-merge-proposals-in-launchpad">
-                <strong>Code merger reviews</strong><br />
-                Review proposed branch mergers, using comments and voting, direct in Launchpad.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/?p=80">
-                <strong>Site-wide search improvements</strong><br />
-                We have significantly enhanced our site-wide search feature to
-                provide better results. Give it a try!
-              </a>
-           </li>
-            <li class="news">
-              <a href="http://news.launchpad.net/category/podcast">
-                <strong>New Launchpad podcast</strong><br />
-                Hear the latest from the Launchpad team, with interviews and
-                news in Launchpod - the Launchpad team podcast.
-              </a>
-            </li>
-          </ul>
-          <div class="discreet" style="text-align: right">
-            Updated 2008-07-02.
-            <a href="http://news.launchpad.net">More...</a>
-          </div>
-        </div>
-        <div class="three column right" id="featured-projects">
-          <h2>Featured projects</h2>
-          <table>
-            <tr tal:repeat="project view/featured_projects">
-              <td tal:content="structure project/fmt:link" />
-            </tr>
-          </table>
-          <ul tal:condition="not: view/featured_projects">
-            <li class="product"><a href="/exaile">Exaile Media Player</a></li>
-            <li class="product"><a href="/deluge">Deluge Torrent Client</a></li>
-            <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/bzr">Bazaar Version Control</a></li>
-            <li class="product"><a href="/democracy">Miro TV Player</a></li>
-            <li class="product"><a href="/awn">Avant Window Navigator</a></li>
-            <li class="product"><a href="/schooltool">SchoolTool</a></li>
-            <li class="product"><a href="/tangocms">TangoCMS</a></li>
-          </ul>
-          <p>
-            <a tal:condition="context/required:launchpad.Admin"
-               href="+featuredprojects">&raquo; Manage featured project list</a>
-          </p>
-        </div>
+      </div>
+
+      <div class="three column right" id="featured-projects">
+        <h2>Featured projects</h2>
+        <table>
+          <tr>
+            <td>
+              <table>
+                <tr tal:repeat="project view/featured_projects_col_a">
+                  <td tal:content="structure project/fmt:link" />
+                </tr>
+              </table>
+            </td>
+            <td>
+              <table>
+                <tr tal:repeat="project view/featured_projects_col_b">
+                  <td tal:content="structure project/fmt:link" />
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <ul tal:condition="not: view/featured_projects">
+          <li class="product"><a href="/exaile">Exaile Media Player</a></li>
+          <li class="product"><a href="/deluge">Deluge Torrent Client</a></li>
+          <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
+          <li class="product"><a href="/bzr">Bazaar Version Control</a></li>
+          <li class="product"><a href="/democracy">Miro TV Player</a></li>
+          <li class="product"><a href="/awn">Avant Window Navigator</a></li>
+          <li class="product"><a href="/schooltool">SchoolTool</a></li>
+          <li class="product"><a href="/tangocms">TangoCMS</a></li>
+        </ul>
+        <p>
+          <a tal:condition="context/required:launchpad.Admin"
+             href="+featuredprojects">&raquo; Manage featured project list</a>
+        </p>
+      </div>
     </div><!--main-->
     <div metal:fill-slot="help">
       <p>
@@ -160,4 +155,3 @@
     </div>
   </body>
 </html>
-<!-- 1-0 done could use a team icon though -->

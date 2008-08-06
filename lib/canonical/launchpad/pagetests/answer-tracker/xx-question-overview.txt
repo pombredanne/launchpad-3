@@ -6,22 +6,10 @@ distribution.
 
 == Products ==
 
-The product's overview page list the latest questions that were asked
-with their status.
-
-    >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> questions = find_portlet(user_browser.contents, 'Latest questions')
-    >>> print extract_text(
-    ...     questions.find('div')).encode('ASCII', 'backslashreplace')
-    [Open] Problemas de Impress\xe3o no Firefox
-    [Answered] Newly installed plug-in doesn't seem to be used
-    [Open] Firefox loses focus and gets stuck
-    [Open] Problem showing the SVG demo on W3C site
-    [Open] Firefox cannot render Bank Site
-
 Creating a new question is possible directly from the main page of a
 product. Users simply click the 'Ask a question' buttion.
 
+    >>> user_browser.open('http://launchpad.dev/firefox')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about Mozilla Firefox
@@ -192,23 +180,10 @@ Project also have the 'Latest questions' portlet and the
 
 == Persons ==
 
-On the page about a person, there is a porlet showing the latest
-questions opened by that person.
+The 'Answers' facet link will display a page listing all the questions
+involving a person.
 
     >>> browser.open('http://launchpad.dev/~name16')
-    >>> find_portlet(browser.contents, 'Latest questions')
-    <div class="portlet" id="...">
-        <h2>Latest questions</h2>
-        ...
-    </div>
-    >>> browser.getLink('Slow system').url
-    '.../ubuntu/+question/7'
-    >>> browser.getLink('Firefox loses focus').url
-    '.../firefox/+question/4'
-
-The 'Answers' facet link will display a page listing all the questions
-involving that person.
-
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/~name16'
     >>> browser.getLink('Answers').click()
