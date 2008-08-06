@@ -285,11 +285,13 @@ class CodeHostingServer(Server):
         if os.path.isdir(self._mirror_root):
             shutil.rmtree(self._mirror_root)
         os.makedirs(self._mirror_root, 0700)
-        self.authserver.setUp()
+        set_up_host_keys_for_testing()
+        set_up_test_user(
+            self.authserver.testUser, self.authserver.testTeam)
 
     def tearDown(self):
         shutil.rmtree(self._branches_root)
-        return self.authserver.tearDown()
+        return defer.succeed(None)
 
     def getTransport(self, relpath=None):
         """Return a new transport for 'relpath', adding necessary cleanup."""
