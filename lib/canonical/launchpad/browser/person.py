@@ -55,7 +55,8 @@ __all__ = [
     'PersonSOP',
     'PersonSpecFeedbackView',
     'PersonSpecsMenu',
-    'PersonSpecWorkLoadView',
+    'PersonSpecWorkloadView',
+    'PersonSpecWorkloadTableView',
     'PersonSubscribedBranchesView',
     'PersonTeamBranchesView',
     'PersonTranslationView',
@@ -1736,15 +1737,34 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
-class PersonSpecWorkLoadView(LaunchpadView):
-    """View used to render the specification workload for a particular person.
+class PersonSpecWorkloadView(LaunchpadView):
+    """View to render the specification workload for a person or team.
 
-    It shows the set of specifications with which this person has a role.
+    It shows the set of specifications with which this person has a role.  If
+    the person is a team, then all members of the team are presented using
+    batching with their individual specifications.
     """
 
-    def initialize(self):
-        assert IPerson.providedBy(self.context), (
-            'PersonSpecWorkLoadView should be used only on an IPerson.')
+    @cachedproperty
+    def members(self):
+        """Return a batch navigator for all members.
+
+        This batch does not test for whether the person has specifications or
+        not.
+        """
+        assert self.context.isTeam, (
+            "PersonSpecWorkloadView.members can only be called on a team.")
+        members = self.context.allmembers
+        batch_nav = BatchNavigator(members, self.request)
+        return batch_nav
+
+
+class PersonSpecWorkloadTableView(LaunchpadView):
+    """View to render the specification workload table for a person.
+
+    It shows the set of specifications with which this person has a role
+    in a single table.
+    """
 
     class PersonSpec:
         """One record from the workload list."""
@@ -1763,7 +1783,7 @@ class PersonSpecWorkLoadView(LaunchpadView):
         Return a structure that lists the specs for which this person is the
         approver, the assignee or the drafter.
         """
-        return [PersonSpecWorkLoadView.PersonSpec(spec, self.context)
+        return [PersonSpecWorkloadTableView.PersonSpec(spec, self.context)
                 for spec in self.context.specifications()]
 
 
