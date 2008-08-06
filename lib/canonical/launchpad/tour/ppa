@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-US">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-    <meta content="Your Personal Package Archive (PPA) simplifies publishing your software. There&rsquo;s no longer any need to ask testers on Ubuntu or Debian to compile your code from source. Just upload a source package and Launchpad will build and publish an installable binary in your own APT repository. Then publish the URL of the repository; users can install the latest version of your package with a single command, and automatically receive updates whenever you push a new version to the archive." name="description"/>
+    <meta content="Your Personal Package Archive (PPA) simplifies publishing your software. There&rsquo;s no longer any need to ask testers on Ubuntu to compile your code from source. Just upload a source package and Launchpad will build and publish an installable binary in your own APT repository. Then publish the URL of the repository; users can install the latest version of your package with a single command, and automatically receive updates whenever you push a new version to the archive." name="description"/>
     <meta content="canonical, launchpad, tour" name="keywords"/>
     <meta content="en-US" name="language"/>
     <title>Launchpad tour</title>
@@ -37,7 +37,7 @@
                 <img src="images/ppa/main-image.jpg" alt="Collaborate with free software communities." />
             </p>
             <p class="intro-text">
-                <strong>Your Personal Package Archive (&ldquo;PPA&rdquo;) simplifies publishing your software.</strong> Now you no longer need to ask testers on Ubuntu or Debian to compile your code from source. Instead, upload a source package to Launchpad and it will build then publish an installable binary in your own APT repository. 
+                <strong>Your Personal Package Archive (&ldquo;PPA&rdquo;) simplifies publishing your software.</strong> Now you no longer need to ask testers on Ubuntu to compile your code from source. Instead, upload a source package to Launchpad and it will build then publish an installable binary in your own APT repository. 
 <br /><br />
 Installing your package is just as easy as with any other Ubuntu software and when you publish a new version your users receive automatic updates.
             </p>
@@ -55,7 +55,7 @@ Installing your package is just as easy as with any other Ubuntu software and wh
                 <div class="furthur-information-block-mid">
                     <div class="block">
                         <h3>Automatic software distribution - with updates&#33;</h3>
-                        <h4>Publishing your software into a PPA is the best way to make sure it will reach a wide audience of Debian and Ubuntu users.</h4>
+                        <h4>Publishing your software into a PPA is the best way to make sure it will reach a wide audience of Ubuntu users.</h4>
                         <p class="screen-holder">
                             <img src="images/ppa/1.png" alt="Automatic software distribution - with updates!" />                        </p>
                         <p>
@@ -86,7 +86,7 @@ When you publish a new version of one of your packages, Ubuntu notifies all of y
                         <p class="screen-holder">
                             <img src="images/ppa/3.png" alt="Multiple architectures"  />                        </p>
                         <p>
-                            Even if you don&rsquo;t have the hardware yourself, Launchpad will create binaries for x86, AMD64 and lpia architectures, with more coming in the future.
+                            Even if you don&rsquo;t have the hardware yourself, Launchpad will create binaries for x86, AMD64 and LPIA architectures, with more coming in the future.
                         </p>
                     </div>
                     <div class="clear"></div>
@@ -97,8 +97,9 @@ When you publish a new version of one of your packages, Ubuntu notifies all of y
             <li class="button-next">
                 <a href="community-support" accesskey="e" tabindex="3">Next</a>
             </li>
-            <li class="copyright">
-                &copy; 2004-2008 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="i" tabindex="7">Terms of Use</a> &#124; <a href="https://help.launchpad.net/Feedback" accesskey="j" tabindex="8">Feedback</a> &#124; <a href="https://help.launchpad.net/FAQ" accesskey="k" tabindex="9">FAQ</a>
+             <li class="copyright">
+                &copy; 2004-2008 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="https://help.launchpad.net/FAQ" accesskey="h" tabindex="6">FAQ</a>
+ 
             </li>
         </ul>
     </div>

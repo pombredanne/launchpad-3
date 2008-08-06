@@ -48,7 +48,7 @@
       tal:define="published_source_and_binary_files
                   view/published_source_and_binary_files"
       style="display: none">
-    <td colspan="5">
+    <td colspan="7">
       <h3>Publishing details</h3>
         <tal:block replace="structure context/@@+record-details" />
       <h3>Changelog</h3>

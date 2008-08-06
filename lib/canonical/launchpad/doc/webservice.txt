@@ -806,6 +806,22 @@ a named factory operation for creating a new cookbook.
     ...                [ICookbookSet, IHTTPApplicationRequest],
     ...                IResourcePOSTOperation, "create_cookbook")
 
+Here's a named POST operation that's not a factory operation: it
+makes a cookbook's cuisine sound more interesting.
+
+    >>> class MakeMoreInterestingOperation(ResourcePOSTOperation):
+    ...     params = ()
+    ...     return_type = None
+    ...     send_modification_event = True
+    ...
+    ...     def call(self):
+    ...         cookbook = self.context
+    ...         cookbook.cuisine = "Nouvelle " + cookbook.cuisine
+
+    >>> provideAdapter(MakeMoreInterestingOperation,
+    ...                [ICookbook, IHTTPApplicationRequest],
+    ...                IResourcePOSTOperation, "make_more_interesting")
+
 
 == Resource objects ==
 
@@ -928,6 +944,7 @@ describes the capabilities of the web service as a whole.
     >>> wadl_resource = wadl_request.traverse(app)
     >>> print wadl_resource(wadl_request)
     <?xml version="1.0"?>
+    <!DOCTYPE...
     <wadl:application ...>
     ...
     </wadl:application>
@@ -1051,9 +1068,32 @@ are passed along to the client.
     >>> print operation_resource()
     No matches for NoSuchRecipe
 
-Collections may also support named POST operations. These operations
-are often factory operations. Here we create a new cookbook for an
-existing author:
+Collections may also support named POST operations. These requests
+have two effects on the server side: they modify the dataset, and they
+may also trigger event notifications. Here are two simple handlers set
+up to print a message whenever we modify a cookbook or the cookbook
+set.
+
+    >>> def modified_cookbook(object, event):
+    ...     """Print a message when triggered."""
+    ...     print "You just modified a cookbook."
+
+    >>> from canonical.launchpad.event.interfaces import (
+    ...     ISQLObjectModifiedEvent)
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> cookbook_listener = TestEventListener(
+    ...     ICookbook, ISQLObjectModifiedEvent, modified_cookbook)
+
+    >>> def modified_cookbook_set(object, event):
+    ...     """Print a message when triggered."""
+    ...     print "You just modified the cookbook set."
+
+    >>> cookbook_set_listener = TestEventListener(
+    ...     ICookbookSet, ISQLObjectModifiedEvent, modified_cookbook_set)
+
+Here we create a new cookbook for an existing author. Because the
+operation's definition doesn't set send_modified_event to True, no
+event will be sent and modified_cookbook_set() won't be called.
 
     >>> body = ("ws.op=create_cookbook&title=Beard%20on%20Bread&"
     ...         "author_name=James%20Beard")
@@ -1090,6 +1130,26 @@ resource afterwards.
     >>> author = request.traverse(app)
     >>> simplejson.loads(author())['name']
     u'Deborah Madison'
+
+Here we modify a cookbook's cuisine using a named operation. Because
+this operation's definition does set send_modified_event to True, an
+event will be sent and modified_cookbook_set() will be called.
+
+    >>> body = "ws.op=make_more_interesting"
+    >>> request = create_web_service_request(
+    ...     '/beta/cookbooks/Everyday%20Greens', 'POST', body,
+    ...     {'CONTENT_TYPE' : 'application/x-www-form-urlencoded'})
+    >>> operation_resource = request.traverse(app)
+    >>> result = operation_resource()
+    You just modified a cookbook.
+    >>> request.response.getStatus()
+    200
+
+    >>> path = '/beta/cookbooks/Everyday%20Greens'
+    >>> request = create_web_service_request(path)
+    >>> cookbook = request.traverse(app)
+    >>> simplejson.loads(cookbook())['cuisine']
+    u'Nouvelle Brazilian'
 
 
 == Entry resources ==
@@ -1569,7 +1629,10 @@ requests. The entity-body of a PATCH request should be a JSON document
 with new values for some of the entry's attributes. Basically, a set
 of assertions about what the object *should* look like.
 
-Here, we modify the name of one of the cookbooks.
+A PATCH request will automatically result in a modification event
+being sent out about the modified object, which means that
+modify_cookbook() will be run. Here, we modify the name of one of the
+cookbooks.
 
     >>> headers = {'CONTENT_TYPE' : 'application/json'}
     >>> body = '{"name" : "The Joy of Cooking (revised)"}'
@@ -1579,6 +1642,7 @@ Here, we modify the name of one of the cookbooks.
     ...     environ=headers, method='PATCH')
     >>> joy_resource_patch = patch_request.traverse(app)
     >>> joy_resource_patch()
+    You just modified a cookbook.
     ''
 
     >>> patch_request.response.getHeader('Location')
@@ -1600,7 +1664,9 @@ whole thing back to the server, whereas with PATCH you're creating a
 new document that describes a subset of the entry's state.
 
 Here, we use PUT to change the cookbook's name back to what it was
-before. Note that we send the entire dictionary back to the server.
+before. Note that we send the entire dictionary back to the
+server. Note also that another modification event is sent out and
+intercepted by the modified_cookbook() listener.
 
     >>> joy['name'] = 'The Joy of Cooking'
     >>> body = simplejson.dumps(joy)
@@ -1610,7 +1676,13 @@ before. Note that we send the entire dictionary back to the server.
 
     >>> joy_resource_put = put_request.traverse(app)
     >>> joy_resource_put()
+    You just modified a cookbook.
     ''
+
+Now that we've proved our point, let's disable the event handler so it
+doesn't keep printing those messages.
+
+    >>> cookbook_listener.unregister()
 
 The cookbook's URL has changed back to what it was before.
 

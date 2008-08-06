@@ -50,6 +50,7 @@ def is_completely_built(source):
 
     return True
 
+
 def has_unpublished_binaries(source):
     """Whether or not a source publication has unpublished binaries.
 
@@ -67,6 +68,8 @@ def has_unpublished_binaries(source):
     # Binaries built from this source in the publishing context.
     built_binaries = set()
     for build in source.getBuilds():
+        if source.pocket != build.pocket:
+            continue
         for binarypackagerelease in build.binarypackages:
             built_binaries.add(binarypackagerelease)
 
@@ -117,8 +120,8 @@ def get_ancestry_candidate(source, archive, series, pocket):
         it was found or None.
     """
     destination_series_ancestries = archive.getPublishedSources(
-        name=source.sourcepackagerelease.name, pocket=pocket,
-        distroseries=series,
+        name=source.sourcepackagerelease.name, exact_match=True,
+        pocket=pocket, distroseries=series,
         status=active_publishing_status)
 
     if destination_series_ancestries.count() == 0:
@@ -128,7 +131,7 @@ def get_ancestry_candidate(source, archive, series, pocket):
     return ancestry
 
 
-def check_archive_conflicts(source, archive, include_binaries):
+def check_archive_conflicts(source, archive, pocket, include_binaries):
     """Check for possible conflicts in the destination archive.
 
     Check if there is a source with the same name and version published
@@ -140,6 +143,9 @@ def check_archive_conflicts(source, archive, include_binaries):
 
     :param source: context `ISourcePackagePublishingHistory`;
     :param archive: destination `IArchive`.
+    :param pocket: destination `PackagePublishingPocket`.
+    :param include_binaries: boolean indicating whether or not binaries
+        are considered in the copy.
 
     :raise CannotCopy: when a copy is not allowed to be performed
         containing the reason of the error.
@@ -147,7 +153,7 @@ def check_archive_conflicts(source, archive, include_binaries):
     destination_archive_conflicts = archive.getPublishedSources(
         name=source.sourcepackagerelease.name,
         version=source.sourcepackagerelease.version,
-        status=active_publishing_status,
+        pocket=pocket, status=active_publishing_status,
         exact_match=True)
 
     if destination_archive_conflicts.count() == 0:
@@ -186,8 +192,6 @@ def check_archive_conflicts(source, archive, include_binaries):
         published_binaries.update(archive_binaries)
 
     if not include_binaries:
-        # We rely on previous check that ensure copies including binaries
-        # can only be performed in packages with quiesced builds.
         if len(published_binaries) > 0:
             raise CannotCopy(
                 "same version already has published binaries in the "
@@ -207,14 +211,10 @@ def check_archive_conflicts(source, archive, include_binaries):
 def check_copy(source, archive, series, pocket, include_binaries):
     """Check if the source can be copied to the given location.
 
-    First, since it's the easiest check, if binaries are included in
-    the copy, it checks if all builds have already quiesced, if not an
-    error is raised.
+    Check possible conflicting publications in the destination archive.
+    See `check_archive_conflicts()`.
 
-    Next, this checks possible conflicting publications in the destination
-    archive. See `check_archive_conflicts()`.
-
-    Finally it checks if the version of the source being copied is higher
+    Also checks if the version of the source being copied is equal or higher
     than any version of the same source present in the destination suite
     (series + pocket).
 
@@ -229,33 +229,29 @@ def check_copy(source, archive, series, pocket, include_binaries):
         containing the reason of the error.
     """
     if include_binaries:
-        if not is_completely_built(source):
-            raise CannotCopy(
-                "source not completely built while copying binaries")
-        if has_unpublished_binaries(source):
-            raise CannotCopy(
-                "source has unpublished binaries, please wait for them "
-                "to be published before copying")
         if len(source.getBuiltBinaries()) == 0:
             raise CannotCopy("source has no binaries to be copied")
 
     # Check if there is already a source with the same name and version
     # published in the destination archive.
-    check_archive_conflicts(source, archive, include_binaries)
+    check_archive_conflicts(source, archive, pocket, include_binaries)
 
     ancestry = get_ancestry_candidate(source, archive, series, pocket)
-    if ancestry is not None and compare_sources(source, ancestry) <= 0:
+    if ancestry is not None and compare_sources(source, ancestry) < 0:
         raise CannotCopy(
             "version older than the %s published in %s" %
             (ancestry.displayname, ancestry.distroseries.name))
 
 
 def do_copy(sources, archive, series, pocket, include_binaries=False):
-    """Perform the complete copy of the given sources.
+    """Perform the complete copy of the given sources incrementally.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
-    to the given destination. Also copy published binaries for each
-    source if requested to.
+    to the given destination if they are not yet available (previously
+    copied).
+
+    Also copy published binaries for each source if requested to. Again,
+    only copy binaries that were not yet copied before.
 
     :param: sources: a list of `ISourcePackagePublishingHistory`;
     :param: archive: the target `IArchive`;
@@ -275,22 +271,40 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
             destination_series = source.distroseries
         else:
             destination_series = series
-        source_copy = source.copyTo(destination_series, pocket, archive)
-        copies.append(source_copy)
-        if not include_binaries:
-            source_copy.createMissingBuilds()
-            continue
+
+        # Copy source if it's not yet copied.
+        source_in_destination = archive.getPublishedSources(
+            name=source.sourcepackagerelease.name, exact_match=True,
+            version=source.sourcepackagerelease.version,
+            status=active_publishing_status,
+            distroseries=destination_series, pocket=pocket)
+        if source_in_destination.count() == 0:
+            source_copy = source.copyTo(destination_series, pocket, archive)
+            copies.append(source_copy)
+            if not include_binaries:
+                source_copy.createMissingBuilds()
+                continue
+
+        # Copy missing suitable binaries.
         for binary in source.getBuiltBinaries():
             try:
-                binary_copy = binary.copyTo(
-                    destination_series, pocket, archive)
+                target_distroarchseries = destination_series[
+                    binary.distroarchseries.architecturetag]
             except NotFoundError:
                 # It is not an error if the destination series doesn't
                 # support all the architectures originally built. We
                 # simply do not copy the binary and life goes on.
-                pass
-            else:
+                continue
+            binary_in_destination = archive.getAllPublishedBinaries(
+                name=binary.binarypackagerelease.name, exact_match=True,
+                version=binary.binarypackagerelease.version,
+                status=active_publishing_status, pocket=pocket,
+                distroarchseries=target_distroarchseries)
+            if binary_in_destination.count() == 0:
+                binary_copy = binary.copyTo(
+                        destination_series, pocket, archive)
                 copies.append(binary_copy)
+
     return copies
 
 
