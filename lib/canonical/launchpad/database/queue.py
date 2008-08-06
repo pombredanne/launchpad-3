@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 import os
+import re
 import shutil
 import tempfile
 
@@ -559,6 +560,77 @@ class PackageUpload(SQLBase):
             changes_lines, changes, summarystring, dry_run):
         """Send a success email."""
 
+        def extract_changes_of_interest(changesfile):
+            """Extract/reformat changes file lines prior to emailing.
+
+            Please note that only the first (most recent) stanza is
+            extracted.
+            """
+            change_date = changed_by = ''
+            changesfile_iter = iter(changesfile.splitlines())
+
+            # Parse everything up to the actual 'Changes:' section.
+            for line in changesfile_iter:
+                # Extract the date of the changes.
+                if line.startswith('Date: '):
+                    change_date = line.split('Date: ')[1]
+                # Extract the author of the changes.
+                if line.startswith('Changed-By: '):
+                    changed_by = line.split('Changed-By: ')[1]
+                    changed_by = changed_by.replace(' at ', '@')
+                if line.startswith('Changes:'):
+                    break
+
+            # Pluck the stanza with the most recent changes from the
+            # 'Changes:' section.
+            content = []
+
+            # Example line: '   [Tim Gardner]'
+            author_line_re = re.compile('^\s\s+\[')
+
+            content_line_re = re.compile('^\s\s+\S')
+            blank_line_re = re.compile('^\s\.$')
+            stanza_start_re = re.compile('^\s\w')
+
+            stanza_started = content_started = False
+
+            for line in changesfile_iter:
+                # Look for the start of the first 'Changes:' stanza.
+                if not stanza_started:
+                    if stanza_start_re.match(line):
+                        stanza_started = True
+                        content.append(line)
+                        content.append('')
+                    continue
+
+                # The stanza has started extract the bits of interest.
+                if author_line_re.match(line):
+                    # Ignore embedded author lines.
+                    pass
+                elif content_line_re.match(line):
+                    if not content_started:
+                        content_started = True
+                    content.append(line)
+                elif blank_line_re.match(line):
+                    # Do not collect empty lines before the first line of
+                    # interest was seen.
+                    if content_started:
+                        content.append('')
+                elif stanza_start_re.match(line):
+                    # End of stanza reached.
+                    break
+
+            # If the last line is not empty append a blank line.
+            if content[-1]:
+                content.append('')
+
+            # Append the author and the date in the format
+            # used in Ubuntu changelogs.
+            content.append('-- %s %s' % (changed_by, change_date))
+
+            # Finally, return the first changes file stanza.
+            return '\n'.join(content)
+
         def do_sendmail(message, recipients=recipients, from_addr=None,
                         bcc=None):
             """Perform substitutions on a template and send the email."""
@@ -602,7 +674,8 @@ class PackageUpload(SQLBase):
             STATUS = "Waiting for approval"
             SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = extract_changes_of_interest(
+                guess_encoding("".join(changes_lines)))
             DISTRO = self.distroseries.distribution.title
             ANNOUNCE = announce_list
 
@@ -612,7 +685,8 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = extract_changes_of_interest(
+                guess_encoding("".join(changes_lines)))
             DISTRO = self.distroseries.distribution.title
             ANNOUNCE = announce_list
 

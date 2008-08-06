@@ -1,8 +1,5 @@
 %(CHANGESFILE)s
 
-%(STATUS)s:
-%(SUMMARY)s
-
 ==
 
 Announcing to %(ANNOUNCE)s
