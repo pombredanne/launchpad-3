@@ -160,6 +160,37 @@ class AuthserverOutOfProcess(Server):
         return config.codehosting.authserver
 
 
+def set_up_host_keys_for_testing():
+    key_pair_path = config.codehosting.host_key_pair_path
+    if os.path.isdir(key_pair_path):
+        shutil.rmtree(key_pair_path)
+    parent = os.path.dirname(key_pair_path)
+    if not os.path.isdir(parent):
+        os.makedirs(parent)
+    shutil.copytree(
+        sibpath(__file__, 'keys'), os.path.join(key_pair_path))
+
+
+def set_up_test_user(test_user, test_team):
+    person_set = getUtility(IPersonSet)
+    testUser = person_set.getByName('no-priv')
+    testUser.name = test_user
+    testTeam = person_set.newTeam(
+        testUser, test_team, test_team,
+        subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    testUser.join(testTeam)
+    ssh_key_set = getUtility(ISSHKeySet)
+    ssh_key_set.new(
+        testUser, SSHKeyType.DSA,
+        'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1k'
+        'tFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3Dz'
+        'eVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTd'
+        'ViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap'
+        '4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3R'
+        'gw==', 'testuser')
+    commit()
+
+
 class AuthserverWithKeysMixin:
     """Server to run the authserver, setting up SSH key configuration."""
 
@@ -168,37 +199,13 @@ class AuthserverWithKeysMixin:
         self.testTeam = testTeam
 
     def setUpKeys(self):
-        key_pair_path = config.codehosting.host_key_pair_path
-        if os.path.isdir(key_pair_path):
-            shutil.rmtree(key_pair_path)
-        parent = os.path.dirname(key_pair_path)
-        if not os.path.isdir(parent):
-            os.makedirs(parent)
-        shutil.copytree(
-            sibpath(__file__, 'keys'), os.path.join(key_pair_path))
+        return set_up_host_keys_for_testing()
 
     def setUpTestUser(self):
         """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a
         known SSH key.
         """
-        person_set = getUtility(IPersonSet)
-        testUser = person_set.getByName('no-priv')
-        testUser.name = self.testUser
-        testTeam = person_set.newTeam(
-            testUser, self.testTeam, self.testTeam,
-            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
-        testUser.join(testTeam)
-        ssh_key_set = getUtility(ISSHKeySet)
-        ssh_key_set.new(
-            testUser, SSHKeyType.DSA,
-            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1k'
-            'tFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3Dz'
-            'eVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTd'
-            'ViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap'
-            '4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3R'
-            'gw==', 'testuser')
-        commit()
-        self.setUpKeys()
+        return set_up_test_user(self.testUser, self.testTeam)
 
     def getPrivateKey(self):
         """Return the private key object used by 'testuser' for auth."""
