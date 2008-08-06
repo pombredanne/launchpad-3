@@ -67,8 +67,8 @@ class SSHTestCase(ServerTestCase):
 
     def installServer(self, server):
         super(SSHTestCase, self).installServer(server)
-        self.default_user = server.authserver.testUser
-        self.default_team = server.authserver.testTeam
+        self.default_user = 'testuser'
+        self.default_team = 'testteam'
 
     def setUp(self):
         setSecurityPolicy(PermissiveSecurityPolicy)
