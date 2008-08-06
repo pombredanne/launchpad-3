@@ -201,7 +201,7 @@ class IPrivateApplication(ILaunchpadApplication):
 
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
 
-    branchdetails = Attribute("""Branch details end point.""")
+    puller_api = Attribute("""Puller API end point.""")
 
     branchfilesystem = Attribute("""The branch filesystem end point.""")
 
