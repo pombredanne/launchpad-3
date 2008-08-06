@@ -346,29 +346,33 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         return SSHPrivateKey(
             username, 'ssh-dss', public_key, '', None)
 
+    def makeChecker(self, do_signature_checking=False):
+        checker = sshserver.PublicKeyFromLaunchpadChecker(
+            self.authserver)
+        # We don't need to validate the SSH key signing here.
+        checker._cbRequestAvatarId = self._cbRequestAvatarId
+        return checker
+
     def _cbRequestAvatarId(self, is_key_valid, credentials):
         if is_key_valid:
             return credentials.username
         return failure.Failure(UnauthorizedLogin())
 
     def setUp(self):
-        authserver = self.FakeAuthenticationEndpoint()
-        self.checker = sshserver.PublicKeyFromLaunchpadChecker(
-            authserver)
-        # We don't need to validate the SSH key signing here.
-        self.checker._cbRequestAvatarId = self._cbRequestAvatarId
-        self.valid_login = authserver.valid_user
-        self.public_key = authserver.valid_key
+        self.authserver = self.FakeAuthenticationEndpoint()
+        self.valid_login = self.authserver.valid_user
+        self.public_key = self.authserver.valid_key
 
     def test_successful(self):
         # We should be able to login with the correct public and private
         # key-pair. This test exists primarily as a control to ensure our
         # other tests are checking the right error conditions.
         creds = self.makeCredentials(self.valid_login, self.public_key)
-        d = self.checker.requestAvatarId(creds)
+        checker = self.makeChecker()
+        d = checker.requestAvatarId(creds)
         return d.addCallback(self.assertEqual, self.valid_login)
 
-    def assertLoginError(self, creds, error_message):
+    def assertLoginError(self, checker, creds, error_message):
         """Assert that logging in with 'creds' fails with 'message'.
 
         :param creds: SSHPrivateKey credentials.
@@ -376,7 +380,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         :return: Deferred. You must return this from your test.
         """
         d = self.assertFailure(
-            self.checker.requestAvatarId(creds),
+            checker.requestAvatarId(creds),
             sshserver.UserDisplayedUnauthorizedLogin)
         d.addCallback(
             lambda exception: self.assertEqual(str(exception), error_message))
@@ -386,17 +390,19 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         # When someone signs in with a non-existent user, they should be told
         # that. The usual security issues don't apply here because the list of
         # Launchpad user names is public.
+        checker = self.makeChecker()
         creds = self.makeCredentials('no-such-user', self.public_key)
         return self.assertLoginError(
-            creds, 'No such Launchpad account: no-such-user')
+            checker, creds, 'No such Launchpad account: no-such-user')
 
     def test_noKeys(self):
         # When you sign into an existing account with no SSH keys, the SSH
         # server should inform you that the account has no keys.
+        checker = self.makeChecker()
         no_key_user = self.FakeAuthenticationEndpoint.no_key_user
         creds = self.makeCredentials(no_key_user, self.public_key)
         return self.assertLoginError(
-            creds,
+            checker, creds,
             "Launchpad user %r doesn't have a registered SSH key"
             % no_key_user)
 
@@ -404,10 +410,10 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         # When you sign into an existing account using the wrong key, you
         # should *not* be informed of the wrong key. This is because SSH often
         # tries several keys as part of normal operation.
-
+        checker = self.makeChecker()
         creds = self.makeCredentials(self.valid_login, 'invalid key')
         d = self.assertFailure(
-            self.checker.requestAvatarId(creds),
+            checker.requestAvatarId(creds),
             UnauthorizedLogin)
         d.addCallback(
             lambda exception:
