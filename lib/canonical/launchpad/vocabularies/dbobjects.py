@@ -57,6 +57,7 @@ __all__ = [
     'TranslationMessageVocabulary',
     'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
+    'ValidPersonVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
     'ValidTeamVocabulary',
@@ -825,7 +826,6 @@ class ValidPersonOrTeamVocabulary(
         text = text.lower()
         return self._doSearch(text=text)
 
-
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid teams in Launchpad."""
 
@@ -835,6 +835,9 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     # restrict the search results to those Persons who have a non-NULL
     # teamowner, i.e. a valid team.
     extra_clause = 'Person.teamowner IS NOT NULL'
+    base_query = """
+                Person.visibility = %s
+                """ % quote(PersonVisibility.PUBLIC)
 
     def search(self, text):
         """Return all teams that match :text:.
@@ -854,17 +857,13 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             extra_clause = ""
 
         if not text:
-            query = """
-                teamowner IS NOT NULL AND Person.visibility = %s
-                """ % quote(PersonVisibility.PUBLIC)
-            query += extra_clause
+            query = self.base_query + extra_clause
             return Person.select(query)
 
         name_match_query = """
             Person.fti @@ ftq(%s)
-            AND Person.visibility = %s
-            AND teamowner IS NOT NULL
-            """ % (quote(text), quote(PersonVisibility.PUBLIC))
+            AND %s
+            """ % (quote(text), self.base_query)
         name_match_query += extra_clause
         name_matches = Person.select(name_match_query)
 
@@ -874,9 +873,9 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         email_match_query = """
             EmailAddress.person = Person.id
             AND lower(email) LIKE %s || '%%'
-            AND Person.visibility = %s
-            AND teamowner IS NOT NULL
-            """ % (quote_like(text), quote(PersonVisibility.PUBLIC))
+            AND %s
+            """ % (quote_like(text), self.base_query)
+
         email_match_query += extra_clause
         email_matches = Person.select(
             email_match_query, clauseTables=['EmailAddress'])
@@ -886,6 +885,26 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         return name_matches.union(
             email_matches, orderBy=['displayname', 'name'])
 
+
+class ValidPersonVocabulary(ValidTeamVocabulary):
+    """The set of all valid persons who are not teams in Launchpad."""
+    displayname = 'Select a Person'
+    # The extra_clause for a valid person is that it not be a team, so
+    # teamowner IS NULL.
+    extra_clause = 'Person.teamowner IS NULL'
+
+    def _filter_valid_people(self, people):
+        return [person for person in people
+                if person.is_valid_person]
+
+    def _doSearch(self, text=""):
+        """Return the people whose fti or email address match :text:
+
+        Each person is also screened to ensure they are in the valid state.
+        """
+        people = super(ValidPersonVocabulary, self)._doSearch(text)
+        valid_people = self._filter_valid_people(people)
+        return valid_people
 
 
 class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
