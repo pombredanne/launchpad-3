@@ -5,9 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'Authserver', 'CodeHostingServer',
-    'SSHCodeHostingServer', 'make_bzr_ssh_server', 'make_launchpad_server',
-    'make_sftp_server']
+    'CodeHostingServer',
+    'SSHCodeHostingServer',
+    'make_bzr_ssh_server',
+    'make_launchpad_server',
+    'make_sftp_server',
+    ]
 
 
 import gc
@@ -120,8 +123,6 @@ def set_up_test_user(test_user, test_team):
         '4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3R'
         'gw==', 'testuser')
     commit()
-
-
 
 
 class FakeLaunchpadServer(LaunchpadServer):
