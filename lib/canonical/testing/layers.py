@@ -303,6 +303,10 @@ class BaseLayer:
                 "Test left new live threads: %s" % repr(new_threads))
         del BaseLayer._threads
 
+        if signal.getsignal(signal.SIGCHLD) != signal.SIG_DFL:
+            BaseLayer.flagTestIsolationFailure(
+                "Test left SIGCHLD handler.")
+
         # Objects with __del__ methods cannot participate in refence cycles.
         # Fail tests with memory leaks now rather than when Launchpad crashes
         # due to a leak because someone ignored the warnings.

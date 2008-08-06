@@ -24,7 +24,7 @@ from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import BlockingProxy
 from canonical.launchpad.testing import LaunchpadObjectFactory
-
+from canonical.testing.layers import TwistedLayer
 
 class AsyncTransport:
     """Make a transport that returns Deferreds.
@@ -61,6 +61,8 @@ class TestFatLocalTransport(TestCaseInTempDir):
 
 
 class TestSFTPAdapter(TrialTestCase):
+
+    layer = TwistedLayer
 
     def makeLaunchpadAvatar(self):
         fake_launchpad = FakeLaunchpad()
@@ -104,6 +106,8 @@ class SFTPTestMixin:
 
 class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
     """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
+
+    layer = TwistedLayer
 
     def setUp(self):
         TrialTestCase.setUp(self)
@@ -345,6 +349,8 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
 
 class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
     """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
+
+    layer = TwistedLayer
 
     def setUp(self):
         TrialTestCase.setUp(self)

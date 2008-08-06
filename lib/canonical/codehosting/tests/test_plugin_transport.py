@@ -37,7 +37,7 @@ from canonical.codehosting.transport import (
     InvalidControlDirectory, LaunchpadInternalServer, LaunchpadServer,
     set_up_logging)
 from canonical.config import config
-from canonical.testing import BaseLayer, reset_logging
+from canonical.testing import BaseLayer, reset_logging, TwistedLayer
 
 
 class MixinBaseLaunchpadServerTests:
@@ -175,6 +175,8 @@ class MixinBaseLaunchpadServerTests:
 class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
                           BzrTestCase):
 
+    layer = TwistedLayer
+
     def setUp(self):
         BzrTestCase.setUp(self)
         MixinBaseLaunchpadServerTests.setUp(self)
@@ -270,6 +272,8 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests, TrialTestCase,
     """Tests for the LaunchpadInternalServer, used by the puller and scanner.
     """
 
+    layer = TwistedLayer
+
     def setUp(self):
         BzrTestCase.setUp(self)
         MixinBaseLaunchpadServerTests.setUp(self)
@@ -316,6 +320,8 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests, TrialTestCase,
 
 class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
     """Tests for `AsyncVirtualTransport`."""
+
+    layer = TwistedLayer
 
     class VirtualServer(Server):
         """Very simple server that provides a AsyncVirtualTransport."""
@@ -409,7 +415,7 @@ class LaunchpadTransportTests:
     """
 
     # See comment on TestLaunchpadServer.
-    layer = BaseLayer
+    layer = TwistedLayer
 
     def setUp(self):
         self.authserver = FakeLaunchpad()
@@ -754,7 +760,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
     # See comment on TestLaunchpadServer.
-    layer = BaseLayer
+    layer = TwistedLayer
 
     def setUp(self):
         BzrTestCase.setUp(self)
