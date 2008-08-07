@@ -626,6 +626,7 @@ class PackageUpload(SQLBase):
 
         def do_sendmail(message, recipients=recipients, from_addr=None,
                         bcc=None):
+            """Perform substitutions on a template and send the email."""
             # Append a 'Signed-By:' line to the email body if this is a
             # signed upload and the signer/sponsor differs from the
             # maintainer.
@@ -654,7 +655,6 @@ class PackageUpload(SQLBase):
                     '%s\nOrigin: %s' %
                     (message.CHANGESFILE, changes['origin']))
 
-            """Perform substitutions on a template and send the email."""
             body = message.template % message.__dict__
 
             # Weed out duplicate name entries.
