@@ -51,7 +51,6 @@ class TestRunWithLogin(TestCaseWithFactory):
     def setUp(self):
         super(TestRunWithLogin, self).setUp()
         self.person = self.factory.makePerson()
-        transaction.commit()
 
     def test_loginAsRequester(self):
         # run_with_login logs in as user given as the first argument
@@ -297,7 +296,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
     def setUp(self):
         super(BranchFileSystemTest, self).setUp()
-        self.arbitrary_person = self.factory.makePerson()
         self.branchfs = BranchFileSystem(None, None)
 
     def assertFaultEqual(self, faultCode, faultString, fault):
