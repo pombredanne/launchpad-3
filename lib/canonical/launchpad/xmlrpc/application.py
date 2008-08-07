@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IPrivateApplication,
     IPrivateMaloneApplication)
 from canonical.launchpad.interfaces.codehosting import (
-    IPullerAPIApplication, IBranchFileSystemApplication)
+    IBranchFileSystemApplication, IBranchPullerApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
@@ -41,9 +41,9 @@ class PrivateApplication:
         return getUtility(IAuthServerApplication)
 
     @property
-    def puller_api(self):
+    def branch_puller(self):
         """See `IPrivateApplication`."""
-        return getUtility(IPullerAPIApplication)
+        return getUtility(IBranchPullerApplication)
 
     @property
     def branchfilesystem(self):
