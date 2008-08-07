@@ -335,6 +335,17 @@ This time, her message is on topic and is accepted.
 Once Anne joins the team, she may post to it, though until she subscribes to
 the mailing list, she will not get a copy of the message.
 
+    # Reset Anne's MessageApproval so that she'll no longer be pre-approved to
+    # post to this mailing list.
+    >>> from canonical.launchpad.database.mailinglist import MessageApproval
+    >>> from canonical.database.sqlbase import sqlvalues
+    >>> approvals = MessageApproval.select("""
+    ...     MessageApproval.posted_by = %s
+    ...     """ % sqlvalues(anne))
+    >>> for approval in approvals:
+    ...     approval.destroySelf()
+    >>> transaction.commit()
+
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> login('foo.bar@canonical.com')
@@ -620,10 +631,13 @@ not need to re-subscribe to the mailing list.
     >>> for message in sorted(messages, key=itemgetter('sender')):
     ...     print message['sender']
     ...     print message['subject']
+    ...     print message['message-id']
     itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     [Itest-one] A posting from a member once again
+    <iguana>
     itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
     [Itest-one] A posting from a member once again
+    <iguana>
 
 
 == First post moderation ==
@@ -742,7 +756,40 @@ But a person in poor standing will have their messages held for approval.
         Itest One <noreply@launchpad.net>
         New mailing list message requiring approval for Itest One
 
-    >>> logout()
+Should a non-team member's held post be approved, they are then allowed to
+post to just that mailing list without further approval required.
+
+    >>> browser.open(
+    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
+    >>> browser.getControl(name='field.%3Cmongoose%3E').value = ['approve']
+    >>> browser.getControl('Moderate').click()
+    >>> smtpd_watcher.wait_for_mbox_delivery('mongoose')
+    >>> smtpd_watcher.wait_for_mbox_delivery('mongoose')
+
+    >>> smtpd.reset()
+    >>> inject('itest-one', """\
+    ... From: bperson@example.org
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A non-member post
+    ... Message-ID: <otter>
+    ...
+    ... Hi, I am not a member of the mailing list.
+    ... """)
+    >>> smtpd_watcher.wait_for_mbox_delivery('otter')
+    >>> smtpd_watcher.wait_for_mbox_delivery('otter')
+    >>> messages = sorted(smtpd.getMessages(), key=itemgetter('sender'))
+    >>> len(messages)
+    2
+    >>> for message in messages:
+    ...     print message['sender']
+    ...     print message['subject']
+    ...     print message['message-id']
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    [Itest-one] A non-member post
+    <otter>
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    [Itest-one] A non-member post
+    <otter>
 
 
 == Preventing archiver forgeries ==
