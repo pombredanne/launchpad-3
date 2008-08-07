@@ -619,7 +619,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     # into account whether or not a team's memberships are private.
     # teams_indirectly_participated_in = exported(
     #     CollectionField(
-    #         title=_('All teams in which this person is an indirect member.'),
+    #         title=_(
+    #             'All teams in which this person is an indirect member.'),
     #         readonly=True, required=False,
     #         value_type=Reference(schema=Interface)),
     #     exported_as='indirect_participations')
