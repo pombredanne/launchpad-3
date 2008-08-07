@@ -35,6 +35,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
+from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
@@ -45,7 +46,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
-from canonical.lazr.fields import CollectionField
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_read_operation, exported,
@@ -331,9 +332,11 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                 "Description of licenses that do not appear in the list "
                 "above.")))
 
-    bugtracker = ProductBugTracker(
-        title=_('Bugs are tracked'),
-        vocabulary="BugTracker")
+    bugtracker = exported(
+        ProductBugTracker(
+            title=_('Bugs are tracked'),
+            vocabulary="BugTracker"),
+        exported_as='bug_tracker')
 
     sourcepackages = Attribute(_("List of packages for this product"))
 
@@ -344,10 +347,11 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         CollectionField(value_type=Object(schema=IProductSeries)),
         exported_as='series')
 
-    development_focus = Choice(
-        title=_('Development focus'), required=True,
-        vocabulary='FilteredProductSeries',
-        description=_('The "trunk" series where development is focused'))
+    development_focus = exported(
+        Choice(
+            title=_('Development focus'), required=True,
+            vocabulary='FilteredProductSeries',
+            description=_('The "trunk" series where development is focused')))
 
     default_stacked_on_branch = Attribute(
         _('The branch that new branches will be stacked on by default.'))
@@ -356,8 +360,11 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         "by the project name, if a project is associated with this "
         "product; otherwise, simply returns the product name."))
 
-    releases = Attribute(_("""An iterator over the ProductReleases for this
-        product."""))
+    releases = exported(
+        CollectionField(
+            title=_("An iterator over the ProductReleases for this product."),
+            readonly=True,
+            value_type=Reference(schema=IProductRelease)))
 
     branches = Attribute(_("""An iterator over the Bazaar branches that are
     related to this product."""))
