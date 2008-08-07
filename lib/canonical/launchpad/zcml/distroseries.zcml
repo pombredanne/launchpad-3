@@ -239,21 +239,6 @@
       />
   </browser:pages>
 
-  <!-- NB DO NOT CHANGE WITHOUT THINKING
-       Do not allow people to change the details of the distro series that
-       will affect the way Soyuz publishes the distroseries. Check with
-       SABDFL before modifying this page. -->
-  <browser:editform
-    for="canonical.launchpad.interfaces.IDistroSeries"
-    permission="launchpad.Edit"
-    label="Edit series details"
-    name="+edit"
-    schema="canonical.launchpad.interfaces.IDistroSeries"
-    facet="overview"
-    fields="displayname title summary description"
-    template="../templates/distroseries-edit.pt"
-    />
-
   <browser:page
     name="+translations"
     for="canonical.launchpad.interfaces.IDistroSeries"
@@ -315,11 +300,23 @@
        SABDFL before modifying this page. -->
   <browser:editform
     for="canonical.launchpad.interfaces.IDistroSeries"
+    permission="launchpad.Edit"
+    name="+edit"
+    class="canonical.launchpad.browser.distroseries.DistroSeriesAdminView"
+    schema="canonical.launchpad.interfaces.IDistroSeries"
+    fields="displayname title summary description"
+    facet="overview"
+    template="../templates/distroseries-edit.pt"
+    />
+
+  <browser:editform
+    for="canonical.launchpad.interfaces.IDistroSeries"
     permission="launchpad.Admin"
     name="+admin"
+    class="canonical.launchpad.browser.distroseries.DistroSeriesAdminView"
     schema="canonical.launchpad.interfaces.IDistroSeries"
-    facet="overview"
     fields="name status version changeslist"
+    facet="overview"
     template="../templates/launchpad-editform.pt"
     />
 

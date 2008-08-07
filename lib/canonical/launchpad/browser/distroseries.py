@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistroSeriesAddView',
+    'DistroSeriesAdminView',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesFullLanguagePackRequestView',
@@ -408,6 +409,16 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
 class DistroSeriesEditView(SQLObjectEditView):
     """View class that lets you edit a DistroSeries object.
+
+    It redirects to the main distroseries page after a successful edit.
+    """
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
+
+
+class DistroSeriesAdminView(SQLObjectEditView):
+    """View class that lets you admin a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
     """

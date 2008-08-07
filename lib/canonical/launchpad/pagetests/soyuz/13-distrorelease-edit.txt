@@ -1,5 +1,6 @@
 DistroSeries information edit.
-This tests makes a modification in warty distroseries and check 
+
+This tests makes a modification in warty distroseries and check
 if the page is not broken.
 
 Navigate to the edit page as admin
@@ -17,10 +18,7 @@ Fill out the form and submit.
   >>> admin_browser.getControl("Description").value = 'description'
   >>> admin_browser.getControl("Change").click()
   >>> admin_browser.url
-  'http://localhost/ubuntu/warty/+edit'
-  >>> admin_browser.contents
-  '...Updated on...'
-
+  'http://localhost/ubuntu/warty'
 
 Check +admin behaviour:
 
@@ -33,12 +31,11 @@ Change changeslist field (supposed to be an email address)
   >>> admin_browser.getControl("Changeslist").value = 'foo@bar.com'
   >>> admin_browser.getControl("Change").click()
   >>> admin_browser.url
-  'http://localhost/ubuntu/warty/+admin'
-  >>> admin_browser.contents
-  '...Updated on...'
+  'http://localhost/ubuntu/warty'
 
 Check if valid_email constraint is working:
 
+  >>> admin_browser.getLink("Administer").click()
   >>> admin_browser.getControl("Changeslist").value = 'foo bar'
   >>> admin_browser.getControl("Change").click()
   >>> admin_browser.url
