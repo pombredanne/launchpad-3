@@ -67,8 +67,8 @@ class BugReportData:
 
     @property
     def upstream_bugs_percentage(self):
-        if self.triaged_bugs:
-            return 100.0 * self.upstream_bugs / self.triaged_bugs
+        if self.open_bugs:
+            return 100.0 * self.upstream_bugs / self.open_bugs
         else:
             return 0.0
 
@@ -103,7 +103,7 @@ class BugReportData:
 
     @property
     def upstream_bugs_delta(self):
-        return self.triaged_bugs - self.upstream_bugs
+        return self.open_bugs - self.upstream_bugs
 
     @property
     def watched_bugs_delta(self):
