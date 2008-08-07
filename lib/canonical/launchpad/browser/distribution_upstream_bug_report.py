@@ -48,8 +48,8 @@ class BugReportData:
     bugs need upstream tasks.
     """
     TRIAGED_THRESHOLD = 75
-    UPSTREAM_THRESHOLD = 60
-    WATCH_THRESHOLD = 95
+    UPSTREAM_THRESHOLD = 90
+    WATCH_THRESHOLD = 90
 
     def __init__(self, open_bugs=0, triaged_bugs=0, upstream_bugs=0,
                  watched_bugs=0):
