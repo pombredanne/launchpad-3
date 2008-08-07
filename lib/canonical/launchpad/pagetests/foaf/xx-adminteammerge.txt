@@ -37,7 +37,10 @@ are merged.
 
 Merged teams are not visible anymore.
 
-    >>> browser.open("http://launchpad.dev/~guadamen")
+    >>> browser.open("http://launchpad.dev/~landscape-developers-merged")
+    Traceback (most recent call last):
+    ...
+    NotFound:...
 
 
 == Corner cases ==

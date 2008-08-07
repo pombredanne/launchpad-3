@@ -7,7 +7,7 @@ Administrators can see the signed Code of Conducts of any given person.
     ...     portlet = find_tag_by_id(page, 'portlet-details')
     ...     return extract_text(portlet)
 
-    >>> browser.open('http://launchpad.dev/~name16')
+    >>> admin_browser.open('http://launchpad.dev/~name16')
     >>> admin_browser.url
     'http://launchpad.dev/~name16'
     >>> print get_details_portlet(admin_browser.contents)

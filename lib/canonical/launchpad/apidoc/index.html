@@ -98,7 +98,7 @@ Application root for malone.
 </p>
         <p>
           <label>URL:</label>
-          <code>https://api.edge.launchpad.net/beta/bugs</code>
+          <code>http://api.launchpad.dev/beta/bugs</code>
         </p>
         <dl class="methods standard">
           <h4>Standard method</h4>
@@ -106,6 +106,529 @@ Application root for malone.
           <dd>Response contains a <a href="#bug">bug</a> 
                 collection.</dd>
         </dl>
+        <div id="bugs-custom-POSTs" class="methods POSTs">
+          <h4>Custom POST methods</h4>
+          <div class="method"><h5 id="bugs-createBug">createBug</h5><p>
+<p>Create a bug (with an appropriate bugtask) and return it.</p>
+
+<p>Things to note when using this factory:</p>
+<blockquote>
+<ul class="rst-simple">
+<li>the owner will be subscribed to the bug</li>
+<li>distribution, product and package contacts (whichever ones are
+applicable based on the bug report target) will bug subscribed to
+all <em>public bugs only</em></li>
+<li>for public upstreams bugs where there is no upstream bug contact,
+the product owner will be subscribed instead</li>
+</ul>
+</blockquote>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+                Fixed:
+                <var>createBug</var></p></td><td><p>The name of the operation being invoked.</p></td></tr><tr><td><p><strong>description</strong></p></td><td><p><small>(required)</small></p></td><td><p>
+<p>Description</p>
+<dl class="rst-docutils">
+<dt>A detailed description of the problem,</dt>
+<dd>including the steps required to reproduce it.</dd>
+</dl>
+
+</p></td></tr><tr><td><p><strong>private</strong></p></td><td><p></p></td><td><p>
+<p>This bug report should be private</p>
+<p>Private bug reports are visible only to their subscribers.</p>
+
+</p></td></tr><tr><td><p><strong>security_related</strong></p></td><td><p></p></td><td><p>
+This bug is a security vulnerability
+</p></td></tr><tr><td><p><strong>tags</strong></p></td><td><p></p></td><td><p>
+<p>Tags</p>
+<p>Separated by whitespace.</p>
+
+</p></td></tr><tr><td><p><strong>target</strong></p></td><td><p><small>(required)</small></p>
+                Link to a <a href="#bug_target">bug_target</a>.
+            </td><td><p>
+The project, distribution or source package that has this bug.
+</p></td></tr><tr><td><p><strong>title</strong></p></td><td><p><small>(required)</small></p></td><td><p>
+<p>Summary</p>
+<p>A one-line summary of the problem.</p>
+
+</p></td></tr></table>
+          <p>On success, the response status will be 201 and the 
+            <var>Location</var> header will contain the link to the newly 
+            created <a href="#bug">bug</a>.
+        </p>
+          
+        </div>
+        </div>
+      </div>
+      <div id="person" class="top-level-collection">
+        <h3>person</h3>
+        <p>
+A Person.
+</p>
+        <p>
+          <label>URL:</label>
+          <code>http://api.launchpad.dev/beta/person</code>
+        </p>
+        <dl class="methods standard">
+          <h4>Standard method</h4>
+          <dt>GET</dt>
+          <dd>Response contains a <a href="#"></a> 
+                collection.</dd>
+        </dl>
+        <div id="person-custom-GETs" class="methods GETs">
+          <h4>Custom GET methods</h4>
+          <div class="method"><h5 id="person-getMembersByStatus">getMembersByStatus</h5><p>
+<p>Return the people whose membership on this team match :status:.</p>
+<p>If no orderby is provided, Person.sortingColumns is used.</p>
+
+</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
+                Fixed:
+                <var>getMembersByStatus</var></p></td><td></td></tr><tr><td><p><strong>status</strong></p></td><td><p><small>(required)</small></p><p><em>One of:</em></p><ul><li><tt>Proposed</tt></li><li><tt>Approved</tt></li><li><tt>Administrator</tt></li><li><tt>Deactivated</tt></li><li><tt>Expired</tt></li><li><tt>Declined</tt></li><li><tt>Invited</tt></li><li><tt>Invitation declined</tt></li></ul></td><td><p>
+The state of this membership
+</p></td></tr></table>
+          
+          <p class="response">Response contains an
+            <code>application/json</code>
+            representation of a
+            <a href="person">person</a>
+                    collection
+                .
+        </p>
+        </div>
+        </div>
+        <div id="person-custom-POSTs" class="methods POSTs">
+          <h4>Custom POST methods</h4>
+          <div class="method">
+            <h5 id="person-acceptInvitationToBeMemberOf">acceptInvitationToBeMemberOf</h5>
+            <p>
+<p>Accept an invitation to become a member of the given team.</p>
+<p>There must be a TeamMembership for this person and the given team with
+the INVITED status. The status of this TeamMembership will be changed
+to APPROVED.</p>
+
+</p>
+            <h6>Parameters</h6>
+            <table>
+              <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>ws.op</strong>
+                  </p>
+                </td>
+                <td>
+                  <p>
+                    <small>(required)</small>
+                  </p>
+                  <p>
+                Fixed:
+                <var>acceptInvitationToBeMemberOf</var></p>
+                </td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>comment</strong>
+                  </p>
+                </td>
+                <td>
+                  <p>
+                    <small>(required)</small>
+                  </p>
+                </td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>team</strong>
+                  </p>
+                </td>
+                <td><p><small>(required)</small></p>
+                Link to a <a href="#person">person</a>.
+            </td>
+                <td>
+                  <p>
+Team
+</p>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div class="method">
+            <h5 id="person-addMember">addMember</h5>
+            <p>
+<p>Add the given person as a member of this team.</p>
+<p>If the given person is already a member of this team we'll simply
+change its membership status. Otherwise a new TeamMembership is
+created with the given status.</p>
+<p>If the person is actually a team and force_team_add is False, the
+team will actually be invited to join this one. Otherwise the team
+is added as if it were a person.</p>
+<p>If the the person is not a team, and may_subscribe_to_list
+is True, then the person may be subscribed to the team's
+mailing list, depending on the list status and the person's
+auto-subscribe settings.</p>
+<p>The given status must be either Approved, Proposed or Admin.</p>
+<p>The reviewer is the user who made the given person a member of this
+team.</p>
+
+</p>
+            <h6>Parameters</h6>
+            <table>
+              <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>ws.op</strong>
+                  </p>
+                </td>
+                <td>
+                  <p>
+                    <small>(required)</small>
+                  </p>
+                  <p>
+                Fixed:
+                <var>addMember</var></p>
+                </td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>comment</strong>
+                  </p>
+                </td>
+                <td>
+                  <p></p>
+                </td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>person</strong>
+                  </p>
+                </td>
+                <td><p><small>(required)</small></p>
+                Link to a <a href="#person">person</a>.
+            </td>
+                <td>
+                  <p>
+Member
+</p>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>status</strong>
+                  </p>
+                </td>
+                <td>
+                  <p></p>
+                  <p>
+                    <em>One of:</em>
+                  </p>
+                  <ul>
+                    <li>
+                      <tt>Proposed</tt>
+                    </li>
+                    <li>
+                      <tt>Approved</tt>
+                    </li>
+                    <li>
+                      <tt>Administrator</tt>
+                    </li>
+                    <li>
+                      <tt>Deactivated</tt>
+                    </li>
+                    <li>
+                      <tt>Expired</tt>
+                    </li>
+                    <li>
+                      <tt>Declined</tt>
+                    </li>
+                    <li>
+                      <tt>Invited</tt>
+                    </li>
+                    <li>
+                      <tt>Invitation declined</tt>
+                    </li>
+                  </ul>
+                </td>
+                <td>
+                  <p>
+The state of this membership
+</p>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div class="method">
+            <h5 id="person-declineInvitationToBeMemberOf">declineInvitationToBeMemberOf</h5>
+            <p>
+<p>Decline an invitation to become a member of the given team.</p>
+<p>There must be a TeamMembership for this person and the given team with
+the INVITED status. The status of this TeamMembership will be changed
+to INVITATION_DECLINED.</p>
+
+</p>
+            <h6>Parameters</h6>
+            <table>
+              <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>ws.op</strong>
+                  </p>
+                </td>
+                <td>
+                  <p>
+                    <small>(required)</small>
+                  </p>
+                  <p>
+                Fixed:
+                <var>declineInvitationToBeMemberOf</var></p>
+                </td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>comment</strong>
+                  </p>
+                </td>
+                <td>
+                  <p>
+                    <small>(required)</small>
+                  </p>
+                </td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>team</strong>
+                  </p>
+                </td>
+                <td><p><small>(required)</small></p>
+                Link to a <a href="#person">person</a>.
+            </td>
+                <td>
+                  <p>
+Team
+</p>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div class="method">
+            <h5 id="person-join">join</h5>
+            <p>
+<p>Join the given team if its subscriptionpolicy is not RESTRICTED.</p>
+<p>Join the given team according to the policies and defaults of that
+team:</p>
+<ul class="rst-simple">
+<li>If the team subscriptionpolicy is OPEN, the user is added as
+an APPROVED member with a NULL TeamMembership.reviewer.</li>
+<li>If the team subscriptionpolicy is MODERATED, the user is added as
+a PROPOSED member and one of the team's administrators have to
+approve the membership.</li>
+</ul>
+<p>If may_subscribe_to_list is True, then also attempt to
+subscribe to the team's mailing list, depending on the list
+status and the person's auto-subscribe settings.</p>
+
+
+</p>
+            <h6>Parameters</h6>
+            <table>
+              <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>ws.op</strong>
+                  </p>
+                </td>
+                <td>
+                  <p>
+                    <small>(required)</small>
+                  </p>
+                  <p>
+                Fixed:
+                <var>join</var></p>
+                </td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>team</strong>
+                  </p>
+                </td>
+                <td><p><small>(required)</small></p>
+                Link to a <a href="#person">person</a>.
+            </td>
+                <td>
+                  <p>
+Team
+</p>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div class="method">
+            <h5 id="person-leave">leave</h5>
+            <p>
+<p>Leave the given team.</p>
+<p>If there's a membership entry for this person on the given team and
+its status is either APPROVED or ADMIN, we change the status to
+DEACTIVATED and remove the relevant entries in teamparticipation.</p>
+<p>Teams cannot call this method because they're not allowed to
+login and thus can't 'leave' another team. Instead, they have their
+subscription deactivated (using the setMembershipData() method) by
+a team administrator.</p>
+
+</p>
+            <h6>Parameters</h6>
+            <table>
+              <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>ws.op</strong>
+                  </p>
+                </td>
+                <td>
+                  <p>
+                    <small>(required)</small>
+                  </p>
+                  <p>
+                Fixed:
+                <var>leave</var></p>
+                </td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>team</strong>
+                  </p>
+                </td>
+                <td><p><small>(required)</small></p>
+                Link to a <a href="#person">person</a>.
+            </td>
+                <td>
+                  <p>
+Team
+</p>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div class="method">
+            <h5 id="person-setLocation">setLocation</h5>
+            <p>
+Specify the location and time zone of a person.
+</p>
+            <h6>Parameters</h6>
+            <table>
+              <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>ws.op</strong>
+                  </p>
+                </td>
+                <td>
+                  <p>
+                    <small>(required)</small>
+                  </p>
+                  <p>
+                Fixed:
+                <var>setLocation</var></p>
+                </td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>latitude</strong>
+                  </p>
+                </td>
+                <td>
+                  <p>
+                    <small>(required)</small>
+                  </p>
+                </td>
+                <td>
+                  <p>
+The latitude of this object.
+</p>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>longitude</strong>
+                  </p>
+                </td>
+                <td>
+                  <p>
+                    <small>(required)</small>
+                  </p>
+                </td>
+                <td>
+                  <p>
+The longitude of this object.
+</p>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <p>
+                    <strong>time_zone</strong>
+                  </p>
+                </td>
+                <td>
+                  <p>
+                    <small>(required)</small>
+                  </p>
+                </td>
+                <td>
+                  <p>
+The time zone of this object.
+</p>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
       </div>
       <div id="people" class="top-level-collection">
         <h3>people</h3>
@@ -114,7 +637,7 @@ The set of Persons.
 </p>
         <p>
           <label>URL:</label>
-          <code>https://api.edge.launchpad.net/beta/people</code>
+          <code>http://api.launchpad.dev/beta/people</code>
         </p>
         <dl class="methods standard">
           <h4>Standard method</h4>
@@ -206,44 +729,6 @@ Search text
                 .
         </p>
         </div>
-          <div class="method"><h5 id="people-getAllPersons">getAllPersons</h5><p>
-<p>Return all Persons, ignoring the merged ones.</p>
-<p>&lt;orderBy&gt; can be either a string with the column name you want to sort
-or a list of column names as strings.
-If no orderBy is specified the results will be ordered using the
-default ordering specified in Person._defaultOrder.</p>
-
-</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
-                Fixed:
-                <var>getAllPersons</var></p></td><td><p>The name of the operation being invoked.</p></td></tr></table>
-          
-          <p class="response">Response contains an
-            <code>application/json</code>
-            representation of a
-            <a href="person">person</a>
-                    collection
-                .
-        </p>
-        </div>
-          <div class="method"><h5 id="people-getAllTeams">getAllTeams</h5><p>
-<p>Return all Teams, ignoring the merged ones.</p>
-<p>&lt;orderBy&gt; can be either a string with the column name you want to sort
-or a list of column names as strings.
-If no orderBy is specified the results will be ordered using the
-default ordering specified in Person._defaultOrder.</p>
-
-</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
-                Fixed:
-                <var>getAllTeams</var></p></td><td><p>The name of the operation being invoked.</p></td></tr></table>
-          
-          <p class="response">Response contains an
-            <code>application/json</code>
-            representation of a
-            <a href="person">person</a>
-                    collection
-                .
-        </p>
-        </div>
           <div class="method"><h5 id="people-getByEmail">getByEmail</h5><p>
 <p>Return the person with the given email address.</p>
 <p>Return None if there is no person with the given email address.</p>
@@ -298,13 +783,117 @@ Subscription policy
       </div>
     </div>
     <h2 id="entry-types">Entry types</h2>
+    <h3 id="branch">branch</h3>
+    <p>
+A Bazaar branch.
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta</code>
+    </p>
+    <div class="representation">
+      <h4>Default representation 
+                (application/json)</h4>
+      <table>
+        <th>Key</th>
+        <th>Value</th>
+        <th>Description</th>
+        <tr>
+          <td>
+            <p>
+              <strong>resource_type_link</strong>
+            </p>
+          </td>
+          <td>
+            <p>
+              <small>(read-only)</small>
+            </p>
+          </td>
+          <td>
+            <p>
+          The link to the WADL description of this resource.
+        </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <p>
+              <strong>self_link</strong>
+            </p>
+          </td>
+          <td>
+            <p>
+              <small>(read-only)</small>
+            </p>
+          </td>
+          <td>
+            <p>The canonical link to this resource.</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <dl id="branch-standard-methods" class="methods standard">
+      <h4>Standard methods</h4>
+      <dt>GET</dt>
+      <dd>Response contains the default 
+            <code>application/json</code> representation 
+            for this entry.
+        </dd>
+      <dt>PATCH</dt>
+      <dd>Entity body should contain a represention encoded using 
+            <code>application/json</code> of the entry
+            fields to update. Any fields of the default representation marked
+            as writeable can be included.
+        </dd>
+      <dt>PUT</dt>
+      <dd>Entity body should contain a representation encoded using 
+            <code>application/json</code> of the entry. 
+            All fields of the default representation should be included. Only
+            fields marked as writeable in the default representation should be
+            modified.
+        </dd>
+    </dl>
+    <div id="branch-custom-POSTs" class="methods POSTs">
+      <h4>Custom POST methods</h4>
+      <div class="method">
+        <h5 id="branch-requestMirror">requestMirror</h5>
+        <p>
+Request that this branch be mirrored on the next run of the branch
+puller.
+</p>
+        <h6>Parameters</h6>
+        <table>
+          <tr>
+            <th>Parameter</th>
+            <th>Value</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>
+              <p>
+                <strong>ws.op</strong>
+              </p>
+            </td>
+            <td>
+              <p>
+                <small>(required)</small>
+              </p>
+              <p>
+                Fixed:
+                <var>requestMirror</var></p>
+            </td>
+            <td></td>
+          </tr>
+        </table>
+      </div>
+    </div>
     <h3 id="bug">bug</h3>
     <p>
 The core bug entry.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/bugs/<var>&lt;id&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/bugs/<var>&lt;id&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -832,7 +1421,7 @@ A file attachment to an IBug.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/bugs/<var>&lt;bug.id&gt;</var>/attachments/<var>&lt;id&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/bugs/<var>&lt;bug.id&gt;</var>/attachments/<var>&lt;id&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -996,7 +1585,7 @@ The relationship between a person and a bug.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/bugs/<var>&lt;bug.id&gt;</var>/subscriptions/<var>&lt;subscriber.name&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/bugs/<var>&lt;bug.id&gt;</var>/subscriptions/<var>&lt;subscriber.name&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -1109,13 +1698,86 @@ Bug
             modified.
         </dd>
     </dl>
+    <h3 id="bug_target">bug_target</h3>
+    <p>
+<p>An entity on which a bug can be reported.</p>
+<p>Examples include an IDistribution, an IDistroSeries and an
+IProduct.</p>
+
+</p>
+    <p>
+      <label>URL:</label>
+      <code>http://api.launchpad.dev/beta</code>
+    </p>
+    <div class="representation">
+      <h4>Default representation 
+                (application/json)</h4>
+      <table>
+        <th>Key</th>
+        <th>Value</th>
+        <th>Description</th>
+        <tr>
+          <td>
+            <p>
+              <strong>resource_type_link</strong>
+            </p>
+          </td>
+          <td>
+            <p>
+              <small>(read-only)</small>
+            </p>
+          </td>
+          <td>
+            <p>
+          The link to the WADL description of this resource.
+        </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <p>
+              <strong>self_link</strong>
+            </p>
+          </td>
+          <td>
+            <p>
+              <small>(read-only)</small>
+            </p>
+          </td>
+          <td>
+            <p>The canonical link to this resource.</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <dl id="bug_target-standard-methods" class="methods standard">
+      <h4>Standard methods</h4>
+      <dt>GET</dt>
+      <dd>Response contains the default 
+            <code>application/json</code> representation 
+            for this entry.
+        </dd>
+      <dt>PATCH</dt>
+      <dd>Entity body should contain a represention encoded using 
+            <code>application/json</code> of the entry
+            fields to update. Any fields of the default representation marked
+            as writeable can be included.
+        </dd>
+      <dt>PUT</dt>
+      <dd>Entity body should contain a representation encoded using 
+            <code>application/json</code> of the entry. 
+            All fields of the default representation should be included. Only
+            fields marked as writeable in the default representation should be
+            modified.
+        </dd>
+    </dl>
     <h3 id="bug_task">bug_task</h3>
     <p>
 A bug needing fixing in a particular product or package.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;target.name&gt;</var>/+bug/<var>&lt;bug.id&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;target.name&gt;</var>/+bug/<var>&lt;bug.id&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -1811,7 +2473,7 @@ A remote bug system.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/bugs/bugtrackers/<var>&lt;name&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/bugs/bugtrackers/<var>&lt;name&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -2077,7 +2739,7 @@ A bug on a remote system.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/bugs/<var>&lt;bug.id&gt;</var>/watch/<var>&lt;id&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/bugs/<var>&lt;bug.id&gt;</var>/watch/<var>&lt;id&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -2396,7 +3058,7 @@ The object that stores the IPerson's emails.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;person.name&gt;</var>/+email/<var>&lt;email&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;person.name&gt;</var>/+email/<var>&lt;email&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -2570,7 +3232,7 @@ A person's nickname on an IRC network.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;person.name&gt;</var>/+ircnick/<var>&lt;id&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;person.name&gt;</var>/+ircnick/<var>&lt;id&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -2689,7 +3351,7 @@ Jabber specific user ID
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;person.name&gt;</var>/+jabberid/<var>&lt;id&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;person.name&gt;</var>/+jabberid/<var>&lt;id&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -2791,7 +3453,7 @@ A Language.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/+languages/<var>&lt;code&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/+languages/<var>&lt;code&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -2864,7 +3526,7 @@ the web as well.</p>
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;target.name&gt;</var>/+bug/<var>&lt;bug.id&gt;</var>/comments/<var>&lt;index&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;target.name&gt;</var>/+bug/<var>&lt;bug.id&gt;</var>/comments/<var>&lt;index&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -3031,7 +3693,7 @@ release-management items that need coordination.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;target.name&gt;</var>/+milestone/<var>&lt;name&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;target.name&gt;</var>/+milestone/<var>&lt;name&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -3129,1238 +3791,6 @@ The product or distribution of this milestone.
             modified.
         </dd>
     </dl>
-    <h3 id="person">person</h3>
-    <p>
-A Person.
-</p>
-    <p>
-      <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;name&gt;</var></code>
-    </p>
-    <div class="representation">
-      <h4>Default representation 
-                (application/json)</h4>
-      <table>
-        <th>Key</th>
-        <th>Value</th>
-        <th>Description</th>
-        <tr>
-          <td>
-            <p>
-              <strong>admins_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#person">person</a> collection.
-            </td>
-          <td>
-            <p>
-List of this team's admins.
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>confirmed_email_addresses_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#email_address">email_address</a> collection.
-            </td>
-          <td>
-            <p>
-<p>Confirmed e-mails of this person.</p>
-<p>Confirmed e-mails are the ones in the VALIDATED state</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>date_created</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(read-only)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-Date Created
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>deactivated_members_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#person">person</a> collection.
-            </td>
-          <td>
-            <p>
-All members whose membership is in the DEACTIVATED state
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>display_name</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(writeable)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-<p>Display Name</p>
-<p>Your name as you would like it displayed throughout Launchpad. Most people use their full name here.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>expired_members_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#person">person</a> collection.
-            </td>
-          <td>
-            <p>
-All members whose membership is in the EXPIRED state
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>hide_email_addresses</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(writeable)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-Hide my email addresses from other Launchpad users
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>homepage_content</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(writeable)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-<p>Homepage Content</p>
-<p>The content of your home page. Edit this and it will be displayed for all the world to see.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>indirect_participations_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#team">team</a> collection.
-            </td>
-          <td>
-            <p>
-All teams in which this person is an indirect member.
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>invited_members_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#person">person</a> collection.
-            </td>
-          <td>
-            <p>
-All members whose membership is in the INVITED state
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>irc_nicknames_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#irc_id">irc_id</a> collection.
-            </td>
-          <td>
-            <p>
-List of IRC nicknames of this Person.
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>is_team</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(read-only)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-Is this object a team?
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>is_valid</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(read-only)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-This is an active user or a team.
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>jabber_ids_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#jabber_id">jabber_id</a> collection.
-            </td>
-          <td>
-            <p>
-List of Jabber IDs of this Person.
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>karma</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(read-only)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-<p>Karma</p>
-<p>The cached total karma for this person.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>languages_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#language">language</a> collection.
-            </td>
-          <td>
-            <p>
-List of languages known by this person
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>latitude</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(read-only)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-The latitude of this object.
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>longitude</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(read-only)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-The longitude of this object.
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>mailing_list_auto_subscribe_policy</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(writeable)</small>
-            </p>
-            <p>
-              <em>One of:</em>
-            </p>
-            <ul>
-              <li>
-                <tt>Never subscribe to mailing lists</tt>
-              </li>
-              <li>
-                <tt>Ask me when I join a team</tt>
-              </li>
-              <li>
-                <tt>Always subscribe me to mailing lists</tt>
-              </li>
-            </ul>
-          </td>
-          <td>
-            <p>
-<p>Mailing List Auto-subscription Policy</p>
-<p>This attribute determines whether a person is automatically subscribed to a team's mailing list when the person joins said team.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>members_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#person">person</a> collection.
-            </td>
-          <td>
-            <p>
-List of members with ADMIN or APPROVED status
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>members_details_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#team_membership">team_membership</a> collection.
-            </td>
-          <td>
-            <p>
-<p>Active TeamMemberships for this object's members.</p>
-<p>Active TeamMemberships are the ones with the ADMIN or APPROVED status.  The results are ordered using Person.sortingColumns.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>memberships_details_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#team_membership">team_membership</a> collection.
-            </td>
-          <td>
-            <p>
-All TeamMemberships for Teams this Person is an active member of.
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>mugshot_link</strong>
-            </p>
-          </td>
-          <td><p><small>(writeable)</small></p>
-                Link to a file resource.
-            </td>
-          <td>
-            <p>
-<p>Mugshot</p>
-<p>A large image of exactly 192x192 pixels, that will be displayed on your home page in Launchpad. Traditionally this is a great big picture of your grinning face. Make the most of it! It should be no bigger than 100kb in size.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>name</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(writeable)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-<p>Name</p>
-<p>A short unique name, beginning with a lower-case letter or number, and containing only letters, numbers, dots, hyphens, or plus signs.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>open_membership_invitations_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#team_membership">team_membership</a> collection.
-            </td>
-          <td>
-            <p>
-<p>Open membership invitations.</p>
-<p>All TeamMemberships which represent an invitation (to join a team) sent to this person.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>participants_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#person">person</a> collection.
-            </td>
-          <td>
-            <p>
-<p>All participants of this team.</p>
-<p>List of all direct and indirect people and teams who, one way or another, are a part of this team. If you want a method to check if a given person is a member of a team, you should probably look at IPerson.inTeam().</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>participations_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#team">team</a> collection.
-            </td>
-          <td>
-            <p>
-All teams in which this person is a participant.
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>preferred_email_address_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#email_address">email_address</a>.
-            </td>
-          <td>
-            <p>
-<p>Preferred email address</p>
-<p>The preferred email address for this person. The one we'll use to communicate with them.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>proposed_members_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#person">person</a> collection.
-            </td>
-          <td>
-            <p>
-All members whose membership is in the PROPOSED state
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>resource_type_link</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(read-only)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-          The link to the WADL description of this resource.
-        </p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>self_link</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(read-only)</small>
-            </p>
-          </td>
-          <td>
-            <p>The canonical link to this resource.</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>sub_teams_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#team">team</a> collection.
-            </td>
-          <td>
-            <p>
-<p>All subteams of this team.</p>
-<p>A subteam is any team that is a member (either directly or
-indirectly) of this team. As an example, let's say we have
-this hierarchy of teams:</p>
-<dl class="rst-docutils">
-<dt>Rosetta Translators</dt>
-<dd><dl class="rst-first rst-last rst-docutils">
-<dt>Rosetta pt Translators</dt>
-<dd>Rosetta pt_BR Translators</dd>
-</dl>
-</dd>
-</dl>
-<p>In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
-Translators' are subteams of the 'Rosetta Translators' team,
-and all members of both subteams are considered members of
-"Rosetta Translators".</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>super_teams_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#team">team</a> collection.
-            </td>
-          <td>
-            <p>
-<p>All superteams of this team.</p>
-<p>A superteam is any team that this team is a member of. For
-example, let's say we have this hierarchy of teams, and we are
-the "Rosetta pt_BR Translators":</p>
-<dl class="rst-docutils">
-<dt>Rosetta Translators</dt>
-<dd><dl class="rst-first rst-last rst-docutils">
-<dt>Rosetta pt Translators</dt>
-<dd>Rosetta pt_BR Translators</dd>
-</dl>
-</dd>
-</dl>
-<p>In this case, we will return both 'Rosetta pt Translators' and
-'Rosetta Translators', because we are member of both of them.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>team_owner_link</strong>
-            </p>
-          </td>
-          <td><p><small>(writeable)</small></p>
-                Link to a <a href="#person">person</a>.
-            </td>
-          <td>
-            <p>
-Team Owner
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>time_zone</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(writeable)</small>
-            </p>
-          </td>
-          <td>
-            <p>
-<p>Time zone</p>
-<p>The time zone of where you live.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>visibility</strong>
-            </p>
-          </td>
-          <td>
-            <p>
-              <small>(writeable)</small>
-            </p>
-            <p>
-              <em>One of:</em>
-            </p>
-            <ul>
-              <li>
-                <tt>Public</tt>
-              </li>
-              <li>
-                <tt>Private Membership</tt>
-              </li>
-            </ul>
-          </td>
-          <td>
-            <p>
-<p>Visibility</p>
-<p>Public visibility is standard, and Private Membership means that a team's members are hidden.</p>
-
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>wiki_names_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#wiki_name">wiki_name</a> collection.
-            </td>
-          <td>
-            <p>
-All WikiNames of this Person.
-</p>
-          </td>
-        </tr>
-      </table>
-    </div>
-    <dl id="person-standard-methods" class="methods standard">
-      <h4>Standard methods</h4>
-      <dt>GET</dt>
-      <dd>Response contains the default 
-            <code>application/json</code> representation 
-            for this entry.
-        </dd>
-      <dt>PATCH</dt>
-      <dd>Entity body should contain a represention encoded using 
-            <code>application/json</code> of the entry
-            fields to update. Any fields of the default representation marked
-            as writeable can be included.
-        </dd>
-      <dt>PUT</dt>
-      <dd>Entity body should contain a representation encoded using 
-            <code>application/json</code> of the entry. 
-            All fields of the default representation should be included. Only
-            fields marked as writeable in the default representation should be
-            modified.
-        </dd>
-    </dl>
-    <div id="person-custom-GETs" class="methods GETs">
-      <h4>Custom GET methods</h4>
-      <div class="method"><h5 id="person-findPathToTeam">findPathToTeam</h5><p>
-<p>Return the teams that cause this person to be a participant of the
-given team.</p>
-<p>If there is more than one path leading this person to the given team,
-only the one with the oldest teams is returned.</p>
-<p>This method must not be called if this person is not an indirect
-member of the given team.</p>
-
-</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
-                Fixed:
-                <var>findPathToTeam</var></p></td><td></td></tr><tr><td><p><strong>team</strong></p></td><td><p><small>(required)</small></p>
-                Link to a <a href="#person">person</a>.
-            </td><td><p>
-Team
-</p></td></tr></table>
-          
-          <p class="response">Response contains an
-            <code>application/json</code>
-            representation of a
-            <a href="person">person</a>
-                    collection
-                .
-        </p>
-        </div>
-      <div class="method"><h5 id="person-getMembersByStatus">getMembersByStatus</h5><p>
-<p>Return the people whose membership on this team match :status:.</p>
-<p>If no orderby is provided, Person.sortingColumns is used.</p>
-
-</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
-                Fixed:
-                <var>getMembersByStatus</var></p></td><td></td></tr><tr><td><p><strong>status</strong></p></td><td><p><small>(required)</small></p><p><em>One of:</em></p><ul><li><tt>Proposed</tt></li><li><tt>Approved</tt></li><li><tt>Administrator</tt></li><li><tt>Deactivated</tt></li><li><tt>Expired</tt></li><li><tt>Declined</tt></li><li><tt>Invited</tt></li><li><tt>Invitation declined</tt></li></ul></td><td><p>
-The state of this membership
-</p></td></tr></table>
-          
-          <p class="response">Response contains an
-            <code>application/json</code>
-            representation of a
-            <a href="person">person</a>
-                    collection
-                .
-        </p>
-        </div>
-      <div class="method">
-        <h5 id="person-inTeam">inTeam</h5>
-        <p>
-<p>Return True if this person is a member or the owner of &lt;team&gt;.</p>
-<p>This method is meant to be called by objects which implement either
-IPerson or ITeam, and it will return True when you ask if a Person is
-a member of himself (i.e. person1.inTeam(person1)).</p>
-<p>&lt;team&gt; can be the id of a team, an SQLObject representing the
-ITeam, or the name of the team.</p>
-
-</p>
-        <h6>Parameters</h6>
-        <table>
-          <tr>
-            <th>Parameter</th>
-            <th>Value</th>
-            <th>Description</th>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>ws.op</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-              <p>
-                Fixed:
-                <var>inTeam</var></p>
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>team</strong>
-              </p>
-            </td>
-            <td><p><small>(required)</small></p>
-                Link to a <a href="#person">person</a>.
-            </td>
-            <td>
-              <p>
-Team
-</p>
-            </td>
-          </tr>
-        </table>
-      </div>
-    </div>
-    <div id="person-custom-POSTs" class="methods POSTs">
-      <h4>Custom POST methods</h4>
-      <div class="method">
-        <h5 id="person-acceptInvitationToBeMemberOf">acceptInvitationToBeMemberOf</h5>
-        <p>
-<p>Accept an invitation to become a member of the given team.</p>
-<p>There must be a TeamMembership for this person and the given team with
-the INVITED status. The status of this TeamMembership will be changed
-to APPROVED.</p>
-
-</p>
-        <h6>Parameters</h6>
-        <table>
-          <tr>
-            <th>Parameter</th>
-            <th>Value</th>
-            <th>Description</th>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>ws.op</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-              <p>
-                Fixed:
-                <var>acceptInvitationToBeMemberOf</var></p>
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>comment</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>team</strong>
-              </p>
-            </td>
-            <td><p><small>(required)</small></p>
-                Link to a <a href="#person">person</a>.
-            </td>
-            <td>
-              <p>
-Team
-</p>
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div class="method">
-        <h5 id="person-addMember">addMember</h5>
-        <p>
-<p>Add the given person as a member of this team.</p>
-<p>If the given person is already a member of this team we'll simply
-change its membership status. Otherwise a new TeamMembership is
-created with the given status.</p>
-<p>If the person is actually a team and force_team_add is False, the
-team will actually be invited to join this one. Otherwise the team
-is added as if it were a person.</p>
-<p>If the the person is not a team, and may_subscribe_to_list
-is True, then the person may be subscribed to the team's
-mailing list, depending on the list status and the person's
-auto-subscribe settings.</p>
-<p>The given status must be either Approved, Proposed or Admin.</p>
-<p>The reviewer is the user who made the given person a member of this
-team.</p>
-
-</p>
-        <h6>Parameters</h6>
-        <table>
-          <tr>
-            <th>Parameter</th>
-            <th>Value</th>
-            <th>Description</th>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>ws.op</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-              <p>
-                Fixed:
-                <var>addMember</var></p>
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>comment</strong>
-              </p>
-            </td>
-            <td>
-              <p></p>
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>person</strong>
-              </p>
-            </td>
-            <td><p><small>(required)</small></p>
-                Link to a <a href="#person">person</a>.
-            </td>
-            <td>
-              <p>
-Member
-</p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>status</strong>
-              </p>
-            </td>
-            <td>
-              <p></p>
-              <p>
-                <em>One of:</em>
-              </p>
-              <ul>
-                <li>
-                  <tt>Proposed</tt>
-                </li>
-                <li>
-                  <tt>Approved</tt>
-                </li>
-                <li>
-                  <tt>Administrator</tt>
-                </li>
-                <li>
-                  <tt>Deactivated</tt>
-                </li>
-                <li>
-                  <tt>Expired</tt>
-                </li>
-                <li>
-                  <tt>Declined</tt>
-                </li>
-                <li>
-                  <tt>Invited</tt>
-                </li>
-                <li>
-                  <tt>Invitation declined</tt>
-                </li>
-              </ul>
-            </td>
-            <td>
-              <p>
-The state of this membership
-</p>
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div class="method">
-        <h5 id="person-declineInvitationToBeMemberOf">declineInvitationToBeMemberOf</h5>
-        <p>
-<p>Decline an invitation to become a member of the given team.</p>
-<p>There must be a TeamMembership for this person and the given team with
-the INVITED status. The status of this TeamMembership will be changed
-to INVITATION_DECLINED.</p>
-
-</p>
-        <h6>Parameters</h6>
-        <table>
-          <tr>
-            <th>Parameter</th>
-            <th>Value</th>
-            <th>Description</th>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>ws.op</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-              <p>
-                Fixed:
-                <var>declineInvitationToBeMemberOf</var></p>
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>comment</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>team</strong>
-              </p>
-            </td>
-            <td><p><small>(required)</small></p>
-                Link to a <a href="#person">person</a>.
-            </td>
-            <td>
-              <p>
-Team
-</p>
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div class="method">
-        <h5 id="person-join">join</h5>
-        <p>
-<p>Join the given team if its subscriptionpolicy is not RESTRICTED.</p>
-<p>Join the given team according to the policies and defaults of that
-team:</p>
-<ul class="rst-simple">
-<li>If the team subscriptionpolicy is OPEN, the user is added as
-an APPROVED member with a NULL TeamMembership.reviewer.</li>
-<li>If the team subscriptionpolicy is MODERATED, the user is added as
-a PROPOSED member and one of the team's administrators have to
-approve the membership.</li>
-</ul>
-<p>If may_subscribe_to_list is True, then also attempt to
-subscribe to the team's mailing list, depending on the list
-status and the person's auto-subscribe settings.</p>
-
-
-</p>
-        <h6>Parameters</h6>
-        <table>
-          <tr>
-            <th>Parameter</th>
-            <th>Value</th>
-            <th>Description</th>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>ws.op</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-              <p>
-                Fixed:
-                <var>join</var></p>
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>team</strong>
-              </p>
-            </td>
-            <td><p><small>(required)</small></p>
-                Link to a <a href="#person">person</a>.
-            </td>
-            <td>
-              <p>
-Team
-</p>
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div class="method">
-        <h5 id="person-leave">leave</h5>
-        <p>
-<p>Leave the given team.</p>
-<p>If there's a membership entry for this person on the given team and
-its status is either APPROVED or ADMIN, we change the status to
-DEACTIVATED and remove the relevant entries in teamparticipation.</p>
-<p>Teams cannot call this method because they're not allowed to
-login and thus can't 'leave' another team. Instead, they have their
-subscription deactivated (using the setMembershipData() method) by
-a team administrator.</p>
-
-</p>
-        <h6>Parameters</h6>
-        <table>
-          <tr>
-            <th>Parameter</th>
-            <th>Value</th>
-            <th>Description</th>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>ws.op</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-              <p>
-                Fixed:
-                <var>leave</var></p>
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>team</strong>
-              </p>
-            </td>
-            <td><p><small>(required)</small></p>
-                Link to a <a href="#person">person</a>.
-            </td>
-            <td>
-              <p>
-Team
-</p>
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div class="method">
-        <h5 id="person-setLocation">setLocation</h5>
-        <p>
-Specify the location and time zone of a person.
-</p>
-        <h6>Parameters</h6>
-        <table>
-          <tr>
-            <th>Parameter</th>
-            <th>Value</th>
-            <th>Description</th>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>ws.op</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-              <p>
-                Fixed:
-                <var>setLocation</var></p>
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>latitude</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-            </td>
-            <td>
-              <p>
-The latitude of this object.
-</p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>longitude</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-            </td>
-            <td>
-              <p>
-The longitude of this object.
-</p>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>time_zone</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-            </td>
-            <td>
-              <p>
-The time zone of this object.
-</p>
-            </td>
-          </tr>
-        </table>
-      </div>
-    </div>
     <h3 id="product">product</h3>
     <p>
 <p>A Product.</p>
@@ -4372,7 +3802,7 @@ Mozilla App Suite as Products, among others.</p>
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;name&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;name&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -4481,7 +3911,7 @@ Mozilla 1.7.2 or Apache 2.0.48.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;product.name&gt;</var>/<var>&lt;product_series.name&gt;</var>/<var>&lt;name&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;product.name&gt;</var>/<var>&lt;product_series.name&gt;</var>/<var>&lt;name&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -4587,7 +4017,7 @@ A series of releases. For example '2.0' or '1.3' or 'dev'.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;product.name&gt;</var>/<var>&lt;name&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;product.name&gt;</var>/<var>&lt;name&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -4693,7 +4123,7 @@ A Project.
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;name&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;name&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -4788,7 +4218,7 @@ Examples: apache, mozilla, gimp.</dd>
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;name&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;name&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -4972,21 +4402,6 @@ Hide my email addresses from other Launchpad users
         <tr>
           <td>
             <p>
-              <strong>indirect_participations_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#team">team</a> collection.
-            </td>
-          <td>
-            <p>
-All teams in which this person is an indirect member.
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
               <strong>invited_members_collection_link</strong>
             </p>
           </td>
@@ -5278,21 +4693,6 @@ All TeamMemberships for Teams this Person is an active member of.
 <p>All participants of this team.</p>
 <p>List of all direct and indirect people and teams who, one way or another, are a part of this team. If you want a method to check if a given person is a member of a team, you should probably look at IPerson.inTeam().</p>
 
-</p>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <p>
-              <strong>participations_collection_link</strong>
-            </p>
-          </td>
-          <td><p><small>(read-only)</small></p>
-                Link to a <a href="#team">team</a> collection.
-            </td>
-          <td>
-            <p>
-All teams in which this person is a participant.
 </p>
           </td>
         </tr>
@@ -5607,30 +5007,6 @@ All WikiNames of this Person.
     </dl>
     <div id="team-custom-GETs" class="methods GETs">
       <h4>Custom GET methods</h4>
-      <div class="method"><h5 id="team-findPathToTeam">findPathToTeam</h5><p>
-<p>Return the teams that cause this person to be a participant of the
-given team.</p>
-<p>If there is more than one path leading this person to the given team,
-only the one with the oldest teams is returned.</p>
-<p>This method must not be called if this person is not an indirect
-member of the given team.</p>
-
-</p><h6>Parameters</h6><table><tr><th>Parameter</th><th>Value</th><th>Description</th></tr><tr><td><p><strong>ws.op</strong></p></td><td><p><small>(required)</small></p><p>
-                Fixed:
-                <var>findPathToTeam</var></p></td><td></td></tr><tr><td><p><strong>team</strong></p></td><td><p><small>(required)</small></p>
-                Link to a <a href="#person">person</a>.
-            </td><td><p>
-Team
-</p></td></tr></table>
-          
-          <p class="response">Response contains an
-            <code>application/json</code>
-            representation of a
-            <a href="person">person</a>
-                    collection
-                .
-        </p>
-        </div>
       <div class="method"><h5 id="team-getMembersByStatus">getMembersByStatus</h5><p>
 <p>Return the people whose membership on this team match :status:.</p>
 <p>If no orderby is provided, Person.sortingColumns is used.</p>
@@ -5649,57 +5025,6 @@ The state of this membership
                 .
         </p>
         </div>
-      <div class="method">
-        <h5 id="team-inTeam">inTeam</h5>
-        <p>
-<p>Return True if this person is a member or the owner of &lt;team&gt;.</p>
-<p>This method is meant to be called by objects which implement either
-IPerson or ITeam, and it will return True when you ask if a Person is
-a member of himself (i.e. person1.inTeam(person1)).</p>
-<p>&lt;team&gt; can be the id of a team, an SQLObject representing the
-ITeam, or the name of the team.</p>
-
-</p>
-        <h6>Parameters</h6>
-        <table>
-          <tr>
-            <th>Parameter</th>
-            <th>Value</th>
-            <th>Description</th>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>ws.op</strong>
-              </p>
-            </td>
-            <td>
-              <p>
-                <small>(required)</small>
-              </p>
-              <p>
-                Fixed:
-                <var>inTeam</var></p>
-            </td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>
-              <p>
-                <strong>team</strong>
-              </p>
-            </td>
-            <td><p><small>(required)</small></p>
-                Link to a <a href="#person">person</a>.
-            </td>
-            <td>
-              <p>
-Team
-</p>
-            </td>
-          </tr>
-        </table>
-      </div>
     </div>
     <div id="team-custom-POSTs" class="methods POSTs">
       <h4>Custom POST methods</h4>
@@ -6141,7 +5466,7 @@ TeamMembership for Users
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;team.name&gt;</var>/+member/<var>&lt;member.name&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;team.name&gt;</var>/+member/<var>&lt;member.name&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
@@ -6355,7 +5680,7 @@ Wiki for Users
 </p>
     <p>
       <label>URL:</label>
-      <code>https://api.edge.launchpad.net/beta/<var>&lt;person.name&gt;</var>/+wikiname/<var>&lt;id&gt;</var></code>
+      <code>http://api.launchpad.dev/beta/<var>&lt;person.name&gt;</var>/+wikiname/<var>&lt;id&gt;</var></code>
     </p>
     <div class="representation">
       <h4>Default representation 
