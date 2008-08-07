@@ -494,3 +494,11 @@ subscribed to the team mailing list.
 
     >>> sorted(email.email for email in list_three.getSubscribedAddresses())
     []
+
+Of course, Salgado still cannot post to a mailing list that he has not been
+approved for, because he has not had three approved moderations.
+
+    >>> team_four, list_four = mailinglists_helper.new_team(
+    ...     'test-four', True)
+    >>> sorted(email.email for email in list_four.getSenderAddresses())
+    [u'no-priv@canonical.com']
