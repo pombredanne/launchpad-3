@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'PullerAPI',
     'BranchFileSystem',
+    'BranchPuller',
     ]
 
 
@@ -23,7 +23,7 @@ from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.branch import (
     BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.codehosting import (
-    IBranchFileSystem, IPullerAPI, LAUNCHPAD_SERVICES,
+    IBranchFileSystem, IBranchPuller, LAUNCHPAD_SERVICES,
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
@@ -36,10 +36,10 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 UTC = pytz.timezone('UTC')
 
 
-class PullerAPI(LaunchpadXMLRPCView):
-    """See `IPullerAPI`."""
+class BranchPuller(LaunchpadXMLRPCView):
+    """See `IBranchPuller`."""
 
-    implements(IPullerAPI)
+    implements(IBranchPuller)
 
     def _getBranchPullInfo(self, branch):
         """Return information the branch puller needs to pull this branch.
@@ -58,7 +58,7 @@ class PullerAPI(LaunchpadXMLRPCView):
         return (branch.id, branch.getPullURL(), branch.unique_name)
 
     def getBranchPullQueue(self, branch_type):
-        """See `IPullerAPI`."""
+        """See `IBranchPuller`."""
         try:
             branch_type = BranchType.items[branch_type]
         except KeyError:
@@ -68,7 +68,7 @@ class PullerAPI(LaunchpadXMLRPCView):
         return [self._getBranchPullInfo(branch) for branch in branches]
 
     def mirrorComplete(self, branch_id, last_revision_id):
-        """See `IPullerAPI`."""
+        """See `IBranchPuller`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
             return False
@@ -77,7 +77,7 @@ class PullerAPI(LaunchpadXMLRPCView):
         return True
 
     def mirrorFailed(self, branch_id, reason):
-        """See `IPullerAPI`."""
+        """See `IBranchPuller`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
             return False
@@ -86,7 +86,7 @@ class PullerAPI(LaunchpadXMLRPCView):
         return True
 
     def recordSuccess(self, name, hostname, started_tuple, completed_tuple):
-        """See `IPullerAPI`."""
+        """See `IBranchPuller`."""
         date_started = datetime_from_tuple(started_tuple)
         date_completed = datetime_from_tuple(completed_tuple)
         getUtility(IScriptActivitySet).recordSuccess(
@@ -95,7 +95,7 @@ class PullerAPI(LaunchpadXMLRPCView):
         return True
 
     def startMirroring(self, branch_id):
-        """See `IPullerAPI`."""
+        """See `IBranchPuller`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
             return False

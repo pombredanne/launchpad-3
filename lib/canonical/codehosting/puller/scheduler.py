@@ -61,7 +61,7 @@ class BranchStatusClient:
     """Twisted client for the branch status methods on the authserver."""
 
     def __init__(self):
-        self.proxy = Proxy(config.codehosting.puller_api_endpoint)
+        self.proxy = Proxy(config.codehosting.branch_puller_endpoint)
 
     def getBranchPullQueue(self, branch_type):
         return self.proxy.callRemote('getBranchPullQueue', branch_type)

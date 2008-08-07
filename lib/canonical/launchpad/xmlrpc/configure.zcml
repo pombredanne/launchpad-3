@@ -24,15 +24,15 @@
     />
 
   <securedutility
-    class="canonical.launchpad.systemhomes.PullerAPIApplication"
-    provides="canonical.launchpad.interfaces.codehosting.IPullerAPIApplication">
-    <allow interface="canonical.launchpad.interfaces.codehosting.IPullerAPIApplication"/>
+    class="canonical.launchpad.systemhomes.BranchPullerApplication"
+    provides="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication">
+    <allow interface="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="canonical.launchpad.interfaces.codehosting.IPullerAPIApplication"
-    interface="canonical.launchpad.interfaces.codehosting.IPullerAPI"
-    class="canonical.launchpad.xmlrpc.codehosting.PullerAPI"
+    for="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication"
+    interface="canonical.launchpad.interfaces.codehosting.IBranchPuller"
+    class="canonical.launchpad.xmlrpc.codehosting.BranchPuller"
     permission="zope.Public"
     />
 
