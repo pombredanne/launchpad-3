@@ -561,74 +561,67 @@ class PackageUpload(SQLBase):
         """Send a success email."""
 
         def extract_changes_of_interest(changesfile):
-            """Extract/reformat changes file lines prior to emailing.
-
-            Please note that only the first (most recent) stanza is
-            extracted.
-            """
-            change_date = changed_by = ''
+            """Extract/reformat changes file lines prior to emailing."""
+            change_date = ''
+            maintainer = ''
+            changed_by = ''
             changesfile_iter = iter(changesfile.splitlines())
+
+            changed_by_re = re.compile(
+                'Changed-By:\s+([^<]+)\s+<([^>]+)(?:\s+at\s+|@)([^>]+)>')
+            maintainer_re = re.compile(
+                'Maintainer:\s+([^<]+)\s+<([^>]+)(?:\s+at\s+|@)([^>]+)>')
 
             # Parse everything up to the actual 'Changes:' section.
             for line in changesfile_iter:
                 # Extract the date of the changes.
                 if line.startswith('Date: '):
                     change_date = line.split('Date: ')[1]
+                    continue
                 # Extract the author of the changes.
-                if line.startswith('Changed-By: '):
-                    changed_by = line.split('Changed-By: ')[1]
-                    changed_by = changed_by.replace(' at ', '@')
+                match = changed_by_re.match(line)
+                if match:
+                    changed_by = '%s <%s@%s>' % match.groups()
+                    continue
+                # Extract the maintainer.
+                match = maintainer_re.match(line)
+                if match:
+                    maintainer = '%s <%s@%s>' % match.groups()
+                    continue
                 if line.startswith('Changes:'):
                     break
 
-            # Pluck the stanza with the most recent changes from the
-            # 'Changes:' section.
+            # Format the 'Changes:' section.
             content = []
-
-            # Example line: '   [Tim Gardner]'
-            author_line_re = re.compile('^\s\s+\[')
-
-            content_line_re = re.compile('^\s\s+\S')
-            blank_line_re = re.compile('^\s\.$')
+            blank_line_re = re.compile('^\s*\.')
             stanza_start_re = re.compile('^\s\w')
-
-            stanza_started = content_started = False
-
+            changes_end_re = re.compile('^\S')
             for line in changesfile_iter:
-                # Look for the start of the first 'Changes:' stanza.
-                if not stanza_started:
-                    if stanza_start_re.match(line):
-                        stanza_started = True
-                        content.append(line)
-                        content.append('')
-                    continue
-
-                # The stanza has started, extract the bits of interest.
-                if author_line_re.match(line):
-                    # Ignore embedded author lines.
-                    pass
-                elif content_line_re.match(line):
-                    if not content_started:
-                        content_started = True
-                    content.append(line)
-                elif blank_line_re.match(line):
-                    # Do not collect empty lines before the first line of
-                    # interest was seen.
-                    if content_started:
-                        content.append('')
-                elif stanza_start_re.match(line):
-                    # End of stanza reached.
+                # Look for the end of the 'Changes:' section.
+                match = changes_end_re.match(line)
+                if match:
                     break
+                # Look for the start of a new 'Changes:' section stanza.
+                match = stanza_start_re.match(line)
+                if match:
+                    # Strip away leading whitespace.
+                    content.append(line.lstrip())
+                    continue
+                match = blank_line_re.match(line)
+                if match:
+                    content.append('')
+                    continue
+                # Other 'Changes:' section content, simply append.
+                content.append(line)
 
-            # If the last line is not empty append a blank line.
-            if content[-1]:
+            # Append a blank line if needed.
+            if content and content[-1]:
                 content.append('')
-
-            # Append the author and the date in the format
-            # used in Ubuntu changelogs.
-            content.append('-- %s %s' % (changed_by, change_date))
-
-            # Finally, return the first changes file stanza.
+            content.append('-- %s %s' % (maintainer, change_date))
+            if changed_by != maintainer:
+                if content and content[-1]:
+                    content.append('')
+                content.append('Changed-By: %s' % changed_by)
             return '\n'.join(content)
 
         def do_sendmail(message, recipients=recipients, from_addr=None,
@@ -931,14 +924,6 @@ class PackageUpload(SQLBase):
                 spr.component.name, spr.section.name)
             extra_headers['X-Launchpad-Component'] = xlp_component_header
             mail_text = '-> %s\n\n%s' % (xlp_component_header, mail_text)
-
-        # Include a 'X-Launchpad-Signer' header if this is a signed upload.
-        if self.signing_key:
-            # This is a signed upload.
-            signer = self.signing_key.owner
-            signer_line = 'changes file signed by: %s (%s)' % (
-                signer.displayname, signer.preferredemail.email)
-            mail_text = '-> %s\n%s' % (signer_line, mail_text)
 
         if from_addr is None:
             from_addr = format_address(
