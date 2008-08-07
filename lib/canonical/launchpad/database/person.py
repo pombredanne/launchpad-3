@@ -1250,12 +1250,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if isinstance(team, str):
             team = PersonSet().getByName(team)
 
-        # XXX: salgado, 2008-08-06: I don't like this; it may cover up bugs
-        # that accidentally delete a person/team self-participation (like
-        # https://launchpad.net/bugs/248498).
-        if team.id == self.id: # Short circuit - would return True anyway
-            return True
-
         if self._inTeam_cache is None: # Initialize cache
             self._inTeam_cache = {}
         else:

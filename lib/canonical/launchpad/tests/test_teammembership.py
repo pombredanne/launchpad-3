@@ -429,7 +429,8 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
             self.team1, self.team2)
         self.assertEqual(team1_on_team2.status, TeamMembershipStatus.APPROVED)
-        team1_on_team2.setStatus(TeamMembershipStatus.DEACTIVATED, self.foobar)
+        team1_on_team2.setStatus(
+            TeamMembershipStatus.DEACTIVATED, self.foobar)
         self.assertEqual(
             team1_on_team2.status, TeamMembershipStatus.DEACTIVATED)
         team1_on_team2.setStatus(TeamMembershipStatus.ADMIN, self.foobar)
