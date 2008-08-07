@@ -67,6 +67,7 @@ from canonical.launchpad.interfaces.country import *
 from canonical.launchpad.interfaces.customlanguagecode import *
 from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
+from canonical.launchpad.interfaces.diff import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
 from canonical.launchpad.interfaces.distributionmirror import *
