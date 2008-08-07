@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
@@ -180,7 +181,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         if requester == LAUNCHPAD_SERVICES:
             return False
         return (branch.branch_type == BranchType.HOSTED
-                and requester.inTeam(branch.owner))
+                and check_permission('launchpad.Edit', branch))
 
     def getBranchInformation(self, login_id, userName, productName,
                              branchName):

@@ -34,13 +34,13 @@ WRITABLE = 'w'
 
 
 class IBranchPullerApplication(ILaunchpadApplication):
-    """Puller API application root."""
+    """Branch Puller application root."""
 
 
 class IBranchPuller(Interface):
     """The puller's interface to the rest of Launchpad.
 
-    Published at 'puller_api' on the private XML-RPC server.
+    Published at 'branch_puller' on the private XML-RPC server.
     """
 
     def getBranchPullQueue(branch_type):
@@ -104,7 +104,7 @@ class IBranchPuller(Interface):
 
 
 class IBranchFileSystemApplication(ILaunchpadApplication):
-    """Blah."""
+    """Branch File System end point root."""
 
 
 # Values for the faultCode of Faults returned by methods of IBranchFileSystem.
@@ -122,7 +122,7 @@ NOT_FOUND_FAULT_CODE = 404
 class IBranchFileSystem(Interface):
     """An interface for dealing with hosted branches in Launchpad.
 
-    Published at `...`.
+    Published at `branchfilesystem`.
 
     The code hosting service uses this to register branches, to retrieve
     information about a user's branches, and to update their status.
@@ -140,7 +140,8 @@ class IBranchFileSystem(Interface):
 
         :returns: (branch_id, permissions), where 'permissions' is 'w' if the
             user represented by 'loginID' can write to the branch, and 'r' if
-            they cannot. If the branch doesn't exist, return ('', '').
+            they cannot. If the branch doesn't exist or is not visible to the
+            person asking, return ('', '').
         """
         # XXX: JonathanLange 2008-08-05 spec=package-branches: This
         # method will need to change to support source package
