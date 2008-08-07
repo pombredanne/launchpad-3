@@ -1237,9 +1237,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return Karma.selectBy(person=self,
             orderBy='-datecreated')[:quantity]
 
-    # XXX: StuartBishop 2006-05-10:
-    # This cache should no longer be needed once CrowdControl lands,
-    # as apparently it will also cache this information.
+    # This is to cache TeamParticipation information as that's used tons of
+    # times in each request.
     _inTeam_cache = None
 
     def inTeam(self, team):
@@ -1250,9 +1249,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # Translate the team name to an ITeam if we were passed a team.
         if isinstance(team, str):
             team = PersonSet().getByName(team)
-
-        if team.id == self.id: # Short circuit - would return True anyway
-            return True
 
         if self._inTeam_cache is None: # Initialize cache
             self._inTeam_cache = {}
