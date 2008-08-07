@@ -238,8 +238,6 @@ class IBreadcrumb(Interface):
 
     text = Attribute('Text of this breadcrumb.')
 
-    has_menu = Attribute('Whether this breadcrumb has a drop-down menu.')
-
 
 #
 # Canonical URLs
@@ -791,6 +789,11 @@ class IBreadcrumbProvider(Interface):
 
     def breadcrumb():
         """Breadcrumb text."""
+
+
+class IPrimaryContext(Interface):
+    """The primary context that used to determine the tabs for the web UI."""
+    context = Attribute('The primary context.')
 
 
 #

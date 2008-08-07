@@ -41,6 +41,12 @@
         factory="canonical.launchpad.webapp.menu.MenuLink"
         />
 
+    <adapter
+        for="*"
+        provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+        factory="canonical.launchpad.webapp.publication.DefaultPrimaryContext"
+        />
+
     <content class="canonical.launchpad.webapp.menu.MenuLink">
         <require
             permission="zope.Public"

@@ -21,6 +21,7 @@ __all__ = [
 from datetime import datetime, timedelta
 import pytz
 
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
@@ -2411,6 +2412,7 @@ class PersonSet:
                 defaultmembershipperiod=defaultmembershipperiod,
                 defaultrenewalperiod=defaultrenewalperiod,
                 subscriptionpolicy=subscriptionpolicy)
+        notify(ObjectCreatedEvent(team))
         # Here we add the owner as a team admin manually because we know what
         # we're doing (so we don't need to do any sanity checks) and we don't
         # want any email notifications to be sent.
@@ -2514,22 +2516,9 @@ class PersonSet:
             query = AND(query, Person.q.mergedID==None)
         return Person.selectOne(query)
 
-    def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None.
-
-        XXX StuartBishop 2008-05-16 bug=237283: This method no longer makes
-        sense. The only things we need to lookup by openid identifier are
-        Accounts.
-        """
-        return Person.selectOne(
-                AND(
-                    Person.q.accountID == Account.q.id,
-                    Account.q.openid_identifier == openid_identifier,
-                    Account.q.status == AccountStatus.ACTIVE,
-                    EmailAddress.q.personID == Person.q.id,
-                    EmailAddress.q.status == EmailAddressStatus.PREFERRED,
-                    ),
-                )
+    def getByAccount(self, account):
+        """See `IPersonSet`."""
+        return Person.selectOne(Person.q.accountID == account.id)
 
     def updateStatistics(self, ztm):
         """See `IPersonSet`."""

@@ -436,19 +436,23 @@ class Archive(SQLBase):
             """ % sqlvalues(version))
         else:
             order_const = "debversion_sort_key(BinaryPackageRelease.version)"
-            desc_version_order = SQLConstant(order_const+" DESC")
+            desc_version_order = SQLConstant(order_const + " DESC")
             orderBy.insert(1, desc_version_order)
 
         if status is not None:
-            if not isinstance(status, list):
-                status = [status]
+            try:
+                status = tuple(status)
+            except TypeError:
+                status = (status,)
             clauses.append("""
                 BinaryPackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
 
         if distroarchseries is not None:
-            if not isinstance(distroarchseries, list):
-                distroarchseries = [distroarchseries]
+            try:
+                distroarchseries = tuple(distroarchseries)
+            except TypeError:
+                distroarchseries = (distroarchseries,)
             # XXX cprov 20071016: there is no sqlrepr for DistroArchSeries
             # uhmm, how so ?
             das_ids = "(%s)" % ", ".join(str(d.id) for d in distroarchseries)
