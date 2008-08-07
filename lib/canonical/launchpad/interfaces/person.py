@@ -619,7 +619,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     # into account whether or not a team's memberships are private.
     # teams_indirectly_participated_in = exported(
     #     CollectionField(
-    #         title=_('All teams in which this person is an indirect member.'),
+    #         title=_(
+    #             'All teams in which this person is an indirect member.'),
     #         readonly=True, required=False,
     #         value_type=Reference(schema=Interface)),
     #     exported_as='indirect_participations')
@@ -1693,17 +1694,6 @@ class IPersonSet(Interface):
     def getByAccount(account):
         """Return the `IPerson` with the given account, or None."""
 
-    @operation_returns_collection_of(IPerson)
-    @export_read_operation()
-    def getAllTeams(orderBy=None):
-        """Return all Teams, ignoring the merged ones.
-
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
-        """
-
     def getPOFileContributors(pofile):
         """Return people that have contributed to the specified POFile."""
 
@@ -1712,17 +1702,6 @@ class IPersonSet(Interface):
 
         The people that translated only IPOTemplate objects that are not
         current will not appear in the returned list.
-        """
-
-    @operation_returns_collection_of(IPerson)
-    @export_read_operation()
-    def getAllPersons(orderBy=None):
-        """Return all Persons, ignoring the merged ones.
-
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
         """
 
     @collection_default_content()
@@ -1805,15 +1784,6 @@ class IPersonSet(Interface):
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
         address.
-        """
-
-    def getUbunteros(orderBy=None):
-        """Return a set of person with valid Ubuntero flag.
-
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
         """
 
     def latest_teams(limit=5):
