@@ -4,25 +4,25 @@
 
 __metaclass__ = type
 __all__ = [
-    'PullerAPI',
     'BranchFileSystem',
+    'BranchPuller',
     ]
 
 
 from canonical.launchpad.interfaces.codehosting import (
-    IPullerAPI, IBranchFileSystem)
+    IBranchFileSystem, IBranchPuller)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 from zope.interface import implements
 
 
-class PullerAPI(LaunchpadXMLRPCView):
-    """See `IPullerAPI`."""
+class BranchPuller(LaunchpadXMLRPCView):
+    """See `IBranchPuller`."""
 
-    implements(IPullerAPI)
+    implements(IBranchPuller)
 
     def getBranchPullQueue(self, branch_type):
-        """See `IPullerAPI`."""
+        """See `IBranchPuller`."""
         return []
 
 

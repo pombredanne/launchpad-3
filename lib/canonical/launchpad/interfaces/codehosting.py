@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'IPullerAPI',
-    'IPullerAPIApplication',
+    'IBranchPuller',
+    'IBranchPullerApplication',
     'IBranchFileSystem',
     'IBranchFileSystemApplication',
     ]
@@ -15,11 +15,11 @@ from zope.interface import Interface
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 
-class IPullerAPIApplication(ILaunchpadApplication):
+class IBranchPullerApplication(ILaunchpadApplication):
     """Puller API application root."""
 
 
-class IPullerAPI(Interface):
+class IBranchPuller(Interface):
     """The puller's interface to the rest of Launchpad.
 
     Published at 'puller_api' on the private XML-RPC server.
