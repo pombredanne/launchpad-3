@@ -175,10 +175,11 @@ You can learn more about lazr.config in the doctest located at
     lib/canonical/lazr/doc/config.txt
 
 
-=== schema template and optional sections===
+=== schema template and optional sections ===
 
 The schema can contain [<category>.template] sections that define a
-common set of keys and value for category of sections. For example:
+common set of keys and default value for category of sections.
+For example:
 
     [vhost.template]
     # Host name of this virtual host.
@@ -202,8 +203,27 @@ common set of keys and value for category of sections. For example:
     rooturl: none
 
 The [vhost.template] defines the keys and default values of a vhost.
-[vhost.answers] is an empty section in the schema, yet it has all the
-keys and values defined in the [vhosts.template].
+"vhost" is a category, any section whose name is prefixed "vhost" will
+inherit the keys and default values of the [vhost.template].
+
+[vhost.answers] is an empty section in the schema...
+
+    [vhost.answers]
+
+...and lpnet-lazr.conf defines this:
+
+    [vhost.answers]
+    hostname: answers.launchpad.net
+
+./lpnet1/launchpad-lazr.conf does not define anything for
+[vhost.answers], yet when it is loaded, it has the all the keys and
+default values of [vhost.template] from the schema, with the hostname
+change defined in lpnet-lazr.conf:
+
+    [vhost.answers]
+    althostnames: None
+    hostname: answers.launchpad.net
+    rooturl: None
 
 The schema may contain [<section>.optional] to define a section
 that may declared in a conf, but is not automatically
@@ -216,14 +236,15 @@ For example:
 is defined in the schema. It has the default keys and values defined
 in [vhost.template]. The [vhost.xmlrpc_private] is not visible in
 most confs because they do not declare that they use the section.
-The lpnet.conf file does though, by including [vhost.xmlrpc] section:
+The production-xmlrpc-private/launchpad-lazr.conf file does though,
+by including [vhost.xmlrpc_private] section:
 
-    [vhost.xmlrpc]
-    hostname: xmlrpc.launchpad.net
+    [vhost.xmlrpc_private]
+    hostname: xmlrpc.lp.internal
     rooturl: https://launchpad.net/
 
-Including just the section ([vhost.xmlrpc]) will suffice. In this case,
-the two keys were redefined.
+Including just the section ([vhost.xmlrpc_private]) will suffice. In
+this case, the two keys were redefined.
 
 
 === Implicit typing ===
@@ -232,11 +253,11 @@ lazr.config support implicit typing so that the application does not
 need to coerce the config values:
 
     Integers: any value that is only made up of numbers, optionally
-        prefixed with +/- is cast as an int: 0, 2001, -55, +404 100.
+        prefixed with +/- is cast as an int: 0, 2001, -55, +404, 100.
 
     True, False, or None: any value that matches the boolean and None
         keywords is treated as the prescribed type. The match is
-        case-insensative: none, nOne, true, and False are all matched.
+        case-insensitive: none, nOne, true, and False are all matched.
 
     Strings: any value that is not an int, bool, or None is treated as
         a str. Multi-line strings can be included by indenting the
