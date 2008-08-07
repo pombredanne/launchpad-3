@@ -4,10 +4,10 @@ SET client_min_messages=ERROR;
 CREATE TABLE Diff (
   id serial PRIMARY KEY,
   bytes integer NOT NULL REFERENCES LibraryFileAlias,
-  diff_lines integer,
+  diff_lines_count integer,
   diffstat text,
-  added_lines integer,
-  removed_lines integer,
+  added_lines_count integer,
+  removed_lines_count integer,
   conflicts text
 );
 
@@ -34,7 +34,7 @@ CREATE TABLE PendingCodeMail (
   date_created timestamp without time zone NOT NULL
       DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   rfc822msgid text NOT NULL,
-  in_reply_to text NOT NULL, -- A Message-Id
+  in_reply_to text, -- A Message-Id
   static_diff integer REFERENCES StaticDiffReference
   );
 
