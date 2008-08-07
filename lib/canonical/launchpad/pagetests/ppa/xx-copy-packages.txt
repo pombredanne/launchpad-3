@@ -52,6 +52,8 @@ PPA in order to be able to copy packages.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
+    Profile /
+    ...
     Copy packages from PPA for Celso Providelo
     To be able to copy packages you have to participate in at least one
     PPA. Activate your own PPA or join a team with an active PPA.
@@ -419,7 +421,7 @@ there are no binaries to be copied.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (source not completely built while copying binaries)
+    (source has no binaries to be copied)
 
 We will mark the pmount build completed, to emulate the situation
 described in bug #236407 when binaries were built but have to
@@ -474,8 +476,7 @@ has unpublished binaries.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (source has unpublished binaries, please wait for them
-     to be published before copying)
+    (source has no binaries to be copied)
 
 We will build and publish the architecture independent binary for
 pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
@@ -528,6 +529,7 @@ broken package.
 James uses the 'delete-packages' interface in his PPA to delete the
 'pmount' source in hoary.
 
+    >>> jblack_browser.getLink('Personal Package Archive').click()
     >>> jblack_browser.getLink('Delete packages').click()
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -538,9 +540,9 @@ James uses the 'delete-packages' interface in his PPA to delete the
 James return to his PPA overview page and checks that the package is
 really deleted.
 
-    >>> jblack_browser.getLink('View PPA').click()
+    >>> jblack_browser.getLink('Personal Package Archive').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl("Search").click()
+    >>> jblack_browser.getControl('Search', index=0).click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Built
     pmount - 0.1-1              Pending    Grumpy           Editors
@@ -931,7 +933,7 @@ in No Privileges' PPA.
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> [build] = jblack_friends_foo_src.createMissingBuilds()
     >>> from canonical.launchpad.interfaces.build import BuildStatus
-    >>> build.forceState(BuildStatus.FAILEDTOBUILD)
+    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
 
     >>> flush_database_updates()
     >>> logout()

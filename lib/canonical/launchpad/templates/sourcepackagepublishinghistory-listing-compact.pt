@@ -17,8 +17,15 @@
          component
        </tal:block>
        <span
+         tal:condition="not: view/isRemoved"
          tal:attributes="title context/datepublished/fmt:datetime"
          tal:content="context/datepublished/fmt:displaydate">
+         2005-09-16
+       </span>
+       <span
+         tal:condition="view/isRemoved"
+         tal:attributes="title context/dateremoved/fmt:datetime"
+         tal:content="context/dateremoved/fmt:displaydate">
          2005-09-16
        </span>
      </td>

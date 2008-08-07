@@ -29,9 +29,11 @@ from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIdStoreFactory, IOpenIdAuthorization,
-    IOpenIdAuthorizationSet, IOpenIDRPConfig, IOpenIDRPConfigSet,
-    IOpenIDRPSummary, IOpenIDRPSummarySet)
+    IOpenIdAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
+    IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
+from canonical.launchpad.webapp.url import urlparse
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class OpenIdAuthorization(SQLBase):
@@ -234,11 +236,17 @@ class OpenIDRPSummarySet:
         :param date_used: an optional datetime the login happened. The current
             datetime is used if date_used is None.
         :raise AssertionError: If the account is not ACTIVE.
+        :return: An `IOpenIDRPSummary` or None if the trust_root is
+            Launchpad or one of its vhosts.
         """
+        trust_site = urlparse(trust_root)[1]
+        launchpad_site = allvhosts.configs['mainsite'].hostname
+        if trust_site.endswith(launchpad_site):
+            return None
         if account.status != AccountStatus.ACTIVE:
             raise AssertionError(
                 'Account %d is not ACTIVE account.' % account.id)
-        identifier = account.openid_identity_url
+        identifier = IOpenIDPersistentIdentity(account).openid_identity_url
         self._assert_identifier_is_not_reused(account, identifier)
         if date_used is None:
             date_used = datetime.now(pytz.UTC)

@@ -60,11 +60,8 @@ override for the purpose of this test.
 
     >>> class BugzillaWithFakeProxy(Bugzilla):
     ...
-    ...     @property
-    ...     def xmlrpc_proxy(self):
-    ...         return xmlrpclib.ServerProxy(
-    ...             'http://example.com/xmlrpc.cgi',
-    ...             transport=test_transport)
+    ...     _test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...         'http://example.com/xmlrpc.cgi', transport=test_transport)
 
     >>> bugzilla = BugzillaWithFakeProxy('http://example.com')
 
@@ -95,13 +92,26 @@ from the remote server.
     ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
     True
 
-If getExternalBugTrackerToUse() doesn't encounter an error when checking
-for the Bugzilla LP Plugin it assumes that the plugin is installed and
-returns an instance of BugzillaLPPlugin.
+Some Bugzillas respond to an invalid XML-RPC method call by returning a
+500 error. getExternalBugTrackerToUse() handles those, too.
 
-    >>> test_transport.error = None
+    >>> test_transport.error = xmlrpclib.ProtocolError(
+    ...     'http://example.com/xmlrpc.cgi', 500, 'Server Error', None)
+
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
-    >>> isinstance(bugzilla_to_use, BugzillaLPPlugin)
+
+    >>> (isinstance(bugzilla_to_use, Bugzilla) and
+    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    True
+
+Some other Bugzillas generate an unparsable response, causing
+ResponseError to be raised.
+
+    >>> test_transport.error = xmlrpclib.ResponseError()
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+
+    >>> (isinstance(bugzilla_to_use, Bugzilla) and
+    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
     True
 
 
@@ -300,7 +310,9 @@ We don't yet support updating the importance for Bugzilla bugs, so let's set it
 to some bogus value, to see that it gets set to UNKNOWN.
 
     >>> from canonical.launchpad.interfaces import BugTaskImportance
-    >>> thunderbird_task.importance = BugTaskImportance.HIGH
+    >>> thunderbird_task.transitionToImportance(
+    ...     BugTaskImportance.HIGH,
+    ...     thunderbird_task.pillar.owner)
 
 We need to create a new ExternalBugtracker for the Mozilla tracker:
 

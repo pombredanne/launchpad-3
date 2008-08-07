@@ -13,6 +13,7 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     CodeReviewVote)
 from canonical.launchpad.database import MessageSet
+from canonical.launchpad.ftests import login_person
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
     CodeHandler, InvalidBranchMergeProposalAddress, InvalidVoteString,
@@ -161,6 +162,27 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
         self.assertEqual('EBAILIWICK', bmp.all_comments[0].vote_tag)
 
+    def test_processWithExistingVote(self):
+        """Process respects the vote command."""
+        mail = self.factory.makeSignedMessage(body=' vote Abstain EBAILIWICK')
+        bmp = self.factory.makeBranchMergeProposal()
+        sender = self.factory.makePerson()
+        bmp.nominateReviewer(sender, bmp.registrant)
+        email_addr = bmp.address
+        [vote] = list(bmp.votes)
+        self.assertEqual(sender, vote.reviewer)
+        self.assertTrue(vote.comment is None)
+        self.switchDbUser(config.processmail.dbuser)
+        # Login the sender as they are set as the message owner.
+        login_person(sender)
+        self.code_handler.process(mail, email_addr, None)
+        comment = bmp.all_comments[0]
+        self.assertEqual(CodeReviewVote.ABSTAIN, comment.vote)
+        self.assertEqual('EBAILIWICK', comment.vote_tag)
+        [vote] = list(bmp.votes)
+        self.assertEqual(sender, vote.reviewer)
+        self.assertEqual(comment, vote.comment)
+
     def test_processSendsMail(self):
         """Processing mail causes mail to be sent."""
         mail = self.factory.makeSignedMessage(
@@ -244,6 +266,41 @@ class TestCodeHandler(TestCaseWithFactory):
                           self.code_handler.getBranchMergeProposal, '')
         self.assertRaises(InvalidBranchMergeProposalAddress,
                           self.code_handler.getBranchMergeProposal, 'mp+abc@')
+
+    def test_getVoteApproveAlias(self):
+        """Test the approve alias of +1."""
+        mail = self.factory.makeSignedMessage(body=' vote +1')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.APPROVE)
+
+    def test_getVoteAbstainAlias(self):
+        """Test the abstain alias of 0."""
+        mail = self.factory.makeSignedMessage(body=' vote 0')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.ABSTAIN)
+
+    def test_getVoteAbstainAliasPlus(self):
+        """Test the abstain alias of +0."""
+        mail = self.factory.makeSignedMessage(body=' vote +0')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.ABSTAIN)
+
+    def test_getVoteAbstainAliasMinus(self):
+        """Test the abstain alias of -0."""
+        mail = self.factory.makeSignedMessage(body=' vote -0')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.ABSTAIN)
+
+    def test_getVoteDisapproveAlias(self):
+        """Test the disapprove alias of -1."""
+        mail = self.factory.makeSignedMessage(body=' vote -1')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.DISAPPROVE)
 
 
 class TestMaloneHandler(TestCaseWithFactory):

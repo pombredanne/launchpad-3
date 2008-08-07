@@ -17,6 +17,7 @@ import tickcount
 
 from psycopg2.extensions import TransactionRollbackError
 from storm.exceptions import DisconnectionError, IntegrityError
+from storm.zope.interfaces import IZStorm
 import transaction
 
 from zope.app import zapi  # used to get at the adapters service
@@ -41,7 +42,8 @@ from canonical.mem import (
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.webapp.interfaces import (
+    IPlacelessAuthUtility, IPrimaryContext)
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -481,6 +483,12 @@ class LaunchpadBrowserPublication(
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
 
+        # Reset all Storm stores when not running the test suite. We could
+        # reset them when running the test suite but that'd make writing tests
+        # a much more painful task.
+        if threading.currentThread().getName() != 'MainThread':
+            for name, store in getUtility(IZStorm).iterstores():
+                store.reset()
 
     def startProfilingHook(self):
         """Handle profiling.
@@ -502,7 +510,7 @@ class LaunchpadBrowserPublication(
         timestamp = "%s.%d" % (
             now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
         pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
-        oopsid= getattr(request, 'oopsid', None)
+        oopsid = getattr(request, 'oopsid', None)
 
         if config.profiling.profile_requests:
             profiler = self.thread_locals.profiler
@@ -628,3 +636,11 @@ def debug_references_startup_check(event):
     if os.path.exists(config.debug.references_scoreboard_file):
         os.remove(config.debug.references_scoreboard_file)
 
+
+class DefaultPrimaryContext:
+    """The default primary context is the context."""
+
+    implements(IPrimaryContext)
+
+    def __init__(self, context):
+        self.context = context

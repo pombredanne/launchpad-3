@@ -127,6 +127,13 @@ class ICodeImportJobSet(Interface):
         :return: A `CodeImportJob` or None if this database id is not found.
         """
 
+    def getReclaimableJobs():
+        """Get the set of jobs that can be reclaimed.
+
+        A job is reclaimable if its heartbeat has not been updated for
+        config.codeimportworker.maximum_heartbeat_interval seconds.
+        """
+
 
 class ICodeImportJobSetPublic(Interface):
     """Parts of the CodeImportJobSet interface that need to be public.
@@ -205,6 +212,20 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: `import_job`.logtail == logtail.
         """
 
+    def startJob(import_job, machine):
+        """Record that `machine` is about to start work on `import_job`.
+
+        :param import_job: `CodeImportJob` object.
+        :param machine: `CodeImportMachine` that will be working on the job.
+        :precondition: `import_job`.state == PENDING.
+        :precondition: `machine`.state == ONLINE.
+        :postcondition: `import_job`.state == RUNNING.
+        :postcondition: `import_job`.machine == machine.
+        :postcondition: `import_job`.date_started == UTC_NOW.
+        :postcondition: `import_job`.heartbeat == UTC_NOW.
+        :postcondition: A START `CodeImportEvent` was created.
+        """
+
     def finishJob(import_job, status, logfile_alias):
         """Record that a job finished running.
 
@@ -227,16 +248,23 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: A FINISH `CodeImportEvent` was created.
         """
 
-    def startJob(import_job, machine):
-        """Record that `machine` is about to start work on `import_job`.
+    def reclaimJob(import_job):
+        """Record that `import_job` has been reclaimed.
+
+        This should be called when the job's heartbeat has not been updated
+        for what the code import watchdog deems is 'too long'.
+
+        This method creates a CodeImportResult object that records that the
+        job was reclaimed, deletes `import_job` from the database and creates
+        a new job that is due again immediately.
+
+        In the conditions below, let `code_import = import_job.code_import`.
 
         :param import_job: `CodeImportJob` object.
-        :param machine: `CodeImportMachine` that will be working on the job.
-        :precondition: `import_job`.state == PENDING.
-        :precondition: `machine`.state == ONLINE.
-        :postcondition: `import_job`.state == RUNNING.
-        :postcondition: `import_job`.machine == machine.
-        :postcondition: `import_job`.date_started == UTC_NOW.
-        :postcondition: `import_job`.heartbeat == UTC_NOW.
-        :postcondition: A START `CodeImportEvent` was created.
+        :precondition: `import_job`.state == RUNNING.
+        :postcondition: `import_job` is deleted.
+        :postcondition: `code_import.import_job` is not None.
+        :postcondition: `code_import.import_job.date_due` is UTC_NOW.
+        :postcondition: A `CodeImportResult` was created.
+        :postcondition: A FINISH `CodeImportEvent` was created.
         """

@@ -23,17 +23,15 @@
                         removeBugSubscription" />
     </content>
 
+    <adapter
+        for="canonical.launchpad.interfaces.IProject"
+        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+        factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
+        />
+
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="ProjectNavigation"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IProject"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProjectDynMenu"
-        attribute="__call__"
-        name="+menudata"
         />
 
     <adapter

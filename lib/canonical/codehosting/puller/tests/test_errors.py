@@ -434,35 +434,6 @@ class TestPullerWorker_SourceProblems(TestCaseWithTransport,
         my_branch.mirror()
         self.assertMirrorFailed(my_branch, 'Not a branch')
 
-    def testMissingFileRevisionData(self):
-        # In the face of a particular kind of source branch corruption, we
-        # don't mirror the branch and log an error gracefully.
-        self.build_tree(['missingrevision/',
-                         'missingrevision/afile'])
-        tree = self.make_branch_and_tree('missingrevision', format='dirstate')
-        tree.add(['afile'], ['myid'])
-        tree.commit('start')
-        # Now we have a good branch with a file called afile and id myid we
-        # need to figure out the actual path for the weave.. or deliberately
-        # corrupt it. like this.
-
-        # XXX: JonathanLange 2007-10-11: _put_weave is an internal function
-        # that we probably shouldn't be using. TODO: Ask author of this test
-        # to better explain which particular repository corruption we are
-        # trying to reproduce here.
-        tree.lock_write()
-        try:
-            tree.branch.repository.weave_store._put_weave(
-                "myid", Weave(weave_name="myid"),
-                tree.branch.repository.get_transaction())
-        finally:
-            tree.unlock()
-        source_url = os.path.abspath('missingrevision')
-        my_branch = self.makePullerWorker(
-            src_dir=source_url, dest_dir="non-existent-destination")
-        my_branch.mirror()
-        self.assertMirrorFailed(my_branch, 'No such file')
-
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

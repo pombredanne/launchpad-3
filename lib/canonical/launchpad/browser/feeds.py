@@ -260,6 +260,23 @@ class BranchFeedLink(FeedLinkBase):
                          'branch.atom')
 
 
+class PersonRevisionFeedLink(FeedLinkBase):
+    """Feed links for revisions created by a person."""
+    usedfor = IPerson
+
+    @property
+    def title(self):
+        if self.context.is_team:
+            return 'Revisions by members of %s' % self.context.displayname
+        else:
+            return 'Revisions by %s' % self.context.displayname
+
+    @property
+    def href(self):
+        return urlappend(canonical_url(self.context, rootsite="feeds"),
+                         'revisions.atom')
+
+
 class FeedsMixin:
     """Mixin which adds the feed_links attribute to a view object.
 
@@ -270,14 +287,15 @@ class FeedsMixin:
     """
     feed_types = (
         AnnouncementsFeedLink,
-        RootAnnouncementsFeedLink,
+        BranchFeedLink,
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
-        PersonLatestBugsFeedLink,
-        ProjectBranchesFeedLink,
-        ProductBranchesFeedLink,
         PersonBranchesFeedLink,
-        BranchFeedLink,
+        PersonLatestBugsFeedLink,
+        PersonRevisionFeedLink,
+        ProductBranchesFeedLink,
+        ProjectBranchesFeedLink,
+        RootAnnouncementsFeedLink,
         )
 
     @property

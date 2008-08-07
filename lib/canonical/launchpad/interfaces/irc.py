@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 class IIrcID(IHasOwner):
     """A person's nickname on an IRC network."""
-    export_as_webservice_entry()
+    export_as_webservice_entry('irc_id')
     id = Int(title=_("Database ID"), required=True, readonly=True)
     # schema=Interface will be overriden in person.py because of circular
     # dependencies.

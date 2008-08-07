@@ -11,7 +11,6 @@ __all__ = [
     'ProjectBranchesView',
     'ProjectBrandingView',
     'ProjectNavigation',
-    'ProjectDynMenu',
     'ProjectEditView',
     'ProjectReviewView',
     'ProjectSetNavigation',
@@ -42,7 +41,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, IProductSet, IProject, IProjectSeries, IProjectSet, 
+    BranchListingSort, IProductSet, IProject, IProjectSeries, IProjectSet,
     NotFoundError)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
@@ -57,8 +56,6 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, StandardLaunchpadFacets, stepthrough, structured)
-from canonical.launchpad.webapp.dynmenu import DynMenu
-from canonical.launchpad.helpers import shortlist
 
 
 class ProjectNavigation(Navigation):
@@ -82,61 +79,6 @@ class ProjectNavigation(Navigation):
     @stepthrough('+series')
     def traverse_series(self, series_name):
         return self.context.getSeries(series_name)
-
-
-class ProjectDynMenu(DynMenu):
-
-    menus = {
-        '': 'mainMenu',
-        'related': 'relatedMenu',
-        }
-
-    MAX_SUB_PROJECTS = 8
-
-    def relatedMenu(self):
-        """Show items related to this project.
-
-        Show a link to the project, and then
-        the contents of the project menu, excluding the current
-        product from the project's list of products.
-        """
-        yield self.makeLink(self.context.title, target=self.context)
-        for link in self.mainMenu():
-            yield link
-
-    def mainMenu(self, excludeproduct=None):
-        """List products within this project.
-
-        List up to MAX_SUB_PROJECTS products.  If there are more than that
-        number of products, list up to MAX_SUB_PROJECTS products with
-        releases, and give a link to a page showing all products.
-
-        Pass a Product instance in as 'excludeproduct' so that it will be
-        excluded from the menu.
-
-        """
-        products = shortlist(self.context.products, 25)
-        num_products = len(products)
-        if excludeproduct is None:
-            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS
-        else:
-            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS + 1
-        if num_products < MAX_SUB_PROJECTS:
-            for product in products:
-                if product != excludeproduct:
-                    yield self.makeBreadcrumbLink(product)
-        else:
-            # XXX: SteveAlexander 2007-03-27:
-            # Use a database API for products-with-releases that prejoins.
-            count = 0
-            for product in products:
-                if product != excludeproduct and product.releases:
-                    yield self.makeBreadcrumbLink(product)
-                    count += 1
-                    if count >= self.MAX_SUB_PROJECTS:
-                        break
-            yield self.makeLink(
-                'See all %s related projects...' % num_products)
 
 
 class ProjectSetNavigation(Navigation):
@@ -253,7 +195,7 @@ class ProjectOverviewMenu(ApplicationMenu):
         return Link('+driver', text, summary, icon='edit')
 
     def top_contributors(self):
-        text = 'List top contributors'
+        text = 'More contributors'
         return Link('+topcontributors', text, icon='info')
 
     def mentorship(self):
@@ -272,7 +214,7 @@ class ProjectOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'Show announcements'
+        text = 'More announcements'
         enabled = bool(self.context.announcements())
         return Link('+announcements', text, enabled=enabled)
 

@@ -1,17 +1,23 @@
 #! /bin/bash
 
-# This script checks each of your branches in ~/canonical/lp-branches/ to
-# see which ones have revisions that have not yet landed in trunk.
+# Check each of the branches in $LP_PROJECT_PATH and show which of them have
+# uncommitted changes, also check which ones have revisions that have not yet
+# landed on trunk.
 
-cd ~/canonical/lp-branches
+source "$HOME/.rocketfuel-env.sh"
+if [ "$?" != 0 ]; then
+    echo "Please run rocketfuel-setup first."
+    exit 1
+fi
+
+cd $LP_PROJECT_PATH
 for branch in *; do
-  if [ ${branch} != "trunk" ] && test -d ${branch} ; then
+  if [ ${branch} != "$LP_TRUNK_NAME" ] && test -d ${branch} ; then
     echo "Examining ${branch}"
     cd ${branch}
     bzr status --short
-    cd ../trunk
+    cd $LP_TRUNK_PATH
     bzr missing --theirs-only --line ../${branch} | grep -v "^You are missing"
     cd ..
   fi;
 done;
-
