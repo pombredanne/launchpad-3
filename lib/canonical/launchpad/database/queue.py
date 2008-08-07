@@ -593,7 +593,7 @@ class PackageUpload(SQLBase):
 
             # Format the 'Changes:' section.
             content = []
-            blank_line_re = re.compile('^\s*\.')
+            blank_line_re = re.compile('^\s*\.\s*$')
             stanza_start_re = re.compile('^\s\w')
             changes_end_re = re.compile('^\S')
             for line in changesfile_iter:
@@ -626,6 +626,28 @@ class PackageUpload(SQLBase):
 
         def do_sendmail(message, recipients=recipients, from_addr=None,
                         bcc=None):
+            # Append a 'Signed-By:' line to the email body if this is a
+            # signed upload and the signer/sponsor differs from the
+            # maintainer.
+            if self.signing_key:
+                # This is a signed upload.
+                signer = self.signing_key.owner
+                # The maintainer is converted to unicode since otherwise
+                # the comparison 3 lines down results in an exception.
+                maintainer = unicode(changes['maintainer'], 'utf-8')
+                signer_id = '%s <%s>' % (
+                    signer.displayname, signer.preferredemail.email)
+                if maintainer != signer_id:
+                    message.CHANGESFILE = (
+                        '%s\nSigned-By: %s' %
+                        (message.CHANGESFILE, signer_id))
+
+            # Add the debian 'Origin:' field if present.
+            if changes.get('origin'):
+                message.CHANGESFILE = (
+                    '%s\nOrigin: %s' %
+                    (message.CHANGESFILE, changes['origin']))
+
             """Perform substitutions on a template and send the email."""
             body = message.template % message.__dict__
 

@@ -767,7 +767,7 @@ However, UTF-8 in the mail content is preserved.
 
 UTF-8 text in the changes file that is sent on the email is preserved
 in the MIME encoding. Please note also that the person that signed the
-changes file is mentioned at the beginning of the email.
+changes file is mentioned toward the end of the email.
 
   >>> print msgs[0].get_payload() # doctest: -NORMALIZE_WHITESPACE
   -> component=3Duniverse, section=3Ddevel
@@ -783,6 +783,7 @@ changes file is mentioned at the beginning of the email.
   <BLANKLINE>
   Changed-By: Non-ascii changed-by =C4=8Ciha=C5=99 <daniel.silverstone@canoni=
   cal.com>
+  Signed-By: Foo Bar <foo.bar@canonical.com>
   <BLANKLINE>
   =3D=3D
   <BLANKLINE>
