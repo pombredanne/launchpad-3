@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import email
 
 import pytz
-from storm.expr import And, Asc, Desc, Not, Select
+from storm.expr import And, Asc, Desc, Exists, Not, Select
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
@@ -254,10 +254,12 @@ class RevisionSet:
             Revision,
             Revision.revision_author == RevisionAuthor.id,
             person_query,
-            Revision.id.is_in(
-                Select(BranchRevision.revisionID,
-                       And(BranchRevision.branch == Branch.id,
-                           Not(Branch.private)))))
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
+                           Not(Branch.private)),
+                       (Branch, BranchRevision))))
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
