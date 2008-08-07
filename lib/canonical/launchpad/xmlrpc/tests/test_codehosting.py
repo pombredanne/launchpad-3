@@ -268,13 +268,15 @@ class BranchPullQueueTest(TestCaseWithFactory):
 
     def makeBranchAndRequestMirror(self, branch_type):
         """Make a branch of the given type and call requestMirror on it."""
-        transaction.begin()
-        try:
-            branch = self.factory.makeBranch(branch_type)
-            branch.requestMirror()
-            return branch
-        finally:
-            transaction.commit()
+        branch = self.factory.makeBranch(branch_type)
+        branch.requestMirror()
+        # The pull queues contain branches that have next_mirror_time strictly
+        # in the past, but requestMirror sets this field to UTC_NOW, so we
+        # push the time back slightly here to get the branch to show up in the
+        # queue.
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.next_mirror_time -= datetime.timedelta(seconds=1)
+        return branch
 
     def test_requestMirrorPutsBranchInQueue_hosted(self):
         branch = self.makeBranchAndRequestMirror(BranchType.HOSTED)
