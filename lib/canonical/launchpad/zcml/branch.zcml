@@ -23,7 +23,7 @@
                     bzr_identity canBeDeleted deletionRequirements
                     associatedProductSeries subscribe getSubscription
                     hasSubscription unsubscribe getSubscriptionsByLevel
-                    getBranchRevision getBranchRevisionByRevisionId
+                    getBranchRevision
                     createBranchRevision getTipRevision updateScannedDetails
                     getNotificationRecipients getScannerData getPullURL
                     requestMirror startMirroring mirrorComplete mirrorFailed
@@ -61,6 +61,21 @@
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.webapp.badge.IHasBadges"
       factory="canonical.launchpad.browser.BranchBadges"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+      factory="canonical.launchpad.browser.branch.BranchPrimaryContext"
+      />
+
+  <!-- hierarchy -->
+  <browser:page
+      for="canonical.launchpad.interfaces.IBranch"
+      name="+hierarchy"
+      class="canonical.launchpad.browser.branch.BranchHierarchy"
+      attribute="__call__"
+      permission="zope.Public"
       />
 
   <subscriber
