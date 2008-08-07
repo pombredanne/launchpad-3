@@ -632,11 +632,17 @@ class PackageUpload(SQLBase):
             if self.signing_key:
                 # This is a signed upload.
                 signer = self.signing_key.owner
+
                 # The maintainer is converted to unicode since otherwise
                 # the comparison 3 lines down results in an exception.
-                maintainer = unicode(changes['maintainer'], 'utf-8')
+                if isinstance(signer.displayname, unicode):
+                    maintainer = unicode(changes['maintainer'], 'utf-8')
+                else:
+                    maintainer = changes['maintainer']
+
                 signer_id = '%s <%s>' % (
                     signer.displayname, signer.preferredemail.email)
+
                 if maintainer != signer_id:
                     message.CHANGESFILE = (
                         '%s\nSigned-By: %s' %
