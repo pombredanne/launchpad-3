@@ -10,16 +10,9 @@ The Hierarchy class builds the breadcrumbs by looking at each object in
 the request.traversed_objects attribute.  If a traversed object can be
 adapted to IBreadcrumb, then it is added to the breadcrumbs list.
 
-    >>> from zope.component import getMultiAdapter, provideAdapter
-    >>> from canonical.launchpad.webapp.server import LaunchpadTestRequest
-    >>> from canonical.launchpad.browser.launchpad import Hierarchy
-
-    >>> request = LaunchpadTestRequest()
-    >>> context = object()
-    >>> hierarchy = getMultiAdapter((context, request), name='+hierarchy')
-
 First, we need a hierarchy of objects.
 
+    >>> from zope.component import getMultiAdapter, provideAdapter
     >>> from zope.interface import Interface, implements
 
     >>> class ICookbook(Interface):
@@ -51,14 +44,19 @@ First, we need a hierarchy of objects.
 Next, we add the objects to the request's list of traversed objects, so
 the hierarchy will discover them.
 
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
     >>> root = Root('', None)
     >>> cookbook = Cookbook('joy-of-cooking', root)
     >>> recipe = Recipe('spam', cookbook)
+
+    >>> request = LaunchpadTestRequest()
     >>> request.traversed_objects = [root, cookbook, recipe]
 
 The Hierarchy's list of breadcrumbs is empty since none of the objects
 have an IBreadcrumb adapter.
 
+    >>> hierarchy = getMultiAdapter((recipe, request), name='+hierarchy')
     >>> hierarchy.items()
     []
 
@@ -66,6 +64,7 @@ Adding the adapters causes the Cookbook and Recipe objects to show up
 in the hierarchy.
 
     >>> from canonical.launchpad.webapp.publisher import Breadcrumb
+    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
 
     >>> def cookbook_to_breadcrumb(cookbook):
     ...     return Breadcrumb(cookbook.name, canonical_url(cookbook))
