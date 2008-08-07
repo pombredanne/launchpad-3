@@ -1158,6 +1158,38 @@ class PersonOverviewNavigationMenu(
         return Link(target, text)
 
 
+class PersonRelatedSoftwareNavigationMenu(NavigationMenu):
+
+    usedfor = IPersonRelatedSoftwareMenu
+    facet = 'overview'
+    links = ('overview', 'maintained', 'uploaded', 'ppa', 'projects')
+
+    def overview(self):
+        target = '+related-software'
+        text = 'Overview'
+        return Link(target, text)
+
+    def maintained(self):
+        target = '+maintained-packages'
+        text = 'Maintained Packages'
+        return Link(target, text)
+
+    def uploaded(self):
+        target = '+uploaded-packages'
+        text = 'Uploaded Packages'
+        return Link(target, text)
+
+    def ppa(self):
+        target = '+ppa-packages'
+        text = 'PPA Packages'
+        return Link(target, text)
+
+    def projects(self):
+        target = '+related-projects'
+        text = 'Related Projects'
+        return Link(target, text)
+
+
 class PersonEditNavigationMenu(NavigationMenu):
     """A sub-menu for different aspects of editing a Person's profile."""
 
