@@ -32,23 +32,21 @@ them.
     ...         print dsp.name, product and product.name or None
     ...         print open, triaged, upstream, watch
 
-A first set of reports, entirely based on sampledata. Since there are no
-triaged bugs, everything upstream's zeroed out:
+A first set of reports, entirely based on sampledata. There are no
+triaged bugs, but there are some upstream ones with watches:
 
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts())
     linux-source-2.6.15 None    1 0 0 0
-    mozilla-firefox     firefox 1 0 0 0
-    thunderbird         None    1 0 0 0
+    mozilla-firefox     firefox 1 0 1 1
+    thunderbird         None    1 0 1 1
 
     >>> print_report(debian.getPackagesAndPublicUpstreamBugCounts())
-    mozilla-firefox     None    3 0 0 0
+    mozilla-firefox     None    3 0 2 1
 
     >>> print_report(kubuntu.getPackagesAndPublicUpstreamBugCounts())
 
-The upstream and watch counts for mozilla-firefox and thunderbird are
-all zero'd out, but they actually have upstream watches linked; it's
-just because the Ubuntu bugs are not triaged.  Let's change that and see
-the counts update:
+If we triage a bugtask on firefox and thunderbird we'll see the count
+for triaged bugs updated:
 
     >>> login('foo.bar@canonical.com')
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
@@ -211,15 +209,16 @@ Let's print out the counts and percentages:
 
     >>> for item in view.data:
     ...     print_numbers(item)
+    ...     print
     2   2   1   1 100.0   50.0   100.0  good good      0  1  0
-    1   0   0   0   0.0    0.0     0.0                 1  0  0
+    1   0   0   0   0.0    0.0     0.0                 1  1  0
     1   1   1   1 100.0  100.0   100.0  good good good 0  0  0
     1   1   1   1 100.0  100.0   100.0  good good good 0  0  0
 
 And the total line:
 
     >>> print_numbers(view.total)
-    5   4   3   3  80.0   75.0   100.0  good good good 1  1  0
+    5   4   3   3  80.0   60.0   100.0  good       good 1  2  0
 
 A Kubuntu view is not nearly as interesting, though:
 
