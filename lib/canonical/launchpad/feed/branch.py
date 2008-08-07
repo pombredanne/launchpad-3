@@ -133,6 +133,8 @@ class BranchListingFeed(BranchFeedBase):
 
         Return the branches for this context sorted by date_created in
         descending order.
+
+        Only `self.quantity` revisions are returned.
         """
         branch_query = getUtility(IBranchSet).getBranchesForContext(
             context=self.context, visible_by_user=None,

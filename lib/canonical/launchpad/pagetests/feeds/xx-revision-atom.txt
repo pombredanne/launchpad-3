@@ -113,7 +113,7 @@ of that team.
 
 == Feed for a product's revisions ==
 
-The feed for a product revisions will show the most recent 25 revisions
+The feed for a product's revisions will show the most recent 25 revisions
 that have been committed on branches for the product.
 
     >>> anon_browser.open('http://feeds.launchpad.dev/fooix/revisions.atom')
@@ -122,15 +122,15 @@ that have been committed on branches for the product.
     >>> BSS(anon_browser.contents).title.contents
     [u'Latest Revisions for Fooix']
 
-Ignore the date associated with the id of 'mike' as this is the date created
-of the person, which will be different each time the test is run.
+Ignore the date associated with the id of 'fooix' as this is the date created
+for the product, which will be different each time the test is run.
 
     >>> print_parse_ids(anon_browser)
     <id>tag:launchpad.net,...:/code/fooix</id>
     <id>tag:launchpad.net,2007-12-03:/revision/rev2.1</id>
     <id>tag:launchpad.net,2007-12-02:/revision/rev2</id>
 
-Ensure the self link is correct and there is only one.
+Ensure the self link points to the feed location and there is only one.
 
     >>> print_parse_links(anon_browser)
     <link rel="self" href="http://feeds.launchpad.dev/fooix/revisions.atom" />
@@ -147,8 +147,8 @@ branch for any product that is associated with the project.
     >>> BSS(anon_browser.contents).title.contents
     [u'Latest Revisions for Fubar']
 
-Ignore the date associated with the id of 'mike' as this is the date created
-of the person, which will be different each time the test is run.
+Ignore the date associated with the id of 'fubar' as this is the date created
+of the project, which will be different each time the test is run.
 
     >>> print_parse_ids(anon_browser)
     <id>tag:launchpad.net,...:/code/fubar</id>
@@ -157,7 +157,7 @@ of the person, which will be different each time the test is run.
     <id>tag:launchpad.net,2007-12-02:/revision/rev2</id>
     <id>tag:launchpad.net,2007-12-01:/revision/rev1</id>
 
-Ensure the self link is correct and there is only one.
+Ensure the self link points to the feed location and there is only one.
 
     >>> print_parse_links(anon_browser)
     <link rel="self" href="http://feeds.launchpad.dev/fubar/revisions.atom" />

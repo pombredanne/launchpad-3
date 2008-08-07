@@ -259,6 +259,10 @@ class RevisionsFeedLinkBase(FeedLinkBase):
 
     @property
     def href(self):
+        """The location of the feed.
+
+        E.g.  http://feeds.launchpad.net/firefox/revisions.atom
+        """
         return urlappend(canonical_url(self.context, rootsite='feeds'),
                          'revisions.atom')
 

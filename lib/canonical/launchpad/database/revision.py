@@ -272,9 +272,13 @@ class RevisionSet:
 
         store = Store.of(project)
 
+        # Need to specify the query tables explicitly for the sub select so it
+        # doesn't try to join against Revision.
+        query_tables = [Branch, BranchRevision]
         if IProduct.providedBy(project):
-            project_query = Branch.product == project
+            project_query = (Branch.product == project)
         elif IProject.providedBy(project):
+            query_tables.append(Product)
             project_query = And(
                 Product.project == project,
                 Branch.product == Product.id)
@@ -284,10 +288,11 @@ class RevisionSet:
 
         result_set = store.find(
             Revision,
-            Revision.revision_author == RevisionAuthor.id,
-            Revision.id.is_in(
-                Select(BranchRevision.revisionID,
-                       And(BranchRevision.branch == Branch.id,
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
                            Not(Branch.private),
-                           project_query))))
+                           project_query),
+                       query_tables)))
         return result_set.order_by(Desc(Revision.revision_date))
