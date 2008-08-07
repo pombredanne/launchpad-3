@@ -117,16 +117,10 @@ The feed for a product revisions will show the most recent 25 revisions
 that have been committed on branches for the product.
 
     >>> anon_browser.open('http://feeds.launchpad.dev/fooix/revisions.atom')
-    >>> def validate_browser_feed(browser):
-    ...     validate_feed(
-    ...         browser.contents, browser.headers['content-type'], browser.url)
     >>> validate_browser_feed(anon_browser)
     No Errors
     >>> BSS(anon_browser.contents).title.contents
     [u'Latest Revisions for Fooix']
-    >>> def print_parse_ids(browser):
-    ...     for id in parse_ids(browser.contents):
-    ...         print id
 
 Ignore the date associated with the id of 'mike' as this is the date created
 of the person, which will be different each time the test is run.
@@ -138,9 +132,6 @@ of the person, which will be different each time the test is run.
 
 Ensure the self link is correct and there is only one.
 
-    >>> def print_parse_links(browser):
-    ...     for link in parse_links(browser.contents, rel="self"):
-    ...         print link
     >>> print_parse_links(anon_browser)
     <link rel="self" href="http://feeds.launchpad.dev/fooix/revisions.atom" />
 
@@ -151,16 +142,10 @@ A feed for a project will show the most recent 25 revisions across any
 branch for any product that is associated with the project.
 
     >>> anon_browser.open('http://feeds.launchpad.dev/fubar/revisions.atom')
-    >>> def validate_browser_feed(browser):
-    ...     validate_feed(
-    ...         browser.contents, browser.headers['content-type'], browser.url)
     >>> validate_browser_feed(anon_browser)
     No Errors
     >>> BSS(anon_browser.contents).title.contents
     [u'Latest Revisions for Fubar']
-    >>> def print_parse_ids(browser):
-    ...     for id in parse_ids(browser.contents):
-    ...         print id
 
 Ignore the date associated with the id of 'mike' as this is the date created
 of the person, which will be different each time the test is run.
@@ -174,8 +159,5 @@ of the person, which will be different each time the test is run.
 
 Ensure the self link is correct and there is only one.
 
-    >>> def print_parse_links(browser):
-    ...     for link in parse_links(browser.contents, rel="self"):
-    ...         print link
     >>> print_parse_links(anon_browser)
     <link rel="self" href="http://feeds.launchpad.dev/fubar/revisions.atom" />
