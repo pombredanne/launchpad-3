@@ -172,7 +172,7 @@ class BranchPullerTest(TestCaseWithFactory):
         self.storage.startMirroring(branch.id)
         failure_message = self.factory.getUniqueString()
         success = self.storage.mirrorFailed(branch.id, failure_message)
-        self.assertEqual(success, True)
+        self.assertEqual(True, success)
         self.assertMirrorFailed(branch, failure_message)
 
     def test_mirrorComplete(self):
@@ -184,7 +184,7 @@ class BranchPullerTest(TestCaseWithFactory):
         self.storage.startMirroring(branch.id)
         revision_id = self.factory.getUniqueString()
         success = self.storage.mirrorComplete(branch.id, revision_id)
-        self.assertEqual(success, True)
+        self.assertEqual(True, success)
         self.assertMirrorSucceeded(branch, revision_id)
 
     def test_mirrorComplete_resets_failure_count(self):
@@ -228,7 +228,7 @@ class BranchPullerTest(TestCaseWithFactory):
         completed_tuple = tuple(completed.utctimetuple())
         success = self.storage.recordSuccess(
             'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
-        self.assertEqual(success, True)
+        self.assertEqual(True, success)
 
         activity = getUtility(IScriptActivitySet).getLastActivity(
             'test-recordsuccess')
@@ -430,60 +430,54 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # server.
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch(BranchType.MIRRORED, owner=requester)
-        branch_id, permissions = self.branchfs.getBranchInformation(
+        branch_info = self.branchfs.getBranchInformation(
             requester.id, branch.owner.name, branch.product.name, branch.name)
         login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(READ_ONLY, permissions)
+        self.assertEqual((branch.id, READ_ONLY), branch_info)
 
     def test_getBranchInformation_imported(self):
         # Imported branches cannot be written to by the smartserver or SFTP
         # server.
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch(BranchType.IMPORTED, owner=requester)
-        branch_id, permissions = self.branchfs.getBranchInformation(
+        branch_info = self.branchfs.getBranchInformation(
             requester.id, branch.owner.name, branch.product.name, branch.name)
         login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(READ_ONLY, permissions)
+        self.assertEqual((branch.id, READ_ONLY), branch_info)
 
     def test_getBranchInformation_remote(self):
         # Remote branches are not accessible by the smartserver or SFTP
         # server.
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch(BranchType.REMOTE, owner=requester)
-        branch_id, permissions = self.branchfs.getBranchInformation(
+        branch_info = self.branchfs.getBranchInformation(
             requester.id, branch.owner.name, branch.product.name, branch.name)
         login(ANONYMOUS)
-        self.assertEqual('', branch_id)
-        self.assertEqual('', permissions)
+        self.assertEqual(('', ''), branch_info)
 
     def test_getBranchInformation_private(self):
         # When we get the branch information for a private branch that is
         # hidden to us, it is an if the branch doesn't exist at all.
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(self.factory.makeBranch(private=True))
-        branch_id, permissions = self.branchfs.getBranchInformation(
+        branch_info = self.branchfs.getBranchInformation(
             requester.id, branch.owner.name, branch.product.name, branch.name)
         login(ANONYMOUS)
-        self.assertEqual('', branch_id)
-        self.assertEqual('', permissions)
+        self.assertEqual(('', ''), branch_info)
 
     def test_getBranchInformationAsLaunchpadServices(self):
         # The LAUNCHPAD_SERVICES special "user" has read-only access to all
         # branches.
         branch = self.factory.makeBranch()
-        branch_id, permissions = self.branchfs.getBranchInformation(
+        branch_info = self.branchfs.getBranchInformation(
             LAUNCHPAD_SERVICES, branch.owner.name, branch.product.name,
             branch.name)
         login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(READ_ONLY, permissions)
+        self.assertEqual((branch.id, READ_ONLY), branch_info)
 
     def test_getBranchInformationForPrivateAsLaunchpadServices(self):
         # The LAUNCHPAD_SERVICES special "user" has read-only access to all
         # branches, even private ones.
-        # salgado is a member of landscape-developers.
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(self.factory.makeBranch(private=True))
         branch_info = self.branchfs.getBranchInformation(
