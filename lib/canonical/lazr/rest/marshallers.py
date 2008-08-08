@@ -71,10 +71,12 @@ class URLDereferencingMixin:
             site_protocol = 'http'
             default_port = '80'
 
-        if (protocol != site_protocol or query != '' or fragment != ''
-            or (host != request_host
-                and host + ':' + default_port != request_host
-                and host != request_host + ':' + default_port)):
+        url_host_and_http_host_are_identical = (
+            host == request_host
+            or host + ':' + default_port == request_host
+            or host == request_host + ':' + default_port)
+        if (not url_host_and_http_host_are_identical
+            or protocol != site_protocol or query != '' or fragment != ''):
             raise NotFound(self, url, self.request)
 
         path_parts = [urllib.unquote(part) for part in path.split('/')]
