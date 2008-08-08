@@ -10,10 +10,7 @@ CREATE TABLE HWSubmissionBug (
         UNIQUE (submission, bug)
 );
 
-CREATE INDEX hwsubmissionbug__submission
-    ON HWSubmissionBug(submission);
-
 CREATE INDEX hwsubmissionbug__bug
     ON HWSubmissionBug(bug);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121,99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121,74, 0);
