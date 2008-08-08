@@ -12,7 +12,6 @@ from subprocess import PIPE, Popen
 import sys
 import unittest
 from urlparse import urlparse
-import xmlrpclib
 
 import transaction
 
@@ -21,16 +20,13 @@ from bzrlib.tests import HttpServer
 from bzrlib.urlutils import local_path_from_url
 
 from zope.component import getUtility
-from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
-from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
 from canonical.codehosting import branch_id_to_path
-from canonical.testing import AppServerLayer
+from canonical.testing import ZopelessAppServerLayer
 
 
 class TestBranchPuller(BranchTestCase):
@@ -41,11 +37,9 @@ class TestBranchPuller(BranchTestCase):
     components in the branch puller system work together sanely.
     """
 
-    layer = AppServerLayer
+    layer = ZopelessAppServerLayer
 
     def setUp(self):
-        setSecurityPolicy(PermissiveSecurityPolicy)
-        login(ANONYMOUS)
         super(TestBranchPuller, self).setUp()
         self._puller_script = os.path.join(
             config.root, 'cronscripts', 'supermirror-pull.py')
