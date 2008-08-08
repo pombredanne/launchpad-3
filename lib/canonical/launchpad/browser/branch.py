@@ -104,7 +104,7 @@ class BranchPrimaryContext:
 class BranchHierarchy(Hierarchy):
     """The hierarchy for a branch should be the product if there is one."""
 
-    def getElements(self):
+    def items(self):
         """See `Hierarchy`."""
         if self.context.product is not None:
             breadcrumb = self.context.product

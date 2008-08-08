@@ -260,16 +260,13 @@ class Hierarchy(LaunchpadView):
         breadcrumbs.reverse()
         return breadcrumbs
 
-    def getElements(self):
-        return list(self.request.breadcrumbs)
-
     def render(self):
         """Render the hierarchy HTML.
 
         The hierarchy elements are taken from the request.breadcrumbs list.
         For each element, element.text is cgi escaped.
         """
-        elements = self.getElements()
+        elements = self.items()
 
         if config.launchpad.site_message:
             site_message = (

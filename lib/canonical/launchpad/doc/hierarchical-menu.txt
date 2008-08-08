@@ -77,9 +77,6 @@ have an IBreadcrumb adapter.
 Adding the adapters causes the Cookbook and Recipe objects to show up
 in the hierarchy.
 
-The IBreadcrumb adapters should return a string that will become the
-breadcrumbs's 'text' attribute.
-
     >>> from canonical.launchpad.webapp.publisher import Breadcrumb
     >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
     >>> from zope.component import queryAdapter
@@ -89,6 +86,9 @@ breadcrumbs's 'text' attribute.
 
     >>> provideAdapter(object_to_breadcrumb, [ICookbook], IBreadcrumb)
     >>> provideAdapter(object_to_breadcrumb, [IRecipe], IBreadcrumb)
+
+The IBreadcrumb adapters should return something string-like.  This will
+become the breadcrumbs's text.
 
     >>> queryAdapter(cookbook, IBreadcrumb)
     'Joy of cooking'
