@@ -247,6 +247,13 @@
       />
   </browser:pages>
 
+  <browser:page
+    for="*"
+    name="+person-macros"
+    permission="zope.Public"
+    template="../templates/person-macros.pt"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IPerson"
     permission="zope.Public"
