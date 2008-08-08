@@ -561,6 +561,19 @@ his team membership is approved.
     [u'no-priv@canonical.com',
      u'samuel.person@example.com', u'sperson@example.org']
 
+Should the mailing list become inactive, none of the addresses will be
+returned either as recipients or senders.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.INACTIVE
+    >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
+    []
+    >>> sorted(email.email for email in list_seven.getSenderAddresses())
+    []
+
+    # Restore the state.
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.ACTIVE
+
 
 == Deleting addresses ==
 
