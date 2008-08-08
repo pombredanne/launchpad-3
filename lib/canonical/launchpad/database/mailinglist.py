@@ -432,6 +432,7 @@ class MailingList(SQLBase):
             TeamParticipation.person = EmailAddress.person AND
             EmailAddress.person = Person.id AND
             Person.teamowner is NULL AND
+            MailingList.team = TeamParticipation.team AND
             MailingList.status <> %s AND
             EmailAddress.status IN %s
             """ % sqlvalues(self.team, MailingListStatus.INACTIVE,

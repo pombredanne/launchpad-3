@@ -258,8 +258,9 @@ def _membership_test(team_name, people, predicate):
     while True:
         members = set(mailing_list.getMembers())
         if predicate(members, member_addresses):
-            # Every address in the arguments was a member.  For doctest
-            # success convenience, return None.
+            # Every address in the arguments was a member.  Return None
+            # on success, so that the doctest doesn't need an extra line to
+            # match the output.
             return None
         # At least one address was not a member.  See if we timed out.
         if datetime.datetime.now() > until:
@@ -297,8 +298,9 @@ def _ensure_addresses_are_in_state(team_name, state, addresses):
                 # The address is not a member, so it can't be in the state.
                 break
         else:
-            # All addresses are in the specified state.  For doctest success
-            # convenience, return None.
+            # All addresses are in the specified state.  Return None on
+            # success, so that the doctest doesn't need an extra line to match
+            # the output.
             return None
         if datetime.datetime.now() > until:
             return 'Timed out'
