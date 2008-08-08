@@ -20,6 +20,7 @@ __all__ = [
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
+    'ZopelessAppServerLayer',
     'ZopelessLayer',
     ]
 

@@ -39,6 +39,7 @@ __all__ = [
     'TwistedLaunchpadZopelessLayer',
     'TwistedAppServerLayer',
     'TwistedLayer',
+    'ZopelessAppServerLayer',
     'ZopelessLayer',
     'disconnect_stores',
     'reconnect_stores',
@@ -1262,7 +1263,7 @@ class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
                 event.set()
 
 
-class AppServerLayer(LaunchpadFunctionalLayer):
+class _BaseAppServerLayer:
     """Environment for starting and stopping the app server."""
 
     # Holds the Popen instance of the spawned app server.
@@ -1370,7 +1371,56 @@ class AppServerLayer(LaunchpadFunctionalLayer):
         DatabaseLayer.force_dirty_database()
 
 
-class TwistedAppServerLayer(TwistedLayer, AppServerLayer):
+class AppServerLayer(LaunchpadFunctionalLayer, _BaseAppServerLayer):
+    """Environment for starting and stopping the app server."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
+class ZopelessAppServerLayer(LaunchpadZopelessLayer, _BaseAppServerLayer):
+    """Zopeless environment for starting and stopping the app server."""
+
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
+class TwistedAppServerLayer(TwistedLayer, ZopelessAppServerLayer):
     """A layer for cleaning up the Twisted thread pool."""
 
     @classmethod
