@@ -23,9 +23,6 @@ from bzrlib.workingtree import WorkingTree
 
 from twisted.python.util import mergeFunctionMetadata
 
-from zope.security.management import setSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
-
 from canonical.codehosting.tests.helpers import (
     adapt_suite, ServerTestCase)
 from canonical.codehosting.tests.servers import (
@@ -33,7 +30,6 @@ from canonical.codehosting.tests.servers import (
 from canonical.codehosting import branch_id_to_path
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
-from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 from canonical.testing import TwistedAppServerLayer
@@ -71,8 +67,6 @@ class SSHTestCase(ServerTestCase):
         self.default_team = 'testteam'
 
     def setUp(self):
-        setSecurityPolicy(PermissiveSecurityPolicy)
-        login(ANONYMOUS)
         super(SSHTestCase, self).setUp()
         self._main_thread_id = thread.get_ident()
 
