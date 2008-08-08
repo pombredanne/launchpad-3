@@ -95,6 +95,7 @@ class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
 
 
 def set_up_host_keys_for_testing():
+    """Put ssh host keys into a directory where the server will find them."""
     key_pair_path = config.codehosting.host_key_pair_path
     if os.path.isdir(key_pair_path):
         shutil.rmtree(key_pair_path)
@@ -106,6 +107,10 @@ def set_up_host_keys_for_testing():
 
 
 def set_up_test_user(test_user, test_team):
+    """Configure a user called 'test_user' with SSH keys.
+
+    Also make sure that 'test_user' belongs to 'test_team'.
+    """
     person_set = getUtility(IPersonSet)
     testUser = person_set.getByName('no-priv')
     testUser.name = test_user
