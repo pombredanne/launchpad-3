@@ -1,5 +1,4 @@
-= Modifying a DistroSeries =
-
+= Modifying DistroSeries =
 
 Only users with administration rights are allowed to modify a
 distroseries.
@@ -72,16 +71,6 @@ which already contains the new information.
     summary
     description
     ...
-
-Restore old information to not disturb the other tests.
-
-    >>> admin_browser.getLink('Change details').click()
-
-    >>> admin_browser.getControl("Display name").value = old_name
-    >>> admin_browser.getControl("Title").value = old_title
-    >>> admin_browser.getControl("Summary").value = old_summary
-    >>> admin_browser.getControl("Description").value = old_description
-    >>> admin_browser.getControl("Change").click()
 
 
 == DistroSeries administration ==
@@ -198,14 +187,6 @@ When a unstable distroseries gets released, set to 'Current', its
 
     >>> hoary.datereleased is not None
     True
-
-Restore previous hoary status.
-
-    >>> from canonical.launchpad.interfaces.distroseries import (
-    ...     DistroSeriesStatus)
-
-    >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
-    >>> hoary.datereleased = None
 
     >>> logout()
 
