@@ -118,7 +118,7 @@ def get_license_status(license_approved, license_reviewed, licenses):
 
 
 class ProductWithLicenses:
-    """Caches Product.licenses."""
+    """Caches `Product.licenses`."""
 
     decorates(IProduct, 'product')
 
@@ -128,13 +128,16 @@ class ProductWithLicenses:
 
     @property
     def licenses(self):
+        """See `IProduct`."""
         return self._licenses
 
     @property
     def license_status(self):
-        """Make license_status use cached ProductWithLicenses.licenses.
+        """See `IProduct`.
 
-        Normally, the Product.license_status property would use Product.licenses.
+        Normally, the `Product.license_status` property would use
+        `Product.licenses`, which is not cached, instead of
+        `ProductWithLicenses.licenses`, which is cached.
         """
         return get_license_status(
             self.license_approved, self.license_reviewed, self.licenses)
@@ -406,6 +409,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.license_approved = False
 
     def __storm_invalidated__(self):
+        """Clear cached non-storm attributes when the transaction ends."""
         self._cached_licenses = None
         if safe_hasattr(self, '_commercial_subscription_cached'):
             del self._commercial_subscription_cached

@@ -789,11 +789,10 @@ class ProductDownloadFileMixin:
 
     @cachedproperty
     def product(self):
-        """Fetch all series, release and file data for the product.
+        """Product with all series, release and file data cached.
 
-        Decorated classes are created rooted at self.product and they
-        contain cached data obtained with a few queries rather than
-        many iterated queries.
+        Decorated classes are created, and they contain cached data
+        obtained with a few queries rather than many iterated queries.
         """
         # Create the decorated product and set the list of series.
         original_product = self.context

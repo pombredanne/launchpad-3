@@ -39,14 +39,16 @@ user to refine his search.
     If the project you are looking for is not on the list below, please
     do another search with more relevant search terms.
 
-    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
-    >>> for tr in search_results.tbody('tr'):
-    ...     print extract_text(tr.td.a)
-    Ubuntu
-    ubuntutest
-    Evolution
-    Tomcat
-    Gnome Applets
+    >>> def print_search_results(a_browser):
+    ...     search_results = find_tag_by_id(browser.contents, 'search-results')
+    ...     for tr in search_results.tbody('tr'):
+    ...         print tr.td.a.img['src'], extract_text(tr.td.a)
+    >>> print_search_results(browser)
+    /@@/distribution Ubuntu
+    /@@/distribution ubuntutest
+    /@@/product Evolution
+    /@@/product Tomcat
+    /@@/product Gnome Applets
 
 We can follow one of these links to go straight to the
 Product/Project/Distribution.
@@ -71,28 +73,15 @@ some terms and do another search.
     <BLANKLINE>
 
 
-Also, we want to make it easy for people to enter the search string on the
-URL, saving them a page load.
-
-    >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
-    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
-    >>> for tr in search_results.tbody('tr'):
-    ...     print extract_text(tr.td.a)
-    Ubuntu
-    ubuntutest
-    Evolution
-    Tomcat
-    Gnome Applets
-
 == Showing icons ==
 
 Each item in the search result has an image. By default it's the
 standard images used for products/projects/distributions.
+Also, we want to make it easy for people to enter the search string on the
+URL, saving them a page load.
 
     >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
-    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
-    >>> for tr in search_results.tbody('tr'):
-    ...     print tr.td.a.img['src'], extract_text(tr.td.a)
+    >>> print_search_results(browser)
     /@@/distribution Ubuntu
     /@@/distribution ubuntutest
     /@@/product Evolution
@@ -118,9 +107,7 @@ instead.
     'http://launchpad.dev/ubuntu'
 
     >>> browser.open('http://launchpad.dev/projects?text=ubuntu')
-    >>> search_results = find_tag_by_id(browser.contents, 'search-results')
-    >>> for tr in search_results.tbody('tr'):
-    ...     print tr.td.a.img['src'], extract_text(tr.td.a)
+    >>> print_search_results(browser)
     http://.../ubuntu-icon.png Ubuntu
     /@@/distribution ubuntutest
     /@@/product Evolution

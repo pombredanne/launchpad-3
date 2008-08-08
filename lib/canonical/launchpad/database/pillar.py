@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces import (
     IProductSet, IProjectSet, License, NotFoundError)
 
 from canonical.launchpad.database.featuredproject import FeaturedProject
+from canonical.launchpad.database.productlicense import ProductLicense
 
 __all__ = [
     'pillar_sort_key',
@@ -121,6 +122,11 @@ class PillarNameSet:
             return getUtility(IDistributionSet).get(distribution)
 
     def build_search_query(self, text, extra_columns=()):
+        """Query parameters shared by search() and count_search_matches().
+
+        :returns: Storm ResultSet object
+        """
+        # These classes are imported in this method to prevent an import loop.
         from canonical.launchpad.database.product import Product
         from canonical.launchpad.database.project import Project
         from canonical.launchpad.database.distribution import Distribution
@@ -133,17 +139,19 @@ class PillarNameSet:
             ]
         conditions = SQL('''
             PillarName.active = TRUE
-            AND ((Product.fti @@ ftq(%(text)s)
-                  OR Product.name = lower(%(text)s)
-                  OR lower(Product.title) = lower(%(text)s))
-                 OR
-                 (Project.fti @@ ftq(%(text)s)
-                  OR Project.name = lower(%(text)s)
-                  OR lower(Project.title) = lower(%(text)s))
-                 OR
-                 (Distribution.fti @@ ftq(%(text)s)
-                  OR Distribution.name = lower(%(text)s)
-                  OR lower(Distribution.title) = lower(%(text)s)))
+            AND (
+                 Product.fti @@ ftq(%(text)s) OR
+                 Product.name = lower(%(text)s) OR
+                 lower(Product.title) = lower(%(text)s) OR
+
+                 Project.fti @@ ftq(%(text)s) OR
+                 Project.name = lower(%(text)s) OR
+                 lower(Project.title) = lower(%(text)s) OR
+
+                 Distribution.fti @@ ftq(%(text)s) OR
+                 Distribution.name = lower(%(text)s) OR
+                 lower(Distribution.title) = lower(%(text)s)
+                )
             ''' % sqlvalues(text=text))
         store = getUtility(IZStorm).get('main')
         columns = [PillarName, Product, Project, Distribution]
@@ -157,21 +165,32 @@ class PillarNameSet:
 
     def search(self, text, limit):
         """See `IPillarSet`."""
+        # These classes are imported in this method to prevent an import loop.
         from canonical.launchpad.database.product import (
             Product, ProductWithLicenses)
-        from canonical.launchpad.database.productlicense import ProductLicense
         if limit is None:
             limit = config.launchpad.default_batch_size
+
         class Array(NamedFunc):
+            """Storm representation of the array() PostgreSQL function."""
             name = 'array'
+
         # Pull out the licenses as a subselect which is converted
-        # into an array since there may be multiple licenses per
-        # product.
+        # into a PostgreSQL array so that multiple licenses per product
+        # can be retrieved in a single row for each product.
         extra_column = Array(
             Select(columns=[ProductLicense.license],
                    where=(ProductLicense.product == Product.id),
                    tables=[ProductLicense]))
         result = self.build_search_query(text, [extra_column])
+
+        # If the search text matches the name or title of the
+        # Product, Project, or Distribution exactly, then this
+        # row should get the highest search rank (9999999).
+        # Each row in the PillarName table will join with only one
+        # of either the Product, Project, or Distribution tables,
+        # so the coalesce() is necessary to find the rank() which
+        # is not null.
         result.order_by(SQL('''
             (CASE WHEN Product.name = lower(%(text)s)
                       OR lower(Product.title) = lower(%(text)s)
@@ -197,15 +216,15 @@ class PillarNameSet:
         # Prefill pillar.product.licenses.
         for pillar_name, product, project, distro, license_ids in (
             result[:limit]):
-            if pillar_name.product is not None:
+            if pillar_name.product is None:
+                pillars.append(pillar_name.pillar)
+            else:
                 licenses = [
                     License.items[license_id]
                     for license_id in license_ids]
                 product_with_licenses = ProductWithLicenses(
                     pillar_name.product, tuple(sorted(licenses)))
                 pillars.append(product_with_licenses)
-            else:
-                pillars.append(pillar_name.pillar)
         return pillars
 
     def add_featured_project(self, project):
