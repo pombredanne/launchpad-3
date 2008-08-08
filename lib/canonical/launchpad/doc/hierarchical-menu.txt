@@ -107,6 +107,36 @@ closest to the hierarchy root.
 
 == Rendering the list ==
 
-Each Breadcrumb object can display itself.
+The Hierarchy object is responsible for rendering the HTML for the location
+bar.
 
-XXX
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> from canonical.launchpad.testing.pages import extract_text
+
+    # Borrowed from launchpad.testing.pages.print_location()
+    >>> def print_hierarchy(html):
+    ...     soup = BeautifulSoup(html)
+    ...     hierarchy = soup.find(attrs={'id': 'lp-hierarchy'}).findAll(
+    ...         recursive=False)
+    ...     segments = [extract_text(step).encode('us-ascii', 'replace')
+    ...                 for step in hierarchy
+    ...                 if step.name != 'small']
+    ...     print 'Location:', ' > '.join(segments[2:])
+
+    >>> print_hierarchy(hierarchy.render())
+    Location: Joy of cooking > Spam
+
+The Launchpad Homepage displays no items in it's location bar.  We are
+considered to be on the home page if there are no breadcrumbs.
+
+    # Simulate a visit to the site root
+    >>> request = make_fake_request('http://launchpad.dev/', [root])
+    >>> homepage_hierarchy = getMultiAdapter(
+    ...     (root, request), name='+hierarchy')
+
+    >>> homepage_hierarchy.items()
+    []
+
+    >>> print_hierarchy(homepage_hierarchy.render())
+    Location:
+
