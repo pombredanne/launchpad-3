@@ -1397,9 +1397,8 @@ class AppServerLayer(LaunchpadFunctionalLayer, _BaseAppServerLayer):
 
 
 class ZopelessAppServerLayer(LaunchpadZopelessLayer, _BaseAppServerLayer):
-    """Layer for tests that run in the zopless environment with an app server.
+    """Layer for tests that run in the zopeless environment with an app server.
     """
-
 
     @classmethod
     @profiled
