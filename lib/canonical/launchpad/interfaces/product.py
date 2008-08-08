@@ -234,7 +234,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
             description=_("""The full URL for screenshots of this project,
                 if available. Please include the http://""")),
-        exported_as='screenshot_url')
+        exported_as='screenshots_url')
 
     downloadurl = exported(
         URIField(

@@ -20,8 +20,6 @@ __all__ = ['IPillar', 'IPillarName', 'IPillarNameSet']
 
 
 class IPillar(Interface):
-    export_as_webservice_entry()
-
     active = exported(
         Bool(title=_('Active'),
              description=_("Whether or not this item is active.")))
