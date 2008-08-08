@@ -330,10 +330,64 @@ This time, her message is on topic and is accepted.
     <BLANKLINE>
 
 
+== Unsubscribed team member ==
+
+Once Anne joins the team, she may post to it, though until she subscribes to
+the mailing list, she will not get a copy of the message.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> team_one = getUtility(IPersonSet).getByName('itest-one')
+    >>> anne.join(team_one)
+    >>> transaction.commit()
+    >>> helpers.ensure_membership('itest-one', anne)
+    >>> logout()
+
+    >>> inject('itest-one', """\
+    ... From: anne.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A member post
+    ... Message-ID: <otter>
+    ...
+    ... Hi, I have just joined this team.
+    ... """)
+    >>> smtpd_watcher.wait_for_mbox_delivery('otter')
+
+Only the archiver gets the message delivery.
+
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    1
+    >>> print messages[0].as_string()
+    From: anne.person@example.com
+    To: itest-one@lists.launchpad.dev
+    Message-ID: <otter>
+    Subject: [Itest-one] A member post
+    ...
+    Sender: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+    ...
+    Hi, I have just joined this team.
+    _______________________________________________
+    Mailing list: http://launchpad.dev/~itest-one
+    Post to     : itest-one@lists.launchpad.dev
+    Unsubscribe : http://launchpad.dev/~itest-one
+    More help   : http://help.launchpad.dev/ListHelp
+    <BLANKLINE>
+    <BLANKLINE>
+
+In addition, the in-house MHonArc archiver has archived this message.
+
+    >>> mhonarc_watcher.wait_for_message_number(2)
+    >>> helpers.collect_archive_message_ids('itest-one')
+    ['elephant', 'otter']
+
+
 == Verified and registered member postings ==
 
-Anne now joins the team and subscribes to the mailing list.  She can now post
-to the mailing list.
+Anne now subscribes to the team's mailing list.  She gets a copy of each
+message posted to the mailing list.
 
     >>> helpers.subscribe('Anne', 'itest-one')
     >>> helpers.ensure_addresses_are_enabled(
@@ -405,12 +459,12 @@ Here's the copy sent to Anne...
 
 In addition, the in-house MHonArc archiver has archived this message.
 
-    >>> mhonarc_watcher.wait_for_message_number(2)
+    >>> mhonarc_watcher.wait_for_message_number(3)
     >>> helpers.collect_archive_message_ids('itest-one')
-    ['elephant', 'falcon']
+    ['elephant', 'falcon', 'otter']
 
-Anne cannot post from her alternative email address because it has still not
-been validated yet.
+Anne cannot post from her alternative email address because it has not been
+validated yet.
 
     >>> inject('itest-one', """\
     ... From: aperson@example.org
@@ -497,8 +551,6 @@ There should also be no held requests pending.
 Anne now leaves the team, but she does not unsubscribe from the mailing list.
 
     >>> login('foo.bar@canonical.com')
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.leave(team_one)
     >>> logout()

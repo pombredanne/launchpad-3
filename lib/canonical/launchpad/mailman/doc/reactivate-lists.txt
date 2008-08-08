@@ -25,13 +25,14 @@ Give the mailing list a welcome message.
     'Greetings team one members!'
 
 Subscribe Anne to the mailing list so that she can post to after
-re-activation.
+re-activation.  Note that no-priv is considered a member because he created
+the mailing list.
 
     >>> helpers.subscribe('Anne', 'itest-one')
     >>> mlist.Load()
     >>> sorted(mlist.getMembers())
     ['anne.person@example.com', 'aperson@example.org',
-     'archive@mail-archive.dev']
+     'archive@mail-archive.dev', 'no-priv@canonical.com']
 
 Now the team owner deactivates the list.
 
@@ -76,4 +77,4 @@ list was deactivated.
 
     >>> sorted(mlist.getMembers())
     ['anne.person@example.com', 'aperson@example.org',
-     'archive@mail-archive.dev']
+     'archive@mail-archive.dev', 'no-priv@canonical.com']

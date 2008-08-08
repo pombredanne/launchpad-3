@@ -14,7 +14,9 @@ Anne registers with Launchpad and decides to subscribe to the mailing list.
 
 Both Anne and Bart are now members of the mailing list.  Both have two
 subscribed addresses (because both are validated with Launchpad), but only one
-of them is enabled.
+of them is enabled.  No Privileges Person is also a disabled member of the
+mailing list because he created the team (and thus is a postings-enabled
+member).
 
     >>> from Mailman.MailList import MailList
     >>> from Mailman.MemberAdaptor import ENABLED
@@ -30,14 +32,16 @@ of them is enabled.
 
     >>> mailing_list = MailList('itest-one', lock=False)
     >>> print_members(mailing_list)
-    Anne Person <anne.person@example.com>   ENABLED
-    Anne Person <aperson@example.org>       DISABLED
-                <archive@mail-archive.dev>  ENABLED
-    Bart Person <bart.person@example.com>   DISABLED
-    Bart Person <bperson@example.org>       ENABLED
+    Anne Person             <anne.person@example.com>   ENABLED
+    Anne Person             <aperson@example.org>       DISABLED
+                            <archive@mail-archive.dev>  ENABLED
+    Bart Person             <bart.person@example.com>   DISABLED
+    Bart Person             <bperson@example.org>       ENABLED
+    No Privileges Person    <no-priv@canonical.com>     DISABLED
 
 Cris and Dirk now subscribe to the team and its list.  Anne changes her
-preferred email address, and Bart unsubscribes from the mailing list.
+preferred email address, and Bart unsubscribes from the mailing list.  Because
+Bart does not leave the team though, his subscription merely gets disabled.
 
     >>> helpers.subscribe('Cris', 'itest-one')
     >>> helpers.subscribe('Dirk', 'itest-one')
@@ -51,7 +55,9 @@ preferred email address, and Bart unsubscribes from the mailing list.
     >>> from zope.component import getUtility
 
     >>> login('foo.bar@canonical.com')
-    >>> anne = getUtility(IPersonSet).getByName('anne')
+    >>> person_set = getUtility(IPersonSet)
+
+    >>> anne = person_set.getByName('anne')
     >>> alternative = mailinglists_helper.get_alternative_email(anne)
     >>> anne.setPreferredEmail(alternative)
     >>> transaction.commit()
@@ -66,13 +72,26 @@ the only other members.
     # Reload the list data.
     >>> mailing_list.Load()
     >>> print_members(mailing_list)
-    Anne Person <anne.person@example.com>   DISABLED
-    Anne Person <aperson@example.org>       ENABLED
-                <archive@mail-archive.dev>  ENABLED
-    Cris Person <cperson@example.org>       DISABLED
-    Cris Person <cris.person@example.com>   ENABLED
-    Dirk Person <dirk.person@example.com>   ENABLED
-    Dirk Person <dperson@example.org>       DISABLED
+    Anne Person             <anne.person@example.com>   DISABLED
+    Anne Person             <aperson@example.org>       ENABLED
+                            <archive@mail-archive.dev>  ENABLED
+    Bart Person             <bart.person@example.com>   DISABLED
+    Bart Person             <bperson@example.org>       DISABLED
+    Cris Person             <cperson@example.org>       DISABLED
+    Cris Person             <cris.person@example.com>   ENABLED
+    Dirk Person             <dirk.person@example.com>   ENABLED
+    Dirk Person             <dperson@example.org>       DISABLED
+    No Privileges Person    <no-priv@canonical.com>     DISABLED
+
+Bart now leaves the team.  His subscription is removed.
+
+    >>> login('foo.bar@canonical.com')
+    >>> bart = person_set.getByName('bart')
+    >>> team_one = person_set.getByName('itest-one')
+    >>> bart.leave(team_one)
+    >>> transaction.commit()
+    >>> logout()
+    >>> helpers.ensure_nonmembership('itest-one', bart)
 
 
 == Alternative addresses ==
@@ -92,13 +111,14 @@ the membership list, either as an enabled or disabled address.
     # Reload the list data.
     >>> mailing_list.Load()
     >>> print_members(mailing_list)
-    Anne Person <anne.person@example.com>   DISABLED
-    Anne Person <aperson@example.org>       ENABLED
-                <archive@mail-archive.dev>  ENABLED
-    Cris Person <cperson@example.org>       DISABLED
-    Cris Person <cris.person@example.com>   ENABLED
-    Dirk Person <dirk.person@example.com>   ENABLED
-    Dirk Person <dperson@example.org>       DISABLED
+    Anne Person             <anne.person@example.com>   DISABLED
+    Anne Person             <aperson@example.org>       ENABLED
+                            <archive@mail-archive.dev>  ENABLED
+    Cris Person             <cperson@example.org>       DISABLED
+    Cris Person             <cris.person@example.com>   ENABLED
+    Dirk Person             <dirk.person@example.com>   ENABLED
+    Dirk Person             <dperson@example.org>       DISABLED
+    No Privileges Person    <no-priv@canonical.com>     DISABLED
 
 Once Anne validates her address though, she may post from it.
 
@@ -110,14 +130,15 @@ Once Anne validates her address though, she may post from it.
 
     >>> mailing_list.Load()
     >>> print_members(mailing_list)
-    Anne Person <anne.person@example.com>   DISABLED
-    Anne Person <anne.x.person@example.net> DISABLED
-    Anne Person <aperson@example.org>       ENABLED
-                <archive@mail-archive.dev>  ENABLED
-    Cris Person <cperson@example.org>       DISABLED
-    Cris Person <cris.person@example.com>   ENABLED
-    Dirk Person <dirk.person@example.com>   ENABLED
-    Dirk Person <dperson@example.org>       DISABLED
+    Anne Person             <anne.person@example.com>   DISABLED
+    Anne Person             <anne.x.person@example.net> DISABLED
+    Anne Person             <aperson@example.org>       ENABLED
+                            <archive@mail-archive.dev>  ENABLED
+    Cris Person             <cperson@example.org>       DISABLED
+    Cris Person             <cris.person@example.com>   ENABLED
+    Dirk Person             <dirk.person@example.com>   ENABLED
+    Dirk Person             <dperson@example.org>       DISABLED
+    No Privileges Person    <no-priv@canonical.com>     DISABLED
 
 
 == Case-preservation ==
@@ -135,7 +156,6 @@ email address.
     >>> email = email_set.new('EmmaXPerson@example.org', emma)
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> from canonical.launchpad.interfaces.mailinglist import IMailingListSet
-    >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> emma.join(team_one)
     >>> list_one = getUtility(IMailingListSet).get('itest-one')
     >>> list_one.subscribe(emma, email)
@@ -148,14 +168,15 @@ address.
 
     >>> mailing_list.Load()
     >>> print_members(mailing_list)
-    Anne Person <anne.person@example.com>   DISABLED
-    Anne Person <anne.x.person@example.net> DISABLED
-    Anne Person <aperson@example.org>       ENABLED
-                <archive@mail-archive.dev>  ENABLED
-    Cris Person <cperson@example.org>       DISABLED
-    Cris Person <cris.person@example.com>   ENABLED
-    Dirk Person <dirk.person@example.com>   ENABLED
-    Dirk Person <dperson@example.org>       DISABLED
-    Emma Person <emma.person@example.com>   DISABLED
-    Emma Person <EmmaXPerson@example.org>   ENABLED
-    Emma Person <eperson@example.org>       DISABLED
+    Anne Person             <anne.person@example.com>   DISABLED
+    Anne Person             <anne.x.person@example.net> DISABLED
+    Anne Person             <aperson@example.org>       ENABLED
+                            <archive@mail-archive.dev>  ENABLED
+    Cris Person             <cperson@example.org>       DISABLED
+    Cris Person             <cris.person@example.com>   ENABLED
+    Dirk Person             <dirk.person@example.com>   ENABLED
+    Dirk Person             <dperson@example.org>       DISABLED
+    Emma Person             <emma.person@example.com>   DISABLED
+    Emma Person             <EmmaXPerson@example.org>   ENABLED
+    Emma Person             <eperson@example.org>       DISABLED
+    No Privileges Person    <no-priv@canonical.com>     DISABLED
