@@ -10,7 +10,6 @@ __all__ = [
     'IScriptActivitySet',
     ]
 
-from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import Datetime, TextLine
 
