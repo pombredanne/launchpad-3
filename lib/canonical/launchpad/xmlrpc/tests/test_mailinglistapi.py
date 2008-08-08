@@ -8,8 +8,6 @@ __all__ = []
 
 import unittest
 
-from zope.component import getUtility
-
 from canonical.launchpad.ftests import login, login_person, ANONYMOUS, logout
 from canonical.launchpad.ftests.mailinglists_helper import (
     new_person, new_team)
