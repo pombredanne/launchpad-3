@@ -247,9 +247,12 @@ class Hierarchy(LaunchpadView):
         # We assume a 1:1 relationship between the URL components and the
         # traversed_objects list.
         for idx, obj in enumerate(reversed(self.request.traversed_objects)):
+            # If the object has an IBreadcrumb adapter, then the object
+            # is intended to be shown in the hierarchy.
             adapter = queryAdapter(obj, IBreadcrumb)
             if adapter:
-                # The adapter should return a string.
+                # The adapter should return a string that is the breadcrumb's
+                # text.
                 breadcrumb_text = adapter
                 url = self.request.getURL(idx, path_only=False)
                 breadcrumbs.append(

@@ -75,17 +75,26 @@ have an IBreadcrumb adapter.
     []
 
 Adding the adapters causes the Cookbook and Recipe objects to show up
-in the hierarchy.  The breadcrumbs are ordered, starting with the
-breadcrumb closest to the hierarchy root.
+in the hierarchy.
+
+The IBreadcrumb adapters should return a string that will become the
+breadcrumbs's 'text' attribute.
 
     >>> from canonical.launchpad.webapp.publisher import Breadcrumb
     >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
+    >>> from zope.component import queryAdapter
 
     >>> def object_to_breadcrumb(context):
     ...     return context.name.capitalize().replace('-', ' ')
 
     >>> provideAdapter(object_to_breadcrumb, [ICookbook], IBreadcrumb)
     >>> provideAdapter(object_to_breadcrumb, [IRecipe], IBreadcrumb)
+
+    >>> queryAdapter(cookbook, IBreadcrumb)
+    'Joy of cooking'
+
+The hierarchy's breadcrumbs are ordered, starting with the breadcrumb
+closest to the hierarchy root.
 
     >>> hierarchy.items()
     [<Breadcrumb
