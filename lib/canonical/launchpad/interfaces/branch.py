@@ -175,7 +175,8 @@ def _format_enum(num, format, format_string=None):
     instance = format()
     if format_string is None:
         format_string = instance.get_format_string()
-    return DBItem(num, format_string, instance.get_format_description())
+    return DBItem(
+        num, format_string.strip(), instance.get_format_description())
 
 
 class BranchFormat(DBEnumeratedType):
@@ -197,6 +198,9 @@ class BranchFormat(DBEnumeratedType):
     BZR_BRANCH_5 = _format_enum(5, BzrBranchFormat5)
 
     BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
+
+    # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
+    BZR_BRANCH_7 = DBItem(7, 'Bazaar Branch Format 7 (needs bzr 1.6)')
 
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
@@ -237,11 +241,24 @@ class RepositoryFormat(DBEnumeratedType):
 
     BZR_KNITPACK_4 = _format_enum(204, RepositoryFormatKnitPack4)
 
+    # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
+    BZR_KNITPACK_5 = DBItem(
+        205, 'Bazaar RepositoryFormatKnitPack5 (bzr 1.6)')
+    BZR_KNITPACK_5_RR = DBItem(
+        206, 'Bazaar RepositoryFormatKnitPack5RichRoot (bzr 1.6)')
+
     BZR_PACK_DEV_0 = _format_enum(
         300, RepositoryFormatPackDevelopment0)
 
     BZR_PACK_DEV_0_SUBTREE = _format_enum(
         301, RepositoryFormatPackDevelopment0Subtree)
+
+    # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
+    BZR_DEV_1 = DBItem(
+        302, 'Bazaar development format 1 (needs bzr.dev from before 1.6)')
+    BZR_DEV_1_SUBTREE = DBItem(
+        303, ('Bazaar development format 1 with subtree support '
+              '(needs bzr.dev from before 1.6)'))
 
 
 class ControlFormat(DBEnumeratedType):
