@@ -21,8 +21,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting import sshserver
 from canonical.config import config
-from canonical.launchpad.daemons.sftp import (
-    getPublicKeyString)
+from canonical.launchpad.daemons.sftp import getPublicKeyString
 from canonical.testing.layers import TwistedLayer
 from canonical.twistedsupport import suppress_stderr
 
@@ -321,6 +320,8 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
     layer = TwistedLayer
 
     class FakeAuthenticationEndpoint:
+        """A fake client for enough of `IUserDetailsStorageV2` for this test.
+        """
 
         valid_user = 'valid_user'
         no_key_user = 'no_key_user'
