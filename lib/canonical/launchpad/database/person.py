@@ -85,7 +85,7 @@ from canonical.launchpad.interfaces.launchpadstatistic import (
 from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.mailinglist import (
-    IMailingListSet, PostedMessageStatus)
+    IMailingListSet, MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
@@ -2796,7 +2796,11 @@ class PersonSet:
             raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
-        assert getUtility(IMailingListSet).get(from_person.name) is None, (
+        # If the team has a mailing list, the mailing list better be in the
+        # purged state, otherwise the team can't be merged.
+        mailing_list = getUtility(IMailingListSet).get(from_person.name)
+        assert (mailing_list is None or
+                mailing_list.status == MailingListStatus.PURGED), (
             "Can't merge teams which have mailing lists into other teams.")
 
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:

@@ -32,12 +32,15 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.mailinglist import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
-    EmailAddressStatus, IEmailAddressSet, IHeldMessageDetails,
-    ILaunchpadCelebrities, IMailingList, IMailingListSet,
+    IHeldMessageDetails, IMailingList, IMailingListSet,
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
-    IMessageSet, MailingListStatus, PostedMessageStatus)
+    MailingListStatus, PostedMessageStatus, UnsafeToPurge)
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -461,6 +464,23 @@ class MailingList(SQLBase):
             """ % sqlvalues(self, PostedMessageStatus.NEW),
             orderBy=['posted_date', 'message_id'])
 
+    def purge(self):
+        """See `IMailingList`."""
+        # At first glance, it would seem that we could use
+        # transitionToStatus(), but it actually doesn't quite match the
+        # semantics we want.  For example, if we try to purge an active
+        # mailing list we really want an UnsafeToPurge exception instead of an
+        # AssertionError.  Fitting that in to transitionToStatus()'s logic is
+        # a bit tortured, so just do it here.
+        if self.status in (MailingListStatus.REGISTERED,
+                           MailingListStatus.DECLINED,
+                           MailingListStatus.FAILED,
+                           MailingListStatus.INACTIVE):
+            self.status = MailingListStatus.PURGED
+        else:
+            assert self.status != MailingListStatus.PURGED, 'Already purged'
+            raise UnsafeToPurge(self)
+
 
 class MailingListSet:
     implements(IMailingListSet)
@@ -471,8 +491,6 @@ class MailingListSet:
         """See `IMailingListSet`."""
         assert team.isTeam(), (
             'Cannot register a list for a person who is not a team')
-        assert self.get(team.name) is None, (
-            'Mailing list for team "%s" already exists' % team.name)
         if registrant is None:
             registrant = team.teamowner
         else:
@@ -489,8 +507,26 @@ class MailingListSet:
             else:
                 raise AssertionError(
                     'registrant is not a team owner or administrator')
-        return MailingList(team=team, registrant=registrant,
-                           date_registered=UTC_NOW)
+        # See if the mailing list already exists.  If so, it must be in the
+        # purged state for us to be able to recreate it.
+        existing_list = self.get(team.name)
+        if existing_list is None:
+            # We have no record for the mailing list, so just create it.
+            return MailingList(team=team, registrant=registrant,
+                               date_registered=UTC_NOW)
+        else:
+            assert existing_list.status == MailingListStatus.PURGED, (
+                'Mailing list for team "%s" already exists' % team.name)
+            assert existing_list.team == team, 'Team mismatch'
+            # It's in the PURGED state, so just tweak the existing record.
+            existing_list.registrant = registrant
+            existing_list.date_registered=UTC_NOW
+            existing_list.reviewer = None
+            existing_list.date_reviewed = None
+            existing_list.date_activated = None
+            existing_list.status = MailingListStatus.REGISTERED
+            existing_list.welcome_message = None
+            return existing_list
 
     def get(self, team_name):
         """See `IMailingListSet`."""
