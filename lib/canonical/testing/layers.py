@@ -36,9 +36,10 @@ __all__ = [
     'LayerInvariantError',
     'LibrarianLayer',
     'PageTestLayer',
-    'TwistedLaunchpadZopelessLayer',
     'TwistedAppServerLayer',
+    'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
+    'ZopelessAppServerLayer',
     'ZopelessLayer',
     'disconnect_stores',
     'reconnect_stores',
@@ -1266,7 +1267,7 @@ class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
                 event.set()
 
 
-class AppServerLayer(LaunchpadFunctionalLayer):
+class _BaseAppServerLayer:
     """Environment for starting and stopping the app server."""
 
     # Holds the Popen instance of the spawned app server.
@@ -1374,8 +1375,9 @@ class AppServerLayer(LaunchpadFunctionalLayer):
         DatabaseLayer.force_dirty_database()
 
 
-class TwistedAppServerLayer(TwistedLayer, AppServerLayer):
-    """A layer for cleaning up the Twisted thread pool."""
+class AppServerLayer(LaunchpadFunctionalLayer, _BaseAppServerLayer):
+    """Layer for tests that run in the webapp environment with an app server.
+    """
 
     @classmethod
     @profiled
@@ -1395,25 +1397,55 @@ class TwistedAppServerLayer(TwistedLayer, AppServerLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        # XXX 2008-06-11 jamesh bug=239086:
-        # Due to bugs in the transaction module's thread local
-        # storage, transactions may be reused by new threads in future
-        # tests.  Therefore we do some cleanup before the pool is
-        # destroyed by TwistedLayer.testTearDown().
-        from twisted.internet import interfaces, reactor
-        if interfaces.IReactorThreads.providedBy(reactor):
-            pool = getattr(reactor, 'threadpool', None)
-            if pool is not None and pool.workers > 0:
-                def cleanup_thread_stores(event):
-                    disconnect_stores()
-                    # Don't exit until the event fires.  This ensures
-                    # that our thread doesn't get added to
-                    # pool.waiters until all threads are processed.
-                    event.wait()
-                event = threading.Event()
-                # Ensure that the pool doesn't grow, and issue one
-                # cleanup job for each thread in the pool.
-                pool.adjustPoolsize(0, pool.workers)
-                for i in range(pool.workers):
-                    pool.callInThread(cleanup_thread_stores, event)
-                event.set()
+        pass
+
+
+class ZopelessAppServerLayer(LaunchpadZopelessLayer, _BaseAppServerLayer):
+    """Layer for tests that run in the zopless environment with an app server.
+    """
+
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
+class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer, _BaseAppServerLayer):
+    """Layer for twisted-using zopeless tests that need a running app server.
+    """
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
