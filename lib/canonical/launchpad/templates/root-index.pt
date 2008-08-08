@@ -54,7 +54,7 @@
 
         <h2>What is Launchpad?</h2>
         <p id="application-summary">
-          Launchpad is hosting service for open source projects that's
+          Launchpad is a hosting service for open source projects that's
           big on collaboration.
           <a href="/+tour">Take a tour...</a>
             <span style="font-size: small; color: red">(new!)</span>
