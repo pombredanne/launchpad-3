@@ -94,8 +94,9 @@ from canonical.launchpad.webapp import (
     LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
     canonical_url, custom_widget)
 from canonical.launchpad.webapp.interfaces import (
-    POSTToNonCanonicalURL, INavigationMenu)
-from canonical.launchpad.webapp.publisher import RedirectionView
+    POSTToNonCanonicalURL, IBreadcrumb, INavigationMenu)
+from canonical.launchpad.webapp.publisher import (
+    Breadcrumb, RedirectionView)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -236,6 +237,25 @@ class LinkView(LaunchpadView):
 
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
+
+    def items(self):
+        """Return a list of Breadcrumb objects visible in the hierarchy.
+
+        The list starts with the breadcrumb closest to the hierarchy root.
+        """
+        breadcrumbs = []
+        # We assume a 1:1 relationship between the URL components and the
+        # traversed_objects list.
+        for idx, obj in enumerate(reversed(self.request.traversed_objects)):
+            adapter = queryAdapter(obj, IBreadcrumb)
+            if adapter:
+                # The adapter should return a string.
+                breadcrumb_text = adapter
+                url = self.request.getURL(idx, path_only=False)
+                breadcrumbs.append(
+                    Breadcrumb(url, breadcrumb_text))
+        breadcrumbs.reverse()
+        return breadcrumbs
 
     def getElements(self):
         return list(self.request.breadcrumbs)
