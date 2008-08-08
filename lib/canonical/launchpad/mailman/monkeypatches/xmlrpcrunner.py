@@ -160,7 +160,7 @@ class XMLRPCRunner(Runner):
                         if list_name <> mm_cfg.MAILMAN_SITE_LIST]
         try:
             info = self._proxy.getMembershipInformation(active_lists)
-            syslog('xmlrpc', 'membership info: %s', info)
+##             syslog('xmlrpc', 'membership info: %s', info)
         except (xmlrpclib.ProtocolError, socket.error), error:
             syslog('xmlrpc', 'Cannot talk to Launchpad: %s', error)
             return
@@ -195,12 +195,12 @@ class XMLRPCRunner(Runner):
                        list_name)
                 continue
             # A little extra debugging.
-            if adds or deletes:
-                syslog('xmlrpc', 'adds: %s', adds)
-                syslog('xmlrpc', 'deletes: %s', deletes)
-                syslog('xmlrpc', 'Membership changes for: %s', list_name)
+##             if adds or deletes:
+##                 syslog('xmlrpc', 'adds: %s', adds)
+##                 syslog('xmlrpc', 'deletes: %s', deletes)
+##                 syslog('xmlrpc', 'Membership changes for: %s', list_name)
             # Lock the list and make the modifications.
-            mlist.Lock()
+            mlist.Lock(2)
             try:
                 # Handle additions first.
                 for address in adds:
@@ -223,7 +223,7 @@ class XMLRPCRunner(Runner):
                         mlist.setDeliveryStatus(address, status)
                         found_updates = True
                 if found_updates:
-                    syslog('xmlrpc', 'updates: %s', updates)
+##                     syslog('xmlrpc', 'updates: %s', updates)
                     syslog('xmlrpc', 'Membership updates for: %s', list_name)
                 # We're done, so flush the changes for this mailing list.
                 mlist.Save()

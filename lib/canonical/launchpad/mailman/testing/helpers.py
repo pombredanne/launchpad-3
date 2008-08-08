@@ -327,6 +327,7 @@ def _ensure_addresses_are_in_state(team_name, state, addresses):
 
 
 def ensure_addresses_are_enabled(team_name, *addresses):
+    """Ensure that addresses are subscribed and enabled."""
     _ensure_addresses_are_in_state(team_name, ENABLED, addresses)
 
 

@@ -765,6 +765,8 @@ post to just that mailing list without further approval required.
     >>> browser.getControl('Moderate').click()
     >>> smtpd_watcher.wait_for_mbox_delivery('mongoose')
     >>> smtpd_watcher.wait_for_mbox_delivery('mongoose')
+    >>> helpers.ensure_addresses_are_enabled(
+    ...     'itest-one', 'bperson@example.org')
 
     >>> smtpd.reset()
     >>> inject('itest-one', """\
