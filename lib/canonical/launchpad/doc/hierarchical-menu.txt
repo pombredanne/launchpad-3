@@ -75,23 +75,25 @@ have an IBreadcrumb adapter.
     []
 
 Adding the adapters causes the Cookbook and Recipe objects to show up
-in the hierarchy.
+in the hierarchy.  The breadcrumbs are ordered, starting with the
+breadcrumb closest to the hierarchy root.
 
     >>> from canonical.launchpad.webapp.publisher import Breadcrumb
     >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
 
-    >>> def cookbook_to_breadcrumb(cookbook):
-    ...     return cookbook.name
+    >>> def object_to_breadcrumb(context):
+    ...     return context.name.capitalize().replace('-', ' ')
 
-    >>> provideAdapter(cookbook_to_breadcrumb, [ICookbook], IBreadcrumb)
+    >>> provideAdapter(object_to_breadcrumb, [ICookbook], IBreadcrumb)
+    >>> provideAdapter(object_to_breadcrumb, [IRecipe], IBreadcrumb)
 
     >>> hierarchy.items()
     [<Breadcrumb
         url='http://launchpad.dev/joy-of-cooking'
-        text='joy-of-cooking'>,
+        text='Joy of cooking'>,
      <Breadcrumb
         url='http://launchpad.dev/joy-of-cooking/spam'
-        text='spam'>]
+        text='Spam'>]
 
 
 == Rendering the list ==
