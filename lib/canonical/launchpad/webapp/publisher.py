@@ -484,6 +484,10 @@ class Breadcrumb:
         self.url = url
         self.text = text
 
+    def __repr__(self):
+        return "<%s url='%s' text='%s'>" % (
+            self.__class__.__name__, self.url, self.text)
+
 
 class Navigation:
     """Base class for writing browser navigation components.
