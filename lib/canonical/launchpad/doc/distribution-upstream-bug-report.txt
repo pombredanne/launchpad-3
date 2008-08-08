@@ -116,6 +116,127 @@ Linking that task to a bugwatch makes the watch counts update:
     mozilla-firefox     firefox 1 1 1 1
 
 
+== Properties of BugReportData ==
+
+The API listed above is based around BugReportData instances, each of
+which offers a set of properties that can be used to accessed data. Each
+row in the upstream report table is represented by an instance of
+PackageBugReportData, which sublcassess BugReportData. We'll create a
+BugReportData instance using some made up figures to demonstrate the
+properties offered by BugReportData.
+
+    >>> import canonical.launchpad.browser as browser
+    >>> bug_data = browser.distribution_upstream_bug_report.BugReportData(
+    ...     open_bugs=90, triaged_bugs=50, upstream_bugs=70,
+    ...     watched_bugs=60)
+
+
+=== Percentages ===
+
+BugReportData offers a set of *_percentage properties.
+
+BugReportData.triaged_bugs_percentage is the percentage of open bugs
+that have been triaged.
+
+    >>> bug_data.triaged_bugs_percentage
+    55.555555555555557
+
+BugReportData.upstream_bugs_percentage is the percentage of open bugs
+that have been forwarded upstream.
+
+    >>> bug_data.upstream_bugs_percentage
+    77.777777777777771
+
+BugReportData.watched_bugs_percentage is the percentage of bugs
+forwarded upstream that have a bug watch against a remote bug.
+
+    >>> bug_data.watched_bugs_percentage
+    85.714285714285708
+
+
+=== Deltas ===
+
+BugReportData also offers a set of of *_delta properties along with the
+*_percentage properties.
+
+BugReportData.triaged_bugs_delta is the difference between the number of
+open bugs and the number of triaged bugs.
+
+    >>> bug_data.triaged_bugs_delta
+    40
+
+BugReportData.upstream bugs_delta is the difference between the number of
+open bugs and the number of bugs forwarded upstream.
+
+    >>> bug_data.upstream_bugs_delta
+    20
+
+BugReportData.watched_bugs_delta is the difference between the number of
+upstream bugs and the number of bugs that have a bug watch against an
+upstream bug.
+
+    >>> bug_data.watched_bugs_delta
+    10
+
+
+=== Classes ===
+
+Finally, BugReportData offers a set of *_class properties. These
+provide the correct CSS class to use for rendering the data in a table.
+They return 'good' if the property that they represent is above a
+certain threshold or an empty string if not.
+
+BugReportData.triaged_bugs_class returns 'good' if the
+triaged_bugs_percentage is greater than BugReportData.TRIAGED_THRESHOLD.
+
+    >>> bug_data.TRIAGED_THRESHOLD
+    75
+
+    >>> bug_data.triaged_bugs_class
+    ''
+
+Increasing the number of triaged bugs will put the percentage over the
+threshold and so triaged_bugs_class will be 'good'.
+
+    >>> bug_data.triaged_bugs = 70
+    >>> bug_data.triaged_bugs_class
+    'good'
+
+BugReportData.upstream_bugs_class returns 'good' if the percentage of
+open bugs forwarded upstream is higher than
+BugReportData.UPSTREAM_THRESHOLD.
+
+    >>> bug_data.UPSTREAM_THRESHOLD
+    90
+
+    >>> bug_data.upstream_bugs_class
+    ''
+
+Increasing the number of upstream bugs will put the percentage over the
+threshold and make upstream_bugs_class 'good'.
+
+    >>> bug_data.upstream_bugs = 85
+    >>> bug_data.upstream_bugs_class
+    'good'
+
+BugReportData.watched_bugs_class returns 'good' if the percentage of
+upstream bugs that have a bug watch is greater than
+BugReportData.WATCH_THRESHOLD.
+
+    >>> bug_data.WATCH_THRESHOLD
+    90
+
+    >>> bug_data.watched_bugs_class
+    ''
+
+Increasing the number of watched bugs will put the percentage over the
+threshold and make watched_bugs_class 'good'.
+
+    >>> bug_data.watched_bugs = 80
+    >>> bug_data.watched_bugs_class
+    'good'
+
+
 == The view ==
 
 We test that the view data is constructed sanely and without any hidden
