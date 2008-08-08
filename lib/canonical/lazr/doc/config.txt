@@ -305,8 +305,7 @@ keyword arg. The filename arg must be passed if the file-like object
 does not have a name attribute.
 
     >>> import StringIO
-    >>> from textwrap import dedent
-    >>> bad_data = dedent("""
+    >>> bad_data = ("""
     ...     [meta]
     ...     metakey: unsupported
     ...     [unknown-section]
@@ -619,13 +618,29 @@ config file that was loaded.
     >>> verifyObject(IConfigData, config.overlays[-1])
     True
 
+Conf files can use the extends key to specify that it extends a schema
+without incurring a processing penalty by loading the schema twice in a
+row. The schema can never be the second item in the overlays stack.
+
+    >>> single_config = schema.load(schema.filename)
+    >>> for config_data in single_config.overlays:
+    ...     print config_data.name
+    base.conf
+
+    >>> single_config.push(schema.filename, raw_schema)
+    >>> for config_data in single_config.overlays:
+    ...     print config_data.name
+    base.conf
+
 
 === push() ===
 
 Raw config data can be merged with the config to create a new overlay
 for testing. The push() method accepts a string of config data. The
 data must conform to the schema. The 'section_1' sections's keys are
-updated when the unparsed data is pushed onto the config.
+updated when the unparsed data is pushed onto the config. Note that
+indented unparsed data is passed to push() in thie example; push()
+does not require tests to dedent the test data.
 
     >>> for key in sorted(config['section_1']):
     ...     print key, ':', config['section_1'][key]
@@ -635,7 +650,7 @@ updated when the unparsed data is pushed onto the config.
     key4 : F&#028c;k yeah!
     key5 : local value
 
-    >>> test_data = dedent("""
+    >>> test_data = ("""
     ...     [section_1]
     ...     key1: test1
     ...     key5:""")
@@ -713,7 +728,7 @@ values in the config to the schema's default values.
     >>> extender_conf_name = path.normpath(path.join(
     ...     path.dirname(__file__), '..', 'tests', 'data',
     ...     'extender.conf'))
-    >>> extender_conf_data = dedent("""
+    >>> extender_conf_data = ("""
     ...     [meta]
     ...     extends: base.conf""")
     >>> config.push(extender_conf_name, extender_conf_data)
