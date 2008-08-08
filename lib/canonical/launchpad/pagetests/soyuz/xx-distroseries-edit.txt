@@ -1,8 +1,14 @@
 = Modifying a DistroSeries =
 
-Only users with administration rights are allowed to modify a distroseries.
 
-Anonymous or unprivileged access are not possible.
+Only users with administration rights are allowed to modify a
+distroseries.
+
+That can be done using the 'Change details' (+edit) and 'Administer'
+(+admin) action menu items.
+
+Anonymous or unprivileged access to these forms is denied, the action
+item is not even presented.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/warty')
     >>> anon_browser.getLink('Change details').click()
@@ -25,6 +31,9 @@ Anonymous or unprivileged access are not possible.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+
+
+== Changing DistroSeries details ==
 
 A administrator can see and access 'Change Details' form.
 
@@ -58,6 +67,7 @@ which already contains the new information.
     Ubuntu Linux 4.10 in Launchpad
 
     >>> print extract_text(find_main_content(admin_browser.contents))
+    Your changes have been applied.
     WartyII
     summary
     description
@@ -73,12 +83,23 @@ Restore old information to not disturb the other tests.
     >>> admin_browser.getControl("Description").value = old_description
     >>> admin_browser.getControl("Change").click()
 
-Administering a distroseries.
+
+== DistroSeries administration ==
+
+Via the administration form the following information can be changed:
+
+ * 'name': the distroseries name (identifier);
+ * version: the distroseries version (also a identifier);
+ * 'changeslist': the emailaddress to where the upload announcements
+   will be sent;
+ * 'status': the distroseries status;
 
     >>> admin_browser.getLink("Administer").click()
 
-Modify the changeslist address field (supposed to be an email address)
+Modifying 'name', 'version' and 'changeslist'.
 
+    >>> admin_browser.getControl(name="field.name").value = 'boing'
+    >>> admin_browser.getControl(name="field.version").value = '1.23'
     >>> admin_browser.getControl("Changeslist").value = 'foo@bar.com'
     >>> admin_browser.getControl("Change").click()
 
@@ -86,9 +107,30 @@ Once submitted the +admin form also redirects to the distroseries
 overview page.
 
     >>> admin_browser.url
+    'http://launchpad.dev/ubuntu/boing'
+
+    >>> print admin_browser.title
+    Ubuntu Linux 1.23 in Launchpad
+
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    Your changes have been applied.
+
+Restore old information and modify the changeslist address field
+(supposed to be an email address).
+
+    >>> admin_browser.getLink("Administer").click()
+    >>> admin_browser.getControl(name="field.name").value = 'warty'
+    >>> admin_browser.getControl(name="field.version").value = '4.10'
+    >>> admin_browser.getControl("Change").click()
+
+Original url restored.
+
+    >>> admin_browser.url
     'http://launchpad.dev/ubuntu/warty'
 
-The information entered as 'changeslist' is validaded as a 'email'.
+The information entered as 'changeslist' is validaded as a 'email',
+anything else than 'user@url' will be rejected.
 
     >>> admin_browser.getLink("Administer").click()
     >>> admin_browser.getControl("Changeslist").value = 'foo bar'
@@ -96,7 +138,6 @@ The information entered as 'changeslist' is validaded as a 'email'.
 
     >>> for message in get_feedback_messages(admin_browser.contents):
     ...     print message
-    There is a problem with the information you entered.
-    Please fix it and try again.
+    There is 1 error.
     Constraint not satisfied
 

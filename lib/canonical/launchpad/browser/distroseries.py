@@ -24,24 +24,28 @@ from zope.app.form.browser.add import AddView
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
-from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough, stepto,
-    LaunchpadEditFormView, action)
-
-from canonical.launchpad.interfaces import (
-    IDistroSeriesLanguageSet, IDistroSeries, ICountry, IDistroSeriesSet,
-    ILaunchBag, ILanguageSet, NotFoundError)
-
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
-
-from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.interfaces.country import ICountry
+from canonical.launchpad.interfaces.distroseries import (
+    IDistroSeries, IDistroSeriesSet)
+from canonical.launchpad.interfaces.distroserieslanguage import (
+        IDistroSeriesLanguageSet)
+from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchBag, NotFoundError)
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, GetitemNavigation, action)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
+from canonical.launchpad.webapp.menu import (
+    Link, ApplicationMenu, enabled_with_permission)
+from canonical.launchpad.webapp.publisher import (
+    canonical_url, stepthrough, stepto)
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -408,24 +412,73 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         return self.request.response.redirect(distro_url + "/+filebug")
 
 
-class DistroSeriesEditView(SQLObjectEditView):
+class DistroSeriesEditView(LaunchpadEditFormView):
     """View class that lets you edit a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
     """
+    schema = IDistroSeries
+    field_names = ['displayname', 'title', 'summary', 'description']
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+    def initialize(self):
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Change %s details' % self.context.title
+
+    @action("Change")
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+
+        self.next_url = canonical_url(self.context)
 
 
-class DistroSeriesAdminView(SQLObjectEditView):
+class DistroSeriesAdminView(LaunchpadEditFormView):
     """View class that lets you admin a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
     """
+    schema = IDistroSeries
+    field_names = ['name', 'version', 'changeslist', 'status']
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+    def initialize(self):
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Administer %s' % self.context.title
+
+    def validate(self, data):
+        from canonical.database.constants import UTC_NOW
+        from canonical.launchpad.interfaces.distroseries import (
+            DistroSeriesStatus)
+
+        post_release_status = (
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED,
+            DistroSeriesStatus.OBSOLETE,
+            )
+
+        status = data.get('status')
+
+        if (self.context.status in post_release_status and
+            status not in post_release_status):
+            self.setFieldError(
+                'status',
+                "Already released distroseries cannot be made unstable "
+                "again.")
+            return
+
+        if (self.context.datereleased is None and
+            status == DistroSeriesStatus.CURRENT):
+            self.context.datereleased = UTC_NOW
+            self.request.response.addInfoNotification(
+                'Datereleased set')
+
+    @action("Change")
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+
+        self.next_url = canonical_url(self.context)
 
 
 class DistroSeriesAddView(AddView):

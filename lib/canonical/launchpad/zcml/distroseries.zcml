@@ -34,7 +34,7 @@
     <require
         permission="launchpad.Admin"
         set_attributes="version name status owner nominatedarchindep
-                        changeslist"
+                        changeslist datereleased"
         />
     <!-- IStructuralSubscriptionTarget -->
     <allow attributes="bug_subscriptions getBugNotificationsRecipients
@@ -298,26 +298,22 @@
        Do not allow people to change the details of the distro series that
        will affect the way Soyuz publishes the distroseries. Check with
        SABDFL before modifying this page. -->
-  <browser:editform
+  <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"
     permission="launchpad.Edit"
     name="+edit"
-    class="canonical.launchpad.browser.distroseries.DistroSeriesAdminView"
-    schema="canonical.launchpad.interfaces.IDistroSeries"
-    fields="displayname title summary description"
+    class="canonical.launchpad.browser.distroseries.DistroSeriesEditView"
     facet="overview"
     template="../templates/distroseries-edit.pt"
     />
 
-  <browser:editform
+  <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"
     permission="launchpad.Admin"
     name="+admin"
     class="canonical.launchpad.browser.distroseries.DistroSeriesAdminView"
-    schema="canonical.launchpad.interfaces.IDistroSeries"
-    fields="name status version changeslist"
     facet="overview"
-    template="../templates/launchpad-editform.pt"
+    template="../templates/distroseries-admin.pt"
     />
 
   <browser:page
