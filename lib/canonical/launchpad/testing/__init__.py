@@ -15,6 +15,52 @@ from canonical.launchpad.testing.factory import *
 class TestCase(unittest.TestCase):
     """Provide Launchpad-specific test facilities."""
 
+    def __init__(self, *args, **kwargs):
+        unittest.TestCase.__init__(self, *args, **kwargs)
+        self._cleanups = []
+        # Python 2.4 shenanigans. These are both implemented by unittest with
+        # double underscores in Python 2.4. There are no direct
+        # implementations of these methods in this class. We use the double
+        # underscore syntax without expansion because this class has the same
+        # __name__ as its base class. In Python 2.5 these elements have single
+        # underscores.
+        self._testMethodName = self.__testMethodName
+        self._exc_info = self.__exc_info
+
+    def _runCleanups(self, result):
+        """Run the cleanups that have been added with addCleanup.
+
+        See the docstring for addCleanup for more information.
+
+        Returns True if all cleanups ran without error, False otherwise.
+        """
+        ok = True
+        while self._cleanups:
+            function, arguments, keywordArguments = self._cleanups.pop()
+            try:
+                function(*arguments, **keywordArguments)
+            except KeyboardInterrupt:
+                raise
+            except:
+                result.addError(self, self._exc_info())
+                ok = False
+        return ok
+
+    def addCleanup(self, function, *arguments, **keywordArguments):
+        """Add a cleanup function to be called before tearDown.
+
+        Functions added with addCleanup will be called in reverse order of
+        adding after the test method and before tearDown.
+
+        If a function added with addCleanup raises an exception, the error
+        will be recorded as a test error, and the next cleanup will then be
+        run.
+
+        Cleanup functions are always called before a test finishes running,
+        even if setUp is aborted by an exception.
+        """
+        self._cleanups.append((function, arguments, keywordArguments))
+
     def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
         """Assert that a callable performs a given notification.
 
@@ -70,6 +116,45 @@ class TestCase(unittest.TestCase):
         """
         self.assertTrue(zope_isinstance(instance, assert_class),
             '%r is not an instance of %r' % (instance, assert_class))
+
+    def run(self, result=None):
+        if result is None:
+            result = self.defaultTestResult()
+        result.startTest(self)
+        testMethod = getattr(self, self._testMethodName)
+        try:
+            try:
+                self.setUp()
+            except KeyboardInterrupt:
+                raise
+            except:
+                result.addError(self, self._exc_info())
+                self._runCleanups(result)
+                return
+
+            ok = False
+            try:
+                testMethod()
+                ok = True
+            except self.failureException:
+                result.addFailure(self, self._exc_info())
+            except KeyboardInterrupt:
+                raise
+            except:
+                result.addError(self, self._exc_info())
+
+            cleanupsOk = self._runCleanups(result)
+            try:
+                self.tearDown()
+            except KeyboardInterrupt:
+                raise
+            except:
+                result.addError(self, self._exc_info())
+                ok = False
+            if ok and cleanupsOk:
+                result.addSuccess(self)
+        finally:
+            result.stopTest(self)
 
 
 class TestCaseWithFactory(TestCase):
