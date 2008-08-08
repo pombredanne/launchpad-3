@@ -66,11 +66,15 @@ class URLDereferencingMixin:
         request_host = self.request.get('HTTP_HOST')
         if config.vhosts.use_https:
             site_protocol = 'https'
+            default_port = '443'
         else:
             site_protocol = 'http'
+            default_port = '80'
 
-        if (host != request_host or protocol != site_protocol or
-            query != '' or fragment != ''):
+        if (protocol != site_protocol or query != '' or fragment != ''
+            or (host != request_host
+                and host + ':' + default_port != request_host
+                and host != request_host + ':' + default_port)):
             raise NotFound(self, url, self.request)
 
         path_parts = [urllib.unquote(part) for part in path.split('/')]
