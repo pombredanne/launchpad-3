@@ -1,0 +1,102 @@
+= Modifying a DistroSeries =
+
+Only users with administration rights are allowed to modify a distroseries.
+
+Anonymous or unprivileged access are not possible.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/warty')
+    >>> anon_browser.getLink('Change details').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> anon_browser.getLink("Administer").click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu/warty')
+    >>> user_browser.getLink('Change details').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.getLink("Administer").click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+A administrator can see and access 'Change Details' form.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/warty')
+    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/ubuntu/warty/+edit'
+
+Save sampledata values for warty, so they can be restored later.
+
+    >>> old_name = admin_browser.getControl("Display name").value
+    >>> old_title = admin_browser.getControl("Title").value
+    >>> old_summary = admin_browser.getControl("Summary").value
+    >>> old_description = admin_browser.getControl("Description").value
+
+Fill out the form with different data and submit.
+
+    >>> admin_browser.getControl("Display name").value = 'WartyII'
+    >>> admin_browser.getControl("Title").value = 'The Warty Warthog II Release'
+    >>> admin_browser.getControl("Summary").value = 'summary'
+    >>> admin_browser.getControl("Description").value = 'description'
+    >>> admin_browser.getControl("Change").click()
+
+Once submitted the form redirects to the distroseries overview page,
+which already contains the new information.
+
+    >>> admin_browser.url
+    'http://launchpad.dev/ubuntu/warty'
+
+    >>> print admin_browser.title
+    Ubuntu Linux 4.10 in Launchpad
+
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    WartyII
+    summary
+    description
+    ...
+
+Restore old information to not disturb the other tests.
+
+    >>> admin_browser.getLink('Change details').click()
+
+    >>> admin_browser.getControl("Display name").value = old_name
+    >>> admin_browser.getControl("Title").value = old_title
+    >>> admin_browser.getControl("Summary").value = old_summary
+    >>> admin_browser.getControl("Description").value = old_description
+    >>> admin_browser.getControl("Change").click()
+
+Administering a distroseries.
+
+    >>> admin_browser.getLink("Administer").click()
+
+Modify the changeslist address field (supposed to be an email address)
+
+    >>> admin_browser.getControl("Changeslist").value = 'foo@bar.com'
+    >>> admin_browser.getControl("Change").click()
+
+Once submitted the +admin form also redirects to the distroseries
+overview page.
+
+    >>> admin_browser.url
+    'http://launchpad.dev/ubuntu/warty'
+
+The information entered as 'changeslist' is validaded as a 'email'.
+
+    >>> admin_browser.getLink("Administer").click()
+    >>> admin_browser.getControl("Changeslist").value = 'foo bar'
+    >>> admin_browser.getControl("Change").click()
+
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    There is a problem with the information you entered.
+    Please fix it and try again.
+    Constraint not satisfied
+

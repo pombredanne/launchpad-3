@@ -151,6 +151,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
              'add_port', 'add_milestone', 'admin', 'builds', 'queue',
              'subscribe']
 
+    @enabled_with_permission('launchpad.Admin')
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
