@@ -12,7 +12,6 @@ import errno
 import shutil
 import socket
 import tarfile
-import itertools
 import traceback
 import xmlrpclib
 
@@ -55,8 +54,6 @@ class XMLRPCRunner(Runner):
     # from Launchpad.  We write this to the xmlrpc log file for better
     # synchronization with the integration tests.  It's not used for any other
     # purpose.
-    serial_number = itertools.count()
-
     def __init__(self, slice=None, numslices=None):
         """Create a faux runner which checks into Launchpad occasionally.
 
@@ -76,8 +73,8 @@ class XMLRPCRunner(Runner):
         self._kids = {}
         self._stop = False
         self._proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
-        # Ensure that the serial log file exists.
-        syslog('serial', 'SERIAL: %s', self.serial_number.next())
+        # Ensure that the log file exists, mostly for the test suite.
+        syslog('xmlrpc', 'XMLRPC runner starting')
 
     def _oneloop(self):
         """Check to see if there's anything for Mailman to do.
@@ -93,7 +90,6 @@ class XMLRPCRunner(Runner):
         self._check_list_actions()
         self._get_subscriptions()
         self._check_held_messages()
-        syslog('xmlrpc', 'completed oneloop')
         # Snooze for a while.
         return 0
 
@@ -146,16 +142,15 @@ class XMLRPCRunner(Runner):
         # operations could fail for spurious reasons.  That shouldn't affect
         # the status reporting for any other list.  This is a little more
         # costly, but it's not that bad.
-        for team_name, status in statuses.items():
+        for team_name, (action, status) in statuses.items():
             this_status = {team_name: status}
             try:
                 self._proxy.reportStatus(this_status)
+                syslog('xmlrpc', '[%s] %s: %s' % (team_name, action, status))
             except (xmlrpclib.ProtocolError, socket.error), error:
                 syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
             except xmlrpclib.Fault, error:
                 syslog('xmlrpc', 'Launchpad exception: %s', error)
-        # Changes were made, so bump the serial number.
-        syslog('serial', 'SERIAL: %s', self.serial_number.next())
 
     def _get_subscriptions(self):
         """Get the latest subscription information."""
@@ -165,44 +160,48 @@ class XMLRPCRunner(Runner):
                         if list_name <> mm_cfg.MAILMAN_SITE_LIST]
         try:
             info = self._proxy.getMembershipInformation(active_lists)
+            syslog('xmlrpc', 'membership info: %s', info)
         except (xmlrpclib.ProtocolError, socket.error), error:
             syslog('xmlrpc', 'Cannot talk to Launchpad: %s', error)
             return
         except xmlrpclib.Fault, error:
             syslog('xmlrpc', 'Launchpad exception: %s', error)
             return
-        if info:
-            syslog('xmlrpc', 'Received subscription info for these lists: %s',
-                   COMMASPACE.join(info))
-        # Maintain a flag to determine whether there were any changes to
-        # Mailman data structures in this XMLRPC request.  If so, we'll need
-        # to bump the serial number to ensure that the integration tests can
-        # stay properly synchronized.
-        changes_detected = False
         for list_name in info:
-            mlist = MailList(list_name)
+            # Start with an unlocked list.
+            mlist = MailList(list_name, lock=False)
+            # Create a mapping of email address to the member's real name,
+            # flags, and status.  Note that flags is currently unused.
+            member_map = dict((address, (realname, flags, status))
+                              for address, realname, flags, status
+                              in info[list_name])
+            # Calculate a few membership sets: one is the set of new members
+            # who need to be added to the mailing list. Another is the set of
+            # old members who need to be removed from the mailing list.  A
+            # third is the set of members who are getting their settings
+            # modified.
+            current_members = set(
+                mlist.getMemberCPAddresses(mlist.getMembers()))
+            future_members = set(member_map)
+            adds = future_members - current_members
+            deletes = current_members - future_members
+            updates = current_members & future_members
+            # If there's nothing to do, just skip this list.
+            if not adds and not deletes and not updates:
+                # Why did we get here?  This list should not have shown up in
+                # getMembershipInformation().
+                syslog('xmlrpc',
+                       'Strange subscription information for list: %s',
+                       list_name)
+                continue
+            # A little extra debugging.
+            if adds or deletes:
+                syslog('xmlrpc', 'adds: %s', adds)
+                syslog('xmlrpc', 'deletes: %s', deletes)
+                syslog('xmlrpc', 'Membership changes for: %s', list_name)
+            # Lock the list and make the modifications.
+            mlist.Lock()
             try:
-                # Create a mapping of email address to the member's real name,
-                # flags, and status.  Note that flags is currently unused.
-                member_map = dict((address, (realname, flags, status))
-                                  for address, realname, flags, status
-                                  in info[list_name])
-                # Start by calculating two sets: one is the set of new members
-                # who need to be added to the mailing list, and the other is
-                # the set of old members who need to be removed from the
-                # mailing list.
-                current_members = set(
-                    mlist.getMemberCPAddresses(mlist.getMembers()))
-                future_members = set(member_map)
-                adds = future_members - current_members
-                deletes = current_members - future_members
-                updates = current_members & future_members
-                # If there are any additions or deletions to the subscription
-                # information, then obviously a change was detected.  Updates
-                # need to be handled differently; they are the more common
-                # case.
-                if adds or deletes:
-                    changes_detected = True
                 # Handle additions first.
                 for address in adds:
                     realname, flags, status = member_map[address]
@@ -212,25 +211,24 @@ class XMLRPCRunner(Runner):
                 for address in deletes:
                     mlist.removeMember(address)
                 # The members who are sticking around may have updates to
-                # their real names or statuses.  Check to see if there are
-                # changes because we need to do that anyway to make sure the
-                # serial number gets bumped only when necessary.
+                # their real names or statuses.
+                found_updates = False
                 for address in updates:
                     # flags are ignored for now.
                     realname, flags, status = member_map[address]
                     if realname <> mlist.getMemberName(address):
                         mlist.setMemberName(address, realname)
-                        changes_detected = True
+                        found_updates = True
                     if status <> mlist.getDeliveryStatus(address):
                         mlist.setDeliveryStatus(address, status)
-                        changes_detected = True
+                        found_updates = True
+                if found_updates:
+                    syslog('xmlrpc', 'updates: %s', updates)
+                    syslog('xmlrpc', 'Membership updates for: %s', list_name)
                 # We're done, so flush the changes for this mailing list.
                 mlist.Save()
             finally:
                 mlist.Unlock()
-        # If changes were detected, bump the serial number.
-        if changes_detected:
-            syslog('serial', 'SERIAL: %s', self.serial_number.next())
 
     def _create_or_reactivate(self, actions, statuses):
         """Process mailing list creation and reactivation actions.
@@ -255,7 +253,7 @@ class XMLRPCRunner(Runner):
                     del initializer[key]
             if initializer:
                 # Reject this list creation request.
-                statuses[team_name] = 'failure'
+                statuses[team_name] = ('create', 'failure')
                 syslog('xmlrpc', 'Unexpected create settings: %s',
                        COMMASPACE.join(initializer))
                 continue
@@ -287,11 +285,10 @@ class XMLRPCRunner(Runner):
             if not status:
                 syslog('xmlrpc', 'An error occurred; the list was not %s: %s',
                        action, team_name)
-                statuses[team_name] = 'failure'
+                statuses[team_name] = ('reactivate', 'failure')
                 return
             self._apply_list_defaults(team_name, list_defaults)
-            statuses[team_name] = 'success'
-            syslog('xmlrpc', 'Successfully %s list: %s', action, team_name)
+            statuses[team_name] = ('create/reactivate', 'success')
 
     def _apply_list_defaults(self, team_name, list_defaults):
         """Apply mailing list defaults and tie the new list into the MTA."""
@@ -378,7 +375,7 @@ class XMLRPCRunner(Runner):
                     list_settings[attrmap[key]] = modifications[key]
                     del modifications[key]
             if modifications:
-                statuses[team_name] = 'failure'
+                statuses[team_name] = ('modify', 'failure')
                 syslog('xmlrpc', 'Unexpected modify settings: %s',
                        COMMASPACE.join(modifications))
                 continue
@@ -397,11 +394,9 @@ class XMLRPCRunner(Runner):
                 syslog('xmlrpc',
                        'List modification error for team: %s', team_name)
                 log_exception()
-                statuses[team_name] = 'failure'
+                statuses[team_name] = ('modify', 'failure')
             else:
-                syslog('xmlrpc', 'Successfully modified list: %s',
-                       team_name)
-                statuses[team_name] = 'success'
+                statuses[team_name] = ('modify', 'success')
 
     def _deactivate(self, actions, statuses):
         """Process mailing list deactivation actions.
@@ -451,10 +446,9 @@ class XMLRPCRunner(Runner):
                 syslog('xmlrpc',
                        'List deletion error for team: %s', team_name)
                 log_exception()
-                statuses[team_name] = 'failure'
+                statuses[team_name] = ('deactivate', 'failure')
             else:
-                syslog('xmlrpc', 'Successfully deleted list: %s', team_name)
-                statuses[team_name] = 'success'
+                statuses[team_name] = ('deactivate', 'success')
 
     def _check_held_messages(self):
         """See if any held messages have been accepted or rejected."""
@@ -472,7 +466,6 @@ class XMLRPCRunner(Runner):
                    COMMASPACE.join(dispositions))
         else:
             return
-        changes_detected = False
         # For each message that has been acted upon in Launchpad, handle the
         # message in here in Mailman.  We need to resort the dispositions so
         # that we can handle all of them for a particular mailing list at the
@@ -508,8 +501,7 @@ class XMLRPCRunner(Runner):
                                message_id)
                     else:
                         mlist.HandleRequest(request_id, mm_cfg.APPROVE)
-                        syslog('vette', 'Approved: %s', message_id)
-                        changes_detected = True
+                        syslog('xmlrpc', 'Approved: %s', message_id)
                 for message_id in declines:
                     request_id = mlist.held_message_ids.pop(message_id, None)
                     if request_id is None:
@@ -517,8 +509,7 @@ class XMLRPCRunner(Runner):
                                message_id)
                     else:
                         mlist.HandleRequest(request_id, mm_cfg.REJECT)
-                        syslog('vette', 'Rejected: %s', message_id)
-                        changes_detected = True
+                        syslog('xmlrpc', 'Rejected: %s', message_id)
                 for message_id in discards:
                     request_id = mlist.held_message_ids.pop(message_id, None)
                     if request_id is None:
@@ -526,14 +517,10 @@ class XMLRPCRunner(Runner):
                                message_id)
                     else:
                         mlist.HandleRequest(request_id, mm_cfg.DISCARD)
-                        syslog('vette', 'Discarded: %s', message_id)
-                        changes_detected = True
+                        syslog('xmlrpc', 'Discarded: %s', message_id)
                 mlist.Save()
             finally:
                 mlist.Unlock()
-        # If changes were detected, bump the serial number.
-        if changes_detected:
-            syslog('serial', 'SERIAL: %s', self.serial_number.next())
 
     def _resynchronize(self, actions, statuses):
         """Process resynchronization actions.
@@ -559,22 +546,22 @@ class XMLRPCRunner(Runner):
                 # is CONSTRUCTING, we can create it now.
                 if status == 'constructing':
                     if self._create(name):
-                        statuses[name] = 'success'
+                        statuses[name] = ('resynchronize', 'success')
                     else:
-                        statuses[name] = 'failure'
+                        statuses[name] = ('resynchronize', 'failure')
                 else:
                     # Any other condition leading to an unknown list is a
                     # failure state.
-                    statuses[name] = 'failure'
+                    statuses[name] = ('resynchronize', 'failure')
             except:
                 # Any other exception is also a failure.
-                statuses[name] = 'failure'
+                statuses[name] = ('resynchronize', 'failure')
                 syslog('xmlrpc', 'Mailing list does not load: %s', name)
             else:
                 # The list loaded just fine, so it successfully
                 # resynchronized.  Be sure to unlock it!
                 mlist.Unlock()
-                statuses[name] = 'success'
+                statuses[name] = ('resynchronize', 'success')
 
 
 def extractall(tgz_file):

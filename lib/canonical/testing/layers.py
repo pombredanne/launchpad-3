@@ -1334,4 +1334,3 @@ class AppServerLayer(LaunchpadFunctionalLayer):
                 "App server died in this test (status=%s):\n%s" % (
                     cls.appserver.returncode, cls.appserver.stdout.read()))
         DatabaseLayer.force_dirty_database()
-
