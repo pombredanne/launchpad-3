@@ -103,11 +103,6 @@ class BranchTestCase(TestCaseWithTransport):
         tree.commit('Added foo', rev_id='rev1')
         return tree
 
-    def emptyPullQueues(self):
-        transaction.begin()
-        cursor().execute("UPDATE Branch SET next_mirror_time = NULL")
-        transaction.commit()
-
     def getUniqueInteger(self):
         """Return an integer unique to this run of the test case."""
         # Delegate to the factory.

@@ -28,6 +28,7 @@ from canonical.codehosting.tests.helpers import (
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
@@ -60,11 +61,6 @@ class SSHTestCase(ServerTestCase):
 
     layer = TwistedAppServerLayer
     server = None
-
-    def installServer(self, server):
-        super(SSHTestCase, self).installServer(server)
-        self.default_user = 'testuser'
-        self.default_team = 'testteam'
 
     def setUp(self):
         super(SSHTestCase, self).setUp()
@@ -173,14 +169,16 @@ class SSHTestCase(ServerTestCase):
         Used to create branches that the test user is not able to create, and
         might not even be able to view.
         """
-        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+        authserver = xmlrpclib.ServerProxy(
+            config.codehosting.authentication_endpoint)
+        branchfs = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
         if creator is None:
             creator_id = authserver.getUser(user)['id']
         else:
             creator_id = authserver.getUser(creator)['id']
         if branch_root is None:
             branch_root = self.server._mirror_root
-        branch_id = authserver.createBranch(creator_id, user, product, branch)
+        branch_id = branchfs.createBranch(creator_id, user, product, branch)
         branch_url = 'file://' + os.path.abspath(
             os.path.join(branch_root, branch_id_to_path(branch_id)))
         self.runInChdir(

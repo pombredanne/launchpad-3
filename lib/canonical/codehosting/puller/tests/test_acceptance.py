@@ -47,7 +47,6 @@ class TestBranchPuller(BranchTestCase):
             config.root, 'cronscripts', 'supermirror-pull.py')
         self.makeCleanDirectory(config.codehosting.branches_root)
         self.makeCleanDirectory(config.supermirror.branchesdest)
-        self.emptyPullQueues()
         authserver_tac = AuthserverTacTestSetup()
         authserver_tac.setUp()
         self.addCleanup(authserver_tac.tearDown)
