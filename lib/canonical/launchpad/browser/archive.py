@@ -121,7 +121,7 @@ class ArchiveContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def copy(self):
         text = 'Copy packages'
-        return Link('+copy-packages', text, icon='info')
+        return Link('+copy-packages', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
