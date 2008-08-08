@@ -12,15 +12,11 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.urlutils import escape
 
-from zope.security.management import setSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
-
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.tests.helpers import (
     CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite)
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
-from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.testing import TwistedAppServerLayer
 from canonical.twistedsupport import defer_to_thread
 
@@ -58,11 +54,6 @@ class TestBranchIDToPath(unittest.TestCase):
 class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     layer = TwistedAppServerLayer
-
-    def setUp(self):
-        setSecurityPolicy(PermissiveSecurityPolicy)
-        login(ANONYMOUS)
-        super(TestFilesystem, self).setUp()
 
     @defer_to_thread
     def test_remove_branch_directory(self):
