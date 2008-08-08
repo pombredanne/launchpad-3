@@ -61,11 +61,6 @@ class SSHTestCase(ServerTestCase):
     layer = TwistedAppServerLayer
     server = None
 
-    def installServer(self, server):
-        super(SSHTestCase, self).installServer(server)
-        self.default_user = 'testuser'
-        self.default_team = 'testteam'
-
     def setUp(self):
         super(SSHTestCase, self).setUp()
         self._main_thread_id = thread.get_ident()
