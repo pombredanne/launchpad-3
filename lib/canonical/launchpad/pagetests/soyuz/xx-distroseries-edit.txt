@@ -104,7 +104,7 @@ Modifying 'name', 'version' and 'changeslist'.
     >>> admin_browser.getControl("Change").click()
 
 Once submitted the +admin form also redirects to the distroseries
-overview page.
+overview page with the up-to-date information.
 
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu/boing'
@@ -140,4 +140,127 @@ anything else than 'user@url' will be rejected.
     ...     print message
     There is 1 error.
     Constraint not satisfied
+
+The 'status' field is also handled in a special way. The view logic
+ensure the distroseries status is set consistently:
+
+ * when a unstable distroseries is made stable it automatically sets
+   'daterelease' timestamp.
+ * stable (released) distroseries are not made 'unstable' again.
+
+In the sampledata ubuntu/warty is set as CURRENT, stable, and its
+'datereleased' is set.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+    >>> warty = ubuntu.getSeries('warty')
+    >>> print warty.status.name
+    CURRENT
+
+    >>> print warty.datereleased
+    2004-08-20 00:00:00+00:00
+
+On the other hand, ubuntu/hoary is in DEVELOPMENT status, unstable,
+and its 'daterelease' is unset.
+
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> print hoary.status.name
+    DEVELOPMENT
+
+    >>> print hoary.datereleased
+    None
+
+    >>> logout()
+
+When a unstable distroseries gets released, set to 'Current', its
+'daterelease' gets recorded.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/hoary/+admin')
+    >>> admin_browser.getControl(
+    ...     "Status").displayValue = ['Current Stable Release']
+    >>> admin_browser.getControl("Changeslist").value = 'foo@bar.com'
+    >>> admin_browser.getControl("Change").click()
+
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    Your changes have been applied.
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> print hoary.status.name
+    CURRENT
+
+    >>> hoary.datereleased is not None
+    True
+
+Restore previous hoary status.
+
+    >>> from canonical.launchpad.interfaces.distroseries import (
+    ...     DistroSeriesStatus)
+
+    >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+    >>> hoary.datereleased = None
+
+    >>> logout()
+
+A stable distroseries cannot be made unstable.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/warty/+admin')
+    >>> print admin_browser.getControl("Status").displayValue
+    ['Current Stable Release']
+
+Making it 'Supported'
+
+    >>> admin_browser.getControl(
+    ...     "Status").displayValue = ['Supported']
+    >>> admin_browser.getControl("Change").click()
+
+    >>> admin_browser.getLink("Administer").click()
+    >>> print admin_browser.getControl("Status").displayValue
+    ['Supported']
+
+Making it 'Obsolete'.
+
+    >>> admin_browser.getControl(
+    ...     "Status").displayValue = ['Obsolete']
+    >>> admin_browser.getControl("Change").click()
+
+    >>> admin_browser.getLink("Administer").click()
+    >>> print admin_browser.getControl("Status").displayValue
+    ['Obsolete']
+
+And finally, move warty back to 'Current'.
+
+    >>> admin_browser.getControl(
+    ...     "Status").displayValue = ['Current Stable Release']
+    >>> admin_browser.getControl("Change").click()
+
+    >>> admin_browser.getLink("Administer").click()
+    >>> print admin_browser.getControl("Status").displayValue
+    ['Current Stable Release']
+
+Note that the previously set 'datereleased' wasn't changed.
+
+    >>> login('foo.bar@canonical.com')
+    >>> print warty.datereleased
+    2004-08-20 00:00:00+00:00
+
+    >>> logout()
+
+Any other status is considered unstable and this not allowed.
+
+    >>> admin_browser.getControl(
+    ...     "Status").displayValue = ['Experimental']
+    >>> admin_browser.getControl("Change").click()
+
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    There is 1 error.
+    Already released distroseries cannot be made unstable again.
 

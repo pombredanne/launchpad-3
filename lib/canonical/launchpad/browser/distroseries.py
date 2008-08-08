@@ -23,6 +23,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 
 from canonical.cachedproperty import cachedproperty
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -31,7 +32,7 @@ from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces.country import ICountry
 from canonical.launchpad.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet)
+    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.distroserieslanguage import (
         IDistroSeriesLanguageSet)
 from canonical.launchpad.interfaces.language import ILanguageSet
@@ -446,10 +447,11 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
         self.label = 'Administer %s' % self.context.title
 
     def validate(self, data):
-        from canonical.database.constants import UTC_NOW
-        from canonical.launchpad.interfaces.distroseries import (
-            DistroSeriesStatus)
+        """Validate status changes.
 
+        Ensure stable distroseries are not made unstable by mistake and
+        set 'datereleased' when a unstable distroseries is made stable.
+        """
         post_release_status = (
             DistroSeriesStatus.CURRENT,
             DistroSeriesStatus.SUPPORTED,
@@ -457,7 +459,6 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
             )
 
         status = data.get('status')
-
         if (self.context.status in post_release_status and
             status not in post_release_status):
             self.setFieldError(
@@ -469,8 +470,6 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
         if (self.context.datereleased is None and
             status == DistroSeriesStatus.CURRENT):
             self.context.datereleased = UTC_NOW
-            self.request.response.addInfoNotification(
-                'Datereleased set')
 
     @action("Change")
     def change_action(self, action, data):
