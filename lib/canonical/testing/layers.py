@@ -23,6 +23,7 @@ __metaclass__ = type
 __all__ = [
     'AppServerLayer',
     'BaseLayer',
+    'DatabaseFunctionalLayer',
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
     'FunctionalLayer',
@@ -914,6 +915,38 @@ class GoogleServiceLayer(BaseLayer):
         # We need to override BaseLayer.testTearDown(), or else we will
         # get a LayerIsolationError.
         pass
+
+
+class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
+    """Provides the database and the Zope3 application server environment."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        # Connect Storm
+        reconnect_stores()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        getUtility(IOpenLaunchBag).clear()
+
+        # If tests forget to logout, we can do it for them.
+        if is_logged_in():
+            logout()
+
+        # Disconnect Storm so it doesn't get in the way of database resets
+        disconnect_stores()
 
 
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
