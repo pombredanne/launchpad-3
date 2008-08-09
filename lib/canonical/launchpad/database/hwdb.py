@@ -259,7 +259,8 @@ class HWVendorNameSet:
 
     def getByName(self, name):
         """See `IHWVendorNameSet`."""
-        return HWVendorName.selectOneBy(name=name)
+        return HWVendorName.selectOne(
+            'ulower(name)=ulower(%s)' % sqlvalues(name))
 
 
 four_hex_digits = re.compile('^0x[0-9a-f]{4}$')
