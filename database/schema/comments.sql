@@ -1937,6 +1937,11 @@ COMMENT ON COLUMN HWDevice.variant IS 'An optional additional description for a 
 COMMENT ON COLUMN HWDevice.name IS 'The human readable product name of the device.';
 COMMENT ON COLUMN HWDevice.submissions IS 'The number of submissions that contain this device.';
 
+COMMENT ON TABLE HWDeviceClass IS 'Capabilities of a device.';
+COMMENT ON COLUMN HWDeviceClass.device IS 'A reference to a device.';
+COMMENT ON COLUMN HWDeviceClass.main_class IS 'The main class of a device. Legal values are defined by the HWMainClass enumeration.';
+COMMENT ON COLUMN HWDeviceClass.sub_class IS 'The sub-class of a device. Legal values are defined by the HWSubClass enumeration.';
+
 COMMENT ON TABLE HWDeviceNameVariant IS 'Alternative vendor and product names of devices.';
 COMMENT ON COLUMN HWDeviceNameVariant.vendor_name IS 'The alternative vendor name.';
 COMMENT ON COLUMN HWDeviceNameVariant.product_name IS 'The alternative product name.';
