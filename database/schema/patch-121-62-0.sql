@@ -5,4 +5,4 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE HWSubmissionDevice ADD COLUMN hal_device_id int NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 62, 0);
