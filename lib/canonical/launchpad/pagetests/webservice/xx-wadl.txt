@@ -545,13 +545,11 @@ custom operations.
      ('GET', 'people-findPerson'),
      ('GET', 'people-findTeam'),
      ('GET', 'people-get'),
-     ('GET', 'people-getAllPersons'),
-     ('GET', 'people-getAllTeams'),
      ('GET', 'people-getByEmail'),
      ('POST', 'people-newTeam')]
 
-    >>> (find, findPerson, findTeam, get, getAllPerson, getAllTeams,
-    ...  getByEmail, newTeam) = sorted(methods, key=lambda i: i.attrib['id'])
+    >>> (find, findPerson, findTeam, get, getByEmail, newTeam) = sorted(
+    ...     methods, key=lambda i: i.attrib['id'])
 
 The standard GET operation is a way of getting either a page of the
 collection (see "The representation of a collection" later in this
