@@ -45,7 +45,7 @@ from canonical.launchpad.interfaces import (
     IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
     IHWVendorNameSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet)
 from canonical.launchpad.interfaces.product import License
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 # The vendor name assigned to new, unknown vendor IDs. See
@@ -68,17 +68,16 @@ class HWSubmission(SQLBase):
     contactable = BoolCol(notNull=True)
     submission_key = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person',
-                       validator=public_person_validator)
+                       storm_validator=validate_public_person)
     distroarchseries = ForeignKey(dbName='distroarchseries',
-                                  foreignKey='DistroArchSeries',
-                                  notNull=True)
+                                  foreignKey='DistroArchSeries')
     raw_submission = ForeignKey(dbName='raw_submission',
                                 foreignKey='LibraryFileAlias',
                                 notNull=False, default=DEFAULT)
     system_fingerprint = ForeignKey(dbName='system_fingerprint',
                                     foreignKey='HWSystemFingerprint',
                                     notNull=True)
-    raw_emailaddress = StringCol(notNull=True)
+    raw_emailaddress = StringCol()
 
 
 class HWSubmissionSet:
@@ -100,7 +99,10 @@ class HWSubmissionSet:
                 'A submission with this ID already exists')
 
         personset = getUtility(IPersonSet)
-        owner = personset.getByEmail(emailaddress)
+        if emailaddress is not None:
+            owner = personset.getByEmail(emailaddress)
+        else:
+            owner = None
 
         fingerprint = HWSystemFingerprint.selectOneBy(
             fingerprint=system_fingerprint)
@@ -257,7 +259,8 @@ class HWVendorNameSet:
 
     def getByName(self, name):
         """See `IHWVendorNameSet`."""
-        return HWVendorName.selectOneBy(name=name)
+        return HWVendorName.selectOne(
+            'ulower(name)=ulower(%s)' % sqlvalues(name))
 
 
 four_hex_digits = re.compile('^0x[0-9a-f]{4}$')

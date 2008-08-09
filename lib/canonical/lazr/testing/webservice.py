@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'FakeRequest',
     'FakeResponse',
+    'pprint_entry',
     ]
 
 from zope.interface import implements
@@ -17,7 +18,7 @@ from canonical.lazr.interfaces.rest import WebServiceLayer
 class FakeResponse(object):
     """Simple response wrapper object."""
     def __init__(self):
-        self.status = 200
+        self.status = 599
         self.headers = {}
 
     def setStatus(self, new_status):
@@ -26,6 +27,13 @@ class FakeResponse(object):
     def setHeader(self, name, value):
         self.headers[name] = value
 
+    def getHeader(self, name):
+        """Return the value of the named header."""
+        return self.headers.get(name)
+
+    def getStatus(self):
+        """Return the response status code."""
+        return self.status
 
 class FakeRequest(object):
     """Simple request object for testing purpose."""
@@ -40,4 +48,14 @@ class FakeRequest(object):
 
     def getApplicationURL(self):
         return "http://api.example.org"
+
+    def get(self, key, default=None):
+        """Simulate an empty set of request parameters."""
+        return default
+
+
+def pprint_entry(json_body):
+    """Pretty-print a webservice entry JSON representation."""
+    for key, value in sorted(json_body.items()):
+        print '%s: %r' % (key, value)
 

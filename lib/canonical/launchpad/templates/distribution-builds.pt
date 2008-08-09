@@ -6,18 +6,13 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1><tal:distro replace="context/displayname">Fuix</tal:distro> builds</h1>
-    </metal:heading>
-
-<div metal:fill-slot="main">
-
-  <div tal:replace="structure context/@@+builds-list"/>    
-</div>
-
-</body>
+    <div metal:fill-slot="main">
+    <h1><tal:distro replace="context/displayname">Fuix</tal:distro> builds</h1>
+      <div tal:replace="structure context/@@+builds-list"/>    
+    </div>
+  </body>
 </html>

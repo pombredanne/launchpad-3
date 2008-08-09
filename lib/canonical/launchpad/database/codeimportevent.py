@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     CodeImportEventDataType, CodeImportEventType,
     ICodeImportEvent, ICodeImportEventSet, ICodeImportEventToken,
     CodeImportMachineOfflineReason, RevisionControlSystems)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.lazr.enum import DBItem
 
 
@@ -41,7 +41,7 @@ class CodeImportEvent(SQLBase):
         dbName='code_import', foreignKey='CodeImport', default=None)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     machine = ForeignKey(
         dbName='machine', foreignKey='CodeImportMachine', default=None)
 
@@ -184,6 +184,28 @@ class CodeImportEventSet:
         return CodeImportEvent(
             event_type=CodeImportEventType.FINISH,
             code_import=code_import, machine=machine)
+
+    def newKill(self, code_import, machine):
+        """See `ICodeImportEventSet`."""
+        assert code_import is not None, "code_import must not be None"
+        assert machine is not None, "machine must not be None"
+        return CodeImportEvent(
+            event_type=CodeImportEventType.KILL,
+            code_import=code_import, machine=machine)
+
+    def newReclaim(self, code_import, machine, job_id):
+        """See `ICodeImportEventSet`."""
+        assert code_import is not None, "code_import must not be None"
+        assert machine is not None, "machine must not be None"
+        assert isinstance(job_id, int), (
+            "job_id must be an int, was: %r" % job_id)
+        event = CodeImportEvent(
+            event_type=CodeImportEventType.RECLAIM,
+            code_import=code_import, machine=machine)
+        _CodeImportEventData(
+            event=event, data_type=CodeImportEventDataType.RECLAIMED_JOB_ID,
+            data_value=str(job_id))
+        return event
 
     def _recordSnapshot(self, event, code_import):
         """Record a snapshot of the code import in the event data."""

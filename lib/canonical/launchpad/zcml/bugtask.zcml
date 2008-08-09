@@ -30,7 +30,8 @@
                            date_left_new date_triaged date_fix_committed
                            date_fix_released date_closed bug_subscribers
                            is_complete canTransitionToStatus isMentor
-                           canMentor isSubscribed getPackageComponent" />
+                           canMentor isSubscribed getPackageComponent
+                           userCanEditImportance userCanEditMilestone" />
         <require
             permission="launchpad.View"
             attributes="bugtargetname bugtargetdisplayname
@@ -45,8 +46,8 @@
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
-                        updateTargetNameCache transitionToStatus
-                        transitionToAssignee" />
+                        updateTargetNameCache transitionToImportance
+                        transitionToStatus transitionToAssignee" />
 
         <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
         The permission checking for milestone and importance is further
@@ -93,13 +94,6 @@
       provides="canonical.lazr.interfaces.IObjectPrivacy"
       for="canonical.launchpad.interfaces.IBugTask"
       factory="canonical.launchpad.browser.BugTaskPrivacyAdapter"
-      permission="zope.Public"
-      />
-
-    <adapter
-      provides="canonical.launchpad.webapp.badge.IHasBadges"
-      for="canonical.launchpad.interfaces.IBugTask"
-      factory="canonical.launchpad.browser.BugTaskBadges"
       permission="zope.Public"
       />
 

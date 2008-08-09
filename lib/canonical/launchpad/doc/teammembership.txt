@@ -57,7 +57,7 @@ One way of adding new members to a team is by having the user himself join the
 team he wants.
 
     >>> salgado = personset.getByName('salgado')
-    >>> login(salgado.preferredemail.email)
+    >>> login_person(salgado)
     >>> salgado.join(t3)
     >>> salgado.join(t4)
 
@@ -69,7 +69,7 @@ member of that team --somebody has to approve his membership first:
 
     >>> [m.displayname for m in t3.allmembers]
     [u'Foo Bar']
-    >>> login(t3.teamowner.preferredemail.email)
+    >>> login_person(t3.teamowner)
     >>> t3.setMembershipData(salgado, TeamMembershipStatus.APPROVED, reviewer)
     >>> flush_database_updates()
     >>> [m.displayname for m in t3.allmembers]
@@ -82,7 +82,7 @@ given team.
     >>> launchpad = personset.getByName('launchpad')
     >>> launchpad.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED
     True
-    >>> login(salgado.preferredemail.email)
+    >>> login_person(salgado)
     >>> salgado.join(launchpad)
     Traceback (most recent call last):
     ...
@@ -102,8 +102,7 @@ approved.  Note, though, that in the case of teams we need to pass a
 requester to the join() method.
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login
-    >>> login(ubuntu_team.teamowner.preferredemail.email)
+    >>> login_person(ubuntu_team.teamowner)
     >>> ubuntu_team.join(t3, ubuntu_team.teamowner)
     >>> t3.subscriptionpolicy
     <DBItem TeamSubscriptionPolicy.MODERATED...
@@ -117,7 +116,7 @@ requester to the join() method.
     True
 
     # Clean things up to not upset the other tests.
-    >>> login(t2.teamowner.preferredemail.email)
+    >>> login_person(t2.teamowner)
     >>> t2.setMembershipData(
     ...     ubuntu_team, TeamMembershipStatus.DEACTIVATED, t2.teamowner)
     >>> login(ANONYMOUS)
@@ -142,7 +141,7 @@ to a team.
     zope.security.interfaces.Unauthorized (..., 'addMember', 'launchpad.Edit')
 
     # Log in as the team owner.
-    >>> login(t3.teamowner.preferredemail.email)
+    >>> login_person(t3.teamowner)
 
     >>> t3.addMember(
     ...     salgado, reviewer=sabdfl, status=TeamMembershipStatus.ADMIN)
@@ -186,7 +185,7 @@ invitation before the team is made a member.
 Once one of the t2 admins approve the membership, t2 is shown as a member
 of t1.
 
-    >>> login(t2.teamowner.preferredemail.email)
+    >>> login_person(t2.teamowner)
     >>> t2.acceptInvitationToBeMemberOf(t1, comment='something')
     >>> [m.displayname for m in t1.allmembers]
     [u'Foo Bar', u't2']
@@ -194,7 +193,7 @@ of t1.
 A team admin can also decline an invitation made to his team.
 
     >>> t2.addMember(t3, reviewer=sabdfl)
-    >>> login(t3.teamowner.preferredemail.email)
+    >>> login_person(t3.teamowner)
     >>> t3.declineInvitationToBeMemberOf(t2, comment='something')
     >>> membership = membershipset.getByPersonAndTeam(t3, t2)
     >>> membership.status == TeamMembershipStatus.INVITATION_DECLINED
@@ -205,7 +204,7 @@ add teams as members of other teams. We can do that by passing an extra
 force_team_add=True to addMember(). We'll use that to add t3 as a member of
 t2, thus making all t3 members be considered members of t2 as well.
 
-    >>> login(t3.teamowner.preferredemail.email)
+    >>> login_person(t3.teamowner)
     >>> t2.addMember(t3, reviewer=sabdfl, force_team_add=True)
     >>> [m.displayname for m in t2.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't3']
@@ -274,7 +273,7 @@ t2 can't use its leave() method to leave t5 because it's a team and teams
 take no actions. One of t5 administrators have to go and remove t2 from t5
 if t2 shouldn't be a member of t5 anymore.
 
-    >>> login(t5.teamowner.preferredemail.email)
+    >>> login_person(t5.teamowner)
     >>> t5.setMembershipData(t2, TeamMembershipStatus.DEACTIVATED, reviewer)
 
 Removing t2 from t5 will have implications in all teams that have t5 as a
@@ -300,7 +299,7 @@ Nothing changes in t1, because t5 wasn't one of its members.
 If 'Guilherme Salgado' decides to leave t3, he'll also be removed from t1
 and t2, but not from t4, because he's a direct member of t4.
 
-    >>> login(salgado.preferredemail.email)
+    >>> login_person(salgado)
     >>> salgado.leave(t3)
     >>> salgado in t1.allmembers
     False
@@ -347,7 +346,7 @@ It's important to note that even if Foo Bar leaves the team he's the owner,
 he'll retains his rights over the team because he's the team's owner. This
 ensures we'll never have teams which can't be managed.
 
-    >>> login(foobar.preferredemail.email)
+    >>> login_person(foobar)
     >>> foobar.leave(t5)
     >>> flush_database_updates()
     >>> [m.displayname for m in t5.allmembers]
@@ -570,14 +569,10 @@ Bug 3989 -- StuarBishop 20060713
     ('', '')
     >>> process.returncode
     0
+    >>> transaction.abort()
 
 Here we can see that the membership that was active is now flagged as expired
 while the one that was inactive hasn't changed.
-
-    # These two objects were updated in another transaction, so we need to
-    # expire them.
-    >>> removeSecurityProxy(foobar_on_admins).expire()
-    >>> removeSecurityProxy(sp_on_ubuntu_translators).expire()
 
     >>> foobar_on_admins = membershipset.getByPersonAndTeam(
     ...     personset.getByName('name16'), personset.getByName('admins'))
@@ -615,7 +610,7 @@ still active.
 
 The member himself can't change the expiration date of his membership.
 
-    >>> login(karl.preferredemail.email)
+    >>> login_person(karl)
     >>> karl_on_mirroradmins.setExpirationDate(tomorrow, karl)
     Traceback (most recent call last):
     ...
@@ -623,7 +618,7 @@ The member himself can't change the expiration date of his membership.
 
 Only a team admin can.
 
-    >>> login(mirror_admins.teamowner.preferredemail.email)
+    >>> login_person(mirror_admins.teamowner)
     >>> karl_on_mirroradmins.setExpirationDate(
     ...     tomorrow, mirror_admins.teamowner)
     >>> karl_on_mirroradmins.dateexpires == tomorrow
@@ -649,7 +644,7 @@ active and set to expire tomorrow).
     >>> karl_on_mirroradmins.canBeRenewedByMember()
     True
 
-    >>> login(karl.preferredemail.email)
+    >>> login_person(karl)
     >>> karl.renewTeamMembership(mirror_admins)
 
     >>> from canonical.launchpad.ftests import syncUpdate
@@ -698,7 +693,7 @@ except shorter)
 
 We can also change the sort order of the results of getMembersByStatus.
 
-    >>> login(cprov.preferredemail.email)
+    >>> login_person(cprov)
     >>> cprov.leave(t3)
     >>> flush_database_updates()
 
@@ -779,7 +774,7 @@ member of.
 Adding admins as a member of t1 will make Salgado a member of t1 as well.
 
     >>> admins = getUtility(IPersonSet).getByName('admins')
-    >>> login(t1.teamowner.preferredemail.email)
+    >>> login_person(t1.teamowner)
     >>> t1.addMember(admins, reviewer=t1.teamowner, force_team_add=True)
     >>> flush_database_updates()
     >>> print '\n'.join(sorted(

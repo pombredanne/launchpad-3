@@ -3,7 +3,7 @@
 """Provides object snapshotting functionality. This is particularly
 useful in calculating deltas"""
 
-from sqlos.interfaces import ISelectResults
+from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 
 from zope.interface.interfaces import IInterface
 from zope.interface import directlyProvides
@@ -53,7 +53,8 @@ class Snapshot:
             if value is _marker:
                 raise AssertionError("Attribute %s not in object %r"
                                      % (name, ob))
-            if ISelectResults.providedBy(value):
+            if (IResultSet.providedBy(value) or
+                ISQLObjectResultSet.providedBy(value)):
                 # SQLMultipleJoin and SQLRelatedJoin return
                 # SelectResults, which doesn't really help the Snapshot
                 # object. We therefore list()ify the values; this isn't

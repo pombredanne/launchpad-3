@@ -10,9 +10,6 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">Name of package</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -21,6 +18,19 @@
 
 
 <div metal:fill-slot="main">
+
+      <div>
+        <a
+          tal:attributes="href context/distroarchseries/fmt:url"
+          tal:content="context/distroarchseries/displayname"
+        />:
+        <a tal:attributes="href context/distroarchseriesbinarypackage/fmt:url">
+          &ldquo;<tal:packagename
+            replace="context/distroarchseriesbinarypackage/name"
+          />&rdquo; package
+        </a>
+      </div>
+      <h1 tal:content="context/title">Name of package</h1>
 
   <tal:description replace="structure context/description/fmt:text-to-html">
      Package Description
@@ -38,20 +48,38 @@
     </ul>
   </div>
 
-  <h2>File download</h2>
+  <h2>Downloadable files</h2>
 
   <div id="files">
-    <ul class="download" tal:condition="context/files">
-      <li tal:repeat="file context/files">
-        <a tal:content="file/libraryfile/filename"
-           tal:attributes="href file/libraryfile/http_url"></a>
-        (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
-      </li>
-    </ul>
-    <p tal:condition="not: context/files">
-      There are no downloadable files for this binary package.
-    </p>
+    <div id="build" tal:condition="context/build">
+        <a tal:define="pbuild context/build"
+           tal:content="pbuild/title"
+           tal:attributes="href pbuild/fmt:url">BUILD</a> produced
+        <span tal:condition="context/files">
+          these files:
+        </span>
+        <span tal:condition="not: context/files">
+          no files for this binary package.
+        </span>
+    </div>
+    
+    <div id="downloadable-files">
+        <ul class="download" tal:condition="context/files">
+          <li tal:repeat="file context/files">
+            <a tal:content="file/libraryfile/filename"
+               tal:attributes="href file/libraryfile/http_url"></a>
+            (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
+          </li>
+        </ul>
+    </div>
   </div>
+  <!-- No build and no downloadable files -->
+  <div tal:condition="not: context/build">
+    <span tal:condition="not: context/files">
+      There are no downloadable files for this binary package.
+    </span>
+  </div>
+
 
   <h2>Package relationships</h2>
 

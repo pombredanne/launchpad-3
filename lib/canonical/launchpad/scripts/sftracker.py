@@ -29,6 +29,8 @@ import time
 
 import pytz
 
+from storm.store import Store
+
 # use cElementTree if it is available ...
 try:
     import xml.elementtree.cElementTree as ET
@@ -50,7 +52,7 @@ from canonical.launchpad.interfaces import (
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 
-# when accessed anonymously, Sourceforge returns dates in this timezone:
+# when accessed anonymously, Sourceforge returns dates in this time zone:
 SOURCEFORGE_TZ = pytz.timezone('US/Pacific')
 UTC = pytz.timezone('UTC')
 
@@ -300,13 +302,16 @@ class TrackerImporter:
 
         # pick a series to attach the milestone.  Pick 'trunk' or
         # 'main' if they exist.  Otherwise pick the first.
+        # pylint: disable-msg=W0631
         for series in self.product.serieses:
             if series.name in ['trunk', 'main']:
                 break
         else:
             series = self.product.serieses[0]
 
-        return series.newMilestone(name)
+        milestone = series.newMilestone(name)
+        Store.of(milestone).flush()
+        return milestone
 
     def createMessage(self, subject, date, userid, text):
         """Create an IMessage for a particular comment."""
@@ -372,7 +377,7 @@ class TrackerImporter:
 
         # set up bug task
         bugtask.datecreated = item.datecreated
-        bugtask.importance = item.lp_importance
+        bugtask.transitionToImportance(item.lp_importance, self.bug_importer)
         bugtask.transitionToStatus(item.lp_status, self.bug_importer)
         bugtask.transitionToAssignee(self.get_person(item.assignee))
 

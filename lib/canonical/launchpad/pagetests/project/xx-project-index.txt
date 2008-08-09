@@ -119,23 +119,23 @@ The home page of a project contains a list of all products which are part of tha
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> products = find_tags_by_class(browser.contents, 'project')
     >>> for product in products:
-    ...     print product.find('a').renderContents()
-    Mozilla Firefox
-    Mozilla Thunderbird
- 
+    ...     print repr(product.find('a').find(text=True))
+    u'&nbsp;Mozilla Firefox'
+    u'&nbsp;Mozilla Thunderbird'
+
 Inactive products are not included in that list, though.
 
     >>> from canonical.launchpad.database import ProductSet
     >>> firefox = ProductSet().getByName('firefox')
     >>> firefox.active = False
     >>> firefox.syncUpdate()
- 
+
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> products = find_tags_by_class(browser.contents, 'project')
     >>> for product in products:
-    ...     print product.find('a').renderContents()
-    Mozilla Thunderbird
- 
+    ...     print repr(product.find('a').find(text=True))
+    u'&nbsp;Mozilla Thunderbird'
+
     >>> firefox.active = True
     >>> firefox.syncUpdate()
 
@@ -149,13 +149,10 @@ It is possible to access the project's product through the project URL.
   >>> browser.open('http://launchpad.dev/mozilla/firefox')
   >>> browser.title
   'Mozilla Firefox in Launchpad'
-  >>> print find_main_content(browser.contents)
-  <...
-  ...The Mozilla Firefox web browser...
-  ...
-  ...Latest bugs...
-  ...
-
+  >>> print extract_text(find_main_content(browser.contents))
+  Details
+  ...Mozilla Firefox
+  ...Part of: the Mozilla Project...
 
 == Project bug subscriptions ==
 

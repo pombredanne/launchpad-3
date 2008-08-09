@@ -827,16 +827,16 @@ variables from there.
     >>> request._orig_env['launchpad.publicationticks'] = 500
     >>> request.supportsRetry()
     True
-    >>> import canonical.launchpad.webapp.adapter as da
+    >>> from storm.exceptions import DisconnectionError
     >>> try:
-    ...     raise da.DisconnectionError()
+    ...     raise DisconnectionError()
     ... except:
     ...     exc_info = sys.exc_info()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: (<class canonical.launchpad.webapp.adapter.DisconnectionError...
+    Retry: (<class storm.exceptions.DisconnectionError...
     ...
 
     >>> request._orig_env.has_key('launchpad.publicationticks')
@@ -927,8 +927,8 @@ afterCall().  For example, this publication subclass will simply print
 some string in its finishReadOnlyRequest().
 
     >>> class MyPublication(LaunchpadBrowserPublication):
-    ...	      def finishReadOnlyRequest(self, txn):
-    ...	      	  print "booo!"
+    ...     def finishReadOnlyRequest(self, txn):
+    ...         print "booo!"
 
     >>> publication = MyPublication(None)
     >>> publication.afterCall(request, None)
@@ -954,7 +954,6 @@ be automatically reverted in a GET request.
     # have to change the request manually.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
-    >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> print foo_bar.city
@@ -973,7 +972,6 @@ But not if the request uses POST, the changes will be preserved.
     # have to change the request manually.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
-    >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> print foo_bar.city
@@ -987,8 +985,9 @@ transaction after GET requests in order to persist new entries added to
 the OAuthNonce table.
 
     >>> import time
-    >>> from canonical.launchpad.interfaces import (
-    ...     IOAuthConsumerSet, IPersonSet, OAuthPermission)
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
@@ -1076,8 +1075,8 @@ will get associated with the request after the beforeTraversal() hook.
 
     >>> marker = object()
     >>> class MyPublication(LaunchpadBrowserPublication):
-    ...	      def getPrincipal(self, request):
-    ...	      	  return marker
+    ...     def getPrincipal(self, request):
+    ...         return marker
 
     >>> publication = MyPublication(None)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -1096,10 +1095,11 @@ will get associated with the request after the beforeTraversal() hook.
 The default implementation will use the IPlacelessAuthentication
 utility to setup the request.
 
+    >>> login(ANONYMOUS) # Get rid of the marker object in the interaction.
     >>> foo_bar_auth = 'Basic %s' % (
-    ...	    'foo.bar@canonical.com:test'.encode('base64'))
+    ...     'foo.bar@canonical.com:test'.encode('base64'))
     >>> request, publication = get_request_and_publication(
-    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    ...     extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
     >>> principal = publication.getPrincipal(request)
     >>> print principal.title
     Foo Bar
@@ -1107,8 +1107,8 @@ utility to setup the request.
 The feeds implementation always returns the anonymous user.
 
     >>> request, publication = get_request_and_publication(
-    ...	    'feeds.launchpad.dev',
-    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    ...     'feeds.launchpad.dev',
+    ...     extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
     >>> principal = publication.getPrincipal(request)
 
     >>> from zope.app.security.interfaces import IUnauthenticatedPrincipal
@@ -1117,12 +1117,15 @@ The feeds implementation always returns the anonymous user.
 
 The webservice implementation returns the principal for the person
 associated with the access token specified in the request.  The
-principal's access_level will be the one specified in the token.
+principal's access_level and scope will match what was specified in the
+token.
 
+    >>> from canonical.launchpad.interfaces.product import IProductSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
-    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC, context=firefox)
     >>> access_token = token.createAccessToken()
     >>> form = dict(
     ...     oauth_consumer_key='foobar123451432',
@@ -1141,6 +1144,8 @@ principal's access_level will be the one specified in the token.
     Guilherme Salgado
     >>> principal.access_level
     <DBItem AccessLevel.WRITE_PUBLIC...
+    >>> principal.scope.name
+    u'firefox'
 
 If the token is expired or doesn't exist, an Unauthorized exception is
 raised, though.

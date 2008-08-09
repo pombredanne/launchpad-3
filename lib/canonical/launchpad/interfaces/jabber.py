@@ -13,16 +13,17 @@ __all__ = [
 from zope.schema import Int, TextLine
 from zope.interface import Interface
 
+from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.rest.schema import Reference
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 
-class IJabberID(Interface):
+class IJabberID(IHasOwner):
     """Jabber specific user ID """
-    export_as_webservice_entry()
+    export_as_webservice_entry('jabber_id')
     id = Int(title=_("Database ID"), required=True, readonly=True)
     # schema=Interface will be overriden in person.py because of circular
     # dependencies.

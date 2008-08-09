@@ -241,7 +241,7 @@ in the License enum.
     >>> len(soup.table('input')) + 10 == len(License)
     True
     >>> soup.a['href']
-    u'http://www.ubuntu.com/community/ubuntustory/licensing'
+    u'https://help.launchpad.net/Legal/ProjectLicensing'
 
 Zero selected licenses should return an empty set and the html
 output should have zero checked inputs.

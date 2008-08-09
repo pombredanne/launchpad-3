@@ -29,7 +29,7 @@ link to a external bug for it.
 
     >>> admin_browser.getControl(
     ...     'Bugs in this project are tracked in Launchpad').selected = False
-    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.getControl('Change', index=3).click()
     >>> admin_browser.open('http://launchpad.dev/gentoo/+edit')
     >>> admin_browser.getControl(
     ...     'Bugs in this project are tracked in Launchpad').selected

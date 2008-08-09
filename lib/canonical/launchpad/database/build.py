@@ -6,6 +6,7 @@ __all__ = ['Build', 'BuildSet']
 
 
 import apt_pkg
+from cStringIO import StringIO
 from datetime import datetime, timedelta
 import logging
 
@@ -15,14 +16,14 @@ from zope.component import getUtility
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
+from storm.references import Reference
 
 from canonical.config import config
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import cursor
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -31,14 +32,20 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
-    get_email_template, contactEmailAddresses)
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBuild, IBuildSet, IBuilderSet,
-    NotFoundError, ILaunchpadCelebrities, PackagePublishingPocket,
-    PackagePublishingStatus)
+     contactEmailAddresses, filenameToContentType, get_email_template)
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IBuild, IBuildSet)
+from canonical.launchpad.interfaces.builder import IBuilderSet
+from canonical.launchpad.interfaces.launchpad import (
+    NotFoundError, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+
 
 class Build(SQLBase):
     implements(IBuild)
@@ -66,13 +73,12 @@ class Build(SQLBase):
     archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
     estimated_build_duration = IntervalCol(default=None)
 
-    @property
-    def buildqueue_record(self):
-        """See `IBuild`"""
-        # XXX cprov 2005-10-25 bug=3424:
-        # Would be nice if we can use fresh sqlobject feature 'singlejoin'
-        # instead.
-        return BuildQueue.selectOneBy(build=self)
+    buildqueue_record = Reference("<primary key>", BuildQueue.buildID,
+                                  on_remote=True)
+    date_first_dispatched = UtcDateTimeCol(dbName='date_first_dispatched')
+
+    upload_log = ForeignKey(
+        dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
 
     @property
     def current_component(self):
@@ -152,8 +158,13 @@ class Build(SQLBase):
     @property
     def binarypackages(self):
         """See `IBuild`."""
-        bpklist = BinaryPackageRelease.selectBy(build=self, orderBy=['id'])
-        return sorted(bpklist, key=lambda a: a.binarypackagename.name)
+        return BinaryPackageRelease.select("""
+            BinaryPackageRelease.build = %s AND
+            BinaryPackageRelease.binarypackagename = BinaryPackageName.id
+            """ % sqlvalues(self),
+            clauseTables=["BinaryPackageName"],
+            orderBy=["BinaryPackageName.name", "BinaryPackageRelease.id"],
+            prejoins=["binarypackagename", "component", "section"])
 
     @property
     def distroarchseriesbinarypackages(self):
@@ -217,6 +228,7 @@ class Build(SQLBase):
         self.buildduration = None
         self.builder = None
         self.buildlog = None
+        self.upload_log = None
         self.dependencies = None
         self.createBuildQueueEntry()
 
@@ -658,6 +670,22 @@ class Build(SQLBase):
                 fromaddress, toaddress, subject, message,
                 headers=extra_headers)
 
+    def storeUploadLog(self, content):
+        """See `IBuild`."""
+        assert self.upload_log is None, (
+            "Upload log information already exist and cannot be overridden.")
+
+        filename = 'upload_%s_log.txt' % self.id
+        contentType = filenameToContentType(filename)
+        file_size = len(content)
+        file_content = StringIO(content)
+        restricted = self.archive.private
+
+        library_file = getUtility(ILibraryFileAliasSet).create(
+            filename, file_size, file_content, contentType=contentType,
+            restricted=restricted)
+        self.upload_log = library_file
+
 
 class BuildSet:
     implements(IBuildSet)
@@ -829,16 +857,13 @@ class BuildSet:
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
-            orderBy = ["-BuildQueue.lastscore"]
+            orderBy = ["-BuildQueue.lastscore", "Build.id"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
         elif status == BuildStatus.SUPERSEDED or status is None:
             orderBy = ["-Build.datecreated"]
         else:
             orderBy = ["-Build.datebuilt"]
-
-        # Fallback to ordering by id as a tie-breaker.
-        orderBy.append("id")
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
@@ -864,12 +889,21 @@ class BuildSet:
             DistroArchSeries.distroseries = DistroSeries.id AND
             DistroSeries.distribution = Distribution.id AND
             Distribution.id = Archive.distribution AND
-            Archive.purpose != %s AND
+            Archive.purpose IN (%s) AND
             Archive.id = Build.archive
-            """ % quote(ArchivePurpose.PPA))
+            """ % ','.join(
+                sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
+
+        prejoins = [
+            "sourcepackagerelease",
+            "sourcepackagerelease.sourcepackagename",
+            "buildlog",
+            "buildlog.content",
+            ]
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,
+                            prejoins=prejoins,
                             orderBy=orderBy)
 
     def retryDepWaiting(self, distroarchseries):
@@ -901,3 +935,23 @@ class BuildSet:
             logger.info("Retrying %s" % build.title)
             build.retry()
             build.buildqueue_record.score()
+
+    def getBuildsBySourcePackageRelease(self, sourcepackagerelease_ids,
+                                        buildstate=None):
+        """See `IBuildSet`."""
+        if (sourcepackagerelease_ids is None or
+            len(sourcepackagerelease_ids) == 0):
+            return []
+
+        query = """
+            sourcepackagerelease IN %s AND
+            archive.id = build.archive AND
+            archive.purpose != %s
+            """ % sqlvalues(sourcepackagerelease_ids, ArchivePurpose.PPA)
+
+        if buildstate is not None:
+            query += "AND buildstate = %s" % sqlvalues(buildstate)
+
+        return Build.select(
+            query, orderBy=["-datecreated", "id"],
+            clauseTables=["Archive"])

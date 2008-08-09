@@ -28,8 +28,8 @@ the "frog" builder.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login("foo.bar@canonical.com")
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
-    >>> cprov.archive.private = True
     >>> cprov.archive.buildd_secret = "secret"
+    >>> cprov.archive.private = True
     >>> cprov_builds = getUtility(
     ...     IBuildSet).getBuildsForArchive(cprov.archive)
     >>> frog = getUtility(IBuilderSet)['frog']
@@ -77,9 +77,13 @@ private build:
 
 and also the main area:
 
-    >>> for message in get_feedback_messages(anon_browser.contents):
-    ...     print message
-    The frog builder is deactivated.
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    The frog builder
+    Current status
+    The frog builder
+    is deactivated.
+    Last updated ...
+
 
 Launchpad Administrators are allowed to see the build in the portlet:
 
@@ -407,10 +411,10 @@ Accessing the build page will now also work:
     ...     "http://launchpad.dev/~cprov/+archive/+build/%s" %
     ...     random_build_id)
     >>> print anon_browser.title
-    Build details for i386 build of iceweasel...
+    i386 build of iceweasel...
 
     >>> browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/+build/%s" %
     ...     random_build_id)
     >>> print browser.title
-    Build details for i386 build of iceweasel...
+    i386 build of iceweasel...

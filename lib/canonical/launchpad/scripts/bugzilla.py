@@ -26,7 +26,9 @@ import logging
 import datetime
 import pytz
 
+from storm.store import Store
 from zope.component import getUtility
+
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
     IBugAttachmentSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
@@ -159,11 +161,13 @@ class BugzillaBackend:
         joins = []
         conditions = []
         if product:
-            joins.append('INNER JOIN products ON bugs.product_id = products.id')
+            joins.append(
+                'INNER JOIN products ON bugs.product_id = products.id')
             conditions.append('products.name IN (%s)' %
                 ', '.join([self.conn.escape(p) for p in product]))
         if component:
-            joins.append('INNER JOIN components ON bugs.component_id = components.id')
+            joins.append(
+                'INNER JOIN components ON bugs.component_id = components.id')
             conditions.append('components.name IN (%s)' %
                 ', '.join([self.conn.escape(c) for c in component]))
         if status:
@@ -221,7 +225,8 @@ class Bug:
 
     def mapSeverity(self, bugtask):
         """Set a Launchpad bug task's importance based on this bug's severity."""
-        bugtask.importance = {
+        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+        importance_map = {
             'blocker': BugTaskImportance.CRITICAL,
             'critical': BugTaskImportance.CRITICAL,
             'major': BugTaskImportance.HIGH,
@@ -229,7 +234,10 @@ class Bug:
             'minor': BugTaskImportance.LOW,
             'trivial': BugTaskImportance.LOW,
             'enhancement': BugTaskImportance.WISHLIST
-            }.get(self.bug_severity, BugTaskImportance.UNKNOWN)
+            }
+        importance = importance_map.get(
+            self.bug_severity, BugTaskImportance.UNKNOWN)
+        bugtask.transitionToImportance(importance, bug_importer)
 
     def mapStatus(self, bugtask):
         """Set a Launchpad bug task's status based on this bug's status.
@@ -391,10 +399,10 @@ class Bugzilla:
         name = re.sub(r'[^a-z0-9\+\.\-]', '-', bug.target_milestone.lower())
 
         milestone = self.ubuntu.getMilestone(name)
-        if milestone is not None:
-            return milestone
-        else:
-            return self.ubuntu.currentseries.newMilestone(name)
+        if milestone is None:
+            milestone = self.ubuntu.currentseries.newMilestone(name)
+            Store.of(milestone).flush()
+        return milestone
 
     def getLaunchpadUpstreamProduct(self, bug):
         """Find the upstream product for the given Bugzilla bug.
@@ -499,7 +507,7 @@ class Bugzilla:
         if bug.alias:
             if re.match(r'^deb\d+$', bug.alias):
                 watch = self.bugwatchset.createBugWatch(
-                    lp_bug, lp_bug.owner, self.debbugs, int(bug.alias[3:]))
+                    lp_bug, lp_bug.owner, self.debbugs, bug.alias[3:])
                 debtask = self.bugtaskset.createTask(
                     lp_bug,
                     owner=lp_bug.owner,

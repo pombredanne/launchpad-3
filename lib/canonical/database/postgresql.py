@@ -32,10 +32,10 @@ def listReferences(cur, table, column, _state=None):
 
     >>> for r in listReferences(cur, 'a', 'aid'):
     ...     print repr(r)
-    ('a', 'selfref', 'a', 'aid', u'a', u'a')
-    ('b', 'aid', 'a', 'aid', u'c', u'c')
-    ('c', 'aid', 'b', 'aid', u'a', u'a')
-    ('d', 'aid', 'b', 'aid', u'a', u'a')
+    (u'a', u'selfref', u'a', u'aid', u'a', u'a')
+    (u'b', u'aid', u'a', u'aid', u'c', u'c')
+    (u'c', u'aid', u'b', u'aid', u'a', u'a')
+    (u'd', u'aid', u'b', u'aid', u'a', u'a')
 
     Of course, there might not be any references
 
@@ -73,7 +73,7 @@ def listReferences(cur, table, column, _state=None):
             AND NOT ref_pg_attribute.attisdropped
         ORDER BY src_pg_class.relname, src_pg_attribute.attname
         """
-    cur.execute(sql, vars())
+    cur.execute(sql, dict(table=table, column=column))
 
     # Recursive function. Create the list that stores our state.
     # We pass this down to subinvocations to avoid loops.
@@ -101,26 +101,26 @@ def listUniques(cur, table, column):
     Simple UNIQUE index
 
     >>> listUniques(cur, 'b', 'aid')
-    [('aid',)]
+    [(u'aid',)]
 
     Primary keys are UNIQUE indexes too
 
     >>> listUniques(cur, 'a', 'aid')
-    [('aid',)]
+    [(u'aid',)]
 
     Compound indexes
 
     >>> listUniques(cur, 'c', 'aid')
-    [('aid', 'bid')]
+    [(u'aid', u'bid')]
     >>> listUniques(cur, 'c', 'bid')
-    [('aid', 'bid')]
+    [(u'aid', u'bid')]
 
     And any combination
 
     >>> l = listUniques(cur, 'd', 'aid')
     >>> l.sort()
     >>> l
-    [('aid',), ('aid', 'bid')]
+    [(u'aid',), (u'aid', u'bid')]
 
     If there are no UNIQUE indexes using the secified column
 
@@ -141,7 +141,7 @@ def listUniques(cur, table, column):
             t.relname = %(table)s
             AND a.attnum > 0
         '''
-    cur.execute(sql, vars())
+    cur.execute(sql, dict(table=table))
     for num,name in cur.fetchall():
         attributes[int(num)] = name
 
@@ -158,7 +158,7 @@ def listUniques(cur, table, column):
             i.indisunique = true
             AND t.relname = %(table)s
         '''
-    cur.execute(sql, vars())
+    cur.execute(sql, dict(table=table))
     for indkey, in cur.fetchall():
         # We have a space seperated list of integer keys into the attribute
         # mapping. Ignore the 0's, as they indicate a function and we don't
@@ -181,8 +181,8 @@ def listSequences(cur):
 
     >>> for r in listSequences(cur):
     ...     print repr(r)
-    ('public', 'a_aid_seq', 'a', 'aid')
-    ('public', 'standalone', None, None)
+    (u'public', u'a_aid_seq', u'a', u'aid')
+    (u'public', u'standalone', None, None)
 
     """
     sql = """
@@ -219,7 +219,7 @@ def listSequences(cur):
                     AND c.relname = %(table)s
                     AND a.attname = %(column)s
                 """
-            cur.execute(sql, vars())
+            cur.execute(sql, dict(schema=schema, table=table, column=column))
             num = cur.fetchone()[0]
             if num == 1:
                 rv.append( (schema, sequence, table, column) )

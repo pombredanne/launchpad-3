@@ -53,6 +53,12 @@ status is returned.
 ...     if output:
 ...         print output
 
+>>> login('test@canonical.com')
+>>> from canonical.launchpad.testing import factory
+>>> factory.LaunchpadObjectFactory().makeBugAttachment(1)
+<BugAttachment at ...>
+>>> logout()
+
 >>> check("/")
 >>> check("/rdf")
 >>> check_redirect("/legal", status=301)
@@ -113,13 +119,12 @@ status is returned.
 >>> check_redirect("/products", status=301)
 >>> check("/projects")
 >>> check("/projects/+all")
->>> check("/projects/+review", auth=True)
+>>> check("/projects/+review-licenses", auth=True)
 >>> check("/firefox")
 >>> check("/firefox/+series")
 >>> check("/firefox/1.0")
 >>> check("/firefox/1.0/+addpackage", auth=True)
 >>> check("/firefox/1.0/+ubuntupkg", auth=True)
->>> check("/firefox/1.0/+source", auth=True)
 >>> check("/firefox/1.0/+edit", auth=True)
 >>> check("/firefox/1.0/+specs")
 >>> check("/firefox/1.0/+addrelease", auth=True)
@@ -286,6 +291,19 @@ Viewing a bug comment.
 >>> check("/firefox/+bug/1/comments/1", auth=True)
 >>> check_not_found("/firefox/+bug/1/comments/42")
 
+Bug attachments in the context of a bug task.
+
+>>> check_not_found("/firefox/+bug/1/attachments")
+>>> check_redirect("/firefox/+bug/1/attachments/1")
+>>> check("/firefox/+bug/1/attachments/1", auth=True)
+
+Bug attachments in the context of a bug. Required by the web-services
+API, and will soon become the home for attachments in the web UI.
+
+>>> check_redirect("/bugs/1/attachments/1")
+>>> check("/bugs/1/attachments/1", auth=True)
+>>> check_not_found("/bugs/2/attachments/1")
+
 Viewing a bug in the context of an upstream where the bug has not yet
 been reported.
 
@@ -375,9 +393,6 @@ Approving/declining a bug nomination.
 Test /people traversals.
 
 >>> check("/people/")
->>> check("/people/+peoplelist")
->>> check("/people/+teamlist")
->>> check("/people/+ubunterolist")
 >>> check("/people/+requestmerge", auth=True)
 >>> check_redirect("/people/+mergerequest-sent", auth=True)
 >>> check("/people/+portlet-about")
@@ -387,7 +402,9 @@ This is for a team:
 >>> check("/~name18/+teamhierarchy")
 >>> check("/~name18/+edit", auth=True)
 >>> check("/~name18/+members")
->>> check("/~name18/+packages")
+>>> check_redirect("/~name18/+projects", status=301)
+>>> check_redirect("/~name18/+packages", status=301)
+>>> check("/~name18/+related-software")
 >>> check("/~name18/+leave", auth=True)
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
@@ -416,7 +433,9 @@ And this is for a person:
 >>> check("/~name16/+reportedbugs")
 >>> check("/~name16/+assignedbugs")
 >>> check("/~name16/+packagebugs")
->>> check("/~name16/+packages")
+>>> check_redirect("/~name16/+packages", status=301)
+>>> check_redirect("/~name16/+projects", status=301)
+>>> check("/~name16/+related-software")
 >>> check("/~name16/+editsshkeys", auth=True)
 >>> check("/~name16/+editpgpkeys", auth=True)
 >>> check("/~name16/+editwikinames", auth=True)
@@ -433,7 +452,7 @@ And this is for a person:
 sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check("/~sabdfl/+packagebugs")
->>> check("/~sabdfl/+packages")
+>>> check("/~sabdfl/+related-software")
 
 >>> check("/+code")
 >>> check("/+code/series", auth=True)
@@ -448,10 +467,10 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/sprints")
 >>> check("/sprints/ubz")
 
->>> check("/++resource++error")
+>>> check_not_found("/++resource++error")
 
->>> check("/@@")
->>> check("//@@")
+>>> check_not_found("/@@")
+>>> check_not_found("//@@")
 >>> check_redirect("/translations/groups/", status=301)
 >>> check_redirect("/translations/imports/", status=301)
 
@@ -473,4 +492,23 @@ Check legacy URL redirects
 Check redirects of Unicode URLs works
 
 >>> check_not_found("/ubuntu/foo%C3%A9")
+
+
+Icing resources.
+
+>>> from canonical.launchpad.versioninfo import revno
+>>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
+>>> check("/+icing-contrib/rev%s/json2.js" % revno)
+>>> check("/+icing-kubuntu/rev%s/kubuntu-masthead2.css" % revno,
+...       host="shipit.kubuntu.dev")
+>>> check("/+icing-edubuntu/rev%s/edubuntu.css" % revno,
+...       host="shipit.edubuntu.dev")
+
+
+Image resources are available from all the virtual hosts.
+
+>>> check('/@@/add', host='launchpad.dev')
+>>> check('/@@/add', host='bugs.launchpad.dev')
+>>> check('/@@/add', host='answers.launchpad.dev')
+>>> check('/@@/add', host='code.launchpad.dev')
 

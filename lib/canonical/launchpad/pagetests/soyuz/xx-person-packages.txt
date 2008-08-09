@@ -1,11 +1,12 @@
 = Person Packages =
 
-All packages maintained or uploaded by a given person can be seen on that
-person's +packages page, which is linked to from the person's home page.
+All packages maintained or uploaded by a given person can be seen on
+that person's +related-software page, which is linked to from the
+person's home page.
 
-    >>> browser.open("http://launchpad.dev/~name16/+packages")
+    >>> browser.open("http://launchpad.dev/~name16/+related-software")
     >>> browser.title
-    'Packages maintained by Foo Bar'
+    'Software related to Foo Bar'
 
 name16, aka the esteemed Foo Bar, has 9 maintained packages in the sample
 data.  The page lists columns of data, "Name", "Uploaded To" and "Version"
@@ -21,12 +22,12 @@ line here as it has working links in the sample data:
     <Link text='cnews' url='http://launchpad.dev/ubuntu/+source/cnews'>
     >>> link.click()
     >>> browser.title
-    'Source Package "cnews" in Ubuntu Linux'
+    '...cnews... source package in Ubuntu'
 
-Same process for the second column should take us to a distribution series 
+Same process for the second column should take us to a distribution series
 source package page:
 
-    >>> browser.open("http://launchpad.dev/~name16/+packages")
+    >>> browser.open("http://launchpad.dev/~name16/+related-software")
     >>> link = browser.getLink(url="/ubuntu/hoary/+source/cnews")
     >>> print link
     <Link text='Ubuntu Hoary' url='http://launchpad.dev/ubuntu/hoary/+source/cnews'>
@@ -34,10 +35,10 @@ source package page:
     >>> browser.title
     'The Hoary Hedgehog Release source packages'
 
-Same again for the third column should take us to a distribution source 
+Same again for the third column should take us to a distribution source
 package release page:
 
-    >>> browser.open("http://launchpad.dev/~name16/+packages")
+    >>> browser.open("http://launchpad.dev/~name16/+related-software")
     >>> link = browser.getLink(url="/ubuntu/+source/cnews/cr.g7-37")
     >>> print link
     <Link text='cr.g7-37' url='http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37'>
@@ -105,12 +106,12 @@ Make user_browser a known user that does not conflict with "no-priv":
 
     >>> user_browser = setupBrowser(auth='Basic test@canonical.com:test')
 
-=== Cprov's +packages page ===
+=== Cprov's +related-software page ===
 
-So let's look at cprov's +packages page which has two entries in the
-PPA section:
+So let's look at cprov's +related-software page which has two entries in
+the PPA section:
 
-    >>> user_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
     iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
@@ -125,14 +126,14 @@ in the newly-private PPA of the "no-priv" user.
 
 The logged-in user's case:
 
-    >>> user_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
     iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
 
 The not logged-in (anonymous) user's case:
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
     iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
@@ -141,12 +142,12 @@ However no-priv himself and any Launchpad Administrator can still see
 both packages:
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
-    >>> nopriv_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> nopriv_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(nopriv_browser)
     iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
     iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
@@ -155,12 +156,12 @@ Let's make sabdfl's archive private and check the page again.
 
     >>> set_private("sabdfl")
 
-    >>> user_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
     iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
     iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
@@ -176,7 +177,7 @@ make cprov's archive private.
 
 It still shows up:
 
-    >>> user_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
     iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
@@ -195,22 +196,22 @@ Now we'll unpublish it in the primary archive.
     >>> flush_database_updates()
     >>> logout()
 
-Now that the packages are not publicly published anywhere, +packages
+Now that the packages are not publicly published anywhere, +related-software
 will not show them.
 
-    >>> user_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
 
 However they will still be available to "no-priv" and administrators as
 applicable:
 
-    >>> nopriv_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> nopriv_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(nopriv_browser)
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
     iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
@@ -223,7 +224,7 @@ packages list any more.
 
 First list the packages in the PPA.
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
     iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
@@ -256,5 +257,5 @@ Then delete the 'iceweasel' package.
 Now re-list the PPA's packages, 'iceweasel' was deleted above and should
 not show again.
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+packages")
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)

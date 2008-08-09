@@ -30,16 +30,21 @@ from openid import oidutil
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.components.openidserver import (
+    OpenIDPersistentIdentity)
+from canonical.launchpad.interfaces.person import (
+    IPersonSet, PersonVisibility)
+from canonical.launchpad.interfaces.logintoken import (
+    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
-    ILoginServiceLoginForm, ILoginTokenSet, IOpenIdAuthorizationSet,
-    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, PersonVisibility,
-    UnexpectedFormData)
+    ILoginServiceLoginForm, IOpenIdAuthorizationSet, IOpenIDRPConfigSet,
+    IOpenIDRPSummarySet)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessLoginSource)
+    IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import logInPerson, logoutPerson
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -84,12 +89,10 @@ class OpenIdMixin:
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
         self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
         self.openid_server = Server(store_factory(), self.server_url)
-        self.identity_url_prefix = (
-            allvhosts.configs['openid'].rooturl + '+id/')
 
     @property
     def user_identity_url(self):
-        return self.identity_url_prefix + self.user.openid_identifier
+        return OpenIDPersistentIdentity(self.user.account).openid_identity_url
 
     def isIdentityOwner(self):
         """Return True if the user can authenticate as the given ID."""
@@ -206,8 +209,8 @@ class OpenIdMixin:
         values['nickname'] = self.user.name
         values['fullname'] = self.user.displayname
         values['email'] = self.user.preferredemail.email
-        if self.user.timezone is not None:
-            values['timezone'] = self.user.timezone
+        if self.user.time_zone is not None:
+            values['timezone'] = self.user.time_zone
         shipment = self.user.lastShippedRequest()
         if shipment is not None:
             values['x_address1'] = shipment.addressline1
@@ -304,6 +307,10 @@ class OpenIdMixin:
             response.addExtension(sreg_response)
 
         self.checkTeamMembership(response)
+
+        rp_summary_set = getUtility(IOpenIDRPSummarySet)
+        rp_summary_set.record(
+            self.user.account, self.openid_request.trust_root)
 
         return response
 
@@ -417,7 +424,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
         """Returns True if the identity URL is supported by the server."""
         identity = self.openid_request.identity
         return (self.openid_request.idSelect() or
-                identity.startswith(self.identity_url_prefix))
+                OpenIDPersistentIdentity.supportsURL(identity))
 
     def isAuthorized(self):
         """Check if the identity is authorized for the trust_root"""

@@ -29,7 +29,7 @@ from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import (
     CyclicalTeamMembershipError, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
     ILaunchpadCelebrities, IPersonSet, ITeamMembership, ITeamMembershipSet,
@@ -49,19 +49,19 @@ class TeamMembership(SQLBase):
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     last_changed_by = ForeignKey(
         dbName='last_changed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     proposed_by = ForeignKey(
         dbName='proposed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     acknowledged_by = ForeignKey(
         dbName='acknowledged_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     reviewed_by = ForeignKey(
         dbName='reviewed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     status = EnumCol(
         dbName='status', notNull=True, enum=TeamMembershipStatus)
     # XXX: salgado, 2008-03-06: Need to rename datejoined and dateexpires to
@@ -276,11 +276,11 @@ class TeamMembership(SQLBase):
         state_transition = {
             admin: [approved, expired, deactivated],
             approved: [admin, expired, deactivated],
-            deactivated: [proposed, approved, invited],
-            expired: [proposed, approved, invited],
+            deactivated: [proposed, approved, admin, invited],
+            expired: [proposed, approved, admin, invited],
             proposed: [approved, admin, declined],
-            declined: [proposed, approved],
-            invited: [approved, invitation_declined],
+            declined: [proposed, approved, admin],
+            invited: [approved, admin, invitation_declined],
             invitation_declined: [invited, approved, admin]}
         assert self.status in state_transition, (
             "Unknown status: %s" % self.status.name)
@@ -329,11 +329,15 @@ class TeamMembership(SQLBase):
 
         if status in active_states:
             _fillTeamParticipation(self.person, self.team)
-        else:
+        elif old_status in active_states:
             # Need to flush db updates because _cleanTeamParticipation() will
             # manipulate the database directly, bypassing the ORM.
             flush_database_updates()
             _cleanTeamParticipation(self.person, self.team)
+        else:
+            # Changed from an inactive state to another inactive one, so no
+            # need to fill/clean the TeamParticipation table.
+            pass
 
         # Flush all updates to ensure any subsequent calls to this method on
         # the same transaction will operate on the correct data.  That is the
@@ -627,6 +631,10 @@ def _cleanTeamParticipation(member, team):
             )
         )"""
     for superteam in superteams:
+        if member in superteam.activemembers:
+            # The member is a direct member of this superteam, so
+            # don't even attempt to kick the member from the superteam.
+            continue
         replacements.update(dict(superteam_id=superteam.id))
         cur.execute(query % replacements)
 

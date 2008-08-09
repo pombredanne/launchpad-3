@@ -4,8 +4,7 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
 
 === Construct an example url hierarchy ===
 
-    >>> from canonical.launchpad.webapp import (
-    ...     nearest_adapter, nearest_context_with_adapter, canonical_url)
+    >>> from canonical.launchpad.webapp import canonical_url
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IApplicationMenu, ICanonicalUrlData, IContextMenu, IFacetLink,
     ...     IFacetMenu, ILink, ILinkData)
@@ -50,50 +49,6 @@ Let's make three objects that together make a url hierarchy:
     >>> canonical_url(street)
     u'http://launchpad.dev/sesamestreet'
 
-
-=== Test nearest_adapter ===
-
-Right now, none of our example objects have a facet menu.
-
-    >>> nearest_adapter(root, IFacetMenu) is None
-    True
-    >>> nearest_adapter(street, IFacetMenu) is None
-    True
-    >>> nearest_adapter(house, IFacetMenu) is None
-    True
-
-We can see that this is true for nearest_context_with_adapter too.
-
-    >>> nearest_context_with_adapter(root, IFacetMenu)
-    (None, None)
-
-We'll make the 'street' object be conformable to IFacetMenu.  Making an object
-be conformable to IFacetMenu is one way of making the object adaptable to
-IFacetMenu.  Another way would be to provide an adapter.
-
-    >>> class ExampleFacetMenu(list):
-    ...     implements(IFacetMenu)
-    ...     def __init__(self, context):
-    ...         list.__init__(self, ['foo', 'bar', 'baz'])
-    ...         self.context = context
-
-    >>> street.setAdapter(IFacetMenu, ExampleFacetMenu)
-    >>> IFacetMenu(street).__class__ is ExampleFacetMenu
-    True
-    >>> nearest_adapter(root, IFacetMenu) is None
-    True
-    >>> nearest_adapter(street, IFacetMenu).__class__ is ExampleFacetMenu
-    True
-    >>> nearest_adapter(house, IFacetMenu).__class__ is ExampleFacetMenu
-    True
-
-We can also see this work with nearest_context_with_adapter.
-
-    >>> context, adapter = nearest_context_with_adapter(house, IFacetMenu)
-    >>> adapter.__class__ is ExampleFacetMenu
-    True
-    >>> context is street
-    True
 
 == The Link class ==
 
@@ -366,8 +321,8 @@ Next, we return the link as HTML.
 
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
     >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
-    <span class="action"><img alt="" class="inlineLinkIcon"
-                              src="/@@/icon" /><a class="menu-link-None" title="summary">text--&gt;</a></span>
+    <a style="...background: url(/@@/icon)..."
+    ...class="menu-link-None" title="summary">text--&gt;</a>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)
@@ -945,24 +900,6 @@ actually calculates a shortened URL for this case.
     http://launchpad.dev/sesamestreet False
 
 
-The result of `house/menu:application` will be empty at the moment, because
-we registered only one application menu for a house, against 'foo'.  The
-'bar' facet is the one selected, so we don't get any application menu.
-
-    >>> menu = test_tales('CONTEXTS/menu:application',
-    ...     context=house, view=view, request=request)
-    >>> list(menu)
-    []
-
-Now, if we change the view's __launchpad_facetname__ so that the 'foo' facet
-is selected, we get a couple of menus.
-
-    >>> view.__launchpad_facetname__ = 'foo'
-    >>> links = test_tales('CONTEXTS/menu:application',
-    ...     context=house, view=view, request=request)
-    >>> for link in links:
-    ...     print link.url
-    http://launchpad.dev/sesamestreet/number73/+first
 
 You can traverse to an individual menu item from the facet menu:
 
@@ -1012,10 +949,6 @@ When there is no menu for a thing, we get an empty iterator.
     ...     'CONTEXTS/menu:facet', context=root, view=view, request=request)
     >>> list(menu)
     []
-    >>> menu = test_tales('CONTEXTS/menu:application',
-    ...     context=root, view=view, request=request)
-    >>> list(menu)
-    []
     >>> menu = test_tales('CONTEXTS/menu:context',
     ...     context=root, view=view, request=request)
     >>> list(menu)
@@ -1042,8 +975,8 @@ render() method.
     >>> html = test_tales('context/menu:foo/first/render',
     ...                   context=house, view=view, request=request)
     >>> print html #doctest: +NORMALIZE_WHITESPACE
-    <span class="action"><a href="http://127.0.0.1/sesamestreet/number73/+first"
-          class="menu-link-first">First menu</a></span>
+    <a...href="http://127.0.0.1/sesamestreet/number73/+first"
+    ...class="menu-link-first">First menu</a>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)

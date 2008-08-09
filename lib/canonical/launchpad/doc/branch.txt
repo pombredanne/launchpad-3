@@ -983,6 +983,7 @@ A BranchPersonSearchContext takes a person and a restriction.
     ~name12/gnome-terminal/mirrored
     ~name12/gnome-terminal/pushed
     ~name12/gnome-terminal/scanned
+    ~landscape-developers/landscape/trunk
     ~name12/+junk/junk.dev
     ~name12/+junk/junk.contrib
 
@@ -1183,6 +1184,46 @@ Branches with revisions are deletable.
     >>> branch.destroySelf()
     >>> print branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
     None
+    >>> logout()
+
+A user without launchpad.Edit cannot delete a branch.
+
+    >>> login('no-priv@canonical.com')
+    >>> message = factory.makeCodeReviewComment()
+    >>> branch = message.branch_merge_proposal.target_branch
+    >>> branch.destroySelf(break_references=True)
+    Traceback (most recent call last):
+    Unauthorized: (<Branch ...>, 'destroySelf', 'launchpad.Edit')
+
+Even if users with no delete rights on the branch could somehow access
+the page, they still wouldn't be able to delete the message.  The message
+is listed as not "allowed":
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> branch_delete_view = getMultiAdapter(
+    ...   (branch, LaunchpadTestRequest()), name="+delete")
+    >>> deletion_requirements = [
+    ...     "%s allowed: %s" % (req[0].__class__.__name__, req[3])
+    ...     for req in branch_delete_view.display_deletion_requirements]
+    >>> for req in sorted(deletion_requirements):
+    ...     print req
+    BranchMergeProposal allowed: False
+    BranchSubscription allowed: False
+
+
+The "allowed: False" status is mirrored in the display.
+
+    >>> request = LaunchpadTestRequest(
+    ...   method='POST',
+    ...   form={'field.actions.delete_branch': 'Delete'})
+    >>> branch_delete_view = getMultiAdapter(
+    ...   (branch, request), name="+delete")
+    >>> branch_delete_view.delete_branch_action.success({})
+    >>> for notice in request.response.notifications:
+    ...     print notice.message
+    This branch cannot be deleted.
+    >>> logout()
 
 
 == Branch references ==
@@ -1212,3 +1253,6 @@ The current references to the branch table are shown here.
     productseries.import_branch
     productseries.user_branch
     specificationbranch.branch
+
+(Unfortunately, references can form a graph-- note that codereviewcomments
+ aren't shown.)

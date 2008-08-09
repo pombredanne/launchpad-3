@@ -8,11 +8,13 @@ __metaclass__ = type
 from zope.interface import Attribute
 
 from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
+from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_read_operation)
+    call_with, collection_default_content, export_as_webservice_collection,
+    export_factory_operation, operation_parameters, REQUEST_USER)
 
 
 __all__ = [
@@ -38,7 +40,36 @@ class IMaloneApplication(ILaunchpadApplication):
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
     latest_bugs = Attribute("The latest 5 bugs filed.")
 
-    @collection_default_content()
-    @export_read_operation()
-    def default_bug_list():
-        """Return a default list of bugs."""
+    @collection_default_content(user=REQUEST_USER)
+    def default_bug_list(user):
+        """Return a default list of bugs.
+
+        :param user: The user who's doing the search.
+        """
+
+    @call_with(owner=REQUEST_USER)
+    @operation_parameters(
+        target=Reference(
+            schema=IBugTarget, required=True,
+            title=u"The project, distribution or source package that has "
+                   "this bug."))
+    @export_factory_operation(
+        IBug, ['title', 'description', 'tags', 'security_related', 'private'])
+    def createBug(owner, title, description, target, security_related=False,
+                  private=False, tags=None):
+        """Create a bug (with an appropriate bugtask) and return it.
+
+        :param target: The Product, Distribution or DistributionSourcePackage
+            affected by this bug.
+
+        Things to note when using this factory:
+
+          * the owner will be subscribed to the bug
+
+          * distribution, product and package contacts (whichever ones are
+            applicable based on the bug report target) will bug subscribed to
+            all *public bugs only*
+
+          * for public upstreams bugs where there is no upstream bug contact,
+            the product owner will be subscribed instead
+        """

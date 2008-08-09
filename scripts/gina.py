@@ -25,7 +25,7 @@ import _pythonpath
 
 from optparse import OptionParser
 import os
-import psycopg
+import psycopg2
 import sys
 import time
 
@@ -176,9 +176,9 @@ def run_gina(options, ztm, target_section):
         keyrings = _get_keyring(keyrings_root)
 
     try:
-        arch_component_items = ArchiveComponentItems(package_root,
-                                                     pocket_distroseries,
-                                                     components, archs)
+        arch_component_items = ArchiveComponentItems(
+            package_root, pocket_distroseries, components, archs,
+            source_only)
     except MangledArchiveError:
         log.exception(
             "Failed to analyze archive for %s" % pocket_distroseries)
@@ -188,13 +188,6 @@ def run_gina(options, ztm, target_section):
     importer_handler = ImporterHandler(ztm, distro, distroseries,
                                        dry_run, kdb, package_root, keyrings,
                                        pocket, component_override)
-
-    for archtag in archs:
-        try:
-            importer_handler.ensure_archinfo(archtag)
-        except DataSetupError:
-            log.exception("Database setup required for run on %s" % archtag)
-            sys.exit(1)
 
     if spnames_only:
         log.info('Running in SourcePackageName-only mode...')
@@ -211,6 +204,13 @@ def run_gina(options, ztm, target_section):
     if source_only:
         log.info('Source only mode... done')
         sys.exit(0)
+
+    for archtag in archs:
+        try:
+            importer_handler.ensure_archinfo(archtag)
+        except DataSetupError:
+            log.exception("Database setup required for run on %s" % archtag)
+            sys.exit(1)
 
     import_binarypackages(packages_map, kdb, package_root, keyrings,
                           importer_handler)
@@ -232,7 +232,7 @@ def import_sourcepackages(packages_map, kdb, package_root,
             try:
                 do_one_sourcepackage(source, kdb, package_root, keyrings,
                                      importer_handler)
-            except psycopg.Error:
+            except psycopg2.Error:
                 log.exception("Database error: unable to create "
                               "SourcePackage for %s. Retrying once.."
                               % package_name)
@@ -250,7 +250,7 @@ def import_sourcepackages(packages_map, kdb, package_root,
             log.exception("Error processing package files for %s" %
                           package_name)
             continue
-        except psycopg.Error:
+        except psycopg2.Error:
             log.exception("Database errors made me give up: unable to create "
                           "SourcePackage for %s" % package_name)
             importer_handler.abort()
@@ -297,7 +297,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 try:
                     do_one_binarypackage(binary, archtag, kdb, package_root,
                                          keyrings, importer_handler)
-                except psycopg.Error:
+                except psycopg2.Error:
                     log.exception("Database errors when importing a "
                                   "BinaryPackage for %s. Retrying once.."
                                   % package_name)
@@ -318,7 +318,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 log.exception("Database duplication processing %s" %
                               package_name)
                 continue
-            except psycopg.Error:
+            except psycopg2.Error:
                 log.exception("Database errors made me give up: unable to "
                               "create BinaryPackage for %s" % package_name)
                 importer_handler.abort()

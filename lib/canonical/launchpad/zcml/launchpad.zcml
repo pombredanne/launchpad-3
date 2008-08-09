@@ -231,7 +231,7 @@
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+oauth-authorize"
+      name="+authorize-token"
       class="canonical.launchpad.browser.OAuthAuthorizeTokenView"
       template="../templates/oauth-authorize.pt"
       permission="launchpad.AnyPerson" />
@@ -254,6 +254,20 @@
       name="+search"
       class="canonical.launchpad.browser.root.LaunchpadSearchView"
       template="../templates/launchpad-search.pt"
+      permission="zope.Public" />
+
+  <browser:page
+      for="*"
+      name="+search-form"
+      class="canonical.launchpad.browser.root.LaunchpadSearchFormView"
+      template="../templates/launchpad-search-form.pt"
+      permission="zope.Public" />
+
+  <browser:page
+      for="*"
+      name="+primary-search-form"
+      class="canonical.launchpad.browser.root.LaunchpadPrimarySearchFormView"
+      template="../templates/launchpad-search-form.pt"
       permission="zope.Public" />
 
   <!-- Declare robots.txt file for the root -->
@@ -308,20 +322,12 @@
       permission="zope.Public"
       />
 
-  <!-- breadcrumbs -->
+  <!-- hierarchy -->
   <browser:page
       for="zope.interface.Interface"
-      name="+breadcrumbs"
-      class="canonical.launchpad.browser.launchpad.Breadcrumbs"
+      name="+hierarchy"
+      class="canonical.launchpad.browser.launchpad.Hierarchy"
       attribute="__call__"
-      permission="zope.Public"
-      />
-
-  <!-- Menus debug page. -->
-  <browser:page
-      for="zope.interface.Interface"
-      name="+debug-menus"
-      template="../templates/launchpad-menus-debug.pt"
       permission="zope.Public"
       />
 
@@ -447,6 +453,29 @@ these URLs in Apache.
   name="+icing-ubuntu"
   class="canonical.launchpad.browser.launchpad.UbuntuIcingFolder"
   layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+icing-kubuntu"
+  class="canonical.launchpad.browser.launchpad.KubuntuIcingFolder"
+  layer="canonical.launchpad.layers.ShipItKUbuntuLayer"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+icing-edubuntu"
+  class="canonical.launchpad.browser.launchpad.EdubuntuIcingFolder"
+  layer="canonical.launchpad.layers.ShipItEdUbuntuLayer"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+icing-contrib"
+  class="canonical.launchpad.browser.launchpad.ContribIcingFolder"
   attribute="__call__"
   permission="zope.Public"
   />

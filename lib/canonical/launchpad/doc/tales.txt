@@ -43,11 +43,10 @@ they all implement IHasLogo,.IHasMugshot and IHasIcon.
     >>> test_tales("person/image:logo", person=person)
     '<img ... src="/@@/person-logo" />'
 
-The Mugshot is presented in a div, floating right, with the mugshot inside
-it:
+The Mugshot is presented in an <img> tag.
 
     >>> test_tales("person/image:mugshot", person=person)
-    '<div...<img...src="/@@/person-mugshot" />.../div>'
+    '<img...src="/@@/person-mugshot" />'
 
 For people we even have different images in case the person in question is not
 an actual launchpad user.
@@ -282,10 +281,14 @@ Merge proposals also have a link formatter, which displays branch titles:
 
 === Code imports ===
 
+The fmt:link for a code import takes you to the branch that the code
+import is associated with.  The primary reason that this is here is
+to support the branch deletion code.
+
     >>> login('foo.bar@canonical.com')
-    >>> code_import = factory.makeCodeImport()
+    >>> code_import = factory.makeCodeImport(branch_name="trunk")
     >>> test_tales("code_import/fmt:link", code_import=code_import)
-    u'<a href="...+code-import">Import of...</a>'
+    u'<a href=".../trunk">Import of...</a>'
 
 
 === Product series ===
@@ -793,8 +796,6 @@ do with 'None/fmt:foo'.
     >>> test_tales('foo/fmt:nice_pre', foo=None)
     ''
     >>> test_tales('foo/fmt:break-long-words', foo=None)
-    ''
-    >>> test_tales('foo/fmt:breadcrumbs', foo=None)
     ''
     >>> test_tales('foo/fmt:date', foo=None)
     ''

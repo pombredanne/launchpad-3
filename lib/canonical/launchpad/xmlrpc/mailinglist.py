@@ -10,6 +10,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -144,24 +145,29 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # list, but may not get deliveries of posted messages.
             for email_address in mailing_list.getSenderAddresses():
                 real_name = email_address.person.displayname
+                # Hidden email addresses are usually only visible to the user.
+                email = removeSecurityProxy(email_address).email
                 # We'll mark the status of these addresses as disabled BYUSER,
                 # which seems like the closest mapping to the semantics we
                 # intend.  It doesn't /really/ matter as long as it's disabled
                 # because the reason is only evident in the Mailman web u/i,
                 # which we're not using.
-                members[email_address.email] = (real_name, flags, BYUSER)
+                members[email] = (real_name, flags, BYUSER)
             # Now go through just the subscribed addresses, the main
             # difference now being that these addresses are enabled for
             # delivery.  If there are overlaps, the enabled flag wins.
             for email_address in mailing_list.getSubscribedAddresses():
                 real_name = email_address.person.displayname
-                members[email_address.email] = (real_name, flags, ENABLED)
-            # Finally, add the archive recipient if there is one.  This
-            # address should never be registered in Launchpad, meaning
-            # specifically that the isRegisteredInLaunchpad() test below
-            # should always fail for it.  That way, the address can never be
-            # used to forge spam onto a list.
-            if config.mailman.archive_address:
+                # Hidden email addresses are usually only visible to the user.
+                email = removeSecurityProxy(email_address).email
+                members[email] = (real_name, flags, ENABLED)
+            # Finally, add the archive recipient if there is one, and if the
+            # team is public.  This address should never be registered in
+            # Launchpad, meaning specifically that the
+            # isRegisteredInLaunchpad() test below should always fail for it.
+            # That way, the address can never be used to forge spam onto a
+            # list.
+            if config.mailman.archive_address and mailing_list.is_public:
                 members[config.mailman.archive_address] = ('', flags, ENABLED)
             # The response must be a list of tuples.
             response[team_name] = [

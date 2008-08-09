@@ -14,6 +14,7 @@ __all__ = [
     'IBugDelta',
     'IBugAddForm',
     'IFrontPageBugAddForm',
+    'InvalidBugTargetType',
     'IProjectBugAddForm',
     ]
 
@@ -25,9 +26,12 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
+from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.person import IPerson
@@ -36,8 +40,10 @@ from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)
 
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
-from canonical.lazr.rest.schema import CollectionField
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_factory_operation, export_write_operation, exported,
+    operation_parameters, rename_parameters_as, webservice_error)
+from canonical.lazr.fields import CollectionField, Reference
 
 
 class CreateBugParams:
@@ -159,7 +165,7 @@ class IBug(IMessageTarget, ICanBeMentored):
              max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
-        Object(IPerson, title=_("The owner's IPerson")))
+        Reference(IPerson, title=_("The owner's IPerson")))
     duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False),
         exported_as='duplicate_of')
@@ -169,12 +175,13 @@ class IBug(IMessageTarget, ICanBeMentored):
                            "their subscribers."),
              default=False))
     date_made_private = exported(
-        Datetime(title=_('Date Made Private'), required=False))
+        Datetime(title=_('Date Made Private'), required=False, readonly=True))
     who_made_private = exported(
         PublicPersonChoice(
             title=_('Who Made Private'), required=False,
             vocabulary='ValidPersonOrTeam',
-            description=_("The person who set this bug private.")))
+            description=_("The person who set this bug private."),
+            readonly=True))
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability"),
              required=False, default=False))
@@ -187,46 +194,62 @@ class IBug(IMessageTarget, ICanBeMentored):
         CollectionField(
             title=_('BugTasks on this bug, sorted upstream, then '
                     'ubuntu, then other distroseriess.'),
-            value_type=Object(schema=IBugTask),
-            readonly=True))
+            value_type=Reference(schema=IBugTask),
+            readonly=True),
+        exported_as='bug_tasks')
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
-    watches = Attribute('SQLObject.Multijoin of IBugWatch')
+    watches = exported(
+        CollectionField(
+            title=_("All bug watches associated with this bug."),
+            value_type=Object(schema=IBugWatch),
+            readonly=True),
+        exported_as='bug_watches')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
-    subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
+    subscriptions = exported(
+        CollectionField(
+            title=_('Subscriptions.'),
+            value_type=Reference(schema=Interface),
+            readonly=True))
     duplicates = exported(
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
-            value_type=BugField()))
-    attachments = Attribute("List of bug attachments.")
+            value_type=BugField(), readonly=True))
+    attachments = exported(
+        CollectionField(
+            title=_("List of bug attachments."),
+            value_type=Reference(schema=IBugAttachment),
+            readonly=True))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     bug_branches = Attribute(
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
-
     tags = exported(
         List(title=_("Tags"), description=_("Separated by whitespace."),
              value_type=Tag(), required=False))
-    is_complete = exported(
-        Bool(description=_(
-                "True or False depending on whether this bug is considered "
-                "completely addressed. A bug is Launchpad is completely "
-                "addressed when there are no tasks that are still open for "
-                "the bug.")))
-    permits_expiration = exported(
-        Bool(title=_("Does the bug's state permit expiration?"),
-             description=_(
-                "Expiration is permitted when the bug is not valid anywhere, "
-                "a message was sent to the bug reporter, and the bug is "
-                "associated with pillars that have enabled bug expiration.")))
-    can_expire = exported(
-        Bool(title=_("Can the Incomplete bug expire if it becomes inactive? "
-                     "Expiration may happen when the bug permits expiration, "
-                     "and a bugtask cannot be confirmed.")))
+    is_complete = Bool(
+        description=_(
+            "True or False depending on whether this bug is considered "
+            "completely addressed. A bug is Launchpad is completely "
+            "addressed when there are no tasks that are still open for "
+            "the bug."),
+        readonly=True)
+    permits_expiration = Bool(
+        title=_("Does the bug's state permit expiration?"),
+        description=_(
+            "Expiration is permitted when the bug is not valid anywhere, "
+            "a message was sent to the bug reporter, and the bug is "
+            "associated with pillars that have enabled bug expiration."),
+        readonly=True)
+    can_expire = Bool(
+        title=_("Can the Incomplete bug expire if it becomes inactive? "
+                "Expiration may happen when the bug permits expiration, "
+                "and a bugtask cannot be confirmed."),
+        readonly=True)
     date_last_message = exported(
         Datetime(title=_('Date of last bug message'),
                  required=False, readonly=True))
@@ -241,6 +264,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         """Return a candidate subject for a followup message."""
 
     # subscription-related methods
+
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
     def subscribe(person, subscribed_by):
         """Subscribe `person` to the bug.
 
@@ -249,6 +277,8 @@ class IBug(IMessageTarget, ICanBeMentored):
         :return: an `IBugSubscription`.
         """
 
+    @call_with(person=REQUEST_USER)
+    @export_write_operation()
     def unsubscribe(person):
         """Remove this person's subscription to this bug."""
 
@@ -326,6 +356,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         bug mail being generated during bulk imports or changes.
         """
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(
+        bugtracker='bug_tracker', remotebug='remote_bug')
+    @export_factory_operation(
+        IBugWatch, ['bugtracker', 'remotebug'])
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
@@ -345,12 +380,18 @@ class IBug(IMessageTarget, ICanBeMentored):
         Returns an IBugBranch.
         """
 
-    def addAttachment(owner, file_, description, comment, filename,
-                      is_patch=False):
+    @call_with(owner=REQUEST_USER)
+    @operation_parameters(
+        data=Bytes(constraint=bug_attachment_size_constraint),
+        comment=Text(), filename=TextLine(), is_patch=Bool(),
+        content_type=TextLine(), description=Text())
+    @export_factory_operation(IBugAttachment, [])
+    def addAttachment(owner, data, comment, filename, is_patch=False,
+                      content_type=None, description=None):
         """Attach a file to this bug.
 
         :owner: An IPerson.
-        :file_: A file-like object.
+        :data: A file-like object, or a `str`.
         :description: A brief description of the attachment.
         :comment: An IMessage or string.
         :filename: A string.
@@ -499,6 +540,17 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no such bugtask is found.
         """
 
+# We are forced to define these now to avoid circular import problems.
+IBugAttachment['bug'].schema = IBug
+IBugWatch['bug'].schema = IBug
+IMessage['bugs'].value_type.schema = IBug
+
+# In order to avoid circular dependencies, we only import
+# IBugSubscription (which itself imports IBug) here, and assign it as
+# the value type for the `subscriptions` collection.
+from canonical.launchpad.interfaces.bugsubscription import IBugSubscription
+IBug['subscriptions'].value_type.schema = IBugSubscription
+
 
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
@@ -582,7 +634,7 @@ class IProjectBugAddForm(IBugAddForm):
 class IFrontPageBugAddForm(IBugAddForm):
     """Create a bug for any bug target."""
 
-    bugtarget = Object(
+    bugtarget = Reference(
         schema=IBugTarget, title=_("Where did you find the bug?"),
         required=True)
 
@@ -642,3 +694,6 @@ class IBugSet(Interface):
             description
         """
 
+class InvalidBugTargetType(Exception):
+    """Bug target's type is not valid."""
+    webservice_error(400)

@@ -10,11 +10,12 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    CodeReviewVote, EmailAddressStatus)
+    CodeReviewVote)
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.codereviewcomment import (
     CodeReviewCommentMailer)
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp import canonical_url
 
 
 class TestCodeReviewComment(TestCaseWithFactory):
@@ -28,19 +29,17 @@ class TestCodeReviewComment(TestCaseWithFactory):
 
     def makeCommentAndSubscriber(self, notification_level=None,
                                  body=None, as_reply=False, vote=None,
-                                 vote_tag=None):
+                                 vote_tag=None, subject=None):
         """Return a comment and a subscriber."""
         sender = self.factory.makePerson(
-            displayname='Sender', email='sender@example.com',
-            email_address_status=EmailAddressStatus.VALIDATED)
+            displayname='Sender', email='sender@example.com')
         comment = self.factory.makeCodeReviewComment(
-            sender, body=body, vote=vote, vote_tag=vote_tag)
+            sender, body=body, vote=vote, vote_tag=vote_tag, subject=subject)
         if as_reply:
             comment = self.factory.makeCodeReviewComment(
-                sender, body=body, parent=comment)
+                sender, body=body, parent=comment, subject=subject)
         subscriber = self.factory.makePerson(
-            displayname='Subscriber', email='subscriber@example.com',
-            email_address_status=EmailAddressStatus.VALIDATED)
+            displayname='Subscriber', email='subscriber@example.com')
         if notification_level is None:
             notification_level = CodeReviewNotificationLevel.FULL
         comment.branch_merge_proposal.source_branch.subscribe(
@@ -54,14 +53,23 @@ class TestCodeReviewComment(TestCaseWithFactory):
             body=body, as_reply=as_reply, vote=vote, vote_tag=vote_tag)
         return CodeReviewCommentMailer.forCreation(comment), subscriber
 
+    def assertRecipientsMatches(self, recipients, mailer):
+        """Assert that `mailer` will send to the people in `recipients`."""
+        persons = zip(*(mailer._recipients.getRecipientPersons()))[1]
+        self.assertEqual(set(recipients), set(persons))
+
     def test_forCreation(self):
         """Ensure that forCreation produces a mailer with expected values."""
         comment, subscriber = self.makeCommentAndSubscriber()
         mailer = CodeReviewCommentMailer.forCreation(comment)
         self.assertEqual(comment.message.subject,
                          mailer._subject_template)
-        self.assertEqual(set([subscriber]),
-                         mailer._recipients.getRecipientPersons())
+        bmp = comment.branch_merge_proposal
+        # The branch owners are implicitly subscribed to their branches
+        # when the branches are created.
+        self.assertRecipientsMatches(
+            [subscriber, bmp.source_branch.owner, bmp.target_branch.owner],
+            mailer)
         self.assertEqual(
             comment.branch_merge_proposal, mailer.merge_proposal)
         sender = comment.message.owner
@@ -75,16 +83,31 @@ class TestCodeReviewComment(TestCaseWithFactory):
         comment, subscriber = self.makeCommentAndSubscriber(
             CodeReviewNotificationLevel.STATUS)
         mailer = CodeReviewCommentMailer.forCreation(comment)
-        self.assertEqual(set(),
-                         mailer._recipients.getRecipientPersons())
+        bmp = comment.branch_merge_proposal
+        # The branch owners are implicitly subscribed to their branches
+        # when the branches are created.
+        self.assertRecipientsMatches(
+            [bmp.source_branch.owner, bmp.target_branch.owner], mailer)
 
     def test_forCreationStatusNoEmail(self):
         """Ensure that subscriptions with NOEMAIL aren't used."""
         comment, subscriber = self.makeCommentAndSubscriber(
             CodeReviewNotificationLevel.NOEMAIL)
         mailer = CodeReviewCommentMailer.forCreation(comment)
-        self.assertEqual(set(),
-                         mailer._recipients.getRecipientPersons())
+        bmp = comment.branch_merge_proposal
+        # The branch owners are implicitly subscribed to their branches
+        # when the branches are created.
+        self.assertRecipientsMatches(
+            [bmp.source_branch.owner, bmp.target_branch.owner], mailer)
+
+    def test_subjectWithStringExpansions(self):
+        # The mailer should not attempt to expand templates in the subject.
+        comment, subscriber = self.makeCommentAndSubscriber(
+            subject='A %(carefully)s constructed subject')
+        mailer = CodeReviewCommentMailer.forCreation(comment)
+        self.assertEqual(
+            'A %(carefully)s constructed subject',
+            mailer._getSubject(email=None))
 
     def test_getReplyAddress(self):
         """Ensure that the reply-to address is reasonable."""
@@ -99,15 +122,17 @@ class TestCodeReviewComment(TestCaseWithFactory):
         headers, subject, body = mailer.generateEmail(subscriber)
         message = mailer.code_review_comment.message
         self.assertEqual(subject, message.subject)
-        self.assertEqual(body.splitlines()[:-2],
+        self.assertEqual(body.splitlines()[:-3],
                          message.text_contents.splitlines())
         source_branch = mailer.merge_proposal.source_branch
         branch_name = source_branch.displayname
-        self.assertEqual(body.splitlines()[-2:],
-            ['-- ', 'You are subscribed to branch %s.' % branch_name])
+        self.assertEqual(body.splitlines()[-3:],
+                         ['-- ', canonical_url(mailer.merge_proposal),
+                          'You are subscribed to branch %s.' % branch_name])
         rationale = mailer._recipients.getReason('subscriber@example.com')[1]
         expected = {'X-Launchpad-Branch': source_branch.unique_name,
                     'X-Launchpad-Message-Rationale': rationale,
+                    'X-Launchpad-Project': source_branch.product.name,
                     'Message-Id': message.rfc822msgid,
                     'Reply-To': mailer._getReplyToAddress(),
                     'In-Reply-To': message.parent.rfc822msgid}
@@ -125,6 +150,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         body = mailer._getBody(subscriber)
         self.assertEqual(body.splitlines()[1:],
             ['-- ', 'I am a wacky guy.', '',
+             canonical_url(mailer.merge_proposal),
              'You are subscribed to branch %s.' % branch_name])
 
     def test_generateEmailWithVote(self):
@@ -133,7 +159,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             vote=CodeReviewVote.APPROVE)
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual('Vote: Approve', body.splitlines()[0])
-        self.assertEqual(body.splitlines()[1:-2],
+        self.assertEqual(body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
 
     def test_generateEmailWithVoteAndTag(self):
@@ -142,7 +168,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             vote=CodeReviewVote.APPROVE, vote_tag='DBTAG')
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual('Vote: Approve DBTAG', body.splitlines()[0])
-        self.assertEqual(body.splitlines()[1:-2],
+        self.assertEqual(body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
 
 

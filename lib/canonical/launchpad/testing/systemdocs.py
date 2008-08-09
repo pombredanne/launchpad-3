@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'default_optionflags',
     'LayeredDocFileSuite',
     'SpecialOutputChecker',
     'setUp',
@@ -24,11 +25,12 @@ from zope.testing.loggingsupport import Handler
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import reset_logging
 
 
@@ -164,10 +166,31 @@ def create_view(context, name, form=None, layer=None, server_url=None,
     return getMultiAdapter((context, request), name=name)
 
 
+def ordered_dict_as_string(dict):
+    """Return the contents of a dict as an ordered string.
+
+    The output will be ordered by key, so {'z': 1, 'a': 2, 'c': 3} will
+    be printed as {'a': 2, 'c': 3, 'z': 1}.
+
+    We do this because dict ordering is not guaranteed.
+    """
+    # XXX 2008-06-25 gmb:
+    #     Once we move to Python 2.5 we won't need this, since dict
+    #     ordering is guaranteed when __str__() is called.
+    item_string = '%r: %r'
+    item_strings = []
+    for key, value in sorted(dict.items()):
+        item_strings.append(item_string % (key, value))
+
+    return '{%s}' % ', '.join(
+        "%r: %r" % (key, value) for key, value in sorted(dict.items()))
+
+
 def setGlobs(test):
     """Add the common globals for testing system documentation."""
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
+    test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['ILaunchBag'] = ILaunchBag
     test.globs['getUtility'] = getUtility
@@ -175,6 +198,8 @@ def setGlobs(test):
     test.globs['flush_database_updates'] = flush_database_updates
     test.globs['create_view'] = create_view
     test.globs['LaunchpadObjectFactory'] = LaunchpadObjectFactory
+    test.globs['ordered_dict_as_string'] = ordered_dict_as_string
+    test.globs['verifyObject'] = verifyObject
 
 
 def setUp(test):

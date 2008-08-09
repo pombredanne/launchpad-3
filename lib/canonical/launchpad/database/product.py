@@ -1,10 +1,14 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
 
 __metaclass__ = type
-__all__ = ['Product', 'ProductSet']
+__all__ = [
+    'get_allowed_default_stacking_names',
+    'Product',
+    'ProductSet',
+    ]
 
 
 import operator
@@ -18,6 +22,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -31,12 +36,13 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.commercialsubscription import (
     CommercialSubscription)
+from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.productbounty import ProductBounty
@@ -53,14 +59,28 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IFAQTarget,
-    IHasBugSupervisor, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
-    IProductSet, IQuestionTarget, IStructuralSubscriptionTarget, License,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+
+from canonical.launchpad.interfaces.branch import (
+    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
+from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    ILaunchpadUsage, NotFoundError)
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet, License, LicenseStatus)
+from canonical.launchpad.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from canonical.launchpad.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 
 
@@ -82,17 +102,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         foreignKey="Project", dbName="project", notNull=False, default=None)
     owner = ForeignKey(
         foreignKey="Person",
-        validator=public_person_validator, dbName="owner", notNull=True)
+        storm_validator=validate_public_person, dbName="owner", notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
-        validator=public_person_validator, notNull=False,
+        storm_validator=validate_public_person, notNull=False,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
@@ -160,14 +180,43 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
 
-    license_info = StringCol(dbName='license_info', default=None)
+    def _validate_license_info(self, attr, value):
+        if not self._SO_creating and value != self.license_info:
+            # Clear the license_reviewed and license_approved flags
+            # if the license changes.
+            self._resetLicenseReview()
+        return value
+
+    license_info = StringCol(dbName='license_info', default=None,
+                             storm_validator=_validate_license_info)
+
+    def _validate_license_approved(self, attr, value):
+        """Ensure license approved is only applied to the correct licenses."""
+        # XXX: BradCrittenden 2008-07-16 Is the check for _SO_creating still
+        # needed for storm?
+        if not self._SO_creating:
+            licenses = self.licenses
+            if value:
+                assert (
+                    License.OTHER_OPEN_SOURCE in licenses and
+                    License.OTHER_PROPRIETARY not in licenses), (
+                    "Only licenses of 'Other/Open Source' and not "
+                    "'Other/Proprietary' may be marked as license_approved.")
+                # Approving a license implies it has been reviewed.  Force
+                # `license_reviewed` to be True.
+                self.license_reviewed = True
+        return value
+
     license_approved = BoolCol(dbName='license_approved',
-                               notNull=True, default=False)
+                               notNull=True, default=False,
+                               storm_validator=_validate_license_approved)
 
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        return self.development_focus.series_branch
+        if self.name in get_allowed_default_stacking_names():
+            return self.development_focus.series_branch
+        return None
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
@@ -285,6 +334,46 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return self.commercial_subscription.is_active
 
+    @property
+    def license_status(self):
+        """See `IProduct`.
+
+        :return: A LicenseStatus enum value.
+        """
+        # A project can only be marked 'license_approved' if it is
+        # OTHER_OPEN_SOURCE.  So, if it is 'license_approved' we return
+        # OPEN_SOURCE, which means one of our admins has determined it is good
+        # enough for us for the project to freely use Launchpad.
+        if self.license_approved:
+            return LicenseStatus.OPEN_SOURCE
+        # Since accesses to the licenses property performs a query on
+        # the ProductLicense table, store the value to avoid doing the
+        # query 3 times.
+        licenses = self.licenses
+        if len(licenses) == 0:
+            # We don't know what the license is.
+            return LicenseStatus.UNSPECIFIED
+        elif License.OTHER_PROPRIETARY in licenses:
+            # Notice the difference between the License and LicenseStatus.
+            return LicenseStatus.PROPRIETARY
+        elif License.OTHER_OPEN_SOURCE in licenses:
+            if self.license_reviewed:
+                # The OTHER_OPEN_SOURCE license was not manually approved
+                # by setting license_approved to true.
+                return LicenseStatus.PROPRIETARY
+            else:
+                # The OTHER_OPEN_SOURCE is pending review.
+                return LicenseStatus.UNREVIEWED
+        else:
+            # The project has at least one license and does not have
+            # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
+            return LicenseStatus.OPEN_SOURCE
+
+    def _resetLicenseReview(self):
+        """When the license is modified, it must be reviewed again."""
+        self.license_reviewed = False
+        self.license_approved = False
+
     def _getLicenses(self):
         """Get the licenses as a tuple."""
         return tuple(
@@ -301,12 +390,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         old_licenses = set(self.licenses)
         if licenses == old_licenses:
             return
-        # Clear the license_reviewed flag if the license changes.
+        # Clear the license_reviewed and license_approved flags
+        # if the license changes.
         # ProductSet.createProduct() passes in reset_license_reviewed=False
         # to avoid changing the value when a Launchpad Admin sets
         # license_reviewed & licenses at the same time.
         if reset_license_reviewed:
-            self.license_reviewed = False
+            self._resetLicenseReview()
         # $product/+edit doesn't require a license if a license hasn't
         # already been set, but updateContextFromData() updates all the
         # fields, so we have to avoid this assertion when the attribute
@@ -326,18 +416,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     licenses = property(_getLicenses, _setLicenses)
 
-    def _set_license_info(self, value):
-        if not self._SO_creating and value != self.license_info:
-            # Clear the license_reviewed flag if the license changes.
-            self.license_reviewed = False
-        self._SO_set_license_info(value)
-
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
         return "BugTask.product = %d" % self.id
 
     def getExternalBugTracker(self):
-        """See `IProduct`."""
+        """See `IHasExternalBugTracker`."""
         if self.official_malone:
             return None
         elif self.bugtracker is not None:
@@ -741,7 +825,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return ProductSeries.selectOneBy(product=self, name=name)
 
     def newSeries(self, owner, name, summary, branch=None):
-        return ProductSeries(product=self, owner=owner, name=name,
+        # XXX: jamesh 2008-04-11
+        # Set the ID of the new ProductSeries to avoid flush order
+        # loops in ProductSet.createProduct()
+        return ProductSeries(productID=self.id, owner=owner, name=name,
                              summary=summary, user_branch=branch)
 
     def getRelease(self, version):
@@ -778,6 +865,25 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
+
+    def getCustomLanguageCode(self, language_code):
+        """See `IProduct`."""
+        return CustomLanguageCode.selectOneBy(
+            product=self, language_code=language_code)
+
+    def userCanEdit(self, user):
+        """See `IProduct`."""
+        if user is None:
+            return False
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(celebs.registry_experts) or
+            user.inTeam(celebs.admin) or
+            user.inTeam(self.owner))
+
+def get_allowed_default_stacking_names():
+    """Return a list of names of `Product`s that allow default stacking."""
+    return config.codehosting.allow_default_stacking.split(',')
 
 
 class ProductSet:
@@ -884,9 +990,118 @@ class ProductSet:
 
         return product
 
-    def forReview(self):
+    def forReview(self, search_text=None, active=None,
+                  license_reviewed=None, licenses=None,
+                  license_info_is_empty=None,
+                  has_zero_licenses=None,
+                  created_after=None, created_before=None,
+                  subscription_expires_after=None,
+                  subscription_expires_before=None,
+                  subscription_modified_after=None,
+                  subscription_modified_before=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return Product.select("reviewed IS FALSE")
+
+        conditions = []
+
+        if license_reviewed is not None:
+            conditions.append('Product.reviewed = %s'
+                              % sqlvalues(license_reviewed))
+
+        if active is not None:
+            conditions.append('Product.active = %s' % sqlvalues(active))
+
+        if search_text is not None and search_text.strip() != '':
+            conditions.append('Product.fti @@ ftq(%s)'
+                              % sqlvalues(search_text))
+
+        if created_after is not None:
+            conditions.append('Product.datecreated >= %s'
+                              % sqlvalues(created_after))
+        if created_before is not None:
+            conditions.append('Product.datecreated <= %s'
+                              % sqlvalues(created_before))
+
+        needs_join = False
+        if subscription_expires_after is not None:
+            conditions.append('CommercialSubscription.date_expires >= %s'
+                              % sqlvalues(subscription_expires_after))
+            needs_join = True
+        if subscription_expires_before is not None:
+            conditions.append('CommercialSubscription.date_expires <= %s'
+                              % sqlvalues(subscription_expires_before))
+            needs_join = True
+
+        if subscription_modified_after is not None:
+            conditions.append(
+                'CommercialSubscription.date_last_modified >= %s'
+                % sqlvalues(subscription_modified_after))
+            needs_join = True
+        if subscription_modified_before is not None:
+            conditions.append(
+                'CommercialSubscription.date_last_modified <= %s'
+                % sqlvalues(subscription_modified_before))
+            needs_join = True
+
+        clause_tables = []
+        if needs_join:
+            conditions.append(
+                'CommercialSubscription.product = Product.id')
+            clause_tables.append('CommercialSubscription')
+
+        or_conditions = []
+        if license_info_is_empty is True:
+            # Match products whose license_info doesn't contain
+            # any non-space characters.
+            or_conditions.append("Product.license_info IS NULL")
+            or_conditions.append(r"Product.license_info ~ E'^\\s*$'")
+        elif license_info_is_empty is False:
+            # license_info contains something besides spaces.
+            or_conditions.append(r"Product.license_info ~ E'[^\\s]'")
+        elif license_info_is_empty is None:
+            # Don't restrict result if license_info_is_empty is None.
+            pass
+        else:
+            raise AssertionError('license_info_is_empty invalid: %r'
+                                 % license_info_is_empty)
+
+        has_license_subquery = '''%s (
+            SELECT 1
+            FROM ProductLicense
+            WHERE ProductLicense.product = Product.id
+            LIMIT 1
+            )
+            '''
+        if has_zero_licenses is True:
+            # The subquery finds zero rows.
+            or_conditions.append(has_license_subquery % 'NOT EXISTS')
+        elif has_zero_licenses is False:
+            # The subquery finds at least one row.
+            or_conditions.append(has_license_subquery % 'EXISTS')
+        elif has_zero_licenses is None:
+            # Don't restrict results if has_zero_licenses is None.
+            pass
+        else:
+            raise AssertionError('has_zero_licenses is invalid: %r'
+                                 % has_zero_licenses)
+
+        if licenses is not None and len(licenses) > 0:
+            or_conditions.append('''EXISTS (
+                SELECT 1
+                FROM ProductLicense
+                WHERE ProductLicense.product = Product.id
+                    AND license IN %s
+                LIMIT 1
+                )
+                ''' % sqlvalues(tuple(licenses)))
+
+        if len(or_conditions) != 0:
+            conditions.append('(%s)' % '\nOR '.join(or_conditions))
+
+        conditions_string = '\nAND '.join(conditions)
+        result = Product.select(
+            conditions_string, clauseTables=clause_tables,
+            orderBy=['displayname', 'name'], distinct=True)
+        return result
 
     def search(self, text=None, soyuz=None,
                rosetta=None, malone=None,
@@ -925,6 +1140,7 @@ class ProductSet:
     def getTranslatables(self):
         """See `IProductSet`"""
         upstream = Product.select('''
+            Product.active AND
             Product.id = ProductSeries.product AND
             POTemplate.productseries = ProductSeries.id AND
             Product.official_rosetta
@@ -932,22 +1148,28 @@ class ProductSet:
             clauseTables=['ProductSeries', 'POTemplate'],
             orderBy='Product.title',
             distinct=True)
-        return upstream
+        return upstream.prejoin(['owner'])
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""
-        randomresults = Product.select('''id IN
-            (SELECT Product.id FROM Product, ProductSeries, POTemplate
-               WHERE Product.id = ProductSeries.product AND
-                     POTemplate.productseries = ProductSeries.id AND
-                     Product.official_rosetta
-               ORDER BY random())
-            ''',
-            distinct=True)
-
-        results = list(randomresults[:maximumproducts])
-        results.sort(lambda a, b: cmp(a.title, b.title))
-        return results
+        return Product.select('''
+            id IN (
+                SELECT DISTINCT product_id AS id
+                FROM (
+                    SELECT Product.id AS product_id, random() AS place
+                    FROM Product
+                    JOIN ProductSeries ON
+                        ProductSeries.Product = Product.id
+                    JOIN POTemplate ON
+                        POTemplate.productseries = ProductSeries.id
+                    WHERE Product.active AND Product.official_rosetta
+                    ORDER BY place
+                ) AS randomized_products
+                LIMIT %s
+            )
+            ''' % quote(maximumproducts),
+            distinct=True,
+            orderBy='Product.title')
 
     @cachedproperty
     def stats(self):

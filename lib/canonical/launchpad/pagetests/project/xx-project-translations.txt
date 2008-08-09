@@ -33,16 +33,15 @@ Let's confirm what we just stated.
 
 Netapplet is in fact a product belonging to GNOME project.
 
-  >>> anon_browser.getLink('Network Applet').click()
+  >>> anon_browser.getLink('NetApplet').click()
   >>> print anon_browser.title
    Network Applet in Launchpad
 
 It's not using Launchpad Translations officially
 
-  >>> for tag in find_tags_by_class(anon_browser.contents, 'summary'):
-  ...     print extract_text(tag)
-  Status: Active
-  ...Doesn&rsquo;t use Translations...
+  >>> uses = find_tag_by_id(anon_browser.contents, 'uses')
+  >>> print extract_text(uses)
+  Does not use Launchpad for development.
 
 Anonymous users don't see the translations
 
@@ -67,7 +66,7 @@ but administrators see translations disabled.
   NetApplet Series: trunk
 
 alsa-utils is a product that doesn't belong to GNOME project. It has
-translations and is using Launchpad Translations officially, and it 
+translations and is using Launchpad Translations officially, and it
 shouldn't appear in GNOME project translations page.
 
   >>> browser.open('http://translations.launchpad.dev/gnome')
@@ -94,12 +93,9 @@ It's using Launchpad Translations officially.
   >>> browser.open('http://launchpad.dev/alsa-utils')
   >>> print browser.url
   http://launchpad.dev/alsa-utils
-  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
-  ...     print tag
-  <...
-  ...Status:...
-  ...Active...
-  ...Uses Translations...
+  >>> uses = find_tag_by_id(browser.contents, 'uses')
+  >>> print extract_text(uses)
+  Uses Launchpad for: Translations.
 
 And it has translations.
 
@@ -120,4 +116,3 @@ whether a product is registered in Launchpad.
   >>> browser.getLink('registered with Launchpad').click()
   >>> print browser.url
   http://translations.launchpad.dev/projects
-

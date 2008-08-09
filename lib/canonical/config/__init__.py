@@ -34,9 +34,21 @@ class CanonicalConfig:
     is thread safe (not that this will be a problem if we stick with
     simple configuration).
     """
-    _config = None
-    _instance_name = os.environ.get(LPCONFIG, DEFAULT_CONFIG)
-    _process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+    def __init__(self, instance_name=None, process_name=None):
+        """Create a new instance of CanonicalConfig.
+
+        :param instance_name: the configuration instance to use. Defaults to
+            the value of the LPCONFIG environment variable.
+        :param process_name: the process configuration name to use. Defaults
+            to the basename of sys.argv[0] without any extension.
+       """
+        self._config = None
+        if instance_name is None:
+            instance_name = os.environ.get(LPCONFIG, DEFAULT_CONFIG)
+        if process_name is None:
+            process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+        self._instance_name = instance_name
+        self._process_name = process_name
 
     @property
     def instance_name(self):
@@ -109,28 +121,32 @@ class CanonicalConfig:
     def _setZConfig(self, here, config_dir):
         """Modify the config, adding automatically generated settings"""
         # Root of the launchpad tree so code can stop jumping through hoops
-        # with __file__
-        config.root = os.path.abspath(os.path.join(
+        # with __file__.
+        self.root = os.path.abspath(os.path.join(
             here, os.pardir, os.pardir, os.pardir))
 
         schemafile = os.path.join(
-            config.root, 'lib/zope/app/server/schema.xml')
+            self.root, 'lib/zope/app/server/schema.xml')
         configfile = os.path.join(config_dir, 'launchpad.conf')
         schema = ZConfig.loadSchema(schemafile)
         root_options, handlers = ZConfig.loadConfig(schema, configfile)
 
         # Devmode from the zope.app.server.main config, copied here for
         # ease of access.
-        config.devmode = root_options.devmode
+        self.devmode = root_options.devmode
 
         # The defined servers.
-        config.servers = root_options.servers
+        self.servers = root_options.servers
 
         # The number of configured threads.
-        config.threads = root_options.threads
+        self.threads = root_options.threads
 
     def __getattr__(self, name):
         self._getConfig()
+        # Check first if it's not one of the name added directly
+        # on this instance.
+        if name in self.__dict__:
+            return self.__dict__[name]
         return getattr(self._config, name)
 
     def __contains__(self, key):
@@ -253,3 +269,91 @@ def loglevel(value):
                 "as per logging module." % value
                 )
 
+
+class DatabaseConfig:
+    """A class to provide the Launchpad database configuration.
+
+    The dbconfig option overlays the database configurations of a
+    chosen config section over the base section:
+
+        >>> from canonical.config import config, dbconfig
+        >>> print config.database.dbhost
+        localhost
+        >>> print config.database.dbuser
+        Traceback (most recent call last):
+          ...
+        AttributeError: ...
+        >>> print config.launchpad.dbhost
+        Traceback (most recent call last):
+          ...
+        AttributeError: ...
+        >>> print config.launchpad.dbuser
+        launchpad
+        >>> print config.librarian.dbuser
+        librarian
+
+        >>> dbconfig.setConfigSection('librarian')
+        >>> print dbconfig.dbhost
+        localhost
+        >>> print dbconfig.dbuser
+        librarian
+
+        >>> dbconfig.setConfigSection('launchpad')
+        >>> print dbconfig.dbhost
+        localhost
+        >>> print dbconfig.dbuser
+        launchpad
+
+    Some values are required to have a value, such as dbuser.  So we
+    get an exception if they are not set:
+
+        >>> config.codehosting.dbuser
+        Traceback (most recent call last):
+          ...
+        AttributeError: No section key named dbuser.
+        >>> dbconfig.setConfigSection('codehosting')
+        >>> print dbconfig.dbuser
+        Traceback (most recent call last):
+          ...
+        ValueError: dbuser must be set
+        >>> dbconfig.setConfigSection('launchpad')
+    """
+    _config_section = None
+    _db_config_attrs = frozenset([
+        'dbuser', 'dbhost', 'dbname', 'db_statement_timeout',
+        'db_statement_timeout_precision', 'isolation_level',
+        'randomise_select_results', 'soft_request_timeout'])
+    _db_config_required_attrs = frozenset(['dbuser', 'dbname'])
+
+    def setConfigSection(self, section_name):
+        self._config_section = section_name
+
+    def _getConfigSections(self):
+        """Returns a list of sections to search for database configuration.
+
+        The first section in the list has highest priority.
+        """
+        if self._config_section is None:
+            return [config.database]
+        overlay = config
+        for part in self._config_section.split('.'):
+            overlay = getattr(overlay, part)
+        return [overlay, config.database]
+
+    def __getattr__(self, name):
+        sections = self._getConfigSections()
+        if name not in self._db_config_attrs:
+            raise AttributeError(name)
+        value = None
+        for section in sections:
+            value = getattr(section, name, None)
+            if value is not None:
+                break
+        # Some values must be provided by the config
+        if value is None and name in self._db_config_required_attrs:
+            raise ValueError('%s must be set' % name)
+        return value
+
+
+dbconfig = DatabaseConfig()
+dbconfig.setConfigSection('launchpad')

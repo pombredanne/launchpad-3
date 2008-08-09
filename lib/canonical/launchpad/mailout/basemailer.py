@@ -43,64 +43,59 @@ class BaseMailer:
         self._subject_template = subject
         self._template_name = template_name
         self._recipients = NotificationRecipientSet()
-        for recipient, (subscription, rationale) in recipients.iteritems():
-            self._recipients.add(recipient, subscription, rationale)
+        for recipient, reason in recipients.iteritems():
+            self._recipients.add(recipient, reason, reason.mail_header)
         self.from_address = from_address
         self.delta = delta
 
-    def generateEmail(self, recipient):
+    def generateEmail(self, email):
         """Generate the email for this recipient.
 
         :return: (headers, subject, body) of the email.
         """
-        headers = self._getHeaders(recipient)
-        subject = self._subject_template % self._getTemplateParams(recipient)
-        return (headers, subject, self._getBody(recipient))
+        headers = self._getHeaders(email)
+        subject = self._getSubject(email)
+        return (headers, subject, self._getBody(email))
+
+    def _getSubject(self, email):
+        """The subject template expanded with the template params."""
+        return self._subject_template % self._getTemplateParams(email)
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""
         return None
 
-    def _getHeaders(self, recipient):
+    def _getHeaders(self, email):
         """Return the mail headers to use."""
-        subscription, rationale = self._recipients.getReason(
-            recipient.preferredemail.email)
-        headers = {'X-Launchpad-Message-Rationale': rationale}
+        reason, rationale = self._recipients.getReason(email)
+        headers = {'X-Launchpad-Message-Rationale': reason.mail_header}
         reply_to = self._getReplyToAddress()
         if reply_to is not None:
             headers['Reply-To'] = reply_to
         return headers
 
-    def _getTemplateParams(self, recipient):
+    def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""
-        params = {'reason': self.getReason(recipient)}
+        reason, rationale = self._recipients.getReason(email)
+        params = {'reason': reason.getReason()}
         if self.delta is not None:
             params['delta'] = self.textDelta()
         return params
-
-    def getReason(self, recipient):
-        """Return a string explaining why the message is being sent.
-
-        This string should be user-oriented, human-readable string.  It should
-        ususally vary by recipient.  Typically appears in the message footer.
-        """
-        raise NotImplementedError(BaseMailer.getReason)
 
     def textDelta(self):
         """Return a textual version of the class delta."""
         return text_delta(self.delta, self.delta.delta_values,
             self.delta.new_values, self.delta.interface)
 
-    def _getBody(self, recipient):
+    def _getBody(self, email):
         """Return the complete body to use for this email."""
         template = get_email_template(self._template_name)
-        return template % self._getTemplateParams(recipient)
+        return template % self._getTemplateParams(email)
 
     def sendAll(self):
         """Send notifications to all recipients."""
-        for recipient in self._recipients.getRecipientPersons():
-            to_address = format_address(
-                recipient.displayname, recipient.preferredemail.email)
-            headers, subject, body = self.generateEmail(recipient)
+        for email, recipient in self._recipients.getRecipientPersons():
+            to_address = format_address(recipient.displayname, email)
+            headers, subject, body = self.generateEmail(email)
             simple_sendmail(
                 self.from_address, to_address, subject, body, headers)

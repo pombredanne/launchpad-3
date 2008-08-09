@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005, 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Branch interfaces."""
@@ -13,6 +13,7 @@ __all__ = [
     'BranchCreationNoTeamOwnedJunkBranches',
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
+    'BranchFormat',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
@@ -22,15 +23,18 @@ __all__ = [
     'BranchTypeError',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'CannotDeleteBranch',
+    'ControlFormat',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchListingFilter',
+    'IBranchNavigationMenu',
     'IBranchPersonSearchContext',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
+    'RepositoryFormat',
     'UICreatableBranchType',
     'UnknownBranchTypeError'
     ]
@@ -38,9 +42,27 @@ __all__ = [
 from cgi import escape
 from datetime import timedelta
 import re
-from zope.interface import implements, Interface, Attribute
 
+# ensure correct plugins are loaded
+import canonical.codehosting
+from bzrlib.branch import (
+    BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
+    BzrBranchFormat6)
+from bzrlib.bzrdir import (
+    BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
+from bzrlib.plugins.loom.branch import (
+    BzrBranchLoomFormat1, BzrBranchLoomFormat6)
+from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
+    RepositoryFormatKnit3, RepositoryFormatKnit4)
+from bzrlib.repofmt.pack_repo import (
+    RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
+    RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
+    RepositoryFormatPackDevelopment0Subtree)
+from bzrlib.repofmt.weaverepo import (
+    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
+    RepositoryFormat7)
 from zope.component import getUtility
+from zope.interface import implements, Interface, Attribute
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
@@ -54,6 +76,8 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_write_operation)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -145,6 +169,97 @@ class BranchType(DBEnumeratedType):
         Registered in Launchpad with an external location,
         but is not to be mirrored, nor available through Launchpad.
         """)
+
+
+def _format_enum(num, format, format_string=None):
+    instance = format()
+    if format_string is None:
+        format_string = instance.get_format_string()
+    return DBItem(num, format_string, instance.get_format_description())
+
+
+class BranchFormat(DBEnumeratedType):
+    """Branch on-disk format.
+
+    This indicates which (Bazaar) format is used on-disk.  The list must be
+    updated as the list of formats supported by Bazaar is updated.
+    """
+
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
+
+    # Branch 4 was only used with all-in-one formats, so it didn't have its
+    # own marker.  It was implied by the control directory marker.
+    BZR_BRANCH_4 = _format_enum(
+        4, BzrBranchFormat4, 'Fake Bazaar Branch 4 marker')
+
+    BRANCH_REFERENCE = _format_enum(1, BranchReferenceFormat)
+
+    BZR_BRANCH_5 = _format_enum(5, BzrBranchFormat5)
+
+    BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
+
+    BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
+
+    BZR_LOOM_2 = _format_enum(106, BzrBranchLoomFormat6)
+
+
+class RepositoryFormat(DBEnumeratedType):
+    """Repository on-disk format.
+
+    This indicates which (Bazaar) format is used on-disk.  The list must be
+    updated as the list of formats supported by Bazaar is updated.
+    """
+
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
+
+    # Repository formats prior to format 7 had no marker because they
+    # were implied by the control directory format.
+    BZR_REPOSITORY_4 = _format_enum(
+        4, RepositoryFormat4, 'Fake Bazaar repository 4 marker')
+
+    BZR_REPOSITORY_5 = _format_enum(
+        5, RepositoryFormat5, 'Fake Bazaar repository 5 marker')
+
+    BZR_REPOSITORY_6 = _format_enum(
+        6, RepositoryFormat6, 'Fake Bazaar repository 6 marker')
+
+    BZR_REPOSITORY_7 = _format_enum(7, RepositoryFormat7)
+
+    BZR_KNIT_1 = _format_enum(101, RepositoryFormatKnit1)
+
+    BZR_KNIT_3 = _format_enum(103, RepositoryFormatKnit3)
+
+    BZR_KNIT_4 = _format_enum(104, RepositoryFormatKnit4)
+
+    BZR_KNITPACK_1 = _format_enum(201, RepositoryFormatKnitPack1)
+
+    BZR_KNITPACK_3 = _format_enum(203, RepositoryFormatKnitPack3)
+
+    BZR_KNITPACK_4 = _format_enum(204, RepositoryFormatKnitPack4)
+
+    BZR_PACK_DEV_0 = _format_enum(
+        300, RepositoryFormatPackDevelopment0)
+
+    BZR_PACK_DEV_0_SUBTREE = _format_enum(
+        301, RepositoryFormatPackDevelopment0Subtree)
+
+
+class ControlFormat(DBEnumeratedType):
+    """Control directory (BzrDir) format.
+
+    This indicates what control directory format is on disk.  Must be updated
+    as new formats become available.
+    """
+
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
+
+    BZR_DIR_4 = _format_enum(4, BzrDirFormat4)
+
+    BZR_DIR_5 = _format_enum(5, BzrDirFormat5)
+
+    BZR_DIR_6 = _format_enum(6, BzrDirFormat6)
+
+    BZR_METADIR_1 = _format_enum(1, BzrDirMetaFormat1)
 
 
 class UICreatableBranchType(EnumeratedType):
@@ -311,8 +426,13 @@ class IBranchBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate branch listings."""
 
 
+class IBranchNavigationMenu(Interface):
+    """A marker interface to indicate the need to show the branch menu."""
+
+
 class IBranch(IHasOwner):
     """A Bazaar branch."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
@@ -353,6 +473,17 @@ class IBranch(IHasOwner):
         description=_("This is the external location where the Bazaar "
                       "branch is hosted."))
 
+    branch_format = Choice(
+        title=_("Branch Format"), required=False, vocabulary=BranchFormat)
+
+    repository_format = Choice(
+        title=_("Repository Format"), required=False,
+        vocabulary=RepositoryFormat)
+
+    control_format = Choice(
+        title=_("Control Directory"), required=False,
+        vocabulary=ControlFormat)
+
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
     mirror_status_message = Text(
@@ -368,7 +499,7 @@ class IBranch(IHasOwner):
     registrant = Attribute("The user that registered the branch.")
     owner = PublicPersonChoice(
         title=_('Owner'), required=True,
-        vocabulary='PersonActiveMembershipPlusSelf',
+        vocabulary='UserTeamsParticipationPlusSelf',
         description=_("Either yourself or a team you are a member of. "
                       "This controls who can modify the branch."))
     author = PublicPersonChoice(
@@ -435,7 +566,7 @@ class IBranch(IHasOwner):
                       "successfully scanned."))
     revision_count = Int(
         title=_("Revision count"),
-        description=_("The number of revisions in the branch")
+        description=_("The revision number of the tip of the branch.")
         )
 
     warehouse_url = Attribute(
@@ -502,7 +633,8 @@ class IBranch(IHasOwner):
         "Only active merge proposals are returned (those that have not yet "
         "been merged).")
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
-                         whiteboard=None, date_created=None):
+                         whiteboard=None, date_created=None,
+                         needs_review=False):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the dependent_branch, if it is there,
@@ -519,6 +651,8 @@ class IBranch(IHasOwner):
             pertinant to the landing such as testing notes.
         :param date_created: Used to specify the date_created value of the
             merge request.
+        :param needs_review: Used to specify the the proposal is ready for
+            review right now.
         """
 
     def getMergeQueue():
@@ -596,16 +730,15 @@ class IBranch(IHasOwner):
         :return: An SQLObject query result.
         """
 
-    def getBranchRevision(sequence):
-        """Get the `BranchRevision` for the given sequence number.
+    def getBranchRevision(sequence=None, revision=None, revision_id=None):
+        """Get the associated `BranchRevision`.
 
-        If no such `BranchRevision` exists, None is returned.
-        """
+        One and only one parameter is to be not None.
 
-    def getBranchRevisionByRevisionId(revision_id):
-        """Get the `BranchRevision for the given revision id.
-
-        If no such `BranchRevision` exists, None is returned.
+        :param sequence: The revno of the revision in the mainline history.
+        :param revision: A `Revision` object.
+        :param revision_id: A revision id string.
+        :return: A `BranchRevision` or None.
         """
 
     def createBranchRevision(sequence, revision):
@@ -651,6 +784,7 @@ class IBranch(IHasOwner):
     def getPullURL():
         """Return the URL used to pull the branch into the mirror area."""
 
+    @export_write_operation()
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
@@ -895,7 +1029,7 @@ class IBranchSet(Interface):
         """
 
     def getTargetBranchesForUsersMergeProposals(user, product):
-        """Return a sequence of branches the user has targetted before."""
+        """Return a sequence of branches the user has targeted before."""
 
     def isBranchNameAvailable(owner, product, branch_name):
         """Is the specified branch_name valid for the owner and product.

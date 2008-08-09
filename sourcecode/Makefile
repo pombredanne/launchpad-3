@@ -4,36 +4,46 @@ PYTHON=python${PYTHON_VERSION}
 # the ones we test.  If we fix them all to have EITHER a good makefile
 # (build and check targets work), or no makefile we can reenable auto
 # detection.
-# test_dirs:=$(shell find . -maxdepth 1 -mindepth 1 -name ".arch-ids" -prune -o -type d -print | grep -v pyarch)
-build_dirs:=bzr cscvs pygettextpo pygpgme sqlobject twisted zope
-test_dirs:=bzr cscvs pygettextpo sqlobject twisted zope
+build_dirs:=bzr cscvs lsprof pygettextpo pygpgme storm twisted zope
+test_dirs:=bzr cscvs pygettextpo storm twisted zope
 launchpad_test_dirs:=
+
+STORM_TESTDB = storm_test
+
+TEST_ENV_VARS = \
+  PYTHON=$(PYTHON) \
+  PYTHON_VERSION=$(PYTHON_VERSION) \
+  STORM_POSTGRES_URI=postgres:$(STORM_TESTDB) \
+  STORM_POSTGRES_HOST_URI=postgres://localhost/$(STORM_TESTDB) \
+  STORM_MYSQL_URI= \
+  STORM_MYSQL_HOST_URI=
 
 all:
 
-check: build
+check: build storm_testdb
 	@ for subdir in ${test_dirs}; do \
-		$(MAKE) -C $$subdir check \
-		PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION} || exit $$?;\
+		$(MAKE) -C $$subdir check $(TEST_ENV_VARS) || exit $$?;\
 	done
 
 check_for_launchpad: build
 	@ for subdir in ${launchpad_test_dirs}; do \
-		$(MAKE) -C $$subdir check \
-		PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION} || exit $$?;\
+		$(MAKE) -C $$subdir check $(TEST_ENV_VARS) || exit $$?;\
 	done
 
 build:
 	@ for subdir in ${build_dirs}; do\
 		if [ -e $$subdir/Makefile ]; then\
-			$(MAKE) -C $$subdir \
-			PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION} \
-			       || exit $$?;\
+			$(MAKE) -C $$subdir $(TEST_ENV_VARS) || exit $$?;\
 		fi;\
 	done
-	#cd zope && ./configure --prefix=inst
-	#cd zope && make install
 
-.PHONY: check check_for_launchpad all build
+# Storm's test suite expects the test database to exist before the
+# test suite is run.
+storm_testdb:
+	@echo "* Creating $(STORM_TESTDB)"
+	@if psql -l | grep -q " $(STORM_TESTDB) "; then \
+	    dropdb $(STORM_TESTDB) >/dev/null; \
+	fi
+	createdb $(STORM_TESTDB)
 
-
+.PHONY: check check_for_launchpad all build storm_testdb

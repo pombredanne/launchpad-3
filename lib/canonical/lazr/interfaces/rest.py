@@ -9,10 +9,10 @@ __all__ = [
     'IByteStorage',
     'IByteStorageResource',
     'ICollection',
-    'ICollectionField',
     'ICollectionResource',
     'IEntry',
     'IEntryResource',
+    'IFieldMarshaller',
     'IHTTPResource',
     'IJSONPublishable',
     'IResourceOperation',
@@ -20,6 +20,10 @@ __all__ = [
     'IResourcePOSTOperation',
     'IScopedCollection',
     'IServiceRootResource',
+    'ITopLevelEntryLink',
+    'IUnmarshallingDoesntNeedValue',
+    'LAZR_WEBSERVICE_NAME',
+    'LAZR_WEBSERVICE_NS',
     'WebServiceLayer',
     ]
 
@@ -29,14 +33,14 @@ from zope.interface import Attribute, Interface
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.schema.interfaces import ISequence
 
 
-class ICollectionField(ISequence):
-    """A field representing a sequence.
+# The namespace prefix for LAZR web service-related tags.
+LAZR_WEBSERVICE_NS = 'lazr.webservice'
 
-    All iterables satisfy this collection field.
-    """
+# The namespace for LAZR web service tags having to do with the names
+# of things.
+LAZR_WEBSERVICE_NAME = '%s.name' % LAZR_WEBSERVICE_NS
 
 
 class IHTTPResource(Interface):
@@ -109,11 +113,17 @@ class IResourceOperation(Interface):
         as application/json.
         """
 
+    send_modification_event = Attribute(
+        "Whether or not to send out an event when this operation completes.")
+
+
 class IResourceGETOperation(IResourceOperation):
     """A one-off operation invoked through GET.
 
     This might be a search or lookup operation.
     """
+    return_type = Attribute(
+        "The type of the resource returned by this operation, if any.")
 
 
 class IResourcePOSTOperation(IResourceOperation):
@@ -157,6 +167,23 @@ class IScopedCollection(ICollection):
     collection = Attribute("The collection scoped to an entry.")
 
 
+class ITopLevelEntryLink(Interface):
+    """A link to a special entry.
+
+    For instance, an alias for the currently logged-in user.
+
+    The link will be present in the representation of the service root
+    resource.
+    """
+
+    link_name = Attribute("The name of the link to this entry in the "
+                          "representation of the service root resource. "
+                          "'_link' will be automatically appended.")
+
+    entry_type = Attribute("The interface defined by the entry on the "
+                           "other end of the link.")
+
+
 class WebServiceLayer(IDefaultBrowserLayer):
     """Marker interface for requests to the web service."""
 
@@ -197,3 +224,52 @@ class IByteStorageResource(IHTTPResource):
 
     def do_DELETE():
         """Delete the stored bytestream."""
+
+
+class IFieldMarshaller(Interface):
+    """A mapper between schema fields and their representation on the wire."""
+
+    representation_name = Attribute(
+        'The name to use for this field within the representation.')
+
+    def marshall_from_json_data(value):
+        """Transform the given data value into an object.
+
+        This is used in PATCH/PUT requests when modifying the field, to get
+        the actual value to use from the data submitted via JSON.
+
+        :param value: A value obtained by deserializing a string into
+            a JSON data structure.
+
+        :return: The value that should be used to update the field.
+
+        """
+
+    def marshall_from_request(value):
+        """Return the value to use based on the request submitted value.
+
+        This is used by operation where the data comes from either the
+        query string or the form-encoded POST data.
+
+        :param value: The value submitted as part of the request.
+
+        :return: The value that should be used to update the field.
+        """
+
+    def unmarshall(entry, value):
+        """Transform an object value into a value suitable for JSON.
+
+        :param entry: The entry whose field this is.
+        :value: The object value of the field.
+
+        :return: A value that can be serialized as part of a JSON hash.
+        """
+
+
+class IUnmarshallingDoesntNeedValue(Interface):
+    """A marker interface for unmarshallers that work without values.
+
+    Most marshallers transform the value they're given, but some work
+    entirely on the field name. If they use this marker interface
+    we'll save time because we won't have to calculate the value.
+    """

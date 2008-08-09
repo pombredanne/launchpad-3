@@ -126,14 +126,20 @@ removal_comment argument.
 
 Inspecting the modified record shows it's ready for domination:
 
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> transaction_timestamp = get_transaction_timestamp()
+
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.DELETED, (4) Deleted>
-    >>> modified_spph.datesuperseded
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-    >>> modified_spph.removed_by.name
-    u'sabdfl'
-    >>> modified_spph.removal_comment
-    u'testing deletion'
+
+    >>> modified_spph.datesuperseded == transaction_timestamp
+    True
+
+    >>> print modified_spph.removed_by.name
+    sabdfl
+
+    >>> print modified_spph.removal_comment
+    testing deletion
 
 requstObsolescence takes no additional arguments:
 
@@ -145,8 +151,9 @@ pockets for stable distroseries):
 
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.OBSOLETE, (5) Obsolete>
-    >>> modified_spph.scheduleddeletiondate
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
+    >>> modified_spph.scheduleddeletiondate == transaction_timestamp
+    True
 
 
 == Copying and published binarypackages lookup ==
@@ -286,7 +293,7 @@ getPublishedBinaries(), it considers both PENDING and PUBLISHED status
 as active, SUPERSEDED, DELETED and OBSOLETE are excluded. Differently,
 getBuiltBinaries() follows binaries in any state.
 
-    >>> source.getPublishedBinaries().count()
+    >>> len(source.getPublishedBinaries())
     2
 
     >>> len(source.getBuiltBinaries())
@@ -305,7 +312,7 @@ getBuiltBinaries() result.
     >>> superseded = a_binary.supersede()
     >>> syncUpdate(superseded)
 
-    >>> source.getPublishedBinaries().count()
+    >>> len(source.getPublishedBinaries())
     1
 
     >>> len(source.getBuiltBinaries())
@@ -318,7 +325,7 @@ published in the original location.
     ...     sabdfl, "go")
     >>> syncUpdate(deleted)
 
-    >>> source.getPublishedBinaries().count()
+    >>> len(source.getPublishedBinaries())
     0
 
     >>> len(source.getBuiltBinaries())
@@ -327,14 +334,14 @@ published in the original location.
 Finally we will mark both copied binary publication as obsolete and
 verify that the getPublishedBinaries() result is also empty after that.
 
-    >>> copied_source.getPublishedBinaries().count()
+    >>> len(copied_source.getPublishedBinaries())
     2
 
     >>> for bin in copied_source.getPublishedBinaries():
     ...     obsoleted = bin.requestObsolescence()
     ...     syncUpdate(obsoleted)
 
-    >>> copied_source.getPublishedBinaries().count()
+    >>> len(copied_source.getPublishedBinaries())
     0
 
     >>> len(copied_source.getBuiltBinaries())
@@ -528,8 +535,8 @@ Using the same Ubuntu source publishing example as above:
 
     >>> for file in source.getSourceAndBinaryLibraryFiles():
     ...     print file.filename
-    foo.dsc
     foo-bin_all.deb
+    foo.dsc
 
 We can also publish a package in a PPA and query on its files:
 
@@ -542,8 +549,8 @@ We can also publish a package in a PPA and query on its files:
 
     >>> for file in ppa_source.getSourceAndBinaryLibraryFiles():
     ...     print file.filename
-    foo.dsc
     foo-bin_all.deb
+    foo.dsc
 
 Notice that some files appear twice if they are published in more than one
 architecture (e.g. for arch-all files).
@@ -634,3 +641,490 @@ Generating respective "Packages" stanzas:
 
     >>> [pub_file.archive_url for pub_file in bpph.files]
     [u'http://launchpad.dev/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
+
+
+== IPublishingSet ==
+
+This utility implements the following methods:
+
+ * getBuildsForSources();
+ * getFilesForSources();
+ * getBinaryPublicationsForSources();
+ * getPackageDiffsForSources();
+
+They receive a list of `SourcePackagePublishingHistory` objects and
+fetch the corresponding information for all of them.
+
+Their returned `ResultSet` (they all use storm natively) follows a
+pattern:
+
+ * (`SourcePackagePublishingHistory`, <object>, [prejoins,])
+
+This way the useful references gets cached and the callsites can group
+the results as necessary.
+
+The `IPublishingSet` methods are also used to implement the corresponding
+features in `ISourcePackagePublishingHistory`:
+
+ * getBuilds -> IPublishingSet.getBuildsForSources;
+ * getSourceAndBinaryLibraryFiles -> IPublishingSet.getFilesForSources;
+ * getPublishedBinaries -> IPublishingSet.getBinaryPublicationsForSources;
+
+So, they were already tested implicitly before in this file, the
+simply use the IPublishing methods passing only a single source
+publication. Now we will document how they work for multiple source
+publications.
+
+IPublishingSet is an essential component for
+`ArchiveSourcePublications` feature, see more  information below in
+its corresponding test section.
+
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     IPublishingSet)
+
+    >>> publishing_set = getUtility(IPublishingSet)
+
+    >>> verifyObject(IPublishingSet, publishing_set)
+    True
+
+We will assembly a list of source publications based on what was
+ever published in Celso's PPA.
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov_sources = list(cprov.archive.getPublishedSources())
+    >>> len(cprov_sources)
+    8
+
+Now that we have a set of source publications let's get the builds in
+its context.
+
+    >>> cprov_builds = publishing_set.getBuildsForSources(cprov_sources)
+
+It returns a `ResultSet` and it contains 3-element tuples as
+`SourcePackagePublishingHistory`, `Build` and `DistroArchseries` for
+each build found.
+
+    >>> cprov_builds.count()
+    7
+
+The `ResultSet` is ordered by ascending
+`SourcePackagePublishingHistory.id` and ascending
+`DistroArchseries.architecturetag` in this order.
+
+    >>> source_pub, build, arch = cprov_builds.last()
+
+    >>> print source_pub.displayname
+    foo 666 in breezy-autotest
+
+    >>> print build.title
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+    >>> print arch.displayname
+    ubuntutest Breezy Badger Autotest i386
+
+Now we retrieve all binary publications for Celso's PPA sources.
+
+    >>> cprov_binaries = publishing_set.getBinaryPublicationsForSources(
+    ...     cprov_sources)
+
+The returned `ResultSet` contains 5-element tuples as
+(`SourcePackagePublishingHistory`, `BinaryPackagePublishingHistory`,
+ `BinaryPackageRelease`, `BinaryPackageName`, `DistroArchSeries`).
+
+    >>> cprov_binaries.count()
+    10
+
+This result is ordered by ascending
+`SourcePackagePublishingHistory.id`, ascending `BinaryPackageName.name`,
+ascending `DistroArchSeries.architecturetag and descending
+`BinaryPackagePublishingHistory.id`.
+
+    >>> (source_pub, binary_pub, binary, binary_name,
+    ...  arch) = cprov_binaries.last()
+
+    >>> print source_pub.displayname
+    foo 666 in breezy-autotest
+
+    >>> print binary_pub.displayname
+    foo-bin 666 in breezy-autotest i386
+
+    >>> print binary.title
+    foo-bin-666
+
+    >>> print binary_name.name
+    foo-bin
+
+    >>> print arch.displayname
+    ubuntutest Breezy Badger Autotest i386
+
+We can retrieve all files related with Celso's PPA publications.
+
+    >>> cprov_files = publishing_set.getFilesForSources(
+    ...     cprov_sources)
+
+This `ResultSet` contains 3-element tuples as
+(`SourcePackagePublishingHistory`, `LibraryFileAlias`,
+`LibraryFileContent`)
+
+    >>> cprov_files.count()
+    14
+
+This result are not ordered since it comes from SQL UNION, so call
+sites are responsible to order them appropriately. So, can can only
+check that they unpack as specified, a 3-element tuple.
+
+    >>> source, file, content = cprov_files.any()
+
+    >>> ordered_filenames = sorted(
+    ...    file.filename for source, file, content in cprov_files)
+
+    >>> print ordered_filenames[-1]
+    firefox-0.9.2.orig.tar.gz
+
+getPackageDiffsForSources() is also provided by `IPublishingSet`, it
+allows callsites to retrieve all related `PackageDiff` records based
+on a collection of source publications.
+
+The sampledata does not contain any `PackageDiff`s, thus nothing is
+returned for the Celso's sources.
+
+    >>> cprov_diffs = publishing_set.getPackageDiffsForSources(
+    ...     cprov_sources)
+
+    >>> cprov_diffs.count()
+    0
+
+For testing purposes we will create a `PackageDiff` for Celso's
+'pmount' and another for Celso's 'iceweasel' sources.
+
+    >>> a_source = cprov_sources[-2]
+    >>> print a_source.displayname
+    iceweasel 1.0 in warty
+
+    >>> to_source = cprov_sources[-1]
+    >>> print to_source.displayname
+    pmount 0.1-1 in warty
+
+    >>> pmount_diff = a_source.sourcepackagerelease.requestDiffTo(
+    ...     cprov, to_source.sourcepackagerelease)
+    >>> print pmount_diff.title
+    1.0 (in Ubuntu) to 0.1-1
+
+    >>> iceweasel_diff = to_source.sourcepackagerelease.requestDiffTo(
+    ...     cprov, a_source.sourcepackagerelease)
+    >>> print iceweasel_diff.title
+    0.1-1 (in Ubuntu) to 1.0
+
+getPackageDiffsForSources() only returns fulfilled `PackageDiff`s, which is
+not the case of the just created ones.
+
+    >>> cprov_diffs.count()
+    0
+
+Once we make the `PackageDiff` records 'fulfilled', by storing a
+'diff_content', they show up in the getPackageDiffsForSources()
+results.
+
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+    >>> naked_diff = removeSecurityProxy(pmount_diff)
+    >>> naked_diff.diff_content = getUtility(ILibraryFileAliasSet)[1]
+
+    >>> naked_diff = removeSecurityProxy(iceweasel_diff)
+    >>> naked_diff.diff_content = getUtility(ILibraryFileAliasSet)[1]
+
+    >>> flush_database_updates()
+
+    >>> cprov_diffs.count()
+    2
+
+getPackageDiffsForSources() returns a list of 4-element tuple, ordered
+by ascending publishing id and descending `PackageDiff` creation date,
+containing:
+
+ * `SourcePackagePublishingHistory`;
+ * `PackageDiff`;
+ * `LibraryFileAlias`;
+ * `LibraryFileContent`.
+
+    >>> [iceweasel_diff, pmount_diff] = cprov_diffs
+
+    >>> source_pub, diff, file, content = pmount_diff
+
+    >>> print source_pub.displayname
+    pmount 0.1-1 in warty
+
+    >>> print diff.title
+    1.0 (in Ubuntu) to 0.1-1
+
+    >>> print file.filename
+    netapplet-1.0.0.tar.gz
+
+    >>> print content.md5
+    01234567890123456789012345678900
+
+Last but not least the publishing set class allows for the bulk deletion
+of publishing history records.
+
+    >>> import operator
+    >>> cprov_sources = sorted(list(
+    ...     cprov.archive.getPublishedSources(
+    ...     status=PackagePublishingStatus.PUBLISHED)),
+    ...     key=operator.attrgetter('id'))
+    >>> print len(cprov_sources)
+    6
+
+We will delete the first two source publishing history records and
+need to know the number of associated binary publishing history
+records.
+
+    >>> cprov_binaries = publishing_set.getBinaryPublicationsForSources(
+    ...     cprov_sources)
+    >>> cprov_binaries.count()
+    9
+
+This is the published binary that will get deleted.
+
+    >>> cprov_binaries = publishing_set.getBinaryPublicationsForSources(
+    ...     cprov_sources[:2])
+    >>> cprov_binaries.count()
+    1
+
+Let's get rid of the first two source publishing history records and their
+associated binary publishing records now.
+
+    >>> deleted = publishing_set.requestDeletion(
+    ...     cprov_sources[:2], cprov, 'OOPS-934EC47')
+
+The number of published sources will decrease by two as expected.
+
+    >>> cprov_sources = list(
+    ...     cprov.archive.getPublishedSources(
+    ...     status=PackagePublishingStatus.PUBLISHED))
+    >>> print len(cprov_sources)
+    4
+
+Analogously, the number of associated published binaries will be less
+by one.
+
+    >>> cprov_binaries = publishing_set.getBinaryPublicationsForSources(
+    ...     cprov_sources)
+    >>> cprov_binaries.count()
+    8
+
+Please note also that the source publishing records to be deleted must
+be passed as a list. Otherwise an exception will be raised.
+
+    >>> deleted = publishing_set.requestDeletion(
+    ...     tuple(cprov_sources[:2]), cprov, 'OOPS-934EC47')
+    Traceback (most recent call last):
+    ...
+    AssertionError: The 'sources' parameter must be a list.
+
+
+== ArchiveSourcePublications ==
+
+`ArchiveSourcePublications` wraps `IPublishingSet` methods to build a
+set of objects which decorate `ISourcePackagePublishingHistory` with
+cached references.
+
+All references related with the given set of source publications are
+fetch in a fixed number of queries (3) instead of varying according
+the size of the set (3 * N).
+
+     >>> from canonical.launchpad.components.archivesourcepublication import (
+     ...     ArchiveSourcePublications)
+
+We will use all published sources in Celso's PPA as our initial set.
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov_published_sources = cprov.archive.getPublishedSources(
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+We use the source publications to initialise
+`ArchiveSourcePublications`.
+
+    >>> decorated_set = ArchiveSourcePublications(cprov_published_sources)
+    >>> empty_decorated_set = ArchiveSourcePublications([])
+
+`ArchiveSourcePublications` implements __nonzero__, so callsites can
+verify in advance whether there are elements to be iterated or not.
+
+    >>> bool(decorated_set)
+    True
+
+    >>> bool(empty_decorated_set)
+    False
+
+Note that this check is *cheap* since it's based only on the given set
+of source publications and doesn't require the class to fetch the
+extra information. The extra information will be only fetch when the
+set gets iterated.
+
+The size of the `ArchiveSourcePublications` always matches the given
+source publication set size:
+
+    >>> cprov_published_sources.count()
+    4
+
+    >>> len(list(decorated_set))
+    4
+
+The decorated objects are returned in the same order used in the given
+'source_publications'.
+
+    >>> def compare_ids(given, returned):
+    ...     given_ids = [obj.id for obj in given]
+    ...     returned_ids = [obj.id for obj in returned]
+    ...     if given_ids == returned_ids:
+    ...        print 'Matches'
+    ...     else:
+    ...        print 'Mismatch:', given_ids, returned_ids
+
+    >>> compare_ids(cprov_published_sources, decorated_set)
+    Matches
+
+Now we will shuffle the order of the given publications, ensure they are
+different, and check if the order is respected:
+
+    >>> original_sources_list = list(cprov_published_sources)
+    >>> shuffled_sources_list = list(cprov_published_sources)
+
+    >>> import random
+    >>> while shuffled_sources_list == original_sources_list:
+    ...     random.shuffle(shuffled_sources_list)
+
+    >>> shuffled_decorated_list = ArchiveSourcePublications(
+    ...      shuffled_sources_list)
+
+The shuffled sources list order is respected by
+ArchiveSourcePublication.
+
+    >>> compare_ids(shuffled_sources_list, shuffled_decorated_list)
+    Matches
+
+And the order is not the same than the original source set.
+
+    >>> compare_ids(original_sources_list, shuffled_decorated_list)
+    Mismatch: ...
+
+We will check a little bit of the `ArchiveSourcePublications`
+internals. There are three essential methods to fetch distinct
+information to be cached in the decorated objects:
+
+  * getBuildsBySource;
+  * getFilesBySource;
+  * getBinariesBySource;
+  * getPackageDiffsBySource.
+
+They exclude the extra references ('prejoins') returned  from the
+corresponding `IPublishingSet` methods and group the wanted results as
+a dictionary, keyed by `SourcePackagePublishingHistory `, in way they
+can be quickly looked up when building `ArchiveSourcePublications`.
+
+    >>> real_pub = cprov_published_sources[0]
+
+Builds by source.
+
+    >>> builds_by_source = decorated_set.getBuildsBySource()
+
+    >>> compare_ids(
+    ...     real_pub.getBuilds(), builds_by_source.get(real_pub, []))
+    Matches
+
+Binary publications by source.
+
+    >>> binaries_by_source = decorated_set.getBinariesBySource()
+
+    >>> compare_ids(
+    ...     real_pub.getPublishedBinaries(),
+    ...     binaries_by_source.get(real_pub, []))
+    Matches
+
+Files by source.
+
+    >>> files_by_source = decorated_set.getFilesBySource()
+    >>> unordered_files = files_by_source.get(real_pub, [])
+
+Note that at this point the `LibrarianFileAlias` are unordered, since
+they are coming from a UNION. We have to order them as done by the
+user-visible method (filename) before comparing.
+
+    >>> import operator
+    >>> ordered_files = sorted(
+    ...     unordered_files, key=operator.attrgetter('filename'))
+
+    >>> compare_ids(
+    ...     real_pub.getSourceAndBinaryLibraryFiles(), ordered_files)
+    Matches
+
+Package diffs by source.
+
+    >>> pub_with_diff = cprov_published_sources[-1]
+
+    >>> diffs_by_source = decorated_set.getPackageDiffsBySource()
+
+    >>> compare_ids(
+    ...     pub_with_diff.sourcepackagerelease.package_diffs,
+    ...     diffs_by_source.get(pub_with_diff, []))
+    Matches
+
+
+Enough internals! What really matters for callsites is that, when
+iterated, `ArchiveSourcePublications`returns `ArchiveSourcePublication`
+objects that decorates `ISourcePackagePublishingHistory` and have
+expensive references for other objects already cached. This makes the
+whole difference when rendering PPA pages with many source
+publications.
+
+    >>> decorated_pub = list(decorated_set)[0]
+
+    >>> print decorated_pub
+    <...ArchiveSourcePublication ...>
+
+    >>> verifyObject(ISourcePackagePublishingHistory, decorated_pub)
+    True
+
+`ArchiveSourcePublication` caches the returned values for following
+methods:
+  * sourcepackagerelease;
+  * getBuilds;
+  * getSourceAndBinaryLibraryFiles;
+  * getPublishedBinaries.
+
+    >>> compare_ids(real_pub.getBuilds(), decorated_pub.getBuilds())
+    Matches
+
+    >>> compare_ids(
+    ...     real_pub.getPublishedBinaries(),
+    ...     decorated_pub.getPublishedBinaries())
+    Matches
+
+    >>> compare_ids(
+    ...     real_pub.getSourceAndBinaryLibraryFiles(),
+    ...     decorated_pub.getSourceAndBinaryLibraryFiles())
+    Matches
+
+The 'sourcepackagerelease' attribute from a decorated
+`ArchiveSourcePublication` object is also another decorated object,
+this way we can cache information refered to
+`ISourcePackageRelease.package_diffs`.
+
+    >>> decorated_pub_with_diff = list(decorated_set)[-1]
+    >>> print decorated_pub_with_diff.sourcepackagerelease
+    <...ArchiveSourcePackageRelease ...>
+
+    >>> from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ...     ISourcePackageRelease)
+    >>> verifyObject(
+    ...     ISourcePackageRelease,
+    ...     decorated_pub_with_diff.sourcepackagerelease)
+    True
+
+    >>> compare_ids(
+    ...     pub_with_diff.sourcepackagerelease.package_diffs,
+    ...     decorated_pub_with_diff.sourcepackagerelease.package_diffs)
+    Matches

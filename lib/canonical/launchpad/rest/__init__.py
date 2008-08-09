@@ -4,6 +4,6 @@
 """Code for Launchpad's RESTful web services."""
 
 from canonical.launchpad.rest.bug import *
-from canonical.launchpad.rest.bugtask import *
 from canonical.launchpad.rest.bytestorage import *
+from canonical.launchpad.rest.me import *
 from canonical.launchpad.rest.messagetarget import *

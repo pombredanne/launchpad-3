@@ -25,12 +25,15 @@ delete the branch.
 
     >>> delete_link.click()
     >>> print extract_text(find_main_content(browser.contents))
-    ~name12/firefox/to-delete for the Mozilla Firefox project
+    Last modified ...
+    lp://dev/~name12/firefox/to-delete
+    ...
     Delete branch
     The following items must be deleted:
     Subscription of Sample Person to ~name.../firefox/to-delete (This is a
     subscription to this branch.)
     Branch deletion is permanent.
+    or Cancel
 
 Once the branch has been deleted, the user is taken back to the code
 listing for the owner of the branch, and a message is shown saying that

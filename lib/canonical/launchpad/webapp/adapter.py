@@ -12,35 +12,38 @@ import traceback
 from time import time
 import warnings
 
+import psycopg2
+from psycopg2.extensions import (
+    ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
+    ISOLATION_LEVEL_SERIALIZABLE, QueryCanceledError)
+
+from storm.database import register_scheme
+from storm.databases.postgres import Postgres, PostgresTimeoutTracer
+from storm.exceptions import TimeoutError
+from storm.tracer import install_tracer
+from storm.zope.interfaces import IZStorm
+
 from zope.component import getUtility
-from zope.interface import implements
-from zope.app.rdb.interfaces import DatabaseException
-from zope.publisher.interfaces import Retry
+from zope.interface import classImplements, implements
 
-from psycopgda.adapter import PsycopgAdapter, PsycopgConnection
-import psycopg
-
-import sqlos.connection
-from sqlos.interfaces import IConnectionName
-
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
-from canonical.database.sqlbase import cursor, ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.launchpad.webapp.opstats import OpStats
 
 __all__ = [
     'DisconnectionError',
-    'LaunchpadDatabaseAdapter',
-    'SessionDatabaseAdapter',
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
     'get_request_statements',
+    'get_request_start_time',
     'get_request_duration',
     'hard_timeout_expired',
     'soft_timeout_expired',
     ]
+
+
+classImplements(TimeoutError, IRequestExpired)
 
 
 def _get_dirty_commit_flags():
@@ -57,241 +60,7 @@ def _reset_dirty_commit_flags(previous_committed, previous_dirty):
         ConnectionWrapper.dirty = False
 
 
-# ---- Reconnecting database adapter
-
-def _wasDisconnected(msg):
-    """Check if the given exception message indicates a database disconnect.
-
-    The message will either be a string, or a dictionary mapping
-    cursors to string messages.
-    """
-    # XXX: James Henstridge 2007-05-14:
-    # This function needs to check exception messages in order to do
-    # its job.  Hopefully we can clean this up when switching to
-    # psycopg2, since it exposes the Postgres error codes through its
-    # exceptions.
-    if isinstance(msg, basestring):
-        if (msg.startswith('server closed the connection unexpectedly') or
-            msg.startswith('could not connect to server') or
-            msg.startswith('no connection to the server')):
-            return True
-    elif isinstance(msg, dict):
-        # Some errors from the connection have a cursor => message
-        # dictionary as a value.
-        for value in msg.itervalues():
-            if _wasDisconnected(value):
-                return True
-    return False
-
-
-class RetryPsycopgIntegrityError(psycopg.IntegrityError, Retry):
-    """Act like a psycopg IntegrityError, but also inherit from Retry
-    so the Zope3 publishing machinery will retry requests if it is
-    raised, as per Bug 31755.
-    """
-    def __init__(self, exc_info):
-        Retry.__init__(self, exc_info)
-        integrity_error = exc_info[1]
-        psycopg.IntegrityError.__init__(self, *integrity_error.args)
-
-
-class DisconnectionError(Exception):
-    """Attempt was made to access the database after a disconnection."""
-
-
-class ReconnectingConnection:
-    """A Python DB-API connection class that handles disconnects."""
-
-    _connection = None
-    _is_dead = False
-    _generation = 0
-
-    def __init__(self, connection_factory):
-        self._connection_factory = connection_factory
-        self._ensureConnected()
-
-    def _ensureConnected(self):
-        """Ensure that we are connected to the database.
-
-        If the connection is marked as dead, or if we can't reconnect,
-        then raise DisconnectionError.
-
-        If we need to reconnect, the connection generation number is
-        incremented.
-        """
-        if self._is_dead:
-            raise DisconnectionError('Already disconnected')
-        if self._connection is not None:
-            return
-        try:
-            self._connection = self._connection_factory()
-            self._generation += 1
-        except psycopg.OperationalError, exc:
-            self._handleDisconnection(exc)
-
-    def _handleDisconnection(self, exc):
-        """Note that we were disconnected from the database.
-
-        This resets the internal _connection attribute, and marks the
-        connection as dead.  Further attempts to use this connection
-        before a rollback() will not result in reconnection.
-
-        This function should be called from an exception handler.
-        """
-        self._is_dead = True
-        self._connection = None
-        raise DisconnectionError(str(exc))
-
-    def _checkDisconnect(self, _function, *args, **kwargs):
-        """Call a function, checking for database disconnections."""
-        try:
-            return _function(*args, **kwargs)
-        except psycopg.IntegrityError:
-            # Fix Bug 31755. There are unavoidable race conditions
-            # when handling form submissions (unless we require tables
-            # to be locked, which would kill performance). To fix
-            # this, if we get an IntegrityError from a constraints
-            # violation we ask Zope to retry the request. This will be
-            # fairly harmless when database constraints are triggered
-            # due to insufficient form validation. When the request is
-            # retried, the form validation code will again get a
-            # chance to detect if database constraints will be
-            # violated and display a suitable error message.
-            raise RetryPsycopgIntegrityError(sys.exc_info())
-        except psycopg.Error, exc:
-            if exc.args and _wasDisconnected(exc.args[0]):
-                self._handleDisconnection(exc)
-            else:
-                raise
-
-    def __getattr__(self, name):
-        if name.startswith('_'):
-            raise AttributeError(name)
-        self._ensureConnected()
-        return getattr(self._connection, name)
-
-    def commit(self):
-        self._ensureConnected()
-        self._checkDisconnect(self._connection.commit)
-
-    def rollback(self):
-        """Rollback the database connection.
-
-        If this results in a disconnection error, we ignore it and set
-        the connection to None so it gets reconnected next time.
-        """
-        if self._connection is not None:
-            try:
-                self._connection.rollback()
-            except psycopg.Error, exc:
-                if exc.args and _wasDisconnected(exc.args[0]):
-                    self._connection = None
-                else:
-                    raise
-        self._is_dead = False
-
-    def cursor(self):
-        return ReconnectingCursor(self)
-
-
-def _handle_disconnections(function_name):
-    """Helper routine for generating wrappers that check for disconnection."""
-    def func(self, *args, **kwargs):
-        self._ensureCursor()
-        return self.connection._checkDisconnect(
-            getattr(self._cursor, function_name), *args, **kwargs)
-    func.__name__ = function_name
-    return func
-
-
-class ReconnectingCursor:
-    """A Python DB-API cursor class that handles disconnects."""
-
-    _generation = None
-    _cursor = None
-
-    def __init__(self, connection):
-        self.connection = connection
-        self._ensureCursor()
-
-    def _ensureCursor(self):
-        self.connection._ensureConnected()
-        # If the cursor and connection generation numbers do not
-        # match, then our cursor belongs to a previous (disconnected)
-        # connection.
-        if self._generation != self.connection._generation:
-            self._cursor = None
-        if self._cursor is None:
-            self._cursor = self.connection._checkDisconnect(
-                self.connection._connection.cursor)
-            self._generation = self.connection._generation
-
-    def __getattr__(self, name):
-        if name.startswith('_'):
-            raise AttributeError(name)
-        self._ensureCursor()
-        return getattr(self._cursor, name)
-
-    execute = _handle_disconnections('execute')
-    executemany = _handle_disconnections('executemany')
-    fetchone = _handle_disconnections('fetchone')
-    fetchmany = _handle_disconnections('fetchmany')
-    fetchall = _handle_disconnections('fetchall')
-
-
-class ReconnectingPsycopgConnection(PsycopgConnection):
-    """A PsycopgConnection subclass that joins the Zope transaction
-    when cursor() is called.
-    """
-
-    def cursor(self):
-        """See IZopeConnection"""
-        self.registerForTxn()
-        return super(ReconnectingPsycopgConnection, self).cursor()
-
-
-class ReconnectingDatabaseAdapter(PsycopgAdapter):
-    """A Postgres database adapter that can reconnect to the database."""
-
-    Connection = ReconnectingConnection
-
-    def connect(self):
-        if not self.isConnected():
-            try:
-                self._v_connection = ReconnectingPsycopgConnection(
-                    self.Connection(self._connection_factory), self)
-            except psycopg.Error, error:
-                raise DatabaseException(str(error))
-
-
-# ---- Session database adapter
-
-class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
-    """A subclass of ReconnectionDatabaseAdapter that stores its
-    connection information in the central launchpad configuration.
-    """
-
-    def __init__(self, dsn=None):
-        """Ignore dsn"""
-        super(SessionDatabaseAdapter, self).__init__(
-            'dbi://%(dbuser)s:@%(dbhost)s/%(dbname)s' % dict(
-                dbuser=config.launchpad_session.dbuser,
-                dbhost=config.launchpad_session.dbhost or '',
-                dbname=config.launchpad_session.dbname))
-
-    def _connection_factory(self):
-        flags = _get_dirty_commit_flags()
-        connection = super(SessionDatabaseAdapter, self)._connection_factory()
-        connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        connection.cursor().execute("SET client_encoding TO UTF8")
-        _reset_dirty_commit_flags(*flags)
-        return connection
-
-
 _local = threading.local()
-
-
-# ---- Main Launchpad database adapter
 
 def set_request_started(starttime=None):
     """Set the start time for the request being served by the current
@@ -347,6 +116,11 @@ def get_request_statements():
     return getattr(_local, 'request_statements', [])
 
 
+def get_request_start_time():
+    """Get the time at which the request started."""
+    return getattr(_local, 'request_start_time', None)
+
+
 def get_request_duration(now=None):
     """Get the duration of the current request in seconds."""
     starttime = getattr(_local, 'request_start_time', None)
@@ -397,186 +171,24 @@ def soft_timeout_expired():
     return _check_expired(config.database.soft_request_timeout)
 
 
-def reset_hard_timeout(execute_func):
-    """Reset the statement_timeout to remaining wallclock time."""
-    timeout = config.database.db_statement_timeout
-    if timeout is None:
-        return # No timeout - nothing to do
-
-    global _local
-
-    start_time = getattr(_local, 'request_start_time', None)
-    if start_time is None:
-        return # Not in a request - nothing to do
-
-    now = time()
-    remaining_ms = (timeout - int((now - start_time) * 1000))
-
-    if remaining_ms <= 0:
-        return # Already timed out - nothing to do
-
-    # Only reset the statement timeout once in this many milliseconds
-    # to avoid too many database round trips.
-    precision = config.database.db_statement_timeout_precision
-
-    current_statement_timeout = getattr(
-            _local, 'current_statement_timeout', None)
-    if (current_statement_timeout is None
-            or current_statement_timeout - remaining_ms > precision):
-        execute_func("SET statement_timeout TO %d" % remaining_ms)
-        _local.current_statement_timeout = remaining_ms
-
-
 class RequestExpired(RuntimeError):
     """Request has timed out."""
     implements(IRequestExpired)
 
 
-class RequestStatementTimedOut(RequestExpired):
-    """A statement that was part of a request timed out."""
+# ---- Prevent database access in the main thread of the app server
 
-
-class LaunchpadConnection(ReconnectingConnection):
-    """A simple wrapper around a DB-API connection object.
-
-    Overrides the cursor() method to return LaunchpadCursor objects.
-    """
-
-    def cursor(self):
-        return LaunchpadCursor(self)
-
-    def commit(self):
-        starttime = time()
-        try:
-            super(LaunchpadConnection, self).commit()
-        finally:
-            _log_statement(starttime, time(), self, 'COMMIT')
-
-    def rollback(self):
-        starttime = time()
-        try:
-            super(LaunchpadConnection, self).rollback()
-        finally:
-            _log_statement(starttime, time(), self, 'ROLLBACK')
-
-
-class LaunchpadCursor(ReconnectingCursor):
-    """A simple wrapper for a DB-API cursor object.
-
-    Overrides the execute() method to check whether the current
-    request has expired.
-    """
-
-    def execute(self, statement, *args, **kwargs):
-        """Execute an SQL query, provided that the current request hasn't
-        timed out.
-
-        If the request has timed out, the current transaction will be
-        doomed (but not completed -- further queries will fail til the
-        transaction completes) and the RequestExpired exception will
-        be raised.
-        """
-        if hard_timeout_expired():
-            # make sure the current transaction can not be committed by
-            # sending a broken SQL statement to the database
-            try:
-                super(LaunchpadCursor, self).execute('break this transaction')
-            except psycopg.DatabaseError:
-                pass
-            OpStats.stats['timeouts'] += 1
-            raise RequestExpired(statement)
-
-        reset_hard_timeout(super(LaunchpadCursor, self).execute)
-
-        try:
-            starttime = time()
-            if os.environ.get("LP_DEBUG_SQL_EXTRA"):
-                traceback.print_stack()
-                sys.stderr.write("." * 70 + "\n")
-            if (os.environ.get("LP_DEBUG_SQL_EXTRA") or
-                os.environ.get("LP_DEBUG_SQL")):
-                sys.stderr.write(statement + "\n")
-                sys.stderr.write("-" * 70 + "\n")
-            try:
-                return super(LaunchpadCursor, self).execute(
-                        statement, *args, **kwargs)
-            finally:
-                _log_statement(
-                        starttime, time(),
-                        self.connection, statement
-                        )
-        except psycopg.ProgrammingError, error:
-            if len(error.args):
-                errorstr = error.args[0]
-                if (errorstr.startswith(
-                    'ERROR:  canceling query due to user request') or
-                    errorstr.startswith(
-                    'ERROR:  canceling statement due to statement timeout') or
-                    errorstr.startswith(
-                    'ERROR:  cancelling statement due to statement timeout')):
-                    raise RequestStatementTimedOut(statement)
-            raise
-
-
-class LaunchpadDatabaseAdapter(ReconnectingDatabaseAdapter):
-    """A subclass of ReconnectingDatabaseAdapter that performs some
-    additional connection setup.
-    """
-    implements(ILaunchpadDatabaseAdapter)
-
-    Connection = LaunchpadConnection
-
-    def __init__(self, dsn=None):
-        """Ignore dsn"""
-        super(LaunchpadDatabaseAdapter, self).__init__('dbi://')
-        self._local = threading.local()
-
-    def _connection_factory(self):
-        """Override method provided by PsycopgAdapter to pull
-        connection settings from the config file
-        """
-        self.setDSN('dbi://%s@%s/%s' % (
-            self.getUser(),
-            config.database.dbhost or '',
-            config.database.dbname
-            ))
-
-        flags = _get_dirty_commit_flags()
-        connection = super(LaunchpadDatabaseAdapter,
-                           self)._connection_factory()
-
-        _reset_dirty_commit_flags(*flags)
-        return connection
-
-    def readonly(self):
-        """See ILaunchpadDatabaseAdapter"""
-        cursor = self._v_connection.cursor()
-        cursor.execute('SET TRANSACTION READ ONLY')
-
-    def switchUser(self, dbuser=None):
-        """See ILaunchpadDatabaseAdapter"""
-        # We have to disconnect and reconnect as we may not be running
-        # as a user with privileges to issue 'SET SESSION AUTHORIZATION'
-        # commands.
-        self.disconnect()
-        self._local.dbuser = dbuser
-        self.connect()
-
-    def getUser(self):
-        """Return the dbuser used by this connection."""
-        return getattr(self._local, 'dbuser', None) or config.launchpad.dbuser
-
-
-class SQLOSAccessFromMainThread(Exception):
-    """The main thread must not access the database via SQLOS.
+class StormAccessFromMainThread(Exception):
+    """The main thread must not access the database via Storm.
 
     Occurs only if the appserver is running. Other code, such as the test
     suite, can do what it likes.
     """
 
+_main_thread_id = None
 
 def break_main_thread_db_access(*ignored):
-    """Deliberately corrupt the SQLOS connection cache.
+    """Ensure that Storm connections are not made in the main thread.
 
     When the app server is running, we want ensure we don't use the
     connection cache from the main thread as this would only be done
@@ -587,33 +199,171 @@ def break_main_thread_db_access(*ignored):
     easier to do on module load, but the test suite has legitimate uses
     for using connections from the main thread.
     """
-    connection_name = getUtility(IConnectionName).name
-    tid = thread.get_ident() # This event handler called on the main thread
-    key = (tid, connection_name)
+    # Record the ID of the main thread.
+    # pylint: disable-msg=W0603
+    global _main_thread_id
+    _main_thread_id = thread.get_ident()
 
-
-    # We can't specify the order event handlers are called, so detect if
-    # another event handler has already been naughty.
-    if sqlos.connection.connCache.has_key(key):
-        raise SQLOSAccessFromMainThread()
-
-    # Break SQLOS from this thread.
-
-    class BrokenConnection:
-        def __getattr__(self, key):
-            raise SQLOSAccessFromMainThread()
-
-    sqlos.connection.connCache[key] = BrokenConnection()
-
-    # And prove it
     try:
-        # Calling cursor() will raise an exception.
-        dummy = cursor()
-    except SQLOSAccessFromMainThread:
-        # This exception occured, so the main thread's connection is
-        # appropriately broken.
+        getUtility(IZStorm).get('main')
+    except StormAccessFromMainThread:
+        # LaunchpadDatabase correctly refused to create a connection
         pass
     else:
-        raise AssertionError("Failed to kill main thread SQLOS connection")
+        # We can't specify the order event handlers are called, so
+        # this means some other code has used storm before this
+        # handler.
+        raise StormAccessFromMainThread()
 
 
+# ---- Storm database classes
+
+isolation_level_map = {
+    'autocommit': ISOLATION_LEVEL_AUTOCOMMIT,
+    'read_committed': ISOLATION_LEVEL_READ_COMMITTED,
+    'serializable': ISOLATION_LEVEL_SERIALIZABLE,
+    }
+
+class LaunchpadDatabase(Postgres):
+
+    def raw_connect(self):
+        # Prevent database connections from the main thread if
+        # break_main_thread_db_access() has been run.
+        if (_main_thread_id is not None and
+            _main_thread_id == thread.get_ident()):
+            raise StormAccessFromMainThread()
+
+        self._dsn = 'dbname=%s user=%s' % (dbconfig.dbname, dbconfig.dbuser)
+        if dbconfig.dbhost:
+            self._dsn += ' host=%s' % dbconfig.dbhost
+
+        flags = _get_dirty_commit_flags()
+        raw_connection = super(LaunchpadDatabase, self).raw_connect()
+
+        if dbconfig.isolation_level is None:
+            isolation_level = ISOLATION_LEVEL_SERIALIZABLE
+        else:
+            isolation_level = isolation_level_map[dbconfig.isolation_level]
+        raw_connection.set_isolation_level(isolation_level)
+
+        _reset_dirty_commit_flags(*flags)
+        return raw_connection
+
+
+class LaunchpadSessionDatabase(Postgres):
+
+    def raw_connect(self):
+        self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
+                                           config.launchpad_session.dbuser)
+        if config.launchpad_session.dbhost:
+            self._dsn += ' host=%s' % config.launchpad_session.dbhost
+
+        flags = _get_dirty_commit_flags()
+        raw_connection = super(LaunchpadSessionDatabase, self).raw_connect()
+        raw_connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        _reset_dirty_commit_flags(*flags)
+        return raw_connection
+
+
+register_scheme('launchpad', LaunchpadDatabase)
+register_scheme('launchpad-session', LaunchpadSessionDatabase)
+
+
+class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
+    """Storm tracer class to keep statement execution time bounded."""
+
+    def __init__(self):
+        # pylint: disable-msg=W0231
+        # The parent class __init__ just sets the granularity
+        # attribute, which we are handling with a property.
+        pass
+
+    @property
+    def granularity(self):
+        return dbconfig.db_statement_timeout_precision / 1000.0
+
+    def connection_raw_execute(self, connection, raw_cursor,
+                               statement, params):
+        """See `TimeoutTracer`"""
+        # Only perform timeout handling on LaunchpadDatabase
+        # connections.
+        if not isinstance(connection._database, LaunchpadDatabase):
+            return
+        # If we are outside of a request, don't do timeout adjustment.
+        if self.get_remaining_time() is None:
+            return
+        try:
+            super(LaunchpadTimeoutTracer, self).connection_raw_execute(
+                connection, raw_cursor, statement, params)
+        except TimeoutError:
+            info = sys.exc_info()
+            # make sure the current transaction can not be committed by
+            # sending a broken SQL statement to the database
+            try:
+                raw_cursor.execute('break this transaction')
+            except psycopg2.DatabaseError:
+                pass
+            OpStats.stats['timeouts'] += 1
+            try:
+                raise info[0], info[1], info[2]
+            finally:
+                info = None
+
+    def connection_raw_execute_error(self, connection, raw_cursor,
+                                     statement, params, error):
+        """See `TimeoutTracer`"""
+        # Only perform timeout handling on LaunchpadDatabase
+        # connections.
+        if not isinstance(connection._database, LaunchpadDatabase):
+            return
+        if isinstance(error, QueryCanceledError):
+            OpStats.stats['timeouts'] += 1
+            raise TimeoutError(statement, params)
+
+    def get_remaining_time(self):
+        """See `TimeoutTracer`"""
+        if not dbconfig.db_statement_timeout:
+            return None
+        start_time = getattr(_local, 'request_start_time', None)
+        if start_time is None:
+            return None
+        now = time()
+        ellapsed = now - start_time
+        return  dbconfig.db_statement_timeout / 1000.0 - ellapsed
+
+
+class LaunchpadStatementTracer:
+    """Storm tracer class to log executed statements."""
+
+    def __init__(self):
+        self._debug_sql = bool(os.environ.get('LP_DEBUG_SQL'))
+        self._debug_sql_extra = bool(os.environ.get('LP_DEBUG_SQL_EXTRA'))
+
+    def connection_raw_execute(self, connection, raw_cursor,
+                               statement, params):
+        if self._debug_sql_extra:
+            traceback.print_stack()
+            sys.stderr.write("." * 70 + "\n")
+        if self._debug_sql or self._debug_sql_extra:
+            sys.stderr.write(statement + "\n")
+            sys.stderr.write("-" * 70 + "\n")
+
+        now = time()
+        connection._lp_statement_start_time = now
+
+    def connection_raw_execute_success(self, connection, raw_cursor,
+                                       statement, params):
+        end = time()
+        start = getattr(connection, '_lp_statement_start_time', end)
+        _log_statement(start, end, connection, statement)
+
+    def connection_raw_execute_error(self, connection, raw_cursor,
+                                     statement, params, error):
+        # Since we are just logging durations, we execute the same
+        # hook code for errors as successes.
+        self.connection_raw_execute_success(
+            connection, raw_cursor, statement, params)
+
+
+install_tracer(LaunchpadTimeoutTracer())
+install_tracer(LaunchpadStatementTracer())

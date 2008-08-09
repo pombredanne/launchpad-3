@@ -17,7 +17,6 @@ __all__ = [
     'SprintSetNavigation',
     'SprintSetSOP',
     'SprintSetView',
-    'SprintsMixinDynMenu',
     'SprintSpecificationsMenu',
     'SprintTopicSetView',
     'SprintView',
@@ -44,7 +43,6 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.dynmenu import neverempty
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
@@ -69,20 +67,6 @@ class SprintNavigation(Navigation):
 
     def breadcrumb(self):
         return self.context.title
-
-
-class SprintsMixinDynMenu:
-
-    @neverempty
-    def meetingsMenu(self):
-        coming_sprints = shortlist(self.context.coming_sprints, 20)
-        if coming_sprints:
-            for sprint in coming_sprints:
-                yield self.makeLink(sprint.title, context=sprint)
-        else:
-            yield self.makeLink('No meetings planned', target=None)
-        if self.context.past_sprints:
-            yield self.makeLink('Show all meetings...', page='+sprints')
 
 
 class SprintOverviewMenu(ApplicationMenu):
@@ -299,8 +283,8 @@ class SprintAddView(LaunchpadFormView):
         time_zone_widget = self.widgets['time_zone']
         if time_zone_widget.hasValidInput():
             tz = pytz.timezone(time_zone_widget.getInputValue())
-            self.widgets['time_starts'].required_timezone = tz
-            self.widgets['time_ends'].required_timezone = tz
+            self.widgets['time_starts'].required_time_zone = tz
+            self.widgets['time_ends'].required_time_zone = tz
 
     def validate(self, data):
         time_starts = data.get('time_starts')
@@ -363,8 +347,8 @@ class SprintEditView(LaunchpadEditFormView):
             tz = pytz.timezone(time_zone_widget.getInputValue())
         else:
             tz = pytz.timezone(self.context.time_zone)
-        self.widgets['time_starts'].required_timezone = tz
-        self.widgets['time_ends'].required_timezone = tz
+        self.widgets['time_starts'].required_time_zone = tz
+        self.widgets['time_ends'].required_time_zone = tz
 
     def validate(self, data):
         time_starts = data.get('time_starts')
@@ -565,7 +549,7 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  attendance.attendee.organization,
                  attendance.attendee.city,
                  country,
-                 attendance.attendee.timezone,
+                 attendance.attendee.time_zone,
                  attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
                  attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
         # CSV can't handle unicode, so we force encoding

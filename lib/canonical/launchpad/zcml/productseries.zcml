@@ -18,7 +18,7 @@
                             status releasefileglob"
             />
         <require
-            permission="launchpad.EditSource"
+            permission="launchpad.AnyPerson"
             set_attributes="importstatus rcstype cvsroot cvsmodule
                 cvstarfileurl cvsbranch svnrepository"
             />
@@ -60,18 +60,24 @@
 	  template="../templates/specification-add.pt"
 	/>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IProductSeries"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProductSeriesDynMenu"
-        attribute="__call__"
-        name="+menudata"
-        />
-
     <adapter
         provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
         for="canonical.launchpad.interfaces.IProductSeries"
         factory="canonical.launchpad.browser.ProductSeriesSOP"
+        permission="zope.Public"
+        />
+
+    <adapter
+        provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        factory="canonical.launchpad.components.productseries.productseries_to_product"
+        permission="zope.Public"
+        />
+
+    <adapter
+        provides="canonical.launchpad.interfaces.ILaunchpadUsage"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        factory="canonical.launchpad.components.productseries.productseries_to_product"
         permission="zope.Public"
         />
 
@@ -150,12 +156,9 @@
             template="../templates/productseries-ubuntupkg.pt"
             />
         <browser:page
-            name="+importstatus"
-            template="../templates/productseries-importstatus.pt"
+            name="+code-summary"
+            template="../templates/productseries-codesummary.pt"
             />
-        <browser:page
-            name="+portlet-source"
-            template="../templates/productseries-portlet-source.pt" />
     </browser:pages>
 
     <browser:page
@@ -234,20 +237,11 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IProductSeries"
-        name="+source"
-        class="canonical.launchpad.browser.ProductSeriesSourceView"
-        template="../templates/productseries-source.pt"
-        facet="overview"
-        permission="launchpad.EditSource"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IProductSeries"
         name="+linkbranch"
         class="canonical.launchpad.browser.ProductSeriesLinkBranchView"
         template="../templates/productseries-linkbranch.pt"
         facet="overview"
-        permission="launchpad.EditSource"
+        permission="launchpad.Edit"
         />
 
     <browser:page
@@ -256,7 +250,7 @@
         class="canonical.launchpad.browser.ProductSeriesLinkBranchFromCodeView"
         template="../templates/productseries-linkbranch.pt"
         facet="overview"
-        permission="launchpad.EditSource"
+        permission="launchpad.Edit"
         />
 
     <browser:editform

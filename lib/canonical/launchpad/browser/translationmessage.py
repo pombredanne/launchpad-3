@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """View classes for ITranslationMessage interface."""
 
@@ -45,7 +45,8 @@ from canonical.launchpad.interfaces import (
     ITranslationMessageSet, ITranslationMessageSuggestions,
     TranslationConflict, TranslationConstants, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, LaunchpadView, Link, urlparse)
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, urlparse)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
@@ -318,6 +319,7 @@ class CurrentTranslationMessageAppMenus(ApplicationMenu):
         text = 'Translate many'
         return Link('../+translate', text, icon='languages')
 
+    @enabled_with_permission('launchpad.Edit')
     def upload(self):
         text = 'Upload a file'
         return Link('../+upload', text, icon='edit')
@@ -401,8 +403,6 @@ class BaseTranslationView(LaunchpadView):
 
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
-            # XXX: kiko 2006-10-18:
-            # This should refer people to +addticket, right?
             self.request.response.addErrorNotification(
                 structured("""
             <p>
@@ -415,8 +415,8 @@ class BaseTranslationView(LaunchpadView):
             application to see whether anyone has submitted it yet.  If not,
             please file the information there as a question.  The preferred
             format for such questions is described in the
-            <a href="https://help.launchpad.net/RosettaFAQ">Frequently Asked
-            Questions list</a>.
+            <a href="https://help.launchpad.net/FAQ/Translations">Frequently
+            Asked Questions list</a>.
             </p>
             <p>
             This only needs to be done once per language. Thanks for helping
@@ -692,8 +692,7 @@ class BaseTranslationView(LaunchpadView):
     @cachedproperty
     def form_is_writeable(self):
         """Whether the form should accept write operations."""
-        return (self.user is not None and
-                self.pofile.canAddSuggestions(self.user))
+        return self.pofile.canAddSuggestions(self.user)
 
     def _extractFormPostedTranslations(self, potmsgset):
         """Look for translations for this `POTMsgSet` in the form submitted.

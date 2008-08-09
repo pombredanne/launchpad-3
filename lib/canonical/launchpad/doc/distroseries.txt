@@ -314,8 +314,9 @@ Check the content IDRSPR binaries & builds attributes:
 
    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
    ...     print bin.id, bin.title, bin.build.distroarchseries.title
-   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
    27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (x86)
+   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
+
 
 'builds' should be empty since it was built in parent (warty), not in this
 distroseries (bumby.
@@ -471,8 +472,9 @@ Supersede previous netapplet publication:
    >>> print superseded_netapplet.status.name
    SUPERSEDED
 
-   >>> superseded_netapplet.datesuperseded
-   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+   >>> from canonical.database.sqlbase import get_transaction_timestamp
+   >>> superseded_netapplet.datesuperseded == get_transaction_timestamp()
+   True
 
 
 == DistroSeries Translations migration ==
@@ -482,9 +484,6 @@ transaction manager (in this case a fake one) to make these work.
 
     >>> class FakeTransactionManager:
     ...     """Mock transaction manager for test."""
-    ...     # The translations-copying code does not want its connection reset
-    ...     # after every transaction.  Give it a field to change.
-    ...     reset_after_transaction = True
     ...     def begin(self):
     ...         pass
     ...     def commit(self):
@@ -979,6 +978,7 @@ set.
             automatically.
     DEBUG   Removing lock file: /var/lock/launchpad-copy-missing-translations-ubuntu-testing.lock
 
+    >>> transaction.abort()
     >>> testing_series = DistroSeries.get(testing_series_id)
     >>> testing_series.defer_translation_imports
     False
@@ -988,6 +988,7 @@ set.
 It succeeds, however, when we pass the --force option.  The script then
 sets the defer_translation_imports flag itself before copying.
 
+    >>> transaction.abort()
     >>> returnvalue, output, error_output = run_script(
     ...     'cronscripts/copy-missing-translations-from-parent.py',
     ...     ['--distribution=ubuntu', '--series=testing', '-v', '--force'])
@@ -1003,6 +1004,7 @@ sets the defer_translation_imports flag itself before copying.
 After completing, the script restores the defer_translation_imports
 flag to its previous value (off).
 
+    >>> transaction.abort()
     >>> testing_series = DistroSeries.get(testing_series_id)
     >>> testing_series.defer_translation_imports
     False
@@ -1129,7 +1131,7 @@ publication in question:
    u'web'
 
    >>> warty_mozilla_pub_binaries = warty_pub_source.getPublishedBinaries()
-   >>> warty_mozilla_pub_binaries.count()
+   >>> len(warty_mozilla_pub_binaries)
    4
    >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
 

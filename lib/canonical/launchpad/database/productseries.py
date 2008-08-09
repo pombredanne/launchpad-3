@@ -25,7 +25,7 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -62,10 +62,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
                                default=None)
     user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
@@ -226,6 +226,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def valid_specifications(self):
         return self.specifications(filter=[SpecificationFilter.VALID])
+
+    @property
+    def is_development_focus(self):
+        """See `IProductSeries`."""
+        return self == self.product.development_focus
 
     def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
@@ -436,28 +441,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
-    def markTestFailed(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = ImportStatus.TESTFAILED
-        self.import_branch = None
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.syncinterval = None
-
-    def markDontSync(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = ImportStatus.DONTSYNC
-        self.import_branch = None
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.datestarted = None
-        self.datefinished = None
-        self.syncinterval = None
-
     def markStopped(self):
         """See `IProductSeriesSourceAdmin`."""
         self.importstatus = ImportStatus.STOPPED
@@ -487,23 +470,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.cvsbranch = None
         self.cvstarfileurl = None
         self.svnrepository = None
-
-    def syncCertified(self):
-        """Return true or false indicating if the sync is enabled"""
-        return self.dateprocessapproved is not None
-
-    def autoSyncEnabled(self):
-        """Is the sync automatically scheduling?"""
-        return self.importstatus == ImportStatus.SYNCING
-
-    def enableAutoSync(self):
-        """Enable autosyncing."""
-        self.datesyncapproved = UTC_NOW
-        self.importstatus = ImportStatus.SYNCING
-
-    def autoTestFailed(self):
-        """Has the series source failed automatic testing by roomba?"""
-        return self.importstatus == ImportStatus.TESTFAILED
 
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""

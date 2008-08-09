@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'Breadcrumb',
+    'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
     'canonical_name',
@@ -40,7 +42,8 @@ from canonical.launchpad.layers import (
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
+    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError,
+    ILaunchpadContainer)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -459,13 +462,27 @@ class RootObject:
 rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
 
 
+class LaunchpadContainer:
+    implements(ILaunchpadContainer)
+
+    def __init__(self, context):
+        self.context = context
+
+    def isWithin(self, scope):
+        """Is this object within the given scope?
+
+        By default all objects are only within itself.  More specific adapters
+        must override this and implement the logic they want.
+        """
+        return self.context == scope
+
+
 class Breadcrumb:
     implements(IBreadcrumb)
 
-    def __init__(self, url, text, has_menu=False):
+    def __init__(self, url, text):
         self.url = url
         self.text = text
-        self.has_menu = has_menu
 
 
 class Navigation:
@@ -545,16 +562,8 @@ class Navigation:
         request.getURL(1) represents the path traversed so far, but without
         the step we're currently working out how to traverse.
         """
-        # If self.context has a view called +menudata, it has a menu.
-        menuview = queryMultiAdapter(
-            (self.context, self.request), name="+menudata")
-        if menuview is None:
-            has_menu = False
-        else:
-            has_menu = menuview.submenuHasItems('')
         self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=False), text,
-                       has_menu))
+            Breadcrumb(self.request.getURL(1, path_only=False), text))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
@@ -715,9 +724,12 @@ class RenamedView:
         self.rootsite = rootsite
 
     def __call__(self):
-        target_url = "%s/%s" % (
-            canonical_url(self.context, rootsite=self.rootsite),
-            self.new_name)
+        context_url = canonical_url(self.context, rootsite=self.rootsite)
+        # Prevents double slashes on the root object.
+        if context_url.endswith('/'):
+            target_url = "%s%s" % (context_url, self.new_name)
+        else:
+            target_url = "%s/%s" % (context_url, self.new_name)
 
         query_string = self.request.get('QUERY_STRING', '')
         if query_string:

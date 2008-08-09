@@ -190,7 +190,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             order_by = '-datepublished'
 
         return SourcePackagePublishingHistory.select(
-            query, orderBy=order_by, clauseTables=['SourcePackageRelease'])
+            query, orderBy=order_by, clauseTables=['SourcePackageRelease'],
+            prejoinClauseTables=['SourcePackageRelease'])
 
     def _getFirstPublishingHistory(self, version=None, include_status=None,
                                    exclude_status=None, order_by=None):
@@ -205,11 +206,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def currentrelease(self):
-        latest_package = self._getFirstPublishingHistory()
-        if latest_package:
-            return DistroSeriesSourcePackageRelease(
-                    self.distroseries, latest_package.sourcepackagerelease)
-        return None
+        releases = self.distroseries.getCurrentSourceReleases(
+            [self.sourcepackagename])
+        return releases.get(self)
 
     def __getitem__(self, version):
         """See `ISourcePackage`."""
@@ -222,7 +221,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def displayname(self):
-        return "%s %s" % (
+        return "%s %s %s" % (
+            self.distribution.displayname,
             self.distroseries.displayname, self.sourcepackagename.name)
 
     @property
@@ -259,6 +259,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         packages = self._getPublishingHistory(
             order_by=[SQLConstant(order_const),
                       "SourcePackagePublishingHistory.datepublished"])
+
         return [DistributionSourcePackageRelease(
                 distribution=self.distribution,
                 sourcepackagerelease=package.sourcepackagerelease)
@@ -266,11 +267,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def distinctreleases(self):
-        """Return a distinct list of sourcepackagereleases for this source
-           package.
+        """Return all distinct `SourcePackageReleases` for this sourcepackage.
+
+        The results are ordered by descending version.
         """
-        order_const = "debversion_sort_key(SourcePackageRelease.version)"
-        releases = SourcePackageRelease.select('''
+        query = """
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
@@ -278,12 +279,20 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             SourcePackageRelease.sourcepackagename = %s AND
             DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s
-            ''' % sqlvalues(self.sourcepackagename, self.distribution,
-                            self.distribution.all_distro_archive_ids),
-            clauseTables=['DistroSeries', 'SourcePackagePublishingHistory'],
-            selectAlso="%s" % (SQLConstant(order_const)),
-            orderBy=[SQLConstant(order_const+" DESC")])
-        return releases.distinct()
+        """ % sqlvalues(self.sourcepackagename, self.distribution,
+                            self.distribution.all_distro_archive_ids)
+
+        clauseTables = ['DistroSeries', 'SourcePackagePublishingHistory']
+        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+
+        # Selecting ordered distinct `SourcePackageReleases` requires us
+        # to 'selectAlso' the ordering index (the debversion_sort_key).
+        releases = SourcePackageRelease.select(
+            query, clauseTables=clauseTables,
+            distinct=True, selectAlso=order_const,
+            orderBy=[SQLConstant(order_const + " DESC")])
+
+        return releases
 
     @property
     def name(self):
@@ -411,7 +420,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs
-        # targetted to be fixed in a specific distroseries + sourcepackage.
+        # targeted to be fixed in a specific distroseries + sourcepackage.
         raise NotImplementedError(
             "A new bug cannot be filed directly on a source package in a "
             "specific distribution series, because series are meant for "

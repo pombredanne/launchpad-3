@@ -12,8 +12,10 @@ A collection responds to GET by serving one page of the objects in the
 collection.
 
   >>> people_collection = webservice.get("/beta/people").jsonBody()
+  >>> people_collection['resource_type_link']
+  u'http://api.launchpad.dev/beta/#people'
   >>> people_collection['total_size']
-  63
+  59
   >>> people_collection['next_collection_link']
   u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
   >>> people_collection.get('prev_collection_link') is None
@@ -24,12 +26,12 @@ collection.
   ...     people_collection['entries'], key=itemgetter('name'))
   >>> len(people_entries)
   5
-  >>> people_entries[0]['name']
-  u'andrelop'
+  >>> people_entries[0]['display_name']
+  u'Brad Crittenden'
   >>> people_entries[0]['self_link']
-  u'http://api.launchpad.dev/beta/~andrelop'
-  >>> people_entries[-1]['name']
-  u'spiv'
+  u'http://api.launchpad.dev/beta/~bac'
+  >>> people_entries[-1]['display_name']
+  u'Carlos Perell\xf3 Mar\xedn'
 
 You can get other pages of the collection by following links:
 
@@ -43,7 +45,7 @@ You can get other pages of the collection by following links:
   >>> people_entries = sorted(
   ...     second_batch['entries'], key=itemgetter('name'))
   >>> people_entries[0]['name']
-  u'bug-watch-updater'
+  u'commercial-admins'
 
 You can also get a larger batch than the default:
 
@@ -55,7 +57,7 @@ You can also get a larger batch than the default:
 
   >>> bigger_batch = webservice.get("/beta/people?ws.size=75").jsonBody()
   >>> len(bigger_batch['entries'])
-  63
+  59
   >>> bigger_batch.get('next_collection_link') is None
   True
 
@@ -140,9 +142,12 @@ The elements of a collection can be looked up by unique identifier:
   jabber_ids_collection_link: http://.../~admins/jabber_ids
   karma: 0
   languages_collection_link: http://.../~admins/languages
+  latitude: None
+  longitude: None
   mailing_list_auto_subscribe_policy: Ask me when I join a team
-  member_memberships_collection_link: http://.../~admins/member_memberships
   members_collection_link: http://.../~admins/members
+  members_details_collection_link: http://.../~admins/members_details
+  memberships_details_collection_link: http://.../~admins/memberships_details
   mugshot_link: http://.../~admins/mugshot
   name: admins
   open_membership_invitations_collection_link:
@@ -151,26 +156,24 @@ The elements of a collection can be looked up by unique identifier:
   preferred_email_address_link: None
   proposed_members_collection_link: http://.../~admins/proposed_members
   renewal_policy: invite them to apply for renewal
+  resource_type_link: http://api.launchpad.dev/beta/#team
   self_link: http://.../~admins
   sub_teams_collection_link: http://.../~admins/sub_teams
   subscription_policy: Moderated Team
   super_teams_collection_link: http://.../~admins/super_teams
   team_description: Launchpad Administrators
-  team_memberships_collection_link: http://.../~admins/team_memberships
   team_owner_link: http://.../~sabdfl
-  teams_indirectly_participated_in_collection_link:
-      http://.../~admins/teams_indirectly_participated_in
-  teams_participated_in_collection_link:
-      http://.../~admins/teams_participated_in
-  timezone: None
+  time_zone: None
   visibility: Public
   wiki_names_collection_link: http://.../~admins/wiki_names
 
 A collection may be scoped to an element:
 
-  >>> result = webservice.get("/beta/~admins/members")
+  >>> result = webservice.get("/beta/~admins/members").jsonBody()
+  >>> result['resource_type_link']
+  u'http://api.launchpad.dev/beta/#person-page-resource'
   >>> team_members = sorted(
-  ...     result.jsonBody()['entries'], key=itemgetter('name'))
+  ...     result['entries'], key=itemgetter('name'))
   >>> len(team_members)
   5
   >>> team_members[0]['name']
@@ -223,10 +226,10 @@ empty list of results:
 
 Custom operations may have custom error handling.
 
-  >>> print webservice.get("/beta/people?ws.op=find&text=")
+  >>> print webservice.get("/beta/~ubuntu-team?ws.op=getMembersByStatus")
   HTTP/1.1 400 Bad Request
   ...
-  text: Required input is missing.
+  status: Required input is missing.
 
 A collection may also expose named operations in response to POST
 requests. These operations are usually factories. Here's a helper

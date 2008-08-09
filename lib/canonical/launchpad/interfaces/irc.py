@@ -15,14 +15,15 @@ from zope.interface import Interface
 
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.rest.schema import Reference
+from canonical.lazr.fields import Reference
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 
-class IIrcID(Interface):
+class IIrcID(IHasOwner):
     """A person's nickname on an IRC network."""
-    export_as_webservice_entry()
+    export_as_webservice_entry('irc_id')
     id = Int(title=_("Database ID"), required=True, readonly=True)
     # schema=Interface will be overriden in person.py because of circular
     # dependencies.

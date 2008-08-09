@@ -15,6 +15,7 @@ from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
+from storm.store import Store
 
 import pytz
 
@@ -24,7 +25,7 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IMessage, IMessageChunk, IMessageSet, IPersonSet,
     InvalidEmailMessage, NotFoundError, PersonCreationRationale,
     UnknownSender)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -47,7 +48,7 @@ class Message(SQLBase):
     subject = StringCol(notNull=False, default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=False)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
         notNull=False, default=None)
     distribution = ForeignKey(foreignKey='Distribution',
@@ -145,6 +146,10 @@ class MessageSet:
             subject=subject, rfc822msgid=rfc822msgid, owner=owner,
             datecreated=datecreated)
         MessageChunk(message=message, sequence=1, content=content)
+        # XXX 2008-05-27 jamesh:
+        # Ensure that BugMessages get flushed in same order as they
+        # are created.
+        Store.of(message).flush()
         return message
 
     def _decode_header(self, header):
@@ -176,7 +181,8 @@ class MessageSet:
 
     def fromEmail(self, email_message, owner=None, filealias=None,
             parsed_message=None, distribution=None,
-            create_missing_persons=False, fallback_parent=None):
+            create_missing_persons=False, fallback_parent=None,
+            date_created=None):
         """See IMessageSet.fromEmail."""
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
@@ -293,14 +299,18 @@ class MessageSet:
             parent = fallback_parent
 
         # figure out the date of the message
-        try:
-            datestr = parsed_message['date']
-            thedate = parsedate_tz(datestr)
-            timestamp = mktime_tz(thedate)
-            datecreated = datetime.fromtimestamp(timestamp,
-                tz=pytz.timezone('UTC'))
-        except (TypeError, ValueError, OverflowError):
-            raise InvalidEmailMessage('Invalid date %s' % datestr)
+        if date_created is not None:
+            datecreated = date_created
+        else:
+            try:
+                datestr = parsed_message['date']
+                thedate = parsedate_tz(datestr)
+                timestamp = mktime_tz(thedate)
+                datecreated = datetime.fromtimestamp(timestamp,
+                    tz=pytz.timezone('UTC'))
+            except (TypeError, ValueError, OverflowError):
+                raise InvalidEmailMessage('Invalid date %s' % datestr)
+
         # make sure we don't create an email with a datecreated in the
         # future. also make sure we don't create an ancient one
         now = datetime.now(pytz.timezone('UTC'))
@@ -366,11 +376,18 @@ class MessageSet:
             #   text/plain content is stored as a blob.
             content_disposition = part.get('Content-disposition', '').lower()
             no_attachment = not content_disposition.startswith('attachment')
-            if (mime_type == 'text/plain' and no_attachment 
+            if (mime_type == 'text/plain' and no_attachment
                 and part.get_filename() is None):
+
+                # Get the charset for the message part. If one isn't
+                # specified, default to latin-1 to prevent
+                # UnicodeDecodeErrors.
                 charset = part.get_content_charset()
-                if charset:
-                    content = content.decode(charset, 'replace')
+                if charset is None:
+                    charset = 'latin-1'
+
+                content = content.decode(charset, 'replace')
+
                 if content.strip():
                     MessageChunk(
                         message=message, sequence=sequence,
@@ -380,13 +397,19 @@ class MessageSet:
                 filename = part.get_filename() or 'unnamed'
                 # Note we use the Content-Type header instead of
                 # part.get_content_type() here to ensure we keep
-                # parameters as sent
+                # parameters as sent. If Content-Type is None we default
+                # to application/octet-stream.
+                if part['content-type'] is None:
+                    content_type = 'application/octet-stream'
+                else:
+                    content_type = part['content-type']
+
                 if len(content) > 0:
                     blob = file_alias_set.create(
                         name=filename,
                         size=len(content),
                         file=cStringIO(content),
-                        contentType=part['content-type']
+                        contentType=content_type
                         )
                     MessageChunk(message=message, sequence=sequence,
                                  blob=blob)
@@ -404,6 +427,11 @@ class MessageSet:
         #         MessageChunk(
         #             message=message, sequence=sequence, content=epilogue
         #             )
+
+        # XXX 2008-05-27 jamesh:
+        # Ensure that BugMessages get flushed in same order as they
+        # are created.
+        Store.of(message).flush()
         return message
 
     @staticmethod

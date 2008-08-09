@@ -117,6 +117,11 @@ The single BuildQueue found is a non-virtual pending build:
     >>> job.is_virtualized
     False
 
+The build start time is not set yet either.
+
+    >>> print job.build.date_first_dispatched
+    None
+
 Update the SourcePackageReleaseFile corresponding to this job:
 
     >>> content = 'anything'
@@ -136,12 +141,27 @@ Check the dispatching method itself:
 
 Verify if the job (BuildQueue) was updated appropriately:
 
+    >>> def checkTimes(expected, actual):
+    ...     if expected != actual:
+    ...         return "expected: %s, actual: %s" % (expected, actual)
+    ...     else:
+    ...         return "OK"
+
     >>> job.builder.id == bob_builder.id
     True
+
     >>> job.build.buildstate.name
     'BUILDING'
-    >>> job.buildstart
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> checkTimes(get_transaction_timestamp(), job.buildstart)
+    'OK'
+
+The build start time will be set to the same value.
+
+    >>> checkTimes(get_transaction_timestamp(),
+    ...            job.build.date_first_dispatched)
+    'OK'
 
 Shutdown builder, mark the build record as failed and remove the
 buildqueue record, so the build was eliminated:
@@ -168,7 +188,7 @@ Create BuildQueue record and inspect some parameters:
 
     >>> ppa_job = ppa_build.createBuildQueueEntry()
     >>> ppa_job.id
-    3L
+    3
     >>> ppa_job.builder == None
     True
     >>> ppa_job.buildstart == None
@@ -243,10 +263,12 @@ PPA job is building.
 
     >>> ppa_job.builder.name
     u'bob'
+
     >>> ppa_job.build.buildstate.name
     'BUILDING'
-    >>> ppa_job.buildstart
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
+    >>> ppa_job.buildstart == get_transaction_timestamp()
+    True
 
 Shutdown builder slave, mark the ppa build record as failed, remove the
 buildqueue record and make 'bob' builder non-virtual again,  so the
@@ -278,7 +300,7 @@ Create BuildQueue record and inspect some parameters:
 
     >>> sec_job = sec_build.createBuildQueueEntry()
     >>> sec_job.id
-    4L
+    4
     >>> print sec_job.builder
     None
     >>> print sec_job.buildstart

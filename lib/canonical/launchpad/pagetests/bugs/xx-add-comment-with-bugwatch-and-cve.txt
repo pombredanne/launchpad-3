@@ -6,9 +6,7 @@ added to the bugwatches resp CVEs related to this bug
 
   >>> user_browser.open(
   ...     'http://localhost/debian/+source/mozilla-firefox/+bug/1')
-  >>> user_browser.getControl('Subject').value = (
-  ...     'Test Comment Subject')
-  >>> user_browser.getControl('Comment', index=-1).value = (
+  >>> user_browser.getControl(name='field.comment').value = (
   ...     '''This is a test comment. This bug is the same as the one
   ...        described here http://some.bugzilla/show_bug.cgi?id=9876
   ...        See also CVE-1991-9911
@@ -18,15 +16,11 @@ added to the bugwatches resp CVEs related to this bug
   >>> user_browser.url
   'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
 
-  >>> cve_portlet = find_portlet(user_browser.contents, 'CVE references')
-  >>> added_cve_link = cve_portlet('a',
-  ...     title='This CVEwas automatically created fro...')[0]
-  >>> print added_cve_link['href']
-  /bugs/cve/1991-9911
-  >>> print extract_text(added_cve_link)
-  1991-9911
+  >>> added_cve_link = user_browser.getLink('1991-9911')
+  >>> print added_cve_link
+  <.../bugs/cve/1991-9911'>
 
-  >>> bugwatch_portlet = find_portlet(user_browser.contents, 
+  >>> bugwatch_portlet = find_portlet(user_browser.contents,
   ...    'Remote bug watches')
   >>> added_bugwatch_link = bugwatch_portlet('a')[-1]
   >>> print added_bugwatch_link['href']
@@ -42,9 +36,7 @@ a comment, both on the same line, one surrounded by non-ascii characters.
 One of these URLs looks like a remote bugzilla bug, the other is not the
 url of a remote bug.
 
-  >>> user_browser.getControl('Subject').value = (
-  ...     'Test Comment Subject')
-  >>> user_browser.getControl('Comment', index=-1).value = (
+  >>> user_browser.getControl(name='field.comment').value = (
   ...     u'\xabhttps://answers.launchpad.net/ubuntu\xbb is not a linked bug '
   ...     u'but https://bugzilla.example.org/show_bug.cgi?id=1235555 '
   ...     u'is.'.encode('utf-8'))

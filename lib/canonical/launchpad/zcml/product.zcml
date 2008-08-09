@@ -32,7 +32,7 @@
                       enable_bug_expiration
                       releaseroot development_focus bugtracker
                       homepage_content icon logo mugshot
-                      license_approved license_info licenses
+                      license_info licenses
                       bug_reporting_guidelines
                       commercial_subscription redeemSubscriptionVoucher"
       />
@@ -52,7 +52,7 @@
     <require
       permission="launchpad.Commercial"
       set_attributes="active private_bugs license_reviewed
-                      reviewer_whiteboard"
+                      license_approved reviewer_whiteboard"
       />
     <!-- Changes to official_rosetta must be available to Launchpad
          Translations admins so we need its own permission. -->
@@ -95,6 +95,12 @@
         attributes="setBugSupervisor" />
   </content>
 
+  <adapter
+      for="canonical.launchpad.interfaces.IProduct"
+      provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+      factory="canonical.launchpad.components.launchpadcontainer.LaunchpadProductContainer"
+      />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
     name="+index"
@@ -132,6 +138,7 @@
         ProductBranchesMenu ProductSpecificationsMenu
         ProductTranslationsMenu ProductBugsMenu
         ProductSetFacets ProductSetContextMenu
+        ProductNavigationMenu ProductEditNavigationMenu
         "
         />
 
@@ -271,6 +278,10 @@
       template="../templates/product-distros.pt"
       />
     <browser:page
+      name="+listing-for-review"
+      template="../templates/product-listing-for-review.pt"
+      />
+    <browser:page
       name="+listing-detailed"
       template="../templates/product-listing-detailed.pt"
       />
@@ -280,11 +291,6 @@
       />
     <!-- Products Portlets -->
     <browser:page
-      name="+details"
-      facet="overview"
-      template="../templates/product-details.pt"
-      />
-    <browser:page
       name="+portlet-requires-subscription"
       facet="overview"
       template="../templates/product-portlet-requires-subscription.pt"
@@ -293,11 +299,6 @@
       name="+portlet-license-missing"
       facet="overview"
       template="../templates/product-portlet-license-missing.pt"
-      />
-    <browser:page
-      name="+portlet-lifecycle"
-      facet="overview"
-      template="../templates/product-portlet-lifecycle.pt"
       />
     <browser:page
       name="+portlet-series"
@@ -343,10 +344,6 @@
       template="../templates/product-portlet-latestbranches.pt"
       />
     <browser:page
-      name="+portlet-productfiles"
-      template="../templates/product-portlet-latestfiles.pt"
-      />
-    <browser:page
       name="+purchase-subscription"
       template="../templates/product-purchase-subscription.pt"
       />
@@ -368,6 +365,24 @@
     permission="zope.Public"
     name="+code-index"
     template="../templates/product-branches.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.product.ProductActiveReviewsView"
+    permission="zope.Public"
+    facet="branches"
+    name="+activereviews"
+    template="../templates/product-mergeproposals.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.product.ProductApprovedMergesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+approvedmerges"
+    template="../templates/product-mergeproposals.pt"
     />
 
   <browser:page
@@ -400,10 +415,10 @@
     for="canonical.launchpad.interfaces.IProduct"
     permission="launchpad.Edit"
     facet="overview"
-    class="canonical.launchpad.browser.ProductReassignmentView">
+    class="canonical.launchpad.browser.ProductEditPeopleView">
     <browser:page
-      name="+reassign"
-      template="../templates/object-reassignment.pt"
+      name="+edit-people"
+      template="../templates/product-edit-people.pt"
       />
   </browser:pages>
 
@@ -545,14 +560,6 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:page
-    for="canonical.launchpad.interfaces.IProduct"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.ProductDynMenu"
-    attribute="__call__"
-    name="+menudata"
-    />
-
   <browser:pages
     for="canonical.launchpad.interfaces.IProductSet"
     permission="zope.Public"
@@ -574,12 +581,12 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IProductSet"
-    class="canonical.launchpad.browser.ProductSetView"
+    class="canonical.launchpad.browser.ProductSetReviewLicensesView"
     facet="overview"
-    permission="launchpad.Admin">
+    permission="launchpad.Commercial">
     <browser:page
-      name="+review"
-      template="../templates/registry-review.pt"
+      name="+review-licenses"
+      template="../templates/products-review-licenses.pt"
       />
   </browser:pages>
 
