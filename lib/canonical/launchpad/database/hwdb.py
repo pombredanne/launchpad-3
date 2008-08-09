@@ -84,7 +84,7 @@ class HWSubmission(SQLBase):
     system_fingerprint = ForeignKey(dbName='system_fingerprint',
                                     foreignKey='HWSystemFingerprint',
                                     notNull=True)
-    raw_emailaddress = StringCol(notNull=True)
+    raw_emailaddress = StringCol()
 
 
 class HWSubmissionSet:
@@ -106,7 +106,10 @@ class HWSubmissionSet:
                 'A submission with this ID already exists')
 
         personset = getUtility(IPersonSet)
-        owner = personset.getByEmail(emailaddress)
+        if emailaddress is not None:
+            owner = personset.getByEmail(emailaddress)
+        else:
+            owner = None
 
         fingerprint = HWSystemFingerprint.selectOneBy(
             fingerprint=system_fingerprint)
@@ -263,7 +266,8 @@ class HWVendorNameSet:
 
     def getByName(self, name):
         """See `IHWVendorNameSet`."""
-        return HWVendorName.selectOneBy(name=name)
+        return HWVendorName.selectOne(
+            'ulower(name)=ulower(%s)' % sqlvalues(name))
 
 
 four_hex_digits = re.compile('^0x[0-9a-f]{4}$')
@@ -618,13 +622,16 @@ class HWSubmissionDevice(SQLBase):
     parent = ForeignKey(dbName='parent', foreignKey='HWSubmissionDevice',
                         notNull=False)
 
+    hal_device_id = IntCol(notNull=True)
+
+
 class HWSubmissionDeviceSet:
     """See `IHWSubmissionDeviceSet`."""
 
     implements(IHWSubmissionDeviceSet)
 
-    def create(self, device_driver_link, submission, parent):
+    def create(self, device_driver_link, submission, parent, hal_device_id):
         """See `IHWSubmissionDeviceSet`."""
         return HWSubmissionDevice(device_driver_link=device_driver_link,
-                                  submission=submission,
-                                  parent=parent)
+                                  submission=submission, parent=parent,
+                                  hal_device_id=hal_device_id)

@@ -30,8 +30,8 @@ from canonical.launchpad.interfaces.branchvisibilitypolicy import (
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
-    IHasOwner, IHasSecurityContact, ILaunchpadContainer, ILaunchpadUsage)
+    IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
@@ -106,11 +106,11 @@ class License(DBEnumeratedType):
 
 
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
-               IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
-               IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
-               IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
-               IPillar, ILaunchpadContainer):
+               IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
+               IHasMentoringOffers, IHasMilestones, IHasMugshot,
+               IMakesAnnouncements, IHasOwner, IHasSecurityContact,
+               IHasSprints, IHasTranslationGroup, IKarmaContext,
+               ILaunchpadUsage, ISpecificationTarget, IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -296,14 +296,6 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         required=False,
         description=_(
             "Description of licenses that do not appear in the list above."))
-
-    def getExternalBugTracker():
-        """Return the external bug tracker used by this bug tracker.
-
-        If the product uses Launchpad, return None.
-        If the product doesn't have a bug tracker specified, return the
-        project bug tracker instead.
-        """
 
     bugtracker = ProductBugTracker(
         title=_('Bugs are tracked'),
@@ -509,15 +501,24 @@ class IProductSet(Interface):
         """Return the latest products registered in the Launchpad."""
 
     def getTranslatables():
-        """Return an iterator over products that have resources translatables.
+        """Return an iterator over products that have translatable resources.
+
+        Skips products that are not configured to be translated in
+        Launchpad, as well as non-active ones.
         """
 
     def featuredTranslatables(maximumproducts=8):
-        """Return an iterator over a sample of translatable products.
+        """Return an iterator over a random sample of translatable products.
 
-        maximum_products is a maximum number of products to be displayed
-        on the front page (it will be less if there are no enough products).
+        Similar to `getTranslatables`, except the number of results is
+        limited and they are randomly chosen.
+
+        :param maximum_products: Maximum number of products to be
+            returned.
+        :return: An iterator over active, translatable products.
         """
+        # XXX JeroenVermeulen 2008-07-31 bug=253583: this is not
+        # currently used!
 
     def count_all():
         """Return a count of the total number of products registered in

@@ -28,9 +28,11 @@ import simplejson
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import (
-    adapts, getAdapters, getMultiAdapter, getUtility, queryAdapter)
+    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
+    getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
-from zope.interface import implements, implementedBy
+from zope.event import notify
+from zope.interface import implements, implementedBy, providedBy
 from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
@@ -43,17 +45,20 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
-# canonical_url and BatchNavigator code should be moved into lazr.
+# canonical_url, BatchNavigator, and event code should be moved into lazr.
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData, ILaunchBag)
 from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    LAZR_WEBSERVICE_NAME)
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 
@@ -413,7 +418,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                                           IFieldMarshaller)
             repr_name = marshaller.representation_name
             try:
-                value = getattr(self.entry, name)
+                if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
+                    value = None
+                else:
+                    value = getattr(self.entry, name)
                 repr_value = marshaller.unmarshall(self.entry, value)
             except Unauthorized:
                 # Either the client doesn't have permission to see
@@ -704,11 +712,23 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.request.response.setHeader('Content-type', 'text/plain')
             return "\n".join(errors)
 
+        # Make a snapshot of the entry to use in a notification event.
+        entry_before_modification = Snapshot(
+            self.entry.context, providing=providedBy(self.entry.context))
+
         # Store the entry's current URL so we can see if it changes.
         original_url = canonical_url(self.context)
         # Make the changes.
         for name, value in validated_changeset.items():
             setattr(self.entry, name, value)
+
+        # Send a notification event.
+        event = SQLObjectModifiedEvent(
+            object=self.entry.context,
+            object_before_modification=entry_before_modification,
+            edited_fields=validated_changeset.keys(),
+            user=getUtility(ILaunchBag).user)
+        notify(event)
 
         # If the modification caused the entry's URL to change, tell
         # the client about the new URL.
@@ -881,13 +901,10 @@ class ServiceRootResource(HTTPResource):
         return data_for_json
 
     def getTopLevelPublications(self):
-        """Return a mapping of top-level link names to published objects.
-
-        This method assumes that only collections are exposed at the top
-        level.
-        """
+        """Return a mapping of top-level link names to published objects."""
         top_level_resources = {}
         site_manager = zapi.getGlobalSiteManager()
+        # First, collect the top-level collections.
         for registration in site_manager.registrations():
             provided = registration.provided
             if IInterface.providedBy(provided):
@@ -902,6 +919,11 @@ class ServiceRootResource(HTTPResource):
                         registration.value.entry_schema)
                     link_name = ("%s_collection_link" % adapter.plural_type)
                     top_level_resources[link_name] = utility
+        # Now, collect the top-level entries.
+        for utility in getAllUtilitiesRegisteredFor(ITopLevelEntryLink):
+            link_name = ("%s_link" % utility.link_name)
+            top_level_resources[link_name] = utility
+
         return top_level_resources
 
 

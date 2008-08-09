@@ -4,12 +4,14 @@
 
 from unittest import TestLoader, TestCase
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import login, login_person
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.mailout.branchmergeproposal import (
@@ -144,6 +146,11 @@ new commit message
         emails = pop_notifications()
         self.assertEqual([], emails)
 
+    def assertRecipientsMatches(self, recipients, mailer):
+        """Assert that `mailer` will send to the people in `recipients`."""
+        persons = zip(*(mailer._recipients.getRecipientPersons()))[1]
+        self.assertEqual(set(recipients), set(persons))
+
     def test_forReviewRequest(self):
         """Test creating a mailer for a review request."""
         merge_proposal, subscriber_ = self.makeProposalWithSubscriber()
@@ -159,8 +166,7 @@ new commit message
             request, merge_proposal, requester)
         self.assertEqual(
             'Requester <requester@example.com>', mailer.from_address)
-        self.assertEqual(
-            set([candidate]), set(mailer._recipients.getRecipientPersons()))
+        self.assertRecipientsMatches([candidate], mailer)
 
 
 class TestRecipientReason(TestCaseWithFactory):
@@ -238,6 +244,45 @@ class TestRecipientReason(TestCaseWithFactory):
             subscription, team_member, bmp, '')
         self.assertEqual('Your team Qux is subscribed to branch foo.',
             reason.getReason())
+
+
+class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
+    """Tests for `BranchMergeProposalRequestReviewView`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.owner = self.factory.makePerson()
+        login_person(self.owner)
+        self.bmp = self.factory.makeBranchMergeProposal(registrant=self.owner)
+
+    def makePersonWithHiddenEmail(self):
+        """Make an arbitrary person with hidden email addresses."""
+        person = self.factory.makePerson()
+        login_person(person)
+        person.hide_email_addresses = True
+        login_person(self.owner)
+        return person
+
+    def test_requestReviewWithPrivateEmail(self):
+        # We can request a review, even when one of the parties involved has a
+        # private email address.
+        candidate = self.makePersonWithHiddenEmail()
+        # Request a review and prepare the mailer.
+        vote_reference = self.bmp.nominateReviewer(
+            candidate, self.owner, None)
+        reason = RecipientReason.forReviewer(vote_reference, candidate)
+        mailer = BMPMailer.forReviewRequest(reason, self.bmp, self.owner)
+        # Send the mail.
+        pop_notifications()
+        mailer.sendAll()
+        mails = pop_notifications()
+        self.assertEqual(1, len(mails))
+        candidate = removeSecurityProxy(candidate)
+        expected_email = '%s <%s>' % (
+            candidate.displayname, candidate.preferredemail.email)
+        self.assertEqual(expected_email, mails[0]['To'])
 
 
 def test_suite():

@@ -64,6 +64,13 @@
     factory="canonical.launchpad.components.answertracker.series_to_questiontarget"
     />
 
+  <adapter
+    provides="canonical.launchpad.interfaces.ILaunchpadUsage"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    factory="canonical.launchpad.components.distroseries.distroseries_to_launchpadusage"
+    permission="zope.Public"
+    />
+
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistroSeriesNavigation"
@@ -77,14 +84,6 @@
     permission="launchpad.AnyPerson"
     template="../templates/specification-add.pt"
   />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.IDistroSeries"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.DistroSeriesDynMenu"
-      attribute="__call__"
-      name="+menudata"
-      />
 
   <browser:url
     for="canonical.launchpad.interfaces.IDistroSeries"

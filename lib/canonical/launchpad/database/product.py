@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
@@ -27,8 +27,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from canonical.launchpad.components.launchpadcontainer import (
-    LaunchpadContainerMixin)
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -89,8 +87,7 @@ from canonical.launchpad.interfaces.translationgroup import (
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin, QuestionTargetMixin,
-              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin,
-              LaunchpadContainerMixin):
+              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin):
 
     """A Product."""
 
@@ -424,7 +421,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return "BugTask.product = %d" % self.id
 
     def getExternalBugTracker(self):
-        """See `IProduct`."""
+        """See `IHasExternalBugTracker`."""
         if self.official_malone:
             return None
         elif self.bugtracker is not None:
@@ -869,10 +866,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
 
-    def isWithin(self, context):
-        """See `ILaunchpadContainer`."""
-        return context == self or context == self.project
-
     def getCustomLanguageCode(self, language_code):
         """See `IProduct`."""
         return CustomLanguageCode.selectOneBy(
@@ -1147,6 +1140,7 @@ class ProductSet:
     def getTranslatables(self):
         """See `IProductSet`"""
         upstream = Product.select('''
+            Product.active AND
             Product.id = ProductSeries.product AND
             POTemplate.productseries = ProductSeries.id AND
             Product.official_rosetta
@@ -1154,22 +1148,28 @@ class ProductSet:
             clauseTables=['ProductSeries', 'POTemplate'],
             orderBy='Product.title',
             distinct=True)
-        return upstream
+        return upstream.prejoin(['owner'])
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""
-        randomresults = Product.select('''id IN
-            (SELECT Product.id FROM Product, ProductSeries, POTemplate
-               WHERE Product.id = ProductSeries.product AND
-                     POTemplate.productseries = ProductSeries.id AND
-                     Product.official_rosetta
-               ORDER BY random())
-            ''',
-            distinct=True)
-
-        results = list(randomresults[:maximumproducts])
-        results.sort(lambda a, b: cmp(a.title, b.title))
-        return results
+        return Product.select('''
+            id IN (
+                SELECT DISTINCT product_id AS id
+                FROM (
+                    SELECT Product.id AS product_id, random() AS place
+                    FROM Product
+                    JOIN ProductSeries ON
+                        ProductSeries.Product = Product.id
+                    JOIN POTemplate ON
+                        POTemplate.productseries = ProductSeries.id
+                    WHERE Product.active AND Product.official_rosetta
+                    ORDER BY place
+                ) AS randomized_products
+                LIMIT %s
+            )
+            ''' % quote(maximumproducts),
+            distinct=True,
+            orderBy='Product.title')
 
     @cachedproperty
     def stats(self):

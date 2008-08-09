@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionNavigation',
-    'DistributionDynMenu',
     'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
@@ -29,6 +28,7 @@ __all__ = [
     'DistributionSetNavigation',
     'DistributionSetContextMenu',
     'DistributionSetSOP',
+    'UsesLaunchpadMixin',
     ]
 
 import datetime
@@ -58,6 +58,7 @@ from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from canonical.launchpad.webapp import (
@@ -68,13 +69,42 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.helpers import english_list
-from canonical.launchpad.browser.seriesrelease import (
-    SeriesOrReleasesMixinDynMenu)
-from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp import NavigationMenu
-from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets.image import ImageChangeWidget
+
+
+class UsesLaunchpadMixin:
+    """This mixin is used for the overview page of products and distros."""
+
+    @property
+    def uses_launchpad_for(self):
+        """Return a string of LP apps (comma-separated) this distro uses."""
+        uses = []
+        href_template = """<a href="%s"><strong>%s</strong></a>"""
+        if self.context.official_answers:
+            url = canonical_url(self.context, rootsite='answers')
+            uses.append(href_template % (url, 'Answers'))
+        if self.context.official_blueprints:
+            url = canonical_url(self.context, rootsite='blueprints')
+            uses.append(href_template % (url, 'Blueprints'))
+        if self.context.official_malone:
+            url = canonical_url(self.context, rootsite='bugs')
+            uses.append(href_template % (url, 'Bug Tracking'))
+        if IProduct.providedBy(self.context):
+            if self.context.official_codehosting:
+                url = canonical_url(self.context, rootsite='code')
+                uses.append(href_template % (url, 'Code'))
+        if self.context.official_rosetta:
+            url = canonical_url(self.context, rootsite='translations')
+            uses.append(href_template % (url, 'Translations'))
+
+        if len(uses) == 0:
+            text = None
+        else:
+            text = english_list(uses)
+
+        return text
 
 
 class DistributionNavigation(
@@ -339,8 +369,8 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def top_contributors(self):
-        text = 'List top contributors'
-        return Link('+topcontributors', text, icon='info')
+        text = u'\u00BB More contributors'
+        return Link('+topcontributors', text)
 
     def mentorship(self):
         text = 'Mentoring available'
@@ -410,7 +440,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'Show announcements'
+        text = u'\u00BB More announcements'
         enabled = bool(self.context.announcements().count())
         return Link('+announcements', text, enabled=enabled)
 
@@ -528,7 +558,8 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
+class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
+                       UsesLaunchpadMixin):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -591,26 +622,6 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
 
-    def usesLaunchpadFor(self):
-        """Return a string of LP apps (comma-separated) this distro uses."""
-        if (not self.context.full_functionality or
-            not self.context.official_anything):
-            return "%s does not use Launchpad." % self.context.title
-        else:
-            # There will be at least one app used if we get here.
-            uses = []
-            if self.context.official_answers:
-                uses.append("<strong>Answers</strong>")
-            if self.context.official_malone:
-                uses.append("<strong>Bug Tracking</strong>")
-            if self.context.official_blueprints:
-                uses.append("<strong>Blueprints</strong>")
-            if self.context.official_rosetta:
-                uses.append("<strong>Translations</strong>")
-
-            apps = english_list(uses)
-
-            return "%s uses Launchpad for %s." % (self.context.title, apps)
 
     def linkedMilestonesForSeries(self, series):
         """Return a string of linkified milestones in the series."""
@@ -988,33 +999,3 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
     def mirrors(self):
         return self.context.disabled_mirrors
 
-
-class DistributionDynMenu(
-    DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
-
-    menus = {
-        '': 'mainMenu',
-        'meetings': 'meetingsMenu',
-        'series': 'seriesMenu',
-        'milestones': 'milestoneMenu',
-        }
-
-    @neverempty
-    def milestoneMenu(self):
-        """Show milestones more recently than one month ago,
-        or with no due date.
-        """
-        fairly_recent = (
-            datetime.datetime.utcnow() - datetime.timedelta(days=30))
-        for milestone in self.context.milestones:
-            if (milestone.dateexpected is None or
-                milestone.dateexpected > fairly_recent):
-                yield self.makeLink(milestone.title, context=milestone)
-        yield self.makeLink('Show all milestones...', page='+milestones')
-
-    @neverempty
-    def mainMenu(self):
-        yield self.makeLink('Series', page='+series', submenu='serieses')
-        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
-        yield self.makeLink(
-            'Milestones', page='+milestones', submenu='milestones')

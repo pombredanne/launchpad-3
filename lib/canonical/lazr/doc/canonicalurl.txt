@@ -12,8 +12,6 @@ First, we'll construct an example object hierarchy.
     >>> from zope.interface import implements, Interface
     >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
-    >>> from zope.interface import Interface
-
     >>> class ICookbook(Interface):
     ...     pass
 
@@ -109,4 +107,60 @@ the root does not have the requested adaptation, and there are no higher
 objects to search.
 
     >>> print nearest_adapter(root, ICookingDirections)
+    None
+
+
+=== Named lookups with nearest_adapter() ===
+
+nearest_adapter() also supports named adapter lookups.
+
+First we need a named adapter to use:
+
+    >>> from zope.component import queryAdapter
+
+    >>> class ILabelledCookbook(Interface):
+    ...     """ A recipe with a name."""
+
+    >>> class LabelledCookbook:
+    ...     implements(ILabelledCookbook)
+    ...     def __init__(self, context):
+    ...         self.context = context
+
+    >>> provideAdapter(LabelledCookbook, [ICookbook], ILabelledCookbook,
+    ...     name='foo')
+
+    >>> print queryAdapter(cookbook, ILabelledCookbook)
+    None
+    >>> queryAdapter(cookbook, ILabelledCookbook, name='foo')
+    <...LabelledCookbook instance ...>
+
+nearest_adapter() behaves as it would with a regular adapter.  The named
+adapter for the next highest object in the canonical URL is returned.
+For a recipe, this is the adapter for the cookbook:
+
+    >>> nearest_adapter(recipe, ILabelledCookbook, name='foo')
+    <...LabelledCookbook instance ...>
+
+We can verify that the adapter is for the Cookbook using
+nearest_context_with_adapter():
+
+    >>> print nearest_context_with_adapter(
+    ...     recipe, ILabelledCookbook, name='foo')
+    (<...Cookbook ...>, <...LabelledCookbook ...>)
+
+And we can see that the adapter is not returned if we omit the 'name'
+keyword argument:
+
+    >>> print nearest_adapter(recipe, ILabelledCookbook)
+    None
+
+If we search for the adapter on the cookbook object, the lookup works as
+expected:
+
+    >>> nearest_adapter(cookbook, ILabelledCookbook, name='foo')
+    <...LabelledCookbook instance ...>
+
+And searching for the adapter on the root object returns nothing:
+
+    >>> print nearest_adapter(root, ILabelledCookbook, name='foo')
     None

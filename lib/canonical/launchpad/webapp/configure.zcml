@@ -35,6 +35,12 @@
         factory="canonical.launchpad.webapp.menu.MenuLink"
         />
 
+    <adapter
+        for="*"
+        provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+        factory="canonical.launchpad.webapp.publication.DefaultPrimaryContext"
+        />
+
     <content class="canonical.launchpad.webapp.menu.MenuLink">
         <require
             permission="zope.Public"
@@ -65,6 +71,12 @@
         provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         factory="canonical.launchpad.webapp.publisher.LaunchpadRootUrlData"
+        />
+
+    <adapter
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+        factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
         />
 
     <!-- TALES namespaces. -->
