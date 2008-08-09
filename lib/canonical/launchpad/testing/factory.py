@@ -271,7 +271,7 @@ class LaunchpadObjectFactory:
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=None, url=None, registrant=None,
-                   explicit_junk=False,
+                   explicit_junk=False, private=False,
                    **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
@@ -300,9 +300,12 @@ class LaunchpadObjectFactory:
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
-        return getUtility(IBranchSet).new(
+        branch = getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
+        if private:
+            removeSecurityProxy(branch).private = True
+        return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):

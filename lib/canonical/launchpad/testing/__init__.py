@@ -117,6 +117,11 @@ class TestCase(unittest.TestCase):
         self.assertTrue(zope_isinstance(instance, assert_class),
             '%r is not an instance of %r' % (instance, assert_class))
 
+    def assertIs(self, expected, observed):
+        """Assert that `expected` is the same object as `observed`."""
+        self.assertTrue(expected is observed,
+                        "%r is not %r" % (expected, observed))
+
     def run(self, result=None):
         if result is None:
             result = self.defaultTestResult()
