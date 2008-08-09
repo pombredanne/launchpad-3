@@ -186,23 +186,22 @@ class LaunchpadObjectFactory:
         syncUpdate(email)
         return person
 
-    def makeTeam(self, owner, displayname=None, email=None, name=None):
+    def makeTeam(self, owner, displayname=None, email=None, name=None,
+                 subscription_policy=TeamSubscriptionPolicy.OPEN):
         """Create and return a new, arbitrary Team.
-
-        The subscription policy of this new team will be OPEN.
 
         :param owner: The IPerson to use as the team's owner.
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
         :param email: The email address to use as the team's contact address.
+        :param subscription_policy: The subscription policy of the team.
         """
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
             displayname = name
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname,
-            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+            owner, name, displayname, subscriptionpolicy=subscription_policy)
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
