@@ -14,6 +14,7 @@ from canonical.launchpad.database import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces import (
     ICountrySet, IPersonSet, ShipItArchitecture, ShipItDistroSeries,
     ShipItFlavour, ShippingRequestPriority, ShippingRequestStatus,
@@ -86,6 +87,8 @@ class TestFraudDetection(unittest.TestCase):
                 'FORM_SUBMIT': 'Request',
                 }
         request = LaunchpadTestRequest(form=form)
+        # The request object on the ShipIt layers has that attribute.
+        request.icing_url = '/+icing-%s' % flavour.name
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
         login(user_email)
         view = getMultiAdapter(
@@ -399,7 +402,9 @@ class TestShippingRequest(unittest.TestCase):
         # If the user becomes inactive (which can be done by having his
         # account closed by an admin or by the user himself), though, the
         # recipient_email will be just a piece of text explaining that.
-        request.recipient.preferredemail.destroySelf()
+        email = request.recipient.preferredemail
+        email.status = EmailAddressStatus.VALIDATED
+        email.destroySelf()
         # Need to clean the cache because preferredemail is a cached property.
         request.recipient._preferredemail_cached = None
         self.failIf(request.recipient.preferredemail is not None)

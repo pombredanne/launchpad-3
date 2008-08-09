@@ -13,33 +13,50 @@
       for="canonical.launchpad.interfaces.ICodeReviewComment
            canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
       handler="canonical.launchpad.mailout.codereviewcomment.send" />
+
     <browser:url
         for="canonical.launchpad.interfaces.ICodeReviewComment"
         path_expression="string:comments/${id}"
         attribute_to_parent="branch_merge_proposal"
         rootsite="code" />
+
+    <browser:menus
+        module="canonical.launchpad.browser.codereviewcomment"
+        classes="CodeReviewCommentContextMenu" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.ICodeReviewComment"
         name="+index" />
-    <browser:page
-        name="+index"
+
+    <browser:pages
         facet="branches"
         for="canonical.launchpad.interfaces.ICodeReviewComment"
-        class="canonical.launchpad.browser.CodeReviewCommentView"
-        permission="zope.Public"
-        template="../templates/codereviewcomment-index.pt"
-        />
+        permission="zope.Public">
+      <browser:page
+        name="+index"
+        template="../templates/codereviewcomment-index.pt" />
+    </browser:pages>
+
     <browser:page
         for="canonical.launchpad.interfaces.ICodeReviewComment"
+        class="canonical.launchpad.browser.CodeReviewCommentView"
         name="+fragment"
         permission="zope.Public"
         template="../templates/codereviewcomment-fragment.pt" />
+
     <browser:page
         for="canonical.launchpad.interfaces.ICodeReviewComment"
         class="canonical.launchpad.browser.CodeReviewCommentSummary"
         name="+fragment-summary"
         permission="zope.Public"
-        template="../templates/codereviewcomment-fragment-summary.pt" />
+        template="../templates/codereviewcomment-fragment.pt" />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.ICodeReviewComment"
+      name="+macros"
+      permission="zope.Public"
+      template="../templates/codereviewcomment-macros.pt" />
+
     <browser:page
         name="+reply"
         facet="branches"

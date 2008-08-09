@@ -17,9 +17,12 @@ from StringIO import StringIO
 
 import pytz
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
+    AccountStatus,
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
     BranchType,
@@ -28,15 +31,19 @@ from canonical.launchpad.interfaces import (
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
     CreateBugParams,
+    DistroSeriesStatus,
     EmailAddressStatus,
     IBranchSet,
     IBugSet,
+    IBugWatchSet,
     ICodeImportJobWorkflow,
     ICodeImportMachineSet,
     ICodeImportEventSet,
     ICodeImportResultSet,
     ICodeImportSet,
     ICountrySet,
+    IDistributionSet,
+    IDistroSeriesSet,
     IEmailAddressSet,
     ILibraryFileAliasSet,
     IPersonSet,
@@ -56,6 +63,14 @@ from canonical.launchpad.interfaces import (
     TeamSubscriptionPolicy,
     UnknownBranchTypeError,
     )
+from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
@@ -148,44 +163,45 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString('person-name')
         if password is None:
             password = self.getUniqueString('password')
-        else:
-            # If a password was specified, validate the email address,
-            # unless told otherwise.
-            if email_address_status is None:
-                email_address_status = EmailAddressStatus.VALIDATED
+        # By default, make the email address preferred.
+        if (email_address_status is None
+                or email_address_status == EmailAddressStatus.VALIDATED):
+            email_address_status = EmailAddressStatus.PREFERRED
         # Set the password to test in order to allow people that have
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname)
+
         # To make the person someone valid in Launchpad, validate the
         # email.
-        if email_address_status == EmailAddressStatus.VALIDATED:
+        if email_address_status == EmailAddressStatus.PREFERRED:
             person.validateAndEnsurePreferredEmail(email)
-        elif email_address_status is not None:
-            email.status = email_address_status
-            email.syncUpdate()
-        else:
-            # Leave the email as NEW.
-            pass
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+        # Make the account ACTIVE if we have a preferred email address now.
+        if (person.preferredemail is not None and
+            person.preferredemail.status == EmailAddressStatus.PREFERRED):
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+        removeSecurityProxy(email).status = email_address_status
+        syncUpdate(email)
         return person
 
-    def makeTeam(self, owner, displayname=None, email=None):
+    def makeTeam(self, owner, displayname=None, email=None, name=None,
+                 subscription_policy=TeamSubscriptionPolicy.OPEN):
         """Create and return a new, arbitrary Team.
-
-        The subscription policy of this new team will be OPEN.
 
         :param owner: The IPerson to use as the team's owner.
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
         :param email: The email address to use as the team's contact address.
+        :param subscription_policy: The subscription policy of the team.
         """
-        name = self.getUniqueString('team-name')
+        if name is None:
+            name = self.getUniqueString('team-name')
         if displayname is None:
             displayname = name
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname,
-            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+            owner, name, displayname, subscriptionpolicy=subscription_policy)
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
@@ -204,13 +220,17 @@ class LaunchpadObjectFactory:
             name, title, summary, owner)
 
     def makeProduct(self, name=None, project=None, displayname=None,
-                    licenses=None):
+                    licenses=None, owner=None):
         """Create and return a new, arbitrary Product."""
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
-            displayname = self.getUniqueString('displayname')
+            if name is None:
+                displayname = self.getUniqueString('displayname')
+            else:
+                displayname = name.capitalize()
         if licenses is None:
             licenses = [License.GNU_GPL_V2]
         return getUtility(IProductSet).createProduct(
@@ -222,6 +242,16 @@ class LaunchpadObjectFactory:
             self.getUniqueString('description'),
             licenses=licenses,
             project=project)
+
+    def makeProductSeries(self, product=None, name=None):
+        """Create and return a new ProductSeries."""
+        if product is None:
+            product = self.makeProduct()
+        owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString()
+        summary = self.getUniqueString()
+        return product.newSeries(owner=owner, name=name, summary=summary)
 
     def makeProject(self, name=None, displayname=None):
         """Create and return a new, arbitrary Project."""
@@ -241,7 +271,7 @@ class LaunchpadObjectFactory:
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=None, url=None, registrant=None,
-                   explicit_junk=False,
+                   explicit_junk=False, private=False,
                    **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
@@ -270,9 +300,12 @@ class LaunchpadObjectFactory:
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
-        return getUtility(IBranchSet).new(
+        branch = getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
+        if private:
+            removeSecurityProxy(branch).private = True
+        return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):
@@ -284,8 +317,7 @@ class LaunchpadObjectFactory:
             target_branch = self.makeBranch(product=product)
         product = target_branch.product
         if registrant is None:
-            registrant = self.makePerson(
-                password=self.getUniqueString('password'))
+            registrant = self.makePerson()
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch)
@@ -325,11 +357,28 @@ class LaunchpadObjectFactory:
         :param person_displayname: The displayname for the created Person
         """
         branch = self.makeBranch(title=branch_title)
-        person = self.makePerson(displayname=person_displayname,
-            email_address_status=EmailAddressStatus.VALIDATED)
+        person = self.makePerson(displayname=person_displayname)
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
+
+    def makeRevision(self, author=None, revision_date=None, parent_ids=None,
+                     rev_id=None, log_body=None):
+        """Create a single `Revision`."""
+        if author is None:
+            author = self.getUniqueString('author')
+        if revision_date is None:
+            revision_date = datetime.now(pytz.UTC)
+        if parent_ids is None:
+            parent_ids = []
+        if rev_id is None:
+            rev_id = self.getUniqueString('revision-id')
+        if log_body is None:
+            log_body = self.getUniqueString('log-body')
+        return getUtility(IRevisionSet).new(
+            revision_id=rev_id, log_body=log_body,
+            revision_date=revision_date, revision_author=author,
+            parent_ids=parent_ids, properties={})
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
@@ -369,7 +418,8 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self, product=None):
+    def makeBug(self, product=None, owner=None, bug_watch_url=None,
+                private=False):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -377,19 +427,114 @@ class LaunchpadObjectFactory:
 
         :param product: If the product is not set, one is created
             and this is used as the primary bug target.
+        :param owner: The reporter of the bug. If not set, one is created.
+        :param bug_watch_url: If specified, create a bug watch pointing
+            to this URL.
         """
         if product is None:
             product = self.makeProduct()
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
-            owner, title, comment=self.getUniqueString())
+            owner, title, comment=self.getUniqueString(), private=private)
         create_bug_params.setBugTarget(product=product)
-        return getUtility(IBugSet).createBug(create_bug_params)
+        bug = getUtility(IBugSet).createBug(create_bug_params)
+        if bug_watch_url is not None:
+            # fromText() creates a bug watch associated with the bug.
+            getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+        return bug
 
-    def makeSignedMessage(self, msgid=None, body=None):
+    def makeBugTask(self, bug=None, target=None):
+        """Create and return a bug task.
+
+        If the bug is already targeted to the given target, the existing
+        bug task is returned.
+
+        :param bug: The `IBug` the bug tasks should be part of. If None,
+            one will be created.
+        :param target: The `IBugTarget`, to which the bug will be
+            targeted to.
+        """
+        if bug is None:
+            bug = self.makeBug()
+        if target is None:
+            target = self.makeProduct()
+        existing_bugtask = bug.getBugTask(target)
+        if existing_bugtask is not None:
+            return existing_bugtask
+        owner = self.makePerson()
+
+        if IProduct.providedBy(target):
+            target_params = {'product': target}
+        elif IProductSeries.providedBy(target):
+            # We can't have a series task without a distribution task.
+            self.makeBugTask(bug, target.product)
+            target_params = {'productseries': target}
+        elif IDistribution.providedBy(target):
+            target_params = {'distribution': target}
+        elif IDistributionSourcePackage.providedBy(target):
+            target_params = {
+                'distribution': target.distribution,
+                'sourcepackagename': target.sourcepackagename,
+                }
+        elif IDistroSeries.providedBy(target):
+            # We can't have a series task without a distribution task.
+            self.makeBugTask(bug, target.distribution)
+            target_params = {'distroseries': target}
+        elif ISourcePackage.providedBy(target):
+            distribution_package = target.distribution.getSourcePackage(
+                target.sourcepackagename)
+            # We can't have a series task without a distribution task.
+            self.makeBugTask(bug, distribution_package)
+            target_params = {
+                'distroseries': target.distroseries,
+                'sourcepackagename': target.sourcepackagename,
+                }
+        else:
+            raise AssertionError('Unknown IBugTarget: %r' % target)
+
+        return getUtility(IBugTaskSet).createTask(
+            bug=bug, owner=owner, **target_params)
+
+    def makeBugAttachment(self, bug=None, owner=None, data=None,
+                          comment=None, filename=None, content_type=None):
+        """Create and return a new bug attachment.
+
+        :param bug: An `IBug` or a bug ID or name, or None, in which
+            case a new bug is created.
+        :param owner: An `IPerson`, or None, in which case a new
+            person is created.
+        :param data: A file-like object or a string, or None, in which
+            case a unique string will be used.
+        :param comment: An `IMessage` or a string, or None, in which
+            case a new message will be generated.
+        :param filename: A string, or None, in which case a unique
+            string will be used.
+        :param content_type: The MIME-type of this file.
+        :return: An `IBugAttachment`.
+        """
+        if bug is None:
+            bug = self.makeBug()
+        elif isinstance(bug, (int, long, basestring)):
+            bug = getUtility(IBugSet).getByNameOrID(str(bug))
+        if owner is None:
+            owner = self.makePerson()
+        if data is None:
+            data = self.getUniqueString()
+        if comment is None:
+            comment = self.getUniqueString()
+        if filename is None:
+            filename = self.getUniqueString()
+        return bug.addAttachment(
+            owner, data, comment, filename, content_type=content_type)
+
+    def makeSignedMessage(self, msgid=None, body=None, subject=None):
         mail = SignedMessage()
         mail['From'] = self.getUniqueEmailAddress()
+        if subject is None:
+            subject = self.getUniqueString('subject')
+        mail['Subject'] = subject
         if msgid is None:
             msgid = make_msgid('launchpad')
         if body is None:
@@ -418,7 +563,7 @@ class LaunchpadObjectFactory:
             product=product)
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None):
+                       cvs_module=None, product=None, branch_name=None):
         """Create and return a new, arbitrary code import.
 
         The code import will be an import from a Subversion repository located
@@ -427,11 +572,12 @@ class LaunchpadObjectFactory:
         if svn_branch_url is cvs_root is cvs_module is None:
             svn_branch_url = self.getUniqueURL()
 
-        product = self.makeProduct()
-        branch_name = self.getUniqueString('name')
+        if product is None:
+            product = self.makeProduct()
+        if branch_name is None:
+            branch_name = self.getUniqueString('name')
         # The registrant gets emailed, so needs a preferred email.
-        registrant = self.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
+        registrant = self.makePerson()
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
@@ -537,7 +683,7 @@ class LaunchpadObjectFactory:
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None):
         if sender is None:
-            sender = self.makePerson(password='password')
+            sender = self.makePerson()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
@@ -581,7 +727,8 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString()
         series = product.newSeries(
             product.owner, name, self.getUniqueString(), user_branch)
-        series.import_branch = import_branch
+        if import_branch is not None:
+            series.import_branch = import_branch
         syncUpdate(series)
         return series
 
@@ -601,7 +748,6 @@ class LaunchpadObjectFactory:
             person, name, brazil, city, addressline, phone)
         # We don't want to login() as the person used to create the request,
         # so we remove the security proxy for changing the status.
-        from zope.security.proxy import removeSecurityProxy
         removeSecurityProxy(request).status = ShippingRequestStatus.APPROVED
         template = getUtility(IStandardShipItRequestSet).getByFlavour(
             flavour)[0]
@@ -616,3 +762,37 @@ class LaunchpadObjectFactory:
         log_alias_id = getUtility(ILibrarianClient).addFile(
             filename, len(log_data), StringIO(log_data), 'text/plain')
         return getUtility(ILibraryFileAliasSet)[log_alias_id]
+
+    def makeDistribution(self, name=None, displayname=None):
+        """Make a new distribution."""
+        if name is None:
+            name = self.getUniqueString()
+        if displayname is None:
+            displayname = self.getUniqueString()
+        title = self.getUniqueString()
+        description = self.getUniqueString()
+        summary = self.getUniqueString()
+        domainname = self.getUniqueString()
+        owner = self.makePerson()
+        members = self.makeTeam(owner)
+        return getUtility(IDistributionSet).new(
+            name, displayname, title, description, summary, domainname,
+            members, owner)
+
+    def makeDistroRelease(self, distribution=None, version=None,
+                          status=DistroSeriesStatus.DEVELOPMENT,
+                          parent_series=None, name=None):
+        """Make a new distro release."""
+        if distribution is None:
+            distribution = self.makeDistribution()
+        if name is None:
+            name = self.getUniqueString()
+
+        return getUtility(IDistroSeriesSet).new(
+            distribution=distribution,
+            version="%s.0" % self.getUniqueInteger(),
+            name=name,
+            displayname=self.getUniqueString(),
+            title=self.getUniqueString(), summary=self.getUniqueString(),
+            description=self.getUniqueString(),
+            parent_series=parent_series, owner=distribution.owner)

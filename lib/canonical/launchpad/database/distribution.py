@@ -29,6 +29,7 @@ from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
@@ -52,7 +53,7 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -78,6 +79,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.publishing import active_publishing_status
 
 from canonical.archivepublisher.debversion import Version
 
@@ -112,24 +114,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     domainname = StringCol(notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
-        validator=public_person_validator, notNull=False,
+        storm_validator=validate_public_person, notNull=False,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     members = ForeignKey(
         dbName='members', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     mirror_admin = ForeignKey(
         dbName='mirror_admin', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     translationgroup = ForeignKey(
         dbName='translationgroup', foreignKey='TranslationGroup',
         notNull=False, default=None)
@@ -186,7 +188,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     language_pack_admin = ForeignKey(
         dbName='language_pack_admin', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     @cachedproperty
     def main_archive(self):
@@ -491,6 +493,37 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getSourcePackageRelease(self, sourcepackagerelease):
         """See `IDistribution`."""
         return DistributionSourcePackageRelease(self, sourcepackagerelease)
+
+    def getCurrentSourceReleases(self, source_package_names):
+        """See `IDistribution`."""
+        source_package_ids = [
+            package_name.id for package_name in source_package_names]
+        releases = SourcePackageRelease.select("""
+            SourcePackageName.id IN %s AND
+            SourcePackageRelease.id =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.id = (
+                SELECT max(spph.id)
+                FROM SourcePackagePublishingHistory spph,
+                     SourcePackageRelease spr, SourcePackageName spn,
+                     DistroSeries ds
+                WHERE
+                    spn.id = SourcePackageName.id AND
+                    spr.sourcepackagename = spn.id AND
+                    spph.sourcepackagerelease = spr.id AND
+                    spph.archive IN %s AND
+                    spph.status IN %s AND
+                    spph.distroseries = ds.id AND
+                    ds.distribution = %s)
+            """ % sqlvalues(
+                source_package_ids, self.all_distro_archive_ids,
+                active_publishing_status, self),
+            clauseTables=[
+                'SourcePackageName', 'SourcePackagePublishingHistory'])
+        return dict(
+            (self.getSourcePackage(release.sourcepackagename),
+             DistributionSourcePackageRelease(self, release))
+            for release in releases)
 
     @property
     def has_any_specifications(self):
@@ -1105,6 +1138,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             'universe' : ArchivePurpose.PRIMARY,
             'multiverse' : ArchivePurpose.PRIMARY,
             'partner' : ArchivePurpose.PARTNER,
+            'contrib': ArchivePurpose.PRIMARY,
+            'non-free': ArchivePurpose.PRIMARY,
             }
 
         try:
@@ -1128,9 +1163,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             COUNT(DISTINCT Bugtask.bug) AS total_bugs,
             COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
                   Bugtask.bug END) AS bugs_triaged,
-            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
+            COUNT(DISTINCT CASE WHEN Bugtask.status IN %(unresolved)s THEN
                   RelatedBugTask.bug END) AS bugs_affecting_upstream,
-            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s AND
+            COUNT(DISTINCT CASE WHEN Bugtask.status in %(unresolved)s AND
                   (RelatedBugTask.bugwatch IS NOT NULL OR
                   RelatedProduct.official_malone IS TRUE) THEN
                   RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
@@ -1222,11 +1257,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                  bugs_affecting_upstream, bugs_with_upstream_bugwatch))
         return results
 
+    def getCustomLanguageCode(self, sourcepackagename, language_code):
+        """See `IDistribution`."""
+        return CustomLanguageCode.selectOneBy(
+            distribution=self, sourcepackagename=sourcepackagename,
+            language_code=language_code)
+
     def setBugSupervisor(self, bug_supervisor, user):
         """See `IHasBugSupervisor`."""
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
+
+    def userCanEdit(self, user):
+        """See `IDistribution`."""
+        if user is None:
+            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.owner) or user.inTeam(admins)
 
 
 class DistributionSet:

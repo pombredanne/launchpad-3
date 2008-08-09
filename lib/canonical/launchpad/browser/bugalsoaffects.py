@@ -417,8 +417,11 @@ class BugTaskCreationStep(AlsoAffectsStep):
             # Address bug trackers, and we expect the status and
             # importance to be updated manually, so we do not reset
             # the status and importance here.
-            task_added.transitionToStatus(BugTaskStatus.UNKNOWN, self.user)
-            task_added.importance = BugTaskImportance.UNKNOWN
+            bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+            task_added.transitionToStatus(
+                BugTaskStatus.UNKNOWN, bug_importer)
+            task_added.transitionToImportance(
+                BugTaskImportance.UNKNOWN, bug_importer)
 
         notify(SQLObjectCreatedEvent(task_added))
         self.next_url = canonical_url(task_added)

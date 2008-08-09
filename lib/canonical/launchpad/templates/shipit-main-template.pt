@@ -5,7 +5,6 @@
 <metal:block define-slot="top_slot" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:lpm="http://ns.launchpad.net/lpm"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
@@ -14,25 +13,21 @@
   dir="ltr"
   tal:attributes="lang view/lang|default_language|default;
                   xml:lang view/lang|default_language|default;
-                  dir view/dir|string:ltr"
-  tal:define="
-      rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/shipitubuntu/rooturl;
-      revno modules/canonical.launchpad.versioninfo/revno;
-      icingroot string:${rooturl}+icing-ubuntu/rev${revno}">
+                  dir view/dir|string:ltr">
 
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
 
     <style type="text/css" media="all"
-      tal:content="string:@import url(${icingroot}/style.css);" />
+      tal:content="string:@import url(${request/icing_url}/style.css);" />
     <style type="text/css" media="print"
-      tal:content="string:@import url(${icingroot}/print.css);" />
+      tal:content="string:@import url(${request/icing_url}/print.css);" />
     <style type="text/css" media="all"
-      tal:content="string:@import url(${icingroot}/lp-extra.css);" />
+      tal:content="string:@import url(${request/icing_url}/lp-extra.css);" />
     <tal:comment condition="nothing">
       XXX: We cannot use tal inside the comment below (which is only
       interpreted by IE), so we have to use /+icing-ubuntu/ie.css rather
-      than using icingroot.
+      than using request/icing_url.
     </tal:comment>
 		<!--[if lt IE 7]>
     <style type="text/css" media="all">
@@ -47,12 +42,12 @@
 
     <div id="round" class="roundme">
       <img id="topcap" alt=""
-        tal:attributes="src string:${icingroot}/cap-top.png" />
+        tal:attributes="src string:${request/icing_url}/cap-top.png" />
     <div id="layout" class="container clear-block">
     <div id="header">
       <div id="logo-floater">
         <h1><a href="http://www.ubuntu.com" title="Ubuntu">
-            <img tal:attributes="src string:${icingroot}/logo.png" alt="Ubuntu" id="logo" /><span>Ubuntu</span></a></h1>
+            <img tal:attributes="src string:${request/icing_url}/logo.png" alt="Ubuntu" id="logo" /><span>Ubuntu</span></a></h1>
       </div>
       <ul class="links primary-links"><li class="first menu-1-1-2"><a href="http://www.ubuntu.com/products" title="Learn about the Ubuntu products" class="menu-1-1-2">Products</a></li>
       <li class="menu-1-2-2"><a href="http://www.ubuntu.com/support" title="Get help with Ubuntu" class="menu-1-2-2">Support</a></li>
@@ -64,7 +59,7 @@
       <div id="masthead" class="clear-block column span-24">
         <div id="block-block-7" class="clear-block block block-block">
           <div class="content"><div class="short-banner">
-          <img tal:attributes="src string:${icingroot}/masthead-shipit.png" width="861" height="100" border="0" usemap="#map" />
+          <img tal:attributes="src string:${request/icing_url}/masthead-shipit.png" width="861" height="100" border="0" usemap="#map" />
           <map name="map"><area shape="rect" coords="655,1,855,96" alt="Visit the Ubuntu Store - Buy Ubuntu branded merchandise, DVDs and world class support" href="https://shop.canonical.com" /></map>
           </div></div>
         </div>
@@ -136,7 +131,7 @@
 
     </div> <!-- /layout -->
     <img id="bottomcap" alt=""
-         tal:attributes="src string:${icingroot}/cap-bottom.png" />
+         tal:attributes="src string:${request/icing_url}/cap-bottom.png" />
   </div>
 
   </body>

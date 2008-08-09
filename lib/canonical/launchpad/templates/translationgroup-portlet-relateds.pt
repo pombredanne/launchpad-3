@@ -5,7 +5,7 @@
   omit-tag="">
 
 <div class="portlet" id="portlet-related">
-  <h2>This group translates for</h2>
+  <h2>This group supervises translations for</h2>
 
   <div class="portletBody">
     <div class="portletContent">
@@ -15,35 +15,33 @@
         <ul>
           <li tal:repeat="distribution context/distributions">
             <a href="#"
-               tal:content="distribution/displayname"
-               tal:attributes="href distribution/fmt:url">Ubuntu</a>
+              tal:content="distribution/displayname"
+              tal:attributes="href distribution/fmt:url">Ubuntu</a>
           </li>
         </ul>
       </tal:distributions>
 
-     <tal:products condition="context/products">
-       <h3>Projects:</h3>
-       <ul>
-         <li tal:repeat="product context/products">
-           <a href="#"
-              tal:content="product/displayname"
-              tal:attributes="href product/fmt:url">Mozilla Firefox</a>
-         </li>
-       </ul>
-     </tal:products>
+      <tal:products condition="context/products">
+        <h3>Projects:</h3>
+        <ul>
+          <li tal:repeat="product context/products">
+            <tal:link replace="structure product/fmt:link" />
+          </li>
+        </ul>
+      </tal:products>
 
-     <tal:projects condition="context/projects">
-       <h3>Project Groups:</h3>
-       <ul>
-         <li tal:repeat="project context/projects">
-           <a href="#"
-              tal:content="project/displayname"
-              tal:attributes="href project/fmt:url">Gnome</a>
-         </li>
-       </ul>
-     </tal:projects>
+      <tal:projects condition="context/projects">
+        <h3>Project Groups:</h3>
+        <ul>
+          <li tal:repeat="project context/projects">
+            <a href="#"
+                tal:content="project/displayname"
+                tal:attributes="href project/fmt:url">Gnome</a>
+          </li>
+        </ul>
+      </tal:projects>
 
-   </div>
+    </div>
   </div>
 </div>
 </tal:root>

@@ -6,11 +6,12 @@ __all__ = [
     'MozillaXpiImporter',
     ]
 
+import re
+from cStringIO import StringIO
 import textwrap
-from os.path import splitext
-from StringIO import StringIO
+
 from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
-from zipfile import ZipFile
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -19,22 +20,10 @@ from canonical.launchpad.interfaces import (
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
+from canonical.launchpad.translationformat.mozilla_zip import (
+    MozillaZipTraversal)
 from canonical.launchpad.translationformat.xpi_header import XpiHeader
-from canonical.launchpad.translationformat.xpi_manifest import (
-    make_jarpath, XpiManifest)
 from canonical.librarian.interfaces import ILibrarianClient
-
-
-def get_file_suffix(path_in_zip):
-    """Given a full file path inside a zip archive, return filename suffix.
-
-    :param path_in_zip: Full file path inside a zip archive, e.g.
-        "foo/bar.dtd".
-    :return: Filename suffix, or empty string if none found.  For example,
-        "foo/bar.dtd" results in ".dtd".
-    """
-    root, ext = splitext(path_in_zip)
-    return ext
 
 
 def add_source_comment(message, comment):
@@ -48,36 +37,22 @@ def add_source_comment(message, comment):
         message.source_comment += '\n'
 
 
-class MozillaZipFile:
-    """Class for reading translatable messages from Mozilla XPI/JAR files.
+class MozillaZipImportParser(MozillaZipTraversal):
+    """XPI and jar parser for import purposes.
 
-    It handles embedded jar, dtd and properties files.
+    Looks for DTD and properties files, and parses them for messages.
+    All messages found are left in `self.messages`.
     """
 
-    def __init__(self, filename, content, xpi_path='', manifest=None):
-        """Open zip (or XPI, or jar) file and scan its contents.
+    # List of ITranslationMessageData representing messages found.
+    messages = None
 
-        :param filename: Name of this zip (XPI/jar) file.
-        :param content: The data making up this zip file.
-        :param xpi_path: Full path of this file inside the XPI archive.
-            Leave blank for the XPI file itself.
-        :param manifest: `XpiManifest` representing the XPI archive's
-            manifest file, if any.
-        """
-        self.filename = filename
-        self.header = None
+    def _begin(self):
+        """Overridable hook for `MozillaZipTraversal`."""
         self.messages = []
-        self.last_translator = None
-        self.manifest = manifest
-        self.archive = ZipFile(StringIO(content), 'r')
 
-        # Process zipped files.  Sort by path to keep ordering deterministic.
-        # Ordering matters in sequence numbering (which in turn shows up in
-        # the UI), but also for consistency in duplicates resolution and for
-        # automated testing.
-        for entry in sorted(self.archive.namelist()):
-            self._processEntry(entry, xpi_path)
-
+    def _finish(self):
+        """Overridable hook for `MozillaZipTraversal`."""
         # Eliminate duplicate messages.
         seen_messages = set()
         deletions = []
@@ -91,95 +66,48 @@ class MozillaZipFile:
         for index in reversed(deletions):
             del self.messages[index]
 
-    def _processEntry(self, entry, xpi_path):
-        """Parse given entry in zip file, if it's relevant.
+        for message in self.messages:
+            message.file_references = ', '.join(message.file_references_list)
 
-        To be relevant, `entry` must have a filename suffix of .jar,
-        .dtd., or .properties.
+    def _processTranslatableFile(self, entry, locale_code, xpi_path,
+                                 chrome_path, filename_suffix):
+        """Overridable hook for `MozillaZipTraversal`.
+
+        This implementation is only interested in DTD and properties
+        files.
         """
-        suffix = get_file_suffix(entry)
-        if suffix not in ('.jar', '.dtd', '.properties'):
+        if filename_suffix == '.dtd':
+            parser = DtdFile
+        elif filename_suffix == '.properties':
+            parser = PropertyFile
+        else:
+            # We're not interested in other file types here.
             return
 
-        if suffix == '.jar':
-            subpath = make_jarpath(xpi_path, entry)
-        else:
-            subpath = "%s/%s" % (xpi_path, entry)
-
-        # If we have a manifest, we only read files listed there as having
-        # something useful for us and skip the rest.  If we don't have a
-        # manifest, we just read the whole archive.
-        if self.manifest is None:
-            chrome_path = None
-        else:
-            if suffix == '.jar':
-                chrome_path = None
-                if not self.manifest.containsLocales(subpath):
-                    # Jar file contains no directories with locale files.
-                    return
-            else:
-                chrome_path, locale = self.manifest.getChromePathAndLocale(
-                    subpath)
-                if chrome_path is None:
-                    # File is not in a directory containing locale files.
-                    return
-
         # Parse file, subsume its messages.
-        parsed_file = self._parseFile(entry, subpath, chrome_path)
-        self.extend(parsed_file.messages)
+        content = self.archive.read(entry)
+        parsed_file = parser(
+            filename=xpi_path, chrome_path=chrome_path, content=content)
+        if parsed_file is not None:
+            self.extend(parsed_file.messages)
 
-    def _parseFile(self, entry, subpath, chrome_path):
-        """Read file `entry` from zip file `archive`, and parse it.
+    def _isTemplate(self):
+        """Is this a template?"""
+        name = self.filename
+        return name is not None and name.startswith('en-US.xpi')
 
-        :param entry: name of file within our zip archive, including
-            full path relative to the archive's root directory.
-        :param subpath: file's path inside overall XPI file.  Used to figure
-            out paths inside jar files.
-        :param chrome_path: file's chrome path within the XPI file.
+    def _processNestedJar(self, zip_instance):
+        """Overridable hook for `MozillaZipTraversal`.
 
-        :return: object representing a parsed DTD, properties, or jar
-            file.  It will have a "messages" attribute containing a list
-            of `TranslationMessageData` objects read from the file.
+        This implementation complements `self.messages` with those found in
+        the jar file we just parsed.
         """
-        data = self.archive.read(entry)
-        suffix = get_file_suffix(entry)
-
-        if suffix == '.jar':
-            parsed_file = MozillaZipFile(filename=entry, xpi_path=subpath,
-                content=data, manifest=self.manifest)
-        elif suffix == '.dtd':
-            parsed_file = DtdFile(
-                filename=entry, chrome_path=chrome_path, content=data)
-        elif suffix == '.properties':
-            parsed_file = PropertyFile(
-                filename=entry, chrome_path=chrome_path, content=data)
-        else:
-            raise AssertionError(
-                "Unexpected filename suffix: %s." % suffix)
-
-        return parsed_file
-
-    def _updateMessageFileReferences(self, message):
-        """Update message's file_references with full path."""
-        if self.filename is not None:
-            # Include self.filename to this entry's file reference.
-            if self.filename.endswith('.jar'):
-                filename = '%s!' % self.filename
-            else:
-                filename = self.filename
-            message.file_references_list = [
-                "%s/%s" % (filename, file_reference)
-                for file_reference in message.file_references_list]
-        # Fill file_references field based on the list of files we
-        # found.
-        message.file_references = ', '.join(
-            message.file_references_list)
+        self.extend(zip_instance.messages)
 
     def _isCommandKeyMessage(self, message):
         """Whether the message represents a command key shortcut."""
         return (
-            self.filename is not None and
-            self.filename.startswith('en-US.xpi') and
+            self._isTemplate() and
             message.translations and (
                 message.msgid_singular.endswith('.commandkey') or
                 message.msgid_singular.endswith('.key')))
@@ -187,38 +115,39 @@ class MozillaZipFile:
     def _isAccessKeyMessage(self, message):
         """Whether the message represents an access key shortcut."""
         return (
-            self.filename is not None and
-            self.filename.startswith('en-US.xpi') and
+            self._isTemplate() and
             message.translations and (
                 message.msgid_singular.endswith('.accesskey')))
 
     def extend(self, newdata):
-        """Append 'newdata' messages to self.messages."""
-        for message in newdata:
-            self._updateMessageFileReferences(message)
+        """Complement `self.messages` with messages found in contained file.
 
+        :param newdata: a sequence representing the messages found in a
+            contained file.
+        """
+        for message in newdata:
             # Special case accesskeys and commandkeys:
             # these are single letter messages, lets display
             # the value as a source comment.
             if self._isCommandKeyMessage(message):
                 comment = u'\n'.join(textwrap.wrap(
-                    u"Select the shortcut key that you want to use. It should"
-                    u" be translated, but often shortcut keys (for example"
-                    u" Ctrl + KEY) are not changed from the original. If a"
-                    u" translation already exists, please don't change it if"
-                    u" you are not sure about it. Please find the context of"
-                    u" the key from the end of the 'Located in' text below."))
+                    u"""Select the shortcut key that you want to use. It
+                    should be translated, but often shortcut keys (for
+                    example Ctrl + KEY) are not changed from the original. If
+                    a translation already exists, please don't change it if
+                    you are not sure about it. Please find the context of
+                    the key from the end of the 'Located in' text below."""))
                 add_source_comment(message, comment)
             elif self._isAccessKeyMessage(message):
                 comment = u'\n'.join(textwrap.wrap(
-                    u"Select the access key that you want to use. These have"
-                    u" to be translated in a way that the selected"
-                    u" character is present in the translated string of the"
-                    u" label being referred to, for example 'i' in 'Edit'"
-                    u" menu item in English. If a translation already"
-                    u" exists, please don't change it if you are not sure"
-                    u" about it. Please find the context of the key from the"
-                    u" end of the 'Located in' text below."))
+                    u"""Select the access key that you want to use. These have
+                    to be translated in a way that the selected character is
+                    present in the translated string of the label being
+                    referred to, for example 'i' in 'Edit' menu item in
+                    English. If a translation already exists, please don't
+                    change it if you are not sure about it. Please find the
+                    context of the key from the end of the 'Located in' text
+                    below."""))
                 add_source_comment(message, comment)
             self.messages.append(message)
 
@@ -376,7 +305,12 @@ class PropertyFile:
                 # Remove any white space before the useful data, like
                 # ' # foo'.
                 line = line.lstrip()
-                if line.startswith(u'#'):
+                if len(line) == 0:
+                    # It's an empty line. Reset any previous comment we have.
+                    last_comment = None
+                    last_comment_line_num = 0
+                    ignore_comment = False
+                elif line.startswith(u'#') or line.startswith(u'//'):
                     # It's a whole line comment.
                     ignore_comment = False
                     line = line[1:].strip()
@@ -391,11 +325,12 @@ class PropertyFile:
 
                     last_comment_line_num = line_num
                     continue
-                elif len(line) == 0:
-                    # It's an empty line. Reset any previous comment we have.
-                    last_comment = None
-                    last_comment_line_num = 0
-                    ignore_comment = False
+
+            # Unescaped URLs are a common mistake: the "//" starts an
+            # end-of-line comment.  To work around that, treat "://" as
+            # a special case.
+            just_saw_colon = False
+
             while line:
                 if is_multi_line_comment:
                     if line.startswith(u'*/'):
@@ -428,12 +363,6 @@ class PropertyFile:
                         # Jump the processed char.
                         line = line[1:]
                     continue
-                elif line.startswith(u'//'):
-                    # It's an 'end of the line comment'
-                    last_comment = '%s\n' % line[2:].strip()
-                    last_comment_line_num = line_num
-                    # Jump to next line
-                    break
                 elif line.startswith(u'/*'):
                     # It's a multi line comment
                     is_multi_line_comment = True
@@ -442,10 +371,18 @@ class PropertyFile:
                     # Jump the comment starting tag
                     line = line[2:]
                     continue
+                elif line.startswith(u'//') and not just_saw_colon:
+                    # End-of-line comment.
+                    last_comment = '%s\n' % line[2:].strip()
+                    last_comment_line_num = line_num
+                    # On to next line.
+                    break
                 elif is_message:
                     # Store the char and continue.
-                    translation += line[0]
+                    head_char = line[0]
+                    translation += head_char
                     line = line[1:]
+                    just_saw_colon = (head_char == ':')
                     continue
                 elif u'=' in line:
                     # Looks like a message string.
@@ -510,7 +447,6 @@ class MozillaXpiImporter:
         self.distroseries = None
         self.sourcepackagename = None
         self.is_published = False
-        self.content = None
         self._translation_file = None
 
     def getFormat(self, file_contents):
@@ -528,20 +464,6 @@ class MozillaXpiImporter:
 
     uses_source_string_msgids = True
 
-    def _extract_manifest(self, archive, contained_files):
-        """Extract manifest file from `ZipFile`."""
-        manifest_names = ['chrome.manifest', 'en-US.manifest']
-        for filename in manifest_names:
-            if filename in contained_files:
-                return XpiManifest(archive.read(filename))
-
-        return None
-
-    def _extract_install_rdf(self, archive, contained_files):
-        if 'install.rdf' not in contained_files:
-            raise TranslationFormatInvalidInputError("No install.rdf found")
-        return XpiHeader(archive.read('install.rdf'))
-
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
         self._translation_file = TranslationFileData()
@@ -553,21 +475,14 @@ class MozillaXpiImporter:
         self.is_published = translation_import_queue_entry.is_published
 
         librarian_client = getUtility(ILibrarianClient)
-        self.content = librarian_client.getFileByAlias(
-            translation_import_queue_entry.content.id)
+        content = librarian_client.getFileByAlias(
+            translation_import_queue_entry.content.id).read()
 
-        # Before going into MozillaZipFile, extract metadata.
-        content = self.content.read()
-        archive = ZipFile(StringIO(content), 'r')
-        contained_files = set(archive.namelist())
-        manifest = self._extract_manifest(archive, contained_files)
-        header = self._extract_install_rdf(archive, contained_files)
+        parser = MozillaZipImportParser(self.basepath, StringIO(content))
+        if parser.header is None:
+            raise TranslationFormatInvalidInputError("No install.rdf found")
 
-        archive = None
-
-        parser = MozillaZipFile(self.basepath, content, manifest=manifest)
-
-        self._translation_file.header = header
+        self._translation_file.header = parser.header
         self._translation_file.messages = parser.messages
 
         return self._translation_file

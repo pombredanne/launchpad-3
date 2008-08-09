@@ -239,7 +239,8 @@ duplicate link remains in the current context.
 
     >>> getUtility(IOpenLaunchBag).add(bug_five_in_firefox)
 
-    >>> print bug_page_view.getDupeBugLink(bug_six)
+    >>> for dupe in bug_page_view.duplicates():
+    ...     print dupe['url']
     http://.../firefox/+bug/6
 
 Bug 2 is not reported in Firefox. Let's mark bug 2 as a dupe of bug 5,
@@ -251,8 +252,10 @@ and see how the returned link changes.
     >>> bug_page_view = getMultiAdapter(
     ...     (bug_five_in_firefox.bug, request), name="+portlet-duplicates")
 
-    >>> print bug_page_view.getDupeBugLink(bug_two)
+    >>> for dupe in bug_page_view.duplicates():
+    ...     print dupe['url']
     http://.../bugs/2
+    ...
 
 == Bug Navigation ==
 
@@ -421,6 +424,7 @@ and nominations. This table is rendered with the
     >>> bugtasks_and_nominations_view = getMultiAdapter(
     ...     (bug_one_bugtask.bug, request),
     ...     name="+bugtasks-and-nominations-table")
+    >>> bugtasks_and_nominations_view.initialize()
 
 The getBugTaskAndNominationViews method returns a list of views for
 bugtasks and nominations to render in the table, sorted by
@@ -498,6 +502,7 @@ Let's add another affected package in Ubuntu to the bug.
 
 A nomination row will be included for evolution now too.
 
+    >>> bugtasks_and_nominations_view.initialize()
     >>> task_and_nomination_views = (
     ...     bugtasks_and_nominations_view.getBugTaskAndNominationViews())
 
@@ -529,6 +534,7 @@ approve/decline nominations.)
     >>> hoary_nomination.approve(current_user)
     >>> warty_nomination.decline(current_user)
 
+    >>> bugtasks_and_nominations_view.initialize()
     >>> task_and_nomination_views = (
     ...     bugtasks_and_nominations_view.getBugTaskAndNominationViews())
 
@@ -677,8 +683,8 @@ should exist.
 Comments imported from the DebBugs bug tracker are not displayed in the
 user interface by default.
 
-A config option, malone.show_imported_comments, controls whether or not
-imported comments will be displayed. We can demonstrate these using the
+A config option, malone.comment_syncing_team, controls which team should
+be able to see imported comments. We can demonstrate these using the
 standard BugTaskView for bug 15, which has a debian bug watch and
 imported comments.
 
@@ -688,11 +694,14 @@ imported comments.
     >>> from canonical.launchpad.webapp.servers import (
     ...     LaunchpadTestRequest)
     >>> bug = getUtility(IBugSet).get(15)
+
+For anonymous users, the comments returned which have been imported from
+a bug watch will have a can_be_shown property of False.
+
+    >>> login(ANONYMOUS)
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
-
-By default, the comments returned which have been imported from a bug
-watch will have a can_be_shown property of False.
-
+    >>> print view.user
+    None
     >>> for comment in view.getBugCommentsForDisplay():
     ...     comment.can_be_shown
     False
@@ -702,17 +711,61 @@ watch will have a can_be_shown property of False.
     False
     False
 
-However, if we set the show_imported_comments config option to True, the
-imported comments for bug 4 will be displayable.
+The same is true for people not in the comment syncing team.
 
     >>> from canonical.config import config
+    >>> syncing_team = getUtility(IPersonSet).getByName(
+    ...     config.malone.comment_syncing_team)
+    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    >>> no_priv.inTeam(syncing_team)
+    False
+
+    >>> login('no-priv@canonical.com')
+    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
+    >>> view.user.name
+    u'no-priv'
+    >>> for comment in view.getBugCommentsForDisplay():
+    ...     comment.can_be_shown
+    False
+    False
+    False
+    False
+    False
+    False
+
+People in the team get to see the comments.
+
+    >>> login('foo.bar@canonical.com')
+    >>> syncing_team.addMember(no_priv, no_priv)
+
+    >>> login('no-priv@canonical.com')
+    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
+    >>> view.user.name
+    u'no-priv'
+    >>> for comment in view.getBugCommentsForDisplay():
+    ...     comment.can_be_shown
+    True
+    True
+    True
+    True
+    True
+    True
+
+However, if we set the comment_syncing_team config option to None, the
+imported comments for bug 15 will be displayable, even for anonymous
+users.
+
     >>> from textwrap import dedent
     >>> test_data = dedent("""
     ...     [malone]
-    ...     show_imported_comments: True
+    ...     comment_syncing_team: None
     ...     """)
     >>> config.push('test_data', test_data)
+
+    >>> login(ANONYMOUS)
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
+    >>> print view.user
+    None
     >>> for comment in view.getBugCommentsForDisplay():
     ...     comment.can_be_shown
     True

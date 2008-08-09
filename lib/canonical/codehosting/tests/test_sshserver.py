@@ -18,7 +18,8 @@ from twisted.python.util import sibpath
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.authserver.client.twistedclient import TwistedAuthServer
+from twisted.web.xmlrpc import Proxy
+
 from canonical.codehosting import sshserver
 from canonical.codehosting.tests.servers import AuthserverWithKeysInProcess
 from canonical.config import config
@@ -326,10 +327,10 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         self.authserver = AuthserverWithKeysInProcess(
             self.valid_login, 'testteam')
         self.authserver.setUp()
-        self.authserver_client = TwistedAuthServer(
+        authserver = Proxy(
             config.codehosting.authserver)
         self.checker = sshserver.PublicKeyFromLaunchpadChecker(
-            self.authserver_client)
+            authserver)
         self.public_key = self.authserver.getPublicKey()
         if not isinstance(self.public_key, str):
             self.public_key = self.public_key.blob()

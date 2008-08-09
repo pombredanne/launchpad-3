@@ -28,6 +28,8 @@ except ImportError:
 
 import pytz
 
+from storm.store import Store
+
 from zope.component import getUtility
 from zope.app.content_types import guess_content_type
 
@@ -183,7 +185,9 @@ class BugImporter:
 
         # Add the milestones to the development focus series of the product
         series = self.product.development_focus
-        return series.newMilestone(name)
+        milestone = series.newMilestone(name)
+        Store.of(milestone).flush()
+        return milestone
 
     def loadCache(self):
         """Load the Bug ID mapping and pending duplicates list from cache."""
@@ -323,8 +327,10 @@ class BugImporter:
 
         # set up bug task
         bugtask.datecreated = datecreated
-        bugtask.importance = get_enum_value(BugTaskImportance,
-                                            get_value(bugnode, 'importance'))
+        bugtask.transitionToImportance(
+            get_enum_value(BugTaskImportance,
+                           get_value(bugnode, 'importance')),
+            self.bug_importer)
         bugtask.transitionToStatus(
             get_enum_value(BugTaskStatus, get_value(bugnode, 'status')),
             self.bug_importer)

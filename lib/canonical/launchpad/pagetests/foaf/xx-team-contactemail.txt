@@ -25,6 +25,9 @@ As we can see, the landscape-developers team has no contact address.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0Each member individually']
 
+
+== External address ==
+
 Changing the contact address to an external address will require the
 user to go through the email address confirmation process.
 
@@ -73,6 +76,19 @@ Follow the token link, to confirm the new email address.
     ['\xa0Another e-mail address']
     >>> browser.getControl(name='field.contact_address').value
     'foo@example.com'
+
+The team's overview page has a portlet that lets you manage the team's contact
+addresses.
+
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.getLink('Manage Addresses').click()
+    >>> print browser.url
+    http://launchpad.dev/%7Elandscape-developers/+contactaddress
+    >>> print browser.title
+    Landscape Developers contact address
+
+
+== Hosted mailing list ==
 
 Now Landscape Developers can apply for a mailing list.
 
@@ -255,6 +271,12 @@ running.
     <Link text='Mailing list archive'
           url='http://lists.launchpad.dev/landscape-developers'>
 
+The team's overview page also displays the posting address.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'mailing-list-posting-address'))
+    landscape-developers@lists.launchpad.dev
+
 When the mailing list is constructed and made active, it can be used as
 the team's contact address.
 
@@ -369,6 +391,7 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> modify
         {'welcome_message': u'Welcome to the test team mailing list.'}
+    landscape-developers --> unsynchronized updating
 
     >>> browser.reload()
     >>> print mailing_list_status_message(browser.contents)
@@ -402,6 +425,7 @@ What if the change fails to propagate? The user will know of this too.
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> modify
         {'welcome_message': u'This change will fail to propagate.'}
+    landscape-developers --> unsynchronized updating
     >>> browser.reload()
     >>> print mailing_list_status_message(browser.contents)
     A change to this team's mailing list is currently being applied.
@@ -476,6 +500,7 @@ An inactive mailing list can be reactivated.
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> create
         {'welcome_message': u'This change will fail to propagate.'}
+    landscape-developers --> unsynchronized constructing
     >>> mailinglist_api.reportStatus({'landscape-developers':'success'})
     True
     >>> print_actions(mailinglist_api.getPendingActions())
@@ -496,6 +521,54 @@ Of course, the reactivated list still has a link to its archive.
     ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/landscape-developers
 
+The archive link is only available for public mailing lists as shown above,
+and for private mailing lists for team members.
+
+    >>> from canonical.launchpad.interfaces.person import PersonVisibility
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     new_team, new_list_for_team)
+    >>> login('foo.bar@canonical.com')
+    >>> bassists = new_team('bassists')
+    >>> bassists.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> bassists_list = new_list_for_team(bassists)
+    >>> logout()
+
+The owner of the list can see archive link.
+
+    >>> user_browser.open('http://launchpad.dev/~bassists')
+    >>> print extract_link_from_tag(
+    ...     find_tag_by_id(user_browser.contents, 'mailing-list-archive'))
+    http://lists.launchpad.dev/bassists
+
+Anonymous users cannot see the link.
+
+    >>> anon_browser.open('http://launchpad.dev/~bassists')
+    >>> print find_tag_by_id(anon_browser.contents, 'mailing-list-archive')
+    None
+
+Normal users who are not team members cannot see the link.
+
+    >>> browser.open('http://launchpad.dev/~bassists')
+    >>> print find_tag_by_id(browser.contents, 'mailing-list-archive')
+    None
+
+Members who are not owners can see the link.
+
+    >>> salgado_browser = setupBrowser(
+    ...     auth='Basic guilherme.salgado@canonical.com:zeca')
+    >>> salgado_browser.open('http://launchpad.dev/~bassists')
+    >>> print find_tag_by_id(salgado_browser.contents, 'mailing-list-archive')
+    None
+
+    >>> admin_browser.open('http://launchpad.dev/~bassists/+addmember')
+    >>> admin_browser.getControl('New member').value = 'salgado'
+    >>> admin_browser.getControl('Add Member').click()
+
+    >>> salgado_browser.open('http://launchpad.dev/~bassists')
+    >>> print extract_link_from_tag(
+    ...     find_tag_by_id(salgado_browser.contents, 'mailing-list-archive'))
+    http://lists.launchpad.dev/bassists
+
 
 == Changing from a hosted ML to an external address ==
 
@@ -510,6 +583,7 @@ address.
     >>> email_set.getByEmail(mailing_list.address)
     <EmailAddress at...
 
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()

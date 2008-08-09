@@ -128,6 +128,7 @@ directly, let's add a grumpy task first.
     ...     target=ubuntu_grumpy, owner=getUtility(ILaunchBag).user)
     >>> nomination.isApproved()
     True
+    >>> transaction.commit()
 
     >>> ubuntu_grumpy_task = bug_two.bugtasks[5]
     >>> ubuntu_grumpy_task.bugtargetdisplayname
@@ -214,7 +215,8 @@ link temporarily:
 
 Now we simulate that the bug watch got updated:
 
-    >>> bugzilla_watch.remotestatus = 'RESOLVED FIXED'
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(bugzilla_watch).remotestatus = 'RESOLVED FIXED'
 
 If we now link the bugtask to the bug watch, the bugtask's status will
 be set to Unknown:

@@ -128,11 +128,12 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
 
     def setUp(self):
         # Create a revision author that doesn't have a user yet.
+        launchpad_dbuser = config.launchpad.dbuser
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.author = RevisionSet()._createRevisionAuthor(
             '"Harry Potter" <harry@canonical.com>')
         transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+        LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
         # Reget the revision author as we have crossed a transaction boundary.
         self.author = RevisionAuthor.byName(self.author.name)
 

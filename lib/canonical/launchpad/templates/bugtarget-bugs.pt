@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/defaultnomenu"
+  metal:use-macro="view/macro:page/default2.0"
   i18n:domain="malone"
 >
   <metal:block fill-slot="head_epilogue">
@@ -28,6 +28,9 @@
       <metal:search
         use-macro="context/@@+bugtarget-macros-search/simple-search-form"
       />
+      <script type="text/javascript"><!--
+           $('field.searchtext').focus();
+      --></script>
 
       <div class="columns">
           <script type="text/javascript"
@@ -107,6 +110,10 @@
             </tbody>
           </table>
           <ul class="cross-reference">
+            <li id="bugtracker">
+              <strong>Bug tracker:</strong>
+              <tal:bugtracker replace="structure view/bugtracker" />
+            </li>
             <li tal:define="fixed_elsewhere view/bugs_fixed_elsewhere_info">
               <a tal:attributes="href fixed_elsewhere/url">
                 <strong tal:content="fixed_elsewhere/count">42</strong>
@@ -161,6 +168,10 @@
             </tal:review-nominations>
             <li style="font-weight: bold;">
               <a href="+bugs">List all open bugs</a>
+            </li>
+            <li>
+              <tal:subscribe define="link context/menu:bugs/subscribe"
+                             replace="structure link/render" />
             </li>
           </ul>
           <ul class="rollover buttons">

@@ -3,7 +3,7 @@
 """Trac ExternalBugTracker implementation."""
 
 __metaclass__ = type
-__all__ = ['Trac', 'TracLPPlugin', 'TracXMLRPCTransport']
+__all__ = ['Trac', 'TracLPPlugin']
 
 import csv
 import pytz
@@ -18,12 +18,15 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, ExternalBugTracker, InvalidBugId,
+    BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
     UnknownRemoteStatusError, UnparseableBugData)
+from canonical.launchpad.components.externalbugtracker.xmlrpc import (
+    UrlLib2Transport)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, IMessageSet,
     ISupportsCommentImport, ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -232,26 +235,21 @@ class Trac(ExternalBugTracker):
         """
         return BugTaskImportance.UNKNOWN
 
+    _status_lookup_titles = 'Trac status',
+    _status_lookup = LookupTree(
+        ('new', 'open', 'reopened', BugTaskStatus.NEW),
+        # XXX, 2007-08-06 Graham Binns:
+        #      We should follow dupes if possible.
+        ('accepted', 'assigned', 'duplicate', BugTaskStatus.CONFIRMED),
+        ('fixed', 'closed', BugTaskStatus.FIXRELEASED),
+        ('invalid', 'worksforme', BugTaskStatus.INVALID),
+        ('wontfix', BugTaskStatus.WONTFIX),
+        )
+
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`"""
-        status_map = {
-            'accepted': BugTaskStatus.CONFIRMED,
-            'assigned': BugTaskStatus.CONFIRMED,
-            # XXX: 2007-08-06 Graham Binns:
-            #      We should follow dupes if possible.
-            'duplicate': BugTaskStatus.CONFIRMED,
-            'fixed': BugTaskStatus.FIXRELEASED,
-            'closed': BugTaskStatus.FIXRELEASED,
-            'invalid': BugTaskStatus.INVALID,
-            'new': BugTaskStatus.NEW,
-            'open': BugTaskStatus.NEW,
-            'reopened': BugTaskStatus.NEW,
-            'wontfix': BugTaskStatus.WONTFIX,
-            'worksforme': BugTaskStatus.INVALID,
-        }
-
         try:
-            return status_map[remote_status]
+            return self._status_lookup.find(remote_status)
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)
 
@@ -284,7 +282,7 @@ class TracLPPlugin(Trac):
         super(TracLPPlugin, self).__init__(baseurl)
 
         if xmlrpc_transport is None:
-            xmlrpc_transport = TracXMLRPCTransport()
+            xmlrpc_transport = UrlLib2Transport(baseurl)
         self.xmlrpc_transport = xmlrpc_transport
         self.internal_xmlrpc_transport = internal_xmlrpc_transport
 
@@ -326,7 +324,7 @@ class TracLPPlugin(Trac):
         auth_url = urlappend(base_auth_url, token_text)
         response = self.urlopen(auth_url)
         auth_cookie = self._extractAuthCookie(response.headers['Set-Cookie'])
-        self.xmlrpc_transport.auth_cookie = auth_cookie
+        self.xmlrpc_transport.setCookie(auth_cookie)
 
     @needs_authentication
     def getCurrentDBTime(self):
@@ -399,12 +397,18 @@ class TracLPPlugin(Trac):
 
         display_name, email = parseaddr(comment['user'])
 
-        # If the name is empty then we return None so that
-        # IPersonSet.ensurePerson() can actually do something with it.
-        if not display_name:
-            display_name = None
-
-        return (display_name, email)
+        # If the email isn't valid, return the email address as the
+        # display name (a Launchpad Person will be created with this
+        # name).
+        if not valid_email(email):
+            return email, None
+        # If the display name is empty, set it to None so that it's
+        # useable by IPersonSet.ensurePerson().
+        elif display_name == '':
+            return None, email
+        # Both displayname and email are valid, return both.
+        else:
+            return display_name, email
 
     def getMessageForComment(self, bug_watch, comment_id, poster):
         """See `ISupportsCommentImport`."""
@@ -430,18 +434,3 @@ class TracLPPlugin(Trac):
             remote_bug, comment_body)
 
         return comment_id
-
-
-class TracXMLRPCTransport(xmlrpclib.Transport):
-    """XML-RPC Transport for Trac bug trackers.
-
-    It sends a cookie header as authentication.
-    """
-
-    auth_cookie = None
-
-    def send_host(self, connection, host):
-        """Send the host and cookie headers."""
-        xmlrpclib.Transport.send_host(self, connection, host)
-        if self.auth_cookie is not None:
-            connection.putheader('Cookie', self.auth_cookie)

@@ -7,7 +7,7 @@ been validated, we show a message and point the user to the forgotten
 password page.
 
     >>> browser.open('http://launchpad.dev/')
-    >>> browser.getLink('Log In / Register').click()
+    >>> browser.getLink('Log in / Register').click()
 
     >>> browser.getControl('E-mail address:', index=1).value = (
     ...     'test@canonical.com')
@@ -27,9 +27,8 @@ on with the registration process.
     >>> browser.getControl('E-mail address:', index=1).value = 'mpo@iki.fi'
     >>> browser.getControl('Register').click()
 
-    >>> print find_tag_by_id(browser.contents, 'nonhelp')
-    <...
-    ...Instructions on completing your registration have been sent to...
+    >>> print extract_text(find_tag_by_id(browser.contents, 'address'))
+    Instructions on completing your registration have been sent to...
 
     >>> from canonical.launchpad.mail import stub
     >>> from canonical.launchpad.ftests.logintoken import (
@@ -68,14 +67,13 @@ this.
 
     (To see spiv's email we must be logged in, so we'll use user_browser)
     >>> user_browser.open('http://launchpad.dev/~spiv')
-    >>> print find_portlet(user_browser.contents, 'Confirmed e-mail addresses')
-    <...
-    ...Confirmed e-mail addresses...
-    ...andrew.bennetts@ubuntulinux.com...
-    ...
+    >>> unregistered_user_info = find_tag_by_id(
+    ...     user_browser.contents, 'not-lp-user-or-team')
+    >>> unregistered_user_info.li.renderContents()
+    '...andrew.bennetts@ubuntulinux.com...'
 
     >>> anon_browser.open('http://launchpad.dev/')
-    >>> anon_browser.getLink('Log In / Register').click()
+    >>> anon_browser.getLink('Log in / Register').click()
 
     >>> anon_browser.getControl('E-mail address:', index=1).value = (
     ...     'andrew.bennetts@ubuntulinux.com')

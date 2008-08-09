@@ -1,7 +1,11 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
+"""The database implementation class for CodeReviewComment."""
+
 __metaclass__ = type
-__all__ = ['CodeReviewComment']
+__all__ = [
+    'CodeReviewComment',
+    ]
 
 from zope.interface import implements
 
@@ -12,13 +16,16 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeReviewVote,
     ICodeReviewComment,
+    ICodeReviewCommentDeletion,
     )
+from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 
 
 class CodeReviewComment(SQLBase):
     """A table linking branch merge proposals and messages."""
 
-    implements(ICodeReviewComment)
+    implements(IBranchNavigationMenu, ICodeReviewComment,
+        ICodeReviewCommentDeletion)
 
     _table = 'CodeReviewMessage'
 
@@ -26,8 +33,9 @@ class CodeReviewComment(SQLBase):
         dbName='branch_merge_proposal', foreignKey='BranchMergeProposal',
         notNull=True)
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
-    vote = EnumCol(dbName='vote', notNull=True, schema=CodeReviewVote)
+    vote = EnumCol(dbName='vote', notNull=False, schema=CodeReviewVote)
     vote_tag = StringCol(default=None)
+
     @property
     def title(self):
         return ('Comment on proposed merge of %(source)s into %(target)s' %

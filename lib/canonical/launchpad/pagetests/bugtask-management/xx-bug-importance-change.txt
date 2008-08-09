@@ -19,9 +19,9 @@ users - only bug watches use it.
 Only the bug supervisor, or a user with launchpd.Edit on the respective
 product or distro, can edit Importance.
 
+    >>> import transaction
     >>> from zope.component import getUtility
 
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IProductSet, IDistributionSet)
@@ -35,9 +35,11 @@ product or distro, can edit Importance.
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> logout()
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> def user_sees_importance_widget(user, url):
     ...     browser = setupBrowser(
-    ...         "Basic %s:test" % user.preferredemail.email)
+    ...         "Basic %s:test"
+    ...         % removeSecurityProxy(user.preferredemail).email)
     ...     browser.open(url)
     ...     try:
     ...         browser.getControl("Importance")
@@ -50,8 +52,8 @@ For a product bug supervisor.
 
     >>> login("foo.bar@canonical.com")
     >>> firefox.setBugSupervisor(no_priv, no_priv)
-    >>> flush_database_updates()
     >>> logout()
+    >>> transaction.commit()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
@@ -77,8 +79,8 @@ he can no longer see the widget.
 
     >>> login("foo.bar@canonical.com")
     >>> firefox.setBugSupervisor(None, None)
-    >>> flush_database_updates()
     >>> logout()
+    >>> transaction.commit()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
@@ -89,8 +91,8 @@ For a distribution bug supervisor.
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu.setBugSupervisor(no_priv, no_priv)
-    >>> flush_database_updates()
     >>> logout()
+    >>> transaction.commit()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
@@ -115,8 +117,8 @@ For someone else, on Ubuntu.
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu.setBugSupervisor(None, None)
-    >>> flush_database_updates()
     >>> logout()
+    >>> transaction.commit()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,

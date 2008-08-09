@@ -289,15 +289,15 @@ class XMLRPCHostedBranchStorage(XMLRPCAuthServerTestCase):
         #
         # The 'evolution' project has a default stacked branch in the sample
         # data.
-        branch = self.server.getDefaultStackedOnBranch('evolution')
-        self.assertEqual('~vcs-imports/evolution/main', branch)
+        branch = self.server.getDefaultStackedOnBranch(12, 'evolution')
+        self.assertEqual('/~vcs-imports/evolution/main', branch)
 
     def test_getDefaultStackedOnBranchWhenEmpty(self):
         # If there is no default stacked-on branch, we'll get an empty string.
-        branch = self.server.getDefaultStackedOnBranch('+junk')
+        branch = self.server.getDefaultStackedOnBranch(12, '+junk')
         self.assertEqual('', branch)
         # The 'gnome-terminal' project has no default stacked branch.
-        branch = self.server.getDefaultStackedOnBranch('gnome-terminal')
+        branch = self.server.getDefaultStackedOnBranch(12, 'gnome-terminal')
         self.assertEqual('', branch)
 
 
@@ -308,11 +308,7 @@ class BranchAPITestCase(XMLRPCAuthServerTestCase):
 
     def testGetBranchPullQueue(self):
         results = self.server.getBranchPullQueue(BranchType.MIRRORED.name)
-        # Check whether one of the expected branches is in the results:
-        self.assertTrue(
-            [15, 'http://example.com/gnome-terminal/main',
-             u'name12/gnome-terminal/main']
-            in results)
+        self.assertEqual([], results)
 
     def testStartMirroring(self):
         self.server.startMirroring(18)

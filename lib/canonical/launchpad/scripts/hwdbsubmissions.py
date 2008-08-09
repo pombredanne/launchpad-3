@@ -15,7 +15,6 @@ from datetime import datetime, timedelta
 from logging import getLogger
 import os
 import re
-from tempfile import NamedTemporaryFile
 
 try:
     import xml.elementtree.cElementTree as etree
@@ -27,8 +26,9 @@ except ImportError:
 
 import pytz
 
+from canonical.lazr.xml import RelaxNGValidator
+
 from canonical.config import config
-from canonical.launchpad.helpers import simple_popen2
 from canonical.launchpad.interfaces.hwdb import HWBus
 
 _relax_ng_files = {
@@ -58,71 +58,20 @@ PCI_SUBCLASS_BRIDGE_CARDBUS = 7
 PCI_CLASS_SERIALBUS_CONTROLLER = 12
 PCI_SUBCLASS_SERIALBUS_USB = 3
 
-class RelaxNGValidator:
-    """A validator for Relax NG schemas."""
+WARNING_NO_HAL_KERNEL_VERSION = 1
+WARNING_NO_KERNEL_PACKAGE_DATA = 2
 
-    def __init__(self, relax_ng_filename):
-        """Create a validator instance.
+DB_FORMAT_FOR_VENDOR_ID = {
+    'pci': '0x%04x',
+    'usb_device': '0x%04x',
+    'scsi': '%-8s',
+    }
 
-        :param relax_ng_filename: The name of a file containing the schema.
-        """
-        self.relax_ng_filename = relax_ng_filename
-        self._errors = ''
-
-    def validate(self, xml):
-        """Validate the string xml
-
-        :return: True, if xml is valid, else False.
-        """
-        # XXX Abel Deuring, 2008-03-20
-        # The original implementation of the validation used the lxml
-        # package. Unfortunately, running lxml's Relax NG validator
-        # caused segfaults during PQM test runs, hence this class uses
-        # an external validator.
-
-        # Performance penalty of the external validator:
-        # Using the lxml validator, the tests in this module need ca.
-        # 3 seconds on a 2GHz Core2Duo laptop.
-        # If the xml data to be validated is passed to xmllint via
-        # canonical.launchpad.helpers.simple_popen2, the run time
-        # of the tests is 38..40 seconds; if the validation input
-        # is not passed via stdin but saved in a temporary file,
-        # the tests need 28..30 seconds.
-
-        xml_file = NamedTemporaryFile()
-        xml_file.write(xml)
-        xml_file.flush()
-        command = 'xmllint -noout -relaxng %s %s'% (self.relax_ng_filename,
-                                                    xml_file.name)
-        result = simple_popen2(command, '').strip()
-
-        # The output consists of lines describing possible errors; the
-        # last line is either "(file) fails to validate" or
-        # "(file) validates".
-        parts = result.rsplit('\n', 1)
-        if len(parts) > 1:
-            self._errors = parts[0]
-            status = parts[1]
-        else:
-            self._errors = ''
-            status = parts[0]
-        if status == xml_file.name + ' fails to validate':
-            return False
-        elif status == xml_file.name + ' validates':
-            return True
-        else:
-            raise AssertionError(
-                'Unexpected result of running xmllint: %s' % result)
-
-    @property
-    def error_log(self):
-        """A string with the errors detected by the validator.
-
-        Each line contains one error; if the validation was successful,
-        error_log is the empty string.
-        """
-        return self._errors
-
+DB_FORMAT_FOR_PRODUCT_ID = {
+    'pci': '0x%04x',
+    'usb_device': '0x%04x',
+    'scsi': '%-16s',
+    }
 
 class SubmissionParser:
     """A Parser for the submissions to the hardware database."""
@@ -132,6 +81,7 @@ class SubmissionParser:
             logger = getLogger()
         self.logger = logger
         self.doc_parser = etree.XMLParser()
+        self._logged_warnings = set()
 
         self.validator = {}
         directory = os.path.join(config.root, 'lib', 'canonical',
@@ -148,10 +98,18 @@ class SubmissionParser:
         self.logger.error(
             'Parsing submission %s: %s' % (submission_key, message))
 
-    def _logWarning(self, message, submission_key):
+    def _logWarning(self, message, warning_id=None):
         """Log `message` for a warning in submission submission_key`."""
-        self.logger.warning(
-            'Parsing submission %s: %s' % (submission_key, message))
+        if warning_id is None:
+            issue_warning = True
+        elif warning_id not in self._logged_warnings:
+            issue_warning = True
+            self._logged_warnings.add(warning_id)
+        else:
+            issue_warning = False
+        if issue_warning:
+            self.logger.warning(
+                'Parsing submission %s: %s' % (self.submission_key, message))
 
     def _getValidatedEtree(self, submission, submission_key):
         """Create an etree doc from the XML string submission and validate it.
@@ -955,6 +913,30 @@ class SubmissionParser:
             if parent_udi is not None:
                 hal_devices[parent_udi].addChild(device)
 
+    def getKernelPackageName(self):
+        """Return the kernel package name of the submission,"""
+        root_hal_device = self.hal_devices[ROOT_UDI]
+        kernel_version = root_hal_device.getProperty('system.kernel.version')
+        if kernel_version is None:
+            self._logWarning(
+                'Submission does not provide property system.kernel.version '
+                'for /org/freedesktop/Hal/devices/computer.',
+                WARNING_NO_HAL_KERNEL_VERSION)
+            return None
+        kernel_package_name = 'linux-image-' + kernel_version
+        if 'packages' not in self.parsed_data['software']:
+            # The RelaxNG schema does not require package data.
+            return None
+        packages = self.parsed_data['software']['packages']
+        if kernel_package_name not in packages:
+            self._logWarning(
+                'Inconsistent kernel version data: According to HAL the '
+                'kernel is %s, but the submission does not know about a '
+                'kernel package %s' % (kernel_version, kernel_package_name),
+                WARNING_NO_HAL_KERNEL_VERSION)
+            return None
+        return kernel_package_name
+
 
 class HALDevice:
     """The representation of a HAL device node."""
@@ -1056,10 +1038,12 @@ class HALDevice:
                 # This is not a storage class PCI device? This
                 # indicates a bug somewhere in HAL or in the hwdb
                 # client, or a fake submission.
-                self.parser.logWarning(
+                device_class = grandparent.getProperty('pci.device_class')
+                self.parser._logWarning(
                     'A (possibly fake) SCSI device %s is connected to '
                     'PCI device %s that has the PCI device class %s; '
-                    'expected class 1.')
+                    'expected class 1 (storage).'
+                    % (self.udi, grandparent.udi, device_class))
                 return None
             pci_subclass = grandparent.getProperty('pci.device_subclass')
             return self.pci_storage_subclass_hwbus.get(pci_subclass)
@@ -1141,15 +1125,15 @@ class HALDevice:
             return self.translateScsiBus()
         elif device_bus == 'pci':
             return self.translatePciBus()
-        elif self.udi == '/org/freedesktop/Hal/devices/computer':
-            # The computer itself. HAL gives it the info.bus property,
-            # 'unknown', hence it is better to rely on the machine's
-            # UDI for identification.
+        elif self.udi == ROOT_UDI:
+            # The computer itself. In Hardy, HAL provides no info.bus
+            # for the machine itself; older versions set info.bus to
+            # 'unknown', hence it is better to use the machine's
+            # UDI.
             return HWBus.SYSTEM
         else:
             self.parser._logWarning(
-                'Unknown bus %r for device %s' % (device_bus, self.udi),
-                self.parser.submission_key)
+                'Unknown bus %r for device %s' % (device_bus, self.udi))
             return None
 
     @property
@@ -1233,7 +1217,7 @@ class HALDevice:
           parent and by their USB vendor/product IDs, which are 0:0.
         """
         bus = self.getProperty('info.bus')
-        if bus in (None, 'platform', 'pnp', 'usb'):
+        if bus in (None, 'usb'):
             # bus is None for a number of "virtual components", like
             # /org/freedesktop/Hal/devices/computer_alsa_timer or
             # /org/freedesktop/Hal/devices/computer_oss_sequencer, so
@@ -1245,18 +1229,12 @@ class HALDevice:
             # Since these components are not the most important ones
             # for the HWDB, we'll ignore them for now. Bug 237038.
             #
-            # info.bus == 'platform' is used for devices like the i8042
-            # which controls keyboard and mouse; HAL has no vendor
-            # information for these devices, so there is no point to
-            # treat them as real devices.
-            #
-            # info.bus == 'pnp' is used for components like the ancient
-            # AT DMA controller or the keyboard. Like for the bus
-            # 'platform', HAL does not provide any vendor data.
-            #
             # info.bus == 'usb' is used for end points of USB devices;
             # the root node of a USB device has info.bus == 'usb_device'.
-            return False
+            #
+            # The computer itself is the only HAL device without the
+            # info.bus property that we treat as a real device.
+            return self.udi == ROOT_UDI
         elif bus == 'usb_device':
             vendor_id = self.getProperty('usb_device.vendor_id')
             product_id = self.getProperty('usb_device.product_id')
@@ -1277,8 +1255,7 @@ class HALDevice:
                     self.parser._logWarning(
                         'USB device found with vendor ID==0, product ID==0, '
                         'where the parent device does not look like a USB '
-                        'host controller: %s' % self.udi,
-                        self.parser.submission_key)
+                        'host controller: %s' % self.udi)
                     return False
             return True
         elif bus == 'scsi':
@@ -1314,3 +1291,177 @@ class HALDevice:
             else:
                 result.extend(sub_device.getRealChildren())
         return result
+
+    @property
+    def has_reliable_data(self):
+        """Can this device be stored in the HWDB?
+
+        Devices are identifed by (bus, vendor_id, product_id).
+        At present we cannot generate reliable vendor and/or product
+        IDs for devices where
+        info.bus in ('pnp', 'platform', 'ieee1394', 'pcmcia').
+
+        info.bus == 'platform' is used for devices like the i8042
+        which controls keyboard and mouse; HAL has no vendor
+        information for these devices, so there is no point to
+        treat them as real devices.
+
+        info.bus == 'pnp' is used for components like the ancient
+        AT DMA controller or the keyboard. Like for the bus
+        'platform', HAL does not provide any vendor data.
+
+        XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
+        nasty: The standard does not define any specification
+        for product IDs or product names, hence HAL often uses
+        the value 0 for the property ieee1394.product_id and a
+        value like "Unknown (0x00d04b)" for ieee.product, where
+        0x00d04b is the vendor ID. I have currently no idea how
+        to find or generate something that could be used as the
+        product ID, so IEEE1394 devices are at present simply
+        not stored in the HWDB. Otherwise, we'd pollute the HWDB
+        with unreliable data. Bug #237044.
+
+        While PCMCIA devices have a manufacturer ID, at least its
+        value as provided by HAL in pcmcia.manf_id it is not very
+        reliable. The HAL property pcmcia.prod_id1 is too not
+        reliable. Sometimes it contains a useful vendor name like
+        "O2Micro" or "ATMEL", but sometimes useless values like
+        "IEEE 802.11b". See for example
+        drivers/net/wireless/atmel_cs.c in the Linux kernel sources.
+        """
+        bus = self.getProperty('info.bus')
+        return bus not in ('pnp', 'platform', 'ieee1394', 'pcmcia')
+
+    def getVendorOrProduct(self, type_):
+        """Return the vendor or product of this device.
+
+        :return: The vendor or product data for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        # HAL does not store vendor data very consistently. Try to find
+        # the data in several places.
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+
+        bus = self.getProperty('info.bus')
+        if self.udi == ROOT_UDI:
+            # HAL sets info.product to "Computer", provides no property
+            # info.vendor and info.bus is "unknown", hence the logic
+            # below does not work properly.
+            return self.getProperty('system.hardware.' + type_)
+        elif bus == 'scsi':
+            if type_ == 'vendor':
+                result = self.getProperty('scsi.vendor').strip()
+                if result == 'ATA':
+                    # A weirdness of the kernel's SCSI emulation layer
+                    # for the IDE and SATA busses: The HAL property
+                    # scsi.vendor is always 'ATA', and the vendor name
+                    # is stored as the first part of the SCSI model
+                    # string.
+                    #
+                    # The assumption below that the vendor name does not
+                    # contain any spaces is not necessarily correct, but
+                    # it is hard to find a better heuristic to separate
+                    # the vendor name from the product name.
+                    return self.getProperty('scsi.model').split(' ', 1)[0]
+                return result
+            else:
+                # What is called elsewhere "product", is called "model"
+                # for the SCSI bus.
+                result = self.getProperty('scsi.model').strip()
+                if self.getProperty('scsi.vendor') == 'ATA':
+                    return result.split(' ', 1)[1]
+                return result
+        else:
+            result = self.getProperty('info.' + type_)
+            if result is None:
+                if bus is None:
+                    return None
+                else:
+                    return self.getProperty('%s.%s' % (bus, type_))
+            else:
+                return result
+
+    @property
+    def vendor(self):
+        """The vendor of this device."""
+        return self.getVendorOrProduct('vendor')
+
+
+    @property
+    def product(self):
+        """The vendor of this device."""
+        return self.getVendorOrProduct('product')
+
+
+    def getVendorOrProductID(self, type_):
+        """Return the vendor or product ID for this device.
+
+        :return: The vendor or product ID for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+        bus = self.getProperty('info.bus')
+        if self.udi == ROOT_UDI:
+            # HAL does not provide IDs for a system itself, we use the
+            # vendor resp. product name instead.
+            return self.getVendorOrProduct(type_)
+        elif bus is None:
+            return None
+        elif bus == 'scsi' or self.udi == ROOT_UDI:
+            # The SCSI specification does not distinguish between a
+            # vendor/model ID and vendor/model name: the SCSI INQUIRY
+            # command returns an 8 byte string as the vendor name and
+            # a 16 byte string as the model name. We use these strings
+            # as the vendor/product name as well as the vendor/product
+            # ID.
+            #
+            # Similary, HAL does not provide a vendor or product ID
+            # for the host system itself, so we use the vendor resp.
+            # product name as the vendor/product ID for systems too.
+            return self.getVendorOrProduct(type_)
+        else:
+            return self.getProperty('%s.%s_id' % (bus, type_))
+
+    @property
+    def vendor_id(self):
+        """The vendor ID of this device."""
+        return self.getVendorOrProductID('vendor')
+
+    @property
+    def product_id(self):
+        """The product ID of this device."""
+        return self.getVendorOrProductID('product')
+
+    @property
+    def vendor_id_for_db(self):
+        """The vendor ID in the representation needed for the HWDB tables.
+
+        USB and PCI IDs are represented in the database in hexadecimal,
+        while the IDs provided by HAL are integers.
+
+        The SCSI vendor name is right-padded with spaces to 8 bytes.
+        """
+        bus = self.getProperty('info.bus')
+        format = DB_FORMAT_FOR_VENDOR_ID.get(bus)
+        if format is None:
+            return self.vendor_id
+        else:
+            return format % self.vendor_id
+
+    @property
+    def product_id_for_db(self):
+        """The product ID in the representation needed for the HWDB tables.
+
+        USB and PCI IDs are represented in the database in hexadecimal,
+        while the IDs provided by HAL are integers.
+
+        The SCSI product name is right-padded with spaces to 16 bytes.
+        """
+        bus = self.getProperty('info.bus')
+        format = DB_FORMAT_FOR_PRODUCT_ID.get(bus)
+        if format is None:
+            return self.product_id
+        else:
+            return format % self.product_id

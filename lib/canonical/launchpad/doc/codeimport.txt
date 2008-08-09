@@ -88,10 +88,12 @@ three members of the vcs-imports team.
     >>> message = email.message_from_string(stub.test_emails[0][2])
     >>> print message['subject']
     New code import: firefox/trunk-cvs
+    >>> print message['X-Launchpad-Message-Rationale']
+    Operator @vcs-imports
     >>> print message.get_payload()
     A new code import has been requested by No Privileges Person:
         http://code.launchpad.dev/~vcs-imports/firefox/trunk-cvs
-    --
+    -- =
     You are getting this email because you are a member of the vcs-imports team.
 
 Creating a CodeImport object creates a corresponding CodeImportEvent.
@@ -188,7 +190,8 @@ This CodeImport is associated to the evolution/main ProductSeries
 
 Members of the VCS Imports team (import operators), or Launchpad
 administrators can update the review status of code imports.  This is
-done using the code import methods: approve; suspend; and invalidate.
+done using the code import methods: approve; suspend; invalidate and
+markFailing.
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
@@ -219,21 +222,11 @@ created if done through the web UI, so we'll add nopriv here.
     >>> code_import.approve({}, nopriv)
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
-    To: david.allouche@canonical.com, foo.bar@canonical.com,
-        robertc@robertcollins.net
-    Subject: Code import product.../name... status: Reviewed
-    <BLANKLINE>
-    The import has been approved and an import will start shortly.
-    --
-    http://code.launchpad.dev/~vcs-imports/product.../name...
-    You are getting this email because you are a member of the vcs-imports team.
-    ----------------------------------------
-    From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
     Subject: Code import product.../name... status: Reviewed
     <BLANKLINE>
     The import has been approved and an import will start shortly.
-    --
+    -- =
     http://code.launchpad.dev/~vcs-imports/product.../name...
     You are receiving this email as you are subscribed to the branch.
     To unsubscribe from this branch go to http://code.launchpad.dev/~vcs-import=
@@ -246,30 +239,32 @@ invalidated.
     >>> code_import.suspend({}, nopriv)
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
-    To: david.allouche@canonical.com, foo.bar@canonical.com,
-        robertc@robertcollins.net
+    To: no-priv@canonical.com
     Subject: Code import product.../name... status: Suspended
     <BLANKLINE>
     The import has been suspended.
     ...
     ----------------------------------------
-    ...
-    To: no-priv@canonical.com
-    ...
 
     >>> code_import.invalidate({}, nopriv)
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
-    To: david.allouche@canonical.com, foo.bar@canonical.com,
-        robertc@robertcollins.net
-    Subject: Code import product-name6/name11 status: Invalid
+    To: no-priv@canonical.com
+    Subject: Code import product.../name... status: Invalid
     <BLANKLINE>
     The import has been marked as invalid.
     ...
     ----------------------------------------
-    ...
+
+    >>> code_import.markFailing({}, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
+    Subject: Code import product.../name... status: Failing
+    <BLANKLINE>
+    The import has been marked as failing.
     ...
+    ----------------------------------------
 
 
 == Update intervals ==
@@ -370,12 +365,13 @@ site:
     http://code.launchpad.dev/+code-imports
 
 The code imports themselves are viewed under the branch's URL,
-however.
+and are not traversable in themselves.
 
     >>> print canonical_url(svn_import.branch)
     http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn
     >>> print canonical_url(svn_import)
-    http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn/+code-import
+    Traceback (most recent call last):
+    NoCanonicalUrl: ...
 
 
 == Modifying CodeImports ==

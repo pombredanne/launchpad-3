@@ -129,9 +129,8 @@ associated with that milestone for products of this project:
 A project milestone page has the same navigation as the project:
 
     >>> anon_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> print_navigation(anon_browser.contents)
+    >>> print_location(anon_browser.contents)
     Location: Mozilla Firefox
-    Structural title: Mozilla Firefox
     Tabs:
     * Overview (http://launchpad.dev/firefox)
     * Code (http://code.launchpad.dev/firefox)
@@ -145,9 +144,8 @@ Similarly, a distribution milestone page has the same navigation as
 the distribution:
 
     >>> anon_browser.open('http://launchpad.dev/debian/+milestone/3.1')
-    >>> print_navigation(anon_browser.contents)
+    >>> print_location(anon_browser.contents)
     Location: Debian
-    Structural title: Debian GNU/Linux
     Tabs:
     * Overview (http://launchpad.dev/debian)
     * Code (Not active)
@@ -193,13 +191,13 @@ To make it easy to refer to the bugs, we'll give each bug a nickname:
 
     >>> bug_1_nickname = 'test-bug-1'
     >>> browser.open(bug_1_url)
-    >>> browser.getLink('Edit description/tags').click()
+    >>> browser.getLink('Update description / tags').click()
     >>> browser.getControl('Nickname').value = bug_1_nickname
     >>> browser.getControl('Change').click()
 
     >>> bug_2_nickname = 'test-bug-2'
     >>> browser.open(bug_2_url)
-    >>> browser.getLink('Edit description/tags').click()
+    >>> browser.getLink('Update description / tags').click()
     >>> browser.getControl('Nickname').value = bug_2_nickname
     >>> browser.getControl('Change').click()
 
@@ -208,19 +206,19 @@ Next, we'll target each bug to the 1.0 milestone:
     >>> milestone = '1.0'
 
     >>> browser.open(bug_1_url)
-    >>> browser.getLink('[edit]').click()
+    >>> browser.getLink(url=bug_1_url + '/+editstatus').click()
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Save Changes').click()
 
     >>> browser.open(bug_2_url)
-    >>> browser.getLink('[edit]').click()
+    >>> browser.getLink(url=bug_2_url + '/+editstatus').click()
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Save Changes').click()
 
 Observe that both bugs are listed in the 1.0 milestone listing:
 
     >>> browser.open('http://launchpad.dev/firefox')
-    >>> browser.getLink('See all milestones').click()
+    >>> browser.getLink('Milestone history').click()
     >>> browser.getLink(milestone).click()
     >>> print browser.title
     Milestone 1.0 for Mozilla Firefox...
@@ -242,7 +240,8 @@ Now we'll mark the second bug as a duplicate of the first:
     >>> browser.getControl('Duplicate').value = bug_1_nickname
     >>> browser.getControl('Change').click()
     >>> print extract_text(find_main_content(browser.contents))
-    Bug...This report is a duplicate...
+    Reported...
+    This report is a duplicate...
 
 Since duplicate bugs are not listed in milestone listings, only our first bug
 is listed in the 1.0 milestone listing:
@@ -405,10 +404,7 @@ Ordinarily, targeting a bug to a milestone causes the bug to appear in that
 milestone's bug listing:
 
     >>> browser.open(bug_2_url)
-    >>> browser.getLink('[edit]').click()
-    >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/.../+editstatus
-
+    >>> browser.getLink(url=bug_2_url + '/+editstatus').click()
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Save Changes').click()
 

@@ -5,13 +5,11 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
-    'BranchWithSortKeys',
     'DEFAULT_BRANCH_LISTING_SORT',
     ]
 
 from datetime import datetime
 import re
-import os
 
 import pytz
 
@@ -19,12 +17,14 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
+from storm.expr import And, Join, LeftJoin
+from storm.info import ClassAlias
+from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
-from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -38,20 +38,21 @@ from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden,
     BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
-    BranchPersonSearchRestriction, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
-    BranchVisibilityRule, CannotDeleteBranch, CodeReviewNotificationLevel,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchPersonSearchContext, IBranchSet,
-    ILaunchpadCelebrities, InvalidBranchMergeProposal,
-    IPerson, IProduct, IProject,
-    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
+    BranchFormat, BranchLifecycleStatus, BranchListingSort,
+    BranchMergeProposalStatus, BranchPersonSearchRestriction,
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    BranchType, BranchTypeError, BranchVisibilityRule, CannotDeleteBranch,
+    CodeReviewNotificationLevel, ControlFormat,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
+    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
+    IProduct, IProject, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
+    NotFoundError, RepositoryFormat)
+from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
@@ -61,7 +62,7 @@ from canonical.launchpad.webapp import urlappend
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranch)
+    implements(IBranch, IBranchNavigationMenu)
     _table = 'Branch'
     _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
 
@@ -71,6 +72,11 @@ class Branch(SQLBase):
     title = StringCol(notNull=False)
     summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
+    branch_format = EnumCol(enum=BranchFormat)
+    repository_format = EnumCol(enum=RepositoryFormat)
+    # XXX: Aaron Bentley 2008-06-13
+    # Rename the metadir_format in the database, see bug 239746
+    control_format = EnumCol(enum=ControlFormat, dbName='metadir_format')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
@@ -78,16 +84,16 @@ class Branch(SQLBase):
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     author = ForeignKey(
         dbName='author', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
 
@@ -154,7 +160,7 @@ class Branch(SQLBase):
 
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
-                         date_created=None):
+                         date_created=None, needs_review=False):
         """See `IBranch`."""
         if self.product is None:
             raise InvalidBranchMergeProposal(
@@ -203,10 +209,16 @@ class Branch(SQLBase):
         self.date_last_modified = date_created
         target_branch.date_last_modified = date_created
 
+        if needs_review:
+            queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
+        else:
+            queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
-            whiteboard=whiteboard, date_created=date_created)
+            whiteboard=whiteboard, date_created=date_created,
+            queue_status=queue_status)
         notify(SQLObjectCreatedEvent(bmp))
         return bmp
 
@@ -292,8 +304,7 @@ class Branch(SQLBase):
     @property
     def warehouse_url(self):
         """See `IBranch`."""
-        root = config.supermirror.warehouse_root_url
-        return "%s%08x" % (root, self.id)
+        return 'lp-mirrored:///%s' % self.unique_name
 
     @property
     def product_name(self):
@@ -385,7 +396,7 @@ class Branch(SQLBase):
             deletion_operations.append(
                 DeletionCallable(merge_proposal,
                     _('This branch is the source branch of this merge'
-                    ' proposal.'), merge_proposal.destroySelf))
+                    ' proposal.'), merge_proposal.deleteProposal))
         # Cannot use self.landing_candidates, because it ignores merged
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
@@ -393,7 +404,7 @@ class Branch(SQLBase):
             deletion_operations.append(
                 DeletionCallable(merge_proposal,
                     _('This branch is the target branch of this merge'
-                    ' proposal.'), merge_proposal.destroySelf))
+                    ' proposal.'), merge_proposal.deleteProposal))
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
             alteration_operations.append(ClearDependentBranch(merge_proposal))
@@ -469,6 +480,7 @@ class Branch(SQLBase):
                 branch=self, person=person,
                 notification_level=notification_level,
                 max_diff_lines=max_diff_lines, review_level=review_level)
+            Store.of(subscription).flush()
         else:
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
@@ -498,19 +510,33 @@ class Branch(SQLBase):
     def unsubscribe(self, person):
         """See `IBranch`."""
         subscription = self.getSubscription(person)
+        store = Store.of(subscription)
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
+        store.flush()
 
-    def getBranchRevision(self, sequence):
+    def getBranchRevision(self, sequence=None, revision=None,
+                          revision_id=None):
         """See `IBranch`."""
-        assert sequence is not None, \
-               "Only use this to fetch revisions from mainline history."
-        return BranchRevision.selectOneBy(branch=self, sequence=sequence)
+        params = (sequence, revision, revision_id)
+        if len([p for p in params if p is not None]) != 1:
+            raise AssertionError(
+                "One and only one of sequence, revision, or revision_id "
+                "should have a value.")
+        if sequence is not None:
+            query = BranchRevision.sequence == sequence
+        elif revision is not None:
+            query = BranchRevision.revision == revision
+        else:
+            query = And(BranchRevision.revision == Revision.id,
+                        Revision.revision_id == revision_id)
 
-    def getBranchRevisionByRevisionId(self, revision_id):
-        """See `IBranch`."""
-        revision = Revision.selectOneBy(revision_id=revision_id)
-        return BranchRevision.selectOneBy(branch=self, revision=revision)
+        store = Store.of(self)
+
+        return store.find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            query).one()
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
@@ -576,8 +602,7 @@ class Branch(SQLBase):
         elif self.branch_type == BranchType.HOSTED:
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
-            prefix = config.codehosting.branches_root
-            return os.path.join(prefix, branch_id_to_path(self.id))
+            return 'lp-hosted:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 
@@ -606,7 +631,7 @@ class Branch(SQLBase):
         self.mirror_failures = 0
         self.mirror_status_message = None
         if (self.next_mirror_time != None
-            and self.last_mirror_attempt > self.next_mirror_time):
+            and self.last_mirror_attempt >= self.next_mirror_time):
             # No mirror was requested since we started mirroring.
             if self.branch_type == BranchType.MIRRORED:
                 self.next_mirror_time = (
@@ -645,48 +670,11 @@ class Branch(SQLBase):
                 "Cannot delete branch: %s" % self.unique_name)
 
 
-class BranchWithSortKeys(Branch):
-    """A hack to allow the sorting of Branch queries by human-meaningful keys.
-
-    The view BranchWithSortKeys has all of the columns of Branch, with:
-
-     - product.name joined as product_name
-     - author.displayname joined as author_name
-     - owner.displayname joined as owner_name
-
-    These columns are never accessed at the Python level so we don't define
-    them in this class.
-
-    If we could get SQLObject to generate LEFT OUTER JOINs nicely, all this
-    wouldn't be necessary.
-
-    XXX: MichaelHudson 2007-10-12 bug=154016: Get rid of this hack
-    when we've converted over to using Storm.
-    """
-
-    @classmethod
-    def select(cls, query, clauseTables=None, orderBy=None):
-        """Wrap a query that refers to Branch to refer to BranchWithSortKeys.
-
-        All the queries carefully and generically created in this file refer
-        to the Branch table.  To be able to query the BranchWithSortKeys view
-        instead, we ask the view for the rows with the same ids as the
-        branches returned by the generated query.
-        """
-        tables = ['Branch']
-        if clauseTables is not None:
-            tables.extend(clauseTables)
-        query = """BranchWithSortKeys.id IN
-                   (SELECT Branch.id FROM %s WHERE %s)""" % (
-                ', '.join(tables), query)
-        return super(BranchWithSortKeys, cls).select(query, orderBy=orderBy)
-
-
 LISTING_SORT_TO_COLUMN = {
-    BranchListingSort.PRODUCT: 'product_name',
+    BranchListingSort.PRODUCT: 'product.name',
     BranchListingSort.LIFECYCLE: '-lifecycle_status',
-    BranchListingSort.NAME: 'name',
-    BranchListingSort.REGISTRANT: 'owner_name',
+    BranchListingSort.NAME: 'branch.name',
+    BranchListingSort.REGISTRANT: 'owner.name',
     BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-date_last_modified',
     BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: 'date_last_modified',
     BranchListingSort.NEWEST_FIRST: '-date_created',
@@ -695,7 +683,7 @@ LISTING_SORT_TO_COLUMN = {
 
 
 DEFAULT_BRANCH_LISTING_SORT = [
-    'product_name', '-lifecycle_status', 'author_name', 'name']
+    'product.name', '-lifecycle_status', 'author.name', 'branch.name']
 
 
 class DeletionOperation:
@@ -926,7 +914,8 @@ class BranchSet:
     def new(self, branch_type, name, registrant, owner, product,
             url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, whiteboard=None, date_created=None):
+            summary=None, whiteboard=None, date_created=None,
+            branch_format=None, repository_format=None, control_format=None):
         """See `IBranchSet`."""
         if date_created is None:
             date_created = UTC_NOW
@@ -962,7 +951,9 @@ class BranchSet:
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard, private=private,
             date_created=date_created, branch_type=branch_type,
-            date_last_modified=date_created)
+            date_last_modified=date_created, branch_format=branch_format,
+            repository_format=repository_format,
+            control_format=control_format)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
@@ -973,6 +964,16 @@ class BranchSet:
                 BranchSubscriptionNotificationLevel.NOEMAIL,
                 BranchSubscriptionDiffSize.NODIFF,
                 CodeReviewNotificationLevel.NOEMAIL)
+
+        # The owner of the branch should also be automatically subscribed
+        # in order for them to get code review notifications.  The implicit
+        # owner subscription does not cause email to be sent about attribute
+        # changes, just merge proposals and code review comments.
+        branch.subscribe(
+            branch.owner,
+            BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.FULL)
 
         notify(SQLObjectCreatedEvent(branch))
         return branch
@@ -1125,6 +1126,36 @@ class BranchSet:
             results = results.limit(branch_count)
         return results
 
+    @staticmethod
+    def _getBranchVisibilitySubQuery(visible_by_user):
+        # Logged in people can see public branches (first part of the union),
+        # branches owned by teams they are in (second part),
+        # and all branches they are subscribed to (third part).
+        return """
+            SELECT Branch.id
+            FROM Branch
+            WHERE
+                NOT Branch.private
+
+            UNION
+
+            SELECT Branch.id
+            FROM Branch, TeamParticipation
+            WHERE
+                Branch.owner = TeamParticipation.team
+            AND TeamParticipation.person = %d
+
+            UNION
+
+            SELECT Branch.id
+            FROM Branch, BranchSubscription, TeamParticipation
+            WHERE
+                Branch.private
+            AND Branch.id = BranchSubscription.branch
+            AND BranchSubscription.person = TeamParticipation.team
+            AND TeamParticipation.person = %d
+            """ % (visible_by_user.id, visible_by_user.id)
+
     def _generateBranchClause(self, query, visible_by_user):
         # If the visible_by_user is a member of the Launchpad admins team,
         # then don't filter the results at all.
@@ -1139,35 +1170,9 @@ class BranchSet:
         if visible_by_user is None:
             return '%sNOT Branch.private' % query
 
-        # Logged in people can see public branches (first part of the union),
-        # branches owned by teams they are in (second part),
-        # and all branches they are subscribed to (third part).
-        clause = ('''
-            %sBranch.id IN (
-                SELECT Branch.id
-                FROM Branch
-                WHERE
-                    NOT Branch.private
-
-                UNION
-
-                SELECT Branch.id
-                FROM Branch, TeamParticipation
-                WHERE
-                    Branch.owner = TeamParticipation.team
-                AND TeamParticipation.person = %d
-
-                UNION
-
-                SELECT Branch.id
-                FROM Branch, BranchSubscription, TeamParticipation
-                WHERE
-                    Branch.private
-                AND Branch.id = BranchSubscription.branch
-                AND BranchSubscription.person = TeamParticipation.team
-                AND TeamParticipation.person = %d)
-            '''
-            % (query, visible_by_user.id, visible_by_user.id))
+        clause = (
+            '%sBranch.id IN (%s)'
+            % (query, self._getBranchVisibilitySubQuery(visible_by_user)))
 
         return clause
 
@@ -1181,7 +1186,7 @@ class BranchSet:
 
     @staticmethod
     def _listingSortToOrderBy(sort_by):
-        """Compute a value to pass as orderBy to BranchWithSortKeys.select().
+        """Compute a value to pass as orderBy to Branch.select().
 
         :param sort_by: an item from the BranchListingSort enumeration.
         """
@@ -1205,9 +1210,17 @@ class BranchSet:
                               visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         builder = BranchQueryBuilder(context, lifecycle_statuses)
-        return BranchWithSortKeys.select(
-            self._generateBranchClause(builder.query, visible_by_user),
-            orderBy=self._listingSortToOrderBy(sort_by))
+        clause = self._generateBranchClause(builder.query, visible_by_user)
+        # Local import to avoid cycles
+        from canonical.launchpad.database import Person, Product
+        Owner = ClassAlias(Person, "owner")
+        Author = ClassAlias(Person, "author")
+        clauseTables = [LeftJoin(
+                LeftJoin(Join(Branch, Owner, Branch.owner == Owner.id),
+                         Author, Branch.author == Author.id),
+                Product, Branch.product == Product.id)]
+        return Branch.select(clause, clauseTables=clauseTables,
+                             orderBy=self._listingSortToOrderBy(sort_by))
 
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""

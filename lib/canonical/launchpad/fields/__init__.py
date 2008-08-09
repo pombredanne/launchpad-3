@@ -80,7 +80,9 @@ from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
-from canonical.lazr.rest.schema import Reference
+
+from canonical.lazr.fields import Reference
+from canonical.lazr.interfaces.fields import IReferenceChoice
 from canonical.foaf import nickname
 
 
@@ -694,5 +696,8 @@ def is_valid_public_person_link(person, other):
 
 
 class PublicPersonChoice(Choice):
+    implements(IReferenceChoice)
+    schema = IObject    # Will be set to IPerson once IPerson is defined.
+
     def constraint(self, value):
         return is_valid_public_person_link(value, self.context)

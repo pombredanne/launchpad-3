@@ -4,34 +4,40 @@
 
 __metaclass__ = type
 __all__ = [
+    'BatchingResourceMixin',
     'Collection',
     'CollectionResource',
     'Entry',
+    'EntryAdapterUtility',
     'EntryResource',
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'ResourceJSONEncoder',
+    'RESTUtilityBase',
     'ScopedCollection',
     'ServiceRootResource',
-    'URLDereferencingMixin',
+    'WADL_SCHEMA_FILE',
     ]
 
 import copy
 from datetime import datetime
+import os
 import simplejson
-from types import NoneType
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import (
-    adapts, getAdapters, getMultiAdapter, getUtility)
+    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
+    getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import implements, implementedBy, providedBy
 from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
-from zope.schema import ValidationError, getFields
+from zope.schema import ValidationError, getFields, getFieldsInOrder
 from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IChoice, IObject)
 from zope.security.interfaces import Unauthorized
@@ -39,19 +45,26 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
-# canonical_url and BatchNavigator code should be moved into lazr.
+# canonical_url, BatchNavigator, and event code should be moved into lazr.
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData, ILaunchBag)
 from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IFieldMarshaller, IHTTPResource, IJSONPublishable,
-    IResourceGETOperation, IResourcePOSTOperation, IScopedCollection,
-    IServiceRootResource)
+    ICollection, ICollectionResource, IEntry, IEntryResource,
+    IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
+    IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
+from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
-from canonical.lazr.rest.schema import URLDereferencingMixin
+
+# The path to the WADL XML Schema definition.
+WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
+                                'wadl20061109.xsd')
 
 
 class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
@@ -85,6 +98,9 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
                 return tuple(obj)
             if isinstance(underlying_object, dict):
                 return dict(obj)
+        if queryAdapter(obj, IEntry):
+            obj = EntryResource(obj, get_current_browser_request())
+
         return IJSONPublishable(obj).toDataForJSON()
 
 
@@ -101,7 +117,7 @@ class JSONItem:
         return str(self.context.title)
 
 
-class HTTPResource(URLDereferencingMixin):
+class HTTPResource:
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 
@@ -237,7 +253,7 @@ class WebServiceBatchNavigator(BatchNavigator):
     This batch navigator differs from others in the names of the query
     variables it expects. This class expects the starting point to be
     contained in the query variable "ws.start" and the size of the
-    batch to be contained in the query variable ""ws.size". When this
+    batch to be contained in the query variable "ws.size". When this
     navigator serves links, it includes query variables by those
     names.
     """
@@ -271,6 +287,8 @@ class BatchingResourceMixin:
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }
+        if navigator.batch.start < 0:
+            batch['start'] = None
         next_url = navigator.nextBatchURL()
         if next_url != "":
             batch['next_collection_link'] = next_url
@@ -280,7 +298,7 @@ class BatchingResourceMixin:
         return batch
 
 
-class CustomOperationResourceMixin(BatchingResourceMixin):
+class CustomOperationResourceMixin:
 
     """A mixin for resources that implement a collection-entry pattern."""
 
@@ -296,7 +314,7 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
         operation = getMultiAdapter((self.context, self.request),
                                     IResourceGETOperation,
                                     name=operation_name)
-        return self._processCustomOperationResult(operation())
+        return operation()
 
     def handleCustomPOST(self, operation_name):
         """Execute a custom write-type operation triggered through POST.
@@ -314,7 +332,7 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
         except ComponentLookupError:
             self.request.response.setStatus(400)
             return "No such operation: " + operation_name
-        return self._processCustomOperationResult(operation())
+        return operation()
 
     def do_POST(self):
         """Invoke a custom operation.
@@ -331,24 +349,6 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
             return "No operation name given."
         del self.request.form['ws.op']
         return self.handleCustomPOST(operation_name)
-
-    def _processCustomOperationResult(self, result):
-        """Process the result of a custom operation."""
-        if isinstance(result, (basestring, NoneType)):
-            # The operation took care of everything and just needs
-            # this string served to the client.
-            return result
-
-        # The operation returned a collection or entry. It will be
-        # serialized to JSON.
-        try:
-            iterator = iter(result)
-        except TypeError:
-            # Result is a single entry
-            return EntryResource(result, self.request)
-
-        # Serve a single batch from the collection.
-        return self.batch(result, self.request)
 
 
 class ReadOnlyResource(HTTPResource):
@@ -411,14 +411,18 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         """
         data = {}
         data['self_link'] = canonical_url(self.context)
+        data['resource_type_link'] = self.type_url
         for name, field in getFields(self.entry.schema).items():
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                           IFieldMarshaller)
-            repr_name = marshaller.representationName(name)
+            repr_name = marshaller.representation_name
             try:
-                value = getattr(self.entry, name)
-                repr_value = marshaller.unmarshall(self.entry, name, value)
+                if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
+                    value = None
+                else:
+                    value = getattr(self.entry, name)
+                repr_value = marshaller.unmarshall(self.entry, value)
             except Unauthorized:
                 # Either the client doesn't have permission to see
                 # this field, or it doesn't have permission to read
@@ -495,8 +499,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # Make sure the representation includes values for all
         # writable attributes.
-        schema = self.entry.schema
-        for name, field in getFields(schema).items():
+        # Get the fields ordered by name so that we always evaluate them in
+        # the same order. This is needed to predict errors when testing.
+        for name, field in getFieldsInOrder(self.entry.schema):
             if (name.startswith('_') or ICollectionField.providedBy(field)
                 or field.readonly):
                 # This attribute is not part of the web service
@@ -507,7 +512,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                          IFieldMarshaller)
-            repr_name = marshaller.representationName(name)
+            repr_name = marshaller.representation_name
             if (changeset.get(repr_name) is None
                 and getattr(self.entry, name) is not None):
                 # This entry has a value for the attribute, but the
@@ -526,6 +531,16 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             return error
         return self._applyChanges(changeset)
 
+    @property
+    def type_url(self):
+        "The URL to the resource type for this resource."
+        adapter = EntryAdapterUtility(self.entry.__class__)
+
+        return "%s#%s" % (
+            canonical_url(self.request.publication.getApplication(
+                    self.request)),
+            adapter.singular_type)
+
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
 
@@ -538,24 +553,33 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         validated_changeset = {}
         errors = []
 
-        # The self link isn't part of the schema, so it's
-        # handled separately.
+        # The self link and resource type link aren't part of the
+        # schema, so they're handled separately.
+        modified_read_only_attribute = ("%s: You tried to modify a "
+                                        "read-only attribute.")
         if 'self_link' in changeset:
             if changeset['self_link'] != canonical_url(self.context):
-                errors.append("self_link: You tried to modify "
-                              "a read-only attribute.")
-            del(changeset['self_link'])
+                errors.append(modified_read_only_attribute % 'self_link')
+            del changeset['self_link']
+
+        if 'resource_type_link' in changeset:
+            if changeset['resource_type_link'] != self.type_url:
+                errors.append(modified_read_only_attribute %
+                              'resource_type_link')
+            del changeset['resource_type_link']
 
         # For every field in the schema, see if there's a corresponding
         # field in the changeset.
-        for name, field in getFields(self.entry.schema).items():
+        # Get the fields ordered by name so that we always evaluate them in
+        # the same order. This is needed to predict errors when testing.
+        for name, field in getFieldsInOrder(self.entry.schema):
             if name.startswith('_'):
                 # This field is not part of the web service interface.
                 continue
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                          IFieldMarshaller)
-            repr_name = marshaller.representationName(name)
+            repr_name = marshaller.representation_name
             if not repr_name in changeset:
                 # The client didn't try to set a value for this field.
                 continue
@@ -565,7 +589,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # way to see if the client changed the value.
             try:
                 current_value = marshaller.unmarshall(
-                    self.entry, name, getattr(self.entry, name))
+                    self.entry, getattr(self.entry, name))
             except Unauthorized:
                 # The client doesn't have permission to see the old
                 # value. That doesn't necessarily mean they can't set
@@ -578,15 +602,14 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # it, validate it, and (if it's different from the current
             # value) move it from the client changeset to the
             # validated changeset.
-            original_value = changeset[repr_name]
-            del(changeset[repr_name])
+            original_value = changeset.pop(repr_name)
             if original_value == current_value == self.REDACTED_VALUE:
                 # The client can't see the field's current value, and
                 # isn't trying to change it. Skip to the next field.
                 continue
 
             try:
-                value = marshaller.marshall(original_value)
+                value = marshaller.marshall_from_json_data(original_value)
             except (ValueError, ValidationError), e:
                 errors.append("%s: %s" % (repr_name, e))
                 continue
@@ -606,8 +629,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # change them.
                 if value != current_value:
                     if field.readonly:
-                        errors.append("%s: You tried to modify a read-only "
-                                      "attribute." % repr_name)
+                        errors.append(modified_read_only_attribute
+                                      % repr_name)
                     else:
                         errors.append(
                             "%s: To modify this field you need to send a PUT "
@@ -623,7 +646,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # ObjectLookupFieldMarshaller, once we make it
                 # possible for Vocabulary fields to specify a schema
                 # class the way IObject fields can.
-                if not field.schema.providedBy(value):
+                if value != None and not field.schema.providedBy(value):
                     errors.append("%s: Your value points to the "
                                   "wrong kind of object" % repr_name)
                     continue
@@ -640,8 +663,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             if field.readonly:
                 change_this_field = False
                 if value != current_value:
-                    errors.append("%s: You tried to modify a read-only "
-                                  "attribute." % repr_name)
+                    errors.append(modified_read_only_attribute
+                                  % repr_name)
                     continue
 
             if change_this_field is True and value != current_value:
@@ -689,11 +712,23 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.request.response.setHeader('Content-type', 'text/plain')
             return "\n".join(errors)
 
+        # Make a snapshot of the entry to use in a notification event.
+        entry_before_modification = Snapshot(
+            self.entry.context, providing=providedBy(self.entry.context))
+
         # Store the entry's current URL so we can see if it changes.
         original_url = canonical_url(self.context)
         # Make the changes.
         for name, value in validated_changeset.items():
             setattr(self.entry, name, value)
+
+        # Send a notification event.
+        event = SQLObjectModifiedEvent(
+            object=self.entry.context,
+            object_before_modification=entry_before_modification,
+            edited_fields=validated_changeset.keys(),
+            user=getUtility(ILaunchBag).user)
+        notify(event)
 
         # If the modification caused the entry's URL to change, tell
         # the client about the new URL.
@@ -704,7 +739,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         return ''
 
 
-class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
+class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
+                         CustomOperationResourceMixin):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
@@ -736,10 +772,38 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
                 self.request.response.setHeader(
                     'Content-Type', self.WADL_TYPE)
                 return result
-            result = self.batch(entries, self.request)
+
+            result = self.batch(entries)
 
         self.request.response.setHeader('Content-type', self.JSON_TYPE)
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
+
+    def batch(self, entries=None):
+        """Return a JSON representation of a batch of entries.
+
+        :param entries: (Optional) A precomputed list of entries to batch.
+        """
+        if entries is None:
+            entries = self.collection.find()
+        result = super(CollectionResource, self).batch(entries, self.request)
+        result['resource_type_link'] = self.type_url
+        return result
+
+    @property
+    def type_url(self):
+        "The URL to the resource type for the object."
+
+        if IScopedCollection.providedBy(self.collection):
+            # Scoped collection. The type URL depends on what type of
+            # entry the collection holds.
+            schema = self.context.relationship.value_type.schema
+            adapter = EntryAdapterUtility.forSchemaInterface(schema)
+            return adapter.entry_page_type_link
+        else:
+            # Top-level collection.
+            schema = self.collection.entry_schema
+            adapter = EntryAdapterUtility.forEntryInterface(schema)
+            return adapter.collection_type_link
 
 
 class ServiceRootResource(HTTPResource):
@@ -837,13 +901,10 @@ class ServiceRootResource(HTTPResource):
         return data_for_json
 
     def getTopLevelPublications(self):
-        """Return a mapping of top-level link names to published objects.
-
-        This method assumes that only collections are exposed at the top
-        level.
-        """
+        """Return a mapping of top-level link names to published objects."""
         top_level_resources = {}
         site_manager = zapi.getGlobalSiteManager()
+        # First, collect the top-level collections.
         for registration in site_manager.registrations():
             provided = registration.provided
             if IInterface.providedBy(provided):
@@ -854,9 +915,15 @@ class ServiceRootResource(HTTPResource):
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
-                    link_name = ("%s_collection_link"
-                                 % registration.value.__name__)
+                    adapter = EntryAdapterUtility.forEntryInterface(
+                        registration.value.entry_schema)
+                    link_name = ("%s_collection_link" % adapter.plural_type)
                     top_level_resources[link_name] = utility
+        # Now, collect the top-level entries.
+        for utility in getAllUtilitiesRegisteredFor(ITopLevelEntryLink):
+            link_name = ("%s_link" % utility.link_name)
+            top_level_resources[link_name] = utility
+
         return top_level_resources
 
 
@@ -905,3 +972,116 @@ class ScopedCollection:
     def find(self):
         """See `ICollection`."""
         return self.collection
+
+
+class RESTUtilityBase:
+
+    def _service_root_url(self):
+        """Return the URL to the service root."""
+        request = get_current_browser_request()
+        return canonical_url(request.publication.getApplication(request))
+
+
+class EntryAdapterUtility(RESTUtilityBase):
+    """Useful information about an entry's presence in the web service.
+
+    This includes the links to entry's WADL resource type, and the
+    resource type for a page of these entries.
+    """
+
+    @classmethod
+    def forSchemaInterface(cls, entry_interface):
+        """Create an entry adapter utility, given a schema interface.
+
+        A schema interface is one that can be annotated to produce a
+        subclass of IEntry.
+        """
+        entry_class = zapi.getGlobalSiteManager().adapters.lookup(
+            (entry_interface,), IEntry)
+        return EntryAdapterUtility(entry_class)
+
+    @classmethod
+    def forEntryInterface(cls, entry_interface):
+        """Create an entry adapter utility, given a subclass of IEntry."""
+        registrations = zapi.getGlobalSiteManager().registrations()
+        entry_classes = [
+            registration.value for registration in registrations
+            if (IInterface.providedBy(registration.provided)
+                and registration.provided.isOrExtends(IEntry)
+                and entry_interface.implementedBy(registration.value))]
+        assert not len(entry_classes) > 1, (
+            "%s provides more than one IEntry subclass." %
+            entry_interface.__name__)
+        assert not len(entry_classes) < 1, (
+            "%s does not provide any IEntry subclass." %
+            entry_interface.__name__)
+        return EntryAdapterUtility(entry_classes[0])
+
+    def __init__(self, entry_class):
+        """Initialize with a class that implements IEntry."""
+        self.entry_class = entry_class
+
+    @property
+    def entry_interface(self):
+        """The IEntry subclass implemented by this entry type."""
+        interfaces = implementedBy(self.entry_class)
+        entry_ifaces = [interface for interface in interfaces
+                        if interface.extends(IEntry)]
+        assert len(entry_ifaces) == 1, ("There must be one and only one "
+                                        "IEntry implementation "
+                                        "for %s" % self.entry_class)
+        return entry_ifaces[0]
+
+    @property
+    def singular_type(self):
+        """Return the singular name for this object type."""
+        interface = self.entry_interface
+        return interface.queryTaggedValue(LAZR_WEBSERVICE_NAME)['singular']
+
+    @property
+    def plural_type(self):
+        """Return the plural name for this object type."""
+        interface = self.entry_interface
+        return interface.queryTaggedValue(LAZR_WEBSERVICE_NAME)['plural']
+
+    @property
+    def type_link(self):
+        """The URL to the type definition for this kind of entry."""
+        return "%s#%s" % (
+            self._service_root_url(), self.singular_type)
+
+    @property
+    def collection_type_link(self):
+        """The definition of a top-level collection of this kind of object."""
+        return "%s#%s" % (
+            self._service_root_url(), self.plural_type)
+
+    @property
+    def entry_page_type(self):
+        """The definition of a collection of this kind of object."""
+        return "%s-page-resource" % self.singular_type
+
+    @property
+    def entry_page_type_link(self):
+        "The URL to the definition of a collection of this kind of object."
+        return "%s#%s" % (
+            self._service_root_url(), self.entry_page_type)
+
+    @property
+    def entry_page_representation_id(self):
+        "The name of the description of a colleciton of this kind of object."
+        return "%s-page" % self.singular_type
+
+    @property
+    def entry_page_representation_link(self):
+        "The URL to the description of a collection of this kind of object."
+        return "%s#%s" % (
+            self._service_root_url(),
+            self.entry_page_representation_id)
+
+    @property
+    def full_representation_link(self):
+        """The URL to the description of the object's full representation."""
+        return "%s#%s-full" % (
+            self._service_root_url(), self.singular_type)
+

@@ -116,3 +116,18 @@ we should not have a link to it.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+
+Administrator can change the translation focus for a distribution.
+
+    >>> editor_browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> editor_browser.open('http://launchpad.dev/ubuntu')
+    >>> editor_browser.getLink('Change distribution details').click()
+    >>> editor_browser.getControl('Translation Focus').displayValue
+    ['ubuntu hoary']
+    >>> editor_browser.getControl('Translation Focus').displayValue = [
+    ...     'ubuntu grumpy']
+    >>> editor_browser.getControl('Change', index=3).click()
+    >>> editor_browser.getLink('Change distribution details').click()
+    >>> editor_browser.getControl('Translation Focus').displayValue
+    ['ubuntu grumpy']

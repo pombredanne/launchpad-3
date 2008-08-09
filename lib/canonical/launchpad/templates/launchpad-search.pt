@@ -16,40 +16,30 @@
         Pages matching "bazaar" in Launchpad
       </h1>
 
-      <form
-         action=""
-         name="sitesearch"
-         id="sitesearch"
-         method="get"
-         accept-charset="UTF-8"
-         tal:attributes="action string:${rooturl}+search">
-        <input
-          id="field.text"
-          class="textType"
-          type="text"
-          size="36"
-          name="field.text"
-          tal:attributes="value view/text"/>
-          <script
-            type="text/javascript"
-            tal:define="script view/focusedElementScript"
-            tal:condition="script"
-            tal:content="structure script" />
-        <input
-           id="field.actions.search"
-           name="field.actions.search"
-           class="button"
-           type="submit"
-           value="Search" />
-      </form>
+      <form tal:replace="structure view/@@+primary-search-form" />
 
       <tal:wants-results condition="view/text">
 
         <div id="search-results" tal:condition="view/has_matches">
           <tal:has_exact_matches condition="view/has_exact_matches">
-            <h2>Most relevant matches</h2>
+
+            <div class="search-batch" style="padding:4px;">
+              <strong class="batch-navigation-index">Exact matches</strong>
+            </div>
 
             <ul class="exact-matches">
+              <li tal:condition="view/has_shipit">
+                <div>
+                  <a tal:attributes="href view/shipit_faq_url"><img
+                    src="/@@/ubuntu-icon" /> Shipit Questions | ubuntu</a>
+                </div>
+                <div class="summary">
+                  Ubuntu is available free of charge and we can send you a CD
+                  of the latest version with no extra cost, but the delivery
+                  may take up to ten weeks, so you should consider downloading
+                  the CD image if you have a fast Internet connection.
+                </div>
+              </li>
               <li tal:condition="view/bug">
                 <div>
                   <tal:link replace="structure view/bug/fmt:link" />
@@ -93,7 +83,7 @@
                 </div>
               </li>
 
-              <li tal:condition="view/pillar" class="pillar">
+              <li tal:condition="view/pillar">
                 <div>
                   <a tal:replace="structure view/pillar/fmt:link">
                     The GNOME project
@@ -164,9 +154,8 @@
           <tal:batch
             condition="view/pages"
             define="batch view/pages/currentBatch|nothing">
-            <h2>Matching pages</h2>
 
-            <div class="upper-batch-nav">
+            <div class="upper-batch-nav search-batch">
               <tal:navigation
                  replace="structure view/pages/@@+navigation-links-upper"/>
             </div>
@@ -186,10 +175,12 @@
               </li>
             </ul>
 
-            <div class="lower-batch-nav">
+            <div class="lower-batch-nav search-batch">
               <tal:navigation
                  replace="structure view/pages/@@+navigation-links-lower" />
             </div>
+
+            <form tal:replace="structure view/@@+search-form" />
           </tal:batch>
         </div>
 

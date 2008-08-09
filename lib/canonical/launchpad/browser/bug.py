@@ -32,6 +32,7 @@ from zope.interface import implements, providedBy
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BugTaskStatus,
     BugTaskSearchParams,
@@ -41,14 +42,14 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet,
     ICveSet,
     IFrontPageBugTaskSearch,
-    IDistributionSourcePackage,
     ILaunchBag,
     NotFoundError,
     )
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.interfaces.bugattachment import IBugAttachmentSet
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView, LaunchpadEditFormView, stepthrough,
@@ -82,6 +83,24 @@ class BugNavigation(Navigation):
         if name.isdigit():
             # in future this should look up by (bug.id, watch.seqnum)
             return getUtility(IBugWatchSet)[name]
+
+    @stepthrough('+subscription')
+    def traverse_subscriptions(self, person_name):
+        """Retrieve a BugSubscription by person name."""
+        for subscription in self.context.subscriptions:
+            if subscription.person.name == person_name:
+                return subscription
+
+    @stepthrough('attachments')
+    def traverse_attachments(self, name):
+        """Retrieve a BugAttachment by ID.
+
+        Only return a attachment if it is related to this bug.
+        """
+        if name.isdigit():
+            attachment = getUtility(IBugAttachmentSet)[name]
+            if attachment is not None and attachment.bug == self.context:
+                return attachment
 
 
 class BugFacets(StandardLaunchpadFacets):
@@ -125,18 +144,18 @@ class BugContextMenu(ContextMenu):
 
     def editdescription(self):
         """Return the 'Edit description/tags' Link."""
-        text = 'Edit description/tags'
+        text = 'Update description / tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
         """Return the 'Set privacy/security' Link."""
-        text = 'Set privacy/security'
-        return Link('+secrecy', text, icon='edit')
+        text = 'Change privacy/security'
+        return Link('+secrecy', text)
 
     def markduplicate(self):
         """Return the 'Mark as duplicate' Link."""
         text = 'Mark as duplicate'
-        return Link('+duplicate', text, icon='edit')
+        return Link('+duplicate', text)
 
     def addupstream(self):
         """Return the 'lso affects project' Link."""
@@ -194,7 +213,10 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        text = 'Add branch'
+        if self.context.bug.bug_branches.count() > 0:
+            text = 'Link another branch'
+        else:
+            text = 'Link a related branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
@@ -223,27 +245,30 @@ class BugContextMenu(ContextMenu):
         """Return the 'Retract mentorship' Link."""
         text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
-        enabled = (self.context.bug.isMentor(user) and
-                   not self.context.bug.is_complete and
-                   user)
+        # We should really only allow people to retract mentoring if the
+        # bug's open and the user's already a mentor.
+        if user and not self.context.bug.is_complete:
+            enabled = self.context.bug.isMentor(user)
+        else:
+            enabled = False
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def createquestion(self):
         """Create a question from this bug."""
-        text = 'Convert to question'
+        text = 'Convert to a question'
         enabled = self.context.bug.getQuestionCreatedFromBug() is None
-        return Link('+create-question', text, icon='edit', enabled=enabled)
+        return Link('+create-question', text, enabled=enabled)
 
     def removequestion(self):
         """Remove the created question from this bug."""
-        text = 'Convert back to bug'
+        text = 'Convert back to a bug'
         enabled = self.context.bug.getQuestionCreatedFromBug() is not None
-        return Link('+remove-question', text, icon='edit', enabled=enabled)
+        return Link('+remove-question', text, enabled=enabled)
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'View activity log'
-        return Link('+activity', text, icon='list')
+        text = 'Activity log'
+        return Link('+activity', text)
 
 
 class MaloneView(LaunchpadFormView):
@@ -352,33 +377,29 @@ class BugView(LaunchpadView):
         object itself. This allows us to protect private bugs using a
         title like 'Private Bug'.
         """
+        duplicate_bugs = list(self.context.duplicates)
+        current_task = self.currentBugTask()
+        dupes_in_current_context = dict(
+            (bugtask.bug, bugtask)
+            for bugtask in current_task.target.searchTasks(
+                BugTaskSearchParams(self.user, bug=any(*duplicate_bugs))))
         dupes = []
-        for bug in self.context.duplicates:
+        for bug in duplicate_bugs:
             dupe = {}
             try:
                 dupe['title'] = bug.title
             except Unauthorized:
                 dupe['title'] = 'Private Bug'
             dupe['id'] = bug.id
-            dupe['url'] = self.getDupeBugLink(bug)
+            # If the dupe has the same context as the one we're in, link
+            # to that bug task directly.
+            if bug in dupes_in_current_context:
+                dupe['url'] = canonical_url(dupes_in_current_context[bug])
+            else:
+                dupe['url'] = canonical_url(bug)
             dupes.append(dupe)
 
         return dupes
-
-    def getDupeBugLink(self, dupe):
-        """Return a URL for a duplicate of this bug.
-
-        The link will be in the current context if the dupe is also
-        reported in this context, otherwise a default /bugs/$bug.id
-        style URL will be returned.
-        """
-        current_task = self.currentBugTask()
-
-        for task in dupe.bugtasks:
-            if task.target == current_task.target:
-                return canonical_url(task)
-
-        return canonical_url(dupe)
 
 
 class BugWithoutContextView:

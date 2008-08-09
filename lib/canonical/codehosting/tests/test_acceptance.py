@@ -16,12 +16,12 @@ import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
     LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
-from bzrlib.repofmt.weaverepo import RepositoryFormat7
-from bzrlib.repository import format_registry
 
 from bzrlib.urlutils import local_path_from_url
-from bzrlib.tests import default_transport, TestCaseWithTransport
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
+
+from twisted.python.util import mergeFunctionMetadata
 
 from canonical.codehosting.tests.helpers import (
     adapt_suite, ServerTestCase)
@@ -33,7 +33,28 @@ from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 from canonical.testing import TwistedLaunchpadZopelessLayer
+from canonical.testing.layers import disconnect_stores, reconnect_stores
 from canonical.twistedsupport import defer_to_thread
+
+
+def db_defer_to_thread(function):
+    """Run in a thread, making sure the database connection is sane.
+
+    The 'main' and 'session' Storm stores will be reconnected before
+    running the function, and then disconnected afterwards (to match
+    what happens in the main thread).
+
+    A Deferred is returned, which fires when the function returns.
+    """
+    def wrapper(*args, **kwargs):
+        reconnect_stores()
+        try:
+            return function(*args, **kwargs)
+        finally:
+            disconnect_stores()
+    wrapper = mergeFunctionMetadata(function, wrapper)
+    return defer_to_thread(wrapper)
+
 
 class SSHTestCase(ServerTestCase):
 
@@ -266,7 +287,7 @@ class AcceptanceTests(SSHTestCase):
             summary=None, whiteboard=None, private=private,
             date_created=UTC_NOW, branch_type=branch_type)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_push_to_new_branch(self):
         """
         The bzr client should be able to read and write to the codehosting
@@ -281,7 +302,7 @@ class AcceptanceTests(SSHTestCase):
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_push_to_existing_branch(self):
         """Pushing to an existing branch must work."""
         # Initial push.
@@ -296,7 +317,7 @@ class AcceptanceTests(SSHTestCase):
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_rename_branch(self):
         """
         Branches should be able to be renamed in the Launchpad webapp, and
@@ -327,7 +348,7 @@ class AcceptanceTests(SSHTestCase):
             self.getTransportURL('~testuser/+junk/renamed-branch'))
 
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_rename_product(self):
         # Push the local branch to the server
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
@@ -347,7 +368,7 @@ class AcceptanceTests(SSHTestCase):
             self.local_branch_path,
             self.getTransportURL('~testuser/firefox/test-branch'))
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_rename_user(self):
         # Rename person in the database. Again, the URL changes (and so does
         # the username we have to connect as!).
@@ -370,13 +391,13 @@ class AcceptanceTests(SSHTestCase):
             self.getTransportURL(
                 '~renamed-user/+junk/test-branch', 'renamed-user'))
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_push_team_branch(self):
         remote_url = self.getTransportURL('~testteam/firefox/a-new-branch')
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_push_new_branch_creates_branch_in_database(self):
         remote_url = self.getTransportURL(
             '~testuser/+junk/totally-new-branch')
@@ -391,7 +412,7 @@ class AcceptanceTests(SSHTestCase):
         self.assertEqual(
             '~testuser/+junk/totally-new-branch', branch.unique_name)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_push_triggers_mirror_request(self):
         # Pushing new data to a branch should trigger a mirror request.
         remote_url = self.getTransportURL(
@@ -422,7 +443,7 @@ class AcceptanceTests(SSHTestCase):
         self.assertNotEqual(None, branch.next_mirror_time)
         LaunchpadZopelessTestSetup().txn.abort()
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_cant_access_private_branch(self):
         # Trying to get information about a private branch should fail as if
         # the branch doesn't exist.
@@ -448,7 +469,7 @@ class AcceptanceTests(SSHTestCase):
             '~landscape-developers/landscape/some-branch')
         self.assertRaises(NotBranchError, self.getLastRevision, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_can_push_to_existing_hosted_branch(self):
         # If a hosted branch exists in the database, but not on the
         # filesystem, and is writable by the user, then the user is able to
@@ -460,7 +481,7 @@ class AcceptanceTests(SSHTestCase):
         self.push(self.local_branch_path, remote_url, use_existing_dir=True)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_cant_push_to_existing_mirrored_branch(self):
         # Users cannot push to mirrored branches.
         LaunchpadZopelessTestSetup().txn.begin()
@@ -482,7 +503,7 @@ class AcceptanceTests(SSHTestCase):
         if flushLoggedErrors is not None:
             flushLoggedErrors()
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_cant_push_to_existing_unowned_hosted_branch(self):
         # Users can only push to hosted branches that they own.
         LaunchpadZopelessTestSetup().txn.begin()
@@ -493,7 +514,7 @@ class AcceptanceTests(SSHTestCase):
             (PermissionDenied, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_cant_push_to_existing_hosted_branch_with_revisions(self):
         # XXX: JonathanLange 2007-08-07, We shoudn't be able to push to
         # branches that have revisions in the database but not actual files:
@@ -511,7 +532,7 @@ class AcceptanceTests(SSHTestCase):
             (PermissionDenied, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
-    @defer_to_thread
+    @db_defer_to_thread
     def test_can_push_loom_branch(self):
         # We can push and pull a loom branch.
         tree = self.makeLoomBranchAndTree('loom')
@@ -607,17 +628,31 @@ def make_server_tests(base_suite, servers):
 
 
 def make_smoke_tests(base_suite):
-    from bzrlib.tests.repository_implementations import (
-        RepositoryTestProviderAdapter)
-    # We specifically exclude RepositoryFormat7, which is not supported.
-    # See bug 173807 for details.
-    all_formats = [
-        format_registry.get(key) for key in format_registry.keys()
-        if not isinstance(format_registry.get(key), RepositoryFormat7)]
-    adapter = RepositoryTestProviderAdapter(
-        default_transport, None,
-        [(format, format._matchingbzrdir) for format in all_formats])
-    return adapt_suite(adapter, base_suite)
+    from bzrlib import tests
+    from bzrlib.tests import repository_implementations
+    excluded_scenarios = [
+        # RepositoryFormat4 is not initializable (bzrlib raises TestSkipped
+        # when you try).
+        'RepositoryFormat4',
+        # Fetching weave formats from the smart server is known to be broken.
+        # See bug 173807 and bzrlib.tests.test_repository.
+        'RepositoryFormat5',
+        'RepositoryFormat6',
+        'RepositoryFormat7',
+        # Using RemoteRepositoryFormat doesn't make sense when testing push to
+        # remote server.
+        'RemoteRepositoryFormat',
+        ]
+    scenarios = repository_implementations.all_repository_format_scenarios()
+    scenarios = [
+        scenario for scenario in scenarios
+        if scenario[0] not in excluded_scenarios
+        and not scenario[0].startswith('RemoteRepositoryFormat')]
+    adapter = tests.TestScenarioApplier()
+    adapter.scenarios = scenarios
+    new_suite = unittest.TestSuite()
+    tests.adapt_tests(base_suite, adapter, new_suite)
+    return new_suite
 
 
 def test_suite():

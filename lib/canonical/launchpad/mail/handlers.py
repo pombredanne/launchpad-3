@@ -260,7 +260,11 @@ class MaloneHandler:
                     if IBugEmailCommand.providedBy(command):
                         if bug_event is not None:
                             notify(bug_event)
-                            bug_event = None
+                        if (bugtask_event is not None and
+                            not ISQLObjectCreatedEvent.providedBy(bug_event)):
+                            notify(bugtask_event)
+                        bugtask = None
+                        bugtask_event = None
 
                         bug, bug_event = command.execute(
                             signed_msg, filealias)
@@ -375,7 +379,7 @@ class MaloneHandler:
     # the entire MacOS file should be sent encapsulated for example in
     # MacBinary format.
     #
-    # application/ms-tnef attachment are created by Outlook; they 
+    # application/ms-tnef attachment are created by Outlook; they
     # seem to store no more than an RTF representation of an email.
 
     irrelevant_content_types = set((
@@ -401,6 +405,11 @@ class MaloneHandler:
             # content type.
             content_type = blob.mimetype.split(';', 1)[0]
             if content_type in self.irrelevant_content_types:
+                continue
+
+            if content_type == 'text/html' and blob.filename == 'unnamed':
+                # This is the HTML representation of the main part of
+                # an email.
                 continue
 
             if content_type in ('text/x-diff', 'text/x-patch'):
@@ -505,6 +514,15 @@ class CodeHandler:
     """Mail handler for the code domain."""
 
     addr_pattern = re.compile(r'(mp\+)([^@]+).*')
+    allow_unknown_users = False
+
+    _vote_alias = {
+        '+1': CodeReviewVote.APPROVE,
+        '+0': CodeReviewVote.ABSTAIN,
+        '0': CodeReviewVote.ABSTAIN,
+        '-0': CodeReviewVote.ABSTAIN,
+        '-1': CodeReviewVote.DISAPPROVE,
+        }
 
     def process(self, mail, email_addr, file_alias):
         """Process an email and create a CodeReviewComment.
@@ -563,7 +581,10 @@ class CodeHandler:
         try:
             vote = CodeReviewVote.items[vote_string.upper()]
         except KeyError:
-            raise InvalidVoteString(vote_string)
+            # If the word doesn't match, check aliases that we allow.
+            vote = CodeHandler._vote_alias.get(vote_string)
+            if vote is None:
+                raise InvalidVoteString(vote_string)
         if len(vote_tag_list) == 0:
             vote_tag = None
         else:
@@ -695,7 +716,7 @@ class MailHandlers:
             # XXX flacoste 2007-04-23 Backward compatibility for old domain.
             # We probably want to remove it in the future.
             'support.launchpad.net': AnswerTrackerHandler(),
-            config.vhost.code.hostname: CodeHandler(),
+            config.launchpad.code_domain: CodeHandler(),
             }
 
     def get(self, domain):

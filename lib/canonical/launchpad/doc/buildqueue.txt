@@ -41,10 +41,10 @@ The static timestamps, representing when the record was initialised
 instances:
 
     >>> bq.created
-    datetime.datetime(...)
+    datetime.datetime(2005, 6, 15, 9, 14, 12, 820778, tzinfo=<UTC>)
 
     >>> bq.buildstart
-    datetime.datetime(...)
+    datetime.datetime(2005, 6, 15, 9, 20, 12, 820778, tzinfo=<UTC>)
 
 Check Builder foreign key, which indicated which builder 'is processing'
 the job in question:
@@ -190,7 +190,7 @@ for testing if we will also be able to deal with more than one architecture.
     >>> from canonical.launchpad.interfaces import (
     ...     PackagePublishingPocket)
     >>> alsa_hoary = hoary.getSourcePackage('alsa-utils')
-    >>> alsa_spr = alsa_hoary.currentrelease.sourcepackagerelease
+    >>> alsa_spr = alsa_hoary['1.0.9a-4'].sourcepackagerelease
     >>> print alsa_spr.title
     alsa-utils - 1.0.9a-4
 

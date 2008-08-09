@@ -64,7 +64,7 @@
           <!-- 3. just registered successfully: -->
           <tal:registered condition="view/registration_success">
             <h1>Registration mail sent</h1>
-            <p>
+            <p id="address">
               Instructions on completing your registration have been sent to
               <strong><code tal:content="view/email"
                 >email@domain.com</code></strong>.

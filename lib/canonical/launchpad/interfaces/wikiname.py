@@ -10,17 +10,19 @@ __all__ = [
 from zope.schema import Int, TextLine
 from zope.interface import Interface
 
+from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.rest.schema import Reference
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import URIField
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 
 UBUNTU_WIKI_URL = 'https://wiki.ubuntu.com/'
 
 
-class IWikiName(Interface):
+class IWikiName(IHasOwner):
     """Wiki for Users"""
     export_as_webservice_entry()
     id = Int(title=_("Database ID"), required=True, readonly=True)
@@ -30,7 +32,9 @@ class IWikiName(Interface):
         Reference(
             title=_("Owner"), schema=Interface, required=True, readonly=True))
     wiki = exported(
-        TextLine(title=_("Wiki host"), required=True))
+        URIField(title=_("Wiki host"),
+                 allowed_schemes=['http', 'https'],
+                 required=True))
     wikiname = exported(
         TextLine(title=_("Wikiname"), required=True))
     url = exported(

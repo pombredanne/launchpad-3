@@ -4,7 +4,7 @@
 #
 #   python -i harness.py
 #
-# At that point, you will have the Launchpad SQLObject classes, all interface
+# At that point, you will have the Launchpad Storm classes, all interface
 # classes and the zope3 CA-fu at your fingertips, connected to launchpad_dev
 # or your LP_DBNAME environment variable (if you have one set).
 #
@@ -20,6 +20,7 @@ if len(sys.argv) > 1:
 else:
     dbuser = None
 
+import transaction
 from zope.component import getUtility
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 execute_zcml_for_scripts()
@@ -27,8 +28,8 @@ execute_zcml_for_scripts()
 #
 # setup connection to the db
 #
-from canonical.lp import initZopeless
-transactionmgr = initZopeless(dbuser=dbuser)
+#from canonical.lp import initZopeless
+#transactionmgr = initZopeless(dbuser=dbuser)
 
 def switch_db_user(dbuser, commit_first=True):
     global transactionmgr
@@ -60,6 +61,11 @@ startup = os.environ.get('PYTHONSTARTUP')
 if startup:
     execfile(startup)
 
+# Bring in useful bits of Storm
+from storm.locals import *
+from storm.expr import *
+from storm.zope.interfaces import IZStorm
+store = getUtility(IZStorm).get('main')
 
 #
 # Let's get a few handy objects going

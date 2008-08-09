@@ -41,6 +41,7 @@ __all__ = [
     'IHasBug',
     'IHasDateCreated',
     'IHasDrivers',
+    'IHasExternalBugTracker',
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
@@ -79,6 +80,21 @@ __all__ = [
 
 class NameNotAvailable(KeyError):
     """You're trying to set a name, but the name you chose isn't available."""
+
+
+class IHasExternalBugTracker(Interface):
+    """An object that can have an external bugtracker specified."""
+
+    def getExternalBugTracker():
+        """Return the external bug tracker used by this bug tracker.
+
+        If the product uses Launchpad, return None.
+
+        If the product doesn't have a bug tracker specified, return the
+        project bug tracker instead. If the product doesn't belong to a
+        superproject, or if the superproject doesn't have a bug tracker,
+        return None.
+        """
 
 
 class ILaunchpadCelebrities(Interface):
@@ -184,6 +200,10 @@ class IPrivateApplication(ILaunchpadApplication):
     authserver = Attribute("""Old Authserver API end point.""")
 
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
+
+    branch_puller = Attribute("""Branch puller end point.""")
+
+    branchfilesystem = Attribute("""The branch filesystem end point.""")
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
@@ -429,7 +449,8 @@ class IAppFrontPageSearchForm(Interface):
 class ILaunchpadSearch(Interface):
     """The Schema for performing searches across all Launchpad."""
 
-    text = TextLine(title=_('Search text'), required=False)
+    text = TextLine(
+        title=_('Search text'), required=False, max_length=250)
 
 
 class UnknownRecipientError(KeyError):
@@ -461,6 +482,12 @@ class INotificationRecipientSet(Interface):
         """Return the set of person who will be notified.
 
         :return: An iterator of `IPerson`, sorted by display name.
+        """
+
+    def getRecipientPersons():
+        """Return the set of individual Persons who will be notified.
+
+        :return: An iterator of (`email_address`, `IPerson`), unsorted.
         """
 
     def __iter__():

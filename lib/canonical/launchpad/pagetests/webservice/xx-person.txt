@@ -23,21 +23,24 @@ for teams (as they're defined in the ITeam interface).
     jabber_ids_collection_link: http://.../~salgado/jabber_ids
     karma: 0
     languages_collection_link: http://.../~salgado/languages
+    latitude: None
+    longitude: None
     mailing_list_auto_subscribe_policy: Ask me when I join a team
-    member_memberships_collection_link: http://.../~salgado/member_memberships
     members_collection_link: http://.../~salgado/members
+    members_details_collection_link: http://.../~salgado/members_details
+    memberships_details_collection_link: http://.../~salgado/memberships_details
     mugshot_link: http://.../~salgado/mugshot
     name: salgado
     open_membership_invitations_collection_link: http://.../~salgado/open_membership_invitations
     participants_collection_link: http://.../~salgado/participants
     preferred_email_address_link: http://.../~salgado/+email/guilherme.salgado@canonical.com
     proposed_members_collection_link: http://.../~salgado/proposed_members
+    resource_type_link: http://api.launchpad.dev/beta/#person
     self_link: http://.../~salgado
-    team_memberships_collection_link: http://.../~salgado/team_memberships
+    sub_teams_collection_link: http://.../~salgado/sub_teams
+    super_teams_collection_link: http://.../~salgado/super_teams
     team_owner_link: None
-    teams_indirectly_participated_in_collection_link: http://.../~salgado/teams_indirectly_participated_in
-    teams_participated_in_collection_link: http://.../~salgado/teams_participated_in
-    timezone: None
+    time_zone: None
     visibility: Public
     wiki_names_collection_link: http://.../~salgado/wiki_names
 
@@ -61,9 +64,12 @@ for teams (as they're defined in the ITeam interface).
     jabber_ids_collection_link: http://.../~ubuntu-team/jabber_ids
     karma: 0
     languages_collection_link: http://.../~ubuntu-team/languages
+    latitude: None
+    longitude: None
     mailing_list_auto_subscribe_policy: Ask me when I join a team
-    member_memberships_collection_link: http://.../~ubuntu-team/member_memberships
     members_collection_link: http://.../~ubuntu-team/members
+    members_details_collection_link: http://.../~ubuntu-team/members_details
+    memberships_details_collection_link: http://.../~ubuntu-team/memberships_details
     mugshot_link: http://.../~ubuntu-team/mugshot
     name: ubuntu-team
     open_membership_invitations_collection_link: http://.../~ubuntu-team/open_membership_invitations
@@ -71,14 +77,14 @@ for teams (as they're defined in the ITeam interface).
     preferred_email_address_link: http://.../~ubuntu-team/+email/support@ubuntu.com
     proposed_members_collection_link: http://.../~ubuntu-team/proposed_members
     renewal_policy: invite them to apply for renewal
+    resource_type_link: http://api.launchpad.dev/beta/#team
     self_link: http://.../~ubuntu-team
+    sub_teams_collection_link: http://.../~ubuntu-team/sub_teams
     subscription_policy: Moderated Team
+    super_teams_collection_link: http://.../~ubuntu-team/super_teams
     team_description: This Team is responsible for the Ubuntu Distribution
-    team_memberships_collection_link: http://.../~ubuntu-team/team_memberships
     team_owner_link: http://.../~sabdfl
-    teams_indirectly_participated_in_collection_link: http://.../~ubuntu-team/teams_indirectly_participated_in
-    teams_participated_in_collection_link: http://.../~ubuntu-team/teams_participated_in
-    timezone: None
+    time_zone: None
     visibility: Public
     wiki_names_collection_link: http://.../~ubuntu-team/wiki_names
 
@@ -116,11 +122,13 @@ representations too.
     >>> email = webservice.get(
     ...     sample_person['preferred_email_address_link']).jsonBody()
     >>> sorted(email)
-    [u'email', u'person_link', u'self_link']
+    [u'email', u'person_link', u'resource_type_link', u'self_link']
     >>> for key, value in sorted(email.items()):
     ...     print "%s: %s" % (key, value)
     email: test@canonical.com
     person_link: http://.../~name12
+    resource_type_link:
+      http://api.launchpad.dev/beta/#email_address
     self_link: http://.../~name12/+email/test@canonical.com
 
 One can only traverse to the email addresses of the person already
@@ -135,16 +143,16 @@ traversed to, obviously.
 
 A person is linked to their team memberships.
 
-    >>> salgado_memberships = salgado['team_memberships_collection_link']
+    >>> salgado_memberships = salgado['memberships_details_collection_link']
     >>> salgado_memberships
-    u'http://.../~salgado/team_memberships'
+    u'http://.../~salgado/memberships_details'
 
 Similarly, a team is linked to the team memberships of its members.
 
     >>> landscape_developers = webservice.get(
     ...     "/beta/~landscape-developers").jsonBody()
-    >>> landscape_developers['member_memberships_collection_link']
-    u'http://.../~landscape-developers/member_memberships'
+    >>> landscape_developers['members_details_collection_link']
+    u'http://.../~landscape-developers/members_details'
 
 And to all membership invitations sent to it.
 
@@ -170,7 +178,7 @@ Team memberships also have data fields.
     >>> sorted(salgado_landscape)
     [u'date_expires', u'date_joined',
      u'last_change_comment', u'last_changed_by_link', u'member_link',
-     u'self_link', u'status', u'team_link']
+     u'resource_type_link', u'self_link', u'status', u'team_link']
 
 Each team membership links to the person who approved the link.
 
@@ -194,7 +202,7 @@ possible to navigate from a team, to the collection of peoples'
 memberships in the team.
 
     >>> print_self_link_of_entries(webservice.get(
-    ...     "/beta/~landscape-developers/member_memberships").jsonBody())
+    ...     "/beta/~landscape-developers/members_details").jsonBody())
     http://.../~landscape-developers/+member/name12
     http://.../~landscape-developers/+member/salgado
 
@@ -226,22 +234,26 @@ All participants (direct or indirect members):
 
 A person/team is also linked to all teams in which they participate.
 
-    >>> salgado['teams_participated_in_collection_link']
-    u'http://.../~salgado/teams_participated_in'
-    >>> print_self_link_of_entries(webservice.get(
-    ...     salgado['teams_participated_in_collection_link']).jsonBody())
-    http://.../~admins
-    http://.../~landscape-developers
-    http://.../~mailing-list-experts
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> salgado['participations_collection_link']
+    # u'http://.../~salgado/participations'
+    # >>> print_self_link_of_entries(webservice.get(
+    # ...     salgado['participations_collection_link']).jsonBody())
+    # http://.../~admins
+    # http://.../~landscape-developers
+    # http://.../~mailing-list-experts
 
 And to the teams in which they're indirect members.
 
-    >>> link = salgado['teams_indirectly_participated_in_collection_link']
-    >>> link
-    u'http://.../~salgado/teams_indirectly_participated_in'
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> link = salgado['indirect_participations_collection_link']
+    # >>> link
+    # u'http://.../~salgado/indirect_participations'
 
-    >>> print_self_link_of_entries(webservice.get(link).jsonBody())
-    http://.../~mailing-list-experts
+    # >>> print_self_link_of_entries(webservice.get(link).jsonBody())
+    # http://.../~mailing-list-experts
 
 There are also links to proposed, invited, deactivated and expired
 members.
@@ -265,6 +277,21 @@ members.
     http://.../~karl
 
 
+=== Sub-teams and super-teams ===
+
+Teams can be members of other teams, and sometimes it's useful to know
+which teams are members of any given team as well as the ones it is a
+member of.
+
+    >>> print_self_link_of_entries(webservice.get(
+    ...     ubuntu_team['sub_teams_collection_link']).jsonBody())
+    http://api.launchpad.dev/beta/~warty-gnome
+
+    >>> print_self_link_of_entries(webservice.get(
+    ...     ubuntu_team['super_teams_collection_link']).jsonBody())
+    http://api.launchpad.dev/beta/~guadamen
+
+
 === Wiki names ===
 
 All wiki names associated to a person/team are also linked to that
@@ -281,10 +308,12 @@ representations too.
 
     >>> wiki_name = sorted(webservice.get(wikis_link).jsonBody()['entries'])[0]
     >>> sorted(wiki_name)
-    [u'person_link', u'self_link', u'url', u'wiki', u'wikiname']
+    [u'person_link', u'resource_type_link', u'self_link', u'url',
+     u'wiki', u'wikiname']
     >>> for key, value in sorted(wiki_name.items()):
     ...     print "%s: %s" % (key, value)
     person_link: http://.../~name12
+    resource_type_link: http://api.launchpad.dev/beta/#wiki_name
     self_link: http://.../~name12/+wikiname/12
     url: https://wiki.ubuntu.com/SamplePerson
     wiki: https://wiki.ubuntu.com/
@@ -296,6 +325,31 @@ to, obviously.
     >>> print webservice.get("/beta/~salgado/+wikiname/12")
     HTTP/1.1 404 Not Found
     ...
+
+Wiki names can be modified.
+
+    >>> from simplejson import dumps
+    >>> patch = {
+    ...    u'wiki': u'http://www.example.com/',
+    ...    u'wikiname': 'MrExample'}
+    >>> response = webservice.patch(
+    ...     wiki_name['self_link'], 'application/json', dumps(patch))
+    >>> wiki_name = sorted(webservice.get(wikis_link).jsonBody()['entries'])[0]
+    >>> print wiki_name['url']
+    http://www.example.com/MrExample
+
+But only if we supply valid data.
+
+  >>> patch = {
+  ...    u'wiki': u'javascript:void/**/',
+  ...    u'wikiname': 'MrExample'}
+  >>> response = webservice.patch(
+  ...     wiki_name['self_link'], 'application/json', dumps(patch))
+  >>> print response.getOutput()
+  HTTP/1.1 400 Bad Request
+  ...
+  wiki: The URI scheme "javascript" is not allowed.
+  Only URIs with the following schemes may be used: http, https
 
 
 === Jabber IDs ===
@@ -315,11 +369,12 @@ representations too.
     >>> jabber_id = sorted(
     ...     webservice.get(jabber_ids_link).jsonBody()['entries'])[0]
     >>> sorted(jabber_id)
-    [u'jabberid', u'person_link', u'self_link']
+    [u'jabberid', u'person_link', u'resource_type_link', u'self_link']
     >>> for key, value in sorted(jabber_id.items()):
     ...     print "%s: %s" % (key, value)
     jabberid: markshuttleworth@jabber.org
     person_link: http://.../~sabdfl
+    resource_type_link: http://api.launchpad.dev/beta/#jabber_id
     self_link: http://.../~sabdfl/+jabberid/markshuttleworth@jabber.org
 
 One can only traverse to the Jabber IDs of the person already traversed
@@ -346,12 +401,14 @@ too.
 
     >>> irc_id = sorted(webservice.get(irc_ids_link).jsonBody()['entries'])[0]
     >>> sorted(irc_id)
-    [u'network', u'nickname', u'person_link', u'self_link']
+    [u'network', u'nickname', u'person_link', u'resource_type_link',
+     u'self_link']
     >>> for key, value in sorted(irc_id.items()):
     ...     print "%s: %s" % (key, value)
     network: irc.freenode.net
     nickname: mark
     person_link: http://.../~sabdfl
+    resource_type_link: http://api.launchpad.dev/beta/#irc_id
     self_link: http://.../~sabdfl/+ircnick/1
 
 One can only traverse to the IRC IDs of the person already traversed
@@ -364,12 +421,16 @@ to, obviously.
 
 == Custom operations ==
 
+IPerson supports a bunch of operations.
+
+
+=== Team membership operations ===
+
 Joining and leaving teams:
 
-    >>> from urllib import quote
     >>> print webservice.named_post(
     ...     salgado['self_link'], 'join', {},
-    ...     team=quote(ubuntu_team['self_link']))
+    ...     team=ubuntu_team['self_link'])
     HTTP/1.1 200 Ok
     ...
     >>> webservice.get(
@@ -378,7 +439,7 @@ Joining and leaving teams:
 
     >>> print webservice.named_post(
     ...     salgado['self_link'], 'leave', {},
-    ...     team=quote(landscape_developers['self_link']))
+    ...     team=landscape_developers['self_link'])
     HTTP/1.1 200 Ok
     ...
     >>> webservice.get(
@@ -389,7 +450,7 @@ Adding an arbitrary member to a team:
 
     >>> print webservice.named_post(
     ...     ubuntu_team['self_link'], 'addMember', {},
-    ...     person=quote(landscape_developers['self_link']),
+    ...     person=landscape_developers['self_link'],
     ...     comment='Just a test')
     HTTP/1.1 200 Ok
     ...
@@ -401,7 +462,7 @@ Accepting or declining a membership invitation:
 
     >>> print webservice.named_post(
     ...     landscape_developers['self_link'], 'acceptInvitationToBeMemberOf',
-    ...     {}, team=quote(ubuntu_team['self_link']), comment='Just a test')
+    ...     {}, team=ubuntu_team['self_link'], comment='Just a test')
     HTTP/1.1 200 Ok
     ...
     >>> webservice.get("/beta/~ubuntu-team/+member/landscape-developers"
@@ -410,8 +471,37 @@ Accepting or declining a membership invitation:
 
     >>> print webservice.named_post(
     ...     '/beta/~name20', 'declineInvitationToBeMemberOf', {},
-    ...     team=quote(ubuntu_team['self_link']), comment='Just a test')
+    ...     team=ubuntu_team['self_link'], comment='Just a test')
     HTTP/1.1 200 Ok
     ...
     >>> webservice.get("/beta/~ubuntu-team/+member/name20").jsonBody()['status']
     u'Invitation declined'
+
+To check whether or not a given person is a participant in a team, use the
+'inTeam' custom operation.
+
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> print webservice.named_get(
+    # ...     '/beta/~salgado', 'inTeam', team=ubuntu_team['self_link']
+    # ...     ).jsonBody()
+    # False
+
+    # >>> print webservice.named_get(
+    # ...     '/beta/~cprov', 'inTeam', team=ubuntu_team['self_link']
+    # ...     ).jsonBody()
+    # True
+
+To find the path from a given person to a team that person is a
+participant, use the 'findPathToTeam' custom operation.
+
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> ml_experts = webservice.get("/beta/~mailing-list-experts").jsonBody()
+    # >>> json = webservice.named_get(
+    # ...     '/beta/~salgado', 'findPathToTeam', team=ml_experts['self_link']
+    # ...     ).jsonBody()
+    # >>> for entry in json['entries']:
+    # ...     print entry['self_link']
+    # http://api.launchpad.dev/beta/~admins
+    # http://api.launchpad.dev/beta/~mailing-list-experts

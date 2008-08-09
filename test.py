@@ -35,6 +35,9 @@ if os.getsid(0) == os.getsid(os.getppid()):
 os.environ['TZ'] = 'Asia/Calcutta'
 time.tzset()
 
+# Enable Storm's C extensions
+os.environ['STORM_CEXTENSIONS'] = '1'
+
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(here, 'lib'))
 
@@ -54,6 +57,12 @@ importfascist.install_import_fascist()
 # Install the warning handler hook and atexit handler.
 import warninghandler
 warninghandler.install_warning_handler()
+
+# Ensure that atexit handlers are executed on TERM.
+import signal
+def exit_with_atexit_handlers(*ignored):
+    sys.exit(-1 * signal.SIGTERM)
+signal.signal(signal.SIGTERM, exit_with_atexit_handlers)
 
 # Ensure overrides are generated
 from configs import generate_overrides
@@ -87,7 +96,7 @@ warnings.filterwarnings(
         'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh'
         )
 warnings.filterwarnings(
-        'ignore', 'twisted.python.plugin', DeprecationWarning, 'buildbot'
+        'ignore', 'twisted.python.plugin', DeprecationWarning,
         )
 warnings.filterwarnings(
         'ignore', 'The concrete concept of a view has been deprecated.',

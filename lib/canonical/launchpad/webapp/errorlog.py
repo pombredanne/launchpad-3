@@ -24,7 +24,7 @@ from zope.exceptions.exceptionformatter import format_exception
 from canonical.config import config
 from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.adapter import (
-    RequestExpired, get_request_statements, get_request_duration,
+    get_request_statements, get_request_duration,
     soft_timeout_expired)
 from canonical.launchpad.webapp.interfaces import (
     IErrorReport, IErrorReportRequest)
@@ -175,7 +175,7 @@ class ErrorReport:
         pageid = msg.getheader('page-id')
         username = msg.getheader('user')
         url = msg.getheader('url')
-        duration = int(msg.getheader('duration', '-1'))
+        duration = int(float(msg.getheader('duration', '-1')))
 
         # Explicitely use an iterator so we can process the file
         # sequentially. In most instances the iterator will actually
@@ -539,7 +539,7 @@ class ScriptRequest(ErrorReportRequest):
         return dict(self.items())
 
 
-class SoftRequestTimeout(RequestExpired):
+class SoftRequestTimeout(Exception):
     """Soft request timeout expired"""
 
 
@@ -551,4 +551,3 @@ def end_request(event):
         globalErrorUtility.raising(
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)
-

@@ -443,9 +443,18 @@ And on a branch with a NULL author.
 
 == Branch subscriptions ==
 
-Branches can be subscribed to and unsubscribed from by a Person.
+Branches can be subscribed to and unsubscribed from by a Person.  An
+implicit subscription to the branch is created when the branch is created
+so that the branch owner can be informed of merge proposals or code review
+messages relating to their branches.
 
-Branch subscriptions now have extra attributes associated with them.
+    >>> subscriptions = list(gterm_dev.subscriptions)
+    >>> print len(subscriptions)
+    1
+    >>> subscriptions[0].person == gterm_dev.owner
+    True
+
+Branch subscriptions have attributes associated with them.
 The notification_level is used to control what email is sent to the
 subscribed user, and max_diff_lines is used to control the size of
 any generated diffs between revisions that are emailed out.  The review_level
@@ -476,9 +485,9 @@ BranchSubscriptionNotificationLevel.
     True
     >>> subscription.review_level == CodeReviewNotificationLevel.FULL
     True
-    >>> gterm_dev.subscriptions[0] == subscription
+    >>> gterm_dev.subscriptions[1] == subscription
     True
-    >>> list(gterm_dev.subscribers) == [sabdfl]
+    >>> set(gterm_dev.subscribers) == set([gterm_dev.owner, sabdfl])
     True
     >>> list(sabdfl.subscribed_branches) == [gterm_dev]
     True
@@ -505,7 +514,7 @@ BranchSubscriptionNotificationLevel.
 
     >>> gterm_dev.unsubscribe(sabdfl)
     >>> gterm_dev.subscribers.count()
-    0
+    1
 
 
 We can get the subscribers for a branch based on their level of
@@ -974,6 +983,7 @@ A BranchPersonSearchContext takes a person and a restriction.
     ~name12/gnome-terminal/mirrored
     ~name12/gnome-terminal/pushed
     ~name12/gnome-terminal/scanned
+    ~landscape-developers/landscape/trunk
     ~name12/+junk/junk.dev
     ~name12/+junk/junk.contrib
 
@@ -1114,14 +1124,10 @@ canonical/launchpad/database/tests/test_branch.py.
 
     >>> print branch.unique_name
     ~ddaa/gnome-terminal/to-delete
-    >>> branch.canBeDeleted()
-    True
 
-Adding a subscriber makes it not deletable.
+Since the branch has ddaa as an implicit subscriber, the branch is not
+deletable.
 
-    >>> ignored = branch.subscribe(
-    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
     >>> branch.canBeDeleted()
     False
     >>> branch.destroySelf()
@@ -1144,14 +1150,12 @@ The requirements for deleting the branch can be discovered:
     ...     BranchType.MIRRORED, 'to-delete', ddaa, ddaa, gterm_product,
     ...     'http://example.com/branches/to-delete', 'A branch to delete',
     ...     date_created=now.next())
-    >>> subscription = branch.subscribe(
-    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
     >>> requirements = branch.deletionRequirements()
 
 The keys in the requirements are the objects that are associated with the
 branch.
 
+    >>> [subscription] = list(branch.subscriptions)
     >>> [subscription] == requirements.keys()
     True
     >>> action, reason = requirements[subscription]
@@ -1180,6 +1184,46 @@ Branches with revisions are deletable.
     >>> branch.destroySelf()
     >>> print branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
     None
+    >>> logout()
+
+A user without launchpad.Edit cannot delete a branch.
+
+    >>> login('no-priv@canonical.com')
+    >>> message = factory.makeCodeReviewComment()
+    >>> branch = message.branch_merge_proposal.target_branch
+    >>> branch.destroySelf(break_references=True)
+    Traceback (most recent call last):
+    Unauthorized: (<Branch ...>, 'destroySelf', 'launchpad.Edit')
+
+Even if users with no delete rights on the branch could somehow access
+the page, they still wouldn't be able to delete the message.  The message
+is listed as not "allowed":
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> branch_delete_view = getMultiAdapter(
+    ...   (branch, LaunchpadTestRequest()), name="+delete")
+    >>> deletion_requirements = [
+    ...     "%s allowed: %s" % (req[0].__class__.__name__, req[3])
+    ...     for req in branch_delete_view.display_deletion_requirements]
+    >>> for req in sorted(deletion_requirements):
+    ...     print req
+    BranchMergeProposal allowed: False
+    BranchSubscription allowed: False
+
+
+The "allowed: False" status is mirrored in the display.
+
+    >>> request = LaunchpadTestRequest(
+    ...   method='POST',
+    ...   form={'field.actions.delete_branch': 'Delete'})
+    >>> branch_delete_view = getMultiAdapter(
+    ...   (branch, request), name="+delete")
+    >>> branch_delete_view.delete_branch_action.success({})
+    >>> for notice in request.response.notifications:
+    ...     print notice.message
+    This branch cannot be deleted.
+    >>> logout()
 
 
 == Branch references ==
@@ -1209,3 +1253,6 @@ The current references to the branch table are shown here.
     productseries.import_branch
     productseries.user_branch
     specificationbranch.branch
+
+(Unfortunately, references can form a graph-- note that codereviewcomments
+ aren't shown.)

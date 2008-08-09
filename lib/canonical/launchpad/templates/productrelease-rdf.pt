@@ -31,6 +31,6 @@
                     string:${context/product/fmt:url}/${context/productseries/name}/+rdf" />
             </lp:ProductSeries>
         </lp:inProductSeries>
-        <lp:owner tal:content="structure context/owner/@@+rdf-contents" />
+        <lp:owner tal:content="structure context/owner/@@+rdf-contents/template" />
     </lp:ProductRelease>
 </rdf:RDF>

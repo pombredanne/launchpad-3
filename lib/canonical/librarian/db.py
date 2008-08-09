@@ -5,11 +5,77 @@
 __metaclass__ = type
 __all__ = [
     'Library',
+    'read_transaction',
+    'write_transaction',
     ]
 
-from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
-
+from psycopg2.extensions import TransactionRollbackError
 from sqlobject.sqlbuilder import AND
+from storm.exceptions import DisconnectionError, IntegrityError
+import transaction
+from twisted.python.util import mergeFunctionMetadata
+
+from canonical.database.sqlbase import reset_store
+from canonical.launchpad.database.librarian import (
+    LibraryFileContent, LibraryFileAlias)
+
+
+RETRY_ATTEMPTS = 3
+
+
+def retry_transaction(func):
+    """Decorator used to retry database transaction failures.
+
+    The function being decorated should not have side effects outside
+    of the transaction.
+    """
+    def wrapper(*args, **kwargs):
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                return func(*args, **kwargs)
+            except (DisconnectionError, IntegrityError,
+                    TransactionRollbackError), exc:
+                if attempt >= RETRY_ATTEMPTS:
+                    raise # tried too many times
+    return mergeFunctionMetadata(func, wrapper)
+
+
+def read_transaction(func):
+    """Decorator used to run the function inside a read only transaction.
+
+    The transaction will be aborted on successful completion of the
+    function.  The transaction will be retried if appropriate.
+    """
+    @reset_store
+    def wrapper(*args, **kwargs):
+        transaction.begin()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            transaction.abort()
+    return retry_transaction(mergeFunctionMetadata(func, wrapper))
+
+
+def write_transaction(func):
+    """Decorator used to run the function inside a write transaction.
+
+    The transaction will be committed on successful completion of the
+    function, and aborted on failure.  The transaction will be retried
+    if appropriate.
+    """
+    @reset_store
+    def wrapper(*args, **kwargs):
+        transaction.begin()
+        try:
+            ret = func(*args, **kwargs)
+        except:
+            transaction.abort()
+            raise
+        transaction.commit()
+        return ret
+    return retry_transaction(mergeFunctionMetadata(func, wrapper))
 
 
 class Library:

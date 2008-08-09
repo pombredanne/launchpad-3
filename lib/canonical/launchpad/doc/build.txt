@@ -7,6 +7,9 @@ The build record may have many BinaryPackageRelease records pointing
 at it and it may reference a build log if the build was done on a
 launchpad build daemon.
 
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...    BuildStatus, IDistributionSet, IBuildSet)
@@ -42,7 +45,7 @@ Let's check the complex properties of a build object.
     <LibraryFileAlias ...>
 
     >>> firefox_build.calculated_buildstart
-    datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
+    datetime.datetime(...)
 
     >>> firefox_build.is_virtualized
     False
@@ -142,13 +145,98 @@ Test "retry" functionality:
 See section 'AssertionErrors in IBuild' for further documentation about
 consequences of an denied 'retry' action.
 
+Let's retrieve a build record that can be retried.
+
     >>> active_build = getUtility(IBuildSet).getByBuildID(9)
-    >>> active_build.title
-    u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
-    >>> active_build.buildstate.title
-    'Failed to build'
-    >>> active_build.builder.name
-    u'bob'
+
+    >>> print active_build.title
+    i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+
+    >>> print active_build.buildstate.name
+    FAILEDTOBUILD
+
+    >>> print active_build.builder.name
+    bob
+
+    >>> print active_build.buildlog.filename
+    netapplet-1.0.0.tar.gz
+
+At this point, it's also convenient to test if any content can be
+stored as 'upload_log' using storeUploadLog().
+
+This method will upload a file to librarian with the given content and
+update the context `upload_log` reference.
+
+We store such information persistently to allow users to revisit it,
+and potentially fix any issue, after the build has been processed.
+
+We continue to send the upload information with the
+build-failure-notification for FAILEDTOUPLOAD builds, see
+build-failedtoupload-workflow.txt for further information.
+
+    >>> print active_build.upload_log
+    None
+
+    >>> active_build.storeUploadLog('sample upload log.')
+    >>> print active_build.upload_log.filename
+    upload_9_log.txt
+
+Once the transaction is committed, the file is available in the
+librarian, and we can retrieve its contents.
+
+    >>> transaction.commit()
+    >>> active_build.upload_log.open()
+    >>> print active_build.upload_log.read()
+    sample upload log.
+
+The 'upload_log' library file privacy is set according to the build
+target archive.
+
+    >>> print active_build.archive.private
+    False
+
+    >>> print active_build.upload_log.restricted
+    False
+
+Transforming ubuntu primary archive in a private archive makes
+storeUploadLog() upload the given content as a restricted file.
+
+    >>> login('foo.bar@canonical.com')
+    >>> active_build.archive.buildd_secret = "secret"
+    >>> active_build.archive.private = True
+    >>> login(ANONYMOUS)
+
+Simply changing the archive privacy after the 'upload_log' is stored
+doesn't make it restricted. The archive privacy will be respected in
+the next upload attempt only.
+
+    >>> print active_build.upload_log.restricted
+    False
+
+In order to call storeUploadLog() again for the same build, we have to
+remove the previously stored 'upload_log'. See the check below in
+'AssertionErrors in IBuild' for more detail.
+
+    >>> login('foo.bar@canonical.com')
+    >>> active_build.upload_log = None
+    >>> login(ANONYMOUS)
+
+Once targeted to a private archive the 'upload_log' gets stored in the
+restricted librarian instance.
+
+    >>> print active_build.archive.private
+    True
+
+    >>> active_build.storeUploadLog('private upload log.')
+    >>> print active_build.upload_log.restricted
+    True
+
+Restore ubuntu main archive state to not affect the rest of the tests.
+
+    >>> login('foo.bar@canonical.com')
+    >>> active_build.archive.buildd_secret = ''
+    >>> active_build.archive.private = False
+    >>> login(ANONYMOUS)
 
 Since ubuntu/warty is already released the failed build can't be
 retried.
@@ -168,21 +256,48 @@ retried.
     >>> active_build.can_be_retried
     True
 
+Before we actually retry the build on hand let's set its start time.
+This will allow us to observe the fact that a build retry does not
+change the start time if it was set already.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> time_now = datetime.now(UTC)
+    >>> unsecured_build = removeSecurityProxy(active_build)
+    >>> unsecured_build.date_first_dispatched = time_now
+    >>> active_build.date_first_dispatched == time_now
+    True
+
 Retry Build record in question:
 
     >>> active_build.retry()
 
+The build was retried but its start time remains the same.
+
+    >>> active_build.date_first_dispatched == time_now
+    True
+
 Build record has no history and is NEEDSBUILD and a corresponding
 BuildQueue record was created.
 
-    >>> active_build.builder is None
-    True
+    >>> print active_build.builder
+    None
 
-    >>> active_build.buildstate.value is 0
-    True
+    >>> print active_build.buildstate.name
+    NEEDSBUILD
 
-    >>> active_build.buildqueue_record is not None
-    True
+    >>> print active_build.buildqueue_record
+    <...BuildQueue...>
+
+'buildlog' and 'upload_log' librarian references were removed when the
+build was retried. They will be garbage-collected later by
+'librariangc' and replaced by new ones when the build re-attempt
+finishes.
+
+    >>> print active_build.buildlog
+    None
+
+    >>> print active_build.upload_log
+    None
 
 We will restore ubuntu/warty previously changes status, SUPPORTED, so
 it won't interfere in the next tests.
@@ -262,9 +377,9 @@ Emulate a huge list of binaries for 'pmount':
     ...         architecturespecific)
 
 
-Check if the property still working:
+Check if the property is still working:
 
-    >>> len(pmount_build.binarypackages)
+    >>> pmount_build.binarypackages.count()
     17
 
 Ensure the list is ordered by 'name'
@@ -451,7 +566,6 @@ the superseded one does.
     >>> hoary_pmount.getBuildRecords().count()
     5
 
-
 For a given distribution as well:
 
     >>> ubuntu.getBuildRecords().count()
@@ -460,12 +574,12 @@ For a given distribution as well:
     >>> L = ubuntu.getBuildRecords(build_state=BuildStatus.FULLYBUILT)
     >>> for l in L:
     ...     print l.datebuilt, l.id, l.buildstate.value
-    2007-08-10 00:00:13+00:00 30 1
+    2007-08-10 00:00:14+00:00 30 1
     2007-08-09 23:59:59+00:00 29 1
-    2005-03-25 00:00:01+00:00 7 1
-    2005-03-25 00:00:01+00:00 16 1
+    2005-03-25 00:00:03+00:00 7 1
+    2005-03-25 00:00:02+00:00 16 1
     2005-03-25 00:00:01+00:00 19 1
-    2004-09-27 11:57:13+00:00 2 1
+    2004-09-27 11:57:14+00:00 2 1
     2004-09-27 11:57:13+00:00 18 1
 
 Retrieve the current PENDING builds
@@ -525,8 +639,8 @@ Let's make cprov's archive private (and hence its builds become private):
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = removeSecurityProxy(getUtility(IPersonSet).getByName('cprov'))
-    >>> cprov.archive.private = True
     >>> cprov.archive.buildd_secret = "secret"
+    >>> cprov.archive.private = True
     >>> flush_database_updates()
 
 Now define a helper function to print out build details:
@@ -680,6 +794,34 @@ they will happen in another archive.
 
     >>> failed_build.can_be_retried
     True
+
+storeUploadLog() refuses to override any previously stored
+'upload_log'.
+
+    >>> failedtoupload_build = getUtility(IBuildSet).getByBuildID(22)
+    >>> print failedtoupload_build.title
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+
+    >>> print failedtoupload_build.upload_log.filename
+    upload_22_log.txt
+
+    >>> failedtoupload_build.storeUploadLog('something')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Upload log information already exist and cannot be
+    overridden.
+
+It's only possible to store another 'upload_log' content once the
+build is retried.
+
+    >>> failedtoupload_build.retry()
+    >>> print failedtoupload_build.upload_log
+    None
+
+    >>> failedtoupload_build.storeUploadLog('something')
+
+    >>> print failedtoupload_build.upload_log.filename
+    upload_22_log.txt
 
 
 == 'Ogre' components ==
@@ -976,9 +1118,6 @@ Create oldest SourcePackageRelease instance.
 
 Create oldest build instance.
 
-    >>> from datetime import datetime, timedelta
-    >>> import pytz
-    >>> UTC = pytz.timezone('UTC')
     >>> oldest_build = oldest_spr.sourcepackagerelease.createBuild(
     ...         test_publisher.breezy_autotest_hppa,
     ...         PackagePublishingPocket.UPDATES,
@@ -1058,3 +1197,68 @@ the main archive.
 
     >>> ppa_build.estimated_build_duration
     datetime.timedelta(0, 3600)
+
+
+== IBuildSet.getBuildsBySourcePackageRelease() ==
+
+getBuildsBySourcePackageRelease() will return all the Build records for
+all the SourcePackageRelease IDs passed.
+
+Create some sources with builds:
+
+    >>> source_one = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='sourceone')
+    >>> source_two = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='sourcetwo')
+    >>> build_one = source_one.sourcepackagerelease.createBuild(
+    ...         test_publisher.breezy_autotest_hppa,
+    ...         PackagePublishingPocket.RELEASE,
+    ...         test_publisher.breezy_autotest.main_archive,
+    ...         status=BuildStatus.FULLYBUILT)
+    >>> build_two = source_two.sourcepackagerelease.createBuild(
+    ...         test_publisher.breezy_autotest_hppa,
+    ...         PackagePublishingPocket.RELEASE,
+    ...         test_publisher.breezy_autotest.main_archive,
+    ...         status=BuildStatus.NEEDSBUILD)
+
+    >>> source_ids = (
+    ...     source_one.sourcepackagerelease.id,
+    ...     source_two.sourcepackagerelease.id,
+    ...     )
+    >>> builds = removeSecurityProxy(bs).getBuildsBySourcePackageRelease(
+    ...     source_ids)
+    >>> import operator
+    >>> for build in sorted(builds, key=operator.attrgetter("id")):
+    ...     print build.title, build.buildstate.name
+    hppa build of sourceone 666 in ubuntutest breezy-autotest RELEASE
+        FULLYBUILT
+    hppa build of sourcetwo 666 in ubuntutest breezy-autotest RELEASE
+        NEEDSBUILD
+
+The results can also be filtered on build state:
+
+    >>> builds = removeSecurityProxy(bs).getBuildsBySourcePackageRelease(
+    ...     source_ids, buildstate=BuildStatus.FULLYBUILT)
+    >>> for build in sorted(builds, key=operator.attrgetter("id")):
+    ...     print build.title, build.buildstate.name
+    hppa build of sourceone 666 in ubuntutest breezy-autotest RELEASE
+        FULLYBUILT
+
+If there are no matching results then it returns an empty SelectResults.
+
+    >>> builds = removeSecurityProxy(bs).getBuildsBySourcePackageRelease(
+    ...     source_ids, buildstate=BuildStatus.CHROOTWAIT)
+    >>> print builds.count()
+    0
+
+Supplying an empty list or None for the IDs results in an empty list
+being returned.
+
+    >>> removeSecurityProxy(bs).getBuildsBySourcePackageRelease(None)
+    []
+
+    >>> removeSecurityProxy(bs).getBuildsBySourcePackageRelease([])
+    []
+

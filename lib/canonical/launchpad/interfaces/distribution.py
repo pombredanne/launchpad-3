@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDistribution',
+    'IDistributionMirrorMenuMarker',
     'IDistributionSet',
     ]
 
@@ -18,21 +19,29 @@ from zope.interface import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
-from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.karma import IKarmaContext
-from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.interfaces import (
-    IBugTarget, IHasAppointedDriver, IHasDrivers, IHasOwner,
-    IHasSecurityContact, ILaunchpadUsage, ISpecificationTarget)
-from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.archive import IArchive
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
+    ILaunchpadUsage)
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
+from canonical.launchpad.interfaces.message import IMessage
+from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.pillar import IPillar
+from canonical.launchpad.interfaces.specificationtarget import (
+    ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
+
+
+class IDistributionMirrorMenuMarker(Interface):
+    """Marker interface for Mirror navigation."""
 
 
 class DistributionNameField(PillarNameField):
@@ -166,7 +175,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         description=_(
             "The DistroSeries that should get the translation effort focus."),
         required=False,
-        vocabulary='FilteredDistroSeriesVocabulary')
+        vocabulary='FilteredDistroSeries')
 
     language_pack_admin = Choice(
         title=_("Language Pack Administrator"),
@@ -228,6 +237,16 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         """Returns an IDistributionSourcePackageRelease
 
         Receives a sourcepackagerelease.
+        """
+
+    def getCurrentSourceReleases(source_package_names):
+        """Get the current release of a list of source packages.
+
+        :param source_package_names: a list of `ISourcePackageName`
+            instances.
+
+        :return: a dict where the key is a `IDistributionSourcePackage`
+            and the value is a `IDistributionSourcePackageRelease`.
         """
 
     def ensureRelatedBounty(bounty):
@@ -344,10 +363,24 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         tuples containing IProducts and three different bug counts:
             - open bugs
             - triaged bugs
-            - triaged bugs with an upstream task
-            - triaged bugs with upstream tasks that are either linked to
+            - open bugs with an upstream task
+            - open bugs with upstream tasks that are either linked to
               bug watches or to products that use_malone.
         """
+
+    def getCustomLanguageCode(sourcepackagename, language_code):
+        """Look up `ICustomLanguageCode`.
+
+        A `SourcePackageName` in a Distribution may override some
+        language codes for translation import purposes.
+        """
+
+    def userCanEdit(user):
+        """Can the user edit this distribution?"""
+
+
+# We are forced to define this now to avoid circular import problems.
+IMessage['distribution'].schema = IDistribution
 
 
 class IDistributionSet(Interface):

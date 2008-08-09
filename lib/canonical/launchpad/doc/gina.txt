@@ -17,6 +17,8 @@ Get the current counts of stuff in the database:
     ...     EmailAddress,
     ...     BinaryPackageRelease,
     ...     Build)
+    >>> from canonical.launchpad.interfaces import (
+    ...     PackagePublishingPocket)
     >>> SSPPH = SecureSourcePackagePublishingHistory
     >>> SBPPH = SecureBinaryPackagePublishingHistory
 
@@ -29,21 +31,23 @@ Get the current counts of stuff in the database:
     >>> orig_bpr_count = BinaryPackageRelease.select().count()
     >>> orig_build_count = Build.select().count()
     >>> orig_sbpph_count = SBPPH.select().count()
-    >>> orig_sspph_main_count = SSPPH.selectBy(componentID=1, pocket=0).count()
+    >>> orig_sspph_main_count = SSPPH.selectBy(
+    ...     componentID=1, pocket=PackagePublishingPocket.RELEASE).count()
 
 Create a distribution release and an arch release for breezy:
 
-    >>> from canonical.launchpad.database import (DistroSeriesSet,
+    >>> from canonical.launchpad.database import (
     ...     ProcessorFamily, DistroArchSeries)
-    >>> from canonical.launchpad.interfaces import (ILaunchpadCelebrities,
-    ... IDistroSeriesSet)
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IDistroSeriesSet)
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
-    >>> drs = getUtility(IDistroSeriesSet)
-    >>> hoary = drs.findByName("hoary")
-    >>> breezy = drs.new(ubuntu, "breezy", "Breezy Badger", "My title",
-    ...                  "My summary", "My description", "5.10",
-    ...                  hoary, celebs.launchpad_developers)
+    >>> distroseries_set = getUtility(IDistroSeriesSet)
+    >>> hoary = ubuntu.getSeries("hoary")
+    >>> breezy = distroseries_set.new(
+    ...     ubuntu, "breezy", "Breezy Badger", "My title",
+    ...     "My summary", "My description", "5.10",
+    ...     hoary, celebs.launchpad_developers)
     >>> pf = ProcessorFamily.selectOneBy(name="x86")
     >>> breezy_i386 = DistroArchSeries(distroseries=breezy,
     ...                         processorfamily=pf,
@@ -69,7 +73,7 @@ packages successfully (at least partially):
      Sources list, but some binaries are in the Packages file. However, these
      binaries are unchaged in Breezy.
    * ubuntu-meta, a source package that generates 3 binary packages in
-     Hoary and 5 in breezy. However, its breezy version is /not/ listed in the 
+     Hoary and 5 in breezy. However, its breezy version is /not/ listed in the
      Sources list, so the binary packages will need to discover it.
    * ed, a source package what generates one binary package and
      misses a section entry in Sources. The same version exists in
@@ -314,8 +318,10 @@ successfully processed.
     >>> print SSPPH.select().count() - orig_sspph_count
     19
 
-    >>> print SSPPH.selectBy(componentID=1,
-    ...                     pocket=0).count() - orig_sspph_main_count
+    >>> print SSPPH.selectBy(
+    ...     componentID=1,
+    ...     pocket=PackagePublishingPocket.RELEASE).count() - \
+    ...     orig_sspph_main_count
     19
 
 === Testing Binary Package Results ===
@@ -435,7 +441,7 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
     cjwatson
     >>> print Person.select().count() - orig_person_count
     12
-    >>> print TeamParticipation.select().count() - orig_tp_count 
+    >>> print TeamParticipation.select().count() - orig_tp_count
     12
     >>> print EmailAddress.select().count() - orig_email_count
     12
@@ -533,7 +539,7 @@ changed, etc.
     16
     >>> print Person.select().count() - orig_person_count
     12
-    >>> print TeamParticipation.select().count() - orig_tp_count 
+    >>> print TeamParticipation.select().count() - orig_tp_count
     12
     >>> print EmailAddress.select().count() - orig_email_count
     12
@@ -644,6 +650,93 @@ partner archive:
 
     >>> print set(sbpph.archive.purpose.name for sbpph in binary_difference)
     set(['PARTNER'])
+
+
+=== Source-only imports ===
+
+Gina has a 'source-only' configuration option which allows it to
+import only sources from the configured archive.
+
+That's how we intend to start importing all debian source releases to
+the launchpad system. This way we would have precise records of
+"Ubuntu-Debian" packages relationships and expose this information,
+not only in Soyuz (package managing) but also in Bugs and Blueprints,
+for instance.
+
+We will restore the initial 'gina_test_archive' because it contains a
+entry for a suite called 'testing' which contains only the source
+indexes from the 'hoary' suite.
+
+    >>> os.remove('/tmp/gina_test_archive')
+    >>> relative_path = ('lib/canonical/launchpad/scripts/'
+    ...                  'ftests/gina_test_archive')
+    >>> path = os.path.join(os.getcwd(), relative_path)
+    >>> os.symlink(path, '/tmp/gina_test_archive')
+
+We will also create the target distroseries for the imported
+sources. We will import them into Debian/Lenny distroseries as
+specified in the testing configuration.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> lenny = distroseries_set.new(
+    ...     debian, "lenny", "lenny", "Lenny",
+    ...     "---", "!!!", "8.06",
+    ...     hoary, celebs.launchpad_developers)
+
+Note that we will create a Lenny/i386 port (DistroArchSeries) to check
+if no binaries get imported by mistake. However this is not required
+in production, i.e., just creating 'lenny' should suffice for the
+source-only import to happen.
+
+    >>> pf = ProcessorFamily.selectOneBy(name="x86")
+    >>> lenny_i386 = DistroArchSeries(
+    ...     distroseries=lenny, processorfamily=pf,
+    ...     architecturetag="i386", official=True,
+    ...     owner=celebs.launchpad_developers)
+
+We will also store the number of binaries already published in debian
+PRIMARY archive, so we can check later it was unaffected by the
+import.
+
+    >>> debian_binaries = SBPPH.selectBy(archive=debian.main_archive)
+    >>> number_of_debian_binaries = debian_binaries.count()
+
+Commit the changes and run the importer script.
+
+    >>> transaction.commit()
+
+    >>> gina_proc = [
+    ...     sys.executable, 'scripts/gina.py', '-q', 'lenny']
+    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+    >>> proc.wait()
+    0
+
+    >>> transaction.commit()
+
+There is now a number of source publications in PENDING status for the
+targetted distroseries, 'lenny'.
+
+    >>> lenny_sources = SSPPH.select("distroseries = %s" % sqlvalues(lenny))
+    >>> lenny_sources.count()
+    11
+
+    >>> print set([pub.status.name for pub in lenny_sources])
+    set(['PENDING'])
+
+As mentioned before, lenny/i386 is empty, no binaries were imported.
+Also, the number of binaries published in the whole debian distribution
+hasn't changed.
+
+    >>> lenny_binaries = SBPPH.selectBy(distroarchseries=lenny_i386)
+    >>> lenny_binaries.count()
+    0
+
+    >>> debian_binaries = SBPPH.selectBy(archive=debian.main_archive)
+    >>> debian_binaries.count() == number_of_debian_binaries
+    True
+
 
 === Other tests ===
 

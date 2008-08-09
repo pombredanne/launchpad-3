@@ -15,13 +15,17 @@
   }
 </script>
 
-<table tal:attributes="class python: context.duplicateof and 'duplicate listing' or 'listing'">
+<table
+  id="affected-software"
+  tal:attributes="class python: context.duplicateof and 'duplicate listing' or 'listing'"
+>
   <thead>
     <tr>
       <th colspan="2">Affects</th>
       <th>Status</th>
       <th>Importance</th>
       <th colspan="2">Assigned to</th>
+      <th>Milestone</th>
     </tr>
   </thead>
 
@@ -34,26 +38,25 @@
 
 </table>
 
-<div style="text-align: right; margin-bottom: 1em;"
-     tal:condition="view/displayAlsoAffectsLinks"
+<div style="width: 100%; margin-bottom: 1em; margin-top: 0.33em;"
+     class="clearfix"
      tal:define="current_bugtask view/currentBugTask">
-
-  Also affects:
-  <span style="white-space: nowrap">
-      <img src="/@@/add" alt="+" />
-      <a tal:attributes="href string:${current_bugtask/fmt:url}/+choose-affected-product"
-         title="Record this bug as occurring in another project">
-        Project&hellip;
-      </a>
-  </span>
-
-  <span style="white-space: nowrap">
-      <img src="/@@/add" alt="+" />
-      <a tal:attributes="href string:${current_bugtask/fmt:url}/+distrotask"
-         title="Record this bug as occurring in another distribution and/or package">
-        Distribution/Package&hellip;
-      </a>
-  </span>
-
+  <div style="text-align: left; float: left;"
+        tal:condition="view/displayAlsoAffectsLinks">
+    <tal:also-affects-links define="context_menu context/menu:context">
+      <tal:addupstream
+          define="link context_menu/addupstream"
+          condition="link/enabled"
+          replace="structure link/render" />
+      <tal:adddistro
+          define="link context_menu/adddistro"
+          condition="link/enabled"
+          replace="structure link/render" />
+      <tal:nominate
+          define="link context_menu/nominate"
+          condition="link/enabled"
+          replace="structure link/render" />
+    </tal:also-affects-links>
+  </div>
 </div>
 </tal:root>

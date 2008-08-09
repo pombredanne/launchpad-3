@@ -18,17 +18,20 @@ from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
+from canonical.lazr.canonicalurl import nearest_adapter
 from canonical.lazr.interfaces import IObjectPrivacy
 
+from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.webapp.interfaces import (
-    AccessLevel, ILaunchpadPrincipal, IAuthorization)
+    AccessLevel, IAuthorization, ILaunchpadContainer, ILaunchpadPrincipal)
 
 steveIsFixingThis = False
+
 
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
     classProvides(ISecurityPolicy)
 
-    def _checkRequiredAccessLevel(self, principal, permission, object):
+    def _checkRequiredAccessLevel(self, access_level, permission, object):
         """Check that the principal has the level of access required.
 
         Each permission specifies the level of access it requires (read or
@@ -44,7 +47,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         if lp_permission.access_level == "write":
             required_access_level = [
                 AccessLevel.WRITE_PUBLIC, AccessLevel.WRITE_PRIVATE]
-            if principal.access_level not in required_access_level:
+            if access_level not in required_access_level:
                 return False
         elif lp_permission.access_level == "read":
             # All principals have access to read data so there's nothing
@@ -55,22 +58,38 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                 "Unknown access level: %s" % lp_permission.access_level)
         return True
 
-    def _checkPrivacy(self, principal, object):
+    def _checkPrivacy(self, access_level, object):
         """If the object is private, check that the principal can access it.
 
         If the object is private and the principal's access level doesn't give
         access to private objects, return False.  Return True otherwise.
         """
-        if IObjectPrivacy(object).is_private:
-            required_access_level = [
-                AccessLevel.READ_PRIVATE, AccessLevel.WRITE_PRIVATE]
-            if principal.access_level not in required_access_level:
-                return False
-        else:
-            # Non-private object; nothing to do.
-            pass
-        return True
+        private_access_levels = [
+            AccessLevel.READ_PRIVATE, AccessLevel.WRITE_PRIVATE]
+        if access_level in private_access_levels:
+            # The user has access to private objects. Return early,
+            # before checking whether the object is private, since
+            # checking it might be expensive.
+            return True
+        return not IObjectPrivacy(object).is_private
 
+    def _getPrincipalsAccessLevel(self, principal, object):
+        """Get the principal's access level for the given object.
+
+        If the principal's scope is None or the object is within the
+        principal's scope, the original access level is returned.  Otherwise
+        the access level is READ_PUBLIC.
+        """
+        if principal.scope is None:
+            return principal.access_level
+        else:
+            container = nearest_adapter(object, ILaunchpadContainer)
+            if container.isWithin(principal.scope):
+                return principal.access_level
+            else:
+                return AccessLevel.READ_PUBLIC
+
+    @block_implicit_flushes
     def checkPermission(self, permission, object):
         """Check the permission, object, user against the launchpad
         authorization policy.
@@ -115,10 +134,12 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
 
         if (principal is not None and
             not isinstance(principal, UnauthenticatedPrincipal)):
+            access_level = self._getPrincipalsAccessLevel(
+                principal, objecttoauthorize)
             if not self._checkRequiredAccessLevel(
-                principal, permission, objecttoauthorize):
+                access_level, permission, objecttoauthorize):
                 return False
-            if not self._checkPrivacy(principal, objecttoauthorize):
+            if not self._checkPrivacy(access_level, objecttoauthorize):
                 return False
 
         # XXX kiko 2007-02-07:

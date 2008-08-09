@@ -4,16 +4,20 @@ __metaclass__ = type
 
 import gc
 import os
+from datetime import datetime
 import thread
+import threading
 from time import strftime
 import traceback
 import urllib
 
+from cProfile import Profile
+
 import tickcount
 
-import sqlos.connection
-from sqlos.interfaces import IConnectionName
-
+from psycopg2.extensions import TransactionRollbackError
+from storm.exceptions import DisconnectionError, IntegrityError
+from storm.zope.interfaces import IZStorm
 import transaction
 
 from zope.app import zapi  # used to get at the adapters service
@@ -33,11 +37,13 @@ from zope.security.management import newInteraction
 
 from canonical.config import config
 from canonical.mem import (
-    countsByType, deltaCounts, mostRefs, printCounts, readCounts, resident)
+    countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
+    resident)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.webapp.interfaces import (
+    IPlacelessAuthUtility, IPrimaryContext)
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -83,6 +89,7 @@ class LaunchpadBrowserPublication(
 
     def __init__(self, db):
         self.db = db
+        self.thread_locals = threading.local()
 
     def annotateTransaction(self, txn, request, ob):
         """See `zope.app.publication.zopepublication.ZopePublication`.
@@ -121,31 +128,8 @@ class LaunchpadBrowserPublication(
     # If this becomes untrue at some point, the code will need to be
     # revisited.
 
-    @staticmethod
-    def clearSQLOSCache():
-        # Big boot for fixing SQLOS transaction issues - nuke the
-        # connection cache at the start of a transaction. This shouldn't
-        # affect performance much, as psycopg does connection pooling.
-        #
-        # XXX Steve Alexander 2004-12-14: Move this to SQLOS, in a method
-        # that is subscribed to the transaction begin event rather than
-        # hacking it into traversal.
-        name = getUtility(IConnectionName).name
-        key = (thread.get_ident(), name)
-        cache = sqlos.connection.connCache
-        connection = cache.pop(key, None)
-        if connection is not None:
-            connection._makeObsolete()
-        # SQLOS Connection objects also only register themselves for
-        # the transaction in which they are instantiated - this is
-        # no longer a problem as we are nuking the connection cache,
-        # but it is still an issue in SQLOS that needs to be fixed.
-        #name = getUtility(IConnectionName).name
-        #con = sqlos.connection.getConnection(None, name)
-        #t = transaction.get_transaction()
-        #t.join(con._dm)
-
     def beforeTraversal(self, request):
+        self.startProfilingHook()
         request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
         threadrequestfile = open('thread-%s.request' % threadid, 'w')
@@ -166,7 +150,6 @@ class LaunchpadBrowserPublication(
         newInteraction(request)
         transaction.begin()
 
-        self.clearSQLOSCache()
         getUtility(IOpenLaunchBag).clear()
 
         # Set the default layer.
@@ -446,8 +429,9 @@ class LaunchpadBrowserPublication(
         # Reraise Retry exceptions rather than log.
         # XXX stub 20070317: Remove this when the standard
         # handleException method we call does this (bug to be fixed upstream)
-        if (retry_allowed
-            and isinstance(exc_info[1], (Retry, da.DisconnectionError))):
+        if retry_allowed and isinstance(
+            exc_info[1], (Retry, DisconnectionError, IntegrityError,
+                          TransactionRollbackError)):
             if request.supportsRetry():
                 # Remove variables used for counting ticks as this request is
                 # going to be retried.
@@ -470,6 +454,9 @@ class LaunchpadBrowserPublication(
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
+
+        self.endProfilingHook(request)
+
         da.clear_request_started()
 
         if config.debug.references:
@@ -495,6 +482,65 @@ class LaunchpadBrowserPublication(
 
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
+
+        # Reset all Storm stores when not running the test suite. We could
+        # reset them when running the test suite but that'd make writing tests
+        # a much more painful task.
+        if threading.currentThread().getName() != 'MainThread':
+            for name, store in getUtility(IZStorm).iterstores():
+                store.reset()
+
+    def startProfilingHook(self):
+        """Handle profiling.
+
+        If requests profiling start a profiler. If memory profiling is
+        requested, save the VSS and RSS.
+        """
+        if config.profiling.profile_requests:
+            self.thread_locals.profiler = Profile()
+            self.thread_locals.profiler.enable()
+
+        if config.profiling.memory_profile_log:
+            self.thread_locals.memory_profile_start = (memory(), resident())
+
+    def endProfilingHook(self, request):
+        """If profiling is turned on, save profile data for the request."""
+        # Create a timestamp including milliseconds.
+        now = datetime.fromtimestamp(da.get_request_start_time())
+        timestamp = "%s.%d" % (
+            now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
+        pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
+        oopsid = getattr(request, 'oopsid', None)
+
+        if config.profiling.profile_requests:
+            profiler = self.thread_locals.profiler
+            profiler.disable()
+
+            if oopsid:
+                oopsid_part = '-%s' % oopsid
+            else:
+                oopsid_part = ''
+            filename = '%s-%s%s-%s.prof' % (
+                timestamp, pageid, oopsid_part,
+                threading.currentThread().getName())
+
+            profiler.dump_stats(
+                os.path.join(config.profiling.profile_dir, filename))
+
+            # Free some memory.
+            self.thread_locals.profiler = None
+
+        # Dump memory profiling info.
+        if config.profiling.memory_profile_log:
+            log = file(config.profiling.memory_profile_log, 'a')
+            vss_start, rss_start = self.thread_locals.memory_profile_start
+            vss_end, rss_end = memory(), resident()
+            if oopsid is None:
+                oopsid = '-'
+            log.write('%s %s %s %f %d %d %d %d\n' % (
+                timestamp, pageid, oopsid, da.get_request_duration(),
+                vss_start, rss_start, vss_end, rss_end))
+            log.close()
 
     def debugReferencesLeak(self, request):
         """See what kind of references are increasing.
@@ -590,3 +636,11 @@ def debug_references_startup_check(event):
     if os.path.exists(config.debug.references_scoreboard_file):
         os.remove(config.debug.references_scoreboard_file)
 
+
+class DefaultPrimaryContext:
+    """The default primary context is the context."""
+
+    implements(IPrimaryContext)
+
+    def __init__(self, context):
+        self.context = context

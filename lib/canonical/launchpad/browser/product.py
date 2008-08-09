@@ -5,40 +5,44 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductNavigation',
-    'ProductDynMenu',
-    'ProductShortLink',
-    'ProductSOP',
-    'ProductFacets',
-    'ProductOverviewMenu',
-    'ProductBugsMenu',
-    'ProductSpecificationsMenu',
-    'ProductBountiesMenu',
-    'ProductBranchesMenu',
-    'ProductTranslationsMenu',
-    'ProductView',
-    'ProductDownloadFileMixin',
-    'ProductDownloadFilesView',
+    'PillarSearchItem',
+    'ProductActiveReviewsView',
+    'ProductAddSeriesView',
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
+    'ProductApprovedMergesView',
+    'ProductBountiesMenu',
     'ProductBranchListingView',
+    'ProductBranchOverviewView',
+    'ProductBranchesMenu',
+    'ProductBranchesView',
     'ProductBrandingView',
-    'ProductEditView',
+    'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductCodeIndexView',
-    'ProductReviewLicenseView',
-    'ProductAddSeriesView',
-    'ProductReassignmentView',
+    'ProductDownloadFileMixin',
+    'ProductDownloadFilesView',
+    'ProductEditNavigationMenu',
+    'ProductEditPeopleView',
+    'ProductEditView',
+    'ProductFacets',
+    'ProductNavigation',
+    'ProductNavigationMenu',
+    'ProductOverviewMenu',
     'ProductRdfView',
-    'ProductSetFacets',
-    'ProductSetSOP',
-    'ProductSetNavigation',
+    'ProductReviewLicenseView',
+    'ProductSOP',
     'ProductSetContextMenu',
+    'ProductSetFacets',
+    'ProductSetNavigation',
+    'ProductSetReviewLicensesView',
+    'ProductSetSOP',
     'ProductSetView',
-    'ProductBranchOverviewView',
-    'ProductBranchesView',
-    'PillarSearchItem',
+    'ProductShortLink',
+    'ProductSpecificationsMenu',
+    'ProductTranslationsMenu',
+    'ProductView',
     ]
 
 from operator import attrgetter
@@ -50,39 +54,45 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.interface import alsoProvides, implements
+from zope.interface import alsoProvides, implements, Interface
 
 from canonical.cachedproperty import cachedproperty
+
 from canonical.config import config
+from canonical.lazr import decorates
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet, IBugTracker,
-    ICountry, IDistribution,
-    IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IPersonSet, IPillarNameSet, IProduct, IProductSeries, IProductSet,
+    BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
+    ICountry, IDistribution, IHasIcon, ILaunchBag, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IPersonSet, IPillarNameSet, IProductReviewSearch,
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet, LicenseStatus)
+from canonical.launchpad.interfaces.productrelease import (
+    IProductRelease, IProductReleaseSet)
+from canonical.launchpad.interfaces.productseries import (
+    IProductSeries)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    IBranchMergeProposalGetter, BranchMergeProposalStatus)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
+from canonical.launchpad.browser.branchmergeproposallisting import (
+    BranchMergeProposalListingView)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
+from canonical.launchpad.browser.distribution import UsesLaunchpadMixin
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import (
     FeedsMixin, ProductBranchesFeedLink)
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
-from canonical.launchpad.browser.objectreassignment import (
-    ObjectReassignmentView)
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.browser.seriesrelease import (
-    SeriesOrReleasesMixinDynMenu)
-from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -91,8 +101,12 @@ from canonical.launchpad.webapp import (
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
+from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.uri import URI
+from canonical.widgets.date import DateWidget
+from canonical.widgets.itemswidgets import (
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget)
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -212,6 +226,7 @@ class ProductLicenseMixin:
                 user_browsername=user.browsername,
                 user_name=user.name,
                 product_name=self.product.name,
+                product_url=canonical_url(self.product),
                 product_summary=indent(self.product.summary),
                 license_titles=indent(license_titles),
                 license_info=indent(self.product.license_info))
@@ -287,15 +302,74 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
+class IProductEditMenu(Interface):
+    """A marker interface for the 'Change details' navigation menu."""
+
+
+class ProductNavigationMenu(NavigationMenu):
+
+    usedfor = IProduct
+    facet = 'overview'
+    links = [
+      'details',
+      'announcements',
+      'downloads',
+      ]
+
+    def details(self):
+        text = 'Details'
+        return Link('', text)
+
+    def announcements(self):
+        text = 'Announcements'
+        return Link('+announcements', text)
+
+    def downloads(self):
+        text = 'Downloads'
+        return Link('+download', text)
+
+
+class ProductEditNavigationMenu(NavigationMenu):
+    """A sub-menu for different aspects of editing a Product's details."""
+
+    usedfor = IProductEditMenu
+    facet = 'overview'
+    title = 'Change project details'
+    links = ('details', 'branding', 'people')
+
+    def details(self):
+        target = '+edit'
+        text = 'Details'
+        return Link(target, text)
+
+    def branding(self):
+        text = 'Branding'
+        return Link('+branding', text)
+
+    def people(self):
+        text = 'People'
+        summary = 'Someone with permission to set goals for all series'
+        return Link('+edit-people', text, summary)
+
+
 class ProductOverviewMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'announce', 'announcements', 'administer',
-        'review_license', 'branch_visibility', 'rdf', 'subscribe']
+        'edit',
+        'reassign',
+        'top_contributors',
+        'mentorship',
+        'distributions',
+        'packages',
+        'series_add',
+        'announce',
+        'announcements',
+        'administer',
+        'review_license',
+        'rdf',
+        ]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -303,24 +377,13 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def branding(self):
-        text = 'Change branding'
-        return Link('+branding', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def driver(self):
-        text = 'Appoint driver'
-        summary = 'Someone with permission to set goals for all series'
-        return Link('+driver', text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change maintainer'
         return Link('+reassign', text, icon='edit')
 
     def top_contributors(self):
-        text = 'List top contributors'
-        return Link('+topcontributors', text, icon='info')
+        text = u'\u00BB More contributors'
+        return Link('+topcontributors', text)
 
     def distributions(self):
         text = 'Packaging information'
@@ -334,10 +397,6 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
-    def files(self):
-        text = 'Download project files'
-        return Link('+download', text, icon='info')
-
     @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Register a series'
@@ -350,17 +409,13 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = 'Show announcements'
-        enabled = bool(self.context.announcements().count())
+        text = u'\u00BB More announcements'
+        enabled = bool(self.context.announcements())
         return Link('+announcements', text, enabled=enabled)
-
-    def branch_add(self):
-        text = 'Register branch'
-        return Link('+addbranch', text, icon='add')
 
     def rdf(self):
         text = structured(
-            'Download <abbr title="Resource Description Framework">'
+            '<abbr title="Resource Description Framework">'
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
 
@@ -374,21 +429,22 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Review license'
         return Link('+review-license', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
-    def branch_visibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit')
-
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
-
 
 class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['bugsupervisor', 'securitycontact', 'cve']
+    links = (
+        'filebug',
+        'bugsupervisor',
+        'securitycontact',
+        'cve',
+        'subscribe'
+        )
+
+    def filebug(self):
+        text = 'Report a bug'
+        return Link('+filebug', text, icon='bug')
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
@@ -403,15 +459,45 @@ class ProductBugsMenu(ApplicationMenu):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
 
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
 
-class ProductBranchesMenu(ApplicationMenu):
+
+class ProductReviewCountMixin:
+    """A mixin used by the menu and the code index view."""
+
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
+        return query.count()
+
+    @cachedproperty
+    def approved_merge_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
+            self.user)
+        return query.count()
+
+
+class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', 'list_branches']
+    links = [
+        'branch_add',
+        'list_branches',
+        'active_reviews',
+        'approved_merges',
+        'code_import',
+        'branch_visibility',
+        ]
 
     def branch_add(self):
-        text = 'Register branch'
+        text = 'Register a branch'
         summary = 'Register a new Bazaar branch for this project'
         return Link('+addbranch', text, summary, icon='add')
 
@@ -419,6 +505,30 @@ class ProductBranchesMenu(ApplicationMenu):
         text = 'List branches'
         summary = 'List the branches for this project'
         return Link('+branches', text, summary, icon='add')
+
+    def active_reviews(self):
+        if self.active_review_count == 1:
+            text = 'active review'
+        else:
+            text = 'active reviews'
+        return Link('+activereviews', text)
+
+    def approved_merges(self):
+        if self.approved_merge_count == 1:
+            text = 'approved merge'
+        else:
+            text = 'approved merges'
+        return Link('+approvedmerges', text)
+
+    @enabled_with_permission('launchpad.Admin')
+    def branch_visibility(self):
+        text = 'Define branch visibility'
+        return Link('+branchvisibility', text, icon='edit')
+
+    def code_import(self):
+        text = 'Import your project'
+        enabled = not self.context.official_codehosting
+        return Link('/+code-imports/+new', text, icon='add', enabled=enabled)
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -474,7 +584,12 @@ class ProductTranslationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = ['translators', 'imports', 'translationdownload']
+    links = [
+        'translators',
+        'imports',
+        'translationdownload',
+        'help_translate',
+        ]
 
     def imports(self):
         text = 'See import queue'
@@ -495,6 +610,11 @@ class ProductTranslationsMenu(ApplicationMenu):
             link = '%s/+export' % preferred_series.name
 
         return Link(link, text, icon='download', enabled=enabled)
+
+    def help_translate(self):
+        text = 'Help translate'
+        link = canonical_url(self.context, rootsite='translations')
+        return Link(link, text, icon='translation')
 
 
 def _sort_distros(a, b):
@@ -572,17 +692,146 @@ class SortSeriesMixin:
         The series list is sorted by version in reverse order.
         The development focus is always first in the list.
         """
-        series_list = list(self.context.serieses)
-        series_list.remove(self.context.development_focus)
+        series_list = list(self.product.serieses)
+        series_list.remove(self.product.development_focus)
         # Now sort the list by name with newer versions before older.
         series_list = sorted_version_numbers(series_list,
                                              key=attrgetter('name'))
-        series_list.insert(0, self.context.development_focus)
+        series_list.insert(0, self.product.development_focus)
         return series_list
+
+
+class ProductWithSeries:
+    """A decorated product that includes series data.
+
+    The extra data is included in this class to avoid repeated
+    database queries.  Rather than hitting the database, the data is
+    cached locally and simply returned.
+    """
+
+    # These need to be predeclared to avoid decorates taking them
+    # over.
+    serieses = None
+    development_focus = None
+    decorates(IProduct, 'product')
+
+    def __init__(self, product):
+        self.product = product
+        self.serieses = []
+        self.series_by_id = {}
+
+    def setSeries(self, serieses):
+        """Set the serieses to the provided collection."""
+        self.serieses = serieses
+        self.series_by_id = dict(
+            (series.id, series) for series in self.serieses)
+
+    def getSeriesById(self, id):
+        """Look up and return a ProductSeries by id."""
+        return self.series_by_id.get(id)
+
+
+class SeriesWithReleases:
+    """A decorated series that includes releases.
+
+    The extra data is included in this class to avoid repeated
+    database queries.  Rather than hitting the database, the data is
+    cached locally and simply returned.
+    """
+
+    # These need to be predeclared to avoid decorates taking them
+    # over.
+    releases = None
+    decorates(IProductSeries, 'series')
+
+    def __init__(self, series):
+        self.series = series
+        self.releases = []
+
+    def addRelease(self, release):
+        self.releases.append(release)
+
+    @cachedproperty
+    def release_files(self):
+        files = set()
+        for release in self.releases:
+            files = files.union(release.files)
+        return files
+
+
+class ReleaseWithFiles:
+    """A decorated release that includes product release files.
+
+    The extra data is included in this class to avoid repeated
+    database queries.  Rather than hitting the database, the data is
+    cached locally and simply returned.
+    """
+
+    # These need to be predeclared to avoid decorates taking them
+    # over.
+    files = None
+    decorates(IProductRelease, 'release')
+
+    def __init__(self, release):
+        self.release = release
+        self.files = []
+
+    def addFile(self, file):
+        self.files.append(file)
 
 
 class ProductDownloadFileMixin:
     """Provides methods for managing download files."""
+
+    def _fetchProductData(self):
+        """Fetch all series, release and file data for the product.
+
+        Decorated classes are created rooted at self.product and they
+        contain cached data obtained with a few queries rather than
+        many iterated queries.
+        """
+        # Create the decorated product and set the list of series.
+        original_product = self.context
+        try:
+            original_serieses = original_product.serieses
+        except AttributeError:
+            # PillarSearchItem pretends to provide IProduct but
+            # doesn't really because it does not have a 'serieses'
+            # attribute.  When the attribute isn't present we can just
+            # return.
+            self.product = original_product
+            return
+
+        self.product = ProductWithSeries(original_product)
+        serieses = []
+        for series in original_serieses:
+            series_with_releases = SeriesWithReleases(series)
+            serieses.append(series_with_releases)
+            if original_product.development_focus == series:
+                self.product.development_focus = series_with_releases
+
+        self.product.setSeries(serieses)
+
+        # Get all of the releases for all of the serieses in a single
+        # query.  The query sorts the releases properly so we know the
+        # resulting list is sorted correctly.
+        release_set = getUtility(IProductReleaseSet)
+        release_by_id = {}
+        releases = release_set.getReleasesForSerieses(
+            self.product.serieses)
+        for release in releases:
+            series = self.product.getSeriesById(
+                release.productseries.id)
+            decorated_release = ReleaseWithFiles(release)
+            series.addRelease(decorated_release)
+            release_by_id[release.id] = decorated_release
+
+        # Get all of the files for all of the releases.  The query
+        # returns all releases sorted properly.
+        files = release_set.getFilesForReleases(releases)
+        for file in files:
+            release = release_by_id[file.productrelease.id]
+            release.addFile(file)
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
@@ -647,7 +896,7 @@ class ProductDownloadFileMixin:
     def seriesHasDownloadFiles(self, series):
         """Determine whether a series has any download files."""
         for release in series.releases:
-            if release.files.count() > 0:
+            if len(release.files) > 0:
                 return True
 
     @cachedproperty
@@ -655,13 +904,13 @@ class ProductDownloadFileMixin:
         """Return the latest release with download files."""
         for series in self.sorted_series_list:
             for release in series.releases:
-                if release.files.count() > 0:
+                if len(list(release.files)) > 0:
                     return release
         return None
 
 
-class ProductView(HasAnnouncementsView, SortSeriesMixin,
-                  FeedsMixin, ProductDownloadFileMixin):
+class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
+                  ProductDownloadFileMixin, UsesLaunchpadMixin):
 
     __used_for__ = IProduct
 
@@ -670,8 +919,12 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin,
         self.form = request.form_ng
 
     def initialize(self):
-        self.product = self.context
         self.status_message = None
+        self._fetchProductData()
+
+    @property
+    def show_license_status(self):
+        return self.context.license_status != LicenseStatus.OPEN_SOURCE
 
     @property
     def freshmeat_url(self):
@@ -806,7 +1059,8 @@ class ProductDownloadFilesView(LaunchpadView,
 
     def initialize(self):
         self.form = self.request.form
-        self.product = self.context
+        self._fetchProductData()
+        # Manually process action for the 'Delete' button.
         self.processDeleteFiles()
 
     def getReleases(self):
@@ -840,21 +1094,24 @@ class ProductDownloadFilesView(LaunchpadView,
         """A mapping between series and releases that are milestones."""
         result = dict()
         for series in self.product.serieses:
-            result[series] = dict()
+            result[series.name] = set()
             milestone_list = [m.name for m in series.milestones]
             for release in series.releases:
                 if release.version in milestone_list:
-                    result[series][release] = True
+                    result[series.name].add(release.version)
         return result
 
     def is_milestone(self, series, release):
         """Determine whether a release is milestone for the series."""
-        return (series in self.milestones and
-                release in self.milestones[series])
+        return (series.name in self.milestones and
+                release.version in self.milestones[series.name])
 
 
 class ProductBrandingView(BrandingChangeView):
 
+    implements(IProductEditMenu)
+
+    label = None
     schema = IProduct
     field_names = ['icon', 'logo', 'mugshot']
 
@@ -862,8 +1119,9 @@ class ProductBrandingView(BrandingChangeView):
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
+    implements(IProductEditMenu)
+
     schema = IProduct
-    label = "Change project details"
     field_names = [
         "displayname",
         "title",
@@ -955,8 +1213,58 @@ class ProductAdminView(ProductEditView):
 
 class ProductReviewLicenseView(ProductAdminView):
     label = "Review project licensing"
-    field_names = ["active", "private_bugs",
-                   "license_reviewed", "reviewer_whiteboard"]
+    field_names = [
+        "active",
+        "private_bugs",
+        "license_reviewed",
+        "license_approved",
+        "reviewer_whiteboard",
+        ]
+
+    def validate(self, data):
+        """Validate approval.
+
+        A project can only be approved if it has OTHER_OPEN_SOURCE as one of
+        its licenses and not OTHER_PROPRIETARY.
+        """
+        licenses = self.context.licenses
+        license_approved = data.get('license_approved', False)
+        if license_approved:
+            if License.OTHER_PROPRIETARY in licenses:
+                self.setFieldError(
+                    'license_approved',
+                    'Proprietary projects may not be manually '
+                    'approved to use Launchpad.  Proprietary projects '
+                    'must use the commercial subscription voucher system '
+                    'to be allowed to use Launchpad.')
+            elif License.OTHER_OPEN_SOURCE not in licenses:
+                self.setFieldError(
+                    'license_approved',
+                    'Only "Other/Open Source" licenses may be '
+                    'manually approved to use Launchpad.')
+            else:
+                # An Other/Open Source license was specified so it may be
+                # approved.
+                pass
+
+    @property
+    def next_url(self):
+        """Successful form submission should send to this URL."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('next_url')
+        if referrer is None:
+            referrer = self.request.getHeader('referer')
+
+        if (referrer is not None
+            and referrer.startswith(self.request.getApplicationURL())):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return self.next_url
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -1015,24 +1323,6 @@ class ProductRdfView:
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
-
-
-class ProductDynMenu(
-        DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
-
-    menus = {
-        '': 'mainMenu',
-        'meetings': 'meetingsMenu',
-        'series': 'seriesMenu',
-        }
-
-    @neverempty
-    def mainMenu(self):
-        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
-        yield self.makeLink('Milestones', page='+milestones')
-        yield self.makeLink('Series', page='+series', submenu='series')
-        yield self.makeLink(
-            'Related', submenu='related', context=self.context.project)
 
 
 class Icon:
@@ -1139,6 +1429,70 @@ class ProductSetView(LaunchpadView):
         return self.matches > self.max_results_to_display
 
 
+class ProductSetReviewLicensesView(LaunchpadFormView):
+    """View for searching products to be reviewed."""
+
+    schema = IProductReviewSearch
+
+    full_row_field_names = [
+        'search_text',
+        'active',
+        'license_reviewed',
+        'license_info_is_empty',
+        'licenses',
+        'has_zero_licenses',
+        ]
+
+    side_by_side_field_names = [
+        ('created_after', 'created_before'),
+        ('subscription_expires_after', 'subscription_expires_before'),
+        ('subscription_modified_after', 'subscription_modified_before'),
+        ]
+
+    custom_widget(
+        'licenses', CheckBoxMatrixWidget, column_count=4,
+        orientation='vertical')
+    custom_widget('active', LaunchpadRadioWidget)
+    custom_widget('license_reviewed', LaunchpadRadioWidget)
+    custom_widget('license_info_is_empty', LaunchpadRadioWidget)
+    custom_widget('has_zero_licenses', LaunchpadRadioWidget)
+    custom_widget('created_after', DateWidget)
+    custom_widget('created_before', DateWidget)
+    custom_widget('subscription_expires_after', DateWidget)
+    custom_widget('subscription_expires_before', DateWidget)
+    custom_widget('subscription_modified_after', DateWidget)
+    custom_widget('subscription_modified_before', DateWidget)
+
+    @property
+    def left_side_widgets(self):
+        return (self.widgets.get(left)
+                for left, right in self.side_by_side_field_names)
+
+    @property
+    def right_side_widgets(self):
+        return (self.widgets.get(right)
+                for left, right in self.side_by_side_field_names)
+
+    @property
+    def full_row_widgets(self):
+        return (self.widgets[name] for name in self.full_row_field_names)
+
+    def forReviewBatched(self):
+        # Calling _validate populates the data dictionary as a side-effect
+        # of validation.
+        data = {}
+        self._validate(None, data)
+        # Get default values from the schema since the form defaults
+        # aren't available until the search button is pressed.
+        search_params = {}
+        for name in self.schema:
+            search_params[name] = self.schema[name].default
+        # Override the defaults with the form values if available.
+        search_params.update(data)
+        return BatchNavigator(self.context.forReview(**search_params),
+                              self.request, size=10)
+
+
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
     """Abstract class for adding a new product.
 
@@ -1224,12 +1578,40 @@ class ProductAddView(ProductAddViewBase):
         notify(ObjectCreatedEvent(self.product))
 
 
-class ProductReassignmentView(ObjectReassignmentView):
-    """Reassign product to a new owner."""
+class ProductEditPeopleView(LaunchpadEditFormView):
+    """Enable editing of important people on the project."""
 
-    def __init__(self, context, request):
-        ObjectReassignmentView.__init__(self, context, request)
-        self.callback = self._reassignProductDependencies
+    implements(IProductEditMenu)
+
+    schema = IProduct
+    field_names = [
+        'owner',
+        'driver',
+        ]
+
+    @action(_('Save changes'), name='save')
+    def save_action(self, action, data):
+        old_owner = self.context.owner
+        old_driver = self.context.driver
+        self.updateContextFromData(data)
+        self._reassignProductDependencies(
+            self.context, old_owner, self.context.owner)
+        if self.context.owner != old_owner:
+            self.request.response.addNotification(
+                "Successfully changed the owner to %s"
+                % self.context.owner.displayname)
+        if self.context.driver != old_driver:
+            if self.context.driver is not None:
+                self.request.response.addNotification(
+                    "Successfully changed the driver to %s"
+                    % self.context.driver.displayname)
+            else:
+                self.request.response.addNotification(
+                    "Successfully removed the driver")
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
     def _reassignProductDependencies(self, product, oldOwner, newOwner):
         """Reassign ownership of objects related to this product.
@@ -1265,6 +1647,9 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
         ProductBranchesFeedLink,
         )
 
+    def initialize(self):
+        self.product = self.context
+
     @cachedproperty
     def recent_revision_branches(self):
         """Branches that have the most recent revisions."""
@@ -1280,7 +1665,7 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     @cachedproperty
     def recent_revisions(self):
         """The tip revision for each of the recent revision branches."""
-        return [branch.getBranchRevision(branch.revision_count)
+        return [branch.getBranchRevision(sequence=branch.revision_count)
                 for branch in self.recent_revision_branches]
 
     @cachedproperty
@@ -1325,8 +1710,12 @@ class ProductBranchListingView(BranchListingView):
 
 
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin):
+                           ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
+
+    def initialize(self):
+        ProductBranchListingView.initialize(self)
+        self.product = self.context
 
     @property
     def form_action(self):
@@ -1404,19 +1793,23 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # skip subsequent series where the lifecycle status is Merged or
         # Abandoned
         sorted_series = self.sorted_series_list
-        IGNORE_STATUS = (
-            BranchLifecycleStatus.MERGED, BranchLifecycleStatus.ABANDONED)
+        def show_branch(branch):
+            if self.selected_lifecycle_status is None:
+                return True
+            else:
+                return (branch.lifecycle_status in
+                    self.selected_lifecycle_status)
         # The series will always have at least one series, that of the
         # development focus.
         dev_focus_branch = sorted_series[0].series_branch
         result = []
-        if dev_focus_branch is not None:
+        if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
         for series in sorted_series[1:]:
             branch = series.series_branch
             if (branch is not None and
                 branch not in result and
-                branch.lifecycle_status not in IGNORE_STATUS):
+                show_branch(branch)):
                 result.append(branch)
         return result
 
@@ -1426,7 +1819,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         series_branches = self._getSeriesBranches()
         branch_query = getUtility(IBranchSet).getBranchesForContext(
             context=self.context, visible_by_user=self.user,
-            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+            lifecycle_statuses=self.selected_lifecycle_status,
             sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
         # We don't want the initial branch listing to be batched, so only get
         # the batch size - the number of series_branches.
@@ -1461,7 +1854,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
-        return self.context.development_focus.series_branch is not None
+        return self.product.development_focus.series_branch is not None
 
     def _getPluralText(self, count, singular, plural):
         if count == 1:
@@ -1506,7 +1899,12 @@ class ProductBranchesView(ProductBranchListingView):
         """
         ProductBranchListingView.initialize(self)
         if self.sort_by == BranchListingSort.DEFAULT:
-            self.request.response.redirect(canonical_url(self.context))
+            redirect_url = canonical_url(self.context)
+            widget = self.widgets['lifecycle']
+            if widget.hasValidInput():
+                redirect_url += (
+                    '?field.lifecycle=' + widget.getInputValue().name)
+            self.request.response.redirect(redirect_url)
 
     @property
     def initial_values(self):
@@ -1514,3 +1912,35 @@ class ProductBranchesView(ProductBranchListingView):
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
             'sort_by': BranchListingSort.LIFECYCLE,
             }
+
+
+class ProductActiveReviewsView(BranchMergeProposalListingView):
+    """Branch merge proposals for the product that are needing review."""
+
+    extra_columns = ['date_review_requested', 'vote_summary']
+    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Active code reviews for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no active code reviews." % self.context.displayname
+
+
+class ProductApprovedMergesView(BranchMergeProposalListingView):
+    """Branch merge proposals for the product that have been approved."""
+
+    extra_columns = ['date_reviewed']
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
+
+    @property
+    def heading(self):
+        return "Approved merges for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no approved merges." % self.context.displayname

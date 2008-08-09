@@ -12,12 +12,14 @@ records to disk, including configuration and indexes.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_archive = cprov.archive
 
-    >>> cprov_archive.owner.name
-    u'cprov'
-    >>> cprov_archive.distribution.name
-    u'ubuntu'
-    >>> cprov_archive.purpose.name
-    'PPA'
+    >>> print cprov_archive.owner.name
+    cprov
+    >>> print cprov_archive.distribution.name
+    ubuntu
+    >>> print cprov_archive.name
+    default
+    >>> print cprov_archive.purpose.name
+    PPA
     >>> cprov_archive.enabled
     True
     >>> cprov_archive.authorized_size
@@ -34,6 +36,16 @@ records to disk, including configuration and indexes.
     3
     >>> cprov_archive.is_ppa
     True
+    >>> cprov_archive.total_count
+    4
+    >>> cprov_archive.pending_count
+    0
+    >>> cprov_archive.succeeded_count
+    3
+    >>> cprov_archive.building_count
+    0
+    >>> cprov_archive.failed_count
+    1
 
 The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
@@ -57,6 +69,58 @@ Inquire what Distribution Series this archive has published sources to:
 
     >>> [s.name for s in cprov_archive.series_with_sources]
     [u'breezy-autotest', u'warty']
+
+'purpose' is a read-only attribute, it can't and shouldn't be modified
+once a IArchive is created. Changing those values would affect the way
+archives are published on disk.
+
+    >>> cprov_archive.purpose = ArchivePurpose.REBUILD
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ('purpose', <Archive at ...>)
+
+'name' is only editable by an LP administrator and only exposed via
+the ArchiveRebuild user interface. PRIMARY, PARTNER and PPAs still
+using default names.
+
+    >>> login("celso.providelo@canonical.com")
+
+    >>> cprov_archive.name = 'no-it-will-not-change-yet'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'name', 'launchpad.Admin')
+
+When editable, the 'name' field is protected by a constraint that
+asserts the archive is indeed a REBUILD and if the name is valid.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> cprov_archive.name = 'there-we-go'
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only REBUILD archives can be renamed.
+
+We will create a REBUILD archive and modify its name.
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> rebuild_archive = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     distribution=ubuntu, name='editable-rebuild')
+
+Only 'valid' (traversable) names can be set.
+
+    >>> rebuild_archive.name = 'ThereWeGo'
+    Traceback (most recent call last):
+    ...
+    AssertionError: Invalid name given to unproxied object.
+
+Valid names work as expected.
+
+    >>> rebuild_archive.name = 'there-we-go'
+    >>> print rebuild_archive.name
+    there-we-go
+
+    >>> login(ANONYMOUS)
 
 
 == Published Source and Binary Lookup ==
@@ -555,7 +619,7 @@ it continues to be considered 'available for deletion'.
 
     >>> removal_candidate = cprov_archive.getPublishedSources(
     ...     name='ice')[0]
-    >>> removal_candidate.getPublishedBinaries().count()
+    >>> len(removal_candidate.getPublishedBinaries())
     1
 
     >>> deleted = removal_candidate.requestDeletion(cprov, 'go away !')
@@ -943,30 +1007,16 @@ A new Archive can be created by passing a name and an owner
     >>> sandbox_archive.owner == name16
     True
 
+PPAs are created with the name attribute set to 'default'.
+
+    >>> print sandbox_archive.name
+    default
+
 We can take the opportunity to check if the default 'authorized_size'
 corresponds to what we state in our policy, 1024 MiB:
 
     >>> name16.archive.authorized_size
     1024
-
-IArchiveSet.ensure will either return an existing archive, or make a new
-one if there is no existing one.
-
-    >>> name12 = getUtility(IPersonSet).getByName('name12')
-    >>> name12_archive = archive_set.ensure(
-    ...     owner=name12, distribution=None, purpose=ArchivePurpose.PPA,
-    ...     description="Holy mackerel")
-    >>> name12_archive.description
-    u'Holy mackerel'
-
-Repeating this call with a different description results in the archive
-created above returned instead of a new one:
-
-    >>> name12_archive = archive_set.ensure(
-    ...     owner=name12, distribution=None, purpose=ArchivePurpose.PPA,
-    ...     description="Flaming trousers")
-    >>> name12_archive.description
-    u'Holy mackerel'
 
 An archive is also associated with a distribution.  This can be found on
 the distribution property.  The default distribution is "ubuntu":
@@ -982,11 +1032,23 @@ An Archive can be retrieved via IPerson.archive property:
 IArchiveSet.getByDistroPurpose retrieves an IArchive given a distribution
 and an ArchivePurpose:
 
-    >>> from canonical.launchpad.interfaces import ArchivePurpose
     >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PARTNER)
-    >>> partner_archive.description
-    u'Partner archive'
+    >>> print partner_archive.name
+    partner
+
+It explicitly fails when purpose is PPA, since such lookup should be
+restricted by archive owner.
+
+    >>> getUtility(IArchiveSet).getByDistroPurpose(
+    ...     ubuntu, ArchivePurpose.PPA)
+    Traceback (most recent call last):
+    ...
+    AssertionError: This method should not be used to lookup PPAs. Use
+    'getPPAByDistributionAndOwnerName' instead.
+
+As mentioned in the error message, getPPAByDistributionAndOwnerName()
+should be used instead. See below.
 
 IArchive.archive_url will return a URL for the archive that the builder can
 use to retrieve files from it.
@@ -1053,17 +1115,14 @@ distribution and a person name. This method is used in
     True
 
 Iteration over the own utility is performed against all archives,
-including the *main_archives*:
+including PPA, PRIMARY, PARTNER and REBUILDS:
 
-    >>> main_archives = 0
-    >>> ppas = 0
-    >>> for archive in archive_set:
-    ...     if not archive.is_ppa:
-    ...         main_archives += 1
-    ...     else:
-    ...         ppas += 1
-    >>> main_archives, ppas
-    (9, 5)
+    >>> archive_purposes = [archive.purpose.name for archive in archive_set]
+    >>> len(archive_purposes)
+    14
+
+    >>> print sorted(set(archive_purposes))
+    ['PARTNER', 'PPA', 'PRIMARY', 'REBUILD']
 
 ArchiveSet utility also offers counters for:
 
@@ -1150,7 +1209,7 @@ which doesn't have a PPA yet.
 When the 'launchpad-buildd-admins' PPA gets created, 'getPPAsForUser'
 immediately recognises 'cprov' rights on it.
 
-    >>> buildd_archive = archive_set.ensure(
+    >>> buildd_archive = archive_set.new(
     ...     owner=lp_buildd_team, purpose=ArchivePurpose.PPA,
     ...     distribution=ubuntu, description='Yo !')
 
@@ -1270,7 +1329,11 @@ are old.
     >>> print_most_active_ppas()
     PPA for Mark Shuttleworth 2
 
-We will create some activity.
+We will create a new PPA and some activity.
+
+    >>> name12 = getUtility(IPersonSet).getByName('name12')
+    >>> name12_archive = archive_set.new(
+    ...     owner=name12, distribution=None, purpose=ArchivePurpose.PPA)
 
     >>> a_pub = cprov_archive.getPublishedSources()[0]
     >>> def create_activity(where, how_many):
@@ -1307,6 +1370,57 @@ Celso's PPA.
     PPA for Launchpad Buildd Admins 8
     PPA for No Privileges Person 4
     PPA for Sample Person 4
+
+'getBuildCountersForArchitecture' allows callsites to quickly present
+the number of builds in pre-defined status for a given `IArchive` and
+`IDistroArchSeries` context.
+
+    >>> def print_build_counters_for(archive, distroarchseries):
+    ...     build_counters = archive_set.getBuildCountersForArchitecture(
+    ...         archive, distroarchseries)
+    ...     sorted_keys = sorted(build_counters.keys())
+    ...     for key in sorted_keys:
+    ...         print key, build_counters[key]
+
+
+Build counters for hoary/i386 in Celso's PPA.
+
+    >>> hoary_i386 = hoary['i386']
+    >>> print_build_counters_for(cprov_archive, hoary_i386)
+    failed     0
+    pending    0
+    succeeded  0
+    total      0
+
+Build counters for hoary/i386 in ubuntu primary archive.
+
+    >>> print_build_counters_for(ubuntu.main_archive, hoary_i386)
+    failed     1
+    pending    2
+    succeeded  1
+    total      4
+
+warty/i386 which has 3 SUPERSEDED builds computed in 'total', but not
+in any other predefined counter.
+
+    >>> warty_i386 = warty['i386']
+    >>> print_build_counters_for(ubuntu.main_archive, warty_i386)
+    failed     3
+    pending    0
+    succeeded  3
+    total      9
+
+Finally, build counters for breezy-autotest/i386 in ubuntu partner
+archive.
+
+    >>> ubuntu_partner = archive_set.getByDistroPurpose(
+    ...      ubuntu, ArchivePurpose.PARTNER)
+    >>> breezy_autotest_i386 = breezy_autotest['i386']
+    >>> print_build_counters_for(ubuntu_partner, breezy_autotest_i386)
+    failed     0
+    pending    0
+    succeeded  1
+    total      1
 
 
 == Archive Permission Checking ==
@@ -1347,3 +1461,73 @@ Cprov does not have permission, however.
 
     >>> ubuntu.main_archive.canUpload(cprov, mozilla)
     False
+
+
+== Rebuild archives ==
+
+For further information about how ArchiveRebuild works see
+archive-rebuilds.txt. Here we will just document why the creation and
+lookup of REBUILD archives are a little different than the rest of the
+archives.
+
+When creating archives with REBUILD purpose, the 'name' field is
+mandatory, since it's user defined. There is no default name for
+them.
+
+Creating new REBUILD archive without passing a name results in an
+AssertionError.
+
+    >>> rebuild_archive = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     distribution=ubuntutest)
+    Traceback (most recent call last):
+    ...
+    AssertionError: 'REBUILD' purpose has no default name.
+
+Passing the 'name', in addition to the owner, purpose and
+distribution, does the trick.
+
+    >>> rebuild_archive = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     distribution=ubuntutest, name='test-rebuild-one')
+
+As mentioned before, the rebuild archive name should be traversable
+otherwise an error is raised.
+
+    >>> getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     distribution=ubuntutest, name='Very@Wrong!Name')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Invalid name given to unproxied object.
+
+The name is used as provided, so callsites should validate it when
+necessary.
+
+    >>> print rebuild_archive.name
+    test-rebuild-one
+
+Another difference is the lookup, we can use getByDistroPurpose(),
+however we have to pass 'name', otherwise a error is raised.
+
+    >>> getUtility(IArchiveSet).getByDistroPurpose(
+    ...     ubuntutest, ArchivePurpose.REBUILD)
+    Traceback (most recent call last):
+    ...
+    AssertionError: 'REBUILD' purpose has no default name.
+
+Passing the name it behaves exactly it does for primary archive
+purposes (PRIMARY and PARTNER). When no matching archive is found,
+None is returned.
+
+    >>> candidate = getUtility(IArchiveSet).getByDistroPurpose(
+    ...     ubuntutest, ArchivePurpose.REBUILD, name="does-not-exist")
+    >>> print candidate
+    None
+
+If there is a matching archive it is returned.
+
+    >>> candidate = getUtility(IArchiveSet).getByDistroPurpose(
+    ...     ubuntutest, ArchivePurpose.REBUILD, name="test-rebuild-one")
+    >>> print candidate.name
+    test-rebuild-one
