@@ -16,14 +16,15 @@
 <div metal:fill-slot="main">
   <div id="packages">
 
-  <tal:ppa-packages
-    define="sourcepackagereleases view/get_latest_uploaded_ppa_packages_with_stats"
-    condition="sourcepackagereleases">
-
   <h1>PPA packages</h1>
 
-  <tal:size replace="view/PACKAGE_LIMIT"/> Most recently uploaded packages
-  <table class="listing">
+  <tal:navigation_top
+       replace="structure view/batchnav/@@+navigation-links-upper" />
+
+  <tal:ppa-packages
+    define="sourcepackagereleases view/batch">
+
+  <table class="listing" condition="sourcepackagereleases">
     <thead>
       <tr>
         <th>Name</th>
@@ -35,9 +36,18 @@
         <th>Questions</th>
       </tr>
     </thead>
-
-    <div metal:use-macro="template/macros/sourcepackagerelease-ppa-rows" />
+    <tbody>
+      <div metal:use-macro="template/macros/sourcepackagerelease-ppa-rows" />
+    </tbody>
   </table>
+
+  <tal:navigation_bottom
+       replace="structure view/batchnav/@@+navigation-links-lower" />
+
+  <tal:no_packages condition="not: sourcepackagereleases">
+    <tal:name replace="context/name"/> has no related PPA packages.
+  </tal:no_packages>
+
   </tal:ppa-packages>
 
   </div>

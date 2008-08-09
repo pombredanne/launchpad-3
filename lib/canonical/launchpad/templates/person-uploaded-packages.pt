@@ -16,14 +16,15 @@
 <div metal:fill-slot="main">
   <div id="packages">
 
-  <tal:uploaded-packages
-    define="sourcepackagereleases view/get_latest_uploaded_but_not_maintained_packages_with_stats"
-    condition="sourcepackagereleases">
-
   <h1>Uploaded packages</h1>
 
-  <tal:size replace="view/PACKAGE_LIMIT"/> Most recently uploaded packages
-  <table class="listing">
+  <tal:navigation_top
+       replace="structure view/batchnav/@@+navigation-links-upper" />
+
+  <tal:uploaded-packages
+    define="sourcepackagereleases view/batch">
+
+  <table class="listing" condition="sourcepackagereleases">
     <thead>
       <tr>
         <th>Name</th>
@@ -35,9 +36,18 @@
         <th>Questions</th>
       </tr>
     </thead>
-
-    <div metal:use-macro="context/@@+person-macros/sourcepackagerelease-rows" />
+    <tbody>
+      <div metal:use-macro="context/@@+person-macros/sourcepackagerelease-rows" />
+    </tbody>
   </table>
+
+  <tal:navigation_bottom
+       replace="structure view/batchnav/@@+navigation-links-lower" />
+
+  <tal:no_packages condition="not: sourcepackagereleases">
+    <tal:name replace="context/name"/> has no uploaded packages.
+  </tal:no_packages>
+
   </tal:uploaded-packages>
   </div>
 </div>

@@ -4560,6 +4560,47 @@ class PersonRelatedSoftwareView(LaunchpadView):
             for package in package_releases]
 
 
+class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
+    """View for +maintained-packages."""
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        self.batchnav = BatchNavigator(
+            self.get_latest_maintained_packages_with_stats, self.request)
+        self.batch = list(self.batchnav.currentBatch())
+
+
+class PersonUploadedPackagesView(PersonRelatedSoftwareView):
+    """View for +uploaded-packages."""
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        self.batchnav = BatchNavigator(
+            self.get_latest_uploaded_but_not_maintained_packages_with_stats,
+            self.request)
+        self.batch = list(self.batchnav.currentBatch())
+
+
+class PersonPPAPackagesView(PersonRelatedSoftwareView):
+    """View for +ppa-packages."""
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        self.batchnav = BatchNavigator(
+            self.get_latest_uploaded_ppa_packages_with_stats, self.request)
+        self.batch = list(self.batchnav.currentBatch())
+
+
+class PersonRelatedProjectsView(PersonRelatedSoftwareView):
+    """View for +related-projects."""
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        self.batchnav = BatchNavigator(
+            self.related_projects, self.request)
+        self.batch = list(self.batchnav.currentBatch())
+
+
 class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's subscribed branches."""
 
