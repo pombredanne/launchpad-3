@@ -432,11 +432,7 @@ def _copy_active_translations_as_update(child, transaction, logger):
     """Update child distroseries with translations from parent."""
     # This function makes extensive use of temporary tables.  Testing with
     # regular persistent tables revealed frequent lockups as the algorithm
-    # waited for autovacuum to go over the holding tables.  Using temporary
-    # tables means that we cannot let our connection be reset at the end of
-    # every transaction.
-    original_reset_setting = transaction.reset_after_transaction
-    transaction.reset_after_transaction = False
+    # waited for autovacuum to go over the holding tables.
     full_name = "%s_%s" % (child.distribution.name, child.name)
     tables = ['POFile', 'TranslationMessage']
     copier = MultiTableCopy(full_name, tables, logger=logger)
@@ -578,7 +574,6 @@ def _copy_active_translations_as_update(child, transaction, logger):
 
     flush_database_updates()
     transaction.commit()
-    transaction.reset_after_transaction = original_reset_setting
 
 
 def copy_active_translations(child_series, transaction, logger):
