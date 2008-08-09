@@ -726,6 +726,11 @@ name, and is in the same module
     >>> entry_interface.__name__
     'IBookEntry'
 
+The original interface docstring is copied over to the new interface:
+
+    >>> entry_interface.__doc__
+    'A simple book data model.'
+
 It extends IEntry.
 
     >>> from canonical.lazr.interfaces.rest import IEntry
@@ -785,6 +790,11 @@ The resulting class is named based on the interface:
 
     >>> entry_adapter_factory.__name__
     'BookEntryAdapter'
+
+Its docstring is also copied over from the original interface:
+
+    >>> entry_adapter_factory.__doc__
+    'A simple book data model.'
 
 The resulting adapter has its schema attribute set to the exported
 interface, and proxies all attributes to the underlying object.
@@ -867,6 +877,11 @@ with the @collection_default_content decorator.
     >>> collection_adapter.find()
     ['A book', 'Another book']
 
+The adapter's docstring is taken from the original interface.
+
+    >>> collection_adapter.__doc__
+    'Set of all the books in the system.'
+
 If parameters were specified, they'll be passed in to the method by
 find(). The REQUEST_USER marker value will be replaced by the logged in
 user.
@@ -931,6 +946,11 @@ the ResourceOperation base class.
     'GET_IBookSetOnSteroids_searchBooks'
     >>> issubclass(read_method_adapter_factory, ResourceOperation)
     True
+
+The adapter's docstring is taken from the decorated method docstring.
+
+    >>> read_method_adapter_factory.__doc__
+    "Return list of books containing 'text'."
 
 The adapter's params attribute contains the specification of the
 parameters accepted by the operation.

@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
-    'Breadcrumbs',
     'BrowserWindowDimensions',
     'ContribIcingFolder',
     'DefaultShortLink',
@@ -286,11 +285,6 @@ class Hierarchy(LaunchpadView):
                 before_last_element = None
             for element in elements:
                 cssclass = 'item'
-                if element.has_menu:
-                    menudata = ' lpm:mid="%s/+menudata"' % element.url
-                    cssclass = ' '.join([cssclass, 'container'])
-                else:
-                    menudata = ''
                 if element is before_last_element:
                     cssclass = ' '.join(['before-last', cssclass])
                 elif element is last_element:
@@ -298,10 +292,10 @@ class Hierarchy(LaunchpadView):
                 else:
                     # No extra CSS class.
                     pass
-                steps.append('<span class="%s"%s>'
+                steps.append('<span class="%s">'
                          '<a href="%s">%s</a>'
                          '</span>'
-                         % (cssclass, menudata, element.url,
+                         % (cssclass, element.url,
                             cgi.escape(element.text)))
             hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
         else:
@@ -315,45 +309,6 @@ class Hierarchy(LaunchpadView):
                         site_message)
 
         return hierarchy
-
-
-class Breadcrumbs(LaunchpadView):
-    """Page fragment to display the breadcrumbs text."""
-
-    def render(self):
-        """Render the breadcrumbs text.
-
-        The breadcrumbs are taken from the request.breadcrumbs list.
-        For each breadcrumb, breadcrumb.text is cgi escaped.
-        """
-        crumbs = list(self.request.breadcrumbs)
-
-        L = []
-        firsttext = 'Home'
-        firsturl = allvhosts.configs['mainsite'].rooturl
-
-        L.append(
-            '<li lpm:mid="root" class="item">'
-            '<a href="%s" class="breadcrumb container" id="homebreadcrumb">'
-            '<em><span>%s</span></em></a></li>'
-            % (firsturl, cgi.escape(firsttext)))
-
-        if crumbs:
-
-            for crumb in crumbs:
-                if crumb.has_menu:
-                    menudata = ' lpm:mid="%s/+menudata"' % crumb.url
-                    cssclass = 'breadcrumb container'
-                else:
-                    menudata = ''
-                    cssclass = 'breadcrumb'
-                L.append('<li class="item"%s>'
-                         '<a href="%s" class="%s"><em>%s</em></a>'
-                         '</li>'
-                         % (menudata, crumb.url, cssclass,
-                            cgi.escape(crumb.text)))
-
-        return u'\n'.join(L)
 
 
 class MaintenanceMessage:
@@ -889,6 +844,20 @@ class LaunchpadTourFolder(ExportedFolder):
             return RedirectionView(
                 "%s+tour/index" % canonical_url(self.context),
                 self.request, status=302), ()
+        else:
+            return self, ()
+
+
+class LaunchpadAPIDocFolder(ExportedFolder):
+    """Export the API documentation."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../apidoc/')
+
+    def browserDefault(self, request):
+        """Traverse to index.html if the directory itself is requested."""
+        if len(self.names) == 0:
+            return self, ('index.html', )
         else:
             return self, ()
 

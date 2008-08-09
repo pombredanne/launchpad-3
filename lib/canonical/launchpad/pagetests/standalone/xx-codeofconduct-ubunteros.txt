@@ -1,18 +1,13 @@
-= Codes of Conduct and Ubunteros =
+= Codes of Conduct =
 
-Administrators can check the list of people that have signed the Code of
-Conduct. Foo Bar should appear on the list even though he signed the 1.0
-version, which is non-current but still valid.
+Administrators can see the signed Code of Conducts of any given person.
 
     # A useful helper
     >>> def get_details_portlet(page):
     ...     portlet = find_tag_by_id(page, 'portlet-details')
     ...     return extract_text(portlet)
 
-    >>> admin_browser.open('http://launchpad.dev/people/+ubunterolist')
-    >>> admin_browser.title
-    'Ubunteros registered in Launchpad'
-    >>> admin_browser.getLink('Foo Bar (name16)').click()
+    >>> admin_browser.open('http://launchpad.dev/~name16')
     >>> admin_browser.url
     'http://launchpad.dev/~name16'
     >>> print get_details_portlet(admin_browser.contents)
