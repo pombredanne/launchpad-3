@@ -175,8 +175,7 @@ def _format_enum(num, format, format_string=None):
     instance = format()
     if format_string is None:
         format_string = instance.get_format_string()
-    return DBItem(
-        num, format_string.strip(), instance.get_format_description())
+    return DBItem(num, format_string, instance.get_format_description())
 
 
 class BranchFormat(DBEnumeratedType):
@@ -200,7 +199,8 @@ class BranchFormat(DBEnumeratedType):
     BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
 
     # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
-    BZR_BRANCH_7 = DBItem(7, 'Bazaar Branch Format 7 (needs bzr 1.6)')
+    BZR_BRANCH_7 = DBItem(7, 'Bazaar Branch Format 7 (needs bzr 1.6)\n',
+                          'Description to be added')
 
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
@@ -243,9 +243,11 @@ class RepositoryFormat(DBEnumeratedType):
 
     # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
     BZR_KNITPACK_5 = DBItem(
-        205, 'Bazaar RepositoryFormatKnitPack5 (bzr 1.6)')
+        205, 'Bazaar RepositoryFormatKnitPack5 (bzr 1.6)\n',
+        'Description to be added')
     BZR_KNITPACK_5_RR = DBItem(
-        206, 'Bazaar RepositoryFormatKnitPack5RichRoot (bzr 1.6)')
+        206, 'Bazaar RepositoryFormatKnitPack5RichRoot (bzr 1.6)\n',
+        'Description to be added')
 
     BZR_PACK_DEV_0 = _format_enum(
         300, RepositoryFormatPackDevelopment0)
@@ -255,10 +257,12 @@ class RepositoryFormat(DBEnumeratedType):
 
     # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
     BZR_DEV_1 = DBItem(
-        302, 'Bazaar development format 1 (needs bzr.dev from before 1.6)')
+        302, 'Bazaar development format 1 (needs bzr.dev from before 1.6)\n',
+        'Description to be added')
     BZR_DEV_1_SUBTREE = DBItem(
         303, ('Bazaar development format 1 with subtree support '
-              '(needs bzr.dev from before 1.6)'))
+              '(needs bzr.dev from before 1.6)\n'),
+        'Description to be added')
 
 
 class ControlFormat(DBEnumeratedType):

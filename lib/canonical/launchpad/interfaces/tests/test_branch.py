@@ -32,7 +32,7 @@ class TestFormatSupport(TestCase):
 
     def bzrlib_is_subset(self, bzrlib_formats, launchpad_enum):
         """Ensure the bzr format marker list is a subset of launchpad."""
-        bzrlib_format_strings = set([name.strip() for name in bzrlib_formats])
+        bzrlib_format_strings = set(bzrlib_formats)
         launchpad_format_strings = set(format.title for format
                                        in launchpad_enum.items)
         self.assertEqual(
