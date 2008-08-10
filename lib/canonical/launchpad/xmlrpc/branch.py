@@ -65,9 +65,9 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if owner_name:
             owner = person_set.getByName(owner_name)
             if owner is None:
-                raise faults.NoSuchPersonWithName(owner_name)
+                return faults.NoSuchPersonWithName(owner_name)
             if not registrant.inTeam(owner):
-                raise faults.NotInTeam(registrant.name, owner_name)
+                return faults.NotInTeam(registrant.name, owner_name)
         else:
             owner = registrant
 
@@ -195,7 +195,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         branch = series.series_branch
         if (branch is None
             or not check_permission('launchpad.View', branch)):
-            raise faults.NoBranchForSeries(series)
+            return faults.NoBranchForSeries(series)
         return branch
 
     def _getBranchForProject(self, project_name):
@@ -299,7 +299,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """See `IPublicCodehostingAPI`."""
         strip_path = path.strip('/')
         if strip_path == '':
-            raise faults.InvalidBranchIdentifier(path)
+            return faults.InvalidBranchIdentifier(path)
         path_segments = strip_path.split('/', 3)
         suffix = None
         if len(path_segments) == 1:
