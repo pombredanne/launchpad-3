@@ -183,13 +183,16 @@ Do the Mailman synchronization by calling the script.  We must set the
 LPCONFIG environment variable for the script to find the correct
 launchpad.conf file.
 
+    >>> import os
+    >>> import sys
     >>> from subprocess import *
     >>> proc = Popen(
     ...     ('scripts/mlist-sync.py', '--hostname',
     ...      'lists.prod.launchpad.dev', source_dir),
     ...     stdout=PIPE, stderr=PIPE,
     ...     cwd=AppServerLayer.appserver_config.root,
-    ...     env=dict(LPCONFIG='testrunner-appserver'))
+    ...     env=dict(LPCONFIG='testrunner-appserver',
+    ...              PYTHONPATH=os.pathsep.join(sys.path)))
     >>> stdout, stderr = proc.communicate()
 
     # Ignore stdout and stderr, but print the return code.  stdout should be
