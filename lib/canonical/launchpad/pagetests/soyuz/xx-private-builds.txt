@@ -77,9 +77,13 @@ private build:
 
 and also the main area:
 
-    >>> for message in get_feedback_messages(anon_browser.contents):
-    ...     print message
-    The frog builder is deactivated.
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    The frog builder
+    Current status
+    The frog builder
+    is deactivated.
+    Last updated ...
+
 
 Launchpad Administrators are allowed to see the build in the portlet:
 
