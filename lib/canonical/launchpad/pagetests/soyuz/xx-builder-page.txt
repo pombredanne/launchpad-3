@@ -33,6 +33,12 @@ location and description.
     Owner
       Launchpad Buildd Admins
 
+The builder status is now displayed as normal text and not as as a
+notification alert.
+
+    >>> messages = get_feedback_messages(anon_browser.contents)
+    >>> print messages
+    []
 
 == Builder Actions ==
 
