@@ -193,4 +193,16 @@
             interface="canonical.launchpad.interfaces.IHWSubmissionDeviceSet" />
     </securedutility>
 
+    <class class="canonical.launchpad.database.HWSubmissionBug">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWSubmissionBug" />
+        <allow attributes="id" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.HWSubmissionBugSet"
+        provides="canonical.launchpad.interfaces.IHWSubmissionBugSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWSubmissionBugSet" />
+    </securedutility>
 </configure>

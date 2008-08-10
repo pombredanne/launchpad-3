@@ -15,6 +15,8 @@ __all__ = [
     'HWDriver',
     'HWDriverSet',
     'HWSubmission',
+    'HWSubmissionBug',
+    'HWSubmissionBugSet',
     'HWSubmissionSet',
     'HWSubmissionDevice',
     'HWSubmissionDeviceSet',
@@ -44,10 +46,10 @@ from canonical.launchpad.interfaces.hwdb import (
     HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
     IHWDeviceClass, IHWDeviceClassSet, IHWDeviceDriverLink,
     IHWDeviceDriverLinkSet, IHWDeviceNameVariant, IHWDeviceNameVariantSet,
-    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionDevice,
-    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
-    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
-    IHWVendorNameSet)
+    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionBug,
+    IHWSubmissionBugSet, IHWSubmissionDevice, IHWSubmissionDeviceSet,
+    IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
+    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -635,3 +637,23 @@ class HWSubmissionDeviceSet:
         return HWSubmissionDevice(device_driver_link=device_driver_link,
                                   submission=submission, parent=parent,
                                   hal_device_id=hal_device_id)
+
+
+class HWSubmissionBug(SQLBase):
+    """See `IHWSubmissionBug`."""
+
+    implements(IHWSubmissionBug)
+    _table = 'HWSubmissionBug'
+
+    submission = ForeignKey(dbName='submission', foreignKey='HWSubmission',
+                              notNull=True)
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+
+class HWSubmissionBugSet:
+    """See `IHWSubmissionBugSet`."""
+
+    implements(IHWSubmissionBugSet)
+
+    def create(self, submission, bug):
+        """See `IHWSubmissionBugSet`."""
+        return HWSubmissionBug(submission=submission, bug=bug)

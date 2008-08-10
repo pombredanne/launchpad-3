@@ -1916,6 +1916,8 @@ COMMENT ON COLUMN HWSubmission.raw_submission IS 'A reference to a row of Librar
 COMMENT ON COLUMN HWSubmission.system_fingerprint IS 'A reference to an entry of the HWDBSystemFingerPrint table. This table stores the system name as returned by HAL (system.vendor, system.product)';
 COMMENT ON COLUMN HWSubmission.raw_emailaddress IS 'The email address of the submitter.';
 
+COMMENT ON TABLE HWSubmissionBug IS 'Link bugs to HWDB submissions';
+
 COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL system.name, system.vendor) from raw submission data';
 COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 
