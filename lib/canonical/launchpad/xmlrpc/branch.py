@@ -188,9 +188,9 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
     def _getSeriesBranch(self, series):
         """Return the branch for the given series.
 
-        :return: The branch for the given series.
-        :raise faults.NoBranchForSeries: if there is no such branch, or if the
-            branch is invisible to the user.
+        :return: The branch for the given series or faults.NoBranchForSeries
+            if there is no such branch, or if the branch is invisible to the
+            user.
         """
         branch = series.series_branch
         if (branch is None
@@ -202,8 +202,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """Return the branch for the development focus of the given project.
 
         :param project_name: The name of a Launchpad project.
-        :return: The Branch object.
-        :raise faults.NoSuchProduct: If there's no project by that name.
+        :return: The Branch object or faults.NoSuchProduct if there's no
+            project by that name.
         """
         if not valid_name(project_name):
             return faults.InvalidProductIdentifier(project_name)
@@ -230,8 +230,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
         :param project_name: The name of a Launchpad project.
         :param series_name: The name of a series on that project.
-        :raise Fault: If the project or the series do not exist.
-        :return: The branch for that series.
+        :return: The branch for that series or a Fault if the project or the
+            series do not exist.
         """
         project = getUtility(IProductSet).getByName(project_name)
         if project is None:
@@ -246,8 +246,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
         :param unique_name: A string of the form "~user/project/branch".
         :return: The corresponding Branch object if the branch exists, a
-            _NonexistentBranch stub object if the branch does not exist.
-        :raises faults.InvalidBranchIdentifier: If unique_name is invalid.
+            _NonexistentBranch stub object if the branch does not exist or
+            faults.InvalidBranchIdentifier if unique_name is invalid.
         """
         if unique_name[0] != '~':
             return faults.InvalidBranchIdentifier(unique_name)
@@ -261,8 +261,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """Return an appropriate response for a non-existent branch.
 
         :param unique_name: A string of the form "~user/project/branch".
-        :return: A _NonexistentBranch object.
-        :raise Fault: If the user or project do not exist.
+        :return: A _NonexistentBranch object or a Fault if the user or project
+            do not exist.
         """
         owner_name, project_name, branch_name = unique_name[1:].split('/')
         owner = getUtility(IPersonSet).getByName(owner_name)
