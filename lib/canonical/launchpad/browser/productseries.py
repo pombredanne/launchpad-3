@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'get_series_branch_error',
     'ProductSeriesBugsMenu',
-    'ProductSeriesDynMenu',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
@@ -51,7 +50,6 @@ from canonical.launchpad.webapp import (
     Link, Navigation, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -645,13 +643,6 @@ class ProductSeriesShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.displayname
-
-
-class ProductSeriesDynMenu(DynMenu):
-
-    def mainMenu(self):
-        for release in self.context.releases:
-            yield self.makeLink(release.title, context=release)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):

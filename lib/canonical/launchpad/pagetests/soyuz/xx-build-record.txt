@@ -234,31 +234,84 @@ when retrying a build, so there is no life-cycle for a pending build
 without buildqueue record anymore.)
 
     >>> admin_browser.getLink("Rescore build").click()
-    >>> admin_browser.getControl(name="SCORE").value = '100'
-    >>> admin_browser.getControl("Update").click()
-    >>> get_feedback_messages(admin_browser.contents)
-    [u'Build Record rescored to 100']
+    >>> admin_browser.getControl("Priority").value = '100'
+    >>> admin_browser.getControl("Rescore").click()
 
-It checks input data sanity (bug # 44240).
+Once submitted, the 'rescore' form sends the user back the build page
+and renders a notification message indicating the operation was done.
 
-    >>> admin_browser.getControl(name="SCORE").value = 'foo'
-    >>> admin_browser.getControl("Update").click()
-    >>> get_feedback_messages(admin_browser.contents)
-    [u'priority must be an integer not "foo"']
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
 
-And also handles direct attempts to rescore a build in the wrong
-state.
+    >>> for text in get_feedback_messages(admin_browser.contents):
+    ...     print text
+    Build rescored to 100.
 
-    >>> print http(r"""
-    ... POST /ubuntu/+source/netapplet/0.99.6-1/+build/13/+rescore HTTP/1.1
-    ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-    ... Content-Length: 9
-    ...
-    ... RESCORE=6""")
-    HTTP/1.1 200 Ok
-    Content-Length: ...
-    ...i386 build of netapplet 0.99.6-1 in ubuntu warty...
-    ...Build can not be rescored...
+Highest and lowest priorities.
+
+    >>> limit = 2 ** 31
+
+    >>> admin_browser.getLink("Rescore build").click()
+    >>> admin_browser.getControl("Priority").value = str(limit - 1)
+    >>> admin_browser.getControl("Rescore").click()
+    >>> for text in get_feedback_messages(admin_browser.contents):
+    ...     print text
+    Build rescored to 2147483647.
+
+    >>> admin_browser.getLink("Rescore build").click()
+    >>> admin_browser.getControl("Priority").value = str(0 - (limit - 1))
+    >>> admin_browser.getControl("Rescore").click()
+    >>> for text in get_feedback_messages(admin_browser.contents):
+    ...     print text
+    Build rescored to -2147483647.
+
+The user can 'cancel' the operation anytime and will be sent to the
+build context page.
+
+    >>> admin_browser.getLink("Rescore build").click()
+    >>> admin_browser.getLink("Cancel").click()
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
+
+The 'rescore' form checks the consistent of the new value given by the
+user.
+
+    >>> admin_browser.getLink("Rescore build").click()
+
+The given value must be a not empty 32-bits signed integer (bug #44240,
+#250490).
+
+    >>> admin_browser.getControl("Priority").value = 'foo'
+    >>> admin_browser.getControl("Rescore").click()
+    >>> for text in get_feedback_messages(admin_browser.contents):
+    ...     print text
+    There is 1 error.
+    Invalid integer data
+
+    >>> admin_browser.getControl("Priority").value = ''
+    >>> admin_browser.getControl("Rescore").click()
+    >>> for text in get_feedback_messages(admin_browser.contents):
+    ...     print text
+    There is 1 error.
+    Required input is missing.
+
+    >>> admin_browser.getControl("Priority").value = str(limit)
+    >>> admin_browser.getControl("Rescore").click()
+    >>> for text in get_feedback_messages(admin_browser.contents):
+    ...     print text
+    There is 1 error.
+    Value is too big
+
+And this form also handles direct attempts to rescore a build in the
+wrong state. The request is simply redirected to the build (context)
+page.
+
+    >>> admin_browser.open(
+    ...    "http://launchpad.dev/ubuntu/+source/netapplet/0.99.6-1/"
+    ...    "+build/13/+rescore")
+
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu/+source/netapplet/0.99.6-1/+build/13
 
 
 == Builds created by Gina ==
@@ -299,12 +352,11 @@ method here, as don't know the password.
 Allow Re-score:
 
     >>> cprov_browser.getLink("Rescore build").click()
-    >>> cprov_browser.getControl(name="SCORE").value = '100'
-    >>> cprov_browser.getControl("Update").click()
-    >>> print extract_text(find_main_content(cprov_browser.contents))
-    Rescore i386 build of libstdc++ b8p in ubuntu hoary RELEASE
-    Build Record rescored to 100
-    ...
+    >>> cprov_browser.getControl("Priority").value = '100'
+    >>> cprov_browser.getControl("Rescore").click()
+    >>> for text in get_feedback_messages(cprov_browser.contents):
+    ...     print text
+    Build rescored to 100.
 
 
 === Dealing with Builders ===
@@ -426,19 +478,17 @@ re-score PPA jobs:
     >>> admin_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> admin_browser.getLink('Rescore build').click()
-    >>> admin_browser.getControl(name="SCORE").value
-    '0'
-    >>> admin_browser.getControl(name="SCORE").value = '100'
-    >>> admin_browser.getControl("Update").click()
-    >>> get_feedback_messages(admin_browser.contents)
-    [u'Build Record rescored to 100']
+    >>> admin_browser.getControl("Priority").value = '100'
+    >>> admin_browser.getControl("Rescore").click()
+    >>> for text in get_feedback_messages(admin_browser.contents):
+    ...     print text
+    Build rescored to 100.
 
     >>> cprov_browser.open(
     ...    "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> cprov_browser.getLink('Rescore build').click()
-    >>> cprov_browser.getControl(name="SCORE").value
-    '100'
-    >>> cprov_browser.getControl(name="SCORE").value = '200'
-    >>> cprov_browser.getControl("Update").click()
-    >>> get_feedback_messages(cprov_browser.contents)
-    [u'Build Record rescored to 200']
+    >>> cprov_browser.getControl("Priority").value = '200'
+    >>> cprov_browser.getControl("Rescore").click()
+    >>> for text in get_feedback_messages(cprov_browser.contents):
+    ...     print text
+    Build rescored to 200.

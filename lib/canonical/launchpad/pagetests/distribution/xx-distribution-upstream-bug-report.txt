@@ -279,11 +279,11 @@ them, though:
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
     >>> print extract_text(table)
     mozilla-firefox  Missing corresponding product.  (find)  (link)
-        3    0     0.00  3  0      0.00    0    0    0.00  0
+        3    0     0.00  3  2      66.67    1    0    0.00  2
 
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-totals')
     >>> print extract_text(table)
-        Totals: 3    0     0.00  3  0      0.00    0    0    0.00  0
+        Totals: 3    0     0.00  3  2      66.67    1    0    0.00  2
 
     >>> browser.open("http://bugs.launchpad.dev/kubuntu/+upstreamreport")
     >>> table = find_tag_by_id(browser.contents, 'upstream-report')

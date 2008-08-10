@@ -339,6 +339,16 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         sourcepackagerelease is an ISourcePackageRelease.
         """
 
+    def getCurrentSourceReleases(source_package_names):
+        """Get the current release of a list of source packages.
+
+        :param source_package_names: a list of `ISourcePackageName`
+            instances.
+
+        :return: a dict where the key is a `ISourcePackage`
+            and the value is a `IDistroSeriesSourcePackageRelease`.
+        """
+
     def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
                              include_pending=False, exclude_pocket=None,
                              archive=None):

@@ -14,7 +14,7 @@
             <i>No other known occurrences.</i>
         </tal:block>
         <tal:block condition="other_occurrences">
-          This bug is also targetted for fixing in...
+          This bug is also known to affect:
         </tal:block>
 
 

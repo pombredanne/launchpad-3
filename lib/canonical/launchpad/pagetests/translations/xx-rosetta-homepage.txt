@@ -44,14 +44,3 @@ in the right column.
     >>> right_column.findAll('a')[-1]
     <a href="/+editmylanguages">
     ...Change your preferred language...
-
-There is also an "About" page that talks about how Launchpad
-Translations works.
-
-    >>> browser.getLink('Learn more').click()
-    >>> print browser.title
-    About Translations
-
-    >>> print extract_text(find_main_content(browser.contents))
-    Your...
-    ... GetText ...

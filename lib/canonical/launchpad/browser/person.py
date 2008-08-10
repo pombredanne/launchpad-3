@@ -5,11 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'BaseListView',
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
-    'PeopleListView',
     'PersonActiveReviewsView',
     'PersonAddView',
     'PersonAnswerContactForView',
@@ -26,7 +24,6 @@ __all__ = [
     'PersonCodeSummaryView',
     'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
-    'PersonDynMenu',
     'PersonEditEmailsView',
     'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
@@ -43,12 +40,11 @@ __all__ = [
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
     'PersonOwnedBranchesView',
-    'PersonPackagesView',
     'PersonRdfView',
     'PersonRdfContentsView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
-    'PersonRelatedProjectsView',
+    'PersonRelatedSoftwareView',
     'PersonSearchQuestionsView',
     'PersonSetContextMenu',
     'PersonSetFacets',
@@ -57,7 +53,8 @@ __all__ = [
     'PersonSOP',
     'PersonSpecFeedbackView',
     'PersonSpecsMenu',
-    'PersonSpecWorkLoadView',
+    'PersonSpecWorkloadView',
+    'PersonSpecWorkloadTableView',
     'PersonSubscribedBranchesView',
     'PersonTeamBranchesView',
     'PersonTranslationView',
@@ -77,14 +74,12 @@ __all__ = [
     'TeamAddMyTeamsView',
     'TeamJoinView',
     'TeamLeaveView',
-    'TeamListView',
     'TeamNavigation',
     'TeamOverviewMenu',
     'TeamMembershipView',
     'TeamMugshotView',
     'TeamReassignmentView',
     'TeamSpecsMenu',
-    'UbunteroListView',
     'archive_to_person',
     ]
 
@@ -143,7 +138,6 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
@@ -163,7 +157,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.browser.openiddiscovery import (
-    OpenIDPersistentIdentity, XRDSContentNegotiationMixin)
+    XRDSContentNegotiationMixin)
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -171,16 +165,19 @@ from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
+from canonical.launchpad.components.openidserver import (
+    OpenIDPersistentIdentity)
+
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
@@ -343,26 +340,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         if irc_nick is None or irc_nick.person != self.context:
             return None
         return irc_nick
-
-
-class PersonDynMenu(DynMenu):
-
-    menus = {
-        'contributions': 'contributionsMenu',
-        }
-
-    @neverempty
-    def contributionsMenu(self):
-        L = [self.makeBreadcrumbLink(item)
-             for item in self.context.iterTopProjectsContributedTo()]
-        L.sort(key=lambda item: item.text.lower())
-        if L:
-            for obj in L:
-                yield obj
-        else:
-            yield self.makeLink(
-                'Projects you contribute to go here.', target=None)
-        yield self.makeLink('See all projects...', target='/products')
 
 
 class TeamNavigation(PersonNavigation):
@@ -592,9 +569,8 @@ class PersonSetContextMenu(ContextMenu):
 
     usedfor = IPersonSet
 
-    links = ['products', 'distributions', 'people', 'meetings', 'peoplelist',
-             'teamlist', 'ubunterolist', 'newteam', 'adminpeoplemerge',
-             'adminteammerge', 'mergeaccounts']
+    links = ['products', 'distributions', 'people', 'meetings', 'newteam',
+             'adminpeoplemerge', 'adminteammerge', 'mergeaccounts']
 
     def products(self):
         return Link('/projects/', 'View projects')
@@ -607,18 +583,6 @@ class PersonSetContextMenu(ContextMenu):
 
     def meetings(self):
         return Link('/sprints/', 'View meetings')
-
-    def peoplelist(self):
-        text = 'List all people'
-        return Link('+peoplelist', text, icon='people')
-
-    def teamlist(self):
-        text = 'List all teams'
-        return Link('+teamlist', text, icon='people')
-
-    def ubunterolist(self):
-        text = 'List all Ubunteros'
-        return Link('+ubunterolist', text, icon='people')
 
     def newteam(self):
         text = 'Register a team'
@@ -972,13 +936,13 @@ class CommonMenuLinks:
         return Link(target, text, icon='edit')
 
     def common_packages(self):
-        target = '+packages'
+        target = '+related-software'
         text = 'List assigned packages'
         summary = 'Packages assigned to %s' % self.context.browsername
         return Link(target, text, summary, icon='packages')
 
     def related_projects(self):
-        target = '+projects'
+        target = '+related-software#projects'
         text = 'List related projects'
         summary = 'Projects %s is involved with' % self.context.browsername
         return Link(target, text, summary, icon='packages')
@@ -1119,32 +1083,8 @@ class IPersonEditMenu(Interface):
 class IPersonRelatedSoftwareMenu(Interface):
     """A marker interface for the 'Related Software' navigation menu."""
 
-
-class PersonOverviewNavigationMenu(NavigationMenu):
-    """The top-level menu of actions a Person may take."""
-
-    usedfor = IHasPersonNavigationMenu
-    facet = 'overview'
-    links = ('profile', 'related_software', 'karma', 'show_ppa')
-
-    def __init__(self, context):
-        context = IPerson(context)
-        super(PersonOverviewNavigationMenu, self).__init__(context)
-
-    def profile(self):
-        target = ''
-        text = 'Profile'
-        return Link(target, text, menu=IPersonEditMenu)
-
-    def related_software(self):
-        target = '+projects'
-        text = 'Related Software'
-        return Link(target, text, menu=IPersonRelatedSoftwareMenu)
-
-    def karma(self):
-        target = '+karma'
-        text = 'Karma'
-        return Link(target, text)
+class PersonPPANavigationMenuMixin:
+    """A mixin that provides the PPA navigation menu link."""
 
     def show_ppa(self):
         """Show the link to a Personal Package Archive.
@@ -1171,6 +1111,34 @@ class PersonOverviewNavigationMenu(NavigationMenu):
             enable_link = False
 
         return Link(target, text, summary, icon='info', enabled=enable_link)
+
+
+class PersonOverviewNavigationMenu(
+    NavigationMenu, PersonPPANavigationMenuMixin):
+    """The top-level menu of actions a Person may take."""
+
+    usedfor = IPerson
+    facet = 'overview'
+    links = ('profile', 'related_software', 'karma', 'show_ppa')
+
+    def __init__(self, context):
+        context = IPerson(context)
+        super(PersonOverviewNavigationMenu, self).__init__(context)
+
+    def profile(self):
+        target = ''
+        text = 'Profile'
+        return Link(target, text, menu=IPersonEditMenu)
+
+    def related_software(self):
+        target = '+related-software'
+        text = 'Related Software'
+        return Link(target, text, menu=IPersonRelatedSoftwareMenu)
+
+    def karma(self):
+        target = '+karma'
+        text = 'Karma'
+        return Link(target, text)
 
 
 class PersonEditNavigationMenu(NavigationMenu):
@@ -1205,24 +1173,6 @@ class PersonEditNavigationMenu(NavigationMenu):
     def passwords(self):
         target = '+changepassword'
         text = 'Passwords'
-        return Link(target, text)
-
-
-class PersonRelatedSoftwareNavigationMenu(NavigationMenu):
-
-    usedfor = IPersonRelatedSoftwareMenu
-    facet = 'overview'
-    title = 'Related Software'
-    links = ('participation', 'assigned_packages')
-
-    def participation(self):
-        target = '+projects'
-        text = 'Participation'
-        return Link(target, text)
-
-    def assigned_packages(self):
-        target = '+packages'
-        text = 'Assigned Packages'
         return Link(target, text)
 
 
@@ -1360,6 +1310,31 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
+class TeamOverviewNavigationMenu(
+    NavigationMenu, PersonPPANavigationMenuMixin):
+    """A top-level menu for navigation within a Team."""
+
+    usedfor = ITeam
+    facet = 'overview'
+    links = ['profile', 'polls', 'members', 'show_ppa']
+
+    def profile(self):
+        target = ''
+        text = 'Overview'
+        return Link(target, text)
+
+    def polls(self):
+        target = '+polls'
+        text = 'Polls'
+        return Link(target, text)
+
+    @enabled_with_permission('launchpad.View')
+    def members(self):
+        target = '+members'
+        text = 'Members'
+        return Link(target, text)
+
+
 class TeamMembershipView(LaunchpadView):
     """The view behins ITeam/+members."""
     @cachedproperty
@@ -1377,54 +1352,6 @@ class TeamMembershipView(LaunchpadView):
     @property
     def have_pending_members(self):
         return self.proposed_memberships or self.invited_memberships
-
-
-class BaseListView:
-
-    header = ""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def _getBatchNavigator(self, results):
-        return BatchNavigator(results, self.request)
-
-    def getTeamsList(self):
-        results = getUtility(IPersonSet).getAllTeams()
-        return self._getBatchNavigator(results)
-
-    def getPeopleList(self):
-        results = getUtility(IPersonSet).getAllPersons()
-        return self._getBatchNavigator(results)
-
-    def getUbunterosList(self):
-        results = getUtility(IPersonSet).getUbunteros()
-        return self._getBatchNavigator(results)
-
-
-class PeopleListView(BaseListView):
-
-    header = "People Launchpad knows about"
-
-    def getList(self):
-        return self.getPeopleList()
-
-
-class TeamListView(BaseListView):
-
-    header = "Teams registered in Launchpad"
-
-    def getList(self):
-        return self.getTeamsList()
-
-
-class UbunteroListView(BaseListView):
-
-    header = "Ubunteros registered in Launchpad"
-
-    def getList(self):
-        return self.getUbunterosList()
 
 
 class FOAFSearchView:
@@ -1745,15 +1672,34 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
-class PersonSpecWorkLoadView(LaunchpadView):
-    """View used to render the specification workload for a particular person.
+class PersonSpecWorkloadView(LaunchpadView):
+    """View to render the specification workload for a person or team.
 
-    It shows the set of specifications with which this person has a role.
+    It shows the set of specifications with which this person has a role.  If
+    the person is a team, then all members of the team are presented using
+    batching with their individual specifications.
     """
 
-    def initialize(self):
-        assert IPerson.providedBy(self.context), (
-            'PersonSpecWorkLoadView should be used only on an IPerson.')
+    @cachedproperty
+    def members(self):
+        """Return a batch navigator for all members.
+
+        This batch does not test for whether the person has specifications or
+        not.
+        """
+        assert self.context.isTeam, (
+            "PersonSpecWorkloadView.members can only be called on a team.")
+        members = self.context.allmembers
+        batch_nav = BatchNavigator(members, self.request)
+        return batch_nav
+
+
+class PersonSpecWorkloadTableView(LaunchpadView):
+    """View to render the specification workload table for a person.
+
+    It shows the set of specifications with which this person has a role
+    in a single table.
+    """
 
     class PersonSpec:
         """One record from the workload list."""
@@ -1772,7 +1718,7 @@ class PersonSpecWorkLoadView(LaunchpadView):
         Return a structure that lists the specs for which this person is the
         approver, the assignee or the drafter.
         """
-        return [PersonSpecWorkLoadView.PersonSpec(spec, self.context)
+        return [PersonSpecWorkloadTableView.PersonSpec(spec, self.context)
                 for spec in self.context.specifications()]
 
 
@@ -2556,6 +2502,52 @@ class PersonView(LaunchpadView, FeedsMixin):
         else:
             return None
 
+    @cachedproperty
+    def email_address_visibility(self):
+        """The EmailAddressVisibleState of this person or team.
+
+        :return: The state of what a logged in user may know of a
+            person or team's email addresses.
+        :rtype: `EmailAddressVisibleState`
+        """
+        return EmailAddressVisibleState(self)
+
+    @property
+    def visible_email_addresses(self):
+        """The list of email address that can be shown.
+
+        The list contains email addresses when the EmailAddressVisibleState's
+        PUBLIC or ALLOWED attributes are True. The preferred email
+        address is the first in the list, the other validated email addresses
+        are not ordered.
+
+        :return: A list of email address strings that can be seen.
+        """
+        visible_states = (
+            EmailAddressVisibleState.PUBLIC, EmailAddressVisibleState.ALLOWED)
+        if self.email_address_visibility.state in visible_states:
+            emails = sorted(
+                email.email for email in self.context.validatedemails)
+            emails.insert(0, self.context.preferredemail.email)
+            return emails
+        else:
+            return []
+
+    @property
+    def visible_email_address_description(self):
+        """A description of who can see a user's email addresses.
+
+        :return: A string, or None if the email addresses cannot be viewed
+            by any user.
+        """
+        state = self.email_address_visibility.state
+        if state is EmailAddressVisibleState.PUBLIC:
+            return 'This email address is only visible to Launchpad users.'
+        elif state is EmailAddressVisibleState.ALLOWED:
+            return 'This email address is not disclosed to others.'
+        else:
+            return None
+
     def htmlEmail(self):
         if self.context.preferredemail is not None:
             return convertToHtmlCode(self.context.preferredemail.email)
@@ -2607,6 +2599,75 @@ class PersonView(LaunchpadView, FeedsMixin):
             return None
 
 
+class EmailAddressVisibleState:
+    """The state of a person's email addresses w.r.t. the logged in user.
+
+    There are five states that describe the visibility of a person or
+    team's addresses to a logged in user, only one will be True:
+
+    * LOGIN_REQUIRED: The user is anonymous; email addresses are never
+      visible to anonymous users.
+    * NONE_AVAILABLE: The person has no validated email addresses or the
+      team has no contact address registered, so there is nothing to show.
+    * PUBLIC: The person is not hiding their email addresses, or the team
+      has a contact address, so any logged in user may view them.
+    * HIDDEN: The person is hiding their email address, so even logged in
+      users cannot view them.  Teams cannot hide their contact address.
+    * ALLOWED: The person is hiding their email address, but the logged in
+      user has permission to see them.  This is either because the user is
+      viewing their own page or because the user is a privileged
+      administrator.
+    """
+    LOGIN_REQUIRED = object()
+    NONE_AVAILABLE = object()
+    PUBLIC = object()
+    HIDDEN = object()
+    ALLOWED = object()
+
+    def __init__(self, view):
+        """Set the state.
+
+        :param view: The view that provides the current user and the
+            context (person or team).
+        :type view: `LaunchpadView`
+        """
+        if view.user is None:
+            self.state = EmailAddressVisibleState.LOGIN_REQUIRED
+        elif view.context.preferredemail is None:
+            self.state = EmailAddressVisibleState.NONE_AVAILABLE
+        elif not view.context.hide_email_addresses:
+            self.state = EmailAddressVisibleState.PUBLIC
+        elif check_permission('launchpad.View',  view.context.preferredemail):
+            self.state = EmailAddressVisibleState.ALLOWED
+        else:
+            self.state = EmailAddressVisibleState.HIDDEN
+
+    @property
+    def is_login_required(self):
+        """Is login required to see the person or team's addresses?"""
+        return self.state is EmailAddressVisibleState.LOGIN_REQUIRED
+
+    @property
+    def are_none_available(self):
+        """Does the person or team not have any email addresses?"""
+        return self.state is EmailAddressVisibleState.NONE_AVAILABLE
+
+    @property
+    def are_public(self):
+        """Are the person's or team's email addresses public to users?"""
+        return self.state is EmailAddressVisibleState.PUBLIC
+
+    @property
+    def are_hidden(self):
+        """Are the person's or team's email addresses hidden from the user?"""
+        return self.state is EmailAddressVisibleState.HIDDEN
+
+    @property
+    def are_allowed(self):
+        """Is the user allowed to see the person's or team's addresses?"""
+        return self.state is EmailAddressVisibleState.ALLOWED
+
+
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
@@ -2648,37 +2709,6 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class PersonRelatedProjectsView(LaunchpadView):
-
-    implements(IPersonRelatedSoftwareMenu)
-
-    # Safety net for the Registry Admins case which is the owner/driver of
-    # lots of projects.
-    max_results_to_display = config.launchpad.default_batch_size
-
-    def _related_projects(self):
-        """Return all projects owned or driven by this person."""
-        return self.context.getOwnedOrDrivenPillars()
-
-    @cachedproperty
-    def relatedProjects(self):
-        """Return projects owned or driven by this person up to the maximum
-        configured."""
-        return list(self._related_projects()[:self.max_results_to_display])
-
-    @cachedproperty
-    def firstFiveRelatedProjects(self):
-        """Return first five projects owned or driven by this person."""
-        return list(self._related_projects()[:5])
-
-    @cachedproperty
-    def related_projects_count(self):
-        return self._related_projects().count()
-
-    def tooManyRelatedProjectsFound(self):
-        return self.related_projects_count > self.max_results_to_display
-
-
 class PersonCodeOfConductEditView(LaunchpadView):
 
     def performCoCChanges(self):
@@ -2704,6 +2734,23 @@ class PersonCodeOfConductEditView(LaunchpadView):
 
 
 class PersonEditWikiNamesView(LaunchpadView):
+    def _validateWikiURL(self, url):
+        """Validate the URL.
+
+        Make sure that the result is a valid URL with only the
+        appropriate schemes.
+        """
+        try:
+            uri = URI(url)
+            if uri.scheme not in ('http', 'https'):
+                self.error_message = (
+                'The URL scheme "%s" is not allowed.  Only http or https '
+                'URLs may be used.' % uri.scheme)
+                return False
+        except InvalidURIError, e:
+            self.error_message = ('"%s" is not a valid URL.' % url)
+            return False
+        return True
 
     def _sanitizeWikiURL(self, url):
         """Strip whitespaces and make sure :url ends in a single '/'."""
@@ -2754,6 +2801,8 @@ class PersonEditWikiNamesView(LaunchpadView):
                     self.error_message = (
                         "Neither Wiki nor WikiName can be empty.")
                     return
+                if not self._validateWikiURL(wiki):
+                    return
                 # Try to make sure people will have only a single Ubuntu
                 # WikiName registered. Although this is almost impossible
                 # because they can do a lot of tricks with the URLs to make
@@ -2786,6 +2835,8 @@ class PersonEditWikiNamesView(LaunchpadView):
                 elif wiki == UBUNTU_WIKI_URL:
                     self.error_message = (
                         "You cannot have two Ubuntu WikiNames.")
+                    return
+                if not self._validateWikiURL(wiki):
                     return
                 wikinameset.new(context, wiki, wikiname)
             else:
@@ -4373,14 +4424,57 @@ class SourcePackageReleaseWithStats:
         self.needs_building = needs_building
 
 
-class PersonPackagesView(LaunchpadView):
-    """View for +packages."""
-
+class PersonRelatedSoftwareView(LaunchpadView):
+    """View for +related-software."""
     implements(IPersonRelatedSoftwareMenu)
 
     PACKAGE_LIMIT = 50
+    # Safety net for the Registry Admins case which is the owner/driver of
+    # lots of projects.
+    max_results_to_display = config.launchpad.default_batch_size
 
-    def getLatestUploadedPPAPackagesWithStats(self):
+    @cachedproperty
+    def related_projects(self):
+        """Return a list of project dicts owned or driven by this person.
+
+        The number of projects returned is limited by max_results_to_display.
+        A project dict has the following keys: title, url, bug_count,
+        spec_count, and question_count.
+        """
+        projects = []
+        max_projects = self.max_results_to_display
+        for pillarname in self._related_projects()[:max_projects]:
+            project = {}
+            project['title'] = pillarname.pillar.title
+            project['url'] = canonical_url(pillarname.pillar)
+            project['bug_count'] = pillarname.pillar.open_bugtasks.count()
+            project['spec_count'] = pillarname.pillar.specifications().count()
+            project['question_count'] = (
+                pillarname.pillar.searchQuestions().count())
+            projects.append(project)
+        return projects
+
+    @cachedproperty
+    def first_five_related_projects(self):
+        """Return first five projects owned or driven by this person."""
+        return list(self._related_projects()[:5])
+
+    @cachedproperty
+    def related_projects_count(self):
+        """The number of project owned or driven by this person."""
+        return self._related_projects().count()
+
+    @property
+    def too_many_related_projects_found(self):
+        """Does the user have more related projects than can be displayed?"""
+        return self.related_projects_count > self.max_results_to_display
+
+    def _related_projects(self):
+        """Return all projects owned or driven by this person."""
+        return self.context.getOwnedOrDrivenPillars()
+
+    @property
+    def get_latest_uploaded_ppa_packages_with_stats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
         Results are filtered according to the permission of the requesting
@@ -4407,12 +4501,14 @@ class PersonPackagesView(LaunchpadView):
                     break
         return self._addStatsToPackages(results)
 
-    def getLatestMaintainedPackagesWithStats(self):
+    @property
+    def get_latest_maintained_packages_with_stats(self):
         """Return the latest maintained packages, including stats."""
         packages = self.context.getLatestMaintainedPackages()
         return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
-    def getLatestUploadedButNotMaintainedPackagesWithStats(self):
+    @property
+    def get_latest_uploaded_but_not_maintained_packages_with_stats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.

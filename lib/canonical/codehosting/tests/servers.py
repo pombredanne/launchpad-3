@@ -19,7 +19,7 @@ import threading
 from zope.component import getUtility
 
 from bzrlib.transport import get_transport, ssh, Server
-from bzrlib.transport.memory import MemoryServer
+from bzrlib.transport.memory import MemoryServer, MemoryTransport
 
 from twisted.conch.ssh import filetransfer
 from twisted.internet import defer
@@ -242,7 +242,8 @@ class FakeLaunchpadServer(LaunchpadServer):
         # The backing transport is supplied during FakeLaunchpadServer.setUp.
         mirror_transport = get_transport(server.get_url())
         LaunchpadServer.__init__(
-            self, BlockingProxy(authserver), user_id, None, mirror_transport)
+            self, BlockingProxy(authserver), user_id, MemoryTransport(),
+            mirror_transport)
         self._schema = 'lp'
 
     def getTransport(self, path=None):
@@ -252,8 +253,6 @@ class FakeLaunchpadServer(LaunchpadServer):
         return transport
 
     def setUp(self):
-        from bzrlib.transport.memory import MemoryTransport
-        self._backing_transport = MemoryTransport()
         LaunchpadServer.setUp(self)
 
     def tearDown(self):

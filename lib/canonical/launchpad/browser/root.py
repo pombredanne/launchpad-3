@@ -35,6 +35,10 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     """An view for the default view of the LaunchpadRoot."""
 
+    # The homepage has two columns to hold featured projects. This
+    # determines the number of projects we display in each column.
+    FEATURED_PROJECT_ROWS = 10
+
     def isRedirectInhibited(self):
         """Returns True if redirection has been inhibited."""
         return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
@@ -49,6 +53,16 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     def featured_projects(self):
         """Return a list of featured projects."""
         return getUtility(IPillarNameSet).featured_projects
+
+    @property
+    def featured_projects_col_a(self):
+        """Return a list of featured projects."""
+        return self.featured_projects[:self.FEATURED_PROJECT_ROWS]
+
+    @property
+    def featured_projects_col_b(self):
+        """Return a list of featured projects."""
+        return self.featured_projects[self.FEATURED_PROJECT_ROWS:]
 
 
 class LaunchpadSearchFormView(LaunchpadView):
