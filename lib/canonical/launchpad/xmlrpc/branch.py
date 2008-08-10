@@ -11,7 +11,6 @@ __all__ = [
     'PublicCodehostingAPI']
 
 import os
-import xmlrpclib
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
@@ -207,7 +206,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         :raise faults.NoSuchProduct: If there's no project by that name.
         """
         if not valid_name(project_name):
-            raise faults.InvalidProductIdentifier(project_name)
+            return faults.InvalidProductIdentifier(project_name)
         project = getUtility(IProductSet).getByName(project_name)
         if project is None:
             pillar = getUtility(IPillarNameSet).getByName(project_name)
@@ -219,10 +218,10 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 else:
                     raise AssertionError(
                         "pillar of unknown type %s" % pillar)
-                raise faults.NoDefaultBranchForPillar(
+                return faults.NoDefaultBranchForPillar(
                     project_name, pillar_type)
             else:
-                raise faults.NoSuchProduct(project_name)
+                return faults.NoSuchProduct(project_name)
         series = project.development_focus
         return self._getSeriesBranch(series)
 
@@ -236,10 +235,10 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """
         project = getUtility(IProductSet).getByName(project_name)
         if project is None:
-            raise faults.NoSuchProduct(project_name)
+            return faults.NoSuchProduct(project_name)
         series = project.getSeries(series_name)
         if series is None:
-            raise faults.NoSuchSeries(series_name, project)
+            return faults.NoSuchSeries(series_name, project)
         return self._getSeriesBranch(series)
 
     def _getBranch(self, unique_name):
@@ -251,7 +250,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         :raises faults.InvalidBranchIdentifier: If unique_name is invalid.
         """
         if unique_name[0] != '~':
-            raise faults.InvalidBranchIdentifier(unique_name)
+            return faults.InvalidBranchIdentifier(unique_name)
         branch = getUtility(IBranchSet).getByUniqueName(unique_name)
         if check_permission('launchpad.View', branch):
             return branch
@@ -268,11 +267,11 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         owner_name, project_name, branch_name = unique_name[1:].split('/')
         owner = getUtility(IPersonSet).getByName(owner_name)
         if owner is None:
-            raise faults.NoSuchPersonWithName(owner_name)
+            return faults.NoSuchPersonWithName(owner_name)
         if project_name != '+junk':
             project = getUtility(IProductSet).getByName(project_name)
             if project is None:
-                raise faults.NoSuchProduct(project_name)
+                return faults.NoSuchProduct(project_name)
         return _NonexistentBranch(unique_name)
 
     def _getResultDict(self, branch, suffix=None):
@@ -296,13 +295,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                     str(URI(host=host, scheme=scheme, path=path)))
             return result
 
-    def _resolve_lp_path(self, path):
-        """Do the work of `IPublicCodehostingAPI.resolve_lp_path`.
-
-        This only differs from the named method in that it raises rather than
-        returning Faults.  `resolve_lp_path` below translates these into
-        returned Faults.
-        """
+    def resolve_lp_path(self, path):
+        """See `IPublicCodehostingAPI`."""
         strip_path = path.strip('/')
         if strip_path == '':
             raise faults.InvalidBranchIdentifier(path)
@@ -327,16 +321,3 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return result
         else:
             return self._getResultDict(result, suffix)
-
-    def resolve_lp_path(self, path):
-        """See `IPublicCodehostingAPI`.
-
-        This just calls _resolve_lp_path to do the work and translates raised
-        Faults into returned Faults.  We do this because Zope considers raised
-        Faults to be errors and so we'd end up logging spurious OOPS reports
-        if we raised them from here.
-        """
-        try:
-            return self._resolve_lp_path(path)
-        except xmlrpclib.Fault, fault:
-            return fault
