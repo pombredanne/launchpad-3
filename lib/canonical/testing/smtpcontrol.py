@@ -23,8 +23,7 @@ from email import message_from_file
 import Mailman
 from canonical.config import config
 from canonical.launchpad.mailman.config import configure_smtp
-from canonical.launchpad.mailman.testing import smtp2mbox
-from canonical.launchpad.mailman.testing.helpers import get_size
+from canonical.testing import smtp2mbox
 
 
 class SMTPControl:
@@ -109,6 +108,8 @@ class SMTPControl:
 
     def getMailboxSize(self):
         """Return the size in bytes of the mailbox."""
+        # Circular import.
+        from canonical.launchpad.mailman.testing.helpers import get_size
         # This is never going to be more than an int width so just do the
         # simplest thing to chop off any 'L' that might be there.
         return int(get_size(self._mbox_filename))

@@ -14,11 +14,11 @@ from Mailman.mm_cfg import QUEUE_DIR, VAR_PREFIX
 
 from canonical.launchpad.mailman.testing import helpers
 from canonical.launchpad.mailman.testing.layers import MailmanLayer
-from canonical.launchpad.mailman.testing.smtpcontrol import SMTPControl
 from canonical.launchpad.testing.browser import (
     setUp as setUpBrowser,
     tearDown as tearDownBrowser)
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from canonical.testing.layers import AppServerLayer
 
 
 HERE = os.path.dirname(__file__)
@@ -28,9 +28,8 @@ def setUp(testobj):
     """Set up for all integration doctests."""
     # We'll always need an smtp server.
     setUpBrowser(testobj)
-    smtp_controller = SMTPControl()
-    smtp_controller.start()
-    testobj.globs['smtpd'] = smtp_controller
+    AppServerLayer.smtp_controller.reset()
+    testobj.globs['smtpd'] = AppServerLayer.smtp_controller
     testobj.globs['mhonarc_watcher'] = MailmanLayer.mhonarc_watcher
     testobj.globs['smtpd_watcher'] = MailmanLayer.smtpd_watcher
     testobj.globs['vette_watcher'] = MailmanLayer.vette_watcher
@@ -41,9 +40,7 @@ def setUp(testobj):
 def tearDown(testobj):
     """Common tear down for the integration tests."""
     tearDownBrowser(testobj)
-    smtpd = testobj.globs['smtpd']
-    smtpd.reset()
-    smtpd.stop()
+    AppServerLayer.smtp_controller.reset()
     # Clear out any qfiles hanging around from a previous run.  Do this first
     # to prevent stale list references.
     for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):
