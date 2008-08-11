@@ -645,15 +645,11 @@ class PackageUpload(SQLBase):
                     signer.displayname, signer.preferredemail.email)
 
                 if maintainer != signer_id:
-                    message.CHANGESFILE = (
-                        '%s\nSigned-By: %s' %
-                        (message.CHANGESFILE, signer_id))
+                    message.SIGNER = 'Signed-By: %s' % signer_id
 
             # Add the debian 'Origin:' field if present.
             if changes.get('origin'):
-                message.CHANGESFILE = (
-                    '%s\nOrigin: %s' %
-                    (message.CHANGESFILE, changes['origin']))
+                message.ORIGIN = 'Origin: %s' % changes['origin']
 
             body = message.template % message.__dict__
 

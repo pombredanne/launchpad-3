@@ -1,4 +1,6 @@
 %(CHANGESFILE)s
+%(SIGNER)s
+%(ORIGIN)s
 
 ==
 
