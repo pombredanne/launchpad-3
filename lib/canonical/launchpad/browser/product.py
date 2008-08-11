@@ -18,6 +18,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductBranchesView',
     'ProductBrandingView',
+    'ProductBreadcrumbBuilder',
     'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductCodeIndexView',
@@ -33,6 +34,7 @@ __all__ = [
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSOP',
+    'ProductSetBreadcrumbBuilder',
     'ProductSetContextMenu',
     'ProductSetFacets',
     'ProductSetNavigation',
@@ -117,9 +119,6 @@ class ProductNavigation(
 
     usedfor = IProduct
 
-    def breadcrumb(self):
-        return self.context.displayname
-
     @stepto('.bzr')
     def dotbzr(self):
         if self.context.development_focus.series_branch:
@@ -150,9 +149,6 @@ class ProductNavigation(
 class ProductSetNavigation(Navigation):
 
     usedfor = IProductSet
-
-    def breadcrumb(self):
-        return 'Projects'
 
     def traverse(self, name):
         # Raise a 404 on an invalid product name
@@ -258,6 +254,13 @@ class ProductSOP(StructuralObjectPresentation):
 
     def listAltChildren(self, num):
         return None
+
+
+class ProductBreadcrumbBuilder(BreadcrumbBuilder):
+    """Returns a breadcrumb for an `IProduct`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -637,6 +640,11 @@ class ProductSetSOP(StructuralObjectPresentation):
 
     def listAltChildren(self, num):
         return None
+
+
+class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Return a breadcrumb for an `IProductSet`."""
+    text = "Projects"
 
 
 class ProductSetFacets(StandardLaunchpadFacets):
