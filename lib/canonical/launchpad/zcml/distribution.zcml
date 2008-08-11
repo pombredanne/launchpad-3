@@ -69,6 +69,20 @@
       factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
       />
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistribution"
+    factory="canonical.launchpad.browser.distribution.DistributionBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistributionSet"
+    factory="canonical.launchpad.browser.distribution.DistributionSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:menus
     module="canonical.launchpad.browser.distribution"
     classes="
