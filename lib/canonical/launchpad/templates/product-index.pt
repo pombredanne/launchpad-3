@@ -26,15 +26,13 @@
         <tal:mugshot replace="structure context/image:mugshot" />
         <h1 tal:content="context/title">Name of project</h1>
         <p id="project-admin-whiteboard" class="whiteboard"
-         tal:condition="context/required:launchpad.Commercial">
+           tal:condition="context/required:launchpad.Commercial">
           <span tal:content="context/reviewer_whiteboard" />
           (<a href="+review-license">edit reviewer whiteboard</a>)
         </p>
-        <p
-          tal:condition="not: context/active"
-          class="warning message"
-          id="project-inactive"
-        >
+        <p tal:condition="not: context/active"
+           class="warning message"
+           id="project-inactive" >
           This project is currently inactive
           <tal:comment condition="nothing">
             This page links to the +review-license form to reactivate

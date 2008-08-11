@@ -850,16 +850,12 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     # restrict the search results to those Persons who have a non-NULL
     # teamowner, i.e. a valid team.
     extra_clause = 'Person.teamowner IS NOT NULL'
-<<<<<<< TREE
-    base_query = """
-=======
     # Search with empty string returns all teams.
     allow_null_search = True
 
     def _doSearch(self, text=""):
         """Return the teams whose fti or email address match :text:"""
         base_query = """
->>>>>>> MERGE-SOURCE
                 Person.visibility = %s
                 """ % quote(PersonVisibility.PUBLIC)
 
