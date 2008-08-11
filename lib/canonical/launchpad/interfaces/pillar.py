@@ -12,8 +12,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Int
 
 from canonical.launchpad import _
-from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+from canonical.lazr.rest.declarations import exported
 
 
 __all__ = ['IPillar', 'IPillarName', 'IPillarNameSet']
