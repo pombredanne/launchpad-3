@@ -28,7 +28,86 @@ row with the same name raises an IntegrityError error.
     Traceback (most recent call last):
     ...
     IntegrityError: duplicate key... violates unique
-    constraint "hwvendorname_name_key"
+    constraint "hwvendorname__lc_vendor_name__idx"
+    <BLANKLINE>
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+The database checks the uniqueness of the lower-case name, hence we
+cannot insert another name like "INTEL" or "intel".
+
+    >>> vendor_name_set.create('INTEL')
+    <HWVendorName ...
+    >>> store.flush()
+    Traceback (most recent call last):
+    ...
+    IntegrityError: duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
+    <BLANKLINE>
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+    >>> vendor_name_set.create('intel')
+    <HWVendorName ...
+    >>> store.flush()
+    Traceback (most recent call last):
+    ...
+    IntegrityError: duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
+    <BLANKLINE>
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+The lower-case uniqueness constraint works for latin characters with
+diacritical marks too...
+
+    >>> a_umlaut_upper = u'\N{LATIN CAPITAL LETTER A WITH DIAERESIS}'
+    >>> a_umlaut_lower = u'\N{LATIN SMALL LETTER A WITH DIAERESIS}'
+    >>> a_umlaut_name = vendor_name_set.create(name=a_umlaut_upper)
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> print repr(a_umlaut_name.name)
+    u'\xc4'
+
+    >>> vendor_name_set.create(name=a_umlaut_lower)
+    <HWVendorName ...
+    >>> store.flush()
+    Traceback (most recent call last):
+    ...
+    IntegrityError: duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
+    <BLANKLINE>
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+...as well as for Cyrillic characters...
+
+    >>> cyrillic_de_upper = u'\N{CYRILLIC CAPITAL LETTER DE}'
+    >>> cyrillic_de_lower = u'\N{CYRILLIC SMALL LETTER DE}'
+    >>> cyrillic_de_name = vendor_name_set.create(name=cyrillic_de_upper)
+    >>> print repr(cyrillic_de_name.name)
+    u'\u0414'
+
+    >>> vendor_name_set.create(name=cyrillic_de_lower)
+    <HWVendorName ...
+    >>> store.flush()
+    Traceback (most recent call last):
+    ...
+    IntegrityError: duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
+    <BLANKLINE>
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+...and Greek characters.
+
+    >>> alpha_upper = u'\N{GREEK CAPITAL LETTER ALPHA}'
+    >>> alpha_lower = u'\N{GREEK SMALL LETTER ALPHA}'
+    >>> cyrillic_de_name = vendor_name_set.create(name=alpha_upper)
+    >>> print repr(cyrillic_de_name.name)
+    u'\u0391'
+
+    >>> vendor_name_set.create(name=alpha_lower)
+    <HWVendorName ...
+    >>> store.flush()
+    Traceback (most recent call last):
+    ...
+    IntegrityError: duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -37,6 +116,26 @@ Existing IHWVendorName records are retrieved by IHWVendorName.getByName().
     >>> intel_name = vendor_name_set.getByName('Intel')
     >>> print intel_name.name
     Intel
+
+The capitalization of the name does not metter.
+
+    >>> intel_name = vendor_name_set.getByName('INTEL')
+    >>> print intel_name.name
+    Intel
+
+    >>> intel_name = vendor_name_set.getByName('intel')
+    >>> print intel_name.name
+    Intel
+
+    >>> umlaut_name = vendor_name_set.getByName(
+    ...     u'\N{LATIN CAPITAL LETTER A WITH DIAERESIS}')
+    >>> print repr(umlaut_name.name)
+    u'\xc4'
+
+    >>> umlaut_name = vendor_name_set.getByName(
+    ...     u'\N{LATIN SMALL LETTER A WITH DIAERESIS}')
+    >>> print repr(umlaut_name.name)
+    u'\xc4'
 
 If no record matching the given name exists, IHWVendorName.getByName()
 returns None.
@@ -1129,11 +1228,68 @@ the given parameters or creates a new one, if no existing record matches.
     None
 
 
+== HWDeviceClass ==
+
+This table specifies the class or classes of a device. A device class
+describes the capabilities of a device, i.e, if it is a printer,
+input device, sound device etc. HWDeviceClass stores the main class of
+a device, enumerated by HWMainClass, as well as a sub-class, enumerated
+by HWSubClass. The required main class specifies the generic type of
+a device, the optional sub-class a more detailed type.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     HWMainClass, HWSubClass, IHWDeviceClassSet)
+    >>> device_class_set = getUtility(IHWDeviceClassSet)
+    >>> device_class_optic_pro_ut12 = device_class_set.create(
+    ...     device=optic_pro_ut12, main_class=HWMainClass.SCANNER,
+    ...     sub_class=HWSubClass.SCANNER_FLATBED)
+    >>> print device_class_optic_pro_ut12.device.name
+    OpticPro UT12
+    >>> print device_class_optic_pro_ut12.main_class.title
+    Scanner
+    >>> print device_class_optic_pro_ut12.sub_class.title
+    Flatbed Scanner
+
+A device may be associated with more than one HWDeviceClass record.
+This allows, for example, the ability to describe a combined
+printer/scanner device as both a printer and a scanner. We (wrongly)
+assume that the Optic Pro UT12 is an MFP device. Let us also assume
+that we do not know if the printer component of this device uses
+inkjet or laser technology, hence we do not specify a sub-class.
+
+    >>> device_class_printer_ut12 = device_class_set.create(
+    ...     device=optic_pro_ut12, main_class=HWMainClass.PRINTER)
+    >>> print device_class_printer_ut12.device.name
+    OpticPro UT12
+    >>> print device_class_printer_ut12.main_class.title
+    Printer
+    >>> print device_class_printer_ut12.sub_class
+    None
+
+If a sub-class is specified, it must match the main class. The attempt
+to create a HWDeviceClass record with non-matching records results in
+a TypeError. The check for matching main class sub-class values ensures
+that the main class name is a prefix of the sub-class name.
+
+    >>> device_class_set.create(device=optic_pro_ut12,
+    ...     main_class=HWMainClass.NETWORK,
+    ...     sub_class=HWSubClass.STORAGE_HARDDISK)
+    Traceback (most recent call last):
+    ...
+    TypeError: HWDeviceClass() did not get matching argument values for
+    main_class: <DBItem HWMainClass.NETWORK, (10000) Network> and
+    sub_class: <DBItem HWSubClass.STORAGE_HARDDISK, (11001) Hard Disk>.
+
+
 == HWSubmissionDevice ==
 
 This table links devices listed in a submission to the
 HWDeviceDriverLink table. Additionally it links a device of a
-submission to its parent device, as modeled by HAL.
+submission to its parent device, as modeled by HAL. A submission
+may contain two or more identical devices. In order to unambiugously
+relate HWSubmissionDevice records to devices as represented in the
+submitted data, we store the attribute "id" of the HAL device node
+too.
 
 We need a submission to which we can link HWSubmissionDevice entries.
 
@@ -1147,7 +1303,7 @@ A HWSubmissionDevice record for a system does not have any parent...
     >>> submission_device_set = getUtility(IHWSubmissionDeviceSet)
     >>> submitted_tuffbook_2600 = submission_device_set.create(
     ...     device_driver_link=tuffbook_2600_device_driver_link,
-    ...     submission=sample_submission, parent=None)
+    ...     submission=sample_submission, parent=None, hal_device_id=1)
     >>> print submitted_tuffbook_2600.device_driver_link.device.name
     Tuffbook 2600
     >>> print submitted_tuffbook_2600.submission.submission_key
@@ -1163,7 +1319,8 @@ is the system itself.
     >>> submitted_usb_ehci_hcd_controller = submission_device_set.create(
     ...      device_driver_link=usb_controller_ehci_hcd_link,
     ...      submission=sample_submission,
-    ...      parent=submitted_tuffbook_2600)
+    ...      parent=submitted_tuffbook_2600,
+    ...      hal_device_id=2)
 
 For the "output aspect" of the USB controller, we have
 usb_controller_usb_link; its parent is submitted_usb_ehci_hcd_controller
@@ -1172,7 +1329,8 @@ that we just have created.
     >>> submitted_usb_controller = submission_device_set.create(
     ...      device_driver_link=usb_controller_usb_link,
     ...      submission=sample_submission,
-    ...      parent=submitted_usb_ehci_hcd_controller)
+    ...      parent=submitted_usb_ehci_hcd_controller,
+    ...      hal_device_id=3)
 
 The USB controller is connected to an (often internal) USB hub. We don't
 yet have HWDevice and HWDeviceDriverLink records for this hub, so we must
@@ -1187,16 +1345,20 @@ create them first.
     >>> submitted_usb_hub = submission_device_set.create(
     ...     device_driver_link=usb_hub_driver_link,
     ...     submission=sample_submission,
-    ...     parent=submitted_usb_controller)
+    ...     parent=submitted_usb_controller,
+    ...      hal_device_id=4)
 
 Finally, a scanner may be connected to the USB hub.
 
     >>> submitted_scanner_usb = submission_device_set.create(
     ...     device_driver_link=scanner_usb_driver_link,
     ...     submission=sample_submission,
-    ...     parent=submitted_usb_hub)
+    ...     parent=submitted_usb_hub,
+    ...      hal_device_id=5)
 
     >>> submitted_scanner_sane = submission_device_set.create(
     ...     device_driver_link=scanner_sane_plustek_link,
     ...     submission=sample_submission,
-    ...     parent=submitted_scanner_usb)
+    ...     parent=submitted_scanner_usb,
+    ...      hal_device_id=6)
+
