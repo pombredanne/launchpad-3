@@ -34,30 +34,35 @@ item is not even presented.
 
 == Changing DistroSeries details ==
 
-A administrator can see and access 'Change Details' form.
+Foo Bar, a administrator, can see and access 'Change Details' form.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/warty')
     >>> admin_browser.getLink('Change details').click()
-    >>> admin_browser.url
-    'http://launchpad.dev/ubuntu/warty/+edit'
 
-Save sampledata values for warty, so they can be restored later.
+    >>> print admin_browser.title
+    Edit details of The Warty Warthog Release
 
-    >>> old_name = admin_browser.getControl("Display name").value
-    >>> old_title = admin_browser.getControl("Title").value
-    >>> old_summary = admin_browser.getControl("Summary").value
-    >>> old_description = admin_browser.getControl("Description").value
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Change The Warty Warthog Release details
+    ...
 
-Fill out the form with different data and submit.
+He can modify any presentation/infromational fields of the
+distroseries in question.:
+
+ * displayname;
+ * title;
+ * summary;
+ * description
 
     >>> admin_browser.getControl("Display name").value = 'WartyII'
     >>> admin_browser.getControl("Title").value = 'The Warty Warthog II Release'
     >>> admin_browser.getControl("Summary").value = 'summary'
     >>> admin_browser.getControl("Description").value = 'description'
+
     >>> admin_browser.getControl("Change").click()
 
-Once submitted the form redirects to the distroseries overview page,
-which already contains the new information.
+After submitting the form, Foo Bar is shown the distroseries overview
+page. He can see that his changes were applied.
 
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu/warty'
@@ -75,25 +80,28 @@ which already contains the new information.
 
 == DistroSeries administration ==
 
-Via the administration form the following information can be changed:
+Via the administration form, Foo Bar can change the following
+information on a distroseries context:
 
  * 'name': the distroseries name (identifier);
  * version: the distroseries version (also a identifier);
- * 'changeslist': the emailaddress to where the upload announcements
+ * 'changeslist': the email address to where the upload announcements
    will be sent;
  * 'status': the distroseries status;
 
-    >>> admin_browser.getLink("Administer").click()
+Foo Bar updates the distroseries' name, version and changelist.
 
-Modifying 'name', 'version' and 'changeslist'.
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/hoary')
+    >>> admin_browser.getLink("Administer").click()
 
     >>> admin_browser.getControl(name="field.name").value = 'boing'
     >>> admin_browser.getControl(name="field.version").value = '1.23'
     >>> admin_browser.getControl("Changeslist").value = 'foo@bar.com'
+
     >>> admin_browser.getControl("Change").click()
 
-Once submitted the +admin form also redirects to the distroseries
-overview page with the up-to-date information.
+Foo Bar can see his changes on the distroseries overview page after
+he submits them.
 
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu/boing'
@@ -105,119 +113,46 @@ overview page with the up-to-date information.
     ...     print message
     Your changes have been applied.
 
-Restore old information and modify the changeslist address field
-(supposed to be an email address).
+Foo Bar can choose any of the available status for a unstable
+distroseries.
 
     >>> admin_browser.getLink("Administer").click()
-    >>> admin_browser.getControl(name="field.name").value = 'warty'
-    >>> admin_browser.getControl(name="field.version").value = '4.10'
+
+    >>> print admin_browser.getControl("Status").displayOptions
+    ['Experimental', 'Active Development', 'Pre-release Freeze',
+     'Future', 'Current Stable Release']
+
+Foo bar flips the distroseries status from DEVELOPMENT to FROZEN,
+EXPERIMENTAL or FUTURE and vice-versa as many time as necessary in the
+distro-team workflow.
+
+    >>> admin_browser.getControl(
+    ...     "Status").displayValue = ['Pre-release Freeze']
     >>> admin_browser.getControl("Change").click()
 
-Original url restored.
-
-    >>> admin_browser.url
-    'http://launchpad.dev/ubuntu/warty'
-
-The information entered as 'changeslist' is validaded as a 'email',
-anything else than 'user@url' will be rejected.
+When it's time, Foo Bar makes ubuntu/hoary the CURRENT ubuntu
+distroseries.
 
     >>> admin_browser.getLink("Administer").click()
-    >>> admin_browser.getControl("Changeslist").value = 'foo bar'
-    >>> admin_browser.getControl("Change").click()
-
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    There is 1 error.
-    Constraint not satisfied
-
-The 'status' field is also handled in a special way. The view logic
-ensure the distroseries status is set consistently:
-
- * when a unstable distroseries is made stable it automatically sets
-   'daterelease' timestamp.
- * stable (released) distroseries are not made 'unstable' again.
-
-In the sampledata ubuntu/warty is set as CURRENT, stable, and its
-'datereleased' is set.
-
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.distribution import (
-    ...     IDistributionSet)
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-
-    >>> warty = ubuntu.getSeries('warty')
-    >>> print warty.status.name
-    CURRENT
-
-    >>> print warty.datereleased
-    2004-08-20 00:00:00+00:00
-
-On the other hand, ubuntu/hoary is in DEVELOPMENT status, unstable,
-and its 'daterelease' is unset.
-
-    >>> hoary = ubuntu.getSeries('hoary')
-    >>> print hoary.status.name
-    DEVELOPMENT
-
-    >>> print hoary.datereleased
-    None
-
-    >>> logout()
-
-When a unstable distroseries gets released, set to 'Current', its
-'daterelease' gets recorded.
-
-    >>> admin_browser.open('http://launchpad.dev/ubuntu/hoary/+admin')
     >>> admin_browser.getControl(
     ...     "Status").displayValue = ['Current Stable Release']
-    >>> admin_browser.getControl("Changeslist").value = 'foo@bar.com'
     >>> admin_browser.getControl("Change").click()
 
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    Your changes have been applied.
-
-    >>> login('foo.bar@canonical.com')
-
-    >>> print hoary.status.name
-    CURRENT
-
-    >>> hoary.datereleased is not None
-    True
-
-    >>> logout()
-
-A stable distroseries cannot be made unstable.
-
-    >>> admin_browser.open('http://launchpad.dev/ubuntu/warty/+admin')
-    >>> print admin_browser.getControl("Status").displayValue
-    ['Current Stable Release']
-
-Making it 'Supported'
-
-    >>> admin_browser.getControl(
-    ...     "Status").displayValue = ['Supported']
-    >>> admin_browser.getControl("Change").click()
+Once it's released, the only other allowed status are SUPPORTED, OBSOLETE.
 
     >>> admin_browser.getLink("Administer").click()
-    >>> print admin_browser.getControl("Status").displayValue
-    ['Supported']
 
-Making it 'Obsolete'.
+    >>> print admin_browser.getControl("Status").displayOptions
+    ['Current Stable Release', 'Supported', 'Obsolete']
 
     >>> admin_browser.getControl(
     ...     "Status").displayValue = ['Obsolete']
     >>> admin_browser.getControl("Change").click()
 
+Foo Bar can move a OBSOLETE or SUPPORTED distroseries back to CURRENT
+if necessary, but he cannot make the distroseries unstable again.
+
     >>> admin_browser.getLink("Administer").click()
-    >>> print admin_browser.getControl("Status").displayValue
-    ['Obsolete']
-
-And finally, move warty back to 'Current'.
-
     >>> admin_browser.getControl(
     ...     "Status").displayValue = ['Current Stable Release']
     >>> admin_browser.getControl("Change").click()
@@ -225,23 +160,3 @@ And finally, move warty back to 'Current'.
     >>> admin_browser.getLink("Administer").click()
     >>> print admin_browser.getControl("Status").displayValue
     ['Current Stable Release']
-
-Note that the previously set 'datereleased' wasn't changed.
-
-    >>> login('foo.bar@canonical.com')
-    >>> print warty.datereleased
-    2004-08-20 00:00:00+00:00
-
-    >>> logout()
-
-Any other status is considered unstable and this not allowed.
-
-    >>> admin_browser.getControl(
-    ...     "Status").displayValue = ['Experimental']
-    >>> admin_browser.getControl("Change").click()
-
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    There is 1 error.
-    Already released distroseries cannot be made unstable again.
-

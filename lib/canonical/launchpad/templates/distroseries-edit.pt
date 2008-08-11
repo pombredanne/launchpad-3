@@ -17,9 +17,8 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
-    <h1 tal:condition="view/label"
-        tal:content="view/label"
-        metal:fill-slot="heading">Form Label comes from ZCML label="xxx"</h1>
+    <h1 tal:content="view/label" metal:fill-slot="heading"
+      >Edit distroseries</h1>
 
   </div>
 

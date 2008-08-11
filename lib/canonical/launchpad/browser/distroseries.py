@@ -17,13 +17,17 @@ __all__ = [
     'DistroSeriesView',
     ]
 
-from zope.component import getUtility
-from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
+from zope.component import getUtility
+from zope.event import notify
+from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad import _
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -34,19 +38,20 @@ from canonical.launchpad.interfaces.country import ICountry
 from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.distroserieslanguage import (
-        IDistroSeriesLanguageSet)
+    IDistroSeriesLanguageSet)
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, GetitemNavigation, action)
+    StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
 from canonical.launchpad.webapp.menu import (
-    Link, ApplicationMenu, enabled_with_permission)
+    ApplicationMenu, Link, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
     canonical_url, stepthrough, stepto)
+from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -422,61 +427,99 @@ class DistroSeriesEditView(LaunchpadEditFormView):
     field_names = ['displayname', 'title', 'summary', 'description']
 
     def initialize(self):
+        """See `LaunchpadEditFormView`.
+
+        Additionally set the 'label' attribute which will be used in the
+        template.
+        """
         LaunchpadEditFormView.initialize(self)
         self.label = 'Change %s details' % self.context.title
 
     @action("Change")
     def change_action(self, action, data):
+        """Update the context and redirects to its overviw page."""
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
-
         self.next_url = canonical_url(self.context)
 
 
 class DistroSeriesAdminView(LaunchpadEditFormView):
-    """View class that lets you admin a DistroSeries object.
+    """View class for administring a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
     """
     schema = IDistroSeries
-    field_names = ['name', 'version', 'changeslist', 'status']
+    field_names = ['name', 'version', 'changeslist']
+    custom_widget('status', LaunchpadDropdownWidget)
 
     def initialize(self):
+        """See `LaunchpadEditFormView`.
+
+        Additionally set the 'label' attribute which will be used in the
+        template.
+        """
         LaunchpadEditFormView.initialize(self)
         self.label = 'Administer %s' % self.context.title
 
-    def validate(self, data):
-        """Validate status changes.
+    def setUpFields(self):
+        """Override `LaunchpadFormView`.
 
-        Ensure stable distroseries are not made unstable by mistake and
-        set 'datereleased' when a unstable distroseries is made stable.
+        In addition to setting schema fields, also initialize the
+        'status' field. See `createStatusField` method.
         """
-        post_release_status = (
+        LaunchpadEditFormView.setUpFields(self)
+        self.form_fields = (
+            self.form_fields + self.createStatusField())
+
+    def createStatusField(self):
+        """Create the 'status' field.
+
+        Create the status vocabulary according the current distroseries
+        status:
+         * stable   -> CURRENT, SUPPORTED, OBSOLETE
+         * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
+        """
+        stable_status = (
             DistroSeriesStatus.CURRENT,
             DistroSeriesStatus.SUPPORTED,
             DistroSeriesStatus.OBSOLETE,
             )
 
-        status = data.get('status')
-        if (self.context.status in post_release_status and
-            status not in post_release_status):
-            self.setFieldError(
-                'status',
-                "Already released distroseries cannot be made unstable "
-                "again.")
-            return
+        if self.context.status not in stable_status:
+            terms = [status for status in DistroSeriesStatus.items
+                     if status not in stable_status]
+            terms.append(DistroSeriesStatus.CURRENT)
+        else:
+            terms = stable_status
 
+        status_vocabulary = SimpleVocabulary(
+            [SimpleTerm(item, item.name, item.title) for item in terms])
+
+        return form.Fields(
+            Choice(__name__='status',
+                   title=_('Status'),
+                   vocabulary=status_vocabulary,
+                   description=_("Select the the distroseries status."),
+                   required=True),
+            custom_widget=self.custom_widgets['status'])
+
+    @action("Change")
+    def change_action(self, action, data):
+        """Update the context and redirects to its overviw page.
+
+        Also, set 'datereleased' when a unstable distroseries is made
+        CURRENT.
+        """
+        status = data.get('status')
         if (self.context.datereleased is None and
             status == DistroSeriesStatus.CURRENT):
             self.context.datereleased = UTC_NOW
 
-    @action("Change")
-    def change_action(self, action, data):
         self.updateContextFromData(data)
+
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
-
         self.next_url = canonical_url(self.context)
 
 
