@@ -1163,6 +1163,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if archive.is_ppa:
             signed_message = signed_message_from_string(changesfilecontent)
             if signed_message is not None:
+                # Overwrite `changesfilecontent` with the text stripped
+                # of the PGP signature.
                 changesfilecontent = signed_message.signedContent
 
         changes_file = getUtility(ILibraryFileAliasSet).create(
