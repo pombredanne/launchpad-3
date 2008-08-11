@@ -608,7 +608,7 @@ COMMENT ON COLUMN ProductSeriesCodeImport.codeimport IS 'The CodeImport that was
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
 COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be the person who creates this Project in the system. We will encourage upstream project leaders to take on this role. The Project owner is able to edit the project.';
-COMMENT ON COLUMN Product.registrant IS 'The registrant is the Person who created the project in Launchpad.  It is set at creation and is never changed thereafter.';
+COMMENT ON COLUMN Project.registrant IS 'The registrant is the Person who created the project in Launchpad.  It is set at creation and is never changed thereafter.';
 COMMENT ON COLUMN Project.driver IS 'This person or team has the ability to approve specs as goals for any series in any product in the project. Similarly, this person or team can approve bugs as targets for fixing in any series, or backporting of fixes to any series.';
 COMMENT ON COLUMN Project.summary IS 'A brief summary of this project. This
 will be displayed in bold text just above the description and below the

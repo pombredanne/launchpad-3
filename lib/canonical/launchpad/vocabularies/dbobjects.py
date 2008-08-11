@@ -719,7 +719,7 @@ class PersonAccountToMergeVocabulary(
 
 class ValidPersonOrTeamVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
-    """The set of valid Persons/Teams in Launchpad.
+    """The set of valid, public Persons/Teams in Launchpad.
 
     A Person is considered valid if he has a preferred email address,
     and Person.merged is None. Teams have no restrictions
@@ -737,6 +737,13 @@ class ValidPersonOrTeamVocabulary(
     # results.
     extra_clause = ""
 
+    # Subclasses should override this property to allow null searches to
+    # return all results.  If false, an empty result set is returned.
+    allow_null_search = False
+
+    # Cache table to use for checking validity.
+    cache_table_name = 'ValidPersonOrTeamCache'
+
     def __contains__(self, obj):
         return obj in self._doSearch()
 
@@ -747,13 +754,14 @@ class ValidPersonOrTeamVocabulary(
         # teams have been requested.
         if not text:
             query = """
-                Person.id = ValidPersonOrTeamCache.id
+                Person.id = %s.id
                 AND Person.visibility = %s
-                """ % quote(PersonVisibility.PUBLIC)
+                """ % (self.cache_table_name,
+                       quote(PersonVisibility.PUBLIC))
             if self.extra_clause:
                 query += " AND %s" % self.extra_clause
             return Person.select(
-                query, clauseTables=['ValidPersonOrTeamCache'])
+                query, clauseTables=[self.cache_table_name])
 
         store = getUtility(IZStorm).get('main')
 
@@ -821,49 +829,53 @@ class ValidPersonOrTeamVocabulary(
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
         if not text:
-            return self.emptySelectResults()
+            if self.allow_null_search:
+                text = ''
+            else:
+                return self.emptySelectResults()
 
         text = text.lower()
         return self._doSearch(text=text)
 
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
-    """The set of all valid teams in Launchpad."""
+    """The set of all valid, public teams in Launchpad."""
 
     displayname = 'Select a Team'
+
+    # XXX: BradCrittenden 2008-08-11 bug=255798: This method does not return
+    # only the valid teams as the name implies because it does not account for
+    # merged teams.
 
     # Because the base class does almost everything we need, we just need to
     # restrict the search results to those Persons who have a non-NULL
     # teamowner, i.e. a valid team.
     extra_clause = 'Person.teamowner IS NOT NULL'
+<<<<<<< TREE
     base_query = """
-                Person.visibility = %s
-                """ % quote(PersonVisibility.PUBLIC)
-
-    def search(self, text):
-        """Return all teams that match :text:.
-
-        Unlike ValidPersonOrTeamVocabulary, providing an empty string for text
-        does not return the empty result set.  Instead, it returns all teams.
-        """
-        if not text:
-            text = ''
-        return self._doSearch(text=text)
+=======
+    # Search with empty string returns all teams.
+    allow_null_search = True
 
     def _doSearch(self, text=""):
         """Return the teams whose fti or email address match :text:"""
+        base_query = """
+>>>>>>> MERGE-SOURCE
+                Person.visibility = %s
+                """ % quote(PersonVisibility.PUBLIC)
+
         if self.extra_clause:
             extra_clause = " AND %s" % self.extra_clause
         else:
             extra_clause = ""
 
         if not text:
-            query = self.base_query + extra_clause
+            query = base_query + extra_clause
             return Person.select(query)
 
         name_match_query = """
             Person.fti @@ ftq(%s)
             AND %s
-            """ % (quote(text), self.base_query)
+            """ % (quote(text), base_query)
         name_match_query += extra_clause
         name_matches = Person.select(name_match_query)
 
@@ -874,7 +886,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             EmailAddress.person = Person.id
             AND lower(email) LIKE %s || '%%'
             AND %s
-            """ % (quote_like(text), self.base_query)
+            """ % (quote_like(text), base_query)
 
         email_match_query += extra_clause
         email_matches = Person.select(
@@ -886,25 +898,16 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             email_matches, orderBy=['displayname', 'name'])
 
 
-class ValidPersonVocabulary(ValidTeamVocabulary):
-    """The set of all valid persons who are not teams in Launchpad."""
+class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
+    """The set of all valid, public persons who are not teams in Launchpad."""
     displayname = 'Select a Person'
     # The extra_clause for a valid person is that it not be a team, so
     # teamowner IS NULL.
     extra_clause = 'Person.teamowner IS NULL'
-
-    def _filter_valid_people(self, people):
-        return [person for person in people
-                if person.is_valid_person]
-
-    def _doSearch(self, text=""):
-        """Return the people whose fti or email address match :text:
-
-        Each person is also screened to ensure they are in the valid state.
-        """
-        people = super(ValidPersonVocabulary, self)._doSearch(text)
-        valid_people = self._filter_valid_people(people)
-        return valid_people
+    # Search with empty string returns all valid people.
+    allow_null_search = True
+    # Cache table to use for checking validity.
+    cache_table_name = 'ValidPersonCache'
 
 
 class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):

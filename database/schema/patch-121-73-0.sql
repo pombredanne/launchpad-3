@@ -32,4 +32,4 @@ ALTER TABLE Project
 CREATE INDEX project__registrant__idx
   ON Project(registrant);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 73, 0);

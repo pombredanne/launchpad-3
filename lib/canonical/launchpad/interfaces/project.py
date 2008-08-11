@@ -15,7 +15,8 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Title, URIField
+from canonical.launchpad.fields import (
+    PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -58,17 +59,18 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
 
     id = Int(title=_('ID'), readonly=True)
 
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'),
         required=True,
         vocabulary='ValidOwner',
         description=_("""Project group owner, it can either a valid
             Person or Team inside Launchpad context."""))
 
-    registrant = Choice(
+    registrant = PublicPersonChoice(
         title=_('Registrant'),
         required=True,
-        vocabulary='ValidPerson',
+        readonly=True,
+        vocabulary='ValidPersonOrTeam',
         description=_("""Project group registrant, a valid
             Person inside Launchpad context."""))
 
@@ -111,7 +113,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
         description=_(
             """The date this project group was created in Launchpad."""))
 
-    driver = Choice(
+    driver = PublicPersonChoice(
         title=_("Driver"),
         description=_(
             "This is a project group-wide appointment, think carefully here! "
@@ -254,8 +256,11 @@ class IProjectSet(Interface):
         """
 
     def new(name, displayname, title, homepageurl, summary, description,
-            owner, mugshot=None, logo=None, icon=None):
-        """Create and return a project with the given arguments."""
+            owner, mugshot=None, logo=None, icon=None, registrant=None):
+        """Create and return a project with the given arguments.
+
+        For a description of the parameters see `IProject`.
+        """
 
     def count_all():
         """Return the total number of projects registered in Launchpad."""
