@@ -6,7 +6,6 @@ __metaclass__ = type
 
 import unittest
 from datetime import timedelta
-from zope.component import getUtility
 from zope.app.session.interfaces import ISessionDataContainer, ISessionData
 
 from canonical.launchpad.webapp.pgsession import (
@@ -47,8 +46,7 @@ class TestPgSession(unittest.TestCase):
         # the session machinery.
         self.sdc['Unknown client id']
 
-        # __setitem__ creates a new row in the SessionData table. The
-        # passed in value is ignored.
+        # __setitem__ calls are ignored.
         self.sdc[client_id] = 'ignored'
 
         # Once __setitem__ is called, we can access the SessionData
@@ -65,15 +63,20 @@ class TestPgSession(unittest.TestCase):
         store.execute("DELETE FROM SessionData", noresult=True)
 
         # Create a session
-        self.sdc[client_id1] = 'whatever'
-        self.sdc[client_id2] = 'whatever'
+        session1 = self.sdc[client_id1]
+        session2 = self.sdc[client_id2]
 
         # Store some session data to ensure we can clean up sessions
         # with data.
         spd = self.sdc[client_id1][product_id]
         spd['key'] = 'value'
 
-        # Do a quick sanity check
+        # Add and delete some data on the second client ID to ensure
+        # that it exists in the database.
+        session2._ensureClientId()
+
+        # Do a quick sanity check.  Nothing has been stored for the
+        # third client ID.
         result = store.execute(
             "SELECT client_id FROM SessionData ORDER BY client_id")
         client_ids = [row[0] for row in result]
@@ -108,7 +111,8 @@ class TestPgSession(unittest.TestCase):
             UPDATE SessionData
             SET last_accessed = last_accessed - '1 year'::interval
             """, noresult=True)
-        self.sdc[client_id1] = 'whatever'
+        session1._ensureClientId()
+        session1 = self.sdc[client_id1]
         result = store.execute("SELECT COUNT(*) FROM SessionData")
         self.failUnlessEqual(result.get_one()[0], 2)
 
@@ -170,6 +174,28 @@ class TestPgSession(unittest.TestCase):
         self.assertRaises(KeyError, session1a_dupe.__getitem__, 'key1')
         self.failUnlessEqual(session1a_dupe['key2'], 'new value2')
         self.failUnlessEqual(session1a_dupe.keys(), ['key2'])
+
+    def test_session_only_stored_when_changed(self):
+        # A record of the session is only stored in the database when
+        # some data is stored against the session.
+        client_id = 'Client Id #1'
+        product_id = 'Product Id'
+
+        session = self.sdc[client_id]
+        pkgdata = session[product_id]
+        self.assertRaises(KeyError, pkgdata.__getitem__, 'key')
+
+        store = self.sdc.store
+        result = store.execute("SELECT COUNT(*) FROM SessionData")
+        self.assertEqual(result.get_one()[0], 0)
+
+        # Now try storing some data in the session, which will result
+        # in it being stored in the database.
+        pkgdata['key'] = 'value'
+        result = store.execute(
+            "SELECT client_id FROM SessionData ORDER BY client_id")
+        client_ids = [row[0] for row in result]
+        self.assertEquals(client_ids, [client_id])
 
 
 def test_suite():
