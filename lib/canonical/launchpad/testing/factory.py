@@ -226,8 +226,6 @@ class LaunchpadObjectFactory:
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
-        if registrant is None:
-            registrant = owner
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
