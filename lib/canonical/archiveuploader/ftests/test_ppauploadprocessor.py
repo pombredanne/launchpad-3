@@ -405,7 +405,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find PPA for 'spiv'\nFurther error processing not "
+            "Could not find PPA for 'spiv'\n"
+            "Further error processing not "
             "possible because of a critical previous error.")
 
     def testUploadToDisabledPPA(self):
@@ -427,7 +428,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            'PPA for Andrew Bennetts is disabled\nFurther error processing '
+            'PPA for Andrew Bennetts is disabled\n'
+            'Further error processing '
             'not possible because of a critical previous error.')
 
     def testPPADistroSeriesOverrides(self):
@@ -583,8 +585,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA for Celso Providelo only supports uploads to "
-            "'ubuntu'\nFurther error processing not possible because of a "
+            "PPA for Celso Providelo only supports uploads to 'ubuntu'\n"
+            "Further error processing not possible because of a "
             "critical previous error.")
 
     def testUploadToUnknownDistribution(self):
@@ -594,7 +596,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find distribution 'biscuit'\nFurther error "
+            "Could not find distribution 'biscuit'\n"
+            "Further error "
             "processing not possible because of a critical previous error.")
 
     def testUploadWithMismatchingPPANotation(self):
@@ -604,7 +607,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA upload path must start with '~'.\nFurther error "
+            "PPA upload path must start with '~'.\n"
+            "Further error "
             "processing not possible because of a critical previous error.")
 
     def testUploadToUnknownPerson(self):
@@ -614,7 +618,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-             "Could not find person 'orange'\nFurther error processing not "
+             "Could not find person 'orange'\n"
+             "Further error processing not "
              "possible because of a critical previous error.")
 
     def testUploadWithMismatchingPath(self):
@@ -627,7 +632,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.rejection_message,
             "Path mismatch 'ubuntu/one/two/three/four'. Use "
             "~<person>/<distro>/[distroseries]/[files] for PPAs and "
-            "<distro>/[files] for normal uploads.\nFurther error processing "
+            "<distro>/[files] for normal uploads.\n"
+            "Further error processing "
             "not possible because of a critical previous error.")
 
     def testUploadWithBadComponent(self):
@@ -642,10 +648,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "bar_1.0-1.dsc: Component 'badcomponent' is not "
-            "valid\nbar_1.0.orig.tar.gz: Component 'badcomponent' is not "
-            "valid\nbar_1.0-1.diff.gz: Component 'badcomponent' is not "
-            "valid\nFurther error processing not possible because of a "
+            "bar_1.0-1.dsc: Component 'badcomponent' is not valid\n"
+            "bar_1.0.orig.tar.gz: Component 'badcomponent' is not valid\n"
+            "bar_1.0-1.diff.gz: Component 'badcomponent' is not valid\n"
+            "Further error processing not possible because of a "
             "critical previous error.")
 
     def testUploadWithBadDistroseries(self):
@@ -661,7 +667,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            'Unable to find distroseries: flangetrousers\nFurther error '
+            'Unable to find distroseries: flangetrousers\n'
+            'Further error '
             'processing not possible because of a critical previous error.')
 
     def testUploadWithBadSection(self):
@@ -672,10 +679,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "bar_1.0-1.dsc: Section 'badsection' is not "
-            "valid\nbar_1.0.orig.tar.gz: Section 'badsection' is not "
-            "valid\nbar_1.0-1.diff.gz: Section 'badsection' is not "
-            "valid\nFurther error processing not possible because of a "
+            "bar_1.0-1.dsc: Section 'badsection' is not valid\n"
+            "bar_1.0.orig.tar.gz: Section 'badsection' is not valid\n"
+            "bar_1.0-1.diff.gz: Section 'badsection' is not valid\n"
+            "Further error processing not possible because of a "
             "critical previous error.")
 
     def testMixedUpload(self):
@@ -1032,7 +1039,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
             'MD5 sum of uploaded file does not match existing file in '
-            'archive\nFiles specified in DSC are broken or missing, skipping '
+            'archive\n'
+            'Files specified in DSC are broken or missing, skipping '
             'package unpack verification.')
 
         self.log.lines = []
@@ -1044,7 +1052,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
             'MD5 sum of uploaded file does not match existing file in '
-            'archive\nFiles specified in DSC are broken or missing, skipping '
+            'archive\n'
+            'Files specified in DSC are broken or missing, skipping '
             'package unpack verification.')
 
         # Cleanup queue directory in order to re-upload the same source.
