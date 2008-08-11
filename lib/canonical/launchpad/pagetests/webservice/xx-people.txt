@@ -34,19 +34,6 @@ There are also operations to search only for people or only for teams.
     >>> sorted(person['name'] for person in search['entries'])
     [u'salgado']
 
-It's also possible to get a list with all the people (including the ones
-whose account is inactive) or all the teams.
-
-    >>> people = webservice.get(
-    ...     "/beta/people?ws.op=getAllPersons").jsonBody()
-    >>> len(people['entries'])
-    5
-
-    >>> teams = webservice.get(
-    ...     "/beta/people?ws.op=getAllTeams").jsonBody()
-    >>> len(people['entries'])
-    5
-
 It's possible to get a list of teams by virtue of which a person
 belongs to a particular team.
 

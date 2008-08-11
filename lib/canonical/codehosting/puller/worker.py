@@ -280,21 +280,12 @@ class PullerWorker:
 
     def _createDestBranch(self):
         """Create the branch to pull to, and copy the source's contents."""
-        # XXX AndrewBennetts 2006-05-26:
-        #    Bzrdir.sprout is *almost* what we want here, except that sprout
-        #    creates a working tree that we don't need. Instead, we do some
-        #    low-level operations.
         if os.path.exists(self.dest):
             shutil.rmtree(self.dest)
         ensure_base(get_transport(self.dest))
-        bzrdir_format = self._source_branch.bzrdir._format
-        bzrdir = bzrdir_format.initialize(self.dest)
-        repo_format = self._source_branch.repository._format
-        repo = repo_format.initialize(bzrdir)
-        branch_format = self._source_branch._format
-        branch = branch_format.initialize(bzrdir)
-        branch.pull(self._source_branch)
-        return branch
+        bzrdir = self._source_branch.bzrdir
+        bzrdir.clone(self.dest, preserve_stacking=True)
+        return Branch.open(self.dest)
 
     def _record_oops(self, message=None):
         """Record an oops for the current exception.

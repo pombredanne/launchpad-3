@@ -5,11 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'BaseListView',
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
-    'PeopleListView',
     'PersonActiveReviewsView',
     'PersonAddView',
     'PersonAnswerContactForView',
@@ -76,14 +74,12 @@ __all__ = [
     'TeamAddMyTeamsView',
     'TeamJoinView',
     'TeamLeaveView',
-    'TeamListView',
     'TeamNavigation',
     'TeamOverviewMenu',
     'TeamMembershipView',
     'TeamMugshotView',
     'TeamReassignmentView',
     'TeamSpecsMenu',
-    'UbunteroListView',
     'archive_to_person',
     ]
 
@@ -573,9 +569,8 @@ class PersonSetContextMenu(ContextMenu):
 
     usedfor = IPersonSet
 
-    links = ['products', 'distributions', 'people', 'meetings', 'peoplelist',
-             'teamlist', 'ubunterolist', 'newteam', 'adminpeoplemerge',
-             'adminteammerge', 'mergeaccounts']
+    links = ['products', 'distributions', 'people', 'meetings', 'newteam',
+             'adminpeoplemerge', 'adminteammerge', 'mergeaccounts']
 
     def products(self):
         return Link('/projects/', 'View projects')
@@ -588,18 +583,6 @@ class PersonSetContextMenu(ContextMenu):
 
     def meetings(self):
         return Link('/sprints/', 'View meetings')
-
-    def peoplelist(self):
-        text = 'List all people'
-        return Link('+peoplelist', text, icon='people')
-
-    def teamlist(self):
-        text = 'List all teams'
-        return Link('+teamlist', text, icon='people')
-
-    def ubunterolist(self):
-        text = 'List all Ubunteros'
-        return Link('+ubunterolist', text, icon='people')
 
     def newteam(self):
         text = 'Register a team'
@@ -1369,54 +1352,6 @@ class TeamMembershipView(LaunchpadView):
     @property
     def have_pending_members(self):
         return self.proposed_memberships or self.invited_memberships
-
-
-class BaseListView:
-
-    header = ""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def _getBatchNavigator(self, results):
-        return BatchNavigator(results, self.request)
-
-    def getTeamsList(self):
-        results = getUtility(IPersonSet).getAllTeams()
-        return self._getBatchNavigator(results)
-
-    def getPeopleList(self):
-        results = getUtility(IPersonSet).getAllPersons()
-        return self._getBatchNavigator(results)
-
-    def getUbunterosList(self):
-        results = getUtility(IPersonSet).getUbunteros()
-        return self._getBatchNavigator(results)
-
-
-class PeopleListView(BaseListView):
-
-    header = "People Launchpad knows about"
-
-    def getList(self):
-        return self.getPeopleList()
-
-
-class TeamListView(BaseListView):
-
-    header = "Teams registered in Launchpad"
-
-    def getList(self):
-        return self.getTeamsList()
-
-
-class UbunteroListView(BaseListView):
-
-    header = "Ubunteros registered in Launchpad"
-
-    def getList(self):
-        return self.getUbunterosList()
 
 
 class FOAFSearchView:
