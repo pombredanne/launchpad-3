@@ -695,6 +695,8 @@ class PackageUpload(SQLBase):
                 guess_encoding("".join(changes_lines)))
             DISTRO = self.distroseries.distribution.title
             ANNOUNCE = announce_list
+            ORIGIN = ''
+            SIGNER = ''
 
         class AcceptedMessage:
             """Accepted message."""
@@ -706,6 +708,8 @@ class PackageUpload(SQLBase):
                 guess_encoding("".join(changes_lines)))
             DISTRO = self.distroseries.distribution.title
             ANNOUNCE = announce_list
+            ORIGIN = ''
+            SIGNER = ''
 
         class PPAAcceptedMessage:
             """PPA accepted message."""
@@ -722,6 +726,8 @@ class PackageUpload(SQLBase):
             SUMMARY = summarystring
             CHANGESFILE = extract_changes_of_interest(
                 guess_encoding("".join(changes_lines)))
+            ORIGIN = ''
+            SIGNER = ''
 
 
         # The template is ready.  The remainder of this function deals with
@@ -947,7 +953,6 @@ class PackageUpload(SQLBase):
             xlp_component_header = 'component=%s, section=%s' % (
                 spr.component.name, spr.section.name)
             extra_headers['X-Launchpad-Component'] = xlp_component_header
-            mail_text = '-> %s\n\n%s' % (xlp_component_header, mail_text)
 
         if from_addr is None:
             from_addr = format_address(
