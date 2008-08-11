@@ -265,15 +265,16 @@ def _membership_test(team_name, people, predicate):
             member_addresses.add(person)
         else:
             for email in person.validatedemails:
-                member_addresses.add(removeSecurityProxy(email).email.lower())
+                member_addresses.add(removeSecurityProxy(email).email)
             # Also add the preferred address.
             preferred = removeSecurityProxy(person.preferredemail).email
-            member_addresses.add(preferred.lower())
+            member_addresses.add(preferred)
     assert len(member_addresses) > 0, 'No valid addresses found'
     mailing_list = MailList(team_name, lock=False)
     until = datetime.datetime.now() + MAILING_LIST_CHECK_INTERVAL
     while True:
-        members = set(mailing_list.getMembers())
+        members = set(
+            mailing_list.getMemberCPAddresses(mailing_list.getMembers()))
         if predicate(members, member_addresses):
             # Every address in the arguments was a member.  Return None
             # on success, so that the doctest doesn't need an extra line to
