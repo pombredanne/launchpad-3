@@ -445,7 +445,7 @@ class DistroSeriesEditView(LaunchpadEditFormView):
 
 
 class DistroSeriesAdminView(LaunchpadEditFormView):
-    """View class for administring a DistroSeries object.
+    """View class for administering a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
     """
