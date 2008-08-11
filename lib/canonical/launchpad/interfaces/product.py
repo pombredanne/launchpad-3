@@ -144,8 +144,15 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         title=_('Owner'),
         required=True,
         vocabulary='ValidOwner',
-        description=_("""Project owner, it can either a valid Person or Team
-            inside Launchpad context."""))
+        description=_("Project owner, it can either a valid Person or Team "
+                      "inside Launchpad context."))
+    registrant = PublicPersonChoice(
+        title=_('Registrant'),
+        required=True,
+        readonly=True,
+        vocabulary='ValidPersonOrTeam',
+        description=_("Project registrant, a valid Person "
+                      "within Launchpad context."))
 
     driver = PublicPersonChoice(
         title=_("Driver"),
@@ -482,8 +489,12 @@ class IProductSet(Interface):
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=(), license_info=None):
-        """Create and Return a brand new Product."""
+                      icon=None, licenses=(), license_info=None,
+                      registrant=None):
+        """Create and return a brand new Product.
+
+        See `IProduct` for a description of the parameters.
+        """
 
     def forReview():
         """Return an iterator over products that need to be reviewed."""
