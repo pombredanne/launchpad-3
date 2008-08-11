@@ -95,7 +95,7 @@ from canonical.launchpad.webapp import (
     canonical_url, custom_widget)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    POSTToNonCanonicalURL, IBreadcrumb, INavigationMenu)
+    POSTToNonCanonicalURL, IBreadcrumbBuilder, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
@@ -244,19 +244,17 @@ class Hierarchy(LaunchpadView):
         The list starts with the breadcrumb closest to the hierarchy root.
         """
         breadcrumbs = []
-        # We assume a 1:1 relationship between the URL components and the
-        # traversed_objects list.
         for idx, obj in enumerate(reversed(self.request.traversed_objects)):
-            # If the object has an IBreadcrumb adapter, then the object
-            # is intended to be shown in the hierarchy.
-            adapter = queryAdapter(obj, IBreadcrumb)
-            if adapter:
-                # The adapter should return a string that is the breadcrumb's
-                # text.
-                breadcrumb_text = adapter
+            # If the object has an IBreadcrumbBuilder adaptation, then the
+            # object is intended to be shown in the hierarchy.
+            builder = queryAdapter(obj, IBreadcrumbBuilder)
+            if builder:
+                # The breadcrumb builder hasn't been given a URL yet.
+                # We assume a 1:1 relationship between the URL components and
+                # the traversed_objects list.
                 url = self.request.getURL(idx, path_only=False)
-                breadcrumbs.append(
-                    Breadcrumb(url, breadcrumb_text))
+                builder.url = url
+                breadcrumbs.append(builder.make_breadcrumb())
         breadcrumbs.reverse()
         return breadcrumbs
 

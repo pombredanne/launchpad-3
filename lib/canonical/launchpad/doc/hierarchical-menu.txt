@@ -147,10 +147,17 @@ Adding the adapters causes the Cookbook and Recipe objects to show up
 in the hierarchy.  The hierarchy's breadcrumbs are ordered, starting with the breadcrumb
 closest to the hierarchy root.
 
+    # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
+    # give it a valid .text attribute.
+    >>> class TextualBreadcrumbBuilder(BreadcrumbBuilder):
+    ...     @property
+    ...     def text(self):
+    ...         return self.context.name.capitalize().replace('-', ' ')
+
     >>> provideAdapter(
-    ...     DynamicBreadcrumbBuilder, [ICookbook], IBreadcrumbBuilder)
+    ...     TextualBreadcrumbBuilder, [ICookbook], IBreadcrumbBuilder)
     >>> provideAdapter(
-    ...     DynamicBreadcrumbBuilder, [IRecipe], IBreadcrumbBuilder)
+    ...     TextualBreadcrumbBuilder, [IRecipe], IBreadcrumbBuilder)
 
     >>> hierarchy.items()
     [<Breadcrumb
