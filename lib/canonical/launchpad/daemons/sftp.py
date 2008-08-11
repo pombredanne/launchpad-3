@@ -41,10 +41,13 @@ class SSHService(service.Service):
         """Create and return an SFTP server that uses the given public and
         private keys.
         """
-        authserver = Proxy(config.codehosting.authentication_endpoint)
-        portal = Portal(sshserver.Realm(authserver))
+        authentication_proxy = Proxy(
+            config.codehosting.authentication_endpoint)
+        branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
+        portal = Portal(
+            sshserver.Realm(authentication_proxy, branchfs_proxy))
         portal.registerChecker(
-            sshserver.PublicKeyFromLaunchpadChecker(authserver))
+            sshserver.PublicKeyFromLaunchpadChecker(authentication_proxy))
         sftpfactory = sshserver.Factory(hostPublicKey, hostPrivateKey)
         sftpfactory.portal = portal
         return sftpfactory
