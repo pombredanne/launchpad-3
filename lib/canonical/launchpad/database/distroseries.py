@@ -50,6 +50,7 @@ from canonical.launchpad.database.distroseries_translations_copy import (
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.publishing import (
@@ -81,7 +82,8 @@ from canonical.launchpad.interfaces import (
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
 from canonical.launchpad.interfaces.publishing import active_publishing_status
-from canonical.launchpad.database.packagecloner import clone_packages
+
+from canonical.launchpad.mail import signed_message_from_string
 
 from canonical.launchpad.validators.person import validate_public_person
 
@@ -1155,6 +1157,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the content in the changes file (as doing so would be guessing
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
+
+        # The PGP signature is stripped from all changesfiles for PPAs
+        # to avoid replay attacks (see bug 159304).
+        if archive.is_ppa:
+            signed_message = signed_message_from_string(changesfilecontent)
+            if signed_message is not None:
+                changesfilecontent = signed_message.signedContent
+
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),
             StringIO(changesfilecontent), 'text/plain',
