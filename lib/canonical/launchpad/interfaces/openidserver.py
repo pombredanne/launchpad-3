@@ -203,9 +203,14 @@ class IOpenIDRPSummarySet(Interface):
 class IOpenIDPersistentIdentity(Interface):
     """An object that represents a persistent user identity URL.
 
-    This interface is used purely for use in the UI.
+    This interface is generally needed by the UI.
     """
-    person = Attribute('The IPerson this is for')
+    account = Attribute('The `IAccount` for the user.')
+    openid_identifier = Attribute('The openid_identifier for the `IAccount`.')
+    openid_identity_url = Attribute("The OpenID identity URL for the user.")
+
+    def supportsURL(identity_url):
+        """Return True if the identity_url format is supported, or False."""
 
 
 class ILoginServiceAuthorizeForm(Interface):

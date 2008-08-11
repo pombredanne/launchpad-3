@@ -857,16 +857,13 @@ class BuildSet:
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
-            orderBy = ["-BuildQueue.lastscore"]
+            orderBy = ["-BuildQueue.lastscore", "Build.id"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
         elif status == BuildStatus.SUPERSEDED or status is None:
             orderBy = ["-Build.datecreated"]
         else:
             orderBy = ["-Build.datebuilt"]
-
-        # Fallback to ordering by id as a tie-breaker.
-        orderBy.append("id")
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 

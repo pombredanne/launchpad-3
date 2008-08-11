@@ -306,6 +306,7 @@ class FeedTypedData:
             altered_content = unicode(soup)
         return altered_content
 
+
 class FeedPerson:
     """See `IFeedPerson`.
 

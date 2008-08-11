@@ -20,6 +20,7 @@ __all__ = [
     'IResourcePOSTOperation',
     'IScopedCollection',
     'IServiceRootResource',
+    'ITopLevelEntryLink',
     'IUnmarshallingDoesntNeedValue',
     'LAZR_WEBSERVICE_NAME',
     'LAZR_WEBSERVICE_NS',
@@ -112,6 +113,10 @@ class IResourceOperation(Interface):
         as application/json.
         """
 
+    send_modification_event = Attribute(
+        "Whether or not to send out an event when this operation completes.")
+
+
 class IResourceGETOperation(IResourceOperation):
     """A one-off operation invoked through GET.
 
@@ -160,6 +165,23 @@ class IScopedCollection(ICollection):
     relationship = Attribute("The relationship between an entry and a "
                              "collection.")
     collection = Attribute("The collection scoped to an entry.")
+
+
+class ITopLevelEntryLink(Interface):
+    """A link to a special entry.
+
+    For instance, an alias for the currently logged-in user.
+
+    The link will be present in the representation of the service root
+    resource.
+    """
+
+    link_name = Attribute("The name of the link to this entry in the "
+                          "representation of the service root resource. "
+                          "'_link' will be automatically appended.")
+
+    entry_type = Attribute("The interface defined by the entry on the "
+                           "other end of the link.")
 
 
 class WebServiceLayer(IDefaultBrowserLayer):

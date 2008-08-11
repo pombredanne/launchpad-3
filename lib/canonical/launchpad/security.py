@@ -555,6 +555,32 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         return can_edit_team(self.obj.team, user)
 
 
+# XXX: 2008-08-01, salgado: At some point we should protect ITeamMembership
+# with launchpad.View so that this adapter is used.  For now, though, it's
+# going to be used only on the webservice (which explicitly checks for
+# launchpad.View) so that we don't leak memberships of private teams.
+class ViewTeamMembership(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = ITeamMembership
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can only view public memberships."""
+        return self.obj.team.visibility == PersonVisibility.PUBLIC
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can view the team's membership.
+
+        Anyone can see a public team's membership. Only a team member or
+        a Launchpad admin can view a private membership.
+        """
+        if self.obj.team.visibility == PersonVisibility.PUBLIC:
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admins) or user.inTeam(self.obj.team):
+            return True
+        return False
+
+
 class EditPersonBySelfOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IPerson
