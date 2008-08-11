@@ -24,6 +24,7 @@ from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import BlockingProxy
 from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.testing.layers import TwistedLayer
 
 
 class AsyncTransport:
@@ -62,11 +63,13 @@ class TestFatLocalTransport(TestCaseInTempDir):
 
 class TestSFTPAdapter(TrialTestCase):
 
+    layer = TwistedLayer
+
     def makeLaunchpadAvatar(self):
         fake_launchpad = FakeLaunchpad()
         user_dict = fake_launchpad.getUser(1)
-        authserver = BlockingProxy(fake_launchpad)
-        return LaunchpadAvatar(user_dict, authserver)
+        branchfs_proxy = BlockingProxy(fake_launchpad)
+        return LaunchpadAvatar(user_dict, branchfs_proxy)
 
     def test_canAdaptToSFTPServer(self):
         server = ISFTPServer(self.makeLaunchpadAvatar())
@@ -104,6 +107,8 @@ class SFTPTestMixin:
 
 class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
     """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
+
+    layer = TwistedLayer
 
     def setUp(self):
         TrialTestCase.setUp(self)
@@ -345,6 +350,8 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
 
 class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
     """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
+
+    layer = TwistedLayer
 
     def setUp(self):
         TrialTestCase.setUp(self)

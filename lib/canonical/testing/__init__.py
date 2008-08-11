@@ -17,8 +17,10 @@ __all__ = [
     'LibrarianLayer',
     'PageTestLayer',
     'reset_logging',
+    'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
+    'ZopelessAppServerLayer',
     'ZopelessLayer',
     ]
 

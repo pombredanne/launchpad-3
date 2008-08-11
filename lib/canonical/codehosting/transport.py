@@ -791,7 +791,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
 def get_scanner_server():
     """Get a Launchpad internal server for scanning branches."""
-    proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
+    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     authserver = BlockingProxy(proxy)
     branch_transport = get_transport(
         'readonly+' + config.supermirror.warehouse_root_url)
@@ -821,7 +821,7 @@ def get_puller_server():
     the hosted branch area and is read-only, the other points to the mirrored
     area and is read/write.
     """
-    proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
+    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     authserver = BlockingProxy(proxy)
     hosted_transport = get_readonly_transport(
         get_chrooted_transport(config.codehosting.branches_root))
