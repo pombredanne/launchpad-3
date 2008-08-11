@@ -46,13 +46,9 @@ Today we'll be cooking with Spam!
 
 == Building IBreadcrumb objects ==
 
-The construction of breadcrumb objects is handled by a BreadcrumbBuilder
-factory.  The factory serves as the adapter between context objects
-and the IBreadcrumb interface.
-
-    >>> from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-
-    >>> builder = BreadcrumbBuilder(cookbook)
+The construction of breadcrumb objects is handled by an IBreadcrumbBuilder
+factory.  The factory adapts a context object and produces an
+IBreadcrumb object for that context.
 
 The builder holds a temporary copy of a breadcrumb until the breadcrumb is
 in a usable state.  This allows us to adapt the breadcrumb context object
@@ -60,10 +56,21 @@ in one place, and to defer setting the breadcrumb's URL.  We can ask the
 builder for a finished breadcrumb after both the text and the URL have
 been specified.
 
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IBreadcrumb, IBreadcrumbBuilder)
+    >>> from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+
+    >>> builder = BreadcrumbBuilder(cookbook)
+    >>> IBreadcrumbBuilder.providedBy(builder)
+    True
+
     >>> builder.text = 'Joy of cooking'
     >>> builder.url = 'http://launchpad.dev/joy-of-cooking'
 
-    >>> builder.make_breadcrumb()
+    >>> breadcrumb = builder.make_breadcrumb()
+    >>> IBreadcrumb.providedBy(breadcrumb)
+    True
+    >>> breadcrumb
     <Breadcrumb
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
@@ -80,38 +87,24 @@ builder raises an error if a URL is not explicitly given by the developer.
     IncompleteObjectError: The object being built by must be given a URL.
 
 The breadcrumb's attributes are given as attributes on the builder class.
-If the attribute is callable, it is treated as a method of the builder.
-Otherwise the attribute's value is used directly.
+They can be overridden with subclassing and Python properties.
 
     >>> from canonical.launchpad.webapp.publisher import canonical_url
 
-    >>> def dynamictext(self):
-    ...     return self.context.name.capitalize().replace('-', ' ')
-    >>> def crumb_url(self):
-    ...     return canonical_url(self.context)
+    >>> class DynamicBreadcrumbBuilder(BreadcrumbBuilder):
+    ...     @property
+    ...     def dynamictext(self):
+    ...         return self.context.name.capitalize().replace('-', ' ')
+    ...
+    ...     @property
+    ...     def crumb_url(self):
+    ...         return canonical_url(self.context)
 
-    >>> builder = BreadcrumbBuilder(cookbook)
-    >>> builder.text = dynamictext
-    >>> builder.url = crumb_url
-
+    >>> builder = DynamicBreadcrumbBuilder(cookbook)
     >>> builder.make_breadcrumb()
     <Breadcrumb
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
-
-The build process is easily customized via subclassing.
-
-    >>> class RecipeCrumbBuilder(BreadcrumbBuilder):
-    ...     def text(self):
-    ...         return self.context.name.capitalize() + '!'
-    ...
-    ...     url = crumb_url
-
-    >>> builder = RecipeCrumbBuilder(recipe)
-    >>> builder.make_breadcrumb()
-    <Breadcrumb
-        url='http://launchpad.dev/joy-of-cooking/spam'
-        text='Spam!'>
 
 
 == Discovering breadcrumbs ==
@@ -143,33 +136,20 @@ the hierarchy will discover them.
     ...     [root, cookbook, recipe])
 
 The Hierarchy's list of breadcrumbs is empty since none of the objects
-have an IBreadcrumb adapter.
+have an IBreadcrumbBuilder adapter.
 
     >>> hierarchy = getMultiAdapter((recipe, request), name='+hierarchy')
     >>> hierarchy.items()
     []
 
 Adding the adapters causes the Cookbook and Recipe objects to show up
-in the hierarchy.
-
-    >>> from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
-    >>> from zope.component import queryAdapter
-
-    >>> def object_to_breadcrumb(context):
-    ...     return context.name.capitalize().replace('-', ' ')
-
-    >>> provideAdapter(object_to_breadcrumb, [ICookbook], IBreadcrumb)
-    >>> provideAdapter(object_to_breadcrumb, [IRecipe], IBreadcrumb)
-
-The IBreadcrumb adapters should return something string-like.  This will
-become the breadcrumbs's text.
-
-    >>> queryAdapter(cookbook, IBreadcrumb)
-    'Joy of cooking'
-
-The hierarchy's breadcrumbs are ordered, starting with the breadcrumb
+in the hierarchy.  The hierarchy's breadcrumbs are ordered, starting with the breadcrumb
 closest to the hierarchy root.
+
+    >>> provideAdapter(
+    ...     DynamicBreadcrumbBuilder, [ICookbook], IBreadcrumbBuilder)
+    >>> provideAdapter(
+    ...     DynamicBreadcrumbBuilder, [IRecipe], IBreadcrumbBuilder)
 
     >>> hierarchy.items()
     [<Breadcrumb
