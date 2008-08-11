@@ -1165,7 +1165,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             if signed_message is not None:
                 # Overwrite `changesfilecontent` with the text stripped
                 # of the PGP signature.
-                changesfilecontent = signed_message.signedContent
+                new_content = signed_message.signedContent
+                if new_content is not None:
+                    changesfilecontent = signed_message.signedContent
 
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),
