@@ -159,7 +159,7 @@ class PullerWorker:
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
-    def _checkSourceUrl(self):
+    def _checkSourceUrl(self, source):
         """Check the validity of the source URL.
 
         If the source is an absolute path, that means it represents a hosted
@@ -168,17 +168,19 @@ class PullerWorker:
 
         If the source URL is uses a ssh-based scheme, raise BadUrlSsh. If it is
         in the launchpad.net domain, raise BadUrlLaunchpad.
+
+        :param source: The source URL to check.
         """
-        if self.source.startswith('/'):
+        if source.startswith('/'):
             return
-        uri = URI(self.source)
+        uri = URI(source)
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
-            raise BadUrlLaunchpad(self.source)
+            raise BadUrlLaunchpad(source)
         if uri.scheme in ['sftp', 'bzr+ssh']:
-            raise BadUrlSsh(self.source)
+            raise BadUrlSsh(source)
 
-    def _checkBranchReference(self):
+    def _checkBranchReference(self, source_location):
         """Check whether the source is an acceptable branch reference.
 
         For HOSTED or IMPORTED branches, branch references are not allowed. For
@@ -197,7 +199,6 @@ class PullerWorker:
             reference that ultimately points to an unsafe location.
         """
         traversed_references = []
-        source_location = self.source
         while True:
             reference_value = self._getBranchReference(source_location)
             if reference_value is None:
@@ -243,9 +244,9 @@ class PullerWorker:
         bzrdir = BzrDir.open(url)
         return bzrdir.get_branch_reference()
 
-    def _openSourceBranch(self):
+    def _openSourceBranch(self, source):
         """Open the branch to pull from, useful to override in tests."""
-        self._source_branch = Branch.open(self.source)
+        return Branch.open(source)
 
     def _mirrorToDestBranch(self):
         """Open the branch to pull to, creating a new one if necessary.
@@ -327,9 +328,9 @@ class PullerWorker:
         server = get_puller_server()
         server.setUp()
         try:
-            self._checkSourceUrl()
-            self._checkBranchReference()
-            self._openSourceBranch()
+            self._checkSourceUrl(self.source)
+            self._checkBranchReference(self.source)
+            self._source_branch = self._openSourceBranch(self.source)
             self._mirrorToDestBranch()
         finally:
             server.tearDown()
