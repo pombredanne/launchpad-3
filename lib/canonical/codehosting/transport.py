@@ -875,8 +875,13 @@ class AsyncVirtualTransport(Transport):
             method = getattr(transport, method_name)
             return method(path, *args, **kwargs)
 
+        def convert_not_enough_information(failure):
+            failure.trap(NotEnoughInformation)
+            raise NoSuchFile(failure.value.virtual_url_fragment)
+
         deferred = self._getUnderylingTransportAndPath(relpath)
         deferred.addCallback(call_method)
+        deferred.addErrback(convert_not_enough_information)
         return deferred
 
     # Transport methods
