@@ -5,7 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'Breadcrumb'
+    'Breadcrumb',
+    'BreadcrumbBuilder',
     ]
 
 
@@ -15,6 +16,7 @@ from canonical.launchpad.webapp.interfaces import IBreadcrumb
 
 
 class Breadcrumb:
+    """See `IBreadcrumb`."""
     implements(IBreadcrumb)
 
     def __init__(self, url, text):
@@ -26,3 +28,33 @@ class Breadcrumb:
             self.__class__.__name__, self.url, self.text)
 
 
+class BreadcrumbBuilder:
+    """See `IBreadcrumbBuilder`.
+
+    This class is intended for use as an adapter.
+    """
+    implements(IBreadcrumbBuilder)
+
+    def __init__(self, context):
+        self.context = context
+
+    def _get_attribute(self, attrname):
+        """Return the value of a possibly callable attribute."""
+        attr = getattr(self, attrname, None)
+        if attr is None:
+            raise IncompleteObjectError(
+                "No '%s' attribute was given with which to build the "
+                "Breadcrumb object." % attrname)
+        return attr
+
+    def make_breadcrumb(self):
+        url = self._get_attribute('url')
+        text = self._get_attribute('text')
+        return Breadcrumb(url, text)
+
+
+class IncompleteObjectError(AttributeError):
+    """Raised when an object being built does not has not had all of the
+    required attributes supplied to it.
+    """
+    pass
