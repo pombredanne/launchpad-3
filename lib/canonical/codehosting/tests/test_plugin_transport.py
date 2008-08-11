@@ -14,6 +14,7 @@ import sys
 import tempfile
 import unittest
 
+from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.transport import (
     get_transport, _get_protocol_handlers, register_transport, Server,
@@ -37,16 +38,13 @@ from canonical.codehosting.transport import (
     InvalidControlDirectory, LaunchpadInternalServer, LaunchpadServer,
     set_up_logging)
 from canonical.config import config
-from canonical.testing import BaseLayer, reset_logging
+from canonical.testing import reset_logging, TwistedLayer
 
 
 class MixinBaseLaunchpadServerTests:
     """Common tests for _BaseLaunchpadServer subclasses."""
 
-    # bzrlib manipulates 'logging'. The test runner will generate spurious
-    # warnings if these manipulations are not cleaned up. BaseLayer does the
-    # cleanup we need.
-    layer = BaseLayer
+    layer = TwistedLayer
 
     def setUp(self):
         self.authserver = FakeLaunchpad()
@@ -313,9 +311,22 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests, TrialTestCase,
             (self.server._branch_transport, '00/00/00/04/'))
         return deferred
 
+    def test_open_containing_raises_branch_not_found(self):
+        # open_containing_from_transport raises NotBranchError if there's no
+        # branch at that URL.
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+        transport = get_transport(self.server.get_url())
+        transport = transport.clone('~testuser/firefox/qux')
+        self.assertRaises(
+            errors.NotBranchError,
+            BzrDir.open_containing_from_transport, transport)
+
 
 class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
     """Tests for `AsyncVirtualTransport`."""
+
+    layer = TwistedLayer
 
     class VirtualServer(Server):
         """Very simple server that provides a AsyncVirtualTransport."""
@@ -409,7 +420,7 @@ class LaunchpadTransportTests:
     """
 
     # See comment on TestLaunchpadServer.
-    layer = BaseLayer
+    layer = TwistedLayer
 
     def setUp(self):
         self.authserver = FakeLaunchpad()
@@ -754,7 +765,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
     # See comment on TestLaunchpadServer.
-    layer = BaseLayer
+    layer = TwistedLayer
 
     def setUp(self):
         BzrTestCase.setUp(self)
