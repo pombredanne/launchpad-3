@@ -121,7 +121,7 @@
 
 
   <p id="owner" tal:condition="context/owner">
-    <strong>Owner:</strong> <tal:link replace="structure context/owner/fmt:link" />
+    <strong>Maintainer:</strong> <tal:link replace="structure context/owner/fmt:link" />
   </p>
 
   <p id="driver" tal:condition="view/effective_driver">
