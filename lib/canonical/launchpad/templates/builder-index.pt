@@ -26,7 +26,7 @@
 
       <h2>Current status</h2>
 
-      <div class="informational message" tal:condition="not: job">
+      <div tal:condition="not: job">
         <p><tal:builder content="context/title" />
            <tal:builderok condition="context/builderok"
              >is idle.</tal:builderok>

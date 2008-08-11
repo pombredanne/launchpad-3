@@ -1237,9 +1237,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return Karma.selectBy(person=self,
             orderBy='-datecreated')[:quantity]
 
-    # XXX: StuartBishop 2006-05-10:
-    # This cache should no longer be needed once CrowdControl lands,
-    # as apparently it will also cache this information.
+    # This is to cache TeamParticipation information as that's used tons of
+    # times in each request.
     _inTeam_cache = None
 
     def inTeam(self, team):
@@ -1250,9 +1249,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # Translate the team name to an ITeam if we were passed a team.
         if isinstance(team, str):
             team = PersonSet().getByName(team)
-
-        if team.id == self.id: # Short circuit - would return True anyway
-            return True
 
         if self._inTeam_cache is None: # Initialize cache
             self._inTeam_cache = {}
@@ -2514,52 +2510,29 @@ class PersonSet:
             query = AND(query, Person.q.mergedID==None)
         return Person.selectOne(query)
 
-    def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None.
-
-        XXX StuartBishop 2008-05-16 bug=237283: This method no longer makes
-        sense. The only things we need to lookup by openid identifier are
-        Accounts.
-        """
-        return Person.selectOne(
-                AND(
-                    Person.q.accountID == Account.q.id,
-                    Account.q.openid_identifier == openid_identifier,
-                    Account.q.status == AccountStatus.ACTIVE,
-                    EmailAddress.q.personID == Person.q.id,
-                    EmailAddress.q.status == EmailAddressStatus.PREFERRED,
-                    ),
-                )
+    def getByAccount(self, account):
+        """See `IPersonSet`."""
+        return Person.selectOne(Person.q.accountID == account.id)
 
     def updateStatistics(self, ztm):
         """See `IPersonSet`."""
         stats = getUtility(ILaunchpadStatisticSet)
-        stats.update('people_count', self.getAllPersons().count())
+        people_count = Person.select(
+            AND(Person.q.teamownerID==None, Person.q.mergedID==None)).count()
+        stats.update('people_count', people_count)
         ztm.commit()
-        stats.update('teams_count', self.getAllTeams().count())
+        teams_count = Person.select(
+            AND(Person.q.teamownerID!=None, Person.q.mergedID==None)).count()
+        stats.update('teams_count', teams_count)
         ztm.commit()
 
     def peopleCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('people_count')
 
-    def getAllPersons(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
-        return Person.select(query, orderBy=orderBy)
-
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
-
-    def getAllTeams(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
-        return Person.select(query, orderBy=orderBy)
 
     def getAllValidPersonsAndTeams(self):
         """See `IPersonSet`."""
@@ -2715,22 +2688,6 @@ class PersonSet:
             return None
         assert emailaddress.person is not None
         return emailaddress.person
-
-    def getUbunteros(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            # The fact that the query below is unique makes it
-            # impossible to use person_sort_key(), and rewriting it to
-            # use a subselect is more expensive. -- kiko
-            orderBy = ["Person.displayname", "Person.name"]
-        sigset = getUtility(ISignedCodeOfConductSet)
-        lastdate = sigset.getLastAcceptedDate()
-
-        query = AND(Person.q.id==SignedCodeOfConduct.q.ownerID,
-                    SignedCodeOfConduct.q.active==True,
-                    SignedCodeOfConduct.q.datecreated>=lastdate)
-
-        return Person.select(query, distinct=True, orderBy=orderBy)
 
     def getPOFileContributors(self, pofile):
         """See `IPersonSet`."""

@@ -23,6 +23,7 @@ __metaclass__ = type
 __all__ = [
     'AppServerLayer',
     'BaseLayer',
+    'DatabaseFunctionalLayer',
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
     'FunctionalLayer',
@@ -35,8 +36,10 @@ __all__ = [
     'LayerInvariantError',
     'LibrarianLayer',
     'PageTestLayer',
+    'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
+    'ZopelessAppServerLayer',
     'ZopelessLayer',
     'disconnect_stores',
     'reconnect_stores',
@@ -300,6 +303,10 @@ class BaseLayer:
             BaseLayer.flagTestIsolationFailure(
                 "Test left new live threads: %s" % repr(new_threads))
         del BaseLayer._threads
+
+        if signal.getsignal(signal.SIGCHLD) != signal.SIG_DFL:
+            BaseLayer.flagTestIsolationFailure(
+                "Test left SIGCHLD handler.")
 
         # Objects with __del__ methods cannot participate in refence cycles.
         # Fail tests with memory leaks now rather than when Launchpad crashes
@@ -916,6 +923,38 @@ class GoogleServiceLayer(BaseLayer):
         pass
 
 
+class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
+    """Provides the database and the Zope3 application server environment."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        # Connect Storm
+        reconnect_stores()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        getUtility(IOpenLaunchBag).clear()
+
+        # If tests forget to logout, we can do it for them.
+        if is_logged_in():
+            logout()
+
+        # Disconnect Storm so it doesn't get in the way of database resets
+        disconnect_stores()
+
+
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
                                GoogleServiceLayer):
     """Provides the Launchpad Zope3 application server environment."""
@@ -1228,7 +1267,7 @@ class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
                 event.set()
 
 
-class AppServerLayer(LaunchpadFunctionalLayer):
+class _BaseAppServerLayer:
     """Environment for starting and stopping the app server."""
 
     # Holds the Popen instance of the spawned app server.
@@ -1335,3 +1374,77 @@ class AppServerLayer(LaunchpadFunctionalLayer):
                     cls.appserver.returncode, cls.appserver.stdout.read()))
         DatabaseLayer.force_dirty_database()
 
+
+class AppServerLayer(LaunchpadFunctionalLayer, _BaseAppServerLayer):
+    """Layer for tests that run in the webapp environment with an app server.
+    """
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
+class ZopelessAppServerLayer(LaunchpadZopelessLayer, _BaseAppServerLayer):
+    """Layer for tests that run in the zopeless environment with an app server.
+    """
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
+class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer, _BaseAppServerLayer):
+    """Layer for twisted-using zopeless tests that need a running app server.
+    """
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
