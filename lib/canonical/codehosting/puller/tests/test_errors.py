@@ -14,7 +14,6 @@ from bzrlib.errors import (
     NotBranchError)
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
-from bzrlib.weave import Weave
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.tests import PullerWorkerMixin
@@ -49,13 +48,13 @@ class StubbedPullerWorker(PullerWorker):
     enable_checkBranchReference = False
     enable_checkSourceUrl = True
 
-    def _checkSourceUrl(self):
+    def _checkSourceUrl(self, url):
         if self.enable_checkSourceUrl:
-            PullerWorker._checkSourceUrl(self)
+            PullerWorker._checkSourceUrl(self, url)
 
-    def _checkBranchReference(self):
+    def _checkBranchReference(self, location):
         if self.enable_checkBranchReference:
-            PullerWorker._checkBranchReference(self)
+            PullerWorker._checkBranchReference(self, location)
 
     def _openSourceBranch(self):
         self.testcase.open_call_count += 1
@@ -141,14 +140,16 @@ class TestBadUrl(ErrorHandlingTestCase):
     def testBadUrlSftp(self):
         # If the scheme of the source url is sftp, _openSourceBranch raises
         # BadUrlSsh.
-        self.branch.source = 'sftp://example.com/foo'
-        self.assertRaises(BadUrlSsh, self.branch._checkSourceUrl)
+        self.assertRaises(
+            BadUrlSsh, self.branch._checkSourceUrl,
+            'sftp://example.com/foo')
 
     def testBadUrlBzrSsh(self):
         # If the scheme of the source url is bzr+ssh, _openSourceBracnh raises
         # BadUrlSsh.
-        self.branch.source = 'bzr+ssh://example.com/foo'
-        self.assertRaises(BadUrlSsh, self.branch._checkSourceUrl)
+        self.assertRaises(
+            BadUrlSsh, self.branch._checkSourceUrl,
+            'bzr+ssh://example.com/foo')
 
     def testBadUrlBzrSshCaught(self):
         # The exception raised if the scheme of the source url is sftp or
@@ -163,12 +164,15 @@ class TestBadUrl(ErrorHandlingTestCase):
     def testBadUrlLaunchpadDomain(self):
         # If the host of the source branch is in the launchpad.net domain,
         # _openSourceBranch raises BadUrlLaunchpad.
-        self.branch.source = 'http://bazaar.launchpad.dev/foo'
-        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
-        self.branch.source = 'sftp://bazaar.launchpad.dev/bar'
-        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
-        self.branch.source = 'http://launchpad.dev/baz'
-        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
+        self.assertRaises(
+            BadUrlLaunchpad, self.branch._checkSourceUrl,
+            'http://bazaar.launchpad.dev/foo')
+        self.assertRaises(
+            BadUrlLaunchpad, self.branch._checkSourceUrl,
+            'sftp://bazaar.launchpad.dev/bar')
+        self.assertRaises(
+            BadUrlLaunchpad, self.branch._checkSourceUrl,
+            'http://launchpad.dev/baz')
 
     def testBadUrlLaunchpadCaught(self):
         # The exception raised if the host of the source url is launchpad.net
@@ -278,7 +282,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
     def testHTTPError(self):
         # If the source branch requires HTTP authentication, say so in the
         # error message.
-        def stubOpenSourceBranch():
+        def stubOpenSourceBranch(url):
             raise urllib2.HTTPError(
                 'http://something', httplib.UNAUTHORIZED,
                 'Authorization Required', 'some headers',
@@ -289,7 +293,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
     def testSocketErrorHandling(self):
         # If a socket error occurs accessing the source branch, say so in the
         # error message.
-        def stubOpenSourceBranch():
+        def stubOpenSourceBranch(url):
             raise socket.error('foo')
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'A socket error occurred:'
@@ -298,7 +302,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
     def testUnsupportedFormatErrorHandling(self):
         # If we don't support the format that the source branch is in, say so
         # in the error message.
-        def stubOpenSourceBranch():
+        def stubOpenSourceBranch(url):
             raise UnsupportedFormatError('Bazaar-NG branch, format 0.0.4')
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'Launchpad does not support branches '
@@ -307,7 +311,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
     def testUnknownFormatError(self):
         # If the format is completely unknown to us, say so in the error
         # message.
-        def stubOpenSourceBranch():
+        def stubOpenSourceBranch(url):
             raise UnknownFormatError(format='Bad format')
         self.branch._openSourceBranch = stubOpenSourceBranch
         self.runMirrorAndAssertErrorStartsWith('Unknown branch format: ')
@@ -315,7 +319,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
     def testParamikoNotPresent(self):
         # If, somehow, we try to mirror a branch that requires SSH, we tell
         # the user we cannot do so.
-        def stubOpenSourceBranch():
+        def stubOpenSourceBranch(url):
             # XXX: JonathanLange 2008-06-25: It's bogus to assume that this is
             # the error we'll get if we try to mirror over SSH.
             raise ParamikoNotPresent('No module named paramiko')
@@ -328,7 +332,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
     def testNotBranchErrorMirrored(self):
         # Log a user-friendly message when we are asked to mirror a
         # non-branch.
-        def stubOpenSourceBranch():
+        def stubOpenSourceBranch(url):
             raise NotBranchError('http://example.com/not-branch')
         self.branch._openSourceBranch = stubOpenSourceBranch
         self.branch.branch_type = BranchType.MIRRORED
@@ -340,7 +344,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
         # the database. Instead, the path is translated to a user-visible
         # location.
         split_id = branch_id_to_path(self.branch.branch_id)
-        def stubOpenSourceBranch():
+        def stubOpenSourceBranch(url):
             raise NotBranchError('/srv/sm-ng/push-branches/%s/.bzr/branch/'
                                  % split_id)
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -353,7 +357,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
         # The not-a-branch error message for import branch does not disclose
         # the internal URL. Since there is no user-visible URL to blame, we do
         # not display any URL at all.
-        def stubOpenSourceBranch():
+        def stubOpenSourceBranch(url):
             raise NotBranchError('http://canonical.example.com/internal/url')
         self.branch._openSourceBranch = stubOpenSourceBranch
         self.branch.branch_type = BranchType.IMPORTED
@@ -361,7 +365,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
 
     def testBranchReferenceLoopError(self):
         """BranchReferenceLoopError exceptions are caught."""
-        def stubCheckBranchReference():
+        def stubCheckBranchReference(location):
             raise BranchReferenceLoopError()
         self.branch._checkBranchReference = stubCheckBranchReference
         self.runMirrorAndAssertErrorEquals("Circular branch reference.")
@@ -370,13 +374,13 @@ class TestErrorHandling(ErrorHandlingTestCase):
         """When a branch reference contains an invalid URL, an InvalidURIError
         is raised. The worker catches this and reports it to the scheduler.
         """
-        def stubCheckBranchReference():
+        def stubCheckBranchReference(location):
             raise InvalidURIError("This is not a URL")
         self.branch._checkBranchReference = stubCheckBranchReference
         self.runMirrorAndAssertErrorEquals("This is not a URL")
 
     def testBzrErrorHandling(self):
-        def stubOpenSourceBranch():
+        def stubOpenSourceBranch(location):
             raise BzrError('A generic bzr error')
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'A generic bzr error'

@@ -151,7 +151,6 @@ class PullerWorker:
         # in production use, but it is expected that tests that do not depend
         # on its value will pass None.
         self.branch_type = branch_type
-        self._source_branch = None
         self._dest_branch = None
         self.protocol = protocol
         if protocol is not None:
@@ -248,7 +247,7 @@ class PullerWorker:
         """Open the branch to pull from, useful to override in tests."""
         return Branch.open(source)
 
-    def _mirrorToDestBranch(self):
+    def _mirrorToDestBranch(self, source_branch):
         """Open the branch to pull to, creating a new one if necessary.
 
         Useful to override in tests.
@@ -257,11 +256,11 @@ class PullerWorker:
             branch = BzrDir.open(self.dest).open_branch()
         except NotBranchError:
             # Make a new branch in the same format as the source branch.
-            branch = self._createDestBranch()
+            branch = self._createDestBranch(source_branch)
         else:
             # Check that destination branch is in the same format as the
             # source.
-            if identical_formats(self._source_branch, branch):
+            if identical_formats(source_branch, branch):
                 # The destination exists, and is in the same format.  So all
                 # we need to do is pull the new revisions.
 
@@ -272,14 +271,14 @@ class PullerWorker:
                 # the timeout expires (currently 5 minutes).
                 if branch.get_physical_lock_status():
                     branch.break_lock()
-                branch.pull(self._source_branch, overwrite=True)
+                branch.pull(source_branch, overwrite=True)
             else:
                 # The destination is in a different format to the source, so
                 # we'll delete it and mirror from scratch.
-                branch = self._createDestBranch()
+                branch = self._createDestBranch(source_branch)
         self._dest_branch = branch
 
-    def _createDestBranch(self):
+    def _createDestBranch(self, source_branch):
         """Create the branch to pull to, and copy the source's contents."""
         # XXX AndrewBennetts 2006-05-26:
         #    Bzrdir.sprout is *almost* what we want here, except that sprout
@@ -288,13 +287,13 @@ class PullerWorker:
         if os.path.exists(self.dest):
             shutil.rmtree(self.dest)
         ensure_base(get_transport(self.dest))
-        bzrdir_format = self._source_branch.bzrdir._format
+        bzrdir_format = source_branch.bzrdir._format
         bzrdir = bzrdir_format.initialize(self.dest)
-        repo_format = self._source_branch.repository._format
+        repo_format = source_branch.repository._format
         repo = repo_format.initialize(bzrdir)
-        branch_format = self._source_branch._format
+        branch_format = source_branch._format
         branch = branch_format.initialize(bzrdir)
-        branch.pull(self._source_branch)
+        branch.pull(source_branch)
         return branch
 
     def _record_oops(self, message=None):
@@ -330,8 +329,8 @@ class PullerWorker:
         try:
             self._checkSourceUrl(self.source)
             self._checkBranchReference(self.source)
-            self._source_branch = self._openSourceBranch(self.source)
-            self._mirrorToDestBranch()
+            source_branch = self._openSourceBranch(self.source)
+            self._mirrorToDestBranch(source_branch)
         finally:
             server.tearDown()
 
