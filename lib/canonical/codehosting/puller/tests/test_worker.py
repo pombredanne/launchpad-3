@@ -151,40 +151,36 @@ class TestCheckBranchReference(unittest.TestCase):
         for i in range(len(locations) - 1):
             self.reference_values[locations[i]] = locations[i+1]
 
-    def assertGetBranchReferenceCallsEqual(self, calls):
-        """Assert that _getBranchReference was called a given number of times
-        and for the given urls.
-        """
-        self.assertEqual(self.get_branch_reference_calls, calls)
+    def assertGetBranchReferenceCallsEqual(self, urls):
+        """Assert that _getBranchReference was called with the given urls. """
+        self.assertEqual(self.get_branch_reference_calls, urls)
 
     def testNotReference(self):
-        """_checkBranchReference does not raise if the source url does not
-        point to a branch reference.
-        """
+        #_checkBranchReference does not raise if the source url does not point
+        # to a branch reference.
         self.can_traverse_references = False
         references = ['file:///local/branch', None]
         self.setUpReferences(references)
-        self.branch._checkBranchReference(references[0]) # This must not raise.
+        # This must not raise.
+        self.branch._checkBranchReference(references[0])
         self.assertGetBranchReferenceCallsEqual(references[:1])
 
     def testBranchReferenceForbidden(self):
-        """_checkBranchReference raises BranchReferenceForbidden if
-        _canTraverseReferences is false and the source url points to a branch
-        reference.
-        """
+        # _checkBranchReference raises BranchReferenceForbidden if
+        # _canTraverseReferences is false and the source url points to a
+        # branch reference.
         self.can_traverse_references = False
         references = ['file:///local/branch', 'http://example.com/branch']
         self.setUpReferences(references)
         self.assertRaises(
-            BranchReferenceForbidden, self.branch._checkBranchReference,
-            references[0])
+            BranchReferenceForbidden,
+            self.branch._checkBranchReference, references[0])
         self.assertGetBranchReferenceCallsEqual(references[:1])
 
     def testAllowedReference(self):
-        """_checkBranchReference does not raise if _canTraverseReferences is
-        true and the source URL points to a branch reference to a remote
-        location.
-        """
+        # _checkBranchReference does not raise if _canTraverseReferences is
+        # true and the source URL points to a branch reference to a remote
+        # location.
         self.can_traverse_references = True
         references = [
             'http://example.com/reference',
@@ -196,10 +192,9 @@ class TestCheckBranchReference(unittest.TestCase):
         self.assertGetBranchReferenceCallsEqual(references[:2])
 
     def testFileReference(self):
-        """_checkBranchReference raises BranchReferenceValueError if
-        _canTraverseReferences is true and the source url points to a 'file'
-        branch reference.
-        """
+        # _checkBranchReference raises BranchReferenceValueError if
+        # _canTraverseReferences is true and the source url points to a 'file'
+        # branch reference.
         self.can_traverse_references = True
         references = [
             'http://example.com/reference',
@@ -212,9 +207,9 @@ class TestCheckBranchReference(unittest.TestCase):
         self.assertGetBranchReferenceCallsEqual(references[:1])
 
     def testSelfReferencingBranch(self):
-        """_checkBranchReference raises BranchReferenceLoopError if
-        _canTraverseReferences is true and the source url points to a
-        self-referencing branch."""
+        # _checkBranchReference raises BranchReferenceLoopError if
+        # _canTraverseReferences is true and the source url points to a
+        # self-referencing branch.
         self.can_traverse_references = True
         references = [
             'http://example.com/reference',
@@ -227,9 +222,9 @@ class TestCheckBranchReference(unittest.TestCase):
         self.assertGetBranchReferenceCallsEqual(references[:1])
 
     def testBranchReferenceLoop(self):
-        """_checkBranchReference raises BranchReferenceLoopError if
-        _canTraverseReferences is true and the source url points to a loop of
-        branch references."""
+        # _checkBranchReference raises BranchReferenceLoopError if
+        # _canTraverseReferences is true and the source url points to a loop
+        # of branch references.
         self.can_traverse_references = True
         references = [
             'http://example.com/reference-1',
@@ -276,28 +271,28 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         return strings
 
     def resetBuffers(self):
-        """Empty the test output and error buffers."""
+        # Empty the test output and error buffers.
         self.output.truncate(0)
         self.assertEqual('', self.output.getvalue())
 
     def test_nothingSentOnConstruction(self):
-        """The protocol sends nothing until it receives an event."""
+        # The protocol sends nothing until it receives an event.
         self.assertSentNetstrings([])
 
     def test_startMirror(self):
-        """Calling startMirroring sends 'startMirroring' as a netstring."""
+        # Calling startMirroring sends 'startMirroring' as a netstring.
         self.protocol.startMirroring(self.branch_to_mirror)
         self.assertSentNetstrings(['startMirroring', '0'])
 
     def test_mirrorSucceeded(self):
-        """Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'."""
+        # Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'.
         self.protocol.startMirroring(self.branch_to_mirror)
         self.resetBuffers()
         self.protocol.mirrorSucceeded(self.branch_to_mirror, 1234)
         self.assertSentNetstrings(['mirrorSucceeded', '1', '1234'])
 
     def test_mirrorFailed(self):
-        """Calling 'mirrorFailed' sends the error message."""
+        # Calling 'mirrorFailed' sends the error message.
         self.protocol.startMirroring(self.branch_to_mirror)
         self.resetBuffers()
         self.protocol.mirrorFailed(
@@ -306,9 +301,8 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
             ['mirrorFailed', '2', 'Error Message', 'OOPS'])
 
     def test_progressMade(self):
-        """Calling 'progressMade' sends an arbitrary string indicating
-        progress.
-        """
+        # Calling 'progressMade' sends an arbitrary string indicating
+        # progress.
         self.protocol.progressMade()
         self.assertSentNetstrings(['progressMade', '0'])
 
