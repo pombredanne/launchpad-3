@@ -5,7 +5,6 @@ __metaclass__ = type
 import unittest
 import datetime
 import pytz
-import unittest
 import transaction
 from cStringIO import StringIO
 
@@ -14,7 +13,6 @@ from canonical.launchpad.testing.pages import (
     find_main_content, get_feedback_messages, setupBrowser)
 
 from canonical.launchpad.ftests import syncUpdate
-from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.database.product import Product
