@@ -10,8 +10,10 @@
   i18n:domain="launchpad"
 >
   <body>
+    <script metal:fill-slot="head_epilogue" type="text/javascript">
+        registerLaunchpadFunction(insertAllExpansionButtons);
+    </script>
     <div metal:fill-slot="main">
-
       <div>
         <a tal:attributes="href context/potemplate/fmt:url"
            tal:content="context/potemplate/title">
@@ -194,12 +196,6 @@
         <tal:status replace="structure context/@@+access" />
         <tal:contributors replace="structure context/@@+contributors" />
       </tal:havepluralforms>
-      <tal:comment replace="nothing">
-        XXX: beuno 20080710 bug=247302: This JS should be in the header
-        instead.
-      </tal:comment>
-      <script language="javascript">insertAllExpansionButtons()</script>
     </div>
-
   </body>
 </html>
