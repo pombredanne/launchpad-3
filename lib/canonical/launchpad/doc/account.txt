@@ -1,15 +1,28 @@
-= Account =
+= Account and AccountSet =
 
 An Account is used by someone to Authenticate with the Launchpad login
 service.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IAccount, IAccountSet, AccountStatus)
+
+= AccountSet =
+
+The AccountSet object provides methods to retrieve `IAccount`s. It
+implements the IAccountSet.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     IAccount, IAccountSet)
+
+    >>> account_set = getUtility(IAccountSet)
+    >>> verifyObject(IAccountSet, account_set)
+    True
+
+
+== Looking up accounts by email address ==
 
 Accounts are generally looked up by email address.
 
     >>> login('no-priv@canonical.com')
-    >>> account_set = getUtility(IAccountSet)
     >>> account = account_set.getByEmail('no-priv@canonical.com')
     >>> IAccount.providedBy(account)
     True
@@ -31,7 +44,56 @@ Fixing this involves more surgery to Launchpad's security systems.
 
     >>> del stub_account
 
-An Account has an encrypted password.
+
+== Looking up accounts by OpenID identifier ==
+
+Each Launchpad user is assigned an permanent OpenID identity URL. The
+last component of this URL is specific to the user, and can be used to
+look up the user.
+
+    >>> account = account_set.getByOpenIdIdentifier('no-priv_oid')
+    >>> IAccount.providedBy(account)
+    True
+    >>> print account.displayname
+    No Privileges Person
+
+None is returned if the identifier is not used by any account.
+
+    >>> print account_set.getByOpenIdIdentifier('no-such-identifier')
+    None
+
+Accounts that have not been validated are not returned either.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     PersonCreationRationale, IPersonSet)
+    >>> personset = getUtility(IPersonSet)
+
+    >>> person, email = personset.createPersonAndEmail(
+    ...     email='whatever@example.com', name='whatever',
+    ...     rationale=PersonCreationRationale.SOURCEPACKAGEIMPORT)
+    >>> person.is_valid_person
+    False
+
+    >>> person.openid_identifier is not None
+    True
+
+    >>> print account_set.getByOpenIdIdentifier(person.openid_identifier)
+    None
+
+
+= The Account object =
+
+The account implements the IAccount interface.
+
+    >>> verifyObject(IAccount, account)
+    True
+
+An account has a displayname.
+
+    >>> print account.displayname
+    No Privileges Person
+
+An account has an encrypted password.
 
     >>> account.password
     u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
@@ -68,6 +130,8 @@ And other account metadata.
 When the status is changed, the date_status_set is updated in the
 database.
 
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+
     >>> original_date_status_set = account.date_status_set
     >>> account.status = AccountStatus.SUSPENDED
 
@@ -83,8 +147,6 @@ The Account's displayname is synced to the Person's displayname if there
 is one. If the Person.displayname is changed, the Account.displayname is
 changed too.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> personset = getUtility(IPersonSet)
     >>> person = personset.getByEmail('no-priv@canonical.com')
     >>> person.displayname = 'Something New'
     >>> account.displayname
@@ -105,11 +167,8 @@ unavailable.
     u'No Privileges Person'
 
 An Account has an OpenID identifier used to generate the OpenID identity
-URL, and a property that contains that url.
+URL.
 
     >>> account.openid_identifier
     u'no-priv_oid'
-
-    >>> account.openid_identity_url
-    'http://openid.launchpad.dev/+id/no-priv_oid'
 

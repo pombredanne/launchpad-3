@@ -61,7 +61,7 @@ class BranchStatusClient:
     """Twisted client for the branch status methods on the authserver."""
 
     def __init__(self):
-        self.proxy = Proxy(config.supermirror.authserver_url)
+        self.proxy = Proxy(config.codehosting.branch_puller_endpoint)
 
     def getBranchPullQueue(self, branch_type):
         return self.proxy.callRemote('getBranchPullQueue', branch_type)
@@ -311,8 +311,7 @@ class PullerMaster:
         self.branch_id = branch_id
         self.source_url = source_url.strip()
         path = branch_id_to_path(branch_id)
-        self.destination_url = os.path.join(
-            config.supermirror.branchesdest, path)
+        self.destination_url = 'lp-mirrored:///%s' % (unique_name,)
         self.unique_name = unique_name
         self.branch_type = branch_type
         self.logger = logger
