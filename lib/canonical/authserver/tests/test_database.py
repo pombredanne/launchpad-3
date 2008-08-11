@@ -1207,7 +1207,6 @@ class BranchPullQueueTest(BranchTestCase):
         LaunchpadScriptLayer.switchDbConfig('authserver')
         super(BranchPullQueueTest, self).setUp()
         self.restrictSecurityPolicy()
-        self.emptyPullQueues()
         self.storage = DatabaseBranchDetailsStorage(None)
 
     def assertBranchQueues(self, hosted, mirrored, imported):
