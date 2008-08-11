@@ -12,7 +12,8 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
+from canonical.launchpad.webapp.interfaces import (
+    IBreadcrumb, IBreadcrumbBuilder)
 
 
 class Breadcrumb:

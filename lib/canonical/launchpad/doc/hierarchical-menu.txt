@@ -84,7 +84,8 @@ builder raises an error if a URL is not explicitly given by the developer.
     >>> builder.make_breadcrumb()
     Traceback (most recent call last):
     ...
-    IncompleteObjectError: The object being built by must be given a URL.
+    IncompleteObjectError: No 'url' attribute was given with which to build
+    the Breadcrumb object.
 
 The breadcrumb's attributes are given as attributes on the builder class.
 They can be overridden with subclassing and Python properties.
@@ -93,11 +94,11 @@ They can be overridden with subclassing and Python properties.
 
     >>> class DynamicBreadcrumbBuilder(BreadcrumbBuilder):
     ...     @property
-    ...     def dynamictext(self):
+    ...     def text(self):
     ...         return self.context.name.capitalize().replace('-', ' ')
     ...
     ...     @property
-    ...     def crumb_url(self):
+    ...     def url(self):
     ...         return canonical_url(self.context)
 
     >>> builder = DynamicBreadcrumbBuilder(cookbook)
