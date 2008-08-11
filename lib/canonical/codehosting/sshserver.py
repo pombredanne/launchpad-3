@@ -121,11 +121,11 @@ class Realm:
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         # Fetch the user's details from the authserver
-        deferred = self.authserver.getUser(avatarId)
+        deferred = self.authserver.callRemote('getUser', avatarId)
 
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
-            avatar = self.avatarFactory(userDict, self.authserver.proxy)
+            avatar = self.avatarFactory(userDict, self.authserver)
             return interfaces[0], avatar, lambda: None
         return deferred.addCallback(gotUserDict)
 
@@ -206,7 +206,7 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         self.authserver = authserver
 
     def checkKey(self, credentials):
-        d = self.authserver.getUser(credentials.username)
+        d = self.authserver.callRemote('getUser', credentials.username)
         return d.addCallback(self._checkUserExistence, credentials)
 
     def _checkUserExistence(self, userDict, credentials):
@@ -214,7 +214,8 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             raise UserDisplayedUnauthorizedLogin(
                 "No such Launchpad account: %s" % credentials.username)
 
-        authorizedKeys = self.authserver.getSSHKeys(credentials.username)
+        authorizedKeys = self.authserver.callRemote(
+            'getSSHKeys', credentials.username)
 
         # Add callback to try find the authorized key
         authorizedKeys.addCallback(self._checkForAuthorizedKey, credentials)
