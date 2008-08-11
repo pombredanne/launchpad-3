@@ -4,15 +4,19 @@
 
 __metaclass__ = type
 
-__all__ = ['BuilderSetNavigation',
-           'BuilderSetFacets',
-           'BuilderSetOverviewMenu',
-           'BuilderSetView',
-           'BuilderSetAddView',
-           'BuilderNavigation',
-           'BuilderFacets',
-           'BuilderOverviewMenu',
-           'BuilderView']
+__all__ = [
+    'BuilderBreadcrumbBuilder',
+    'BuilderFacets',
+    'BuilderOverviewMenu',
+    'BuilderNavigation',
+    'BuilderSetAddView',
+    'BuilderSetBreadcrumbBuilder',
+    'BuilderSetFacets',
+    'BuilderSetOverviewMenu',
+    'BuilderSetNavigation',
+    'BuilderSetView',
+    'BuilderView',
+    ]
 
 import datetime
 import operator
@@ -33,6 +37,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, canonical_url, enabled_with_permission,
     stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.lazr import decorates
 
@@ -40,9 +45,6 @@ from canonical.lazr import decorates
 class BuilderSetNavigation(GetitemNavigation):
     """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
-
-    def breadcrumb(self):
-        return 'Build Farm'
 
     @stepthrough('+build')
     def traverse_build(self, name):
@@ -58,11 +60,20 @@ class BuilderSetNavigation(GetitemNavigation):
             return self.redirectSubTree(canonical_url(build))
 
 
+class BuilderSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Returns a breadcrumb for an `IBuilderSet`."""
+    text = 'Build Farm'
+
+
 class BuilderNavigation(Navigation):
     """Navigation methods for IBuilder."""
     usedfor = IBuilder
 
-    def breadcrumb(self):
+
+class BuilderBreadcrumbBuilder(BreadcrumbBuilder):
+    """Returns a breadcrumb for an `IBuilder`."""
+    @property
+    def text(self):
         return self.context.title
 
 

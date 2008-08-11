@@ -12,6 +12,20 @@
         <allow interface="canonical.launchpad.interfaces.IBuilderSet" />
     </securedutility>
 
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IBuilder"
+      factory="canonical.launchpad.browser.builder.BuilderBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IBuilderSet"
+      factory="canonical.launchpad.browser.builder.BuilderSetBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
     <browser:url
         for="canonical.launchpad.interfaces.IBuilderSet"
         path_expression="string:+builds"
