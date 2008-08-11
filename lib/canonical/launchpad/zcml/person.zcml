@@ -34,6 +34,27 @@
     permission="zope.Public"
     />
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IPerson"
+    factory="canonical.launchpad.browser.person.PersonBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ITeam"
+    factory="canonical.launchpad.browser.person.TeamBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IPersonSet"
+    factory="canonical.launchpad.browser.person.PersonSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <content class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.person.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.person.ITeamPublic"/>

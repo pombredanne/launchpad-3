@@ -17,6 +17,7 @@ __all__ = [
     'PersonBranchesMenu',
     'PersonBranchesView',
     'PersonBrandingView',
+    'PersonBreadcrumbBuilder',
     'PersonBugsMenu',
     'PersonChangePasswordView',
     'PersonClaimView',
@@ -46,6 +47,7 @@ __all__ = [
     'PersonRelatedBugsView',
     'PersonRelatedSoftwareView',
     'PersonSearchQuestionsView',
+    'PersonSetBreadcrumbBuilder',
     'PersonSetContextMenu',
     'PersonSetFacets',
     'PersonSetNavigation',
@@ -73,6 +75,7 @@ __all__ = [
     'SubscribedBugTaskSearchListingView',
     'TeamAddMyTeamsView',
     'TeamJoinView',
+    'TeamBreadcrumbBuilder',
     'TeamLeaveView',
     'TeamNavigation',
     'TeamOverviewMenu',
@@ -172,6 +175,7 @@ from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
@@ -291,9 +295,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     usedfor = IPerson
 
-    def breadcrumb(self):
-        return self.context.displayname
-
     @stepthrough('+expiringmembership')
     def traverse_expiring_membership(self, name):
         # Return the found membership regardless of its status as we know
@@ -345,9 +346,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
-
-    def breadcrumb(self):
-        return smartquote('"%s" team') % self.context.displayname
 
     @stepthrough('+poll')
     def traverse_poll(self, name):
@@ -523,9 +521,6 @@ class PersonSetNavigation(Navigation):
 
     usedfor = IPersonSet
 
-    def breadcrumb(self):
-        return 'People'
-
     def traverse(self, name):
         # Raise a 404 on an invalid Person name
         person = self.context.getByName(name)
@@ -563,6 +558,25 @@ class PersonSetFacets(StandardLaunchpadFacets):
     usedfor = IPersonSet
 
     enable_only = ['overview']
+
+
+class PersonBreadcrumbBuilder(BreadcrumbBuilder):
+    """Returns a breadcrumb for an `IPerson`."""
+    @property
+    def text(self):
+        return self.context.displayname
+
+
+class TeamBreadcrumbBuilder(BreadcrumbBuilder):
+    """Returns a breadcrumb for an `ITeam`."""
+    @property
+    def text(self):
+        return smartquote('"%s" team') % self.context.displayname
+
+
+class PersonSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Return a breadcrumb for an `IPersonSet`."""
+    text = "People"
 
 
 class PersonSetContextMenu(ContextMenu):
