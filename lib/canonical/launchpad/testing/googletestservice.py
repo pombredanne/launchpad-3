@@ -192,8 +192,9 @@ def start_as_process():
         script = head + '.py'
     # Make sure we aren't using the parent stdin and stdout to avoid spam
     # and have fewer things that can go wrong shutting down the process.
-    proc = subprocess.Popen(script,
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    proc = subprocess.Popen(
+        script, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
     proc.stdin.close()
     return proc
 
