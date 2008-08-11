@@ -151,7 +151,6 @@ class PullerWorker:
         # in production use, but it is expected that tests that do not depend
         # on its value will pass None.
         self.branch_type = branch_type
-        self._dest_branch = None
         self.protocol = protocol
         if protocol is not None:
             self.protocol.branch_id = branch_id
@@ -276,7 +275,7 @@ class PullerWorker:
                 # The destination is in a different format to the source, so
                 # we'll delete it and mirror from scratch.
                 branch = self._createDestBranch(source_branch)
-        self._dest_branch = branch
+        return branch
 
     def _createDestBranch(self, source_branch):
         """Create the branch to pull to, and copy the source's contents."""
@@ -330,7 +329,7 @@ class PullerWorker:
             self._checkSourceUrl(self.source)
             self._checkBranchReference(self.source)
             source_branch = self._openSourceBranch(self.source)
-            self._mirrorToDestBranch(source_branch)
+            return self._mirrorToDestBranch(source_branch)
         finally:
             server.tearDown()
 
@@ -340,7 +339,7 @@ class PullerWorker:
         """
         self.protocol.startMirroring(self)
         try:
-            self.mirrorWithoutChecks()
+            dest_branch = self.mirrorWithoutChecks()
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
@@ -408,7 +407,7 @@ class PullerWorker:
             raise
 
         else:
-            last_rev = self._dest_branch.last_revision()
+            last_rev = dest_branch.last_revision()
             self.protocol.mirrorSucceeded(self, last_rev)
 
     def __eq__(self, other):
