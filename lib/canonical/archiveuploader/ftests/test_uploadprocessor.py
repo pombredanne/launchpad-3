@@ -365,15 +365,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-2")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Verify we get an email talking about awaiting approval.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
-        foo_bar = "Foo Bar <foo.bar@canonical.com>"
-        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
-        self.assertTrue("(Waiting for approval)" in raw_msg,
-                        "Expected an 'upload awaits approval' email.\n"
-                        "Got:\n%s" % raw_msg)
-
         # And verify that the queue item is in the unapproved state.
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.UNAPPROVED, name="bar",
