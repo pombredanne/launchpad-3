@@ -114,7 +114,7 @@ class BranchHierarchy(Hierarchy):
         url = canonical_url(breadcrumb)
         text = breadcrumb.displayname
 
-        return [Breadcrumb(url, text, False)]
+        return [Breadcrumb(url, text)]
 
 
 class BranchSOP(StructuralObjectPresentation):
