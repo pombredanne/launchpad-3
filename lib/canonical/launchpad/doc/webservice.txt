@@ -873,10 +873,11 @@ will act as though you had performed a GET on the URL
     >>> from cStringIO import StringIO
 
     >>> def create_web_service_request(
-    ...     path_info, method='GET', body=None, environ=None):
+    ...     path_info, method='GET', body=None, environ=None,
+    ...     http_host='api.launchpad.dev'):
     ...     test_environ = {
-    ...         'SERVER_URL': 'http://api.launchpad.dev',
-    ...         'HTTP_HOST': 'api.launchpad.dev',
+    ...         'SERVER_URL': 'http://%s' % http_host,
+    ...         'HTTP_HOST': http_host,
     ...         'PATH_INFO': path_info,
     ...     }
     ...     if environ is not None:
@@ -1704,18 +1705,66 @@ we change a cookbook's author. Since all objects are identified by
 their URLs, we make the change by modifying the cookbook's
 'author_link' field to point to another author.
 
-    >>> joy['author_link'] = u'http://api.launchpad.dev/beta/authors/Julia%20Child'
-    >>> resource = create_web_service_request(
-    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking',
-    ...     body=simplejson.dumps(joy), environ=headers,
-    ...     method='PUT').traverse(app)
-    >>> resource()
-    ''
+    >>> def change_joy_author(new_author_link, host='api.launchpad.dev'):
+    ...     representation = {'author_link' : new_author_link}
+    ...     resource = create_web_service_request(
+    ...         '/beta/cookbooks/The%20Joy%20of%20Cooking',
+    ...         body=simplejson.dumps(representation), environ=headers,
+    ...         method='PATCH', http_host=host).traverse(app)
+    ...     return resource()
+    >>> path = '/beta/authors/Julia%20Child'
 
+    >>> change_joy_author(u'http://api.launchpad.dev' + path)
+    ''
     >>> joy = simplejson.loads(joy_resource())
     >>> joy['author_link']
     u'http://api.launchpad.dev/beta/authors/Julia%20Child'
 
+When identifying an object by URL, make sure the hostname of your URL
+matches the hostname you're requesting. If they don't match, your
+request will fail.
+
+    >>> change_joy_author(u'http://api.launchpad.net' + path)
+    'author_link: No such object...'
+
+One possible source of hostname mismatches is the HTTP port. If the
+web service is served from a strange port, you'll need to specify that
+port in the URLs you send.
+
+    >>> change_joy_author(u'http://api.launchpad.dev' + path,
+    ...                   host='api.launchpad.dev:9000')
+    'author_link: No such object...'
+
+    >>> change_joy_author(u'http://api.launchpad.dev:9000' + path,
+    ...                   host='api.launchpad.dev:9000')
+    ''
+
+You don't have to specify the default port in the URLs you send, even
+if you specified it when you made the request.
+
+    >>> change_joy_author(u'http://api.launchpad.dev' + path,
+    ...                   host='api.launchpad.dev:80')
+    ''
+
+    >>> change_joy_author(u'http://api.launchpad.dev:80' + path,
+    ...                   host='api.launchpad.dev')
+    ''
+
+    >>> change_joy_author(u'https://api.launchpad.dev' + path,
+    ...                   host='api.launchpad.dev:443')
+    'author_link: No such object...'
+
+    >>> from textwrap import dedent
+    >>> from canonical.config import config
+    >>> config.push('use-https', """
+    ...     [vhosts]
+    ...     use_https: True
+    ...     """)
+    >>> change_joy_author(u'https://api.launchpad.dev' + path,
+    ...                   host='api.launchpad.dev:443')
+    ''
+
+    >>> ignored = config.pop('use-https')
 
 = Cleanup =
 
