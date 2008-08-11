@@ -14,6 +14,13 @@
     <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
   </content>
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ICve"
+    factory="canonical.launchpad.browser.cve.CveBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:menus
     module="canonical.launchpad.browser"
     classes="CveContextMenu CveSetContextMenu"
