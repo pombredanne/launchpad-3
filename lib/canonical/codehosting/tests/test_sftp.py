@@ -26,6 +26,7 @@ from canonical.codehosting.transport import BlockingProxy
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import TwistedLayer
 
+
 class AsyncTransport:
     """Make a transport that returns Deferreds.
 
@@ -67,8 +68,8 @@ class TestSFTPAdapter(TrialTestCase):
     def makeLaunchpadAvatar(self):
         fake_launchpad = FakeLaunchpad()
         user_dict = fake_launchpad.getUser(1)
-        authserver = BlockingProxy(fake_launchpad)
-        return LaunchpadAvatar(user_dict, authserver)
+        branchfs_proxy = BlockingProxy(fake_launchpad)
+        return LaunchpadAvatar(user_dict, branchfs_proxy)
 
     def test_canAdaptToSFTPServer(self):
         server = ISFTPServer(self.makeLaunchpadAvatar())
