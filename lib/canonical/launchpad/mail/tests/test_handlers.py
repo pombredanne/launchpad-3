@@ -5,19 +5,21 @@ __metaclass__ = type
 import transaction
 import unittest
 
+from bzrlib.merge_directive import MergeDirective2
+from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 from zope.testing.doctest import DocTestSuite
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    CodeReviewVote)
+    BranchSubscriptionNotificationLevel, BranchType,
+    CodeReviewNotificationLevel, CodeReviewVote, IBranchSet)
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
     CodeHandler, InvalidBranchMergeProposalAddress, InvalidVoteString,
-    mail_handlers, MaloneHandler, parse_commands)
+    mail_handlers, MaloneHandler, NonLaunchpadTarget, parse_commands)
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
@@ -301,6 +303,68 @@ class TestCodeHandler(TestCaseWithFactory):
         self.switchDbUser(config.processmail.dbuser)
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, CodeReviewVote.DISAPPROVE)
+
+    @staticmethod
+    def make_merge_directive(source_branch=None, target_branch=None,
+        source_branch_url=None, target_branch_url=None):
+        if source_branch_url is None:
+            source_branch_url = (config.codehosting.supermirror_root +
+                                 source_branch.unique_name)
+        if target_branch_url is None:
+            target_branch_url = (config.codehosting.supermirror_root +
+                                 target_branch.unique_name)
+        return MergeDirective2(None, None, None, None, target_branch_url,
+                               source_branch=source_branch_url)
+
+
+    def test_acquireBranchesForProposal(self):
+        target_branch = self.factory.makeBranch()
+        source_branch = self.factory.makeBranch()
+        md = self.make_merge_directive(source_branch, target_branch)
+        submitter = self.factory.makePerson()
+        mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
+            md, submitter)
+        self.assertEqual(mp_source, source_branch)
+        self.assertEqual(mp_target, target_branch)
+
+    def test_acquireBranchesForProposalRemoteTarget(self):
+        source_branch = self.factory.makeBranch()
+        md = self.make_merge_directive(source_branch,
+                                       target_branch_url='http://example.com')
+        submitter = self.factory.makePerson()
+        self.assertRaises(NonLaunchpadTarget,
+                          self.code_handler._acquireBranchesForProposal, md,
+                          submitter)
+
+    def test_acquireBranchesForProposalRemoteSource(self):
+        target_branch = self.factory.makeBranch()
+        source_branch_url = 'http://example.com/suffix'
+        md = self.make_merge_directive(source_branch_url=source_branch_url,
+                                       target_branch=target_branch)
+        branches = getUtility(IBranchSet)
+        self.assertEqual(None, branches.getByUrl(source_branch_url))
+        submitter = self.factory.makePerson()
+        mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
+            md, submitter)
+        self.assertEqual(mp_target, target_branch)
+        self.assertFalse(mp_source is None)
+        self.assertEqual(mp_source, branches.getByUrl(source_branch_url))
+        self.assertEqual(BranchType.REMOTE, mp_source.branch_type)
+        self.assertEqual(mp_target.product, mp_source.product)
+        self.assertEqual('suffix', mp_source.name)
+
+    def test_acquireBranchesForProposalRemoteSourceDupeName(self):
+        target_branch = self.factory.makeBranch()
+        source_branch_url = 'http://example.com/suffix'
+        md = self.make_merge_directive(source_branch_url=source_branch_url,
+                                       target_branch=target_branch)
+        branches = getUtility(IBranchSet)
+        submitter = self.factory.makePerson()
+        duplicate_branch = self.factory.makeBranch(
+            product=target_branch.product, name='suffix', owner=submitter)
+        mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
+            md, submitter)
+        self.assertEqual('suffix-1', mp_source.name)
 
 
 class TestMaloneHandler(TestCaseWithFactory):

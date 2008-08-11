@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 import re
-from urlparse import urlunparse
+from urlparse import urlunparse, urlparse
 
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
@@ -14,8 +14,9 @@ from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
-    EmailProcessingError, IBranchMergeProposalGetter, IBugAttachmentSet,
+    BranchType, BugAttachmentType, BugNotificationLevel,
+    CreatedBugWithNoBugTasksError, EmailProcessingError,
+    IBranchMergeProposalGetter, IBranchSet, IBugAttachmentSet,
     IBugEditEmailCommand, IBugEmailCommand, IBugMessageSet,
     IBugTaskEditEmailCommand, IBugTaskEmailCommand, CodeReviewVote,
     IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
@@ -510,6 +511,10 @@ class InvalidVoteString(Exception):
     """The user-supplied vote is not an acceptable value."""
 
 
+class NonLaunchpadTarget(Exception):
+    """Target branch is not registered with Launchpad."""
+
+
 class CodeHandler:
     """Mail handler for the code domain."""
 
@@ -617,6 +622,36 @@ class CodeHandler:
             return getter.get(merge_proposal_id)
         except SQLObjectNotFound:
             raise NonExistantBranchMergeProposalAddress(email_addr)
+
+    def _acquireBranchesForProposal(self, md, submitter):
+        """Find or create DB Branches from a MergeDirective.
+
+        If the target is not a Launchpad branch, NonLaunchpadTarget will be
+        raised.  If the source is not a Launchpad branch, a REMOTE branch will
+        be created implicitly, with submitter as its owner/registrant.
+
+        :param md: The `MergeDirective` to get branch URLs from.
+        :param submitter: The `Person` who requested that the merge be
+            performed.
+        :return: source_branch, target_branch
+        """
+        branches = getUtility(IBranchSet)
+        mp_source = branches.getByUrl(md.source_branch)
+        mp_target = branches.getByUrl(md.target_branch)
+        if mp_target is None:
+            raise NonLaunchpadTarget()
+        if mp_source is None:
+            basename = urlparse(md.source_branch)[2].split('/')[-1]
+            name = basename
+            count = 1
+            while not branches.isBranchNameAvailable(submitter,
+                mp_target.product, name):
+                name = '%s-%d' % (basename, count)
+                count += 1
+            mp_source = branches.new(BranchType.REMOTE, name, submitter,
+                                     submitter, mp_target.product,
+                                     md.source_branch)
+        return mp_source, mp_target
 
 
 class SpecificationHandler:
