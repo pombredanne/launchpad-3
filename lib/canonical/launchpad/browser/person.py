@@ -371,6 +371,13 @@ class TeamNavigation(PersonNavigation):
             person, self.context)
 
 
+class TeamBreadcrumbBuilder(BreadcrumbBuilder):
+    """Returns a breadcrumb for an `ITeam`."""
+    @property
+    def text(self):
+        return smartquote('"%s" team') % self.context.displayname
+
+
 class TeamMembershipSelfRenewalView(LaunchpadFormView):
 
     implements(IBrowserPublisher)
@@ -552,31 +559,17 @@ class PersonSetSOP(StructuralObjectPresentation):
         return None
 
 
+class PersonSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Return a breadcrumb for an `IPersonSet`."""
+    text = "People"
+
+
 class PersonSetFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for the IPersonSet."""
 
     usedfor = IPersonSet
 
     enable_only = ['overview']
-
-
-class PersonBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IPerson`."""
-    @property
-    def text(self):
-        return self.context.displayname
-
-
-class TeamBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `ITeam`."""
-    @property
-    def text(self):
-        return smartquote('"%s" team') % self.context.displayname
-
-
-class PersonSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Return a breadcrumb for an `IPersonSet`."""
-    text = "People"
 
 
 class PersonSetContextMenu(ContextMenu):
@@ -636,6 +629,13 @@ class PersonSOP(StructuralObjectPresentation):
 
     def countAltChildren(self):
         raise NotImplementedError
+
+
+class PersonBreadcrumbBuilder(BreadcrumbBuilder):
+    """Returns a breadcrumb for an `IPerson`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class PersonFacets(StandardLaunchpadFacets):
