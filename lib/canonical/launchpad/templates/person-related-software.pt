@@ -21,7 +21,7 @@
 
   <h1>Maintained packages</h1>
 
-  <tal:size replace="view/PACKAGE_LIMIT"/> Most recently uploaded packages
+  <tal:message replace="view/maintained_packages_header_message"/>
   <table class="listing">
     <thead>
       <tr>
@@ -46,7 +46,7 @@
 
   <h1>Uploaded packages</h1>
 
-  <tal:size replace="view/PACKAGE_LIMIT"/> Most recently uploaded packages
+  <tal:message replace="view/uploaded_packages_header_message"/>
   <table class="listing">
     <thead>
       <tr>
@@ -70,7 +70,7 @@
 
   <h1>PPA packages</h1>
 
-  <tal:size replace="view/PACKAGE_LIMIT"/> Most recently uploaded packages
+  <tal:message replace="view/ppa_packages_header_message"/>
   <table class="listing">
     <thead>
       <tr>

@@ -32,8 +32,6 @@
         <th>Version</th>
         <th>When</th>
         <th>Failures</th>
-        <th>Bugs</th>
-        <th>Questions</th>
       </tr>
     </thead>
     <tbody>
@@ -94,8 +92,6 @@
           </tal:block>
       </tal:block>
     </td>
-    <td style="text-align: right">-</td>
-    <td style="text-align: right">-</td>
   </tal:block>
   </tr>
 </metal:macro>
