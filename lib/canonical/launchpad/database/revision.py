@@ -10,8 +10,9 @@ from datetime import datetime, timedelta
 import email
 
 import pytz
-from storm.expr import And, Asc, Desc, Not, Select
+from storm.expr import And, Asc, Desc, Exists, Not, Select
 from storm.store import Store
+from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 from sqlobject import (
@@ -301,6 +302,26 @@ class RevisionSet:
             AND Revision.revision_date >= %s
             """ % sqlvalues(product, cut_off_date),
             prejoins=['revision_author'])
+
+    @staticmethod
+    def getRevisionsNeedingKarmaAllocated():
+        """See `IRevisionSet`."""
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+
+        store = getUtility(IZStorm).get('main')
+
+        return store.find(
+            Revision,
+            Revision.revision_author == RevisionAuthor.id,
+            RevisionAuthor.person != None,
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
+                           Branch.product != None),
+                       (Branch, BranchRevision))))
 
     @staticmethod
     def getPublicRevisionsForPerson(person):

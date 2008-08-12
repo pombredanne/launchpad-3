@@ -134,6 +134,22 @@ class IRevisionSet(Interface):
         be 100% accurate, it is much more accurate than using date created.
         """
 
+    def getRevisionsNeedingKarmaAllocated():
+        """Get the revisions needing karma allocated.
+
+        Under normal circumstances karma is allocated for revisions by the
+        branch scanner as it is scanning the revisions.
+
+        There are a number of circumstances where this doesn't happen though:
+          * The revision author is not linked to a Launchpad person
+          * The branch is +junk
+
+        :return: A ResultSet containing revisions where:
+           * karma not allocated
+           * revision author linked to a Launchpad person
+           * revision in a branch associated with a product
+        """
+
     def getPublicRevisionsForPerson(person):
         """Get the public revisions for the person or team specified.
 
