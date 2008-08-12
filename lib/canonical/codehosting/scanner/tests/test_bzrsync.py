@@ -434,8 +434,10 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertNotInMainline('trunk', db_branch)
         self.assertInMainline('branch', db_branch)
 
-    def test_stacked_branch(self):
-        # We record branch stacking information when we scan a stacked branch.
+    def test_external_stacked_branch(self):
+        # When we scan a branch 'foo' that's stacked on an external branch
+        # 'bar' that is mirrored by Launchpad, we mark 'foo' as being stacked
+        # on 'bar'.
         stacked_format = 'development'
 
         class HttpAsLocalTransport(LocalTransport):
