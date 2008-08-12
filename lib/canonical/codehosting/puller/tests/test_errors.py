@@ -18,11 +18,8 @@ from bzrlib.transport import get_transport
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.codehosting.puller.worker import (
-    BadUrlSsh,
-    BadUrlLaunchpad,
-    BranchReferenceLoopError,
-    PullerWorker,
-    PullerWorkerProtocol)
+    BadUrlLaunchpad, BadUrlSsh, BranchReferenceLoopError, PullerWorker,
+    PullerWorkerProtocol, URLChecker)
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.uri import InvalidURIError
 from canonical.testing import reset_logging
@@ -78,10 +75,14 @@ class ErrorHandlingTestCase(unittest.TestCase):
         unittest.TestCase.setUp twice.
         """
         self.protocol = StubbedPullerWorkerProtocol()
+        class _AcceptAnythingChecker(URLChecker):
+            def checkOneURL(self, url):
+                pass
+        checker = _AcceptAnythingChecker()
         self.branch = StubbedPullerWorker(
             src='foo', dest='bar', branch_id=1,
             unique_name='owner/product/foo', branch_type=None,
-            protocol=self.protocol, oops_prefix='TOKEN')
+            protocol=self.protocol, checker=checker, oops_prefix='TOKEN')
         self.open_call_count = 0
         self.branch.testcase = self
 
