@@ -10,11 +10,9 @@ from unittest import TestCase, TestLoader
 
 import psycopg2
 import pytz
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
@@ -22,13 +20,13 @@ from canonical.launchpad.interfaces import (
     IBranchSet, IRevisionSet)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):
     """Test the `getBranch` method of the revision."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
@@ -75,7 +73,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
 class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
     """Test the `getPublicRevisionsForPerson` method of `RevisionSet`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
@@ -170,7 +168,7 @@ class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
 class TestGetPublicRevisonsForProduct(TestCaseWithFactory):
     """Test the `getPublicRevisionsForProduct` method of `RevisionSet`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
@@ -250,7 +248,7 @@ class TestGetPublicRevisonsForProduct(TestCaseWithFactory):
 class TestGetPublicRevisonsForProject(TestCaseWithFactory):
     """Test the `getPublicRevisionsForProject` method of `RevisionSet`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
@@ -344,7 +342,7 @@ class TestTipRevisionsForBranches(TestCase):
     # The LaunchpadZopelessLayer is used as the setUp needs to
     # switch database users in order to create revisions for the
     # test branches.
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login('test@canonical.com')
@@ -352,13 +350,8 @@ class TestTipRevisionsForBranches(TestCase):
         factory = LaunchpadObjectFactory()
         branches = [factory.makeBranch() for count in range(5)]
         branch_ids = [branch.id for branch in branches]
-        transaction.commit()
-        launchpad_dbuser = config.launchpad.dbuser
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         for branch in branches:
             factory.makeRevisionsForBranch(branch)
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
         # Retrieve the updated branches (due to transaction boundaries).
         branch_set = getUtility(IBranchSet)
         self.branches = [branch_set.get(id) for id in branch_ids]
