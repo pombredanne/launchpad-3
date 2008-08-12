@@ -12,7 +12,6 @@ from subprocess import PIPE, Popen
 import sys
 import unittest
 from urlparse import urlparse
-import xmlrpclib
 
 import transaction
 
@@ -23,12 +22,11 @@ from bzrlib.urlutils import local_path_from_url
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
 from canonical.codehosting import branch_id_to_path
-from canonical.testing import LaunchpadScriptLayer
+from canonical.testing import ZopelessAppServerLayer
 
 
 class TestBranchPuller(BranchTestCase):
@@ -39,7 +37,7 @@ class TestBranchPuller(BranchTestCase):
     components in the branch puller system work together sanely.
     """
 
-    layer = LaunchpadScriptLayer
+    layer = ZopelessAppServerLayer
 
     def setUp(self):
         super(TestBranchPuller, self).setUp()
@@ -47,10 +45,6 @@ class TestBranchPuller(BranchTestCase):
             config.root, 'cronscripts', 'supermirror-pull.py')
         self.makeCleanDirectory(config.codehosting.branches_root)
         self.makeCleanDirectory(config.supermirror.branchesdest)
-        self.emptyPullQueues()
-        authserver_tac = AuthserverTacTestSetup()
-        authserver_tac.setUp()
-        self.addCleanup(authserver_tac.tearDown)
 
     def assertMirrored(self, source_path, branch):
         """Assert that 'branch' was mirrored succesfully."""
@@ -147,25 +141,6 @@ class TestBranchPuller(BranchTestCase):
         http_server.setUp()
         self.addCleanup(http_server.tearDown)
         return http_server.get_url().rstrip('/')
-
-    def test_fixture(self):
-        """Confirm the fixture is set up correctly.
-
-        We want the branch upload area and the supermirror destination area to
-        both be empty. We also want the branch pull queue to be empty.
-        """
-        self.assertEqual([], os.listdir(config.codehosting.branches_root))
-        self.assertEqual([], os.listdir(config.supermirror.branchesdest))
-        server = xmlrpclib.Server(config.supermirror.authserver_url)
-        self.assertEqual(
-            [], server.getBranchPullQueue(BranchType.HOSTED.name))
-        self.assertEqual(
-            [], server.getBranchPullQueue(BranchType.MIRRORED.name))
-        self.assertEqual(
-            [], server.getBranchPullQueue(BranchType.IMPORTED.name))
-        self.failUnless(
-            os.path.isfile(self._puller_script),
-            "%s doesn't exist" % (self._puller_script,))
 
     def test_mirrorAHostedBranch(self):
         """Run the puller on a populated hosted branch pull queue."""
