@@ -13,7 +13,7 @@
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.IDistroSeriesBinaryPackage"
-    factory="canonical.launchpad.browser.distroseriesbinarypackage.DistroSeriesBinaryPackageBreadcrumbBuilder"
+    factory="canonical.launchpad.browser.DistroSeriesBinaryPackageBreadcrumbBuilder"
     permission="zope.Public"
     />
 

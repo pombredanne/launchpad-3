@@ -84,7 +84,7 @@
     <adapter
       provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
       for="canonical.launchpad.interfaces.IProductSeries"
-      factory="canonical.launchpad.browser.productseries.ProductSeriesBreadcrumbBuilder"
+      factory="canonical.launchpad.browser.ProductSeriesBreadcrumbBuilder"
       permission="zope.Public"
       />
 

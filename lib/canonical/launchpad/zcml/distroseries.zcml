@@ -74,7 +74,7 @@
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.IDistroSeries"
-    factory="canonical.launchpad.browser.distroseries.DistroSeriesBreadcrumbBuilder"
+    factory="canonical.launchpad.browser.DistroSeriesBreadcrumbBuilder"
     permission="zope.Public"
     />
 

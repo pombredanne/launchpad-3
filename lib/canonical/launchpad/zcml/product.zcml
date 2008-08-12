@@ -104,14 +104,14 @@
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.IProduct"
-    factory="canonical.launchpad.browser.product.ProductBreadcrumbBuilder"
+    factory="canonical.launchpad.browser.ProductBreadcrumbBuilder"
     permission="zope.Public"
     />
 
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.IProductSet"
-    factory="canonical.launchpad.browser.product.ProductSetBreadcrumbBuilder"
+    factory="canonical.launchpad.browser.ProductSetBreadcrumbBuilder"
     permission="zope.Public"
     />
 

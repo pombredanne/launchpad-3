@@ -17,7 +17,7 @@
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.ICve"
-    factory="canonical.launchpad.browser.cve.CveBreadcrumbBuilder"
+    factory="canonical.launchpad.browser.CveBreadcrumbBuilder"
     permission="zope.Public"
     />
 

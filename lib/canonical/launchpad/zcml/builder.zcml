@@ -15,14 +15,14 @@
     <adapter
       provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
       for="canonical.launchpad.interfaces.IBuilder"
-      factory="canonical.launchpad.browser.builder.BuilderBreadcrumbBuilder"
+      factory="canonical.launchpad.browser.BuilderBreadcrumbBuilder"
       permission="zope.Public"
       />
 
     <adapter
       provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
       for="canonical.launchpad.interfaces.IBuilderSet"
-      factory="canonical.launchpad.browser.builder.BuilderSetBreadcrumbBuilder"
+      factory="canonical.launchpad.browser.BuilderSetBreadcrumbBuilder"
       permission="zope.Public"
       />
 

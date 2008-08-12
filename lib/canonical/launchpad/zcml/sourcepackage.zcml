@@ -32,7 +32,7 @@
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.ISourcePackage"
-    factory="canonical.launchpad.browser.sourcepackage.SourcePackageBreadcrumbBuilder"
+    factory="canonical.launchpad.browser.SourcePackageBreadcrumbBuilder"
     permission="zope.Public"
     />
 

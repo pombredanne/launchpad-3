@@ -51,7 +51,7 @@
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-    factory="canonical.launchpad.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumbBuilder"
+    factory="canonical.launchpad.browser.DistributionSourcePackageBreadcrumbBuilder"
     permission="zope.Public"
     />
   <browser:defaultView
