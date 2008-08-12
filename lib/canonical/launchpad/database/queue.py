@@ -560,70 +560,6 @@ class PackageUpload(SQLBase):
             changes_lines, changes, summarystring, dry_run):
         """Send a success email."""
 
-        def extract_changes_of_interest(changesfile):
-            """Extract/reformat changes file lines prior to emailing."""
-            change_date = ''
-            maintainer = ''
-            changed_by = ''
-            changesfile_iter = iter(changesfile.splitlines())
-
-            changed_by_re = re.compile(
-                'Changed-By:\s+([^<]+)\s+<([^>]+)(?:\s+at\s+|@)([^>]+)>')
-            maintainer_re = re.compile(
-                'Maintainer:\s+([^<]+)\s+<([^>]+)(?:\s+at\s+|@)([^>]+)>')
-
-            # Parse everything up to the actual 'Changes:' section.
-            for line in changesfile_iter:
-                # Extract the date of the changes.
-                if line.startswith('Date: '):
-                    change_date = line.split('Date: ')[1]
-                    continue
-                # Extract the author of the changes.
-                match = changed_by_re.match(line)
-                if match:
-                    changed_by = '%s <%s@%s>' % match.groups()
-                    continue
-                # Extract the maintainer.
-                match = maintainer_re.match(line)
-                if match:
-                    maintainer = '%s <%s@%s>' % match.groups()
-                    continue
-                if line.startswith('Changes:'):
-                    break
-
-            # Format the 'Changes:' section.
-            content = []
-            blank_line_re = re.compile('^\s*\.\s*$')
-            stanza_start_re = re.compile('^\s\w')
-            changes_end_re = re.compile('^\S')
-            for line in changesfile_iter:
-                # Look for the end of the 'Changes:' section.
-                match = changes_end_re.match(line)
-                if match:
-                    break
-                # Look for the start of a new 'Changes:' section stanza.
-                match = stanza_start_re.match(line)
-                if match:
-                    # Strip away leading whitespace.
-                    content.append(line.lstrip())
-                    continue
-                match = blank_line_re.match(line)
-                if match:
-                    content.append('')
-                    continue
-                # Other 'Changes:' section content, simply append.
-                content.append(line)
-
-            # Append a blank line if needed.
-            if content and content[-1]:
-                content.append('')
-            content.append('-- %s %s' % (maintainer, change_date))
-            if changed_by != maintainer:
-                if content and content[-1]:
-                    content.append('')
-                content.append('Changed-By: %s' % changed_by)
-            return '\n'.join(content)
-
         def do_sendmail(message, recipients=recipients, from_addr=None,
                         bcc=None):
             """Perform substitutions on a template and send the email."""
@@ -645,11 +581,11 @@ class PackageUpload(SQLBase):
                     signer.displayname, signer.preferredemail.email)
 
                 if maintainer != signer_id:
-                    message.SIGNER = 'Signed-By: %s' % signer_id
+                    message.SIGNER = '\nSigned-By: %s' % signer_id
 
             # Add the debian 'Origin:' field if present.
             if changes.get('origin'):
-                message.ORIGIN = 'Origin: %s' % changes['origin']
+                message.ORIGIN = '\nOrigin: %s' % changes['origin']
 
             body = message.template % message.__dict__
 
@@ -691,10 +627,10 @@ class PackageUpload(SQLBase):
             STATUS = "Waiting for approval"
             SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
-            CHANGESFILE = extract_changes_of_interest(
-                guess_encoding("".join(changes_lines)))
+            CHANGESFILE = self.sourcepackagerelease.changelog_entry
             DISTRO = self.distroseries.distribution.title
             ANNOUNCE = announce_list
+            CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
 
@@ -704,10 +640,10 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = extract_changes_of_interest(
-                guess_encoding("".join(changes_lines)))
+            CHANGESFILE = self.sourcepackagerelease.changelog_entry
             DISTRO = self.distroseries.distribution.title
             ANNOUNCE = announce_list
+            CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
 
@@ -724,8 +660,8 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = extract_changes_of_interest(
-                guess_encoding("".join(changes_lines)))
+            CHANGESFILE = self.sourcepackagerelease.changelog_entry
+            CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
 
