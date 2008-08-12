@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation
     )
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 
 class DistroSeriesBinaryPackageFacets(StandardLaunchpadFacets):
