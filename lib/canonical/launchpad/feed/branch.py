@@ -291,27 +291,35 @@ class ProjectRevisionFeedBase(RevisionListingFeed):
         """See `IFeed`."""
         return 'Latest Revisions for %s' % self.context.displayname
 
-    def _getRawItems(self):
-        """See `RevisionListingFeed._getRawItems`.
-
-        Return the public revisions in this product, or in products that are
-        part of this project.
-        """
-        query = getUtility(IRevisionSet).getPublicRevisionsForProject(
-            self.context)
-        return list(query[:self.quantity])
-
 
 class ProductRevisionFeed(ProjectRevisionFeedBase):
     """Feed for a project's revisions."""
 
     usedfor = IProduct
 
+    def _getRawItems(self):
+        """See `RevisionListingFeed._getRawItems`.
+
+        Return the public revisions in this product.
+        """
+        query = getUtility(IRevisionSet).getPublicRevisionsForProduct(
+            self.context)
+        return list(query[:self.quantity])
+
 
 class ProjectRevisionFeed(ProjectRevisionFeedBase):
     """Feed for a project's revisions."""
 
     usedfor = IProject
+
+    def _getRawItems(self):
+        """See `RevisionListingFeed._getRawItems`.
+
+        Return the public revisions in products that are part of this project.
+        """
+        query = getUtility(IRevisionSet).getPublicRevisionsForProject(
+            self.context)
+        return list(query[:self.quantity])
 
 
 class RevisionPerson:
