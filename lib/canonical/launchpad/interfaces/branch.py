@@ -173,11 +173,13 @@ class BranchType(DBEnumeratedType):
         """)
 
 
-def _format_enum(num, format, format_string=None):
+def _format_enum(num, format, format_string=None, description=None):
     instance = format()
     if format_string is None:
         format_string = instance.get_format_string()
-    return DBItem(num, format_string, instance.get_format_description())
+    if description is None:
+        description = instance.get_format_description()
+    return DBItem(num, format_string, description)
 
 
 class BranchFormat(DBEnumeratedType):
@@ -242,10 +244,12 @@ class RepositoryFormat(DBEnumeratedType):
     BZR_KNITPACK_4 = _format_enum(204, RepositoryFormatKnitPack4)
 
     BZR_KNITPACK_5 = _format_enum(
-        205, RepositoryFormatKnitPack5)
+        205, RepositoryFormatKnitPack5,
+        description='Packs 5 (needs bzr 1.6, supports stacking)\n')
 
     BZR_KNITPACK_5_RR = _format_enum(
-        206, RepositoryFormatKnitPack5RichRoot)
+        206, RepositoryFormatKnitPack5RichRoot,
+        description='Packs 5-Rich Root (needs bzr 1.6, supports stacking)')
 
     BZR_PACK_DEV_0 = _format_enum(
         300, RepositoryFormatPackDevelopment0)
