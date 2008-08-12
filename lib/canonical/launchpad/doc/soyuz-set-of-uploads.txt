@@ -353,11 +353,12 @@ Check the email recipient for displayname containing special chars,
   To: "Foo B. Bar" <foo.bar@canonical.com>,
   	Celso Providelo <celso.providelo@canonical.com>
   Subject: [ubuntutest/breezy] bar 1.0-4 (Accepted)
-  -> component=3Duniverse, section=3Ddevel
   ...
-  Changed-By: Celso R. Providelo <cprov@ubuntu.com>
-  Signed-By: Foo B. Bar <foo.bar@canonical.com>
+  Changed-By: Celso R. Providelo <cprov@ubuntu.com> =
+  <BLANKLINE>
+  Signed-By: Foo B. Bar <foo.bar@canonical.com> =
   ...
+  <BLANKLINE>
 
 Revert changes:
 
@@ -475,14 +476,9 @@ Upload a newer version of source package "foo" to breezy-backports:
 
   >>> simulate_upload(
   ...     'foo_2.9-1', upload_policy='sync', loglevel=logging.DEBUG)
-  log> ...
-  log> Sent a mail:
-  log>     Subject: [ubuntutest/breezy-backports] foo 2.9-1 (Accepted)
-  log>     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
-  log>     Body:
-  log> -> component=universe, section=devel
-  log>
-  log>  foo (2.9-1) breezy-backports; urgency=low
+  log> Initialising connection.
+  ...
+  log> Setting it to ACCEPTED
   ...
   Upload complete.
 
@@ -520,14 +516,9 @@ live with this inconsistency.
 
   >>> simulate_upload(
   ...     'foo_2.9-2', upload_policy='sync', loglevel=logging.DEBUG)
-  log> ...
-  log> Sent a mail:
-  log>     Subject: [ubuntutest/breezy-updates] foo 2.9-2 (Accepted)
-  log>     Recipients: breezy-changes@ubuntu.com
-  log>     Body:
-  log> -> component=universe, section=devel
-  log>
-  log>  foo (2.9-2) breezy-updates; urgency=low
+  log> Initialising connection.
+  ...
+  log> Setting it to ACCEPTED
   ...
   Upload complete.
 
@@ -537,27 +528,17 @@ in PROPOSED:
 
   >>> simulate_upload(
   ...     'foo_2.9-4', upload_policy='sync', loglevel=logging.DEBUG)
-  log> ...
-  log> Sent a mail:
-  log>     Subject: [ubuntutest/breezy-proposed] foo 2.9-4 (Accepted)
-  log>     Recipients: breezy-changes@ubuntu.com
-  log>     Body:
-  log> -> component=universe, section=devel
-  log>
-  log>  foo (2.9-4) breezy-proposed; urgency=low
+  log> Initialising connection.
+  ...
+  log> Setting it to ACCEPTED
   ...
   Upload complete.
 
   >>> simulate_upload(
   ...     'foo_2.9-3', upload_policy='sync', loglevel=logging.DEBUG)
-  log> ...
-  log> Sent a mail:
-  log>     Subject: [ubuntutest/breezy-security] foo 2.9-3 (Accepted)
-  log>     Recipients: breezy-changes@ubuntu.com
-  log>     Body:
-  log> -> component=universe, section=devel
-  log>
-  log>  foo (2.9-3) breezy-security; urgency=low
+  log> Initialising connection.
+  ...
+  log> Setting it to ACCEPTED
   ...
   Upload complete.
 
