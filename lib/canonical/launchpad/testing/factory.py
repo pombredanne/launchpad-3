@@ -186,23 +186,22 @@ class LaunchpadObjectFactory:
         syncUpdate(email)
         return person
 
-    def makeTeam(self, owner, displayname=None, email=None, name=None):
+    def makeTeam(self, owner, displayname=None, email=None, name=None,
+                 subscription_policy=TeamSubscriptionPolicy.OPEN):
         """Create and return a new, arbitrary Team.
-
-        The subscription policy of this new team will be OPEN.
 
         :param owner: The IPerson to use as the team's owner.
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
         :param email: The email address to use as the team's contact address.
+        :param subscription_policy: The subscription policy of the team.
         """
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
             displayname = name
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname,
-            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+            owner, name, displayname, subscriptionpolicy=subscription_policy)
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
@@ -272,7 +271,7 @@ class LaunchpadObjectFactory:
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=None, url=None, registrant=None,
-                   explicit_junk=False,
+                   explicit_junk=False, private=False,
                    **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
@@ -301,9 +300,12 @@ class LaunchpadObjectFactory:
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
-        return getUtility(IBranchSet).new(
+        branch = getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
+        if private:
+            removeSecurityProxy(branch).private = True
+        return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):
