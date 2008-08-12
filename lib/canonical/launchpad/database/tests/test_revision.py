@@ -22,13 +22,13 @@ from canonical.launchpad.interfaces import (
     IBranchSet, IRevisionSet)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 
 class TestRevisionKarma(TestCaseWithFactory):
     """Test the `getBranch` method of the revision."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
@@ -98,7 +98,7 @@ class TestRevisionKarma(TestCaseWithFactory):
 class TestRevisionGetBranch(TestCaseWithFactory):
     """Test the `getBranch` method of the revision."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
@@ -147,7 +147,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
 class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
     """Test the `getPublicRevisionsForPerson` method of `RevisionSet`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
