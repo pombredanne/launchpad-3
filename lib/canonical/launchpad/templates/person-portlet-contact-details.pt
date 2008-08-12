@@ -132,14 +132,6 @@
           </tr>
         </tal:can-view-openid-login>
 
-        <tr tal:condition="not: context/is_team">
-          <th>Time zone:</th>
-          <td>
-            <tal:timezone replace="context/time_zone">UTC</tal:timezone>
-            <em tal:condition="not: context/time_zone">None given</em>
-          </td>
-        </tr>
-
       </tbody>
     </table>
 

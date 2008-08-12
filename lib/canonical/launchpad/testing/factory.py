@@ -144,7 +144,8 @@ class LaunchpadObjectFactory:
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
     def makePerson(self, email=None, name=None, password=None,
-                   email_address_status=None, displayname=None):
+                   email_address_status=None, displayname=None,
+                   time_zone='Europe/London', latitude=None, longitude=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -156,6 +157,9 @@ class LaunchpadObjectFactory:
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
         :param displayname: The display name to use for the person.
+        :param time_zone: This person's time zone, as a string.
+        :param latitude: This person's latitude, as a float.
+        :param longitude: This person's longitude, as a float.
         """
         if email is None:
             email = self.getUniqueEmailAddress()
@@ -173,6 +177,7 @@ class LaunchpadObjectFactory:
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname)
 
+        person.setLocation(latitude, longitude, time_zone, person)
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.PREFERRED:

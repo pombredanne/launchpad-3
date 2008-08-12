@@ -1,0 +1,69 @@
+== Edit person location information ==
+
+The location information is editable by anybody (like a wiki), until the
+person provides location data for themselves. At that point it is only
+editable by people who have launchpad.Edit on the person, which is that
+person and admins.
+
+    >>> login('test@canonical.com')
+    >>> zzz = factory.makePerson(
+    ...     name='zzz', time_zone='Africa/Maseru', email='zzz@foo.com',
+    ...     latitude=None, longitude=None, password='test')
+    >>> logout()
+
+Anybody logged in can see the Location widget for a person who has no
+location set.
+
+    >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> nopriv_browser.open('http://launchpad.dev/~zzz/+editlocation')
+    >>> find_tag_by_id(nopriv_browser.contents, "field.location.latitude")
+    <input...name="field.location.latitude" type="hidden"...
+
+Not only can we see the widgets, but anybody logged in can actually provide
+new location information.  Here we need to provide the location and time
+zone, but when accessed through a real browser the page will use Javascript
+to infer the time zone based on the location given.
+
+    >>> nopriv_browser.getControl(name='field.location.latitude').value = (
+    ...     '13.0')
+    >>> nopriv_browser.getControl(name='field.location.longitude').value = (
+    ...     '17.0')
+    >>> nopriv_browser.getControl(name='field.location.time_zone').value = [
+    ...     'Europe/Madrid']
+    >>> nopriv_browser.getControl('Update').click()
+    >>> zzz.latitude
+    13.0
+    >>> zzz.longitude
+    17.0
+    >>> zzz.time_zone
+    u'Europe/Madrid'
+
+If the person provides his own location information, then the data is
+locked, and random people can no longer edit it.
+
+    >>> self_browser = setupBrowser(auth="Basic zzz@foo.com:test")
+    >>> self_browser.open('http://launchpad.dev/~zzz/+editlocation')
+    >>> self_browser.getControl(name='field.location.latitude').value = (
+    ...     '39.48')
+    >>> self_browser.getControl(name='field.location.longitude').value = (
+    ...     '-0.40')
+    >>> self_browser.getControl(name='field.location.time_zone').value = [
+    ...     'Europe/Madrid']
+    >>> self_browser.getControl('Update').click()
+
+    >>> nopriv_browser.open('http://launchpad.dev/~zzz/+editlocation')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+Of course, the person himself can continue to edit it:
+
+    >>> self_browser.open('http://launchpad.dev/~zzz/+editlocation')
+    >>> self_browser.getControl(name='field.location.latitude').value
+    '39.48'
+
+And so can a Launchpad admin:
+
+    >>> admin_browser.open('http://launchpad.dev/~zzz/+editlocation')
+    >>> admin_browser.getControl(name='field.location.latitude').value
+    '39.48'

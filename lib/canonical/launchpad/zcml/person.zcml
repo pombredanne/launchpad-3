@@ -94,8 +94,8 @@
     name="+index" />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"
-    name="+specs"
     layer="canonical.launchpad.layers.BlueprintLayer"
+    name="+specs"
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"
@@ -172,6 +172,14 @@
     class="canonical.launchpad.browser.PersonEditView"
     permission="launchpad.Edit"
     template="../templates/person-edit.pt"
+    />
+
+  <browser:page
+    name="+editlocation"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonEditLocationView"
+    permission="launchpad.EditLocation"
+    template="../templates/person-editlocation.pt"
     />
 
   <browser:page
@@ -290,6 +298,10 @@
     <browser:page
       name="+xrds"
       attribute="xrds"
+      />
+    <browser:page
+      name="+portlet-map"
+      template="../templates/person-portlet-map.pt"
       />
   </browser:pages>
 
@@ -649,6 +661,29 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
+    class="canonical.launchpad.browser.TeamMapView"
+    name="+map"
+    template="../templates/team-map.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.TeamMapData"
+    template="../templates/team-map-data.pt"
+    name="+mapdata"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    name="+editlocation"
+    template="../templates/team-editlocation.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
     name="+listing-simple"
     template="../templates/team-listing-simple.pt"
     />
@@ -659,6 +694,14 @@
     name="+mugshots"
     template="../templates/team-mugshots.pt"
     class="canonical.launchpad.browser.TeamMugshotView"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    class="canonical.launchpad.browser.TeamMapView"
+    permission="zope.Public"
+    name="+portlet-map"
+    template="../templates/team-portlet-map.pt"
     />
 
   <browser:page

@@ -1,0 +1,15 @@
+#! /bin/bash
+# Make sure we have a copy of the GeoIP "city" database. This is used to
+# guess the latitude and longitude of users being added to the system
+
+if [ ! -e /usr/share/GeoIP/GeoLiteCity.dat ]; then
+  echo "Downloading GeoIP City database for latitude / longitude data"
+  sudo mkdir -p /usr/share/GeoIP
+  cd /usr/share/GeoIP
+  sudo wget http://lpdebs.canonical.com/geoip/GeoLiteCity.dat.gz
+  sudo gzip -d GeoLiteCity.dat.gz
+  if [ $? -ne 0 ]; then
+    echo "Unable to install Lite version of GeoIP City database"
+    exit 1
+  fi
+fi

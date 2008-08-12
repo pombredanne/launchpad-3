@@ -31,6 +31,7 @@ __all__ = [
     'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
+    'PersonEditLocationView',
     'PersonFacets',
     'PersonGPGView',
     'PersonIndexView',
@@ -92,7 +93,7 @@ import subprocess
 import urllib
 
 from zope.app.error.interfaces import IErrorReportingUtility
-from zope.app.form.browser import SelectWidget, TextAreaWidget, TextWidget
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
 from zope.interface import implements, Interface
@@ -110,7 +111,7 @@ from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget,
-    LaunchpadRadioWidgetWithDescription, PasswordChangeWidget)
+    LaunchpadRadioWidgetWithDescription, LocationWidget, PasswordChangeWidget)
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
@@ -165,6 +166,7 @@ from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
+from canonical.launchpad.fields import LocationField
 from canonical.launchpad.components.openidserver import (
     OpenIDPersistentIdentity)
 
@@ -973,10 +975,9 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['edit', 'branding', 'common_edithomepage',
              'editemailaddresses', 'editlanguages', 'editwikinames',
              'editircnicknames', 'editjabberids', 'editpassword',
-             'editsshkeys', 'editpgpkeys',
-             'memberships', 'mentoringoffers',
-             'codesofconduct', 'karma', 'common_packages', 'administer',
-             'related_projects', 'activate_ppa', 'show_ppa']
+             'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
+             'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
+             'administer', 'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1024,6 +1025,12 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def editpassword(self):
         target = '+changepassword'
         text = 'Change your password'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.EditLocation')
+    def editlocation(self):
+        target = '+editlocation'
+        text = 'Set location and time zone'
         return Link(target, text, icon='edit')
 
     def karma(self):
@@ -1183,7 +1190,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['edit', 'branding', 'common_edithomepage', 'members',
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
-             'editlanguages', 'polls',
+             'editlanguages', 'map', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
              'reassign', 'common_packages', 'related_projects',
              'activate_ppa', 'show_ppa']
@@ -1225,6 +1232,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+addmember'
         text = 'Add member'
         return Link(target, text, icon='add')
+
+    def map(self):
+        target = '+map'
+        text = 'Show map and time zones'
+        return Link(target, text)
 
     def add_my_teams(self):
         target = '+add-my-teams'
@@ -2675,6 +2687,9 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
+        # This view requires the gmap2 Javascript in order to render the map
+        # with the person's usual location.
+        self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
 
@@ -2707,6 +2722,51 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                 _("You have been unsubscribed from the team "
                   "mailing list."))
         self.request.response.redirect(canonical_url(self.context))
+
+    def map_portlet_html(self):
+        """Generate the HTML which shows the map portlet."""
+        assert self.request.needs_gmap2, (
+            "To use this method a view must flag that it needs gmap2.")
+        assert self.context.latitude is not None, (
+            "Can't generate the map for a person who hasn't set a location.")
+
+        replacements = {'center_lat': self.context.latitude,
+                        'center_lng': self.context.longitude}
+        return u"""
+            <script type="text/javascript">
+                renderPersonMapSmall(%(center_lat)s, %(center_lng)s);
+            </script>""" % replacements
+
+
+class PersonRelatedProjectsView(LaunchpadView):
+
+    implements(IPersonRelatedSoftwareMenu)
+
+    # Safety net for the Registry Admins case which is the owner/driver of
+    # lots of projects.
+    max_results_to_display = config.launchpad.default_batch_size
+
+    def _related_projects(self):
+        """Return all projects owned or driven by this person."""
+        return self.context.getOwnedOrDrivenPillars()
+
+    @cachedproperty
+    def relatedProjects(self):
+        """Return projects owned or driven by this person up to the maximum
+        configured."""
+        return list(self._related_projects()[:self.max_results_to_display])
+
+    @cachedproperty
+    def firstFiveRelatedProjects(self):
+        """Return first five projects owned or driven by this person."""
+        return list(self._related_projects()[:5])
+
+    @cachedproperty
+    def related_projects_count(self):
+        return self._related_projects().count()
+
+    def tooManyRelatedProjectsFound(self):
+        return self.related_projects_count > self.max_results_to_display
 
 
 class PersonCodeOfConductEditView(LaunchpadView):
@@ -3345,9 +3405,7 @@ class PersonEditView(BasePersonEditView):
     """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
-                   'hide_email_addresses', 'verbose_bugnotifications',
-                   'time_zone']
-    custom_widget('time_zone', SelectWidget, size=15)
+                   'hide_email_addresses', 'verbose_bugnotifications']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     implements(IPersonEditMenu)
@@ -3366,16 +3424,6 @@ class PersonEditView(BasePersonEditView):
         """
         return [convertToHtmlCode(jabber.jabberid)
                 for jabber in self.context.jabberids]
-
-    # XXX: salgado, 2008-06-19: This will be removed as soon as the new UI
-    # for setting a person's location/time_zone lands.
-    def updateContextFromData(self, data):
-        """Overwrite it here because the time_zone can't be set directly."""
-        time_zone = data.pop('time_zone')
-        self.context.setLocation(
-            self.context.latitude, self.context.longitude,
-            time_zone, self.user)
-        super(PersonEditView, self).updateContextFromData(data)
 
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
@@ -4673,6 +4721,41 @@ class PersonApprovedMergesView(BranchMergeProposalListingView):
     def no_proposal_message(self):
         """Shown when there is no table to show."""
         return "%s has no approved merges." % self.context.displayname
+
+
+class PersonLocationForm(Interface):
+
+    location = LocationField(
+        title=_('Use the map to indicate default location'),
+        required=True)
+
+
+class PersonEditLocationView(LaunchpadFormView):
+    """Edit a person's location."""
+
+    schema = PersonLocationForm
+    custom_widget('location', LocationWidget)
+
+    def initialize(self):
+        self.next_url = canonical_url(self.context)
+        self.for_team_name = self.request.form.get('for_team')
+        if self.for_team_name is not None:
+            for_team = getUtility(IPersonSet).getByName(self.for_team_name)
+            if for_team is not None:
+                self.next_url = canonical_url(for_team) + '/+map'
+        super(PersonEditLocationView, self).initialize()
+        self.cancel_url = self.next_url
+
+    @action(_("Update"), name="update")
+    def action_update(self, action, data):
+        """Set the coordinates and time zone for the person."""
+        new_location = data.get('location')
+        if new_location is None:
+            raise UnexpectedFormData('No location received.')
+        latitude = new_location.latitude
+        longitude = new_location.longitude
+        time_zone = new_location.time_zone
+        self.context.setLocation(latitude, longitude, time_zone, self.user)
 
 
 def archive_to_person(archive):

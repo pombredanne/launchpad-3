@@ -888,6 +888,8 @@ person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 person_editlanguages = ContextDisplayName(
     smartquote("%s's preferred languages"))
 
+person_editlocation = ContextDisplayName(smartquote("%s's usual location"))
+
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
 person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
@@ -1391,6 +1393,8 @@ team_contactaddress = ContextDisplayName('%s contact address')
 
 team_edit = 'Edit team information'
 
+team_editlocation = 'Unable to edit the location of a team'
+
 team_editproposed = ContextBrowsername('Proposed members of %s')
 
 team_index = ContextBrowsername('%s in Launchpad')
@@ -1404,6 +1408,8 @@ team_leave = ContextBrowsername('Leave %s')
 team_mailinglist = 'Configure mailing list'
 
 team_mailinglist_moderate = 'Moderate mailing list'
+
+team_map = ContextBrowsername('Map of %s Participants')
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
 

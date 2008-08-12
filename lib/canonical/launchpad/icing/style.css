@@ -1384,16 +1384,16 @@ div.right {clear: right; float: right;}
 div.left div.portlet, div.right div.portlet {
   border: dotted #cbcbcb; /* matches color of mainarea_* images */
   border-width: 1px 0 0 0;
-  margin-top: 1em;
-  padding-top: 1em;
+  margin-top: 0;
+  padding-top: 0.5em;
 }
 div.left div.portlet {
-  border-width: 1px 1px 0 0;
-  padding: 0.75em 0.75em 0.75em 0;
+  border-width: 1px 0 0 0;
+  padding: 0 0.5em 0.5em 0;
 }
 div.right div.portlet { /* is this necessary? */
   border-width: 1px 0 0 1px;
-  padding: 0.75em 0 0.75em 0.75em;
+  padding: 0 0 0.5em 0.5em;
 }
 div.columns div.right div.portlet {border: none; padding: 0;} /* BlueprintsFP */
 
@@ -1445,13 +1445,11 @@ th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
 th.icon.left, td.icon.left {padding-right: 0;}
 th.icon.right, td.icon.right {padding-left: 0;}
 th.nowrap, td.nowrap {white-space: nowrap;}
+table.contributions {width: 100%;}
 tfoot th, table.contributions th {text-align: left;}
 table.contributions, table.contributions th, table.contributions td {
-  border: 1px solid #e6e6e6;}
+  border: 0; padding: 1;}
 table.contributions th {font-weight: normal;}
-table.contributions tr.odd {background-color: #fff; color: inherit;}
-table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
-table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
 table.contributions td {vertical-align: middle; width: 16px;}
 
 /* --- Listing tables --- */
@@ -1467,6 +1465,8 @@ table.listing tr.category th, table.listing tr.category td {padding-top: 1em;}
 table.listing tfoot td {border: 1px solid #d2d2d2;}
 table.listing thead td {border: none;}
 tr.highlight {background-color: #ff9;}
+tr.white {background-color: #fff;}
+tr.shaded {background-color: #f6f6f6;}
 table.listing tr.note {font-size: smaller;}
 .amount {text-align: right;}
 table.listing th, table.listing td {padding: 0.25em;}
