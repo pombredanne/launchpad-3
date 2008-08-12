@@ -152,7 +152,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             required=True,
             vocabulary='ValidOwner',
             description=_("Project owner, it can either a valid Person or Team "
-                          "inside Launchpad context."))
+                          "inside Launchpad context.")))
     registrant = PublicPersonChoice(
         title=_('Registrant'),
         required=True,
