@@ -26,17 +26,10 @@ from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
-    BranchFormat,
-    BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel,
-    BranchType,
-    CodeReviewNotificationLevel,
-    ControlFormat,
-    IBranchSet,
-    IPersonSet,
-    IRevisionSet,
-    RepositoryFormat,
-    )
+    BranchFormat, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, BranchType,
+    CodeReviewNotificationLevel, ControlFormat, IBranchSet, IPersonSet,
+    IRevisionSet, RepositoryFormat)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.uri import URI
 from canonical.codehosting.scanner.bzrsync import (
