@@ -16,7 +16,7 @@ from bzrlib.transport import get_transport
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.codehosting.puller.worker import (
-    BadUrlFile, BadUrlLaunchpad, BadUrlSsh, BranchReferenceForbidden,
+    BadUrl, BadUrlFile, BadUrlLaunchpad, BadUrlSsh, BranchReferenceForbidden,
     BranchReferenceLoopError, MirroredURLChecker, PullerWorkerProtocol,
     URLChecker, get_canonical_url_for_branch_name, install_worker_ui_factory)
 from canonical.launchpad.database import Branch
@@ -83,12 +83,17 @@ class TestURLCheckerCheckSource(unittest.TestCase):
     class StubbedURLChecker(URLChecker):
         """URLChecker that provides canned answers."""
 
-        def __init__(self, should_follow_references, references):
+        def __init__(self, should_follow_references, references,
+                     unsafe_urls=None):
             self._should_follow_references = should_follow_references
             self._reference_values = {}
             for i in range(len(references) - 1):
                 self._reference_values[references[i]] = references[i+1]
+            if unsafe_urls is None:
+                unsafe_urls = set()
+            self.unsafe_urls = unsafe_urls
             self.follow_reference_calls = []
+            self.check_one_url_calls = []
 
         def followReference(self, url):
             self.follow_reference_calls.append(url)
@@ -98,64 +103,63 @@ class TestURLCheckerCheckSource(unittest.TestCase):
             return self._should_follow_references
 
         def checkOneURL(self, url):
-            pass
+            self.check_one_url_calls.append(url)
+            if url in self.unsafe_urls:
+                raise BadUrl(url)
+
+    def testCheckInitialURL(self):
+        # checkSource checks that the URL it is initially passed is allowed.
+        checker = self.StubbedURLChecker(None, [], set(['a']))
+        self.assertRaises(BadUrl, checker.checkSource, 'a')
 
     def testNotReference(self):
         # checkSource does not raise if the source url does not point to a
         # branch reference, even if branch references are forbidden.
-        references = ['file:///local/branch', None]
-        checker = self.StubbedURLChecker(False, references)
+        checker = self.StubbedURLChecker(False, ['a', None])
         # This must not raise.
-        checker.checkSource(references[0])
-        self.assertEquals(references[:1], checker.follow_reference_calls)
+        checker.checkSource('a')
+        self.assertEquals(['a'], checker.follow_reference_calls)
 
     def testBranchReferenceForbidden(self):
         # checkSource raises BranchReferenceForbidden if branch references are
         # forbidden and the source URL points to a branch reference.
-        references = ['file:///local/branch', 'http://example.com/branch']
-        checker = self.StubbedURLChecker(False, references)
+        checker = self.StubbedURLChecker(False, ['a', 'b'])
         self.assertRaises(
-            BranchReferenceForbidden, checker.checkSource, references[0])
-        self.assertEquals(references[:1], checker.follow_reference_calls)
+            BranchReferenceForbidden, checker.checkSource, 'a')
+        self.assertEquals(['a'], checker.follow_reference_calls)
 
     def testAllowedReference(self):
         # checkSource does not raise if following references is allowed and
-        # the source URL points to a branch reference to a remote location.
-        references = [
-            'http://example.com/reference',
-            'http://example.com/branch',
-            None,
-            ]
-        checker = self.StubbedURLChecker(True, references)
+        # the source URL points to a branch reference to a permitted location.
+        checker = self.StubbedURLChecker(True, ['a', 'b', None])
         # This must not raise.
-        checker.checkSource(references[0])
-        self.assertEquals(references[:2], checker.follow_reference_calls)
+        checker.checkSource('a')
+        self.assertEquals(['a', 'b'], checker.follow_reference_calls)
+
+    def testCheckReferencedURLs(self):
+        # checkSource checks if the URL a reference points to is safe.
+        checker = self.StubbedURLChecker(
+            True, ['a', 'b', None], unsafe_urls=set('b'))
+        self.assertRaises(BadUrl, checker.checkSource, 'a')
+        self.assertEquals(['a'], checker.follow_reference_calls)
 
     def testSelfReferencingBranch(self):
         # checkSource raises BranchReferenceLoopError if following references
         # is allowed and the source url points to a self-referencing branch
         # reference.
-        references = [
-            'http://example.com/reference',
-            'http://example.com/reference',
-            ]
-        checker = self.StubbedURLChecker(True, references)
+        checker = self.StubbedURLChecker(True, ['a', 'a'])
         self.assertRaises(
-            BranchReferenceLoopError, checker.checkSource, references[0])
-        self.assertEquals(references[:1], checker.follow_reference_calls)
+            BranchReferenceLoopError, checker.checkSource, 'a')
+        self.assertEquals(['a'], checker.follow_reference_calls)
 
     def testBranchReferenceLoop(self):
         # checkSource raises BranchReferenceLoopError if following references
         # is allowed and the source url points to a loop of branch references.
-        references = [
-            'http://example.com/reference-1',
-            'http://example.com/reference-2',
-            'http://example.com/reference-1',
-            ]
+        references = ['a', 'b', 'a']
         checker = self.StubbedURLChecker(True, references)
         self.assertRaises(
-            BranchReferenceLoopError, checker.checkSource, references[0])
-        self.assertEquals(references[:2], checker.follow_reference_calls)
+            BranchReferenceLoopError, checker.checkSource, 'a')
+        self.assertEquals(['a', 'b'], checker.follow_reference_calls)
 
 
 class TestMirroredURLChecker(unittest.TestCase):
@@ -187,6 +191,19 @@ class TestMirroredURLChecker(unittest.TestCase):
         self.assertRaises(
             BadUrlLaunchpad, checker.checkOneURL,
             self.factory.getUniqueURL(host='bazaar.launchpad.dev'))
+
+    def testNoHTTPSLaunchpadURL(self):
+        checker = MirroredURLChecker()
+        self.assertRaises(
+            BadUrlLaunchpad, checker.checkOneURL,
+            self.factory.getUniqueURL(
+                host='bazaar.launchpad.dev', scheme='https'))
+
+    def testNoOtherHostLaunchpadURL(self):
+        checker = MirroredURLChecker()
+        self.assertRaises(
+            BadUrlLaunchpad, checker.checkOneURL,
+            self.factory.getUniqueURL(host='code.launchpad.dev'))
 
 
 class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):

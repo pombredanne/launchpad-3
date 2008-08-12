@@ -135,49 +135,34 @@ def identical_formats(branch_one, branch_two):
 
 
 class URLChecker(object):
+    """A `URLChecker` checks whether locations are safe to pull branches from.
+
+    The external interface is `checkSource`.  Subclasses must override
+    `shouldFollowReferences` and `checkOneURL`, and tests override
+    `followReference`.
+    """
 
     def followReference(self, url):
         """Get the branch-reference value at the specified url.
 
-        This method is useful to override in unit tests.
+        This method exists only to be overriden in unit tests.
         """
         bzrdir = BzrDir.open(url)
         return bzrdir.get_branch_reference()
 
-    def shouldFollowReferences(self):
-        """Whether we can traverse references when mirroring this branch type.
-
-        We do not traverse references for HOSTED branches because that may
-        cause us to connect to remote locations, which we do not allow because
-        we want hosted branches to be mirrored quickly.
-
-        We do not traverse references for IMPORTED branches because the
-        code-import system should never produce branch references.
-
-        We traverse branche references for MIRRORED branches because they
-        provide a useful redirection mechanism and we want to be consistent
-        with the bzr command line.
-        """
-        raise NotImplementedError(self.shouldFollowReferences)
-
     def checkSource(self, url):
-        """Check whether the source is an acceptable branch reference.
+        """Check `url` is safe to pull a branch from.
 
-        For HOSTED or IMPORTED branches, branch references are not
-        allowed. For MIRRORED branches, branch references are allowed if they
-        do not constitute a reference cycle and if they do not point to an
-        unsafe location.
-
+        :param url: URL of the location to check.
         :raise BranchReferenceForbidden: the source location contains a branch
             reference, and branch references are not allowed for this branch
             type.
-
         :raise BranchReferenceLoopError: the source location contains a branch
             reference that leads to a reference cycle.
-
-        :raise BranchReferenceValueError: the source location contains a
-            branch reference that ultimately points to an unsafe location.
+        :raise BadUrl: `checkOneURL` is expected to raise this or a subclass
+            when it finds a URL it deems to be unsafe.
         """
+        self.checkOneURL(url)
         traversed_references = set()
         while True:
             reference_value = self.followReference(url)
@@ -191,20 +176,39 @@ class URLChecker(object):
             self.checkOneURL(reference_value)
             url = reference_value
 
+    def shouldFollowReferences(self):
+        """Whether we traverse references when mirroring.
+
+        Subclasses must override this method.
+
+        If we encounter a branch reference and this returns false, an error is
+        raised.
+
+        :returns: A boolean to indicate whether to follow a branch reference.
+        """
+        raise NotImplementedError(self.shouldFollowReferences)
+
+
     def checkOneURL(self, url):
         """Check the safety of the source URL.
 
-        If the source URL is uses a ssh-based scheme, raise BadUrlSsh. If it
-        is in the launchpad.net domain, raise BadUrlLaunchpad.
+        Subclasses must override this method.
 
         :param url: The source URL to check.
+        :raise BadUrl: subclasses are expected to raise this or a subclass
+            when it finds a URL it deems to be unsafe.
         """
         raise NotImplementedError(self.checkOneURL)
 
 
 class HostedURLChecker(URLChecker):
     def shouldFollowReferences(self):
-        """ """
+        """See `URLChecker.shouldFollowReferences`.
+
+        We do not traverse references for HOSTED branches because that may
+        cause us to connect to remote locations, which we do not allow because
+        we want hosted branches to be mirrored quickly.
+        """
         return False
     def checkOneURL(self, url):
         uri = URI(url)
@@ -215,6 +219,12 @@ class HostedURLChecker(URLChecker):
 
 class MirroredURLChecker(URLChecker):
     def shouldFollowReferences(self):
+        """See `URLChecker.shouldFollowReferences`.
+
+        We traverse branch references for MIRRORED branches because they
+        provide a useful redirection mechanism and we want to be consistent
+        with the bzr command line.
+        """
         return True
     def checkOneURL(self, url):
         uri = URI(url)
@@ -229,7 +239,11 @@ class MirroredURLChecker(URLChecker):
 
 class ImportedURLChecker(URLChecker):
     def shouldFollowReferences(self):
-        """ """
+        """See `URLChecker.shouldFollowReferences`.
+
+        We do not traverse references for IMPORTED branches because the
+        code-import system should never produce branch references.
+        """
         return False
     def checkOneURL(self, url):
         if not url.startswith(config.launchpad.bzr_imports_root_url):
@@ -252,7 +266,7 @@ class PullerWorker:
     """
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
-                 protocol, oops_prefix=None):
+                 protocol, checker, oops_prefix=None):
         self.source = src
         self.dest = dest
         self.branch_id = branch_id
@@ -261,7 +275,7 @@ class PullerWorker:
         # in production use, but it is expected that tests that do not depend
         # on its value will pass None.
         self.branch_type = branch_type
-        self.checker = NullChecker()
+        self.checker = checker
         self.protocol = protocol
         if protocol is not None:
             self.protocol.branch_id = branch_id
