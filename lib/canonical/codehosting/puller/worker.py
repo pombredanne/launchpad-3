@@ -29,8 +29,9 @@ from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 
 __all__ = [
-    'BadUrlSsh',
+    'BadUrlFile',
     'BadUrlLaunchpad',
+    'BadUrlSsh',
     'BranchReferenceLoopError',
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
@@ -47,6 +48,10 @@ class BadUrlSsh(Exception):
 
 class BadUrlLaunchpad(Exception):
     """Tried to mirror a branch from launchpad.net."""
+
+
+class BadUrlFile(Exception):
+    """Tried to mirror a branch from a file:/// URL."""
 
 
 class BranchReferenceForbidden(Exception):
@@ -134,6 +139,117 @@ def identical_formats(branch_one, branch_two):
     )
 
 
+class URLChecker(object):
+
+    def followReference(self, url):
+        """Get the branch-reference value at the specified url.
+
+        This method is useful to override in unit tests.
+        """
+        bzrdir = BzrDir.open(url)
+        return bzrdir.get_branch_reference()
+
+    def shouldFollowReferences(self):
+        """Whether we can traverse references when mirroring this branch type.
+
+        We do not traverse references for HOSTED branches because that may
+        cause us to connect to remote locations, which we do not allow because
+        we want hosted branches to be mirrored quickly.
+
+        We do not traverse references for IMPORTED branches because the
+        code-import system should never produce branch references.
+
+        We traverse branche references for MIRRORED branches because they
+        provide a useful redirection mechanism and we want to be consistent
+        with the bzr command line.
+        """
+        raise NotImplementedError(self.shouldFollowReferences)
+        traverse_references_from_branch_type = {
+            BranchType.HOSTED: False,
+            BranchType.MIRRORED: True,
+            BranchType.IMPORTED: False,
+            }
+        assert self.branch_type in traverse_references_from_branch_type, (
+            'Unexpected branch type: %r' % (self.branch_type,))
+        return traverse_references_from_branch_type[self.branch_type]
+
+    def checkSource(self, url):
+        """Check whether the source is an acceptable branch reference.
+
+        For HOSTED or IMPORTED branches, branch references are not
+        allowed. For MIRRORED branches, branch references are allowed if they
+        do not constitute a reference cycle and if they do not point to an
+        unsafe location.
+
+        :raise BranchReferenceForbidden: the source location contains a branch
+            reference, and branch references are not allowed for this branch
+            type.
+
+        :raise BranchReferenceLoopError: the source location contains a branch
+            reference that leads to a reference cycle.
+
+        :raise BranchReferenceValueError: the source location contains a
+            branch reference that ultimately points to an unsafe location.
+        """
+        traversed_references = set()
+        while True:
+            reference_value = self._getBranchReference(url)
+            if reference_value is None:
+                break
+            if not self._canTraverseReferences():
+                raise BranchReferenceForbidden(reference_value)
+            traversed_references.add(url)
+            if reference_value in traversed_references:
+                raise BranchReferenceLoopError()
+            self.checkOneURL(reference_value)
+            url = reference_value
+
+    def checkOneURL(self, url):
+        """Check the safety of the source URL.
+
+        If the source URL is uses a ssh-based scheme, raise BadUrlSsh. If it
+        is in the launchpad.net domain, raise BadUrlLaunchpad.
+
+        :param url: The source URL to check.
+        """
+        raise NotImplementedError(self.checkOneURL)
+
+
+class HostedURLChecker(URLChecker):
+    def shouldFollowReferences(self):
+        """ """
+        return False
+    def checkOneURL(self, url):
+        uri = URI(url)
+        if uri.scheme != 'lp-hosted':
+            raise AssertionError(
+                "Non-hosted url %r for hosted branch." % url)
+
+
+class MirroredURLChecker(URLChecker):
+    def shouldFollowReferences(self):
+        return True
+    def checkOneURL(self, url):
+        uri = URI(url)
+        launchpad_domain = config.vhost.mainsite.hostname
+        if uri.underDomain(launchpad_domain):
+            raise BadUrlLaunchpad(url)
+        if uri.scheme in ['sftp', 'bzr+ssh']:
+            raise BadUrlSsh(url)
+        if uri.scheme == 'file':
+            raise BadUrlFile(url)
+
+
+class ImportedURLChecker(URLChecker):
+    def shouldFollowReferences(self):
+        """ """
+        return False
+    def checkOneURL(self, url):
+        if not url.startswith(config.launchpad.bzr_imports_root_url):
+            raise AssertionError(
+                "Bogus URL for imported branch: %r" % url)
+
+
 class PullerWorker:
     """This class represents a single branch that needs mirroring.
 
@@ -157,82 +273,6 @@ class PullerWorker:
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
-    def _checkSourceUrl(self, source):
-        """Check the validity of the source URL.
-
-        If the source is an absolute path, that means it represents a hosted
-        branch, and it does not make sense to check its scheme or hostname. So
-        let it pass.
-
-        If the source URL is uses a ssh-based scheme, raise BadUrlSsh. If it is
-        in the launchpad.net domain, raise BadUrlLaunchpad.
-
-        :param source: The source URL to check.
-        """
-        if source.startswith('/'):
-            return
-        uri = URI(source)
-        launchpad_domain = config.vhost.mainsite.hostname
-        if uri.underDomain(launchpad_domain):
-            raise BadUrlLaunchpad(source)
-        if uri.scheme in ['sftp', 'bzr+ssh']:
-            raise BadUrlSsh(source)
-
-    def _checkBranchReference(self, source_location):
-        """Check whether the source is an acceptable branch reference.
-
-        For HOSTED or IMPORTED branches, branch references are not allowed. For
-        MIRRORED branches, branch references are allowed if they do not
-        constitute a reference cycle and if they do not point to an unsafe
-        location.
-
-        :raise BranchReferenceForbidden: the source location contains a branch
-            reference, and branch references are not allowed for this branch
-            type.
-
-        :raise BranchReferenceLoopError: the source location contains a branch
-            reference that leads to a reference cycle.
-
-        :raise BranchReferenceValueError: the source location contains a branch
-            reference that ultimately points to an unsafe location.
-        """
-        traversed_references = []
-        while True:
-            reference_value = self._getBranchReference(source_location)
-            if reference_value is None:
-                break
-            if not self._canTraverseReferences():
-                raise BranchReferenceForbidden(reference_value)
-            traversed_references.append(source_location)
-            if reference_value in traversed_references:
-                raise BranchReferenceLoopError()
-            reference_value_uri = URI(reference_value)
-            if reference_value_uri.scheme == 'file':
-                raise BranchReferenceValueError(reference_value)
-            source_location = reference_value
-
-    def _canTraverseReferences(self):
-        """Whether we can traverse references when mirroring this branch type.
-
-        We do not traverse references for HOSTED branches because that may
-        cause us to connect to remote locations, which we do not allow because
-        we want hosted branches to be mirrored quickly.
-
-        We do not traverse references for IMPORTED branches because the
-        code-import system should never produce branch references.
-
-        We traverse branche references for MIRRORED branches because they
-        provide a useful redirection mechanism and we want to be consistent
-        with the bzr command line.
-        """
-        traverse_references_from_branch_type = {
-            BranchType.HOSTED: False,
-            BranchType.MIRRORED: True,
-            BranchType.IMPORTED: False,
-            }
-        assert self.branch_type in traverse_references_from_branch_type, (
-            'Unexpected branch type: %r' % (self.branch_type,))
-        return traverse_references_from_branch_type[self.branch_type]
 
     def _getBranchReference(self, url):
         """Get the branch-reference value at the specified url.

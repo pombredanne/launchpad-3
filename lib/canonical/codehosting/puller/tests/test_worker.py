@@ -32,7 +32,9 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
         source_tree = self.make_branch_and_tree('source-branch')
-        to_mirror = self.makePullerWorker(source_tree.branch.base)
+        to_mirror = self.makePullerWorker(
+            src_dir='lp-hosted:///~a/b/source-branch',
+            branch_type=BranchType.HOSTED)
         source_tree.commit('commit message')
         to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
@@ -124,9 +126,9 @@ class TestCheckBranchReference(unittest.TestCase):
             self.testcase.get_branch_reference_calls.append(url)
             return self.testcase.reference_values[url]
 
-        def _canTraverseReferences(self):
-            assert self.testcase.can_traverse_references is not None
-            return self.testcase.can_traverse_references
+        #def _canTraverseReferences(self):
+        #    assert self.testcase.can_traverse_references is not None
+        #    return self.testcase.can_traverse_references
 
     def setUp(self):
         self.branch = TestCheckBranchReference.StubbedPullerWorker(
@@ -134,7 +136,7 @@ class TestCheckBranchReference(unittest.TestCase):
         self.branch.testcase = self
         self.get_branch_reference_calls = []
         self.reference_values = {}
-        self.can_traverse_references = None
+        #self.can_traverse_references = None
 
     def setUpReferences(self, locations):
         """Set up the stubbed PullerWorker to model a chain of references.
@@ -158,7 +160,7 @@ class TestCheckBranchReference(unittest.TestCase):
     def testNotReference(self):
         #_checkBranchReference does not raise if the source url does not point
         # to a branch reference.
-        self.can_traverse_references = False
+        self.branch.branch_type = BranchType.HOSTED
         references = ['file:///local/branch', None]
         self.setUpReferences(references)
         # This must not raise.
@@ -169,7 +171,7 @@ class TestCheckBranchReference(unittest.TestCase):
         # _checkBranchReference raises BranchReferenceForbidden if
         # _canTraverseReferences is false and the source url points to a
         # branch reference.
-        self.can_traverse_references = False
+        self.branch.branch_type = BranchType.HOSTED
         references = ['file:///local/branch', 'http://example.com/branch']
         self.setUpReferences(references)
         self.assertRaises(
@@ -195,7 +197,7 @@ class TestCheckBranchReference(unittest.TestCase):
         # _checkBranchReference raises BranchReferenceValueError if
         # _canTraverseReferences is true and the source url points to a 'file'
         # branch reference.
-        self.can_traverse_references = True
+        self.branch.branch_type = BranchType.MIRRORED
         references = [
             'http://example.com/reference',
             'file://local/branch',
@@ -210,7 +212,7 @@ class TestCheckBranchReference(unittest.TestCase):
         # _checkBranchReference raises BranchReferenceLoopError if
         # _canTraverseReferences is true and the source url points to a
         # self-referencing branch.
-        self.can_traverse_references = True
+        self.branch.branch_type = BranchType.MIRRORED
         references = [
             'http://example.com/reference',
             'http://example.com/reference',
@@ -225,7 +227,7 @@ class TestCheckBranchReference(unittest.TestCase):
         # _checkBranchReference raises BranchReferenceLoopError if
         # _canTraverseReferences is true and the source url points to a loop
         # of branch references.
-        self.can_traverse_references = True
+        self.branch.branch_type = BranchType.MIRRORED
         references = [
             'http://example.com/reference-1',
             'http://example.com/reference-2',

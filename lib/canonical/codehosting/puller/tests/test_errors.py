@@ -267,8 +267,7 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
         reference_url = self.createBranchReference('file:///sauces/sikrit')
         self.branch.branch_type = BranchType.MIRRORED
         self.branch.source = reference_url
-        expected_msg = ("Bad branch reference value: file:///sauces/sikrit")
-        self.runMirrorAndAssertErrorEquals(expected_msg)
+        self.runMirrorAndAssertErrorStartsWith("BadUrlFile")
         self.assertEqual(self.open_call_count, 0)
 
 
