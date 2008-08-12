@@ -165,6 +165,86 @@ class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
             list(RevisionSet.getPublicRevisionsForPerson(self.author)))
 
 
+class TestGetPublicRevisonsForProduct(TestCaseWithFactory):
+    """Test the `getPublicRevisionsForProduct` method of `RevisionSet`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Use an administrator to set branch privacy easily.
+        TestCaseWithFactory.setUp(self, "admin@canonical.com")
+        self.date_generator = time_counter(
+            datetime(2007, 1, 1, tzinfo=pytz.UTC),
+            delta=timedelta(days=1))
+        self.product = self.factory.makeProduct()
+
+    def _makeRevision(self):
+        """Make a revision using the date generator."""
+        return self.factory.makeRevision(
+            revision_date=self.date_generator.next())
+
+    def _addRevisionsToBranch(self, branch, *revs):
+        # Add the revisions to the the branch.
+        for sequence, rev in enumerate(revs):
+            branch.createBranchRevision(sequence, rev)
+
+    def _makeRevisionInBranch(self, product=None):
+        # Make a revision, and associate it with a branch.  The branch is made
+        # with the product passed in, which means that if there was no product
+        # passed in, the factory makes a new one.
+        if product is None:
+            product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        rev = self._makeRevision()
+        branch.createBranchRevision(1, rev)
+        return rev
+
+    def testRevisionsMustBeInABranchOfProduct(self):
+        # The revision must be in a branch for the product.
+        # returned.
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        rev2 = self._makeRevisionInBranch()
+        self.assertEqual(
+            [rev1],
+            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
+
+    def testRevisionsMustBeInAPublicBranch(self):
+        # A revision for the project must be in a public branch to be
+        # returned.
+        rev1 = self._makeRevision()
+        b = self.factory.makeBranch(product=self.product)
+        b.createBranchRevision(1, rev1)
+        b.private = True
+        self.assertEqual(
+            [],
+            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
+
+    def testNewestRevisionFirst(self):
+        # The revisions are ordered with the newest first.
+        rev1 = self._makeRevision()
+        rev2 = self._makeRevision()
+        rev3 = self._makeRevision()
+        branch = self.factory.makeBranch(product=self.product)
+        self._addRevisionsToBranch(branch, rev1, rev2, rev3)
+        self.assertEqual(
+            [rev3, rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
+
+    def testRevisionsOnlyReturnedOnce(self):
+        # If the revisions appear in multiple branches, they are only returned
+        # once.
+        rev1 = self._makeRevision()
+        rev2 = self._makeRevision()
+        rev3 = self._makeRevision()
+        self._addRevisionsToBranch(
+            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
+        self._addRevisionsToBranch(
+            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
+        self.assertEqual(
+            [rev3, rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
+
+
 class TestGetPublicRevisonsForProject(TestCaseWithFactory):
     """Test the `getPublicRevisionsForProject` method of `RevisionSet`."""
 
@@ -189,20 +269,6 @@ class TestGetPublicRevisonsForProject(TestCaseWithFactory):
         for sequence, rev in enumerate(revs):
             branch.createBranchRevision(sequence, rev)
 
-    def testParameterMustBeProductOrProject(self):
-        # The method must be called with a product or project.
-        self.assertEqual(
-            [],
-            list(RevisionSet.getPublicRevisionsForProject(self.product)))
-        self.assertEqual(
-            [],
-            list(RevisionSet.getPublicRevisionsForProject(self.project)))
-        # Every other type of parameter will raise an AssertionError.
-        self.assertRaises(
-            AssertionError,
-            RevisionSet.getPublicRevisionsForProject,
-            self.factory.makePerson())
-
     def _makeRevisionInBranch(self, product=None):
         # Make a revision, and associate it with a branch.  The branch is made
         # with the product passed in, which means that if there was no product
@@ -221,7 +287,7 @@ class TestGetPublicRevisonsForProject(TestCaseWithFactory):
         rev2 = self._makeRevisionInBranch()
         self.assertEqual(
             [rev1],
-            list(RevisionSet.getPublicRevisionsForProject(self.product)))
+            list(RevisionSet.getPublicRevisionsForProject(self.project)))
 
     def testRevisionsMustBeInAPublicBranch(self):
         # A revision for the project must be in a public branch to be
@@ -232,7 +298,7 @@ class TestGetPublicRevisonsForProject(TestCaseWithFactory):
         b.private = True
         self.assertEqual(
             [],
-            list(RevisionSet.getPublicRevisionsForProject(self.product)))
+            list(RevisionSet.getPublicRevisionsForProject(self.project)))
 
     def testNewestRevisionFirst(self):
         # The revisions are ordered with the newest first.
@@ -243,7 +309,7 @@ class TestGetPublicRevisonsForProject(TestCaseWithFactory):
         self._addRevisionsToBranch(branch, rev1, rev2, rev3)
         self.assertEqual(
             [rev3, rev2, rev1],
-            list(RevisionSet.getPublicRevisionsForProject(self.product)))
+            list(RevisionSet.getPublicRevisionsForProject(self.project)))
 
     def testProjectRevisions(self):
         # Revisions in all products that are part of the project are returned.
@@ -267,7 +333,7 @@ class TestGetPublicRevisonsForProject(TestCaseWithFactory):
             self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
         self.assertEqual(
             [rev3, rev2, rev1],
-            list(RevisionSet.getPublicRevisionsForProject(self.product)))
+            list(RevisionSet.getPublicRevisionsForProject(self.project)))
 
 
 class TestTipRevisionsForBranches(TestCase):

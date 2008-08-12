@@ -263,6 +263,24 @@ class RevisionSet:
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
+    def getPublicRevisionsForProduct(product):
+        """See `IRevisionSet`."""
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+
+        result_set = Store.of(product).find(
+            Revision,
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
+                           Not(Branch.private),
+                           Branch.product == product),
+                       (Branch, BranchRevision))))
+        return result_set.order_by(Desc(Revision.revision_date))
+
+    @staticmethod
     def getPublicRevisionsForProject(project):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
@@ -270,29 +288,15 @@ class RevisionSet:
         from canonical.launchpad.database.product import Product
         from canonical.launchpad.database.branchrevision import BranchRevision
 
-        store = Store.of(project)
-
-        # Need to specify the query tables explicitly for the sub select so it
-        # doesn't try to join against Revision.
-        query_tables = [Branch, BranchRevision]
-        if IProduct.providedBy(project):
-            project_query = (Branch.product == project)
-        elif IProject.providedBy(project):
-            query_tables.append(Product)
-            project_query = And(
-                Product.project == project,
-                Branch.product == Product.id)
-        else:
-            raise AssertionError(
-                "project must provide either IProduct or IProject")
-
-        result_set = store.find(
+        result_set = Store.of(project).find(
             Revision,
             Exists(
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
                            BranchRevision.branch == Branch.id,
                            Not(Branch.private),
-                           project_query),
-                       query_tables)))
+                           Product.project == project,
+                           Branch.product == Product.id),
+                       (Branch, BranchRevision, Product))))
         return result_set.order_by(Desc(Revision.revision_date))
+

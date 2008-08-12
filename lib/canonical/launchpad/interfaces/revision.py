@@ -132,10 +132,19 @@ class IRevisionSet(Interface):
             with the most recent revision_date first.
         """
 
-    def getPublicRevisionsForProject(project):
-        """Get the public revisions for the product or project specified.
+    def getPublicRevisionsForProduct(product):
+        """Get the public revisions for the product specified.
 
         :return: ResultSet containing all revisions that are in a public
-            branch associated with the product, or a product that is
-            associated with the project.
+            branch associated with the product.  The results are ordered
+            with the most recent revision_date first.
+        """
+
+    def getPublicRevisionsForProject(project):
+        """Get the public revisions for the project specified.
+
+        :return: ResultSet containing all revisions that are in a public
+            branch associated with a product that is associated with the
+            project.  The results are ordered with the most recent
+            revision_date first.
         """
