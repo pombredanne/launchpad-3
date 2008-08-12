@@ -160,7 +160,6 @@ class XMLRPCRunner(Runner):
                         if list_name <> mm_cfg.MAILMAN_SITE_LIST]
         try:
             info = self._proxy.getMembershipInformation(active_lists)
-##             syslog('xmlrpc', 'membership info: %s', info)
         except (xmlrpclib.ProtocolError, socket.error), error:
             syslog('xmlrpc', 'Cannot talk to Launchpad: %s', error)
             return
@@ -175,11 +174,11 @@ class XMLRPCRunner(Runner):
             member_map = dict((address, (realname, flags, status))
                               for address, realname, flags, status
                               in info[list_name])
-            # In Mailman parlance, the 'member key' is the lowercased
-            # address.  We need a mapping from member key to case-preserved
-            # address for all future members of the list.
-            member_keys = dict((address.lower(), address)
-                               for address in member_map)
+            # In Mailman parlance, the 'member key' is the lower-cased
+            # address.  We need a mapping from the member key to
+            # case-preserved address for all future members of the list.
+            key_to_case_preserved = dict((address.lower(), address)
+                                         for address in member_map)
             # The following modifications to membership may be made:
             # - Current members whose address is changing case
             # - New members who need to be added to the mailing list
@@ -189,7 +188,7 @@ class XMLRPCRunner(Runner):
             # Start by getting the case-folded membership sets of all current
             # and future members.
             current_members = set(mlist.getMembers())
-            future_members = set(member_keys)
+            future_members = set(key_to_case_preserved)
             # Additions are all those addresses in future_members who are not
             # in current_members.
             additions = future_members - current_members
@@ -214,7 +213,7 @@ class XMLRPCRunner(Runner):
                 for address in additions:
                     # When adding the new member, be sure to use the
                     # case-preserved email address.
-                    original_address = member_keys[address]
+                    original_address = key_to_case_preserved[address]
                     realname, flags, status = member_map[original_address]
                     mlist.addNewMember(original_address, realname=realname)
                     mlist.setDeliveryStatus(original_address, status)
@@ -227,7 +226,7 @@ class XMLRPCRunner(Runner):
                 for address in updates:
                     # See if the case is changing.
                     current_address = mlist.getMemberCPAddress(address)
-                    future_address = member_keys[address]
+                    future_address = key_to_case_preserved[address]
                     if current_address <> future_address:
                         mlist.changeMemberAddress(address, future_address)
                         found_updates = True
