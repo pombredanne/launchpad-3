@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistroSeriesAddView',
+    'DistroSeriesBreadcrumbBuilder',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesFullLanguagePackRequestView',
@@ -40,15 +41,13 @@ from canonical.launchpad.browser.translations import TranslationsMixin
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistroSeries
-
-    def breadcrumb(self):
-        return self.context.version
 
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
@@ -134,6 +133,13 @@ class DistroSeriesSOP(StructuralObjectPresentation):
 
     def countAltChildren(self):
         raise NotImplementedError
+
+
+class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+    """Returns a breadcrumb for an `IDistroSeries`."""
+    @property
+    def text(self):
+        return self.context.version
 
 
 class DistroSeriesFacets(StandardLaunchpadFacets):
