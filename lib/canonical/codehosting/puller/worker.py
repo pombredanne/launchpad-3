@@ -29,6 +29,7 @@ from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 
 __all__ = [
+    'BadUrl',
     'BadUrlFile',
     'BadUrlLaunchpad',
     'BadUrlSsh',
@@ -44,15 +45,19 @@ __all__ = [
     ]
 
 
-class BadUrlSsh(Exception):
+class BadUrl(Exception):
+    """Tried to mirror a branch from a bad URL."""
+
+
+class BadUrlSsh(BadUrl):
     """Tried to mirror a branch from sftp or bzr+ssh."""
 
 
-class BadUrlLaunchpad(Exception):
+class BadUrlLaunchpad(BadUrl):
     """Tried to mirror a branch from launchpad.net."""
 
 
-class BadUrlFile(Exception):
+class BadUrlFile(BadUrl):
     """Tried to mirror a branch from a file:/// URL."""
 
 
@@ -60,18 +65,6 @@ class BranchReferenceForbidden(Exception):
     """Trying to mirror a branch reference and the branch type does not allow
     references.
     """
-
-
-class BranchReferenceValueError(Exception):
-    """Encountered a branch reference with an unsafe value.
-
-    An unsafe value is a local URL, such as a file:// URL or an http:// URL in
-    canonical.com, that may cause disclosure of restricted data.
-    """
-
-    def __init__(self, url):
-        Exception.__init__(self, url)
-        self.url = url
 
 
 class BranchReferenceLoopError(Exception):
@@ -427,10 +420,6 @@ class PullerWorker:
         except BranchReferenceForbidden, e:
             msg = ("Branch references are not allowed for branches of type "
                    "%s." % (self.branch_type.title,))
-            self._mirrorFailed(msg)
-
-        except BranchReferenceValueError, e:
-            msg = "Bad branch reference value: %s" % (e.url,)
             self._mirrorFailed(msg)
 
         except BranchReferenceLoopError, e:

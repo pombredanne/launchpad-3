@@ -16,11 +16,11 @@ from bzrlib.transport import get_transport
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.codehosting.puller.worker import (
-    BranchReferenceForbidden, BranchReferenceLoopError,
-    BranchReferenceValueError, PullerWorkerProtocol, URLChecker,
-    get_canonical_url_for_branch_name, install_worker_ui_factory)
+    BadUrlFile, BadUrlLaunchpad, BadUrlSsh, BranchReferenceForbidden,
+    BranchReferenceLoopError, MirroredURLChecker, PullerWorkerProtocol,
+    URLChecker, get_canonical_url_for_branch_name, install_worker_ui_factory)
 from canonical.launchpad.database import Branch
-from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import LaunchpadScriptLayer, reset_logging
 
@@ -119,22 +119,22 @@ class TestURLCheckerCheckSource(unittest.TestCase):
         self.assertEquals(references[:1], checker.follow_reference_calls)
 
     def testAllowedReference(self):
-        # _checkBranchReference does not raise if _canTraverseReferences is
-        # true and the source URL points to a branch reference to a remote
-        # location.
+        # checkSource does not raise if following references is allowed and
+        # the source URL points to a branch reference to a remote location.
         references = [
             'http://example.com/reference',
             'http://example.com/branch',
             None,
             ]
         checker = self.StubbedURLChecker(True, references)
-        checker.checkSource(references[0]) # This must not raise.
+        # This must not raise.
+        checker.checkSource(references[0])
         self.assertEquals(references[:2], checker.follow_reference_calls)
 
     def testSelfReferencingBranch(self):
-        # _checkBranchReference raises BranchReferenceLoopError if
-        # _canTraverseReferences is true and the source url points to a
-        # self-referencing branch.
+        # checkSource raises BranchReferenceLoopError if following references
+        # is allowed and the source url points to a self-referencing branch
+        # reference.
         references = [
             'http://example.com/reference',
             'http://example.com/reference',
@@ -145,9 +145,8 @@ class TestURLCheckerCheckSource(unittest.TestCase):
         self.assertEquals(references[:1], checker.follow_reference_calls)
 
     def testBranchReferenceLoop(self):
-        # _checkBranchReference raises BranchReferenceLoopError if
-        # _canTraverseReferences is true and the source url points to a loop
-        # of branch references.
+        # checkSource raises BranchReferenceLoopError if following references
+        # is allowed and the source url points to a loop of branch references.
         references = [
             'http://example.com/reference-1',
             'http://example.com/reference-2',
@@ -157,6 +156,37 @@ class TestURLCheckerCheckSource(unittest.TestCase):
         self.assertRaises(
             BranchReferenceLoopError, checker.checkSource, references[0])
         self.assertEquals(references[:2], checker.follow_reference_calls)
+
+
+class TestMirroredURLChecker(unittest.TestCase):
+    """Tests specific to `MirroredURLChecker`."""
+
+    def setUp(self):
+        self.factory = LaunchpadObjectFactory()
+
+    def testNoFileURL(self):
+        checker = MirroredURLChecker()
+        self.assertRaises(
+            BadUrlFile, checker.checkOneURL,
+            self.factory.getUniqueURL(scheme='file'))
+
+    def testNoSSHURL(self):
+        checker = MirroredURLChecker()
+        self.assertRaises(
+            BadUrlSsh, checker.checkOneURL,
+            self.factory.getUniqueURL(scheme='bzr+ssh'))
+
+    def testNoSftpURL(self):
+        checker = MirroredURLChecker()
+        self.assertRaises(
+            BadUrlSsh, checker.checkOneURL,
+            self.factory.getUniqueURL(scheme='sftp'))
+
+    def testNoLaunchpadURL(self):
+        checker = MirroredURLChecker()
+        self.assertRaises(
+            BadUrlLaunchpad, checker.checkOneURL,
+            self.factory.getUniqueURL(host='bazaar.launchpad.dev'))
 
 
 class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
