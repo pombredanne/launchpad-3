@@ -23,7 +23,7 @@ from canonical.launchpad.fields import (
     )
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr.fields import Reference
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
 
@@ -136,13 +136,17 @@ class IHasMilestones(Interface):
     """An interface for classes providing milestones."""
     export_as_webservice_entry()
 
-    milestones = Attribute(_(
-        "The visible and active milestones associated with this object, "
-        "ordered by date expected."))
+    milestones = exported(
+        CollectionField(
+            title=_("The visible and active milestones associated with this "
+                    "object, ordered by date expected."),
+            value_type=Reference(schema=IMilestone)))
 
-    all_milestones = Attribute(_(
-        "All milestones associated with this object, ordered by "
-        "date expected."))
+    all_milestones = exported(
+        CollectionField(
+            title=_("All milestones associated with this object, ordered by "
+                    "date expected."),
+            value_type=Reference(schema=IMilestone)))
 
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
