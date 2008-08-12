@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroSeriesBinaryPackageBreadcrumbBuilder',
     'DistroSeriesBinaryPackageFacets',
     'DistroSeriesBinaryPackageNavigation',
     'DistroSeriesBinaryPackageView',
@@ -39,8 +40,13 @@ class DistroSeriesBinaryPackageNavigation(Navigation):
 
     usedfor = IDistroSeriesBinaryPackage
 
-    def breadcrumb(self):
+
+class DistroSeriesBinaryPackageBreadcrumbBuilder(BreadcrumbBuilder):
+    """Returns a breadcrumb for an `IDistroSeriesBinaryPackage`."""
+    @property
+    def text(self):
         return self.context.binarypackagename.name
+
 
 class DistroSeriesBinaryPackageView:
 
