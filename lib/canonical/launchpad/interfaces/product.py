@@ -141,7 +141,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                 'and security policy will apply to this project.')),
         exported_as='project_group')
     owner = PublicPersonChoice(
-        title=_('Owner'),
+        title=_('Maintainer'),
         required=True,
         vocabulary='ValidOwner',
         description=_("Project owner, it can either a valid Person or Team "

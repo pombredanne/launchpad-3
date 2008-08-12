@@ -1598,7 +1598,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
             self.context, old_owner, self.context.owner)
         if self.context.owner != old_owner:
             self.request.response.addNotification(
-                "Successfully changed the owner to %s"
+                "Successfully changed the maintainer to %s"
                 % self.context.owner.displayname)
         if self.context.driver != old_driver:
             if self.context.driver is not None:

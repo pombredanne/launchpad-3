@@ -193,7 +193,7 @@
         for="canonical.launchpad.interfaces.IProject"
         permission="launchpad.Edit"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+        class="canonical.launchpad.browser.ProjectMaintainerReassignmentView">
           <browser:page
               name="+reassign"
               template="../templates/object-reassignment.pt"

@@ -28,6 +28,7 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectSetView',
     'ProjectRdfView',
+    'ProjectMaintainerReassignmentView',
     ]
 
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -52,6 +53,8 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
+from canonical.launchpad.browser.objectreassignment import (
+    ObjectReassignmentView)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
@@ -185,7 +188,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change owner'
+        text = 'Change maintainer'
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -581,3 +584,8 @@ class ProjectSeriesSpecificationsMenu(ApplicationMenu):
     def assignments(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
+
+
+class ProjectMaintainerReassignmentView(ObjectReassignmentView):
+    """View class for changing project maintainer."""
+    ownerOrMaintainerName = 'maintainer'
