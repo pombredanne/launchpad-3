@@ -202,6 +202,14 @@ class URLChecker(object):
 
 
 class HostedURLChecker(URLChecker):
+    """Specialization of `URLChecker` for HOSTED branches.
+
+    In summary:
+
+     - don't follow references,
+     - assert we're pulling from a lp-hosted:/// URL.
+    """
+
     def shouldFollowReferences(self):
         """See `URLChecker.shouldFollowReferences`.
 
@@ -210,7 +218,14 @@ class HostedURLChecker(URLChecker):
         we want hosted branches to be mirrored quickly.
         """
         return False
+
     def checkOneURL(self, url):
+        """See `URLChecker.checkOneURL`.
+
+        If the URL we are mirroring from is anything but a
+        lp-hosted:///~user/project/branch URL, something has gone badly wrong,
+        so we raise AssertionError if that's happened.
+        """
         uri = URI(url)
         if uri.scheme != 'lp-hosted':
             raise AssertionError(
@@ -218,6 +233,14 @@ class HostedURLChecker(URLChecker):
 
 
 class MirroredURLChecker(URLChecker):
+    """Specialization of `URLChecker` for MIRRORED branches.
+
+    In summary:
+
+     - follow references,
+     - check the URLs we're about to access for sanity.
+    """
+
     def shouldFollowReferences(self):
         """See `URLChecker.shouldFollowReferences`.
 
@@ -226,7 +249,12 @@ class MirroredURLChecker(URLChecker):
         with the bzr command line.
         """
         return True
+
     def checkOneURL(self, url):
+        """See `URLChecker.checkOneURL`.
+
+        We refuse to mirror from Launchpad or a ssh-like or file URL.
+        """
         uri = URI(url)
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
@@ -238,6 +266,14 @@ class MirroredURLChecker(URLChecker):
 
 
 class ImportedURLChecker(URLChecker):
+    """Specialization of `URLChecker` for IMPORTED branches.
+
+    In summary:
+
+     - don't follow references,
+     - assert the URLs are of the form we expect.
+    """
+
     def shouldFollowReferences(self):
         """See `URLChecker.shouldFollowReferences`.
 
@@ -245,18 +281,18 @@ class ImportedURLChecker(URLChecker):
         code-import system should never produce branch references.
         """
         return False
+
     def checkOneURL(self, url):
+        """See `URLChecker.checkOneURL`.
+
+        If the URL we are mirroring from does not start how we expect the pull
+        URLs of import branches to start, something has gone badly wrong, so
+        we raise AssertionError if that's happened.
+        """
         if not url.startswith(config.launchpad.bzr_imports_root_url):
             raise AssertionError(
                 "Bogus URL for imported branch: %r" % url)
 
-
-class NullChecker(URLChecker):
-    def shouldFollowReferences(self):
-        """ """
-        return False
-    def checkOneURL(self, url):
-        pass
 
 class PullerWorker:
     """This class represents a single branch that needs mirroring.
