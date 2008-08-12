@@ -25,7 +25,9 @@ delete the branch.
 
     >>> delete_link.click()
     >>> print extract_text(find_main_content(browser.contents))
-    ~name12/firefox/to-delete for the Mozilla Firefox (Unreviewed) project
+    Last modified ...
+    lp://dev/~name12/firefox/to-delete
+    ...
     Delete branch
     The following items must be deleted:
     Subscription of Sample Person to ~name.../firefox/to-delete (This is a

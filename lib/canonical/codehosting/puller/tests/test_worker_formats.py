@@ -6,8 +6,6 @@ __metaclass__ = type
 
 import unittest
 
-from bzrlib.urlutils import local_path_to_url
-
 from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
@@ -100,7 +98,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         self.assertEqual(orig, mirrored)
 
     def test_loomBranch(self):
-        # When we mirror a loom branch for the first time....
+        # When we mirror a loom branch for the first time, the mirrored loom
+        # branch matches the original.
         branch = self._createSourceBranch(
             RepositoryFormatPackDevelopment1(),
             BzrDirMetaFormat1())

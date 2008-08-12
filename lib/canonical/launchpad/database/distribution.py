@@ -22,8 +22,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.components.launchpadcontainer import (
-    LaunchpadContainerMixin)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
@@ -91,8 +89,7 @@ from canonical.launchpad.validators.name import sanitize_name, valid_name
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
-                   QuestionTargetMixin, StructuralSubscriptionTargetMixin,
-                   LaunchpadContainerMixin):
+                   QuestionTargetMixin, StructuralSubscriptionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
@@ -1166,9 +1163,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             COUNT(DISTINCT Bugtask.bug) AS total_bugs,
             COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
                   Bugtask.bug END) AS bugs_triaged,
-            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
+            COUNT(DISTINCT CASE WHEN Bugtask.status IN %(unresolved)s THEN
                   RelatedBugTask.bug END) AS bugs_affecting_upstream,
-            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s AND
+            COUNT(DISTINCT CASE WHEN Bugtask.status in %(unresolved)s AND
                   (RelatedBugTask.bugwatch IS NOT NULL OR
                   RelatedProduct.official_malone IS TRUE) THEN
                   RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch

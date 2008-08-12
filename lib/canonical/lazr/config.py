@@ -17,6 +17,7 @@ from ConfigParser import NoSectionError, RawConfigParser
 from os.path import abspath, basename, dirname
 import re
 import StringIO
+from textwrap import dedent
 
 from zope.interface import implements
 
@@ -488,9 +489,13 @@ class Config:
         place it on top of the overlay stack. If the conf_data extends
         another conf, a ConfigData object will be created for that first.
         """
+        conf_data = dedent(conf_data)
         confs = self._getExtendedConfs(conf_name, conf_data)
         confs.reverse()
         for conf_name, parser, encoding_errors in confs:
+            if self.data.filename == self.schema.filename == conf_name:
+                # Do not parse the schema file twice in a row.
+                continue
             config_data = self._createConfigData(
                 conf_name, parser, encoding_errors)
             self._overlays = (config_data, ) + self._overlays
