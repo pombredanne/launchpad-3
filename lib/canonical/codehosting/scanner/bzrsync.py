@@ -613,8 +613,10 @@ class BzrSync:
             branch_url = bzr_branch.get_stacked_on_url()
         except (UnstackableBranchFormat, NotStacked):
             return None
-        else:
-            return getUtility(IBranchSet).getByUrl(branch_url.rstrip('/'))
+        branch_set = getUtility(IBranchSet)
+        if branch_url.startswith('/'):
+            return branch_set.getByUniqueName(branch_url.strip('/'))
+        return branch_url.getByUrl(branch_url.rstrip('/'))
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""

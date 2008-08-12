@@ -11,8 +11,11 @@ import random
 import time
 import unittest
 
+from bzrlib.branch import Branch
 from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
-from bzrlib.transport import register_transport, unregister_transport
+from bzrlib.transport import (
+    get_transport, register_transport, unregister_transport)
+from bzrlib.transport.chroot import ChrootServer
 from bzrlib.uncommit import uncommit
 from bzrlib.urlutils import (
     local_path_from_url, join as urljoin)
@@ -56,11 +59,15 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.makeFixtures()
         self.lp_db_user = config.launchpad.dbuser
         self.switchDbUser(config.branchscanner.dbuser)
+        self._chroot_server = ChrootServer(self.get_transport())
+        self._chroot_server.setUp()
+        self.addCleanup(self._chroot_server.tearDown)
         self._setUpAuthor()
 
     def _fakeTransportFactory(self, url):
         self.assertTrue(url.startswith(self._url_prefix))
-        return self.get_transport(url[len(self._url_prefix):])
+        url = self._chroot_server.get_url() + url[len(self._url_prefix):]
+        return get_transport(url)
 
     def switchDbUser(self, user):
         """We need to reset the config warehouse root after a switch."""
@@ -461,6 +468,32 @@ class TestBzrSync(BzrSyncTestCase):
             db_stacked_branch, format=stacked_format)
 
         bzr_stacked_tree.branch.set_stacked_on_url(db_base_branch.url)
+
+        self.makeBzrSync(db_stacked_branch).syncBranchAndClose()
+        self.assertEqual(db_stacked_branch.stacked_on.id, db_base_branch.id)
+
+    def test_hosted_stacked_branch(self):
+        # Hosted branches will often be stacked on other hosted branches using
+        # URL fragments like '/~foo/bar/baz'. When the scanner sees such
+        # branches, it will record the stacking relationship.
+        stacked_format = 'development'
+
+        # Make the stacked-on branch.
+        self.switchDbUser(self.lp_db_user)
+        db_base_branch = self.makeDatabaseBranch()
+        bzr_base_tree = self.makeBzrBranchAndTree(
+            db_base_branch, format=stacked_format)
+
+        # Make the stacked branch.
+        db_stacked_branch = self.makeDatabaseBranch()
+        bzr_stacked_tree = self.makeBzrBranchAndTree(
+            db_stacked_branch, format=stacked_format)
+        bzr_stacked_branch = Branch.open(
+            'lp-mirrored:///%s' % db_stacked_branch.unique_name)
+
+        # Stack 'em up.
+        bzr_stacked_branch.set_stacked_on_url(
+            '/' + db_base_branch.unique_name)
 
         self.makeBzrSync(db_stacked_branch).syncBranchAndClose()
         self.assertEqual(db_stacked_branch.stacked_on.id, db_base_branch.id)
