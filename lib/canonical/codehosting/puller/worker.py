@@ -37,8 +37,10 @@ __all__ = [
     'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
     'install_worker_ui_factory',
+    'MirroredURLChecker',
     'PullerWorker',
-    'PullerWorkerProtocol'
+    'PullerWorkerProtocol',
+    'URLChecker',
     ]
 
 
