@@ -1598,9 +1598,11 @@ handlers. This method adds notifications only for recipients with a
 notification level greater or equal to METADATA.
 
     >>> from canonical.launchpad.components.bug import BugDelta
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.interfaces.bugtask import IUpstreamBugTask
     >>> from canonical.launchpad.mailnotification import (
     ...     add_bug_change_notifications)
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> subscription_no_priv.bug_notification_level = (
@@ -1609,6 +1611,9 @@ notification level greater or equal to METADATA.
     >>> LaunchpadZopelessLayer.switchDbUser(
     ...     config.malone.bugnotification_dbuser)
     >>> bug_five = getUtility(IBugSet).get(5)
+    >>> bugtask_bug_5_firefox = bug_five.getBugTask(firefox)
+    >>> old_bugtask_bug_5_firefox = Snapshot(
+    ...     bugtask_bug_5_firefox, providing=IUpstreamBugTask)
     >>> bug_delta = BugDelta(bug_five, bugurl=canonical_url(bug_five),
     ...     user=getUtility(IPersonSet).getByEmail('test@canonical.com'),
     ...     added_bugtasks=bug_five.bugtasks[-2])
@@ -1645,10 +1650,13 @@ will not receive notifications sent by add_bug_change_notification().
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(
     ...     config.malone.bugnotification_dbuser)
+    >>> bugtask_bug_5_firefox = bug_five.getBugTask(firefox)
+    >>> old_bugtask_bug_5_firefox = Snapshot(
+    ...     bugtask_bug_5_firefox, providing=IUpstreamBugTask)
     >>> bug_delta = BugDelta(bug_five, bugurl=canonical_url(bug_five),
     ...     user=getUtility(IPersonSet).getByEmail('test@canonical.com'),
     ...     added_bugtasks=bug_five.bugtasks[-1])
-    >>> add_bug_change_notifications(bug_delta)
+    >>> add_bug_change_notifications(bug_delta, old_bugtask_bug_5_firefox)
     >>> default_notification_interval = config.malone.bugnotification_interval
     >>> config.malone.bugnotification_interval = 0
     >>> pending_notifications = getUtility(
