@@ -76,6 +76,8 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_write_operation)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -196,6 +198,10 @@ class BranchFormat(DBEnumeratedType):
 
     BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
 
+    # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
+    BZR_BRANCH_7 = DBItem(7, 'Bazaar Branch Format 7 (needs bzr 1.6)\n',
+                          'Description to be added')
+
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
     BZR_LOOM_2 = _format_enum(106, BzrBranchLoomFormat6)
@@ -235,11 +241,28 @@ class RepositoryFormat(DBEnumeratedType):
 
     BZR_KNITPACK_4 = _format_enum(204, RepositoryFormatKnitPack4)
 
+    # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
+    BZR_KNITPACK_5 = DBItem(
+        205, 'Bazaar RepositoryFormatKnitPack5 (bzr 1.6)\n',
+        'Description to be added')
+    BZR_KNITPACK_5_RR = DBItem(
+        206, 'Bazaar RepositoryFormatKnitPack5RichRoot (bzr 1.6)\n',
+        'Description to be added')
+
     BZR_PACK_DEV_0 = _format_enum(
         300, RepositoryFormatPackDevelopment0)
 
     BZR_PACK_DEV_0_SUBTREE = _format_enum(
         301, RepositoryFormatPackDevelopment0Subtree)
+
+    # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
+    BZR_DEV_1 = DBItem(
+        302, 'Bazaar development format 1 (needs bzr.dev from before 1.6)\n',
+        'Description to be added')
+    BZR_DEV_1_SUBTREE = DBItem(
+        303, ('Bazaar development format 1 with subtree support '
+              '(needs bzr.dev from before 1.6)\n'),
+        'Description to be added')
 
 
 class ControlFormat(DBEnumeratedType):
@@ -430,6 +453,7 @@ class IBranchNavigationMenu(Interface):
 
 class IBranch(IHasOwner):
     """A Bazaar branch."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
@@ -563,7 +587,7 @@ class IBranch(IHasOwner):
                       "successfully scanned."))
     revision_count = Int(
         title=_("Revision count"),
-        description=_("The number of revisions in the branch")
+        description=_("The revision number of the tip of the branch.")
         )
 
     warehouse_url = Attribute(
@@ -630,7 +654,8 @@ class IBranch(IHasOwner):
         "Only active merge proposals are returned (those that have not yet "
         "been merged).")
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
-                         whiteboard=None, date_created=None):
+                         whiteboard=None, date_created=None,
+                         needs_review=False):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the dependent_branch, if it is there,
@@ -647,6 +672,8 @@ class IBranch(IHasOwner):
             pertinant to the landing such as testing notes.
         :param date_created: Used to specify the date_created value of the
             merge request.
+        :param needs_review: Used to specify the the proposal is ready for
+            review right now.
         """
 
     def getMergeQueue():
@@ -778,6 +805,7 @@ class IBranch(IHasOwner):
     def getPullURL():
         """Return the URL used to pull the branch into the mirror area."""
 
+    @export_write_operation()
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
@@ -1022,7 +1050,7 @@ class IBranchSet(Interface):
         """
 
     def getTargetBranchesForUsersMergeProposals(user, product):
-        """Return a sequence of branches the user has targetted before."""
+        """Return a sequence of branches the user has targeted before."""
 
     def isBranchNameAvailable(owner, product, branch_name):
         """Is the specified branch_name valid for the owner and product.

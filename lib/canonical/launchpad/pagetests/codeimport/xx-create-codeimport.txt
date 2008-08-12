@@ -47,6 +47,9 @@ When the user clicks continue, the import branch is created
     Import Status: Pending Review
     This branch is an import of the Subversion branch
     from http://svn.example.com/firefox/trunk.
+    >>> browser.getLink("http://svn.example.com/firefox/trunk")
+    <Link text='http://svn.example.com/firefox/trunk'
+           url='http://svn.example.com/firefox/trunk'>
 
 The user is also subscribed to the branch to get notifications.
 

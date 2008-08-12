@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import logging
-from datetime import datetime, timedelta
 from StringIO import StringIO
 import urlparse
 
@@ -385,15 +384,17 @@ class BzrSync:
 
         (added_ancestry, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges(
-            bzr_ancestry, bzr_history, db_ancestry, db_history, 
+            bzr_ancestry, bzr_history, db_ancestry, db_history,
             db_branch_revision_map)
         self.logger.info("Inserting or checking %d revisions.",
             len(added_ancestry))
         # Add new revisions to the database.
-        revisions = self.getNewBazaarRevisions(
-            bzr_branch, added_ancestry)
-        for revision in revisions:
-            self.syncOneRevision(revision, branchrevisions_to_insert)
+        added_ancestry_list = list(added_ancestry)
+        for i in range(0, len(added_ancestry_list), 1000):
+            revisions = self.getNewBazaarRevisions(
+                bzr_branch, added_ancestry_list[i:i+1000])
+            for revision in revisions:
+                self.syncOneRevision(revision, branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
@@ -472,7 +473,7 @@ class BzrSync:
             RepositoryFormat, repository_string,
             RepositoryFormat.UNRECOGNIZED)
 
-    def planDatabaseChanges(self, bzr_ancestry, bzr_history, db_ancestry, 
+    def planDatabaseChanges(self, bzr_ancestry, bzr_history, db_ancestry,
                             db_history, db_branch_revision_map):
         """Plan database changes to synchronize with bzrlib data.
 
@@ -524,77 +525,39 @@ class BzrSync:
             self.getRevisions(
                 bzr_history, added_merged.union(added_history)))
 
-        return (added_ancestry, branchrevisions_to_delete, 
+        return (added_ancestry, branchrevisions_to_delete,
                 branchrevisions_to_insert)
-            
+
     def getNewBazaarRevisions(self, bzr_branch, added_ancestry):
         """Return the new Bazaar revisions in `bzr_branch`.
-        
-        :param added_ancestry: the set of Bazaar revision IDs that the 
+
+        :param added_ancestry: the set of Bazaar revision IDs that the
             scanner has found in the Bazaar branch but not in the database
             branch.
         """
         # Add new revisions to the database.
         added_ancestry = bzr_branch.repository.get_parent_map(added_ancestry)
         return bzr_branch.repository.get_revisions(added_ancestry.keys())
-        
+
     def syncOneRevision(self, bzr_revision, branchrevisions_to_insert):
         """Import the revision with the given revision_id.
 
         :param bzr_revision: the revision to import
-        :param branchrevisions_to_insert: a dict of revision ids to revno
         :type bzr_revision: bzrlib.revision.Revision
+        :param branchrevisions_to_insert: a dict of revision ids to integer
+            revno.  (Non-mainline revisions will not be present).
         """
         revision_id = bzr_revision.revision_id
         revision_set = getUtility(IRevisionSet)
         db_revision = revision_set.getByRevisionId(revision_id)
         if db_revision is not None:
-            # Verify that the revision in the database matches the
-            # revision from the branch.  Currently we just check that
-            # the parent revision list matches.
-            self.logger.debug("Checking revision: %s", revision_id)
-            db_parents = db_revision.parents
-            bzr_parents = bzr_revision.parent_ids
-
-            seen_parents = set()
-            for sequence, parent_id in enumerate(bzr_parents):
-                if parent_id in seen_parents:
-                    continue
-                seen_parents.add(parent_id)
-                matching_parents = [db_parent for db_parent in db_parents
-                                    if db_parent.parent_id == parent_id]
-                if len(matching_parents) == 0:
-                    raise RevisionModifiedError(
-                        'parent %s was added since last scan' % parent_id)
-                elif len(matching_parents) > 1:
-                    raise RevisionModifiedError(
-                        'parent %s is listed multiple times in db'
-                        % parent_id)
-                if matching_parents[0].sequence != sequence:
-                    raise RevisionModifiedError(
-                        'parent %s reordered (old index %d, new index %d)'
-                        % (parent_id, matching_parents[0].sequence, sequence))
-            if len(seen_parents) != len(db_parents):
-                removed_parents = [db_parent.parent_id
-                                   for db_parent in db_parents
-                                   if db_parent.parent_id not in seen_parents]
-                raise RevisionModifiedError(
-                    'some parents removed since last scan: %s'
-                    % (removed_parents,))
-        else:
-            # Revision not yet in the database. Load it.
-            self.logger.debug("Inserting revision: %s", revision_id)
-            revision_date = self._timestampToDatetime(bzr_revision.timestamp)
-            db_revision = revision_set.new(
-                revision_id=revision_id,
-                log_body=bzr_revision.message,
-                revision_date=revision_date,
-                revision_author=bzr_revision.get_apparent_author(),
-                parent_ids=bzr_revision.parent_ids,
-                properties=bzr_revision.properties)
-            # If a mainline revision, add the bug branch link.
-            if branchrevisions_to_insert[revision_id] is not None:
-                self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
+            return
+        # Revision not yet in the database. Load it.
+        self.logger.debug("Inserting revision: %s", revision_id)
+        revision_set.newFromBazaarRevision(bzr_revision)
+        # If a mainline revision, add the bug branch link.
+        if branchrevisions_to_insert[revision_id] is not None:
+            self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
 
     def getRevisions(self, bzr_history, revision_subset):
         """Generate revision IDs that make up the branch's ancestry.
@@ -608,24 +571,6 @@ class BzrSync:
                 yield revision_id, index + 1
         for revision_id in revision_subset.difference(set(bzr_history)):
             yield revision_id, None
-
-    def _timestampToDatetime(self, timestamp):
-        """Convert the given timestamp to a datetime object.
-
-        This works around a bug in Python that causes datetime.fromtimestamp
-        to raise an exception if it is given a negative, fractional timestamp.
-
-        :param timestamp: A timestamp from a bzrlib.revision.Revision
-        :type timestamp: float
-
-        :return: A datetime corresponding to the given timestamp.
-        """
-        # Work around Python bug #1646728.
-        # See https://launchpad.net/bugs/81544.
-        int_timestamp = int(timestamp)
-        revision_date = datetime.fromtimestamp(int_timestamp, tz=UTC)
-        revision_date += timedelta(seconds=timestamp - int_timestamp)
-        return revision_date
 
     def deleteBranchRevisions(self, branchrevisions_to_delete):
         """Delete a batch of BranchRevision rows."""
@@ -648,15 +593,17 @@ class BzrSync:
                 mainline_revids.append(revision_id)
         # Generate emails for the revisions in the revision_history
         # for the branch.
-        present_mainline_revids = set(
-            bzr_branch.repository.get_parent_map(mainline_revids))
-        present_mainline_revisions = bzr_branch.repository.get_revisions(
-            present_mainline_revids)
-        for revision in present_mainline_revisions:
-            sequence = branchrevisions_to_insert[revision.revision_id]
-            assert sequence is not None
-            self._branch_mailer.generateEmailForRevision(
-                bzr_branch, revision, sequence)
+        for i in range(0, len(mainline_revids), 1000):
+            present_mainline_revids = set(
+                bzr_branch.repository.get_parent_map(
+                    mainline_revids[i:i+1000]))
+            present_mainline_revisions = bzr_branch.repository.get_revisions(
+                present_mainline_revids)
+            for revision in present_mainline_revisions:
+                sequence = branchrevisions_to_insert[revision.revision_id]
+                assert sequence is not None
+                self._branch_mailer.generateEmailForRevision(
+                    bzr_branch, revision, sequence)
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""

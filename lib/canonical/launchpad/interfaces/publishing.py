@@ -588,6 +588,44 @@ class IPublishingSet(Interface):
              `BinaryPackageRelease`, `BinaryPackageName`, `DistroArchSeries`)
         """
 
+    def getPackageDiffsForSources(one_or_more_source_publications):
+        """Return all `PackageDiff`s for each given source publication.
+
+        The returned ResultSet contains entries with the wanted `PackageDiff`s
+        associated with the corresponding source publication and its resulting
+        `LibraryFileAlias` and `LibraryFileContent` in a 4-element tuple. This
+        way the extra information will be cached and the callsites can group
+        package-diffs in any convenient form.
+
+        The result is ordered by:
+
+         1. Ascending `SourcePackagePublishingHistory.id`,
+         2. Descending `PackageDiff.date_requested`.
+
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
+
+        :return: a storm ResultSet containing tuples as
+            (`SourcePackagePublishingHistory`, `PackageDiff`,
+             `LibraryFileAlias`, `LibraryFileContent`)
+        """
+
+
+    def requestDeletion(sources, removed_by, removal_comment=None):
+        """Delete the source and binary publications specified.
+
+        This method deletes the source publications passed via the first
+        parameter as well as their associated binary publications.
+
+        :param sources: list of `SourcePackagePublishingHistory` objects.
+        :param removed_by: `IPerson` responsible for the removal.
+        :param removal_comment: optional text describing the removal reason.
+
+        :return: The deleted publishing record, either:
+            `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory`.
+        """
+
 
 class PackagePublishingStatus(DBEnumeratedType):
     """Package Publishing Status

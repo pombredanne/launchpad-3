@@ -143,7 +143,7 @@ class OAuthAccessTokenView(LaunchpadView):
     """Where consumers may exchange a request token for an access token."""
 
     def __call__(self):
-        """Create an access token and include its key/secret in the response.
+        """Create an access token and respond with its key/secret/context.
 
         If the consumer is not registered, the given token key doesn't exist
         (or is not associated with the consumer), the signature does not match
@@ -171,6 +171,9 @@ class OAuthAccessTokenView(LaunchpadView):
             return u''
 
         access_token = token.createAccessToken()
-        body = u'oauth_token=%s&oauth_token_secret=%s' % (
-            access_token.key, access_token.secret)
+        context_name = None
+        if access_token.context is not None:
+            context_name = access_token.context.name
+        body = u'oauth_token=%s&oauth_token_secret=%s&lp.context=%s' % (
+            access_token.key, access_token.secret, context_name)
         return body

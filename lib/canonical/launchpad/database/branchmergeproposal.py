@@ -368,7 +368,8 @@ class BranchMergeProposal(SQLBase):
             registrant=registrant,
             target_branch=self.target_branch,
             dependent_branch=self.dependent_branch,
-            whiteboard=self.whiteboard)
+            whiteboard=self.whiteboard,
+            needs_review=True)
         self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive
         # properties of supersedes and superseded_by are visible to

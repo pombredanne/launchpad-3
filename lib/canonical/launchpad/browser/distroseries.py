@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'DistroSeriesAddView',
-    'DistroSeriesDynMenu',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesFullLanguagePackRequestView',
@@ -28,7 +27,6 @@ from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
     enabled_with_permission, GetitemNavigation, stepthrough, stepto,
     LaunchpadEditFormView, action)
-from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.launchpad.interfaces import (
     IDistroSeriesLanguageSet, IDistroSeries, ICountry, IDistroSeriesSet,
@@ -450,14 +448,6 @@ class DistroSeriesAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
-
-
-class DistroSeriesDynMenu(DynMenu):
-
-    def mainMenu(self):
-        for architecture in self.context.architectures:
-            yield self.makeLink(
-                architecture.architecturetag, target=architecture)
 
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):

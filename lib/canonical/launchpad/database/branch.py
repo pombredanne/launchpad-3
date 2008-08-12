@@ -160,7 +160,7 @@ class Branch(SQLBase):
 
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
-                         date_created=None):
+                         date_created=None, needs_review=False):
         """See `IBranch`."""
         if self.product is None:
             raise InvalidBranchMergeProposal(
@@ -209,10 +209,16 @@ class Branch(SQLBase):
         self.date_last_modified = date_created
         target_branch.date_last_modified = date_created
 
+        if needs_review:
+            queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
+        else:
+            queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
-            whiteboard=whiteboard, date_created=date_created)
+            whiteboard=whiteboard, date_created=date_created,
+            queue_status=queue_status)
         notify(SQLObjectCreatedEvent(bmp))
         return bmp
 
@@ -298,7 +304,7 @@ class Branch(SQLBase):
     @property
     def warehouse_url(self):
         """See `IBranch`."""
-        return 'lp-internal:///%s' % self.unique_name
+        return 'lp-mirrored:///%s' % self.unique_name
 
     @property
     def product_name(self):
@@ -596,7 +602,7 @@ class Branch(SQLBase):
         elif self.branch_type == BranchType.HOSTED:
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
-            return 'lp-internal:///%s' % (self.unique_name,)
+            return 'lp-hosted:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 
@@ -625,7 +631,7 @@ class Branch(SQLBase):
         self.mirror_failures = 0
         self.mirror_status_message = None
         if (self.next_mirror_time != None
-            and self.last_mirror_attempt > self.next_mirror_time):
+            and self.last_mirror_attempt >= self.next_mirror_time):
             # No mirror was requested since we started mirroring.
             if self.branch_type == BranchType.MIRRORED:
                 self.next_mirror_time = (
