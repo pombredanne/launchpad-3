@@ -37,21 +37,21 @@
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.IPerson"
-    factory="canonical.launchpad.browser.person.PersonBreadcrumbBuilder"
+    factory="canonical.launchpad.browser.PersonBreadcrumbBuilder"
     permission="zope.Public"
     />
 
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.ITeam"
-    factory="canonical.launchpad.browser.person.TeamBreadcrumbBuilder"
+    factory="canonical.launchpad.browser.TeamBreadcrumbBuilder"
     permission="zope.Public"
     />
 
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.IPersonSet"
-    factory="canonical.launchpad.browser.person.PersonSetBreadcrumbBuilder"
+    factory="canonical.launchpad.browser.PersonSetBreadcrumbBuilder"
     permission="zope.Public"
     />
 
