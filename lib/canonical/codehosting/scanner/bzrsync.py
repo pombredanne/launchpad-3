@@ -25,18 +25,9 @@ from bzrlib.repofmt.weaverepo import (
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchFormat,
-    BranchSubscriptionNotificationLevel,
-    BugBranchStatus,
-    ControlFormat,
-    IBranchRevisionSet,
-    IBranchSet,
-    IBugBranchSet,
-    IBugSet,
-    IRevisionSet,
-    NotFoundError,
-    RepositoryFormat,
-    )
+    BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
+    ControlFormat, IBranchRevisionSet, IBranchSet, IBugBranchSet, IBugSet,
+    IRevisionSet, NotFoundError, RepositoryFormat)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
 
