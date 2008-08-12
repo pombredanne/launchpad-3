@@ -5,6 +5,8 @@
 
 __all__ = [
     'HWDevice',
+    'HWDeviceClass',
+    'HWDeviceClassSet',
     'HWDeviceSet',
     'HWDeviceDriverLink',
     'HWDeviceDriverLinkSet',
@@ -13,6 +15,8 @@ __all__ = [
     'HWDriver',
     'HWDriverSet',
     'HWSubmission',
+    'HWSubmissionBug',
+    'HWSubmissionBugSet',
     'HWSubmissionSet',
     'HWSubmissionDevice',
     'HWSubmissionDeviceSet',
@@ -36,14 +40,19 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
-    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceDriverLink,
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.hwdb import (
+    HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
+    HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
+    IHWDeviceClass, IHWDeviceClassSet, IHWDeviceDriverLink,
     IHWDeviceDriverLinkSet, IHWDeviceNameVariant, IHWDeviceNameVariantSet,
-    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionDevice,
-    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
-    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
-    IHWVendorNameSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet)
+    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionBug,
+    IHWSubmissionBugSet, IHWSubmissionDevice, IHWSubmissionDeviceSet,
+    IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
+    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators.person import validate_public_person
 
@@ -77,7 +86,7 @@ class HWSubmission(SQLBase):
     system_fingerprint = ForeignKey(dbName='system_fingerprint',
                                     foreignKey='HWSystemFingerprint',
                                     notNull=True)
-    raw_emailaddress = StringCol(notNull=True)
+    raw_emailaddress = StringCol()
 
 
 class HWSubmissionSet:
@@ -99,7 +108,10 @@ class HWSubmissionSet:
                 'A submission with this ID already exists')
 
         personset = getUtility(IPersonSet)
-        owner = personset.getByEmail(emailaddress)
+        if emailaddress is not None:
+            owner = personset.getByEmail(emailaddress)
+        else:
+            owner = None
 
         fingerprint = HWSystemFingerprint.selectOneBy(
             fingerprint=system_fingerprint)
@@ -256,7 +268,8 @@ class HWVendorNameSet:
 
     def getByName(self, name):
         """See `IHWVendorNameSet`."""
-        return HWVendorName.selectOneBy(name=name)
+        return HWVendorName.selectOne(
+            'ulower(name)=ulower(%s)' % sqlvalues(name))
 
 
 four_hex_digits = re.compile('^0x[0-9a-f]{4}$')
@@ -560,6 +573,43 @@ class HWDeviceDriverLinkSet:
         return device_driver_link
 
 
+class HWDeviceClass(SQLBase):
+    """See `IHWDeviceClass`."""
+    implements(IHWDeviceClass)
+
+    device = ForeignKey(dbName='device', foreignKey='HWDevice', notNull=True)
+    main_class = EnumCol(enum=HWMainClass, notNull=True)
+    sub_class = EnumCol(enum=HWSubClass)
+
+    def _create(self, id, **kw):
+        """Create a HWDeviceClass record.
+
+        Ensure that main_class and sub_class have consistent values.
+        """
+        main_class = kw.get('main_class')
+        if main_class is None:
+            raise TypeError('HWDeviceClass() did not get expected keyword '
+                            'argument main_class')
+        sub_class = kw.get('sub_class')
+        if sub_class is not None:
+            if not sub_class.name.startswith(main_class.name + '_'):
+                raise TypeError(
+                    'HWDeviceClass() did not get matching argument values '
+                    'for main_class: %r and sub_class: %r.'
+                    % (main_class, sub_class))
+        SQLBase._create(self, id, **kw)
+
+
+class HWDeviceClassSet:
+    """See `IHWDeviceClassSet`."""
+    implements(IHWDeviceClassSet)
+
+    def create(self, device, main_class, sub_class=None):
+        """See `IHWDeviceClassSet`."""
+        return HWDeviceClass(device=device, main_class=main_class,
+                             sub_class=sub_class)
+
+
 class HWSubmissionDevice(SQLBase):
     """See `IHWSubmissionDevice`."""
 
@@ -574,13 +624,36 @@ class HWSubmissionDevice(SQLBase):
     parent = ForeignKey(dbName='parent', foreignKey='HWSubmissionDevice',
                         notNull=False)
 
+    hal_device_id = IntCol(notNull=True)
+
+
 class HWSubmissionDeviceSet:
     """See `IHWSubmissionDeviceSet`."""
 
     implements(IHWSubmissionDeviceSet)
 
-    def create(self, device_driver_link, submission, parent):
+    def create(self, device_driver_link, submission, parent, hal_device_id):
         """See `IHWSubmissionDeviceSet`."""
         return HWSubmissionDevice(device_driver_link=device_driver_link,
-                                  submission=submission,
-                                  parent=parent)
+                                  submission=submission, parent=parent,
+                                  hal_device_id=hal_device_id)
+
+
+class HWSubmissionBug(SQLBase):
+    """See `IHWSubmissionBug`."""
+
+    implements(IHWSubmissionBug)
+    _table = 'HWSubmissionBug'
+
+    submission = ForeignKey(dbName='submission', foreignKey='HWSubmission',
+                              notNull=True)
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+
+class HWSubmissionBugSet:
+    """See `IHWSubmissionBugSet`."""
+
+    implements(IHWSubmissionBugSet)
+
+    def create(self, submission, bug):
+        """See `IHWSubmissionBugSet`."""
+        return HWSubmissionBug(submission=submission, bug=bug)

@@ -10,65 +10,55 @@
     also_notified_subscribers context/getAlsoNotifiedSubscribers
   "
 >
-  <h2>Subscribe/Unsubscribe</h2>
-  <ul tal:define="context_menu context/menu:context">
-    <li
-      tal:define="link context_menu/subscription"
-      tal:condition="link/enabled"
-      tal:attributes="style string:list-style-image: url(/@@/${link/icon})"
-    ><a tal:attributes="href link/url" tal:content="link/text" /></li>
-    <li
-      tal:define="link context_menu/addsubscriber"
-      tal:condition="link/enabled"
-      tal:attributes="style string:list-style-image: url(/@@/${link/icon})"
-    ><a tal:attributes="href link/url" tal:content="link/text" /></li>
-  </ul>
-  <h2>Subscribers</h2>
-  <ul
-    id="subscribers-direct"
-    class="person"
-    tal:condition="direct_subscriptions"
+  <div class="section" tal:define="context_menu context/menu:context">
+    <div tal:content="structure context_menu/subscription/render" />
+    <div tal:content="structure context_menu/addsubscriber/render" />
+  </div>
+  <div class="section" id="subscribers-direct">
+    <h2>Subscribers</h2>
+      <div
+        tal:condition="direct_subscriptions"
+        tal:repeat="subscription direct_subscriptions"
+      >
+        <a
+          tal:attributes="
+            href subscription/person/fmt:url;
+            title subscription/display_subscribed_by;
+          "
+        >
+          <tal:block replace="structure subscription/person/image:icon" /> 
+          <tal:block replace="structure subscription/person/browsername" />
+        </a>
+      </div>
+      <div tal:condition="not:direct_subscriptions">None</div>
+  </div>
+  <div
+    tal:condition="from_dupes_subscriptions"
+    id="subscribers-from-duplicates"
+    class="section"
   >
-
-      <li tal:repeat="subscription direct_subscriptions">
-        <a href="#"
-           tal:content="subscription/person/browsername"
-           tal:attributes="
-               href subscription/person/fmt:url;
-               title subscription/display_subscribed_by">
-	  Dafydd Harries
-	</a>
-      </li>
-    </ul>
-
-  <div tal:condition="not:direct_subscriptions">None</div>
-
-    <div tal:condition="from_dupes_subscriptions">
-
-      <h2>From duplicates</h2>
-      <ul id="subscribers-from-duplicates" class="person">
-        <li tal:repeat="subscription from_dupes_subscriptions">
-          <a href="#"
-             tal:content="subscription/person/browsername"
-             tal:attributes="
-                 href subscription/person/fmt:url;
-                 title subscription/display_subscribed_by">Dafydd Harries</a>
-        </li>
-      </ul>
+    <h2>From duplicates</h2>
+    <div tal:repeat="subscription from_dupes_subscriptions">
+      <a
+        tal:attributes="
+          href subscription/person/fmt:url;
+          title subscription/display_subscribed_by;
+        "
+      >
+        <tal:block replace="structure subscription/person/image:icon" /> 
+        <tal:block replace="subscription/person/browsername" />
+      </a>
     </div>
-
-    <div tal:condition="also_notified_subscribers">
-
+  </div>
+  <div
+    tal:condition="also_notified_subscribers"
+    id="subscribers-indirect"
+    class="Section"
+  >
     <h2>Also notified</h2>
-
-      <ul id="subscribers-also-notified" class="person">
-        <li tal:repeat="subscriber also_notified_subscribers">
-          <a href="#"
-             tal:content="subscriber/browsername"
-             tal:attributes="href subscriber/fmt:url">Dafydd Harries</a>
-        </li>
-      </ul>
-
-    </div>
-
+    <div
+      tal:repeat="subscriber also_notified_subscribers"
+      tal:content="structure subscriber/fmt:link"
+    />
+  </div>
 </div>

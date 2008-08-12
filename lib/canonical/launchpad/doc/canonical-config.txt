@@ -90,8 +90,7 @@ ZConfig.
 Tests can update the config with test data. For example, the domain
 can be changed for a feature.
 
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
+    >>> test_data = ("""
     ...     [answertracker]
     ...     email_domain: answers.launchpad.dev""")
     >>> config.push('test_data', test_data)
@@ -180,6 +179,21 @@ Because Config is designed to failover to the default development
 environment, and the testrunner overrides the environment and config,
 we need to reconfigure the environment and reload the canonical.config
 module to test CanonicalConfig's behaviour.
+
+Alternatively, the instance name and process name can be specified as
+argument to the constructor.
+
+    >>> from canonical.config import CanonicalConfig
+    >>> dev_config = CanonicalConfig('development', 'authserver')
+    >>> dev_config.instance_name
+    'development'
+    >>> dev_config.process_name
+    'authserver'
+
+    >>> dev_config.devmode
+    True
+    >>> dev_config.authserver.dbuser
+    'authserver'
 
 # XXX sinzui 2008-03-25 bug=78545: This cannot be tested until the
 # config can be restored when this test is torn down.

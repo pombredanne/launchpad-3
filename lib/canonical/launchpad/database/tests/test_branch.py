@@ -61,6 +61,62 @@ class TestCodeImport(TestCase):
         self.assertEqual(None, branch.code_import)
 
 
+class TestBranchGetRevision(TestCaseWithFactory):
+    """Make sure that `Branch.getBranchRevision` works as expected."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.branch = self.factory.makeBranch()
+
+    def _makeRevision(self, revno):
+        # Make a revision and add it to the branch.
+        rev = self.factory.makeRevision()
+        br = self.branch.createBranchRevision(revno, rev)
+        return rev
+
+    def testGetBySequenceNumber(self):
+        rev1 = self._makeRevision(1)
+        branch_revision = self.branch.getBranchRevision(sequence=1)
+        self.assertEqual(rev1, branch_revision.revision)
+        self.assertEqual(1, branch_revision.sequence)
+
+    def testGetByRevision(self):
+        rev1 = self._makeRevision(1)
+        branch_revision = self.branch.getBranchRevision(revision=rev1)
+        self.assertEqual(rev1, branch_revision.revision)
+        self.assertEqual(1, branch_revision.sequence)
+
+    def testGetByRevisionId(self):
+        rev1 = self._makeRevision(1)
+        branch_revision = self.branch.getBranchRevision(
+            revision_id=rev1.revision_id)
+        self.assertEqual(rev1, branch_revision.revision)
+        self.assertEqual(1, branch_revision.sequence)
+
+    def testNonExistant(self):
+        rev1 = self._makeRevision(1)
+        self.assertTrue(self.branch.getBranchRevision(sequence=2) is None)
+        rev2 = self.factory.makeRevision()
+        self.assertTrue(self.branch.getBranchRevision(revision=rev2) is None)
+        self.assertTrue(
+            self.branch.getBranchRevision(revision_id='not found') is None)
+
+    def testInvalidParams(self):
+        self.assertRaises(AssertionError, self.branch.getBranchRevision)
+        rev1 = self._makeRevision(1)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          sequence=1, revision=rev1,
+                          revision_id=rev1.revision_id)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          sequence=1, revision=rev1)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          revision=rev1, revision_id=rev1.revision_id)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          sequence=1, revision_id=rev1.revision_id)
+
+
 class TestBranch(TestCaseWithFactory):
     """Test basic properties about Launchpad database branches."""
 
@@ -70,7 +126,7 @@ class TestBranch(TestCaseWithFactory):
         # Hosted branches are pulled from internal Launchpad URLs.
         branch = self.factory.makeBranch(branch_type=BranchType.HOSTED)
         self.assertEqual(
-            'lp-internal:///%s' % branch.unique_name, branch.getPullURL())
+            'lp-hosted:///%s' % branch.unique_name, branch.getPullURL())
 
     def test_pullURLMirrored(self):
         # Mirrored branches are pulled from their actual URLs -- that's the

@@ -21,6 +21,7 @@ __all__ = [
 from datetime import datetime, timedelta
 import pytz
 
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
@@ -29,7 +30,9 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
+from storm.expr import And, LeftJoin, Not, Or
 from storm.store import Store
+from storm.zope.interfaces import IZStorm
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -86,10 +89,9 @@ from canonical.launchpad.interfaces.mailinglist import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
-    InvalidName, IPerson, IPersonSet, ITeam, IHasPersonNavigationMenu,
-    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
-    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
+    InvalidName, IPerson, IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
+    PersonCreationRationale, PersonVisibility, PersonalStanding,
+    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -180,8 +182,7 @@ def validate_person_visibility(person, attr, value):
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
-    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot,
-               IHasPersonNavigationMenu)
+    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -1068,6 +1069,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             FROM Product, TeamParticipation
             WHERE TeamParticipation.person = %(person)s
             AND owner = TeamParticipation.team
+            AND Product.active IS TRUE
             """ % sqlvalues(person=self)]
 
         # We only want to use the extra query if match_name is not None and it
@@ -1235,9 +1237,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return Karma.selectBy(person=self,
             orderBy='-datecreated')[:quantity]
 
-    # XXX: StuartBishop 2006-05-10:
-    # This cache should no longer be needed once CrowdControl lands,
-    # as apparently it will also cache this information.
+    # This is to cache TeamParticipation information as that's used tons of
+    # times in each request.
     _inTeam_cache = None
 
     def inTeam(self, team):
@@ -1248,9 +1249,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # Translate the team name to an ITeam if we were passed a team.
         if isinstance(team, str):
             team = PersonSet().getByName(team)
-
-        if team.id == self.id: # Short circuit - would return True anyway
-            return True
 
         if self._inTeam_cache is None: # Initialize cache
             self._inTeam_cache = {}
@@ -1695,17 +1693,27 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    def deactivateAccount(self, comment):
-        """Deactivate this person's Launchpad account.
+    def activateAccount(self, comment, password, preferred_email):
+        """See `IPersonSpecialRestricted`.
 
-        Deactivating an account means:
-            - Setting its password to NULL;
-            - Removing the user from all teams he's a member of;
-            - Changing all his email addresses' status to NEW;
-            - Revoking Code of Conduct signatures of that user;
-            - Reassigning bugs/specs assigned to him;
-            - Changing the ownership of products/projects/teams owned by him.
+        :raise AssertionError: if the Person is a Team.
         """
+        # XXX sinzui 2008-07-14 bug=248518:
+        # This method would assert the password is not None, but
+        # setPreferredEmail() passes the Person's current password.
+        if self.is_team:
+            raise AssertionError(
+                "Teams cannot be activated with this method.")
+        self.account.status = AccountStatus.ACTIVE
+        self.account.status_comment = comment
+        self.password = password
+        if preferred_email is not None:
+            self.validateAndEnsurePreferredEmail(preferred_email)
+        # sync so validpersoncache updates.
+        self.account.sync()
+
+    def deactivateAccount(self, comment):
+        """See `IPersonSpecialRestricted`."""
         assert self.is_valid_person, (
             "You can only deactivate an account of a valid person.")
 
@@ -1786,19 +1794,23 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             count += 1
         return new_name
 
-    def reactivateAccount(self, comment):
-        """Reactivate the account.
+    def reactivateAccount(self, comment, password, preferred_email):
+        """See `IPersonSpecialRestricted`.
 
-        Set the account status to ACTIVE and possibly restore the user's
-        name.
+        :raise AssertionError: if the password is not valid.
+        :raise AssertionError: if the preferred email address is None.
+        :raise AssertionError: if this `Person` is a team.
         """
-        if self.password is None:
+        if self.is_team:
             raise AssertionError(
-                "User %s cannot be reactivate without first setting a "
+                "Teams cannot be reactivated with this method.")
+        if password in (None, ''):
+            raise AssertionError(
+                "User %s cannot be reactivated without a "
                 "password." % self.name)
-        if self.preferredemail is None:
+        if preferred_email is None:
             raise AssertionError(
-                "User %s cannot be reactivate without first setting a "
+                "User %s cannot be reactivated without a "
                 "preferred email address." % self.name)
         self.account.status = AccountStatus.ACTIVE
         self.account.status_comment = comment
@@ -1809,6 +1821,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             name_parts = self.name.split('-deactivatedaccount')
             base_new_name = name_parts[0]
             self.name = self._ensureNewName(base_new_name)
+        self.password = password
+        self.validateAndEnsurePreferredEmail(preferred_email)
 
     @property
     def visibility_consistency_warning(self):
@@ -2081,15 +2095,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setPreferredEmail(self, email):
         """See `IPerson`."""
         assert not self.is_team, "This method must not be used for teams."
-        if self.preferredemail is None:
-            # This is the first time we're confirming this person's email
-            # address, so we now assume this person has a Launchpad account.
-            # XXX: This is a hack! In the future we won't have this
-            # association between accounts and confirmed addresses, but this
-            # will do for now. -- Guilherme Salgado, 2007-07-03
-            self.account.status = AccountStatus.ACTIVE
-            self.account.status_comment = None
-            self.account.sync() # sync so validpersoncache updates.
+        if (self.preferredemail is None
+            and self.account_status != AccountStatus.ACTIVE):
+            # XXX sinzui 2008-07-14 bug=248518:
+            # This is a hack to preserve this function's behaviour before
+            # Account was split from Person. This can be removed when
+            # all the callsites ensure that the account is ACTIVE first.
+            self.activateAccount(
+                "Activated when the preferred email was set.",
+                password=self.password,
+                preferred_email=email)
         # Anonymous users may claim their profile; remove the proxy
         # to set the account.
         removeSecurityProxy(email).account = self.account
@@ -2391,6 +2406,7 @@ class PersonSet:
                 defaultmembershipperiod=defaultmembershipperiod,
                 defaultrenewalperiod=defaultrenewalperiod,
                 subscriptionpolicy=subscriptionpolicy)
+        notify(ObjectCreatedEvent(team))
         # Here we add the owner as a team admin manually because we know what
         # we're doing (so we don't need to do any sanity checks) and we don't
         # want any email notifications to be sent.
@@ -2494,65 +2510,49 @@ class PersonSet:
             query = AND(query, Person.q.mergedID==None)
         return Person.selectOne(query)
 
-    def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None.
-
-        XXX StuartBishop 2008-05-16 bug=237283: This method no longer makes
-        sense. The only things we need to lookup by openid identifier are
-        Accounts.
-        """
-        return Person.selectOne(
-                AND(
-                    Person.q.accountID == Account.q.id,
-                    Account.q.openid_identifier == openid_identifier,
-                    Account.q.status == AccountStatus.ACTIVE,
-                    EmailAddress.q.personID == Person.q.id,
-                    EmailAddress.q.status == EmailAddressStatus.PREFERRED,
-                    ),
-                )
+    def getByAccount(self, account):
+        """See `IPersonSet`."""
+        return Person.selectOne(Person.q.accountID == account.id)
 
     def updateStatistics(self, ztm):
         """See `IPersonSet`."""
         stats = getUtility(ILaunchpadStatisticSet)
-        stats.update('people_count', self.getAllPersons().count())
+        people_count = Person.select(
+            AND(Person.q.teamownerID==None, Person.q.mergedID==None)).count()
+        stats.update('people_count', people_count)
         ztm.commit()
-        stats.update('teams_count', self.getAllTeams().count())
+        teams_count = Person.select(
+            AND(Person.q.teamownerID!=None, Person.q.mergedID==None)).count()
+        stats.update('teams_count', teams_count)
         ztm.commit()
 
     def peopleCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('people_count')
 
-    def getAllPersons(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
-        return Person.select(query, orderBy=orderBy)
-
-    def getAllValidPersons(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        return Person.select(
-                Person.q.id == ValidPersonCache.q.id, orderBy=orderBy)
-
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
 
-    def getAllTeams(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
-        return Person.select(query, orderBy=orderBy)
-
     def getAllValidPersonsAndTeams(self):
         """See `IPersonSet`."""
-        return self.getAllTeams().union(
-            self.getAllValidPersons(),
-            orderBy=Person._sortingColumnsForSetOperations)
+        store = getUtility(IZStorm).get('main')
+        tables = [
+            Person,
+            LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+            LeftJoin(Account, EmailAddress.account == Account.id),
+            ]
+        result = store.using(*tables).find(
+            Person,
+            And(
+                Person.merged == None,
+                Or(# A valid person-or-team is either a team...
+                   Not(Person.teamowner == None), # 'Not' due to Bug 244768
+
+                   # or has an active account and a preferred email address.
+                   And(Account.status == AccountStatus.ACTIVE,
+                       EmailAddress.status == EmailAddressStatus.PREFERRED))))
+        return result.order_by(Person.sortingColumns)
 
     def find(self, text, orderBy=None):
         """See `IPersonSet`."""
@@ -2688,22 +2688,6 @@ class PersonSet:
             return None
         assert emailaddress.person is not None
         return emailaddress.person
-
-    def getUbunteros(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            # The fact that the query below is unique makes it
-            # impossible to use person_sort_key(), and rewriting it to
-            # use a subselect is more expensive. -- kiko
-            orderBy = ["Person.displayname", "Person.name"]
-        sigset = getUtility(ISignedCodeOfConductSet)
-        lastdate = sigset.getLastAcceptedDate()
-
-        query = AND(Person.q.id==SignedCodeOfConduct.q.ownerID,
-                    SignedCodeOfConduct.q.active==True,
-                    SignedCodeOfConduct.q.datecreated>=lastdate)
-
-        return Person.select(query, distinct=True, orderBy=orderBy)
 
     def getPOFileContributors(self, pofile):
         """See `IPersonSet`."""
@@ -3392,6 +3376,13 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_person, team_id))
 
+        # Transfer the OpenIDRPSummaries to the new account.
+        cur.execute("""
+            UPDATE OpenIDRPSummary
+            SET account = %s
+            WHERE account = %s
+            """ % sqlvalues(to_person.account, from_person.account))
+
         # Flag the account as merged
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
@@ -3464,7 +3455,7 @@ class PersonSet:
             Person.id in (%s)
             ''' % branch_clause)
 
-    def getSubscribersForTargets(self, targets, recipients=None):
+    def getSubscribersForTargets(self, targets, recipients=None, level=None):
         """See `IPersonSet`. """
         if len(targets) == 0:
             return set()
@@ -3481,6 +3472,10 @@ class PersonSet:
                 else:
                     target_criteria_clauses.append(
                         '%s IS NULL' % key)
+            if level is not None:
+                target_criteria_clauses.append('bug_notification_level >= %s'
+                    % quote(level.value))
+
             target_criteria.append(
                 '(%s)' % ' AND '.join(target_criteria_clauses))
 
@@ -3685,4 +3680,3 @@ class IrcIDSet:
     def new(self, person, network, nickname):
         """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)
-

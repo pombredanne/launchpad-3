@@ -9,6 +9,7 @@ all = ['entry_adapter_for_schema']
 import textwrap
 import urllib
 
+from epydoc.markup import DocstringLinker
 from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
@@ -22,34 +23,62 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollection, IEntry, IResourceGETOperation, IResourceOperation,
-    IResourcePOSTOperation, IScopedCollection)
+    IResourcePOSTOperation, IScopedCollection, ITopLevelEntryLink)
 from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
-from canonical.lazr.interfaces.rest import WebServiceLayer
+from canonical.lazr.interfaces.rest import (
+    LAZR_WEBSERVICE_NAME, WebServiceLayer)
 from canonical.lazr.rest import (
     CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
 
 
-class WadlAPI(RESTUtilityBase):
-    """Base class for WADL-related function namespaces."""
+class WadlDocstringLinker(DocstringLinker):
+    """DocstringLinker used during WADL geneneration.
 
-    def docstringToXHTML(self, doc):
-        """Convert an epydoc docstring to XHTML."""
-        if doc is None:
-            return None
-        doc = textwrap.dedent(doc)
-        if doc == '':
-            return None
-        errors = []
-        parsed = parse_docstring(doc, errors)
-        if len(errors) > 0:
-            messages = [str(error) for error in errors]
-            raise AssertionError(
-                "Invalid docstring %s:\n %s" % (doc, "\n ".join(messages)))
-        return parsed.to_html(None)
+    epydoc uses this object to turn index and identifier references
+    like `DocstringLinker` into an appropriate markup in the output
+    format.
+
+    We don't want to generate links in the WADL file so we basically
+    return the identifier without any special linking markup.
+    """
+
+    def translate_identifier_xref(self, identifier, label=None):
+        """See `DocstringLinker`."""
+        if label:
+            return label
+        return identifier
+
+    def translate_indexterm(self, indexterm):
+        """See `DocstringLinker`."""
+        return indexterm
 
 
-class WadlResourceAPI(WadlAPI):
+WADL_DOC_TEMPLATE = (
+    '<wadl:doc xmlns="http://www.w3.org/1999/xhtml">\n%s\n</wadl:doc>')
+
+
+def generate_wadl_doc(doc):
+    """Create a wadl:doc element wrapping a docstring."""
+    if doc is None:
+        return None
+    # Our docstring convention prevents dedent from working correctly, we need
+    # to dedent all but the first line.
+    lines = doc.strip().splitlines()
+    if not len(lines):
+        return None
+    doc = "%s\n%s" % (lines[0], textwrap.dedent("\n".join(lines[1:])))
+    errors = []
+    parsed = parse_docstring(doc, errors)
+    if len(errors) > 0:
+        messages = [str(error) for error in errors]
+        raise AssertionError(
+            "Invalid docstring %s:\n %s" % (doc, "\n ".join(messages)))
+
+    return WADL_DOC_TEMPLATE % parsed.to_html(WadlDocstringLinker())
+
+
+class WadlResourceAPI(RESTUtilityBase):
     "Namespace for WADL functions that operate on resources."
 
     def __init__(self, resource):
@@ -116,7 +145,7 @@ class WadlByteStorageResourceAPI(WadlResourceAPI):
         return "%s#HostedFile" % self._service_root_url()
 
 
-class WadlServiceRootResourceAPI(WadlAPI):
+class WadlServiceRootResourceAPI(RESTUtilityBase):
     """Namespace for functions that operate on the service root resource.
 
     This class doesn't subclass WadlResourceAPI because that class
@@ -141,15 +170,20 @@ class WadlServiceRootResourceAPI(WadlAPI):
         resource_dicts = []
         top_level = self.resource.getTopLevelPublications()
         for link_name, publication in top_level.items():
-            # We only expose collection resources for now.
-            resource = CollectionResource(publication, self.resource.request)
+            if ITopLevelEntryLink.providedBy(publication):
+                # It's a link to an entry resource.
+                resource = publication
+            else:
+                # It's a collection resource.
+                resource = CollectionResource(
+                    publication, self.resource.request)
             resource_dicts.append({'name' : link_name,
                                    'path' : "$['%s']" % link_name,
                                    'resource' : resource})
         return resource_dicts
 
 
-class WadlResourceAdapterAPI(WadlAPI):
+class WadlResourceAdapterAPI(RESTUtilityBase):
     """Namespace for functions that operate on resource adapter classes."""
 
     def __init__(self, adapter, adapter_interface):
@@ -160,7 +194,7 @@ class WadlResourceAdapterAPI(WadlAPI):
     @property
     def doc(self):
         """Human-readable XHTML documentation for this object type."""
-        return self.docstringToXHTML(self.adapter.__doc__)
+        return generate_wadl_doc(self.adapter.__doc__)
 
     @property
     def named_operations(self):
@@ -194,6 +228,22 @@ class WadlResourceAdapterAPI(WadlAPI):
             (model_class, WebServiceLayer), IResourceOperation)
         ops = [{'name' : name, 'op' : op} for name, op in operations]
         return ops
+
+
+class WadlEntryInterfaceAdapterAPI(WadlResourceAdapterAPI):
+    """Namespace for WADL functions that operate on entry interfaces.
+
+    That is, IEntry subclasses.
+    """
+    def __init__(self, entry_interface):
+        super(WadlEntryInterfaceAdapterAPI, self).__init__(
+            entry_interface, IEntry)
+        self.utility = EntryAdapterUtility.forEntryInterface(entry_interface)
+
+    @property
+    def entry_page_representation_link(self):
+        "The URL to the description of a collection of this kind of object."
+        return self.utility.entry_page_representation_link
 
 
 class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
@@ -244,11 +294,6 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
         return self.utility.entry_page_representation_id
 
     @property
-    def entry_page_representation_link(self):
-        "The URL to the description of a collection of this kind of object."
-        return self.utility.entry_page_representation_link
-
-    @property
     def all_fields(self):
         "Return all schema fields for the object."
         return getFields(self.adapter.schema).values()
@@ -272,7 +317,8 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
     @property
     def collection_type(self):
         """The name of this kind of resource."""
-        return self.adapter.__name__
+        tag = self.entry_schema.queryTaggedValue(LAZR_WEBSERVICE_NAME)
+        return tag['plural']
 
     @property
     def type_link(self):
@@ -286,7 +332,7 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
         return self.adapter.entry_schema
 
 
-class WadlFieldAPI(WadlAPI):
+class WadlFieldAPI(RESTUtilityBase):
     "Namespace for WADL functions that operate on schema fields."
 
     def __init__(self, field):
@@ -314,7 +360,8 @@ class WadlFieldAPI(WadlAPI):
         name = self.field.__name__
         if ICollectionField.providedBy(self.field):
             return name + '_collection_link'
-        elif IObject.providedBy(self.field) or IBytes.providedBy(self.field):
+        elif (IObject.providedBy(self.field) or IBytes.providedBy(self.field)
+              or IReferenceChoice.providedBy(self.field)):
             return name + '_link'
         else:
             return name
@@ -322,14 +369,7 @@ class WadlFieldAPI(WadlAPI):
     @property
     def doc(self):
         """The docstring for this field."""
-        title = self.field.title
-        if title != '':
-            title = "<strong>%s</strong>" % title
-            if self.field.description != '':
-                return "%s: %s" % (self.field.title, self.field.description)
-            else:
-                return title
-        return self.field.description
+        return generate_wadl_doc(self.field.__doc__)
 
     @property
     def path(self):
@@ -402,7 +442,18 @@ class WadlFieldAPI(WadlAPI):
         return None
 
 
-class WadlOperationAPI(WadlAPI):
+class WadlTopLevelEntryLinkAPI(RESTUtilityBase):
+    """Namespace for WADL functions that operate on top-level entry links."""
+
+    def __init__(self, entry_link):
+        self.entry_link = entry_link
+
+    def type_link(self):
+        return EntryAdapterUtility.forSchemaInterface(
+            self.entry_link.entry_type).type_link
+
+
+class WadlOperationAPI(RESTUtilityBase):
     "Namespace for WADL functions that operate on named operations."
 
     def __init__(self, operation):
@@ -427,7 +478,7 @@ class WadlOperationAPI(WadlAPI):
     @property
     def doc(self):
         """Human-readable documentation for this operation."""
-        return self.docstringToXHTML(self.operation.__doc__)
+        return generate_wadl_doc(self.operation.__doc__)
 
     @property
     def has_return_type(self):

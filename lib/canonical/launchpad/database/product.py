@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
@@ -8,6 +8,7 @@ __all__ = [
     'get_allowed_default_stacking_names',
     'Product',
     'ProductSet',
+    'ProductWithLicenses',
     ]
 
 
@@ -23,12 +24,12 @@ from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.lazr import decorates
+from canonical.lazr.utils import safe_hasattr
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from canonical.launchpad.components.launchpadcontainer import (
-    LaunchpadContainerMixin)
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -85,12 +86,67 @@ from canonical.launchpad.interfaces.specification import (
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 
+def get_license_status(license_approved, license_reviewed, licenses):
+    """Decide the license status for an `IProduct`.
+
+    :return: A LicenseStatus enum value.
+    """
+    # A project can only be marked 'license_approved' if it is
+    # OTHER_OPEN_SOURCE.  So, if it is 'license_approved' we return
+    # OPEN_SOURCE, which means one of our admins has determined it is good
+    # enough for us for the project to freely use Launchpad.
+    if license_approved:
+        return LicenseStatus.OPEN_SOURCE
+    if len(licenses) == 0:
+        # We don't know what the license is.
+        return LicenseStatus.UNSPECIFIED
+    elif License.OTHER_PROPRIETARY in licenses:
+        # Notice the difference between the License and LicenseStatus.
+        return LicenseStatus.PROPRIETARY
+    elif License.OTHER_OPEN_SOURCE in licenses:
+        if license_reviewed:
+            # The OTHER_OPEN_SOURCE license was not manually approved
+            # by setting license_approved to true.
+            return LicenseStatus.PROPRIETARY
+        else:
+            # The OTHER_OPEN_SOURCE is pending review.
+            return LicenseStatus.UNREVIEWED
+    else:
+        # The project has at least one license and does not have
+        # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
+        return LicenseStatus.OPEN_SOURCE
+
+
+class ProductWithLicenses:
+    """Caches `Product.licenses`."""
+
+    decorates(IProduct, 'product')
+
+    def __init__(self, product, licenses):
+        self.product = product
+        self._licenses = licenses
+
+    @property
+    def licenses(self):
+        """See `IProduct`."""
+        return self._licenses
+
+    @property
+    def license_status(self):
+        """See `IProduct`.
+
+        Normally, the `Product.license_status` property would use
+        `Product.licenses`, which is not cached, instead of
+        `ProductWithLicenses.licenses`, which is cached.
+        """
+        return get_license_status(
+            self.license_approved, self.license_reviewed, self.licenses)
+
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin, QuestionTargetMixin,
-              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin,
-              LaunchpadContainerMixin):
+              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin):
 
     """A Product."""
 
@@ -182,6 +238,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
+    _cached_licenses = None
 
     def _validate_license_info(self, attr, value):
         if not self._SO_creating and value != self.license_info:
@@ -192,8 +249,27 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     license_info = StringCol(dbName='license_info', default=None,
                              storm_validator=_validate_license_info)
+
+    def _validate_license_approved(self, attr, value):
+        """Ensure license approved is only applied to the correct licenses."""
+        # XXX: BradCrittenden 2008-07-16 Is the check for _SO_creating still
+        # needed for storm?
+        if not self._SO_creating:
+            licenses = self.licenses
+            if value:
+                assert (
+                    License.OTHER_OPEN_SOURCE in licenses and
+                    License.OTHER_PROPRIETARY not in licenses), (
+                    "Only licenses of 'Other/Open Source' and not "
+                    "'Other/Proprietary' may be marked as license_approved.")
+                # Approving a license implies it has been reviewed.  Force
+                # `license_reviewed` to be True.
+                self.license_reviewed = True
+        return value
+
     license_approved = BoolCol(dbName='license_approved',
-                               notNull=True, default=False)
+                               notNull=True, default=False,
+                               storm_validator=_validate_license_approved)
 
     @property
     def default_stacked_on_branch(self):
@@ -324,42 +400,29 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         :return: A LicenseStatus enum value.
         """
-        if self.license_approved:
-            return LicenseStatus.OPEN_SOURCE
-        # Since accesses to the licenses property performs a query on
-        # the ProductLicense table, store the value to avoid doing the
-        # query 3 times.
-        licenses = self.licenses
-        if len(licenses) == 0:
-            # We don't know what the license is.
-            return LicenseStatus.UNREVIEWED
-        elif License.OTHER_PROPRIETARY in licenses:
-            # Notice the difference between the License and LicenseStatus.
-            return LicenseStatus.PROPRIETARY
-        elif License.OTHER_OPEN_SOURCE in licenses:
-            if self.license_reviewed:
-                # The OTHER_OPEN_SOURCE license was not manually approved
-                # by setting license_approved to true.
-                return LicenseStatus.PROPRIETARY
-            else:
-                # The OTHER_OPEN_SOURCE is pending review.
-                return LicenseStatus.UNREVIEWED
-        else:
-            # The project has at least one license and does not have
-            # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
-            return LicenseStatus.OPEN_SOURCE
+        return get_license_status(
+            self.license_approved, self.license_reviewed, self.licenses)
 
     def _resetLicenseReview(self):
         """When the license is modified, it must be reviewed again."""
         self.license_reviewed = False
         self.license_approved = False
 
+    def __storm_invalidated__(self):
+        """Clear cached non-storm attributes when the transaction ends."""
+        self._cached_licenses = None
+        if safe_hasattr(self, '_commercial_subscription_cached'):
+            del self._commercial_subscription_cached
+
     def _getLicenses(self):
         """Get the licenses as a tuple."""
-        return tuple(
-            product_license.license
-            for product_license
-                in ProductLicense.selectBy(product=self, orderBy='license'))
+        if self._cached_licenses is None:
+            product_licenses = ProductLicense.selectBy(
+                product=self, orderBy='license')
+            self._cached_licenses = tuple(
+                product_license.license
+                for product_license in product_licenses)
+        return self._cached_licenses
 
     def _setLicenses(self, licenses, reset_license_reviewed=True):
         """Set the licenses from a tuple of license enums.
@@ -393,6 +456,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         for license in licenses.difference(old_licenses):
             ProductLicense(product=self, license=license)
+        self._cached_licenses = tuple(sorted(licenses))
 
     licenses = property(_getLicenses, _setLicenses)
 
@@ -401,7 +465,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return "BugTask.product = %d" % self.id
 
     def getExternalBugTracker(self):
-        """See `IProduct`."""
+        """See `IHasExternalBugTracker`."""
         if self.official_malone:
             return None
         elif self.bugtracker is not None:
@@ -846,10 +910,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
 
-    def isWithin(self, context):
-        """See `ILaunchpadContainer`."""
-        return context == self or context == self.project
-
     def getCustomLanguageCode(self, language_code):
         """See `IProduct`."""
         return CustomLanguageCode.selectOneBy(
@@ -1124,6 +1184,7 @@ class ProductSet:
     def getTranslatables(self):
         """See `IProductSet`"""
         upstream = Product.select('''
+            Product.active AND
             Product.id = ProductSeries.product AND
             POTemplate.productseries = ProductSeries.id AND
             Product.official_rosetta
@@ -1131,22 +1192,28 @@ class ProductSet:
             clauseTables=['ProductSeries', 'POTemplate'],
             orderBy='Product.title',
             distinct=True)
-        return upstream
+        return upstream.prejoin(['owner'])
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""
-        randomresults = Product.select('''id IN
-            (SELECT Product.id FROM Product, ProductSeries, POTemplate
-               WHERE Product.id = ProductSeries.product AND
-                     POTemplate.productseries = ProductSeries.id AND
-                     Product.official_rosetta
-               ORDER BY random())
-            ''',
-            distinct=True)
-
-        results = list(randomresults[:maximumproducts])
-        results.sort(lambda a, b: cmp(a.title, b.title))
-        return results
+        return Product.select('''
+            id IN (
+                SELECT DISTINCT product_id AS id
+                FROM (
+                    SELECT Product.id AS product_id, random() AS place
+                    FROM Product
+                    JOIN ProductSeries ON
+                        ProductSeries.Product = Product.id
+                    JOIN POTemplate ON
+                        POTemplate.productseries = ProductSeries.id
+                    WHERE Product.active AND Product.official_rosetta
+                    ORDER BY place
+                ) AS randomized_products
+                LIMIT %s
+            )
+            ''' % quote(maximumproducts),
+            distinct=True,
+            orderBy='Product.title')
 
     @cachedproperty
     def stats(self):

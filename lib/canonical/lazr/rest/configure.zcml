@@ -27,6 +27,13 @@
         />
 
     <adapter
+        for="canonical.lazr.interfaces.ITopLevelEntryLink"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlTopLevelEntryLinkAPI"
+        name="wadl"
+        />
+
+    <adapter
         for="canonical.lazr.interfaces.ICollectionResource"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlCollectionResourceAPI"
@@ -52,6 +59,13 @@
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlEntryAdapterAPI"
         name="wadl_entry"
+        />
+
+    <adapter
+        for="zope.interface.interfaces.IInterface"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlEntryInterfaceAdapterAPI"
+        name="wadl_entry_interface"
         />
 
     <adapter

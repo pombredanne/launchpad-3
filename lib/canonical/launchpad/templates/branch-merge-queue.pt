@@ -6,20 +6,17 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-</metal:portlets>
+<metal:heading fill-slot="before_nav_menu"
+               tal:content="structure context/@@+heading"/>
 
 <div metal:fill-slot="main">
 
-  <tal:branch-link define="branch context">
-    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
-  </tal:branch-link>
   <h1>Branch merge queue</h1>
 
   <div id="merge-queue">

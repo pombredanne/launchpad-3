@@ -21,8 +21,6 @@ from urllib import quote
 from datetime import datetime
 import pytz
 
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -692,7 +690,6 @@ class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
         team = getUtility(IPersonSet).newTeam(
             teamowner, name, displayname, teamdescription,
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
-        notify(ObjectCreatedEvent(team))
 
         email = data.get('contactemail')
         if email is not None:

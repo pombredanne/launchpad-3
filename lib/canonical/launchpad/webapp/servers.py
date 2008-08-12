@@ -64,7 +64,8 @@ from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
-from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.publisher import (
+    get_current_browser_request, RedirectionView)
 from canonical.launchpad.webapp.opstats import OpStats
 
 from canonical.lazr.timeout import set_default_timeout_function
@@ -1036,6 +1037,9 @@ class WebServicePublication(LaunchpadBrowserPublication):
         elif IHTTPResource.providedBy(ob):
             # A resource knows how to take care of itself.
             return ob
+        elif zope_isinstance(ob, RedirectionView):
+            # A redirection should be served as is.
+            return ob
         else:
             # This object should not be published on the web service.
             raise NotFound(ob, '')
@@ -1076,7 +1080,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
             # Everything is fine, let's return the principal.
             pass
         principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            token.person.id, access_level=token.permission)
+            token.person.id, access_level=token.permission,
+            scope=token.context)
 
         # Make sure the principal is a member of the beta test team.
         # XXX leonardr 2008-05-22 blueprint=api-bugs-remote

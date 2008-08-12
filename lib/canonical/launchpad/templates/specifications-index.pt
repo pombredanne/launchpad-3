@@ -14,8 +14,8 @@
 
       <ul class="buttons">
         <li>
-          <a href="/+tour"
-             tal:attributes="href string:${rooturl}+tour/feature-tracking.html">
+          <a href="/+tour/feature-tracking"
+             tal:attributes="href string:${rooturl}+tour/feature-tracking">
             <img
               alt="Take a tour"
               src="/+icing/but-lrg-takeatour.gif"

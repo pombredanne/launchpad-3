@@ -13,8 +13,8 @@
     <div metal:fill-slot="main">
       <ul class="rollover buttons">
         <li>
-          <a href="/+tour"
-             tal:attributes="href string:${rooturl}+tour/branch-hosting-tracking.html">
+          <a href="/+tour/branch-hosting-tracking"
+             tal:attributes="href string:${rooturl}+tour/branch-hosting-tracking">
             <img
               alt="Take a tour"
               src="/+icing/but-lrg-takeatour.gif"

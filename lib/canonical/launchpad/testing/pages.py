@@ -522,7 +522,7 @@ def print_location(contents):
     segments = [extract_text(step).encode('us-ascii', 'replace')
                 for step in hierarchy
                 if step.name != 'small']
-    print 'Location:', ' > '.join(segments[1:])
+    print 'Location:', ' > '.join(segments[2:])
     print 'Tabs:'
     print_location_apps(contents)
     main_heading = doc.h1

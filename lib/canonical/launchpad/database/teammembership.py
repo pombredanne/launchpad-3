@@ -329,11 +329,15 @@ class TeamMembership(SQLBase):
 
         if status in active_states:
             _fillTeamParticipation(self.person, self.team)
-        else:
+        elif old_status in active_states:
             # Need to flush db updates because _cleanTeamParticipation() will
             # manipulate the database directly, bypassing the ORM.
             flush_database_updates()
             _cleanTeamParticipation(self.person, self.team)
+        else:
+            # Changed from an inactive state to another inactive one, so no
+            # need to fill/clean the TeamParticipation table.
+            pass
 
         # Flush all updates to ensure any subsequent calls to this method on
         # the same transaction will operate on the correct data.  That is the
@@ -627,6 +631,10 @@ def _cleanTeamParticipation(member, team):
             )
         )"""
     for superteam in superteams:
+        if member in superteam.activemembers:
+            # The member is a direct member of this superteam, so
+            # don't even attempt to kick the member from the superteam.
+            continue
         replacements.update(dict(superteam_id=superteam.id))
         cur.execute(query % replacements)
 
