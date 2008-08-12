@@ -302,15 +302,37 @@ class PullerWorker:
     """
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
-                 protocol, checker, oops_prefix=None):
+                 protocol, checker=None, oops_prefix=None):
+        """Construct a `PullerWorker`.
+
+        :param src: The URL to pull from.
+        :param dest: The URL to pull into.
+        :param branch_id: The database ID of the branch we're pulling.
+        :param unique_name: The unique_name of the branch we're pulling
+            (without the tilde).
+        :param branch_type: A member of the BranchType enum.  It is expected
+            that tests that do not depend on its value will pass None.
+        :param protocol: An instance of `PullerWorkerProtocol`.
+        :param checker: An instance of `URLChecker`.  If not passed, one will
+            be chosen based on the value of `branch_type`.
+        :param oops_prefix: An oops prefix to pass to `setOopsToken` on the
+            global ErrorUtility.
+        """
         self.source = src
         self.dest = dest
         self.branch_id = branch_id
         self.unique_name = unique_name
-        # The branch_type argument should always be set to a BranchType enum
-        # in production use, but it is expected that tests that do not depend
-        # on its value will pass None.
         self.branch_type = branch_type
+        if checker is None:
+            if branch_type == BranchType.HOSTED:
+                checker = HostedURLChecker()
+            elif branch_type == BranchType.MIRRORED:
+                checker = MirroredURLChecker()
+            elif branch_type == BranchType.IMPORTED:
+                checker = ImportedURLChecker()
+            else:
+                raise AssertionError(
+                    "Unexpected branch type: %r" % branch_type)
         self.checker = checker
         self.protocol = protocol
         if protocol is not None:
@@ -318,17 +340,11 @@ class PullerWorker:
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
-
-    def _getBranchReference(self, url):
-        """Get the branch-reference value at the specified url.
-
-        This method is useful to override in unit tests.
-        """
-        bzrdir = BzrDir.open(url)
-        return bzrdir.get_branch_reference()
-
     def _openSourceBranch(self, source):
-        """Open the branch to pull from, useful to override in tests."""
+        """Open the branch to pull from.
+
+        This only exists as a separate method to be overriden in tests.
+        """
         return Branch.open(source)
 
     def _mirrorToDestBranch(self, source_branch):
