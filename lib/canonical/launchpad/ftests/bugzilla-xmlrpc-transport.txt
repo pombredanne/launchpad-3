@@ -1,8 +1,7 @@
 = TestBugzillaXMLRPCTransport =
 
 The TestBugzillaXMLRPCTransport is an XML-RPC transport which simulates
-a remote Bugzilla instance that implements both the Bugzilla XMLRPC API
-and the additional Launchpad plugin API.
+a remote Bugzilla instance that implements the Launchpad plugin API.
 
     >>> import xmlrpclib
     >>> from canonical.launchpad.ftests.externalbugtracker import (
@@ -37,13 +36,13 @@ error will be raised.
 If a namespace exists but there is no method registered under that
 namespace with a given method name, an AssertionError will be raised.
 
-    >>> 'unregistered_method' in bugzilla_transport.methods['Bug']
+    >>> 'unregistered_method' in bugzilla_transport.methods['Launchpad']
     False
 
-    >>> server.Bug.unregistered_method()
+    >>> server.Launchpad.unregistered_method()
     Traceback (most recent call last):
       ...
-    AssertionError: No method 'unregistered_method' in namespace 'Bug'.
+    AssertionError: No method 'unregistered_method' in namespace 'Launchpad'.
 
 
 == Authentication ==
@@ -58,7 +57,8 @@ Some methods require authentication.
 To be authenticated, we need to provide a login cookie. The test
 transport doesn't validate this cookie, it just checks that it exists.
 
-    >>> bugzilla_transport.setCookie("Bugzilla_logincookie=Want moar cookies plz")
+    >>> bugzilla_transport.setCookie(
+    ...     "Bugzilla_logincookie=Want moar cookies plz")
     >>> print server.Test.login_required()
     Wonderful, you've logged in! Aren't you a clever biped?
 
@@ -123,15 +123,16 @@ more useful.
     utc_time: 20080515T22:19:53
 
 
-== Bug.get_bugs() ==
+== Launchpad.get_bugs() ==
 
-The common Bugzilla bug API offers a get_bugs() method which can be used
-to retrieve bugs from a remote Bugzilla instance. It takes a list of bug
-IDs to retrieve and returns a list of dicts containing those bugs' data.
-As is standard with the Bugzilla XMLRPC API, arguments are enclosed in a
-dict so that they are treated as key: value pairs.
+The plugin API offers a get_bugs() method which can be used to retrieve
+bugs from a remote Bugzilla instance. It takes a list of bug IDs to
+retrieve and returns a list of dicts containing those bugs' data.  As is
+standard with the Bugzilla XMLRPC API, arguments are enclosed in a dict
+so that they are treated as "key: value" pairs.
 
-    >>> return_value = server.Bug.get_bugs({'ids': [1], 'permissive': True})
+    >>> return_value = server.Launchpad.get_bugs(
+    ...     {'ids': [1], 'permissive': True})
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict):
     ...     print "%s: %s" % (key, bug_dict[key])
@@ -153,7 +154,8 @@ dict so that they are treated as key: value pairs.
 If more than one ID is specified when get_bugs() is called, more than
 one bug will be returned (assuming they all exist and are accessible).
 
-    >>> return_value = server.Bug.get_bugs({'ids': [1, 2], 'permissive': True})
+    >>> return_value = server.Launchpad.get_bugs(
+    ...     {'ids': [1, 2], 'permissive': True})
     >>> bug_dicts = return_value['bugs']
     >>> for bug_dict in bug_dicts:
     ...     for key in sorted(bug_dict):
@@ -191,7 +193,7 @@ one bug will be returned (assuming they all exist and are accessible).
 
 Bug aliases can also be used to request remote bugs.
 
-    >>> return_value = server.Bug.get_bugs(
+    >>> return_value = server.Launchpad.get_bugs(
     ...     {'ids': ['bug-two'], 'permissive': True})
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict):
@@ -211,10 +213,74 @@ Bug aliases can also be used to request remote bugs.
     status: NEW
     summary: Collect unknown persons in docking bay 2.
 
+Specifying a 'changed_since' parameter when calling Launchpad.get_bugs()
+will cause the method to only return bugs that have changed since that
+date / time. This acts as an intersection with the 'ids' parameter,
+allowing Launchpad to get only the recently-updated subset of a given
+set of remote bugs.
 
-== Bug.comments() ==
+    >>> from xmlrpclib import DateTime
 
-The Launchpad Bugzilla plugin defines a Bug.comments() method which
+    >>> changed_since = datetime(2008, 6, 11, 9, 0, 0)
+
+    >>> # We encode changed_since into an XML-RPC DateTime manually.
+    >>> # This is because xmlrpclib can't handle DateTime encoding
+    >>> # within a dict.
+    >>> # XXX 2008-08-05 gmb (bug 254999):
+    >>> #     We can remove this once we upgrade to python 2.5.
+    >>> changed_since = DateTime(changed_since.timetuple())
+
+    >>> return_value = server.Launchpad.get_bugs({
+    ...     'ids': [1, 2],
+    ...     'changed_since': changed_since,
+    ...     'permissive': True,
+    ...     })
+
+    >>> bug_dicts = return_value['bugs']
+    >>> assert len(bug_dicts) == 1, "There should only be one bug dict."
+
+    >>> bug_dict = bug_dicts[0]
+    >>> for key in sorted(bug_dict):
+    ...     print "%s: %s" % (key, bug_dict[key])
+    alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    is_open: True
+    last_change_time: 20080611T09:24:29
+    priority: P1
+    product: HeartOfGold
+    resolution: 
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.
+
+Setting changed_since to a date in the future will mean that no bugs are
+returned.
+
+    >>> from datetime import timedelta
+    >>> changed_since = datetime.now() + timedelta(days=42)
+
+    >>> # XXX 2008-08-05 gmb (bug 254999):
+    >>> #     We can remove this once we upgrade to python 2.5.
+    >>> changed_since = DateTime(changed_since.timetuple())
+
+    >>> return_value = server.Launchpad.get_bugs({
+    ...     'ids': [1, 2],
+    ...     'changed_since': changed_since,
+    ...     'permissive': True,
+    ...     })
+
+    >>> bug_dicts = return_value['bugs']
+    >>> len(bug_dicts)
+    0
+
+
+== Launchpad.comments() ==
+
+The Launchpad Bugzilla plugin defines a Launchpad.comments() method which
 allows a remote system to get the comments for a given bug or set of
 bugs. We'll define a helper method for printing out comments.
 
@@ -233,10 +299,10 @@ bugs. We'll define a helper method for printing out comments.
     ...             print
     ...         print
 
-If Bug.comments() is passed a list of bug IDs it will return all the
-comments for all of those bugs.
+If Launchpad.comments() is passed a list of bug IDs it will return all
+the comments for all of those bugs.
 
-    >>> return_dict = server.Bug.comments({'bug_ids': [1, 2]})
+    >>> return_dict = server.Launchpad.comments({'bug_ids': [1, 2]})
     >>> bugs_dict = return_dict['bugs']
 
     >>> print_bug_comments(bugs_dict)
@@ -270,7 +336,7 @@ comments for all of those bugs.
 If an ids parameter is specified along with bug_ids, only the comments
 whose IDs are in the list of IDs passed will be returned.
 
-    >>> return_dict = server.Bug.comments(
+    >>> return_dict = server.Launchpad.comments(
     ...     {'bug_ids': [1, 2], 'ids': [1, 2]})
     >>> bugs_dict = return_dict['bugs']
 
@@ -290,11 +356,11 @@ whose IDs are in the list of IDs passed will be returned.
         text: Bring the passengers to the bridge please Marvin.
         time: 20080616T13:08:08
 
-Passing an include parameter allows us to limit which fields are
+Passing an include_fields parameter allows us to limit which fields are
 returned for each comment.
 
-    >>> return_dict = server.Bug.comments(
-    ...     {'bug_ids': [1, 2], 'include': ('id', 'author')})
+    >>> return_dict = server.Launchpad.comments(
+    ...     {'bug_ids': [1, 2], 'include_fields': ('id', 'author')})
     >>> bugs_dict = return_dict['bugs']
 
     >>> print_bug_comments(bugs_dict, sort_key='id')
@@ -313,33 +379,39 @@ returned for each comment.
         author: Ford Prefect <ford.prefect@h2g2.com>
         id: 4
 
+It's worth noting that, due to a quirk in the XML-RPC spec, the bug IDs
+in the returned 'bugs' dict are strings, not integers:
 
-== Bug.add_comment() ==
+    >>> print sorted(bugs_dict)
+    ['1', '2']
 
-The standard Bugzilla API offers a method, Bug.add_comment(), which can
-be used to add comments to a remote bug. It takes two arguments: the ID
-of the remote comment and the body of the comment to be added to it.
+
+== Launchpad.add_comment() ==
+
+The plugin API offers a method, Launchpad.add_comment(), which can be
+used to add comments to a remote bug. It takes two arguments: the ID of
+the remote comment and the body of the comment to be added to it.
 
 add_comment() requires authentication.
 
     >>> bugzilla_transport.expireCookie(bugzilla_transport.auth_cookie)
-    >>> server.Bug.add_comment({'id': 1, 'comment': "This won't work"})
+    >>> server.Launchpad.add_comment({'id': 1, 'comment': "This won't work"})
     Traceback (most recent call last):
       ...
     Fault: <Fault 410: 'Login Required'>
 
-Bug.add_comment() will return the integer comment ID of the new comment
+Launchpad.add_comment() will return the integer comment ID of the new comment
 on the remote server.
 
     >>> comment = "Didn't we have a lovely time the day we went to Bangor?"
     >>> bugzilla_transport.auth_cookie = 'open sesame'
-    >>> return_dict = server.Bug.add_comment({'id': 1, 'comment': comment})
+    >>> return_dict = server.Launchpad.add_comment({'id': 1, 'comment': comment})
     >>> print return_dict['comment_id']
     5
 
 The comment will be stored with the other comments on the remote server.
 
-    >>> return_dict = server.Bug.comments({'bug_ids': [1], 'ids': [5]})
+    >>> return_dict = server.Launchpad.comments({'bug_ids': [1], 'ids': [5]})
     >>> bugs_dict = return_dict['bugs']
 
     >>> print_bug_comments(bugs_dict, sort_key='id')
@@ -353,7 +425,7 @@ The comment will be stored with the other comments on the remote server.
 If add_comment is called on a bug that doesn't exist a fault will be
 raised.
 
-    >>> server.Bug.add_comment({'id': 42, 'comment': "This won't work"})
+    >>> server.Launchpad.add_comment({'id': 42, 'comment': "This won't work"})
     Traceback (most recent call last):
       ...
     Fault: <Fault 101: 'Bug #42 does not exist.'>

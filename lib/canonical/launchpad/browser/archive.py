@@ -25,6 +25,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import Interface
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -34,6 +35,8 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
+from canonical.launchpad.components.archivesourcepublication import (
+    ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
     IArchivePackageCopyingForm, IArchivePackageDeletionForm,
@@ -45,7 +48,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IStructuralHeaderPresentation, NotFoundError)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
-    inactive_publishing_status)
+    inactive_publishing_status, IPublishingSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -118,7 +121,7 @@ class ArchiveContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def copy(self):
         text = 'Copy packages'
-        return Link('+copy-packages', text, icon='info')
+        return Link('+copy-packages', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
@@ -132,7 +135,9 @@ class ArchiveViewBase:
     @property
     def is_active(self):
         """Whether or not this PPA already have publications in it."""
-        return bool(self.context.getPublishedSources())
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return self.context.getPublishedSources().count() > 0
 
     @property
     def source_count_text(self):
@@ -243,7 +248,8 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         """Setup of the package search results."""
         self.batchnav = BatchNavigator(
             self.getPublishingRecords(), self.request)
-        self.search_results = self.batchnav.currentBatch()
+        results = list(self.batchnav.currentBatch())
+        self.search_results = ArchiveSourcePublications(results)
 
 
 class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
@@ -325,7 +331,9 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         infrastructure will do the validation for us.
         """
         terms = []
-        for pub in self.sources[:self.max_sources_presented]:
+
+        results = list(self.sources[:self.max_sources_presented])
+        for pub in ArchiveSourcePublications(results):
             terms.append(SimpleTerm(pub, str(pub.id), pub.displayname))
         return form.Fields(
             List(__name__='selected_sources',
@@ -374,7 +382,9 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
     def has_sources(self):
         """Whether or not the PPA has published source packages."""
         available_sources = self.getSources()
-        return bool(available_sources)
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return available_sources.count() > 0
 
     @property
     def available_sources_size(self):
@@ -459,10 +469,8 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         selected_sources = data.get('selected_sources')
 
         # Perform deletion of the source and its binaries.
-        for source in selected_sources:
-            source.requestDeletion(self.user, comment)
-            for bin in source.getPublishedBinaries():
-                bin.requestDeletion(self.user, comment)
+        publishing_set = getUtility(IPublishingSet)
+        publishing_set.requestDeletion(selected_sources, self.user, comment)
 
         # We end up issuing the published_source query twice this way,
         # because we need the original available source vocabulary to
@@ -756,7 +764,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     @cachedproperty
     def has_dependencies(self):
         """Whether or not the PPA has recorded dependencies."""
-        return bool(self.context.dependencies)
+        # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return self.context.dependencies.count() > 0
 
     def validate_remove(self, action, data):
         """Validate dependency removal parameters.

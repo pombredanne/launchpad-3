@@ -7,7 +7,6 @@ import os
 import shutil
 import socket
 import sys
-from xmlrpclib import ServerProxy
 import urllib2
 
 from bzrlib.branch import Branch
@@ -23,8 +22,7 @@ from canonical.config import config
 from canonical.codehosting import ProgressUIFactory
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller import get_lock_id_for_branch_id
-from canonical.codehosting.transport import (
-    BlockingProxy, get_chrooted_transport, LaunchpadInternalServer)
+from canonical.codehosting.transport import get_puller_server
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -161,13 +159,6 @@ class PullerWorker:
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
-    def _getLaunchpadServer(self):
-        """Return a LaunchpadInternalServer for fetching hosted branches."""
-        authserver = BlockingProxy(ServerProxy(config.codehosting.authserver))
-        branch_transport = get_chrooted_transport(
-            config.codehosting.branches_root)
-        return LaunchpadInternalServer(authserver, branch_transport)
-
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
 
@@ -289,21 +280,12 @@ class PullerWorker:
 
     def _createDestBranch(self):
         """Create the branch to pull to, and copy the source's contents."""
-        # XXX AndrewBennetts 2006-05-26:
-        #    Bzrdir.sprout is *almost* what we want here, except that sprout
-        #    creates a working tree that we don't need. Instead, we do some
-        #    low-level operations.
         if os.path.exists(self.dest):
             shutil.rmtree(self.dest)
         ensure_base(get_transport(self.dest))
-        bzrdir_format = self._source_branch.bzrdir._format
-        bzrdir = bzrdir_format.initialize(self.dest)
-        repo_format = self._source_branch.repository._format
-        repo = repo_format.initialize(bzrdir)
-        branch_format = self._source_branch._format
-        branch = branch_format.initialize(bzrdir)
-        branch.pull(self._source_branch)
-        return branch
+        bzrdir = self._source_branch.bzrdir
+        bzrdir.clone(self.dest, preserve_stacking=True)
+        return Branch.open(self.dest)
 
     def _record_oops(self, message=None):
         """Record an oops for the current exception.
@@ -333,7 +315,7 @@ class PullerWorker:
         particularly useful for tests that want to mirror a branch and be
         informed immediately of any errors.
         """
-        server = self._getLaunchpadServer()
+        server = get_puller_server()
         server.setUp()
         try:
             self._checkSourceUrl()

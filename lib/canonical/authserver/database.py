@@ -25,7 +25,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.ftests import login, login_person, logout, ANONYMOUS
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.database.sqlbase import clear_current_connection_cache
+from canonical.database.sqlbase import (
+    clear_current_connection_cache, reset_store)
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
@@ -47,6 +48,7 @@ def utf8(x):
 
 def read_only_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
+    @reset_store
     def transacted(*args, **kwargs):
         transaction.begin()
         clear_current_connection_cache()
@@ -61,9 +63,9 @@ def read_only_transaction(function):
 
 def writing_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
+    @reset_store
     def transacted(*args, **kwargs):
         transaction.begin()
-        clear_current_connection_cache()
         login(ANONYMOUS)
         try:
             ret = function(*args, **kwargs)
@@ -499,7 +501,7 @@ class DatabaseBranchDetailsStorage:
         if branch.branch_type == BranchType.REMOTE:
             raise AssertionError(
                 'Remote branches should never be in the pull queue.')
-        return (branch.id, branch.getPullURL(), branch.unique_name[1:])
+        return (branch.id, branch.getPullURL(), branch.unique_name)
 
     def getBranchPullQueue(self, branch_type):
         """See `IBranchDetailsStorage`."""

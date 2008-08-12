@@ -619,7 +619,7 @@ it continues to be considered 'available for deletion'.
 
     >>> removal_candidate = cprov_archive.getPublishedSources(
     ...     name='ice')[0]
-    >>> removal_candidate.getPublishedBinaries().count()
+    >>> len(removal_candidate.getPublishedBinaries())
     1
 
     >>> deleted = removal_candidate.requestDeletion(cprov, 'go away !')

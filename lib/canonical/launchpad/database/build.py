@@ -6,6 +6,7 @@ __all__ = ['Build', 'BuildSet']
 
 
 import apt_pkg
+from cStringIO import StringIO
 from datetime import datetime, timedelta
 import logging
 
@@ -31,14 +32,20 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
-    get_email_template, contactEmailAddresses)
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBuild, IBuildSet, IBuilderSet,
-    NotFoundError, ILaunchpadCelebrities, PackagePublishingPocket,
-    PackagePublishingStatus)
+     contactEmailAddresses, filenameToContentType, get_email_template)
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IBuild, IBuildSet)
+from canonical.launchpad.interfaces.builder import IBuilderSet
+from canonical.launchpad.interfaces.launchpad import (
+    NotFoundError, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+
 
 class Build(SQLBase):
     implements(IBuild)
@@ -69,6 +76,9 @@ class Build(SQLBase):
     buildqueue_record = Reference("<primary key>", BuildQueue.buildID,
                                   on_remote=True)
     date_first_dispatched = UtcDateTimeCol(dbName='date_first_dispatched')
+
+    upload_log = ForeignKey(
+        dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
 
     @property
     def current_component(self):
@@ -218,6 +228,7 @@ class Build(SQLBase):
         self.buildduration = None
         self.builder = None
         self.buildlog = None
+        self.upload_log = None
         self.dependencies = None
         self.createBuildQueueEntry()
 
@@ -659,6 +670,22 @@ class Build(SQLBase):
                 fromaddress, toaddress, subject, message,
                 headers=extra_headers)
 
+    def storeUploadLog(self, content):
+        """See `IBuild`."""
+        assert self.upload_log is None, (
+            "Upload log information already exist and cannot be overridden.")
+
+        filename = 'upload_%s_log.txt' % self.id
+        contentType = filenameToContentType(filename)
+        file_size = len(content)
+        file_content = StringIO(content)
+        restricted = self.archive.private
+
+        library_file = getUtility(ILibraryFileAliasSet).create(
+            filename, file_size, file_content, contentType=contentType,
+            restricted=restricted)
+        self.upload_log = library_file
+
 
 class BuildSet:
     implements(IBuildSet)
@@ -830,16 +857,13 @@ class BuildSet:
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
-            orderBy = ["-BuildQueue.lastscore"]
+            orderBy = ["-BuildQueue.lastscore", "Build.id"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
         elif status == BuildStatus.SUPERSEDED or status is None:
             orderBy = ["-Build.datecreated"]
         else:
             orderBy = ["-Build.datebuilt"]
-
-        # Fallback to ordering by id as a tie-breaker.
-        orderBy.append("id")
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
@@ -870,8 +894,16 @@ class BuildSet:
             """ % ','.join(
                 sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
+        prejoins = [
+            "sourcepackagerelease",
+            "sourcepackagerelease.sourcepackagename",
+            "buildlog",
+            "buildlog.content",
+            ]
+
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,
+                            prejoins=prejoins,
                             orderBy=orderBy)
 
     def retryDepWaiting(self, distroarchseries):

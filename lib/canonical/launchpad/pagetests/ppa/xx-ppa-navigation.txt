@@ -13,7 +13,7 @@ link on the PPA owner page.
 While navigating around the PPA the "structural location" remains the
 "PPA owner":
 
-    >>> print_navigation(anon_browser.contents)
+    >>> print_location(anon_browser.contents)
     Location: Celso Providelo
     Tabs:
     * Overview (http://launchpad.dev/~cprov)
@@ -36,7 +36,7 @@ the 'View build records' link.
 The user could return to the 'PPA' overview by using the 'View PPA'
 link:
 
-    >>> anon_browser.getLink('View PPA').url
+    >>> anon_browser.getLink('Personal Package Archive').url
     'http://launchpad.dev/~cprov/+archive'
 
 The user can navigate to an individual build details:
@@ -47,7 +47,7 @@ The user can navigate to an individual build details:
     >>> anon_browser.title
     'i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
 
-    >>> print_navigation(anon_browser.contents)
+    >>> print_location(anon_browser.contents)
     Location: Celso Providelo
     Tabs:
     * Overview (http://launchpad.dev/~cprov)

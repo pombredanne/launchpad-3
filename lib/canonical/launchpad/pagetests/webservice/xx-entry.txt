@@ -22,6 +22,16 @@ Salgado'.
   >>> salgado['display_name']
   u'Guilherme Salgado'
 
+The service root resource describes a link to one special entry: the
+user account of the authenticated user. To avoid confusion when one
+program runs as different users, this is implemented as a redirect to
+that person's canonical URL.
+
+  >>> print webservice.get('/beta/people/+me').getOutput()
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://api.launchpad.dev/beta/~salgado
+
 
 == Content negotiation ==
 
@@ -58,28 +68,6 @@ capabilities.
   >>> negotiated_type('application/json;q=0,'
   ...                 'application/vd.sun.wadl+xml;q=0.1')
   'application/vd.sun.wadl+xml'
-
-
-== Partial visibility ==
-
-Some parts of an entry may not be visible. Here we see a public bug
-that's assigned to a private team. A non-privileged user can see the
-bug but not the team. Ordinarily this would cause a problem because
-the representation of the bug is supposed to contain a link to a
-team. Instead of denying access completely, that part of the
-representation is omitted from the team.
-
-   >>> authorized_view = webservice.get('/beta/~myteam').jsonBody()
-   >>> authorized_view['members_collection_link']
-   u'http://api.launchpad.dev/beta/~myteam/members'
-   >>> authorized_view['members_details_collection_link']
-   u'http://api.launchpad.dev/beta/~myteam/members_details'
-
-   >>> unauthorized_view = user_webservice.get('/beta/~myteam').jsonBody()
-   >>> unauthorized_view['members_collection_link']
-   u'tag:launchpad.net:2008:redacted'
-   >>> unauthorized_view['members_details_collection_link']
-   u'tag:launchpad.net:2008:redacted'
 
 
 == Custom operations ==

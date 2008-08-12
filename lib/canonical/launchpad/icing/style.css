@@ -1,3 +1,27 @@
+/* = Launchpad style sheet = */
+
+/* == Contents == */
+/*
+ * Guidelines
+ * Stuff browsers should do but don't
+ * Overall presentation
+...
+ * Application-specific styles
+  - Overview
+  - Code
+  - Bugs
+  - Blueprints
+  - Translations
+  - Answers
+...
+*/
+
+/* == Guidelines == */
+/*
+ * Use absolute units (e.g. px, pt) only when image sizes or CSS limitations
+   demand it. Otherwise, use relative units (%, em).
+*/
+
 .demo {background-color: #fee;}
 
 /* === Stuff browsers should do but don't === */
@@ -18,6 +42,7 @@
 abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
 address {font-style: inherit;}
 * html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
+div.aside {display: block;}
 caption {caption-side: bottom; text-align: left;}
 dt dfn {font-style: normal; font-weight: bold;}
 dd {margin-bottom: 1em;}
@@ -50,6 +75,7 @@ legend legend {font-weight: normal;}
   border-width: 0 0 1px 0;
   display: block;
 }
+div.section {display: block; margin-bottom: 1em;}
 table {border-collapse: collapse;}
 textarea {display: block;}
 thead {vertical-align: bottom;}
@@ -72,11 +98,7 @@ html {
   color: #333;
   background-color: #fff;
 }
-body {
-  margin: 0; padding: 10px 20px;
-  /* Minimal width to display the application tabs and rounded corners. */
-  min-width: 529px;
-}
+body {margin: 0; padding: 10px 20px;}
 
 :link                         {color: #039;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
@@ -85,8 +107,9 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   background: none;
+  clear: left;
   padding: 0;
-  margin: 0;
+  margin: 0 0 0.5em;
   /* Content headings are highlighted using a different color (the color is
      overriden per-application in subsequent rules) instead of bold text. */
   color: #83ad23;
@@ -96,58 +119,57 @@ h1 { font-size: 2.2em; }
 h2 { font-size: 1.5em; }
 h3 { font-size: 1.1em; }
 h4, h5, h6 { font-size: 1em; }
-h1, h2, h3, h4, h5, h6 { margin-bottom: 0.5em; }
 /* H1 is only used at the top the maincontent, maybe below a short description
    of the displayed object. It must have zero margin-top. */
 h2, h3, h4, h5, h6 { margin-top: 1em; }
+/* Browsers indent lists inconsistently, so we override them completely: */
+ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
 
 .exception {color: #cc0000;}
-.discreet, .lesser {font-size: 80%;}
+.discreet, .lesser {font-size: 90%;}
 .offline {text-align: center; margin: 2em 20px;}
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 .unavailable {color: #999; background: none;}
 
-/* --- Error, warning, and info messages --- */
+/* === Error, warning, and informational messages === */
+/* Error, warning, and informational alerts are in a centered box: */
+.error.message, .warning.message, .informational.message {
+  border: solid #666;
+  border-width: 1px 2px 2px 1px;
+  color: black;
+  margin: 0 auto 10px auto;
+  padding: 0 10px 10px 20px;
+  width: 30em;
+}
+/* The alerts are preceded with an icon overlaying the top left corner: */
+.error.message::before, .warning.message::before,
+.informational.message::before {
+  display: block; margin: -15px 0 -6px -35px;
+}
+/* Error messages are pink, with alerts having an error icon: */
+.error         {background: #ffe4e4;}
+.error.message::before         {content: url(/@@/error-large);}
+/* Warning messages are orange, with alerts having a warning icon: */
+.warning       {background: #fff59c;}
+.warning.message::before       {content: url(/@@/warning-large);}
+/* Informational messages are blue-to-grey, with alerts having an info icon: */
+.informational {background: #d4e8ff url(/+icing/blue-fade-to-grey);}
+.informational.message::before {content: url(/@@/info-large);}
+/* Debugging messages are white on grey, with alerts having an info icon: */
+.debugging     {background: #666; color: white;}
+.debugging.message::before     {content: url(/@@/info-large);}
+/* Form errors override this background color, because the lack of space
+between the edge of fields and the edge of the color would look bad: */
+table.form .error {background: none;}
+/* And inside, the error message itself uses a smaller icon: */
+.error .message {
+  background: url(/@@/error) center left no-repeat;
+  margin-bottom: 0.25em;
+  padding-left: 18px;
+}
 
-.error, .warning, .informational {
-  padding: 0.5em;
-}
-.message {
-  background: 5px 0.5em no-repeat;
-  font-weight: bold;
-  margin: 1em 0 0.5em;
-  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
-}
-.error .message, .warning .message, .informational .message {
-  margin: 0.25em 0 0;
-  padding: 0 0 0 25px;
-  background: 0 0 no-repeat;
-}
-.error {color: #db1f22;}
-.error.message, .error .message {
-  background-image: url(/@@/error);
-}
-td.error {
-  border: 1px solid #db1f22;
-  background-color: #ffffff;
-}
-.warning {background-color: #fcdd99; color: black;}
-.warning.message, .warning .message {
-  background-image: url(/@@/warning);
-}
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
-}
-.helpwanted.message, .helpwanted .message {
-  background-image: url(/@@/helpwanted);
-}
-.informational {background-color: #fcfc99; color: black;}
-.informational.message, .informational .message {
-  background-image: url(/@@/info);
-}
-.debugging {background-color: #666; color: white;}
-.debugging.message, .debugging .message {
-  background-image: url(/@@/info);
 }
 .whiteboard {
   color: #666;
@@ -181,13 +203,13 @@ table.listing div.field>label, table.listing div.field>div>label,
 table.listing div.actions {
   display: block; margin-top: 1em;
 }
-/* XXX 20080110 mpt: We make textareas slightly narrower in IE to avoid the
-right side being clipped (bug 156202). This should be rechecked post-2.0. */
-textarea {width: 100%;}
-/* This is currently overridden for Internet Explorer in main-template.pt. */
+/* Text fields occupy as much of the page width as possible, minus a safety
+margin for Internet Explorer, and up to a reasonable maximum: */
+textarea {width: 90%; max-width: 60em;}
 
-table.form {margin-top: 1em; width: 100%;}
-  /* http://launchpad.dev/firefox/+edit */
+/* Many forms are laid out using tables, with appropriate spacing: */
+table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
+table.form th, table.form td {padding-bottom: 1em;}
 
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
@@ -236,6 +258,7 @@ table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 .batch-navigation-links .next.inactive {
   background-image: url(/@@/arrowRight-inactive);
 }
+.batch-navigation-links .inactive {color: #999ea7;}
 /* And all the links have spacing between them: */
 .batch-navigation-links .previous, .batch-navigation-links .next,
 .batch-navigation-links .last {
@@ -267,7 +290,10 @@ img {
 }
 img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
 .collapsible legend a span {text-decoration: underline;}
-.collapsible {padding: 0; margin: 0;}
+.collapsible {
+  margin: 0;
+  padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
+}
 .collapsed {border: none; margin-bottom: 0;}
 fieldset .collapsed {display: none;}
 fieldset .expanded {display: block;}
@@ -287,16 +313,6 @@ form.primary.search {
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
 
-hr {
-  border: 0;
-  margin: 8px 0px 0px 0px;
-  padding: 6px 0px 0px 0px;
-  width: 100%;
-  height: 2px;
-  border-top: 2px solid #000000;
-  overflow: hidden;
-  display: none;
-}
 h1 em, h2 em, h3 em, h4 em, h5 em {
   font-style: normal;
   color: #353535;
@@ -327,21 +343,17 @@ hr {
 
 /* All pages begin with a global header or a topline. */
 #globalheader {
+  clear: both;
   position: relative;
   width: 100%;
   height: 21px;
   overflow: hidden;
   margin: 0;
+  padding: 0;
   background-color: #EEE;
   background-image:  url(globalheader_bg.gif);
   background-repeat: repeat-x;
   background-position: top center;
-}
-/* Home icon and link. */
-#globalheader a.home {
-  display: block;
-  margin: 0;
-  padding: 0;
 }
 #globalheader .sitemessage a {
   color: #FFF;
@@ -349,296 +361,267 @@ hr {
 }
 /* Site-specific message. */
 #globalheader .sitemessage {
-  position: absolute;
-  top: 2px;
-  left: 10px;
-  display: inline;
+  text-align: center;
   color: #FFF;
   font-size: 13px;
+  padding-top: 2px;
 }
-/* Small launchpad icon and rasterized text. */
-#globalheader img.launchpad {
-  position: absolute;
-  top: 0;
-  right: 0;
-}
-/* Thin line at the top, when we don't have a global header site message */
-#topline {
-  position: relative;
-  width: 100%;
-  height: 1px;
-  overflow: hidden;
-  margin: 0;
-  background-color: #6D6D6D;
-}
-/* Next is a location bar. */
 
-#locationbar {
-  width: 100%;
-  height: 26px;
+/* === Location bar === */
+/* The location bar consists of three element: the login control, the location
+hierarchy, and the application tabs. */
+#locationbar {margin-bottom: 30px;}
+
+/* === Login control === */
+/* At the top right of the page is a link to log in or a button to log out: */
+#logincontrol {
+    float: right;
+}
+#logincontrol a:hover {
+    text-decoration: none;
+}
+
+/* push image a little bit down to make it line up better with the text */
+#logincontrol img {
+    margin-bottom: -2px;
+}
+/* The 'Log Out' button lacks the right margin that buttons usually have: */
+#logincontrol input[type='submit'] {
+  font-size: smaller;
+  margin-right: 0;
+}
+
+/* === Location hierarchy === */
+/*
+  # XXX mpt 20080710 bug=247420: Known issues with the hierarchy:
+  - The top border and bevel of the last segment is missing.
+  - The right border and bevel of the last segment is missing.
+  - The border between the last segment and the spine should not be present.
+  - The spine should have a slight top bevel as well as a border.
+*/
+/*
+  The location bar begins with a series of interlocking segments, showing
+  your location in the hierarchy of people and projects:
+*/
+#lp-hierarchy {
+  float: left;
+  width: auto;
+  background: #eee url(navigation-hierarchy-bg) top left no-repeat;
+  margin-bottom: -1px;
+  min-height: 25px;
+}
+/* The first segment has a rounded top left corner:*/
+.first-rounded {
+  background: url(navigation-hierarchy-nw) top left no-repeat;
+  min-height: 25px;
+  display: block;
+  width: 6px;
+  float: left;
+}
+/* The segments have '>' separators for the benefit of those without CSS: */
+#lp-hierarchy small {display: none;}
+/* The last segment is darker (on the front page, this is the only item): */
+#lp-hierarchy.home {
+  background: url(navigation-hierarchy-home-bg) no-repeat;
+  padding: 0 0 2px 6px;
+  width:110px;
+}
+/* Each segment appears as a clickable button: */
+#lp-hierarchy a {
+  color: #000; float:left; display: block; padding: 6px 22px 0 8px;
+}
+/* The segments have chevrons to convey their parent-child relationship: */
+#lp-hierarchy .item {
+  background: url(navigation-hierarchy-chevron-normal) no-repeat right;
+  float: left;
+  min-height: 25px;
+  padding-bottom: 2px;
+  vertical-align: middle;
+}
+/* The penultimate segment leads into the dark color of the last segment: */
+#lp-hierarchy .before-last {
+  background:url(navigation-hierarchy-chevron-selected) no-repeat right;
+}
+/* The last segment is dark, and has a rounded top right corner: */
+#lp-hierarchy .last a {font-weight: bold; padding-right: 10px;}
+#lp-hierarchy .last {
+  background: #ddd url(navigation-hierarchy-ne) top right no-repeat;
+}
+
+/* === Location spine === */
+/*
+  A narrow horizontal bar ties the location bar together. On those pages with
+  application tabs, it visually connects the selected hierarchy element and
+  the selected tab:
+*/
+.apps-separator {
+  clear: left;
+  height: 5px;
   margin: 0;
   padding: 0;
-  list-style: none;
-  background-color: #AFDB1F;
-  font-size: 11px;
-  font-weight: bold;
-  color: #FFF;
+  background: #ddd;
+  border: 1px solid #ccc;
 }
-ul#menuroot a#homebreadcrumb span {
-  background: url(home-low-high.gif) left top no-repeat;
-  padding-left: 16px; /* space between home icon and the word "Home" */
-}
-ul#menuroot li a#homebreadcrumb:hover span,
-ul#menuroot li.selected a#homebreadcrumb span {
-  background: url(home-low-high.gif) left -20px no-repeat;
-  padding-left: 16px;
-}
-/* The location bar contains menus. */
-ul#menuroot {
-  display: inline;
-  float: left;
-  margin: 0;
-  /* Right padding needed so the rightmost arrow is within the box. It must be
-     the opposite of the negative right margin on breadcrumb items. */
-  /* Other paddings and margins set to zero to undo the generic "ul" style. */
-  padding: 0 16px 0 0;
-  margin: 0;
-  /* To prevent a gap when "#logincontrol" wraps around and the font size is
-     increased, we need to prevent the box height from being greater than the
-     height of the #locationbar box, which sets the green background. We do not
-     inherit the height limit from #location bar because this element is
-     floated.
 
-     0px vertical padding + 26px height = 26px, height of "#locationbar". */
-  height: 26px;
-}
-/* XXX: needs explanation */
-ul#menuroot li {
-  display: inline;
-}
-/* Style for breadcrumb items.
- *
- * XXX: background stuff needs explanation.
- *
- * Negative right margin for breadcrumbs.
- * This is part of how we make them look like arrows.
- */
-ul#menuroot a.breadcrumb {
+/* === Location application tabs === */
+/* In most pages, the location bar includes six centered application tabs: */
+#lp-apps {
   position: relative;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1000px 0px;
-  display: block;
+  width: 98%; /* leaves a minimum explanatory margin at the left and right */
+  max-width: 72em; /* prevents each tab from being more than 12em wide */
+  padding: 0;
+  margin: 0 auto; /* centers the tabs */
+}
+/* The tabs have text separators for the benefit of those without CSS: */
+#lp-apps small {display: none;}
+/* The tabs are equal size, not too wide, and attached to the center bar: */
+#lp-apps span {
+  position: relative;
   float: left;
-  margin-right: -16px;
+  width: 16.16%; /* = (100% / 6) - 0.5% left over */
+  margin: 0 0.25%; /* = the leftover 0.5%, half each on the left and right */
+    /* This is overridden in main-template.pt for Internet Explorer */
+  padding: 0;
+  text-align: center;
+  color: #333;
+  line-height: 1.5em;
 }
-/* "Your location:" text.
- *
- * The 1px negative right margin is to bring the first breadcrumb a little
- * closer to the "Your location:" text.  It makes it look visually tighter
- * because of the chevron shape of the highlights.
- */
-#yourlocation {
-  float: left;
+#lp-apps span a, #lp-apps span strong {
   display: block;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1100px 0px;
-  padding: 6px 0 6px 10px;
-  margin-right: -1px;
-  /* To prevent a gap when "#logincontrol" wraps around and the font size is
-     increased, we need to prevent the box height from being greater than the
-     height of the #locationbar box, which sets the green background. We do not
-     inherit the height limit from #location bar because this element is
-     floated.
-
-     12px vertical padding + 14px height = 26px, height of "#locationbar". */
-  height: 14px;
-}
-/* IE6 specific rule to make the location bar look better. */
-* html #yourlocation {padding-bottom: 4px;}
-/* Display dyn menu items and breadcrumbs with black text and as blocks. */
-#locationbar li a,
-#locationbar li span {
-  display: block;
-  color: #000000;
-}
-/* Unlinked items.  Same colour as the overview actions menu. */
-#locationbar li .unlinked {
-  color: #83AD23;
-}
-/* XXX: needs explanation */
-ul#menuroot a.breadcrumb em { /* should be changed to not need em */
-  font-style: normal;
-  float: left;
-  display: block;
-  background-image: url(locationbar_nodrop_em_bg.gif);
-  background-repeat: no-repeat;
-  background-position: right top;
-  padding: 6px 26px 6px 20px;
-  cursor: pointer;
-}
-* html ul#menuroot a.breadcrumb em {padding-bottom: 4px;} /* for IE6 */
-/* When a breadcrumb has a submenu, show a down-arrow. */
-ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
-  background-image: url(locationbar_em_bg.gif);
-}
-/* General appearance of a dynamic menu item.
- * The area we actually see on the page is an <a> element.
- * The <li> element takes up no space.
- */
-#locationbar ul.menu li a,
-#locationbar ul.menu li .unlinked {
-  background-image: none;
-  background-color: #AFDB1F;
-  float: none;
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 3px;
-  padding-bottom: 3px;
-  height: auto;
-}
-/* General appearance of a dynamic menu item. */
-#locationbar ul.menu li {
-  margin-bottom: 0px;
-  padding-bottom: 0px;
-}
-/* Appearance of a dynamic menu or submenu.
- * Note the 3d-effect border.
- * Note the z-index so that they appear above all other content.
- */
-#locationbar ul.menu {
-  background-color: #AFDB1F;
-  position: absolute;
-  z-index: 2000;
-  margin-left: 0px;
-  border-right: 1px solid #90B51A;
-  border-bottom: 1px solid #90B51A;
-  border-top: 1px solid #DCF58B;
-  border-left: 1px solid #DCF58B;
-  padding-left: 0px;
-  padding-right: 0px;
-}
-
-/* Because the menus are misplaced on IE6, we'll hide them for now. */
-* html ul#menuroot a.container.breadcrumb em {
-  background-image: url(locationbar_nodrop_em_bg.gif);
-}
-* html #locationbar ul.menu {display: none;}
-
-/* Inhibit underlines on all dyn menu items. */
-#locationbar li a:hover {
+  color: #333;
   text-decoration: none;
-}
-/* Set the appearance of dyn menu items other than the breadcrumbs
- * on mouse-over.
- * The colour #EEE is sometimes used for debugging.
- */
-#locationbar ul#rootmenu ul.menu li a:hover {
-  /* color: #EEE; */
-}
-/* Set the appearance of dyn menu items other than the breadcrumbs
- * when selected and potentially opened.
- * This works, but has the > that makes IE unhappy.
- * #locationbar ul.menu li.selected>a {
- *   background-color: #C8EF48;
- *   color: #000;
- * }
- * So instead, we have the following two rules.
-*/
-#locationbar ul.menu li a {
-  background-color: #AFDB1F;
-  color: #000;
-}
-#locationbar ul.menu li.selected>a {
-  background-color: #C8EF48;
-  color: #000;
-}
-/* Set the appearance of breadcrumb items on mouse-over.
- * This is the same as how they look when selected, so that
- * they look right during the deliberate delay between being
- * moused-over and actually activated.
- */
-ul#menuroot li a.breadcrumb:hover {
-  background-position: 0px 0px;
-  color: #000;
-}
-/* Set the appearance of breadcrumb items when selected for opening. */
-ul#menuroot li.selected a.breadcrumb {
-  background-position: 0px 0px;
-  color: #000;
-}
-/* Make dyn menu items that are the source of submenus have a right-arrow
- * on the far right, to show they can be opened.
- *
- * Does not include the breadcrumbs.
- */
-#locationbar ul.menu a.container {
-  background-image: url(/@@/arrowRight);
-  background-repeat: no-repeat;
-  background-position: center right;
-}
-/* Allow dyn menus to appear ouside of the locationbar, even though they
- * overflow its bounds.
- */
-#locationbar {margin-bottom: 10px; overflow: visible;}
-/* Prevent the text in links in menu items from wrapping.
- * Apply appropriate formatting to links in menu items.
- */
-#locationbar li a,
-#locationbar li .unlinked {
-  left: auto;
-  margin: 0px 0px 0px 0px;
-  white-space: pre;
-}
-/* Login control goes on the right, taking up the full height of the
- * locationbar.
- */
-#logincontrol {
-  float: right;
-  height: 100%;
-  /* In narrow windows, when the "#menuroot" is wide, this can wrap around. So
-     use the same background color as the rest of the "#locationbar". */
-  background-color: #AFDB1F;
-  /* Override margin set in common.css (for help.launchpad.net). */
   margin: 0;
+  overflow: hidden;
+  padding: 0 0 5px;
 }
-/* The control itself is actually in a table cell, vertically aligned to
- * the middle of the locationbar.
- */
-#logincontrol td {
-  color: #FFFFFF;
-  font-size: 11px;
-  font-weight: bold;
-  vertical-align: middle;
-  /* Reset vertical padding specified by the "td" style. It causes the
-     "#logincontrol" background area to exceed the "#locationbar" height for
-     even modest increases in font size. */
-  padding-top: 0;
-  padding-bottom: 0;
-  /* Set horizontal padding to 10px, which is also the left padding of the
-     "#yourlocation" box (hence the visible space left of the location bar). */
-  padding-left: 10px;
-  padding-right: 10px;
+/* The active tab is darker, and looks contiguous with the spine above: */
+#lp-apps .active {border-top: 1px solid #ddd; font-weight: bold; top: -1px;}
+#lp-apps .overview {
+  background: url(navigation-tabs-sw-overview) bottom right no-repeat;
 }
-/* Reset standard margin from "input[type='submit']" to avoid unwanted spacing
-   when logged in. */
-#logincontrol input[type='submit'] { margin-right: 0; }
-/* Link text is black. */
-#logincontrol a {
-    color: #000000;
+#lp-apps .overview a, #lp-apps .overview strong {
+  background: url(navigation-tabs-se-overview) bottom left no-repeat;
+}
+#lp-apps .overview a:hover {
+  color: #8fb635;
+}
+#lp-apps .overview.active {
+  background: url(navigation-tabs-sw-overview-active) bottom right no-repeat;
+}
+#lp-apps .overview.active strong, #lp-apps .overview.active a {
+  background: url(navigation-tabs-se-overview-active) bottom left no-repeat;
+}
+#lp-apps .branches {
+  background: url(navigation-tabs-sw-code) bottom right no-repeat;
+}
+#lp-apps .branches a, #lp-apps .branches strong {
+  background: url(navigation-tabs-se-code) bottom left no-repeat;
+}
+#lp-apps .branches a:hover {
+  color: #d18c3b;
+}
+#lp-apps .branches.active {
+  background: url(navigation-tabs-sw-code-active) bottom right no-repeat;
+  border-top: 1px solid #ddd;
+}
+#lp-apps .branches.active strong, #lp-apps .branches.active a {
+  background: url(navigation-tabs-se-code-active) bottom left no-repeat;
+}
+#lp-apps .bugs {
+  background: url(navigation-tabs-sw-bugs) bottom right no-repeat;
+}
+#lp-apps .bugs a, #lp-apps .bugs strong {
+  background: url(navigation-tabs-se-bugs) bottom left no-repeat;
+}
+#lp-apps .bugs a:hover {
+  color: #a02c35;
+}
+#lp-apps .bugs.active {
+  background: url(navigation-tabs-sw-bugs-active) bottom right no-repeat;
+}
+#lp-apps .bugs.active strong, #lp-apps .bugs.active a {
+  background: url(navigation-tabs-se-bugs-active) bottom left no-repeat;
+}
+#lp-apps .specifications {
+  background: url(navigation-tabs-sw-blueprints) bottom right no-repeat;
+}
+#lp-apps .specifications a, #lp-apps .specifications strong {
+  background: url(navigation-tabs-se-blueprints) bottom left no-repeat;
+}
+#lp-apps .specifications a:hover {
+  color: #3895bd;
+}
+#lp-apps .specifications.active {
+  background: url(navigation-tabs-sw-blueprints-active) bottom right no-repeat;
+}
+#lp-apps .specifications.active strong, #lp-apps .specifications.active a {
+  background: url(navigation-tabs-se-blueprints-active) bottom left no-repeat;
+}
+#lp-apps .translations {
+  background: url(navigation-tabs-sw-translations) bottom right no-repeat;
+}
+#lp-apps .translations a, #lp-apps .translations strong {
+  background: url(navigation-tabs-se-translations) bottom left no-repeat;
+}
+#lp-apps .translations a:hover {
+  color: #bb3a84;
+}
+#lp-apps .translations.active {
+  background: url(navigation-tabs-sw-translations-active) bottom right no-repeat;
+}
+#lp-apps .translations.active strong, #lp-apps .translations.active a {
+  background: url(navigation-tabs-se-translations-active) bottom left no-repeat;
+}
+#lp-apps .answers {
+  background: url(navigation-tabs-sw-answers) bottom right no-repeat;
+}
+#lp-apps .answers a, #lp-apps .answers strong {
+  background: url(navigation-tabs-se-answers) bottom left no-repeat;
+}
+#lp-apps .answers a:hover {
+  color: #3941bf;
+}
+#lp-apps .answers.active {
+  background: url(navigation-tabs-sw-answers-active) bottom right no-repeat;
+}
+#lp-apps .answers.active strong, #lp-apps .answers.active a {
+  background: url(navigation-tabs-se-answers-active) bottom left no-repeat;
+}
+/* After all has been said and done, we still want disabled ones to look disabled */
+#lp-apps .disabled-tab {
+  background: url(navigation-tabs-sw-disabled) bottom right no-repeat;
+}
+#lp-apps .disabled-tab strong {
+  background: url(navigation-tabs-se-disabled) bottom left no-repeat;
+  display: block;
+  font-weight: normal;
+  color: #a7a7a7;
+}
+.navigation.menu > :first-child {
+  background: url(navigation-nw-w-normal.png) top left no-repeat;
+}
+.navigation.menu > strong:first-child {
+  background-image: url(navigation-nw-w-selected.png);
+}
+/* The bottom right corner is placed over top of the bottom border: */
+.navigation.menu > :first-child::before {
+  content: '';
+  background: url(navigation-sw-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+  vertical-align: -1px;
 }
 
+/* === Help pane === */
 /*
 Inline help is contained in a <div> and dynamically positioned by JavaScript.
 */
 #help-pane {
   position: absolute;
-  border: 5px solid black;
-  padding: 10px;
+  border: 1px solid black;
+  padding: 1px 1px 5px 10px;
   z-index: 3000;  /* This should appear above all other content. */
   background-color: #fff;
-  width: 25em;
+  width: 600px; /* based on the help wiki, should change later */
 }
 /* We want the hidden pane to have dimensions so that we can position the
 frame with them.  This works because the element an absolute position, taking
@@ -654,10 +637,7 @@ it out of the page flow. */
 #help-body {
     background: url(spinner.gif) no-repeat center center;
 }
-#help-pane iframe {
-    width: 100%;
-    height: 18em;
-}
+#help-pane iframe {width: 100%; height: 300px; border: 0;}
 #help-pane iframe.invisible {
     visibility: hidden;
     display: block;
@@ -673,6 +653,13 @@ it out of the page flow. */
 }
 
 span.help {font-weight: normal;}
+
+/* === ID and timestamp === */
+/* The first text in many pages is the object's timestamp and identifier. */
+/* The timestamp is the date last modified or (more usually) registered: */
+.object.timestamp {float: right;}
+/* An identifier is a unique label, such as a bug number or branch ID: */
+.object.identifier {float: left;}
 
 /* === Navigation menus === */
 /* A "navigation menu" categorizes the information about an object. */
@@ -737,25 +724,38 @@ span.help {font-weight: normal;}
   background-image: url(/+icing/navigation-se-selected.png);
 }
 
-/* Immediately above the global footer, on most pages, is a search field: */
-#globalsearch {font-size: smaller; margin: 4em 0 2em; text-align: center;}
-#globalsearch input {display: block; margin: 0 auto;}
+#globalsearch {
+  float: right;
+  display: inline;
+  font-weight: normal;
+  margin-right: 1em;
+}
+
+#globalsearch input {
+  font-size: small;
+}
+
 /* The last element on every page is a standard footer. */
-#globalfooter {clear: both; margin: 0.5em 0;}
+#globalfooter {
+    clear: both;
+    border: solid #c1c9d6;
+    border-width: 1px 0 0 0;
+    margin: 0.5em 0;
+}
 /* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
   border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
   padding-top: 0.5em;
 }
-#colophon            {float: left;                     width: 49%;}
-#applications-footer {float: right; text-align: right; width: 49%;}
-#copyright           {float: right; text-align: right; width: 48%;}
+#colophon            {float: left;}
+#applications-footer {float: right;}
+#lp-arcana           {float: right;}
 
 /* === Specific page layouts === */
 
 /*- App home pages and pillar indexes both have a heading and app buttons. -*/
-table#applications {margin-bottom: -0.5em;}
+table#applications {margin: 1em 0 -0.5em;}
 table#applications th, table#applications td {vertical-align: bottom;}
 table#applications th {padding-left: 60px; text-align: left;}
 table#applications th h1 {margin: 0; padding: 0;}
@@ -786,7 +786,7 @@ partly (but not visibly) overlaps the rounded border of the main area. */
 /* Display the pillar image above mainarea, so the image does not appear
    cropped in wide windows on browsers that do not support transparent
    background. */
-#structuralobjectheading img { 
+#structuralobjectheading img {
   z-index: 2;
 }
 
@@ -827,131 +827,35 @@ partly (but not visibly) overlaps the rounded border of the main area. */
 
 /* mainarea and three other divs supply the bottom (mainarea), top (x),
 top left (y), and top right (z) of the rounded border. */
-#mainarea {
-  clear: both;
-  background-image: url(mainarea_bottom.gif);
-  background-repeat: repeat-x;
-  background-position: bottom left;
-  position: relative;
-}
-#mainarea div.x {
-  position: relative;
-  width: 100%;
-  background: url(mainarea_top.gif) top left repeat-x;
-}
-#mainarea div.y {
-  position: relative;
-  width: 100%;
-  background: url(mainarea_topleft.gif) top left no-repeat;
-}
-#mainarea div.z {
-  position: relative;
-  width: 100%;
-  background: url(mainarea_topright.gif) 100% top no-repeat;
-}
+#mainarea {clear: both; position: relative;}
 
 /* Inside those is a container for the main content, and the portlets if any. */
-#container {
-  margin-top: 30px;
-  padding: 48px 0 40px;
-  position: relative;
-}
+#container {margin: 0 0 40px;}
 * html #container {margin-top: 0; position: static;} /* fixes in IE6 */
 
-/* Something private for a public project has a cordon inside the tabs: */
-#container.private {background: url(/@@/private-bg) left 28px repeat-x;}
-
-/*
-  To let the main content width = 100% - 220px for the portlets,
-  we apply a negative right margin so the portlets can float on the right:
-*/
-#maincontent {float: left; margin-right: -220px; width: 100%;}
-/* To avoid overlap, we need an extra container with positive right margin: */
+/* A two-column layout with portlets is achieved using floats: */
+#maincontent, #maincontentsub, #portlets {float: left;}
+/* ("maincontentsub" is used for a two-column section in bugtask-index.pt.) */
+/* The main column should take the full width available, minus 200px for the
+portlets. We achieve this using a negative right margin: */
+#maincontent, #maincontentsub {width: 100%; margin-right: -200px;}
+/* And the portlets use exactly this 200px: */
+#portlets {width: 200px; margin: 0;}
+/* Inside, the main column itself keeps 20px clear of the 200px column: */
 #nonportlets {margin-right: 220px;}
-#portlets .portlet {width: 200px;}
-
-ul#applicationchooser {
-  position: absolute;
-  right: 0;
-  width: 510px;
-  height: 32px;
-  overflow: hidden;
-  margin: 0px 0px 18px 0px;
-  padding: 0;
-  list-style: none;
-  font-size: 11px;
-  background-image: url(mainarea_topright.gif);
-  background-repeat: no-repeat;
-  background-position: top right;
-}
-/* If there are no tabs, a substitute div maintains the same spacing. */
-div#noapplicationchooser {clear: both; margin-bottom: -28px;}
-ul#applicationchooser li {
-  float: left;
-  display: block;
-  width: 82px;
-  height: 40px;
-  background-image: url(appchoose_a.gif);
-  background-repeat: no-repeat;
-  background-position: -100px 0px;
-  overflow: hidden;
-  text-align: center;
-  font-weight: bold;
-  color: #000000;
-}
-
-/* We make the anchor display block, and use the same height as the li,
- * to ensure the whole tab area is clickable. */
-ul#applicationchooser li a {
-  display: block;
-  padding: 7px 0px 0px 0px;
-  height: 40px;
-}
-
-/* For the selected and unavailable tabs, we need to provide the padding
- * (since there's no anchor), and change the cursor to avoid it being an
- * i-beam when hovering over the text of the tab. */
-ul#applicationchooser li span.selected,
-ul#applicationchooser li span.disabled,
-ul#applicationchooser li.unavailable
-{
-  display: block;
-  padding: 8px 0px 0px 0px;
-  cursor: default;
-}
-
-/* Disabled icons shouldn't hover up */
-ul#applicationchooser li span.disabled:hover,
-ul#applicationchooser li.unavailable:hover
-{
-  background-position: -100px 0px;
-}
-
-ul#applicationchooser li span.disabled,
-ul#applicationchooser li.unavailable
-{
-  color: lightgrey;
-}
-
-ul#applicationchooser li:hover {
-  background-position: 0px 0px;
-}
-
-/* Avoid underlining anchors inside the tabs */
-ul#applicationchooser a:hover {
-  text-decoration: none;
-}
-
-ul#applicationchooser li#applicationchooser_selected {
-  background-position: -200px 0px;
-}
+/* One-column pages can construct portlets using <div class="aside">: */
+div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 
 /* -- Pillar indexes -- */
 
 /* Distributions, projects, and people have two-column main pages. */
-/* Most of the information is in the second column: */
-.pillar {margin-left: 212px;}
-/* But the main heading, subheadings, and the logo are in the first column: */
+/* The main heading and most of the information is in the second column: */
+.pillar {
+  margin-left: 212px;
+  zoom: 1; /* sets hasLayout in IE, ensuring correct mugshot/heading layout */
+}
+.pillar h1 {clear: none;}
+/* But the mugshot and the subheadings are in the first column: */
 .pillar h2, .pillar .mugshot {
   clear: left;
   float: left;
@@ -960,44 +864,38 @@ ul#applicationchooser li#applicationchooser_selected {
   width: 192px;
 }
 /* There is a margin between each section and the previous one: */
-.pillar div.portlet, .pillar div.section {clear: left; padding-top: 2em;}
+.pillar div.portlet, .pillar div.section {clear: both; margin-bottom: 2em;}
 .pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
 
-/* --- Portlets --- */
-#portlets {
-  display: inline;
-  float: right;
-  width: 200px;
-  overflow: hidden;
-  margin-left: -220px; /* negates -220px right margin of #maincontent */
-  padding-left: 20px; /* 20px margin between main content and portlets */
-  list-style: none;
-}
+
+/* === Portlets === */
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
 * html #portlets {left: 20px;}
-/* IE7 gets the padding right but overcalculates the left margin, so we use
-a conditional comment in main-template.pt to work around the above rule. */
-#portlets .portlet {
-  background-color: #ebebeb;
-  border: 1px solid;
-  border-color: #fff #ccc #ccc #fff;
-  clear: both;
-  float: left;
+/* Portlets look the same whether as class="portlet" or class="aside": */
+#portlets .portlet, div.aside {
+  background-color: #fafafa;
+  border:1px solid #d6d6d6;
   margin: 0 0 0.5em 0;
   color: #717171;
-  padding: 4px 8px;
+  padding: 8px;
   width: 182px; /* = 200px column - 2*1px vertical border - 2*8px padding */
   overflow: hidden;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
 }
 /* In the Actions menu, part of the horizontal padding is used for
 highlighting menu items, so padding is handled by the contents instead: */
 #portlets #actions {
   padding: 4px 0; width: 198px; /* 200px column - 2*1px vertical border */
 }
-#portlets .portlet, #portlets .portlet h2 {font-size: 12px;}
-#portlets .portlet h2 {
+#portlets .portlet, div.aside, #portlets .portlet h2, div.aside h2 {
+  font-size: 12px;
+}
+#portlets .portlet h2, div.aside h2 {
   border-bottom: 1px solid #ccc;
-  color: inherit;
+  color: inherit !important;
+    /* http://launchpad.dev/ubuntu/+source/pmount/+filebug-advanced */
   font-weight: bold;
   margin: 0 0 1em;
   padding: 0 0 1px;
@@ -1018,6 +916,15 @@ highlighting menu items, so padding is handled by the contents instead: */
   padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */
 }
 #actions a:hover {background-color: #fff; text-decoration: underline;}
+
+/* === Public/private status === */
+/* The first portlet on many pages discloses whether the object is private: */
+#privacy {background: #fff;}
+#privacy.private {
+  background: url(/@@/private-bg) top left repeat-x; /* 8px high */
+  padding-top: 12px; /* = 8px + the usual 4px top padding */
+}
+
 .check,
 .radio {
   background: transparent;
@@ -1093,7 +1000,7 @@ ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
-/* === Application-specific styles === */
+/* == Application-specific styles == */
 
 #application-footer strong {font-weight: normal;}
 
@@ -1114,21 +1021,6 @@ dl.faq dd {margin: 1em 0 2em 4em;}
 
 /* --- Overview --- */
 
-body.tab-overview #mainarea div.x {
-  background-image: url(mainarea_top.gif);
-}
-body.tab-overview #mainarea div.y {
-  background-image: url(mainarea_topleft.gif);
-}
-body.tab-overview #mainarea div.z {
-  background-image: url(mainarea_topright.gif);
-}
-body.tab-overview #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_a.gif);
-}
-body.tab-overview #mainarea ul#applicationchooser li.tab-overview {
-  background-position: -200px 0px !important;
-}
 body.tab-overview #mainarea #portlets .portlet.active h2 a,
 body.tab-overview #mainarea div#portlets div.portlet.active a {
   background-color: #F0CB00;
@@ -1162,27 +1054,17 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   color: #83ad23;
 }
 
+/* The top-most Person portlet, Contact Details, is allowed to float up and
+beside the mugshot. */
+#contact-details {clear: none;}
+
 .product.series, .project {margin-bottom: 1em;}
+#packages h1, #projects h1 {margin-top: 1.2em;}
+
 
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
-body.tab-branches #mainarea div.x {
-  background-image: url(mainarea_tab1_top.gif);
-}
-body.tab-branches #mainarea div.y {
-  background-image: url(mainarea_tab1_topleft.gif);
-}
-body.tab-branches #mainarea div.z,
-body.tab-branches #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab1_topright.gif);
-}
-body.tab-branches #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_tab1_a.gif);
-}
-body.tab-branches #mainarea ul#applicationchooser li.tab-branches {
-  background-position: -200px 0px !important;
-}
 body.tab-branches #mainarea #portlets .portlet.active h2 a,
 body.tab-branches #mainarea div#portlets div.portlet.active a {
   background-color: #CE4227;
@@ -1229,22 +1111,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 /* --- Bugs --- */
 
 body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}
-body.tab-bugs #mainarea div.x {
-  background-image: url(mainarea_tab2_top.gif);
-}
-body.tab-bugs #mainarea div.y {
-  background-image: url(mainarea_tab2_topleft.gif);
-}
-body.tab-bugs #mainarea div.z,
-body.tab-bugs #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab2_topright.gif);
-}
-body.tab-bugs #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_tab2_a.gif);
-}
-body.tab-bugs #mainarea ul#applicationchooser li.tab-bugs {
-  background-position: -200px 0px !important;
-}
 body.tab-bugs #mainarea #portlets .portlet.active h2 a,
 body.tab-bugs #mainarea div#portlets div.portlet.active a {
   background-color: #F0CB00;
@@ -1299,22 +1165,6 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 
 body.tab-specifications #applications {
   background: url(app-blueprints-wm.gif) no-repeat;
-}
-body.tab-specifications #mainarea div.x {
-  background-image: url(mainarea_tab4_top.gif);
-}
-body.tab-specifications #mainarea div.y {
-  background-image: url(mainarea_tab4_topleft.gif);
-}
-body.tab-specifications #mainarea div.z,
-body.tab-specifications #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab4_topright.gif);
-}
-body.tab-specifications #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_tab4_a.gif);
-}
-body.tab-specifications #mainarea ul#applicationchooser li.tab-specifications {
-  background-position: -200px 0px !important;
 }
 body.tab-specifications #mainarea #portlets .portlet.active h2 a,
 body.tab-specifications #mainarea div#portlets div.portlet.active a {
@@ -1373,26 +1223,10 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 .specdeliveryIMPLEMENTED        {color: green;}
 .specdeliveryINFORMATIONAL      {color: green;}
 
-/* --- Translations --- */
+/* === Translations === */
 
 body.tab-translations #applications {
   background: url(app-translations-wm.gif) no-repeat;
-}
-body.tab-translations #mainarea div.x {
-  background-image: url(mainarea_tab5_top.gif);
-}
-body.tab-translations #mainarea div.y {
-  background-image: url(mainarea_tab5_topleft.gif);
-}
-body.tab-translations #mainarea div.z,
-body.tab-translations #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab5_topright.gif);
-}
-body.tab-translations #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_tab5_a.gif);
-}
-body.tab-translations #mainarea ul#applicationchooser li.tab-translations {
-  background-position: -200px 0px !important;
 }
 body.tab-translations #mainarea #portlets .portlet.active h2 a,
 body.tab-translations #mainarea div#portlets div.portlet.active a {
@@ -1433,26 +1267,13 @@ body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
   padding: 0 4px; /* should be half the width of /@@/translation-space */
   white-space: pre; /* stops consecutive spaces from collapsing */
 }
+/* In translation forms, single-line text fields occupy nearly all of the
+available width, just like multi-line fields (see "textarea" above): */
+input.translate {width: 90%; max-width: 60em;}
 
-/* --- Answers --- */
+/* === Answers === */
 
 body.tab-answers #applications {background: url(app-answers-wm.gif) no-repeat;}
-body.tab-answers #mainarea div.x {
-  background-image: url(mainarea_tab6_top.gif);
-}
-body.tab-answers #mainarea div.y {
-  background-image: url(mainarea_tab6_topleft.gif);
-}
-body.tab-answers #mainarea div.z,
-body.tab-answers #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab6_topright.gif);
-}
-body.tab-answers #mainarea ul#applicationchooser li {
-  background-image: url(appchoose_tab6_a.gif);
-}
-body.tab-answers #mainarea ul#applicationchooser li.tab-answers {
-  background-position: -200px 0px !important;
-}
 body.tab-answers #mainarea #portlets .portlet.active h2 a,
 body.tab-answers #mainarea div#portlets div.portlet.active a {
   background-color: #3840be;
@@ -1620,7 +1441,6 @@ table.summary ul, table.summary ul li {
   margin: 0;
   padding: 0;
 }
-th, td {padding: 0.25em;}
 th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
 th.icon.left, td.icon.left {padding-right: 0;}
 th.icon.right, td.icon.right {padding-left: 0;}
@@ -1636,7 +1456,7 @@ table.contributions td {vertical-align: middle; width: 16px;}
 
 /* --- Listing tables --- */
 
-table.listing {margin: 0; width: 100%; font-size: 8.5pt;}
+table.listing {margin: 0; width: 100%; font-size: 90%;}
 table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
 table.listing thead, table.listing thead th, table.listing tfoot tr {
   border: 1px solid #d2d2d2;
@@ -1761,15 +1581,18 @@ div.popupTitle {
   margin-top: 1em;
   margin-bottom: 1em;
 }
-
-#search-results, #no-search{
-  width: 40em;
+#search-results ul.site-matches {
+  max-width: 55em;
 }
 
 #search-results div.upper-batch-nav {
   border-top: 1px solid #d2d2d2;
-  margin-top: 1.5em;
+  margin-top: 2.5em;
   margin-bottom: 0.5em;
+}
+#search-results .search-batch {
+  background: #e7effc;
+  margin-bottom: 10px;
 }
 
 #search-results div.lower-batch-nav {

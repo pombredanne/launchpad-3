@@ -8,16 +8,26 @@ __metaclass__ = type
 __all__ = [
     'BuildStatus',
     'IBuild',
+    'IBuildRescoreForm',
     'IBuildSet',
     'IHasBuildRecords',
     'incomplete_building_status',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Timedelta
+from zope.schema import Choice, Datetime, Int, Object, TextLine, Timedelta
 
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.launchpad.interfaces.archive import IArchive
+from canonical.launchpad.interfaces.builder import IBuilder
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.processor import IProcessor
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket)
+from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ISourcePackageRelease)
 
 
 class BuildStatus(DBEnumeratedType):
@@ -108,23 +118,79 @@ incomplete_building_status = (
 
 class IBuild(Interface):
     """A Build interface"""
-    id = Attribute("The build ID.")
-    datecreated = Attribute("Date of BinPackage Creation")
-    processor = Attribute("BinaryPackage Processor")
-    distroarchseries = Attribute("The Distro Arch Series")
-    buildstate = Attribute("BinaryBuild State")
-    datebuilt = Attribute("Binary Date of Built")
-    buildduration = Attribute("Build Duration Interval")
-    buildlog = Attribute("The Build LOG Referency")
-    builder = Attribute("The Builder")
-    sourcepackagerelease = Attribute("SourcePackageRelease reference")
-    pocket = Attribute("Target pocket of this build")
-    dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
-    archive = Attribute("The archive")
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+
+    datecreated = Datetime(
+        title=_('Date created'), required=True, readonly=True,
+        description=_("The time when the build request was created."))
+
+    processor = Object(
+        title=_("Processor"), schema=IProcessor,
+        required=True, readonly=True,
+        description=_("The Processor where this build should be built."))
+
+    sourcepackagerelease = Object(
+        title=_('Source'), schema=ISourcePackageRelease,
+        required=True, readonly=True,
+        description=_("The SourcePackageRelease requested to build."))
+
+    distroarchseries = Object(
+        title=_("Architecture"), schema=IDistroArchSeries,
+        required=True, readonly=True,
+        description=_("The DistroArchSeries context for this build."))
+
+    archive = Object(
+        title=_("Archive"), schema=IArchive,
+        required=True, readonly=True,
+        description=_("The Archive context for this build."))
+
+    pocket = Choice(
+        title=_('Pocket'), required=True, vocabulary=PackagePublishingPocket,
+        description=_("The build targeted pocket."))
+
+    buildstate = Choice(
+        title=_('State'), required=True, vocabulary=BuildStatus,
+        description=_("The current build state."))
+
     estimated_build_duration = Timedelta(
         title=_("Estimated Build Duration"), required=False,
-        description=_("Estimated build duration interval"))
-    date_first_dispatched = Attribute("The actual build start time.")
+        description=_("Estimated build duration interval. Optionally "
+                      "set during build creation time."))
+
+    date_first_dispatched = Datetime(
+        title=_('Date first dispatched'), required=False,
+        description=_("The actual build start time. Set when the build "
+                      "is dispatched the first time and not changed in "
+                      "subsequent build attempts."))
+
+    dependencies = TextLine(
+        title=_("Dependencies"), required=False,
+        description=_("Debian-like dependency line that must be satisfied "
+                      "before attempting to build this request."))
+
+    builder = Object(
+        title=_("Builder"), schema=IBuilder, required=False,
+        description=_("The Builder which address this build request."))
+
+    datebuilt = Datetime(
+        title=_('Date built'), required=False,
+        description=_("The time when the build result got collected."))
+
+    buildduration = Timedelta(
+        title=_("Build Duration"), required=False,
+        description=_("Build duration interval, calculated when the "
+                      "build result gets collected."))
+
+    buildlog = Object(
+        schema=ILibraryFileAlias, required=False,
+        title=_("The LibraryFileAlias containing the entire buildlog."))
+
+    upload_log = Object(
+        schema=ILibraryFileAlias, required=False,
+        title=_("The LibraryFileAlias containing the upload log for "
+                "build resulting in binaries that could not be processed "
+                "successfully. Otherwise it will be None."))
 
     # Properties
     current_component = Attribute(
@@ -230,6 +296,18 @@ class IBuild(Interface):
             `BuildStatus.NEEDSBUILD` state.
         """
 
+    def storeUploadLog(content):
+        """Store the given content as the build upload_log.
+
+        The given content is stored in the librarian, restricted as necessary
+        according to the targeted archive's privacy.  The content object's
+        'upload_log' attribute will point to the `LibrarianFileAlias`.
+
+        :param content: string containing the upload-processor log output for
+            the binaries created in this build.
+        """
+
+
 class IBuildSet(Interface):
     """Interface for BuildSet"""
 
@@ -313,3 +391,12 @@ class IHasBuildRecords(Interface):
         "user" is the requesting user and if specified can be used in
         permission checks to see if he is allowed to view the build.
         """
+
+
+class IBuildRescoreForm(Interface):
+    """Form for rescoring a build."""
+
+    priority = Int(
+        title=_("Priority"), required=True, max=((2 ** 31) - 1),
+        description=_("Build priority, the build with the highest value will "
+                      "be dispatched first."))

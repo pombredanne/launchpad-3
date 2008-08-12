@@ -335,7 +335,8 @@ demonstrate.
     ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
     >>> generic_netapplet_task.transitionToAssignee(sample_person)
     >>> generic_netapplet_task.milestone = ubuntu_edgy_milestone
-    >>> generic_netapplet_task.importance = BugTaskImportance.CRITICAL
+    >>> generic_netapplet_task.transitionToImportance(
+    ...     BugTaskImportance.CRITICAL, ubuntu.owner)
 
     >>> current_series_ubuntu_task = bugtaskset.createTask(
     ...     bug=ubuntu_bug, owner=launchbag.user,
@@ -563,11 +564,25 @@ require extra privileges.)
     >>> print current_series_netapplet_task.importance.title
     Critical
 
-    >>> current_series_netapplet_task.importance = BugTaskImportance.MEDIUM
+    >>> current_series_netapplet_task.transitionToImportance(
+    ...     BugTaskImportance.MEDIUM, ubuntu.owner)
 
     >>> print generic_netapplet_task.importance.title
     Medium
     >>> print current_series_netapplet_task.importance.title
+    Medium
+
+Not everyone can edit the importance, though. If an unauthorised user
+is passed to transitionToImportance an exception is raised.
+
+    >>> current_series_netapplet_task.transitionToImportance(
+    ...     BugTaskImportance.LOW, no_priv)
+    Traceback (most recent call last):
+    ...
+    UserCannotEditBugTaskImportance:
+      User does not have sufficient permissions to edit the bug task importance.
+
+    >>> print generic_netapplet_task.importance.title
     Medium
 
 4. Milestone

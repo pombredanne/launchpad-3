@@ -24,6 +24,32 @@
     />
 
   <securedutility
+    class="canonical.launchpad.systemhomes.BranchPullerApplication"
+    provides="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication">
+    <allow interface="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication"
+    interface="canonical.launchpad.interfaces.codehosting.IBranchPuller"
+    class="canonical.launchpad.xmlrpc.codehosting.BranchPuller"
+    permission="zope.Public"
+    />
+
+  <securedutility
+    class="canonical.launchpad.systemhomes.BranchFileSystemApplication"
+    provides="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication">
+    <allow interface="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication"
+    interface="canonical.launchpad.interfaces.codehosting.IBranchFileSystem"
+    class="canonical.launchpad.xmlrpc.codehosting.BranchFileSystem"
+    permission="zope.Public"
+    />
+
+  <securedutility
     class="canonical.launchpad.systemhomes.CodeImportSchedulerApplication"
     provides="canonical.launchpad.interfaces.ICodeImportSchedulerApplication">
     <allow interface="canonical.launchpad.interfaces.ICodeImportSchedulerApplication"/>
@@ -79,7 +105,7 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
-  <class class="canonical.launchpad.xmlrpc.faults.NoSuchPersonWithUsername">
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchPersonWithName">
     <require like_class="xmlrpclib.Fault" />
   </class>
 
@@ -132,6 +158,22 @@
   </class>
 
   <class class="canonical.launchpad.xmlrpc.faults.BranchNameInUse">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoDefaultBranchForPillar">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidProductIdentifier">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NotInTeam">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchName">
     <require like_class="xmlrpclib.Fault" />
   </class>
 

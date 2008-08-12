@@ -236,7 +236,7 @@
 
     <tal:package repeat="package packageupload/binary_packages">
       <tal:define
-        define="is_new package/is_new;
+        define="is_new python:view.is_new(package);
                 component_name package/component/name/lower;
                 section_name package/section/name/lower;
                 version package/version">

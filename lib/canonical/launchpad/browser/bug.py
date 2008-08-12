@@ -32,6 +32,7 @@ from zope.interface import implements, providedBy
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BugTaskStatus,
     BugTaskSearchParams,
@@ -44,7 +45,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag,
     NotFoundError,
     )
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.interfaces.bugattachment import IBugAttachmentSet
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
@@ -89,6 +90,17 @@ class BugNavigation(Navigation):
         for subscription in self.context.subscriptions:
             if subscription.person.name == person_name:
                 return subscription
+
+    @stepthrough('attachments')
+    def traverse_attachments(self, name):
+        """Retrieve a BugAttachment by ID.
+
+        Only return a attachment if it is related to this bug.
+        """
+        if name.isdigit():
+            attachment = getUtility(IBugAttachmentSet)[name]
+            if attachment is not None and attachment.bug == self.context:
+                return attachment
 
 
 class BugFacets(StandardLaunchpadFacets):
@@ -137,7 +149,7 @@ class BugContextMenu(ContextMenu):
 
     def visibility(self):
         """Return the 'Set privacy/security' Link."""
-        text = 'Set privacy/security'
+        text = 'Change privacy/security'
         return Link('+secrecy', text)
 
     def markduplicate(self):

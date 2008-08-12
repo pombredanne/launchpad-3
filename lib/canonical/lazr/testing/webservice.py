@@ -49,6 +49,10 @@ class FakeRequest(object):
     def getApplicationURL(self):
         return "http://api.example.org"
 
+    def get(self, key, default=None):
+        """Simulate an empty set of request parameters."""
+        return default
+
 
 def pprint_entry(json_body):
     """Pretty-print a webservice entry JSON representation."""
