@@ -18,11 +18,15 @@ of them is enabled.  No Privileges Person is also a disabled member of the
 mailing list because he created the team (and thus is a postings-enabled
 member).
 
+    >>> import re
     >>> from Mailman.MailList import MailList
     >>> from Mailman.MemberAdaptor import ENABLED
-    >>> def print_members(mailing_list):
+    >>> def print_members(mailing_list, pattern=None):
     ...     for key in sorted(mailing_list.getMembers()):
     ...         address = mailing_list.getMemberCPAddress(key)
+    ...         if (pattern is not None and
+    ...             not re.search(pattern, address, re.IGNORECASE)):
+    ...             continue
     ...         fullname = mailing_list.getMemberName(key)
     ...         if mailing_list.getDeliveryStatus(key) == ENABLED:
     ...             status = 'ENABLED'
@@ -180,3 +184,30 @@ address.
     Emma Person             <EmmaXPerson@example.org>   ENABLED
     Emma Person             <eperson@example.org>       DISABLED
     No Privileges Person    <no-priv@canonical.com>     DISABLED
+
+Emma decides to change the case of her alternative email address, and Mailman
+accurately tracks these changes in case.
+
+    >>> removeSecurityProxy(email).email = 'emmaXperson@example.org'
+    >>> transaction.commit()
+    >>> helpers.ensure_membership('itest-one', 'emmaXperson@example.org')
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list, 'emma')
+    Emma Person <emma.person@example.com>   DISABLED
+    Emma Person <emmaXperson@example.org>   ENABLED
+
+    >>> removeSecurityProxy(email).email = 'emmaxperson@example.org'
+    >>> transaction.commit()
+    >>> helpers.ensure_membership('itest-one', 'emmaxperson@example.org')
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list, 'emma')
+    Emma Person <emma.person@example.com>   DISABLED
+    Emma Person <emmaxperson@example.org>   ENABLED
+
+    >>> removeSecurityProxy(email).email = 'EMMAXPERSON@example.org'
+    >>> transaction.commit()
+    >>> helpers.ensure_membership('itest-one', 'EMMAXPERSON@example.org')
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list, 'emma')
+    Emma Person <emma.person@example.com>   DISABLED
+    Emma Person <EMMAXPERSON@example.org>   ENABLED

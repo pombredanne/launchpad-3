@@ -175,47 +175,64 @@ class XMLRPCRunner(Runner):
             member_map = dict((address, (realname, flags, status))
                               for address, realname, flags, status
                               in info[list_name])
-            # Calculate a few membership sets: one is the set of new members
-            # who need to be added to the mailing list. Another is the set of
-            # old members who need to be removed from the mailing list.  A
-            # third is the set of members who are getting their settings
-            # modified.
-            current_members = set(
-                mlist.getMemberCPAddresses(mlist.getMembers()))
-            future_members = set(member_map)
-            adds = future_members - current_members
-            deletes = current_members - future_members
+            # In Mailman parlance, the 'member key' is the lowercased
+            # address.  We need a mapping from member key to case-preserved
+            # address for all future members of the list.
+            member_keys = dict((address.lower(), address)
+                               for address in member_map)
+            # The following modifications to membership may be made:
+            # - Current members whose address is changing case
+            # - New members who need to be added to the mailing list
+            # - Old members who need to be removed from the mailing list
+            # - Current members whose settings are being changed
+            #
+            # Start by getting the case-folded membership sets of all current
+            # and future members.
+            current_members = set(mlist.getMembers())
+            future_members = set(member_keys)
+            # Additions are all those addresses in future_members who are not
+            # in current_members.
+            additions = future_members - current_members
+            # Deletions are all those addresses in current_members who are not
+            # in future_members.
+            deletions = current_members - future_members
+            # Any address in both current and future members is either
+            # changing case, updating settings, or both.
             updates = current_members & future_members
             # If there's nothing to do, just skip this list.
-            if not adds and not deletes and not updates:
+            if not additions and not deletions and not updates:
                 # Why did we get here?  This list should not have shown up in
                 # getMembershipInformation().
                 syslog('xmlrpc',
                        'Strange subscription information for list: %s',
                        list_name)
                 continue
-            # A little extra debugging.
-##             if adds or deletes:
-##                 syslog('xmlrpc', 'adds: %s', adds)
-##                 syslog('xmlrpc', 'deletes: %s', deletes)
-##                 syslog('xmlrpc', 'Membership changes for: %s', list_name)
             # Lock the list and make the modifications.
             mlist.Lock(2)
             try:
                 # Handle additions first.
-                for address in adds:
-                    realname, flags, status = member_map[address]
-                    mlist.addNewMember(address, realname=realname)
-                    mlist.setDeliveryStatus(address, status)
+                for address in additions:
+                    # When adding the new member, be sure to use the
+                    # case-preserved email address.
+                    original_address = member_keys[address]
+                    realname, flags, status = member_map[original_address]
+                    mlist.addNewMember(original_address, realname=realname)
+                    mlist.setDeliveryStatus(original_address, status)
                 # Handle deletions next.
-                for address in deletes:
+                for address in deletions:
                     mlist.removeMember(address)
-                # The members who are sticking around may have updates to
-                # their real names or statuses.
+                # Updates can be either a settings update, a change in the
+                # case of the subscribed address, or both.
                 found_updates = False
                 for address in updates:
+                    # See if the case is changing.
+                    current_address = mlist.getMemberCPAddress(address)
+                    future_address = member_keys[address]
+                    if current_address <> future_address:
+                        mlist.changeMemberAddress(address, future_address)
+                        found_updates = True
                     # flags are ignored for now.
-                    realname, flags, status = member_map[address]
+                    realname, flags, status = member_map[future_address]
                     if realname <> mlist.getMemberName(address):
                         mlist.setMemberName(address, realname)
                         found_updates = True
@@ -223,7 +240,6 @@ class XMLRPCRunner(Runner):
                         mlist.setDeliveryStatus(address, status)
                         found_updates = True
                 if found_updates:
-##                     syslog('xmlrpc', 'updates: %s', updates)
                     syslog('xmlrpc', 'Membership updates for: %s', list_name)
                 # We're done, so flush the changes for this mailing list.
                 mlist.Save()
