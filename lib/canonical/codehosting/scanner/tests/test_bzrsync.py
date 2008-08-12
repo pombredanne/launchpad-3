@@ -450,12 +450,10 @@ class TestBzrSync(BzrSyncTestCase):
         # that the URL can *look* valid and still be opened.
         HttpAsLocalTransport.register()
         self.addCleanup(HttpAsLocalTransport.unregister)
-        self.txn.begin()
         db_base_branch.branch_type = BranchType.MIRRORED
         db_base_branch.url = urljoin(
             'http://localhost',
             local_path_from_url(bzr_base_tree.branch.base)).rstrip('/')
-        self.txn.commit()
 
         # Make the stacked branch.
         db_stacked_branch = self.makeDatabaseBranch()
