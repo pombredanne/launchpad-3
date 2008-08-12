@@ -8,26 +8,26 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
+    'ProjectAnswersMenu',
+    'ProjectBountiesMenu',
     'ProjectBranchesView',
     'ProjectBrandingView',
-    'ProjectNavigation',
+    'ProjectBreadcrumbBuilder',
     'ProjectEditView',
-    'ProjectReviewView',
-    'ProjectSetNavigation',
-    'ProjectSOP',
     'ProjectFacets',
-    'ProjectOverviewMenu',
-    'ProjectSeriesSpecificationsMenu',
-    'ProjectSpecificationsMenu',
-    'ProjectBountiesMenu',
-    'ProjectAnswersMenu',
-    'ProjectTranslationsMenu',
-    'ProjectSetContextMenu',
-    'ProjectView',
-    'ProjectEditView',
-    'ProjectAddProductView',
-    'ProjectSetView',
+    'ProjectNavigation',
     'ProjectRdfView',
+    'ProjectReviewView',
+    'ProjectOverviewMenu',
+    'ProjectSOP',
+    'ProjectSeriesSpecificationsMenu',
+    'ProjectSetBreadcrumbBuilder',
+    'ProjectSetContextMenu',
+    'ProjectSetNavigation',
+    'ProjectSetView',
+    'ProjectSpecificationsMenu',
+    'ProjectTranslationsMenu',
+    'ProjectView',
     ]
 
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -56,14 +56,12 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, StandardLaunchpadFacets, stepthrough, structured)
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 
 class ProjectNavigation(Navigation):
 
     usedfor = IProject
-
-    def breadcrumb(self):
-        return self.context.displayname
 
     def traverse(self, name):
         return self.context.getProduct(name)
@@ -84,9 +82,6 @@ class ProjectNavigation(Navigation):
 class ProjectSetNavigation(Navigation):
 
     usedfor = IProjectSet
-
-    def breadcrumb(self):
-        return 'Project Groups'
 
     def traverse(self, name):
         # Raise a 404 on an invalid project name
@@ -110,6 +105,18 @@ class ProjectSOP(StructuralObjectPresentation):
 
     def listAltChildren(self, num):
         return None
+
+
+class ProjectBreadcrumbBuilder(BreadcrumbBuilder):
+    """Returns a breadcrumb for an `IProject`."""
+    @property
+    def text(self):
+        return self.context.displayname
+
+
+class ProjectSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Returns a breadcrumb for an `IProjectSet`."""
+    text = 'Project Groups'
 
 
 class ProjectSetContextMenu(ContextMenu):
