@@ -20,7 +20,6 @@ import tempfile
 
 from email import message_from_file
 
-import Mailman
 from canonical.config import config
 from canonical.launchpad.mailman.config import configure_smtp
 from canonical.testing import smtp2mbox
@@ -51,6 +50,7 @@ class SMTPControl:
 
     def start(self):
         """Fork and exec the child process."""
+        import Mailman
         self._pid = pid = os.fork()
         if pid == 0:
             # Child -- exec the server
