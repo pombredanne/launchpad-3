@@ -4,11 +4,12 @@
 
 import _pythonpath
 
+import transaction
+
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
+from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
@@ -34,12 +35,26 @@ class RevisonKarmaAllocator(LaunchpadCronScript):
         """
         self.logger.info("Updating revision karma")
 
-        self.logger.info("Finished updating revision karma")
+        # In order to only iterate over the revisions that we actually care
+        # about, we are looking for the following:
+        #   * karma not allocated
+        #   * revision author linked to a Launchpad person
+        #   * revision in a branch associated with a product
 
+        revision_set = getUtility(IRevisionSet)
+        for revision in revision_set.getRevisionsNeedingKarmaAllocated():
+            # Find the appropriate branch, and allocate karma to it.
+            branch = revision.getBranch(allow_private=True)
+            revision.allocateKarma(branch)
+            self.logger.debug(
+                "Allocating karma for branch %s to %s" % (
+                    branch.bzr_identity,
+                    revision.revision_author.person.name))
+        transaction.commit()
+        self.logger.info("Finished updating revision karma")
 
 
 if __name__ == '__main__':
     script = RevisonKarmaAllocator('allocate-revision-karma',
         dbuser=config.launchpad.dbuser)
     script.lock_and_run(implicit_begin=True)
-

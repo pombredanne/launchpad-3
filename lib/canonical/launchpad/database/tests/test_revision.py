@@ -10,13 +10,16 @@ from unittest import TestCase, TestLoader
 
 import psycopg2
 import pytz
+from storm.store import Store
+from storm.zope.interfaces import IZStorm
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.database.revision import RevisionSet
+from canonical.launchpad.database.karma import Karma
+from canonical.launchpad.database.revision import Revision, RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     IBranchSet, IRevisionSet)
@@ -51,6 +54,11 @@ class TestRevisionKarma(TestCaseWithFactory):
         branch.createBranchRevision(1, rev)
         self.assertEqual(False, rev.karma_allocated)
 
+    def test_noRevisionsNeedingAllocation(self):
+        # There are no outstanding revisions needing karma allocated.
+        self.assertEqual(
+            [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
     def test_karmaAllocatedForKnownAuthor(self):
         # If the revision author is known, allocate karma.
         author = self.factory.makePerson()
@@ -59,40 +67,61 @@ class TestRevisionKarma(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         branch.createBranchRevision(1, rev)
         self.assertEqual(True, rev.karma_allocated)
-        [karma] = list(author.latestKarma(1))
+        # Get the karma event.
+        [karma] = list(Store.of(author).find(
+            Karma,
+            Karma.person == author,
+            Karma.product == branch.product))
         self.assertEqual(karma.datecreated, rev.revision_date)
         self.assertEqual(karma.product, branch.product)
+        # Since karma has been allocated, the revision isn't in our list.
+        self.assertEqual(
+            [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
 
-    def _setupRevisionBranchAndPerson(self):
+    def test_noKarmaForJunk(self):
+        # Revisions only associated with junk branches don't get karma.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(
+            author=author.preferredemail.email)
+        branch = self.factory.makeBranch(explicit_junk=True)
+        branch.createBranchRevision(1, rev)
+        self.assertEqual(False, rev.karma_allocated)
+        # Nor is this revision identified as needing karma allocated.
+        self.assertEqual(
+            [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_junkBranchMovedToProductNeedsKarma(self):
+        # A junk branch that moves to a product needs karma allocated.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(
+            author=author.preferredemail.email)
+        branch = self.factory.makeBranch(explicit_junk=True)
+        branch.createBranchRevision(1, rev)
+        # Once the branch is connected to the revision, we now specify
+        # a product for the branch.
+        branch.product = self.factory.makeProduct()
+        # Nor is this revision identified as needing karma allocated.
+        self.assertEqual(
+            [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_newRevisionAuthorLinkNeedsKarma(self):
+        # If Launchpad knows of revisions by a particular author, and later
+        # that authoer registers with launchpad, the revisions need karma
+        # allocated.
         email = self.factory.getUniqueEmailAddress()
         rev = self.factory.makeRevision(author=email)
         branch = self.factory.makeBranch()
         branch.createBranchRevision(1, rev)
         self.assertEqual(False, rev.karma_allocated)
+        # Since the revision author is not known, the revisions do not at this
+        # stage need karma allocated.
+        self.assertEqual(
+            [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+        # The person registers with Launchpad.
         author = self.factory.makePerson(email=email)
-        return rev, branch, author
-
-    def test_linkToPersonClaimsRevisionKarma(self):
-        # Revisions that exist already, but without allocated karma will get
-        # karma events created when we work out who the Launchpad person is.
-        rev, branch, author = self._setupRevisionBranchAndPerson()
-        rev.revision_author.linkToLaunchpadPerson()
-
-        self.assertEqual(True, rev.karma_allocated)
-        [karma] = list(author.latestKarma(1))
-        self.assertEqual(karma.datecreated, rev.revision_date)
-        self.assertEqual(karma.product, branch.product)
-
-    def test_checkNewVerifiedEmailClaimsRevisionKarma(self):
-        # Revisions that exist already, but without allocated karma will get
-        # karma events created when we work out who the Launchpad person is.
-        rev, branch, author = self._setupRevisionBranchAndPerson()
-        RevisionSet().checkNewVerifiedEmail(author.preferredemail)
-
-        self.assertEqual(True, rev.karma_allocated)
-        [karma] = list(author.latestKarma(1))
-        self.assertEqual(karma.datecreated, rev.revision_date)
-        self.assertEqual(karma.product, branch.product)
+        # Now the kama needs allocating.
+        self.assertEqual(
+            [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):

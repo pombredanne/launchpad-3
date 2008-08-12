@@ -276,7 +276,6 @@ class RevisionSet:
         naked_email = removeSecurityProxy(email)
         for author in RevisionAuthor.selectBy(email=naked_email.email):
             author.person = email.person
-            author._claimRevisionKarma()
 
     def getTipRevisionsForBranches(self, branches):
         """See `IRevisionSet`."""
@@ -312,15 +311,18 @@ class RevisionSet:
 
         store = getUtility(IZStorm).get('main')
 
+        # XXX: Tim Penhey 2008-08-12, bug 244768
+        # Using Not(column == None) rather than column != None.
         return store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
-            RevisionAuthor.person != None,
+            Not(RevisionAuthor.person == None),
+            Not(Revision.karma_allocated),
             Exists(
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
                            BranchRevision.branch == Branch.id,
-                           Branch.product != None),
+                           Not(Branch.product == None)),
                        (Branch, BranchRevision))))
 
     @staticmethod
