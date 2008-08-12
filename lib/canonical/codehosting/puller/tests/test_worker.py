@@ -32,9 +32,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
         source_tree = self.make_branch_and_tree('source-branch')
-        to_mirror = self.makePullerWorker(
-            src_dir='lp-hosted:///~a/b/source-branch',
-            branch_type=BranchType.HOSTED)
+        to_mirror = self.makePullerWorker(src_dir='source-branch')
         source_tree.commit('commit message')
         to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)

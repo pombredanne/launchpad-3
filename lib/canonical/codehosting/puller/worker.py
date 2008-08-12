@@ -164,14 +164,6 @@ class URLChecker(object):
         with the bzr command line.
         """
         raise NotImplementedError(self.shouldFollowReferences)
-        traverse_references_from_branch_type = {
-            BranchType.HOSTED: False,
-            BranchType.MIRRORED: True,
-            BranchType.IMPORTED: False,
-            }
-        assert self.branch_type in traverse_references_from_branch_type, (
-            'Unexpected branch type: %r' % (self.branch_type,))
-        return traverse_references_from_branch_type[self.branch_type]
 
     def checkSource(self, url):
         """Check whether the source is an acceptable branch reference.
@@ -193,10 +185,10 @@ class URLChecker(object):
         """
         traversed_references = set()
         while True:
-            reference_value = self._getBranchReference(url)
+            reference_value = self.followReference(url)
             if reference_value is None:
                 break
-            if not self._canTraverseReferences():
+            if not self.shouldFollowReferences():
                 raise BranchReferenceForbidden(reference_value)
             traversed_references.add(url)
             if reference_value in traversed_references:
@@ -250,6 +242,13 @@ class ImportedURLChecker(URLChecker):
                 "Bogus URL for imported branch: %r" % url)
 
 
+class NullChecker(URLChecker):
+    def shouldFollowReferences(self):
+        """ """
+        return False
+    def checkOneURL(self, url):
+        pass
+
 class PullerWorker:
     """This class represents a single branch that needs mirroring.
 
@@ -267,6 +266,7 @@ class PullerWorker:
         # in production use, but it is expected that tests that do not depend
         # on its value will pass None.
         self.branch_type = branch_type
+        self.checker = NullChecker()
         self.protocol = protocol
         if protocol is not None:
             self.protocol.branch_id = branch_id
@@ -366,8 +366,7 @@ class PullerWorker:
         server = get_puller_server()
         server.setUp()
         try:
-            self._checkSourceUrl(self.source)
-            self._checkBranchReference(self.source)
+            self.checker.checkSource(self.source)
             source_branch = self._openSourceBranch(self.source)
             return self._mirrorToDestBranch(source_branch)
         finally:
