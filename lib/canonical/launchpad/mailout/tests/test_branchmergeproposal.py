@@ -81,10 +81,20 @@ Baz Qux has proposed merging foo into bar.
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
         self.assertEqual(None, bmp.root_message_id)
         mailer.sendAll()
+        notification = pop_notifications()[-1]
+        self.assertEqual('<foobar-example-com>', notification['Message-Id'])
         self.assertEqual('<foobar-example-com>', bmp.root_message_id)
         mailer.message_id = '<bazqux-example-com>'
         mailer.sendAll()
         self.assertEqual('<foobar-example-com>', bmp.root_message_id)
+
+    def test_inReplyTo(self):
+        """Ensure that messages are in reply to the root"""
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        bmp.root_message_id = '<root-message-id>'
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        headers, subject, body = mailer.generateEmail(subscriber)
+        self.assertEqual('<root-message-id>', headers['In-Reply-To'])
 
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""

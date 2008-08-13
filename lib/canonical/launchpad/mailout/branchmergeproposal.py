@@ -162,6 +162,8 @@ class BMPMailer(BaseMailer):
         headers['X-Launchpad-Branch'] = reason.branch.unique_name
         if reason.branch.product is not None:
             headers['X-Launchpad-Project'] = reason.branch.product.name
+        if self.merge_proposal.root_message_id is not None:
+            headers['In-Reply-To'] = self.merge_proposal.root_message_id
         return headers
 
     def _getTemplateParams(self, email):
