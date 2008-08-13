@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 import os
-import re
 import shutil
 import tempfile
 
