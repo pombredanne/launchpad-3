@@ -18,7 +18,13 @@ from canonical.config import config
 
 
 class AcceptAnythingOpener(BranchOpener):
+    """A specialization of `BranchOpener` that opens any branch."""
+
     def checkOneURL(self, url):
+        """See `BranchOpener.checkOneURL`.
+
+        Accept anything, to make testing easier.
+        """
         pass
 
 
@@ -71,7 +77,9 @@ class PullerBranchTestCase(BranchTestCase):
         os.makedirs(path)
 
     def pushToBranch(self, branch, tree=None):
-        """Push a Bazaar branch to a given Launchpad branch.
+        """Push a Bazaar branch to a given Launchpad branch's hosted area.
+
+        Use this to test mirroring a hosted branch.
 
         :param branch: A Launchpad Branch object.
         """

@@ -146,7 +146,11 @@ class BranchOpener(object):
     """
 
     def open(self, url):
-        """XXX."""
+        """Open the Bazaar branch at url, first checking for safety.
+
+        What safety means is defined by a subclasses `followReference` and
+        `checkOneURL` methods.
+        """
         self.checkSource(url)
         return self.openBranch(url)
 
@@ -252,7 +256,7 @@ class MirroredBranchOpener(BranchOpener):
     In summary:
 
      - follow references,
-     - check the URLs we're about to access for sanity.
+     - only open non-Launchpad http: and https: URLs.
     """
 
     def shouldFollowReferences(self):
@@ -285,7 +289,7 @@ class ImportedBranchOpener(BranchOpener):
     In summary:
 
      - don't follow references,
-     - assert the URLs are of the form we expect.
+     - assert the URLs start with the prefix we expect for imported branches.
     """
 
     def shouldFollowReferences(self):
@@ -315,6 +319,18 @@ class PullerWorker:
     status client which is used to report on the mirror progress.
     """
 
+    def _checkerForBranchType(self, branch_type):
+        """Return an instance of an appropriate subclass of `URLChecker`."""
+        if branch_type == BranchType.HOSTED:
+            return HostedBranchOpener()
+        elif branch_type == BranchType.MIRRORED:
+            return MirroredBranchOpener()
+        elif branch_type == BranchType.IMPORTED:
+            return ImportedBranchOpener()
+        else:
+            raise AssertionError(
+                "Unexpected branch type: %r" % branch_type)
+
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
                  protocol, branch_opener=None, oops_prefix=None):
         """Construct a `PullerWorker`.
@@ -338,15 +354,7 @@ class PullerWorker:
         self.unique_name = unique_name
         self.branch_type = branch_type
         if branch_opener is None:
-            if branch_type == BranchType.HOSTED:
-                branch_opener = HostedBranchOpener()
-            elif branch_type == BranchType.MIRRORED:
-                branch_opener = MirroredBranchOpener()
-            elif branch_type == BranchType.IMPORTED:
-                branch_opener = ImportedBranchOpener()
-            else:
-                raise AssertionError(
-                    "Unexpected branch type: %r" % branch_type)
+            branch_opener = self._checkerForBranchType(branch_type)
         self.branch_opener = branch_opener
         self.protocol = protocol
         if protocol is not None:
