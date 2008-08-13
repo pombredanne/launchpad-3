@@ -96,6 +96,7 @@ from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
+from canonical.testing.smtpcontrol import SMTPControl
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
@@ -1276,6 +1277,10 @@ class _BaseAppServerLayer:
     # The config used by the spawned app server.
     appserver_config = CanonicalConfig('testrunner-appserver', 'runlaunchpad')
 
+    # The SMTP server for layer tests.  See
+    # configs/testrunner-appserver/mail-configure.zcml
+    smtp_controller = None
+
     @classmethod
     @profiled
     def setUp(cls):
@@ -1287,6 +1292,8 @@ class _BaseAppServerLayer:
         # skipped.
         atexit.register(cls.tearDown)
         cls.waitUntilAppServerIsReady()
+        cls.smtp_controller = SMTPControl()
+        cls.smtp_controller.start()
 
     @classmethod
     def cleanUpStaleAppServer(cls):
@@ -1359,6 +1366,8 @@ class _BaseAppServerLayer:
             os.kill(cls.appserver.pid, signal.SIGTERM)
             cls.appserver.wait()
         cls.appserver = None
+        cls.smtp_controller.reset()
+        cls.smtp_controller.stop()
 
     @classmethod
     @profiled
@@ -1425,7 +1434,8 @@ class ZopelessAppServerLayer(LaunchpadZopelessLayer, _BaseAppServerLayer):
         pass
 
 
-class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer, _BaseAppServerLayer):
+class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer,
+                            _BaseAppServerLayer):
     """Layer for twisted-using zopeless tests that need a running app server.
     """
 

@@ -51,7 +51,8 @@ class FileUploadClient:
             self.state.s.connect((self.upload_host, self.upload_port))
             self.state.f = self.state.s.makefile('w+', 0)
         except socket.error, x:
-            raise UploadFailed(str(x))
+            raise UploadFailed(
+                '[%s:%s]: %s' % (self.upload_host, self.upload_port, x))
 
     def _close(self):
         """Close connection"""

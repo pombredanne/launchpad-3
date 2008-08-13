@@ -79,10 +79,13 @@ To create a new bug we use the createBug operation.  That operation
 takes a target parameter which must be a either a Product, a
 Distribution or a DistributionSourcePackage.
 
+    >>> project_collection = webservice.get(
+    ...   "/beta/projects?ws.op=search&text=firefox").jsonBody()
+    >>> firefox = project_collection['entries'][0]
     >>> print webservice.named_post(
     ...     '/beta/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
-    ...     target='http://api.launchpad.dev/beta/firefox')
+    ...     target=firefox['self_link'])
     HTTP/1.1 201 Created
     ...
     Location: http://api.launchpad.dev/beta/bugs/...
