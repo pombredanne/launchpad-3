@@ -539,8 +539,8 @@ twice, once as posted from Malone, and once as held by Mailman.
     >>> transaction.commit()
 
     # This one will still have Subject: Firefox 1
-    >>> held_msg = message_set.fromEmail(message_text)
-    >>> list_four.holdMessage(held_msg)
+    >>> list_message = message_set.fromEmail(message_text)
+    >>> held_message = list_four.holdMessage(list_message)
 
 The message with the Message-ID <xinu> appears twice in the database.
 
@@ -553,7 +553,7 @@ The message with the Message-ID <xinu> appears twice in the database.
 But the held message details used in the web u/i's moderation interface gets
 only the one held by Mailman.
 
-    >>> details = getAdapter(held_msg, IHeldMessageDetails)
+    >>> details = getAdapter(held_message, IHeldMessageDetails)
     >>> print details.message_id
     <xinu>
     >>> print details.subject
