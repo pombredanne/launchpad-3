@@ -652,7 +652,10 @@ class PackageUpload(SQLBase):
                     "\nThis upload awaits approval by a distro manager\n")
             CHANGESFILE = sanitize_string(changes['changes'])
             DISTRO = self.distroseries.distribution.title
-            ANNOUNCE = announce_list
+            if announce_list:
+                ANNOUNCE = 'Announcing to %s' % announce_list
+            else:
+                ANNOUNCE = 'No announcement sent'
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -665,7 +668,10 @@ class PackageUpload(SQLBase):
             SUMMARY = summarystring
             CHANGESFILE = sanitize_string(changes['changes'])
             DISTRO = self.distroseries.distribution.title
-            ANNOUNCE = announce_list
+            if announce_list:
+                ANNOUNCE = 'Announcing to %s' % announce_list
+            else:
+                ANNOUNCE = 'No announcement sent'
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''

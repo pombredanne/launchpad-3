@@ -748,7 +748,7 @@ the INFO level what it /would/ have sent.
   INFO:
   INFO: ==
   INFO:
-  INFO: Announcing to None
+  INFO: No announcement sent
   INFO:
   INFO: Thank you for your contribution to Ubuntu Linux.
   INFO:
