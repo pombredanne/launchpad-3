@@ -3183,7 +3183,7 @@ class PersonGPGView(LaunchpadView):
 
         if key_ids is None:
             self.error_message = structured(
-                'No Key(s) selected for deactivation.')
+                'No key(s) selected for deactivation.')
             return
 
         # verify if we have multiple entries to deactive
@@ -3237,7 +3237,7 @@ class PersonGPGView(LaunchpadView):
 
         if key_ids is None:
             self.error_message = structured(
-                'No Key(s) selected for reactivation.')
+                'No key(s) selected for reactivation.')
             return
 
         found = []
@@ -3282,7 +3282,7 @@ class PersonGPGView(LaunchpadView):
                     'before trying to reactivate them '
                     'again.' % (', '.join(notfound)))
 
-        self.info_message = structured('\n<br>\n'.join(comments))
+        self.info_message = structured('\n<br />\n'.join(comments))
 
     def _validateGPG(self, key):
         logintokenset = getUtility(ILoginTokenSet)

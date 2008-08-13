@@ -64,7 +64,7 @@ not be called.
     u''
 
 A view can have `error_message` or `info_message` set for display in
-the template (each template is responsible to include the messages,
+the template (each template is responsible for including the messages,
 using a `structure` directive). The supplied value must be None or
 an IStructuredString implementation.
 
