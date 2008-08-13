@@ -584,7 +584,6 @@ class PackageUpload(SQLBase):
                 # This is a signed upload.
                 signer = self.signing_key.owner
 
-                # Sanitize the signer's display name and email address.
                 signer_name = sanitize_string(signer.displayname)
                 signer_email = sanitize_string(signer.preferredemail.email)
 
@@ -621,7 +620,14 @@ class PackageUpload(SQLBase):
                            from_addr=from_addr, bcc=bcc)
 
         def sanitize_string(s):
-            """Make sure string does not trigger 'ascii' codec errors."""
+            """Make sure string does not trigger 'ascii' codec errors.
+
+            Convert string to unicode if needed so that characters outside
+            the (7-bit) ASCII range do not cause errors like these:
+
+                'ascii' codec can't decode byte 0xc4 in position 21: ordinal
+                not in range(128)
+            """
             if isinstance(s, unicode):
                 return s
             else:
