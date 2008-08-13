@@ -479,8 +479,7 @@ class PullerWorker:
             self._mirrorFailed(msg)
 
         except NotBranchError, e:
-            hosted_branch_error = NotBranchError(
-                "sftp://bazaar.launchpad.net/~%s" % self.unique_name)
+            hosted_branch_error = NotBranchError("lp:~%s" % self.unique_name)
             message_by_type = {
                 BranchType.HOSTED: str(hosted_branch_error),
                 BranchType.IMPORTED: "Not a branch.",
