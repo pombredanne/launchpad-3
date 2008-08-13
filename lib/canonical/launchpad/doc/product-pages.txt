@@ -56,7 +56,7 @@ Setting the driver for Firefox shows that it is used for the product,
 after a new view is obtained.
 
     >>> firefox.driver = cprov
-    >>> view.effective_driver.name
+    >>> print view.effective_driver.name
     sabdfl
     >>> view = create_initialized_view(firefox, name='+index')
     >>> print view.effective_driver.name
