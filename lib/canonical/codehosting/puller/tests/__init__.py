@@ -9,6 +9,9 @@ from StringIO import StringIO
 from canonical.codehosting.puller.worker import (
     BranchOpener, PullerWorker, PullerWorkerProtocol)
 
+class AcceptAnythingOpener(BranchOpener):
+    def checkOneURL(self, url):
+        pass
 
 class PullerWorkerMixin:
     """Mixin for tests that want to make PullerWorker objects.
@@ -30,10 +33,7 @@ class PullerWorkerMixin:
         if oops_prefix is None:
             oops_prefix = ''
         if branch_type is None:
-            class _AcceptAnythingOpener(BranchOpener):
-                def checkOneURL(self, url):
-                    pass
-            opener = _AcceptAnythingOpener()
+            opener = AcceptAnythingOpener()
         else:
             opener = None
         return PullerWorker(

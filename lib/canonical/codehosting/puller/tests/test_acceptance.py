@@ -128,9 +128,7 @@ class TestBranchPuller(BranchTestCase):
             output and error are strings contain the output of the process to
             stdout and stderr respectively.
         """
-        command = [
-            sys.executable, os.path.join(self._puller_script), '-q',
-            branch_type]
+        command = [sys.executable, self._puller_script, '-q', branch_type]
         retcode, output, error = self.runSubprocess(command)
         return command, retcode, output, error
 
