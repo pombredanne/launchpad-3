@@ -603,9 +603,6 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
   DEBUG: bar (1.0-2) breezy; urgency=low
   DEBUG:
   DEBUG:   * A second upload to ensure that binary overrides of _all work
-  DEBUG: .
-  DEBUG:   * Also closes Launchpad bug #6
-  DEBUG:
   DEBUG:
   DEBUG: -- Launchpad team <launchpad@lists.canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
   DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
@@ -736,7 +733,6 @@ the INFO level what it /would/ have sent.
   >>> random_package_upload.notify(dry_run=True, logger=mock_logger)
   DEBUG: Building recipients list.
   ...
-  DEBUG: Skipping announcement, it is a binary upload to SECURITY.
   INFO: Would have sent a mail:
   INFO:   Subject: [ubuntu/hoary-security] bar 1.0-2 (Accepted)
   INFO:   Sender: Root <root@localhost>
@@ -746,9 +742,6 @@ the INFO level what it /would/ have sent.
   INFO: bar (1.0-2) breezy; urgency=low
   INFO:
   INFO:   * A second upload to ensure that binary overrides of _all work
-  INFO: .
-  INFO:   * Also closes Launchpad bug #6
-  INFO:
   INFO:
   INFO: -- Launchpad team <launchpad@lists.canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
   INFO: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
@@ -809,7 +802,8 @@ changes file is mentioned toward the end of the email.
   <BLANKLINE>
   <BLANKLINE>
   -- Non-ascii maintainer =C4=8Ciha=C5=99 <launchpad@lists.canonical.com> Thu=
-  , 30 Mar 2006 01:36:14 +0100
+  , 30 Mar 2006 01:36:14 +0100 =
+  <BLANKLINE>
   Changed-By: Non-ascii changed-by =C4=8Ciha=C5=99 <daniel.silverstone@canoni=
   cal.com> =
   <BLANKLINE>

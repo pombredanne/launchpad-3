@@ -563,15 +563,20 @@ class PackageUpload(SQLBase):
         def do_sendmail(message, recipients=recipients, from_addr=None,
                         bcc=None):
             """Perform substitutions on a template and send the email."""
+            # Append maintainer info to the change log.
+            maintainer = changes.get('maintainer')
+            if maintainer:
+                maintainer = sanitize_string(maintainer)
+                message.MAINTAINER = (
+                    '-- %s %s' % (maintainer, changes['date']))
+
             # Add the debian 'Changed-By:' field if the changes author
             # differs from the maintainer.
-            maintainer = changes.get('maintainer')
             changed_by = changes.get('changed-by')
             if maintainer and changed_by:
-                maintainer = sanitize_string(maintainer)
                 changed_by = sanitize_string(changed_by)
                 if changed_by != maintainer:
-                    message.CHANGEDBY = 'Changed-By: %s' % changed_by
+                    message.CHANGEDBY = '\nChanged-By: %s' % changed_by
 
             # Append a 'Signed-By:' line to the email body if this is a
             # signed upload and the signer/sponsor differs from the
@@ -624,40 +629,6 @@ class PackageUpload(SQLBase):
                 result = guess_encoding(s)
             return result
 
-        def fix_maintainer_line(changelog_entry):
-            """Fix the last line in the change log.
-
-            The last line contains the signature of the person who authored
-            the last change ('changed-by'). The distro team wants the last
-            line to contain the maintainer's signature however.
-            """
-            maintainer = changes.get('maintainer')
-            if maintainer:
-                # The last line can only be fixed as described above if
-                # we have a maintainer.
-
-                maintainer = sanitize_string(maintainer)
-
-                # Split the change log into lines so we can manipulate
-                # the last one.
-                changes_lines = changelog_entry.splitlines()
-                last_line = changes_lines[-1]
-
-                # This is the bit we'd like to extract from the last line.
-                date_regex = re.compile(
-                    '((Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+\d.+)\s*$')
-                match = date_regex.search(last_line)
-                if match:
-                    change_date = match.group(1)
-                else:
-                    change_date = ''
-
-                # Replace the last change log line and put it together
-                # again.
-                changes_lines[-1] = '-- %s %s' % (maintainer, change_date)
-                changelog_entry = '\n'.join(changes_lines)
-            return changelog_entry
-
         class NewMessage:
             """New message."""
             template = get_email_template('upload-new.txt')
@@ -675,8 +646,7 @@ class PackageUpload(SQLBase):
             STATUS = "Waiting for approval"
             SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
-            CHANGESFILE = fix_maintainer_line(
-                self.sourcepackagerelease.changelog_entry)
+            CHANGESFILE = sanitize_string(changes['changes'])
             DISTRO = self.distroseries.distribution.title
             ANNOUNCE = announce_list
             CHANGEDBY = ''
@@ -689,8 +659,7 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = fix_maintainer_line(
-                self.sourcepackagerelease.changelog_entry)
+            CHANGESFILE = sanitize_string(changes['changes'])
             DISTRO = self.distroseries.distribution.title
             ANNOUNCE = announce_list
             CHANGEDBY = ''
@@ -710,8 +679,7 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = fix_maintainer_line(
-                self.sourcepackagerelease.changelog_entry)
+            CHANGESFILE = sanitize_string(changes['changes'])
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
