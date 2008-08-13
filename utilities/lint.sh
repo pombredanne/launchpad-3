@@ -99,6 +99,7 @@ group_lines_by_file() {
 
 
 sample_dir="database/sampledata"
+current_sql="${sample_dir}/current.sql"
 karma_bombs=`sed '/INTO karma /!d; /2000-/d; /2001-/d' $current_sql`
 if [ -n "$karma_bombs" ]; then
     echo ""
