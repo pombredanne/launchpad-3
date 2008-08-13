@@ -16,7 +16,7 @@ __all__ = [
 import sets
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int, Set, Text, TextLine
+from zope.schema import Bool, Choice, Date, Int, Object, Set, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary
 
 
@@ -35,6 +35,8 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
+from canonical.launchpad.interfaces.productrelease import IProductRelease
+from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -44,8 +46,11 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-     export_as_webservice_entry, exported)
+    collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters)
 
 
 class LicenseStatus(DBEnumeratedType):
@@ -118,7 +123,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry('project')
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
@@ -140,34 +145,40 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                 'preferences and decisions around bug tracking, translation '
                 'and security policy will apply to this project.')),
         exported_as='project_group')
-    owner = PublicPersonChoice(
-        title=_('Maintainer'),
-        required=True,
-        vocabulary='ValidOwner',
-        description=_("Project owner, it can either a valid Person or Team "
-                      "inside Launchpad context."))
-    registrant = PublicPersonChoice(
-        title=_('Registrant'),
-        required=True,
-        readonly=True,
-        vocabulary='ValidPersonOrTeam',
-        description=_("Project registrant, a valid Person "
-                      "within Launchpad context."))
 
-    driver = PublicPersonChoice(
-        title=_("Driver"),
-        description=_(
-            "This person or team will be able to set feature goals for "
-            "and approve bug targeting or backporting for ANY major series "
-            "in this project. You might want to leave this blank and just "
-            "appoint a team for each specific series, rather than having "
-            "one project team that does it all."),
-        required=False, vocabulary='ValidPersonOrTeam')
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Maintainer'),
+            required=True,
+            vocabulary='ValidOwner',
+            description=_("Project owner, it can either a valid Person or Team "
+                          "inside Launchpad context.")))
+
+    registrant = exported(
+        PublicPersonChoice(
+            title=_('Registrant'),
+            required=True,
+            readonly=True,
+            vocabulary='ValidPersonOrTeam',
+            description=_("Project registrant, a valid Person "
+                          "within Launchpad context.")))
+
+    driver = exported(
+        PublicPersonChoice(
+            title=_("Driver"),
+            description=_(
+                "This person or team will be able to set feature goals for "
+                "and approve bug targeting or backporting for ANY major "
+                "series in this project. You might want to leave this blank "
+                "and just appoint a team for each specific series, rather "
+                "than having one project team that does it all."),
+            required=False, vocabulary='ValidPersonOrTeam'))
 
     drivers = Attribute(
         "Presents the drivers of this project as a list. A list is "
         "required because there might be a project driver and also a "
         "driver appointed in the overarching project group.")
+
     name = exported(
         ProductNameField(
             title=_('Name'),
@@ -176,71 +187,95 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                 "At least one lowercase letter or number, followed by "
                 "letters, dots, hyphens or plusses. "
                 "Keep this name short, as it is used in URLs.")))
-    displayname = TextLine(
-        title=_('Display Name'),
-        description=_("""The name of the project as it would appear in a
-            paragraph."""))
 
-    title = Title(
-        title=_('Title'),
-        description=_("""The project title. Should be just a few words."""))
+    displayname = exported(
+        TextLine(
+            title=_('Display Name'),
+            description=_("""The name of the project as it would appear in a
+                paragraph.""")),
+        exported_as='display_name')
 
-    summary = Summary(
-        title=_('Summary'),
-        description=_("""The summary should be a single short paragraph."""))
+    title = exported(
+        Title(
+            title=_('Title'),
+            description=_("The project title. Should be just a few words.")))
 
-    description = Description(
-        title=_('Description'),
-        required=False,
-        description=_("""Include information on how to get involved with
-            development. Don't repeat anything from the Summary."""))
+    summary = exported(
+        Summary(
+            title=_('Summary'),
+            description=_("The summary should be a single short paragraph.")))
 
-    datecreated = TextLine(
-        title=_('Date Created'),
-        description=_("""The date this project was created in Launchpad."""))
+    description = exported(
+        Description(
+            title=_('Description'),
+            required=False,
+            description=_("""Include information on how to get involved with
+                development. Don't repeat anything from the Summary.""")))
 
-    homepageurl = URIField(
-        title=_('Homepage URL'),
-        required=False,
-        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The project home page. Please include
-            the http://"""))
+    datecreated = exported(
+        TextLine(
+            title=_('Date Created'),
+            description=_("The date this project was created in Launchpad.")),
+        exported_as='date_created')
 
-    wikiurl = URIField(
-        title=_('Wiki URL'),
-        required=False,
-        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The full URL of this project's wiki, if it has one.
-            Please include the http://"""))
+    homepageurl = exported(
+        URIField(
+            title=_('Homepage URL'),
+            required=False,
+            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+            description=_("""The project home page. Please include
+                the http://""")),
+        exported_as="homepage_url")
 
-    screenshotsurl = URIField(
-        title=_('Screenshots URL'),
-        required=False,
-        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The full URL for screenshots of this project,
-            if available. Please include the http://"""))
+    wikiurl = exported(
+        URIField(
+            title=_('Wiki URL'),
+            required=False,
+            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+            description=_("""The full URL of this project's wiki, if it has
+                one. Please include the http://""")),
+        exported_as='wiki_url')
 
-    downloadurl = URIField(
-        title=_('Download URL'),
-        required=False,
-        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The full URL where downloads for this project
-            are located, if available. Please include the http://"""))
+    screenshotsurl = exported(
+        URIField(
+            title=_('Screenshots URL'),
+            required=False,
+            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+            description=_("""The full URL for screenshots of this project,
+                if available. Please include the http://""")),
+        exported_as='screenshots_url')
 
-    programminglang = TextLine(
-        title=_('Programming Language'),
-        required=False,
-        description=_("""A comma delimited list of programming
-            languages used for this project."""))
+    downloadurl = exported(
+        URIField(
+            title=_('Download URL'),
+            required=False,
+            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+            description=_("""The full URL where downloads for this project
+                are located, if available. Please include the http://""")),
+        exported_as='download_url')
 
-    sourceforgeproject = TextLine(title=_('Sourceforge Project'),
-        required=False,
-        description=_("""The SourceForge project name for
-            this project, if it is in sourceforge."""))
+    programminglang = exported(
+        TextLine(
+            title=_('Programming Language'),
+            required=False,
+            description=_("""A comma delimited list of programming
+                languages used for this project.""")),
+        exported_as='programming_language')
 
-    freshmeatproject = TextLine(title=_('Freshmeat Project'),
-        required=False, description=_("""The Freshmeat project name for
-            this project, if it is in freshmeat."""))
+    sourceforgeproject = exported(
+        TextLine(
+            title=_('Sourceforge Project'),
+            required=False,
+            description=_("""The SourceForge project name for
+                this project, if it is in sourceforge.""")),
+        exported_as='sourceforge_project')
+
+    freshmeatproject = exported(
+        TextLine(
+            title=_('Freshmeat Project'),
+            required=False, description=_("""The Freshmeat project name for
+                this project, if it is in freshmeat.""")),
+        exported_as='freshmeat_project')
 
     homepage_content = Text(
         title=_("Homepage Content"), required=False,
@@ -294,32 +329,38 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             "Notes on the project's license, editable only by reviewers "
             "(Admins & Commercial Admins)."))
 
-    licenses = Set(
-        title=_('Licenses'),
-        value_type=Choice(vocabulary=License))
+    licenses = exported(
+        Set(title=_('Licenses'),
+            value_type=Choice(vocabulary=License)))
 
-    license_info = Description(
-        title=_('Description of additional licenses'),
-        required=False,
-        description=_(
-            "Description of licenses that do not appear in the list above."))
+    license_info = exported(
+        Description(
+            title=_('Description of additional licenses'),
+            required=False,
+            description=_(
+                "Description of licenses that do not appear in the list "
+                "above.")))
 
-    bugtracker = ProductBugTracker(
-        title=_('Bugs are tracked'),
-        vocabulary="BugTracker")
+    bugtracker = exported(
+        ProductBugTracker(
+            title=_('Bugs are tracked'),
+            vocabulary="BugTracker"),
+        exported_as='bug_tracker')
 
     sourcepackages = Attribute(_("List of packages for this product"))
 
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
-    serieses = Attribute(_("""An iterator over the ProductSeries for this
-        product"""))
+    serieses = exported(
+        CollectionField(value_type=Object(schema=IProductSeries)),
+        exported_as='series')
 
-    development_focus = Choice(
-        title=_('Development focus'), required=True,
-        vocabulary='FilteredProductSeries',
-        description=_('The "trunk" series where development is focused'))
+    development_focus = exported(
+        Choice(
+            title=_('Development focus'), required=True,
+            vocabulary='FilteredProductSeries',
+            description=_('The "trunk" series where development is focused')))
 
     default_stacked_on_branch = Attribute(
         _('The branch that new branches will be stacked on by default.'))
@@ -328,8 +369,11 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         "by the project name, if a project is associated with this "
         "product; otherwise, simply returns the product name."))
 
-    releases = Attribute(_("""An iterator over the ProductReleases for this
-        product."""))
+    releases = exported(
+        CollectionField(
+            title=_("An iterator over the ProductReleases for this product."),
+            readonly=True,
+            value_type=Reference(schema=IProductRelease)))
 
     branches = Attribute(_("""An iterator over the Bazaar branches that are
     related to this product."""))
@@ -438,6 +482,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
 class IProductSet(Interface):
     """The collection of products."""
+    export_as_webservice_collection(IProduct)
 
     title = Attribute("The set of Products registered in the Launchpad")
 
@@ -499,6 +544,9 @@ class IProductSet(Interface):
     def forReview():
         """Return an iterator over products that need to be reviewed."""
 
+    @collection_default_content()
+    @operation_parameters(text=TextLine())
+    @export_read_operation()
     def search(text=None, soyuz=None,
                rosetta=None, malone=None,
                bazaar=None):

@@ -47,7 +47,7 @@ import re
 import canonical.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6)
+    BzrBranchFormat6, BzrBranchFormat7)
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
 from bzrlib.plugins.loom.branch import (
@@ -198,9 +198,7 @@ class BranchFormat(DBEnumeratedType):
 
     BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
 
-    # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
-    BZR_BRANCH_7 = DBItem(7, 'Bazaar Branch Format 7 (needs bzr 1.6)\n',
-                          'Description to be added')
+    BZR_BRANCH_7 = _format_enum(7, BzrBranchFormat7)
 
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
@@ -589,6 +587,8 @@ class IBranch(IHasOwner):
         title=_("Revision count"),
         description=_("The revision number of the tip of the branch.")
         )
+
+    stacked_on = Attribute('Stacked-on branch')
 
     warehouse_url = Attribute(
         "URL for accessing the branch by ID. "

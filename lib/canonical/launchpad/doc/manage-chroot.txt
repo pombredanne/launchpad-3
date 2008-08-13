@@ -193,6 +193,6 @@ results in an appropriate error.
     ... else:
     ...     print "Did not get expected exception"
     DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
-    Librarian upload failed: (111, 'Connection refused')
+    Librarian upload failed: [...]: (111, 'Connection refused')
 
     >>> LibrarianLayer.reveal()
