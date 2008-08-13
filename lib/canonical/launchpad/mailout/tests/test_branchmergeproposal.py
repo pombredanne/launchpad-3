@@ -49,6 +49,7 @@ class TestMergeProposalMailing(TestCase):
         """Ensure that the contents of the mail are as expected"""
         bmp, subscriber = self.makeProposalWithSubscriber()
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        mailer.message_id = '<foobar-example-com>'
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0]
         headers, subject, body = mailer.generateEmail(subscriber)
@@ -64,10 +65,26 @@ Baz Qux has proposed merging foo into bar.
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
              'X-Launchpad-Project': bmp.source_branch.product.name,
-             'Reply-To': bmp.address},
+             'Reply-To': bmp.address,
+             'Message-Id': '<foobar-example-com>'},
             headers)
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
         mailer.sendAll()
+
+    def test_RecordMessageId(self):
+        """Ensure that the contents of the mail are as expected"""
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        mailer.message_id = '<foobar-example-com>'
+        headers, subject, body = mailer.generateEmail(subscriber)
+        self.assertEqual('<foobar-example-com>', headers['Message-Id'])
+        self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
+        self.assertEqual(None, bmp.root_message_id)
+        mailer.sendAll()
+        self.assertEqual('<foobar-example-com>', bmp.root_message_id)
+        mailer.message_id = '<bazqux-example-com>'
+        mailer.sendAll()
+        self.assertEqual('<foobar-example-com>', bmp.root_message_id)
 
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""

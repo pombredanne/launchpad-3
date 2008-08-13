@@ -151,6 +151,8 @@ class BranchMergeProposal(SQLBase):
                     ORDER BY Message.datecreated LIMIT 1)
             """ % self.id)
 
+    root_message_id = StringCol(default=None)
+
     @property
     def title(self):
         """See `IBranchMergeProposal`."""

@@ -92,6 +92,11 @@ class BMPMailer(BaseMailer):
                             from_address, delta)
         self.merge_proposal = merge_proposal
 
+    def sendAll(self):
+        BaseMailer.sendAll(self)
+        if self.merge_proposal.root_message_id is None:
+            self.merge_proposal.root_message_id = self.message_id
+
     @staticmethod
     def _format_user_address(user):
         return format_address(user.displayname, user.preferredemail.email)

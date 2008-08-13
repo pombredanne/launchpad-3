@@ -18,7 +18,7 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, List
+from zope.schema import Choice, Datetime, Int, List, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
@@ -161,6 +161,7 @@ class IBranchMergeProposal(Interface):
 
     reviewer = Attribute(
         _("The person that accepted (or rejected) the code for merging."))
+
     reviewed_revision_id = Attribute(
         _("The revision id that has been approved by the reviewer."))
 
@@ -216,6 +217,9 @@ class IBranchMergeProposal(Interface):
     # Cannote use Object as this would cause circular dependencies.
     root_comment = Attribute(
         _("The first message in discussion of this merge proposal"))
+    root_message_id = Text(
+        title=_('The email message id from the first message'),
+        required=False)
     all_comments = Attribute(
         _("All messages discussing this merge proposal"))
 

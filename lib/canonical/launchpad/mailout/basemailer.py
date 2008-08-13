@@ -29,7 +29,7 @@ class BaseMailer:
     """
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None):
+                 delta=None, message_id=None):
         """Constructor.
 
         :param subject: A Python dict-replacement template for the subject
@@ -39,6 +39,8 @@ class BaseMailer:
         :param from_address: The from_address to use on emails.
         :param delta: A Delta object with members "delta_values", "interface"
             and "new_values", such as BranchMergeProposalDelta.
+        :param message_id: The Message-Id to use for generated emails.  If
+            not supplied, random message-ids will be used.
         """
         self._subject_template = subject
         self._template_name = template_name
@@ -47,6 +49,7 @@ class BaseMailer:
             self._recipients.add(recipient, reason, reason.mail_header)
         self.from_address = from_address
         self.delta = delta
+        self.message_id = message_id
 
     def generateEmail(self, email):
         """Generate the email for this recipient.
@@ -72,6 +75,8 @@ class BaseMailer:
         reply_to = self._getReplyToAddress()
         if reply_to is not None:
             headers['Reply-To'] = reply_to
+        if self.message_id is not None:
+            headers['Message-Id'] = self.message_id
         return headers
 
     def _getTemplateParams(self, email):
