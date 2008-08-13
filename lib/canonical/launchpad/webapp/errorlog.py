@@ -212,7 +212,7 @@ class ErrorReport:
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
-    _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
+    _ignored_exceptions = set(['TranslationUnavailable'])
     _default_config_section = 'error_reports'
 
     lasterrordir = None
