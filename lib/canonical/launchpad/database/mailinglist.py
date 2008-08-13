@@ -49,7 +49,9 @@ class MessageApproval(SQLBase):
 
     implements(IMessageApproval)
 
-    message_id = StringCol(notNull=True)
+    message = ForeignKey(
+        dbName='message', foreignKey='Message',
+        notNull=True)
 
     posted_by = ForeignKey(
         dbName='posted_by', foreignKey='Person',
@@ -76,6 +78,11 @@ class MessageApproval(SQLBase):
         default=None)
 
     disposal_date = UtcDateTimeCol(default=None)
+
+    @property
+    def message_id(self):
+        """See `IMessageApproval`."""
+        return self.message.rfc822msgid
 
     def approve(self, reviewer):
         """See `IMessageApproval`."""
@@ -458,7 +465,7 @@ class MailingList(SQLBase):
 
     def holdMessage(self, message):
         """See `IMailingList`."""
-        held_message = MessageApproval(message_id=message.rfc822msgid,
+        held_message = MessageApproval(message=message,
                                        posted_by=message.owner,
                                        posted_message=message.raw,
                                        posted_date=message.datecreated,
@@ -470,9 +477,11 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         return MessageApproval.select("""
             MessageApproval.mailing_list = %s AND
-            MessageApproval.status = %s
+            MessageApproval.status = %s AND
+            MessageApproval.message = Message.id
             """ % sqlvalues(self, PostedMessageStatus.NEW),
-            orderBy=['posted_date', 'message_id'])
+            clauseTables=['Message'],
+            orderBy=['posted_date', 'Message.rfc822msgid'])
 
 
 class MailingListSet:
@@ -585,10 +594,11 @@ class MessageApprovalSet:
 
     def getMessageByMessageID(self, message_id):
         """See `IMessageApprovalSet`."""
-        response = MessageApproval.selectBy(message_id=message_id)
-        if response.count() == 0:
-            return None
-        return response[0]
+        return MessageApproval.selectOne("""
+            MessageApproval.message = Message.id AND
+            Message.rfc822msgid = %s
+            """ % sqlvalues(message_id),
+            distinct=True, clauseTables=['Message'])
 
     def getHeldMessagesWithStatus(self, status):
         """See `IMessageApprovalSet`."""
@@ -602,14 +612,8 @@ class HeldMessageDetails:
 
     def __init__(self, message_approval):
         self.message_approval = message_approval
+        self.message = message_approval.message
         self.message_id = message_approval.message_id
-        # We need to get the IMessage object associated with this
-        # IMessageApproval object.  The tie-in is the Message-ID.
-        messages = getUtility(IMessageSet).get(self.message_id)
-        assert len(messages) == 1, (
-            'Expected exactly one message with Message-ID: %s' %
-            self.message_id)
-        self.message = messages[0]
         self.subject = self.message.subject
         self.date = self.message.datecreated
         self.author = self.message.owner
