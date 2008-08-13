@@ -15,18 +15,27 @@ import datetime
 import pytz
 
 from zope.component import getUtility
-from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces import implements, NotFound
 
 from canonical.launchpad import _
 from canonical.launchpad.browser import BugContextMenu
 from canonical.launchpad.interfaces import (
     ICveSet, ILaunchBag, IBugNomination, IBugNominationForm, INullBugTask)
-
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, custom_widget, action)
 from canonical.launchpad.webapp.authorization import check_permission
-
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+
+
+class BugNominationPrimaryContext:
+    """The primary context is the nearest `IBugTarget`."""
+    implements(IPrimaryContext)
+
+    def __init__(self, nomination):
+        launchbag = getUtility(ILaunchBag)
+        self.context = launchbag.bugtask.target
+
 
 class BugNominationView(LaunchpadFormView):
 
