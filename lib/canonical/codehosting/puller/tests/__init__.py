@@ -52,6 +52,7 @@ class PullerWorkerMixin:
 
 
 class PullerBranchTestCase(BranchTestCase):
+    """Some useful code for the more-integration-y puller tests."""
 
     def getHostedPath(self, branch):
         """Return the path of 'branch' in the upload area."""
