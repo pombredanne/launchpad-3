@@ -53,16 +53,30 @@ class BzrSyncTestCase(TestCaseWithTransport):
         # The lp-mirrored transport is set up by the branch_scanner module.
         # Here we set up a fake so that we can test without worrying about
         # authservers and the like.
-        self._url_prefix = 'lp-mirrored:///'
-        register_transport(self._url_prefix, self._fakeTransportFactory)
         self.factory = LaunchpadObjectFactory()
         self.makeFixtures()
         self.lp_db_user = config.launchpad.dbuser
         self.switchDbUser(config.branchscanner.dbuser)
+        self._setUpFakeTransport()
+        self._setUpAuthor()
+
+    def _setUpFakeTransport(self):
+        # The scanner tests assume that branches live on a Launchpad virtual
+        # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
+        # entire virtual filesystem here, we fake it by having a chrooted file
+        # transport do the work.
+        #
+        # The related method `makeBzrBranchAndTree` takes a database branch
+        # and creates the branch in the correct location on our fake
+        # filesystem.
+        self._url_prefix = 'lp-mirrored:///'
+        register_transport(self._url_prefix, self._fakeTransportFactory)
         self._chroot_server = ChrootServer(self.get_transport())
         self._chroot_server.setUp()
         self.addCleanup(self._chroot_server.tearDown)
-        self._setUpAuthor()
+        self.addCleanup(
+            lambda: unregister_transport(
+                self._url_prefix, self._fakeTransportFactory))
 
     def _fakeTransportFactory(self, url):
         self.assertTrue(url.startswith(self._url_prefix))
@@ -73,10 +87,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
         """We need to reset the config warehouse root after a switch."""
         LaunchpadZopelessLayer.switchDbUser(user)
         self.txn = LaunchpadZopelessLayer.txn
-
-    def tearDown(self):
-        unregister_transport('lp-mirrored:///', self._fakeTransportFactory)
-        TestCaseWithTransport.tearDown(self)
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""

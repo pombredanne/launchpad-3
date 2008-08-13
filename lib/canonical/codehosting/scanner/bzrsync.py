@@ -616,7 +616,7 @@ class BzrSync:
         branch_set = getUtility(IBranchSet)
         if branch_url.startswith('/'):
             return branch_set.getByUniqueName(branch_url.strip('/'))
-        return branch_url.getByUrl(branch_url.rstrip('/'))
+        return branch_set.getByUrl(branch_url.rstrip('/'))
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
