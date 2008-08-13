@@ -483,8 +483,8 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(db_stacked_branch.stacked_on.id, db_base_branch.id)
 
     def test_hosted_stacked_branch(self):
-        # Hosted branches will often be stacked on other hosted branches using
-        # URL fragments like '/~foo/bar/baz'. When the scanner sees such
+        # By default, hosted branches will be stacked on other hosted branches
+        # using URL fragments like '/~foo/bar/baz'. When the scanner sees such
         # branches, it will record the stacking relationship.
         stacked_format = 'development'
 
