@@ -52,9 +52,9 @@ class StubbedPullerWorker(PullerWorker):
         if self.enable_checkSourceUrl:
             PullerWorker._checkSourceUrl(self, url)
 
-    def _checkBranchReference(self, location):
+    def _checkBranchReference(self, url):
         if self.enable_checkBranchReference:
-            PullerWorker._checkBranchReference(self, location)
+            PullerWorker._checkBranchReference(self, url)
 
     def _openSourceBranch(self):
         self.testcase.open_call_count += 1

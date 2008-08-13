@@ -156,8 +156,9 @@ class TestCheckBranchReference(unittest.TestCase):
         self.assertEqual(self.get_branch_reference_calls, urls)
 
     def testNotReference(self):
-        #_checkBranchReference does not raise if the source url does not point
-        # to a branch reference.
+        # _checkBranchReference can only raise if source URL points to a
+        # branch reference.  If it doesn't point to a branch reference, then
+        # it can't raise an error.
         self.can_traverse_references = False
         references = ['file:///local/branch', None]
         self.setUpReferences(references)
