@@ -466,7 +466,7 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG: bar (1.0-2) breezy; urgency=low
   DEBUG:
   DEBUG:   * A second upload to ensure that binary overrides of _all work
-  DEBUG: .
+  DEBUG: 
   DEBUG:   * Also closes Launchpad bug #6
   DEBUG:
   DEBUG:
@@ -489,7 +489,7 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG: bar (1.0-2) breezy; urgency=low
   DEBUG:
   DEBUG:   * A second upload to ensure that binary overrides of _all work
-  DEBUG: .
+  DEBUG: 
   DEBUG:   * Also closes Launchpad bug #6
   DEBUG:
   DEBUG:
