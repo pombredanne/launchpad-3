@@ -134,21 +134,33 @@ def identical_formats(branch_one, branch_two):
     )
 
 
-class URLChecker(object):
-    """A `URLChecker` checks whether locations are safe to pull branches from.
+class BranchOpener(object):
+    """A `BranchOpener` opens branches with an eye to safety.
 
-    The external interface is `checkSource`.  Subclasses must override
+    The external interface is `open`.  Subclasses must override
     `shouldFollowReferences` and `checkOneURL`, and tests override
-    `followReference`.
+    `followReference` and `openBranch`.
     """
+
+    def open(self, url):
+        """XXX."""
+        self.checkSource(url)
+        return self.openBranch(url)
 
     def followReference(self, url):
         """Get the branch-reference value at the specified url.
 
-        This method exists only to be overriden in unit tests.
+        This exists as a separate method only to be overriden in unit tests.
         """
         bzrdir = BzrDir.open(url)
         return bzrdir.get_branch_reference()
+
+    def openBranch(self, url):
+        """Open the Bazaar at `url`.
+
+        This exists as a separate method only to be overriden in unit tests.
+        """
+        return Branch.open(url)
 
     def checkSource(self, url):
         """Check `url` is safe to pull a branch from.
@@ -188,7 +200,6 @@ class URLChecker(object):
         """
         raise NotImplementedError(self.shouldFollowReferences)
 
-
     def checkOneURL(self, url):
         """Check the safety of the source URL.
 
@@ -201,8 +212,8 @@ class URLChecker(object):
         raise NotImplementedError(self.checkOneURL)
 
 
-class HostedURLChecker(URLChecker):
-    """Specialization of `URLChecker` for HOSTED branches.
+class HostedBranchOpener(BranchOpener):
+    """Specialization of `BranchOpener` for HOSTED branches.
 
     In summary:
 
@@ -211,7 +222,7 @@ class HostedURLChecker(URLChecker):
     """
 
     def shouldFollowReferences(self):
-        """See `URLChecker.shouldFollowReferences`.
+        """See `BranchOpener.shouldFollowReferences`.
 
         We do not traverse references for HOSTED branches because that may
         cause us to connect to remote locations, which we do not allow because
@@ -220,7 +231,7 @@ class HostedURLChecker(URLChecker):
         return False
 
     def checkOneURL(self, url):
-        """See `URLChecker.checkOneURL`.
+        """See `BranchOpener.checkOneURL`.
 
         If the URL we are mirroring from is anything but a
         lp-hosted:///~user/project/branch URL, something has gone badly wrong,
@@ -232,8 +243,8 @@ class HostedURLChecker(URLChecker):
                 "Non-hosted url %r for hosted branch." % url)
 
 
-class MirroredURLChecker(URLChecker):
-    """Specialization of `URLChecker` for MIRRORED branches.
+class MirroredBranchOpener(BranchOpener):
+    """Specialization of `BranchOpener` for MIRRORED branches.
 
     In summary:
 
@@ -242,7 +253,7 @@ class MirroredURLChecker(URLChecker):
     """
 
     def shouldFollowReferences(self):
-        """See `URLChecker.shouldFollowReferences`.
+        """See `BranchOpener.shouldFollowReferences`.
 
         We traverse branch references for MIRRORED branches because they
         provide a useful redirection mechanism and we want to be consistent
@@ -251,7 +262,7 @@ class MirroredURLChecker(URLChecker):
         return True
 
     def checkOneURL(self, url):
-        """See `URLChecker.checkOneURL`.
+        """See `BranchOpener.checkOneURL`.
 
         We refuse to mirror from Launchpad or a ssh-like or file URL.
         """
@@ -265,8 +276,8 @@ class MirroredURLChecker(URLChecker):
             raise BadUrlFile(url)
 
 
-class ImportedURLChecker(URLChecker):
-    """Specialization of `URLChecker` for IMPORTED branches.
+class ImportedBranchOpener(BranchOpener):
+    """Specialization of `BranchOpener` for IMPORTED branches.
 
     In summary:
 
@@ -275,7 +286,7 @@ class ImportedURLChecker(URLChecker):
     """
 
     def shouldFollowReferences(self):
-        """See `URLChecker.shouldFollowReferences`.
+        """See `BranchOpener.shouldFollowReferences`.
 
         We do not traverse references for IMPORTED branches because the
         code-import system should never produce branch references.
@@ -283,7 +294,7 @@ class ImportedURLChecker(URLChecker):
         return False
 
     def checkOneURL(self, url):
-        """See `URLChecker.checkOneURL`.
+        """See `BranchOpener.checkOneURL`.
 
         If the URL we are mirroring from does not start how we expect the pull
         URLs of import branches to start, something has gone badly wrong, so
@@ -302,7 +313,7 @@ class PullerWorker:
     """
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
-                 protocol, checker=None, oops_prefix=None):
+                 protocol, branch_opener=None, oops_prefix=None):
         """Construct a `PullerWorker`.
 
         :param src: The URL to pull from.
@@ -313,7 +324,7 @@ class PullerWorker:
         :param branch_type: A member of the BranchType enum.  It is expected
             that tests that do not depend on its value will pass None.
         :param protocol: An instance of `PullerWorkerProtocol`.
-        :param checker: An instance of `URLChecker`.  If not passed, one will
+        :param branch_opener: An instance of `BranchOpener`.  If not passed, one will
             be chosen based on the value of `branch_type`.
         :param oops_prefix: An oops prefix to pass to `setOopsToken` on the
             global ErrorUtility.
@@ -323,17 +334,17 @@ class PullerWorker:
         self.branch_id = branch_id
         self.unique_name = unique_name
         self.branch_type = branch_type
-        if checker is None:
+        if branch_opener is None:
             if branch_type == BranchType.HOSTED:
-                checker = HostedURLChecker()
+                branch_opener = HostedBranchOpener()
             elif branch_type == BranchType.MIRRORED:
-                checker = MirroredURLChecker()
+                branch_opener = MirroredBranchOpener()
             elif branch_type == BranchType.IMPORTED:
-                checker = ImportedURLChecker()
+                branch_opener = ImportedBranchOpener()
             else:
                 raise AssertionError(
                     "Unexpected branch type: %r" % branch_type)
-        self.checker = checker
+        self.branch_opener = branch_opener
         self.protocol = protocol
         if protocol is not None:
             self.protocol.branch_id = branch_id
@@ -418,8 +429,7 @@ class PullerWorker:
         server = get_puller_server()
         server.setUp()
         try:
-            self.checker.checkSource(self.source)
-            source_branch = self._openSourceBranch(self.source)
+            source_branch = self.branch_opener.open(self.source)
             return self._mirrorToDestBranch(source_branch)
         finally:
             server.tearDown()
@@ -462,6 +472,10 @@ class PullerWorker:
 
         except BadUrlLaunchpad:
             msg = "Launchpad does not mirror branches from Launchpad."
+            self._mirrorFailed(msg)
+
+        except BadUrlFile:
+            msg = "Launchpad does not mirror references to file:/// URLs."
             self._mirrorFailed(msg)
 
         except NotBranchError, e:

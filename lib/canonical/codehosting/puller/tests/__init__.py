@@ -1,7 +1,7 @@
 from StringIO import StringIO
 
 from canonical.codehosting.puller.worker import (
-    PullerWorker, PullerWorkerProtocol, URLChecker)
+    BranchOpener, PullerWorker, PullerWorkerProtocol)
 
 
 class PullerWorkerMixin:
@@ -23,11 +23,11 @@ class PullerWorkerMixin:
             protocol = PullerWorkerProtocol(StringIO())
         if oops_prefix is None:
             oops_prefix = ''
-        class _AcceptAnythingChecker(URLChecker):
+        class _AcceptAnythingOpener(BranchOpener):
             def checkOneURL(self, url):
                 pass
-        checker = _AcceptAnythingChecker()
+        opener = _AcceptAnythingOpener()
         return PullerWorker(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
-            branch_type=branch_type, protocol=protocol, checker=checker,
+            branch_type=branch_type, protocol=protocol, branch_opener=opener,
             oops_prefix=oops_prefix)

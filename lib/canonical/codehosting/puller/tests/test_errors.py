@@ -18,8 +18,9 @@ from bzrlib.transport import get_transport
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.codehosting.puller.worker import (
-    BadUrlLaunchpad, BadUrlSsh, BranchReferenceLoopError, PullerWorker,
-    PullerWorkerProtocol, URLChecker)
+    BadUrlFile, BadUrlLaunchpad, BadUrlSsh, BranchOpener,
+    BranchReferenceForbidden, BranchReferenceLoopError, PullerWorker,
+    PullerWorkerProtocol)
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.uri import InvalidURIError
 from canonical.testing import reset_logging
@@ -39,151 +40,81 @@ class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
         self.calls.append(log_event)
 
 
-class StubbedPullerWorker(PullerWorker):
-    """Partially stubbed subclass of PullerWorker, for unit tests."""
-
-    enable_checkBranchReference = False
-    enable_checkSourceUrl = True
-
-    def _checkSourceUrl(self, url):
-        if self.enable_checkSourceUrl:
-            PullerWorker._checkSourceUrl(self, url)
-
-    def _checkBranchReference(self, location):
-        if self.enable_checkBranchReference:
-            PullerWorker._checkBranchReference(self, location)
-
-    def _openSourceBranch(self):
-        self.testcase.open_call_count += 1
-
-    def _mirrorToDestBranch(self):
-        pass
-
-
 class ErrorHandlingTestCase(unittest.TestCase):
     """Base class to test PullerWorker error reporting."""
 
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        self._errorHandlingSetUp()
+    class CustomErrorOpener(BranchOpener):
+        def __init__(self, exc):
+            self.exc = exc
+        def open(self, url):
+            raise self.exc
 
-    def _errorHandlingSetUp(self):
-        """Setup code that is specific to ErrorHandlingTestCase.
-
-        This is needed because TestReferenceMirroring uses a diamond-shaped
-        class hierarchy and we do not want to end up calling
-        unittest.TestCase.setUp twice.
-        """
-        self.protocol = StubbedPullerWorkerProtocol()
-        class _AcceptAnythingChecker(URLChecker):
-            def checkOneURL(self, url):
-                pass
-        checker = _AcceptAnythingChecker()
-        self.branch = StubbedPullerWorker(
+    def makeWorker(self, opener):
+        branch = PullerWorker(
             src='foo', dest='bar', branch_id=1,
-            unique_name='owner/product/foo', branch_type=None,
-            protocol=self.protocol, checker=checker, oops_prefix='TOKEN')
-        self.open_call_count = 0
-        self.branch.testcase = self
+            unique_name='owner/product/foo', branch_type=BranchType.HOSTED,
+            protocol=StubbedPullerWorkerProtocol(), branch_opener=opener,
+            oops_prefix='TOKEN')
+        return branch
 
-    def runMirrorAndGetError(self):
+    def getMirrorFailureForException(self, exc):
         """Mirror the branch and return the error message.
 
         Runs mirror, checks that we receive exactly one error, and returns the
         str() of the error.
         """
-        self.branch.mirror()
+        branch = self.makeWorker(self.CustomErrorOpener(exc))
+        branch.mirror()
         self.assertEqual(
-            2, len(self.protocol.calls),
+            2, len(branch.protocol.calls),
             "Expected startMirroring and mirrorFailed, got: %r"
-            % (self.protocol.calls,))
-        startMirroring, mirrorFailed = self.protocol.calls
+            % (branch.protocol.calls,))
+        startMirroring, mirrorFailed = branch.protocol.calls
         self.assertEqual(('startMirroring',), startMirroring)
         self.assertEqual('mirrorFailed', mirrorFailed[0])
-        self.assert_('TOKEN' in mirrorFailed[2])
-        self.protocol.calls = []
+        self.assertTrue('TOKEN' in mirrorFailed[2])
+        branch.protocol.calls = []
         return str(mirrorFailed[1])
 
-    def runMirrorAndAssertErrorStartsWith(self, expected_msg):
-        """Mirror the branch and assert the error starts with `expected_msg`.
+class TestErrorCatching(ErrorHandlingTestCase):
+    """Tests for presenting error messages in useful ways.
 
-        Runs mirror and checks that we receive exactly one error, the str()
-        of which starts with `expected_msg`.
-        """
-        error = self.runMirrorAndGetError()
-        if not error.startswith(expected_msg):
-            self.fail('Expected "%s" but got "%s"' % (expected_msg, error))
-
-    def runMirrorAndAssertErrorEquals(self, expected_error):
-        """Mirror the branch and assert the error message is `expected_error`.
-
-        Runs mirror and checks that we receive exactly one error, the str() of
-        which is equal to `expected_error`.
-        """
-        error = self.runMirrorAndGetError()
-        self.assertEqual(error, expected_error)
-
-
-class TestBadUrl(ErrorHandlingTestCase):
-    """Test that PullerWorker does not try mirroring from bad URLs.
-
-    Bad URLs use schemes like sftp or bzr+ssh that usually require
-    authentication, and hostnames in the launchpad.net domains.
-
-    This prevents errorspam produced by ssh when it cannot connect and saves
-    timing out when trying to connect to chinstrap, sodium (always using a
-    ssh-based scheme) or launchpad.net.
-
-    That also allows us to display a more informative error message to the
-    user.
+    These are testing the large collection of except: clauses in
+    `PullerWorker.mirror`.
     """
-
-    def testBadUrlSftp(self):
-        # If the scheme of the source url is sftp, _openSourceBranch raises
-        # BadUrlSsh.
-        self.assertRaises(
-            BadUrlSsh, self.branch._checkSourceUrl,
-            'sftp://example.com/foo')
-
-    def testBadUrlBzrSsh(self):
-        # If the scheme of the source url is bzr+ssh, _openSourceBracnh raises
-        # BadUrlSsh.
-        self.assertRaises(
-            BadUrlSsh, self.branch._checkSourceUrl,
-            'bzr+ssh://example.com/foo')
 
     def testBadUrlBzrSshCaught(self):
         # The exception raised if the scheme of the source url is sftp or
         # bzr+ssh is caught and an informative error message is displayed to
         # the user.
         expected_msg = "Launchpad cannot mirror branches from SFTP "
-        self.branch.source = 'sftp://example.com/foo'
-        self.runMirrorAndAssertErrorStartsWith(expected_msg)
-        self.branch.source = 'bzr+ssh://example.com/foo'
-        self.runMirrorAndAssertErrorStartsWith(expected_msg)
-
-    def testBadUrlLaunchpadDomain(self):
-        # If the host of the source branch is in the launchpad.net domain,
-        # _openSourceBranch raises BadUrlLaunchpad.
-        self.assertRaises(
-            BadUrlLaunchpad, self.branch._checkSourceUrl,
-            'http://bazaar.launchpad.dev/foo')
-        self.assertRaises(
-            BadUrlLaunchpad, self.branch._checkSourceUrl,
-            'sftp://bazaar.launchpad.dev/bar')
-        self.assertRaises(
-            BadUrlLaunchpad, self.branch._checkSourceUrl,
-            'http://launchpad.dev/baz')
+        msg = self.getMirrorFailureForException(
+            BadUrlSsh('sftp://example.com/foo'))
+        self.assertTrue(msg.startswith(expected_msg))
 
     def testBadUrlLaunchpadCaught(self):
         # The exception raised if the host of the source url is launchpad.net
         # or a host in this domain is caught, and an informative error message
         # is displayed to the user.
         expected_msg = "Launchpad does not mirror branches from Launchpad."
-        self.branch.source = 'http://bazaar.launchpad.dev/foo'
-        self.runMirrorAndAssertErrorEquals(expected_msg)
-        self.branch.source = 'http://launchpad.dev/foo'
-        self.runMirrorAndAssertErrorEquals(expected_msg)
+        msg = self.getMirrorFailureForException(
+            BadUrlLaunchpad('http://launchpad.dev/foo'))
+        self.assertTrue(msg.startswith(expected_msg))
+
+    def testHostedBranchReference(self):
+        # A branch reference for a hosted branch must cause an error.
+        expected_msg = (
+            "Branch references are not allowed for branches of type Hosted.")
+        msg = self.getMirrorFailureForException(
+            BranchReferenceForbidden())
+        self.assertEqual(expected_msg, msg)
+
+    def testMirrorLocalBranchReference(self):
+        # A file:// branch reference for a mirror branch must cause an error.
+        expected_msg = "Launchpad does not mirror references to file:/// URLs."
+        msg = self.getMirrorFailureForException(
+            BadUrlFile('file:///sauces/sikrit'))
+        self.assertEqual(expected_msg, msg)
 
 
 class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
@@ -274,10 +205,6 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
 
 class TestErrorHandling(ErrorHandlingTestCase):
     """Test our error messages for when the source branch has problems."""
-
-    def setUp(self):
-        ErrorHandlingTestCase.setUp(self)
-        self.branch.enable_checkSourceUrl = False
 
     def testHTTPError(self):
         # If the source branch requires HTTP authentication, say so in the
