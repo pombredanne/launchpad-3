@@ -86,7 +86,7 @@ This new version fixes bug #6 according its changesfiles:
     bar (1.0-2) breezy; urgency=low
     <BLANKLINE>
       * A second upload to ensure that binary overrides of _all work
-    .
+    <BLANKLINE>
       * Also closes Launchpad bug #6
     <BLANKLINE>
     <BLANKLINE>
@@ -128,7 +128,7 @@ FIXRELEASED and bug notification are generated:
     bar (1.0-2) breezy; urgency=low
     <BLANKLINE>
       * A second upload to ensure that binary overrides of _all work
-    . 
+    <BLANKLINE>
       * Also closes Launchpad bug #6
     <BLANKLINE>
     <BLANKLINE>
