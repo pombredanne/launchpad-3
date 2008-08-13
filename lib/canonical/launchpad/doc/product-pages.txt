@@ -3,6 +3,7 @@
 The browser module for product has many view classes that should be
 tested in this pages test.  As it is this test is pretty sparse.
 
+
 == Product View ==
 
 The page at /product_name includes overview information about the product.
@@ -31,10 +32,7 @@ Neither Mozilla nor Firefox has a driver set.
     None
 
 Thus the effective driver for Firefox is None.
-
-    >>> view = getMultiAdapter(
-    ...     (firefox, LaunchpadTestRequest()), name='+index')
-    >>> view.initialize()
+    >>> view = create_initialized_view(firefox, name='+index')
     >>> print view.effective_driver
     None
 
@@ -50,17 +48,16 @@ up on this view instance.
 
 Creating a new view shows the new driver.
 
-    >>> view = getMultiAdapter(
-    ...     (firefox, LaunchpadTestRequest()), name='+index')
-    >>> view.initialize()
+    >>> view = create_initialized_view(firefox, name='+index')
     >>> print view.effective_driver.name
     sabdfl
 
-Setting the driver for Firefox shows that it is used.
+Setting the driver for Firefox shows that it is used for the product,
+after a new view is obtained.
 
     >>> firefox.driver = cprov
-    >>> view = getMultiAdapter(
-    ...     (firefox, LaunchpadTestRequest()), name='+index')
-    >>> view.initialize()
+    >>> view.effective_driver.name
+    sabdfl
+    >>> view = create_initialized_view(firefox, name='+index')
     >>> print view.effective_driver.name
     cprov
