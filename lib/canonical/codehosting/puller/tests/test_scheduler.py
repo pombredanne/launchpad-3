@@ -6,7 +6,6 @@ __metaclass__ = type
 from datetime import datetime
 import logging
 import os
-import shutil
 import textwrap
 import unittest
 
@@ -14,7 +13,6 @@ import pytz
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.urlutils import local_path_from_url, local_path_to_url
 
 from twisted.internet import defer, error
 from twisted.protocols.basic import NetstringParseError
@@ -23,11 +21,10 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 
-from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller import get_lock_id_for_branch_id, scheduler
+from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
-from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp import errorlog
@@ -562,13 +559,13 @@ protocol = PullerWorkerProtocol(sys.stdout)
 """
 
 
-class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
+class TestPullerMasterIntegration(PullerBranchTestCase, TrialTestCase):
     """Tests for the puller master that launch sub-processes."""
 
     layer = TwistedAppServerLayer
 
     def setUp(self):
-        BranchTestCase.setUp(self)
+        PullerBranchTestCase.setUp(self)
         self.makeCleanDirectory(config.codehosting.branches_root)
         self.makeCleanDirectory(config.supermirror.branchesdest)
         branch_id = self.makeBranch(BranchType.HOSTED).id
@@ -577,37 +574,6 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         self.bzr_tree = self.createTemporaryBazaarBranchAndTree('src-branch')
         self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakeBranchStatusClient()
-
-    def getHostedPath(self, branch):
-        """Return the path of 'branch' in the upload area."""
-        return os.path.join(
-            config.codehosting.branches_root, branch_id_to_path(branch.id))
-
-    def getMirroredPath(self, branch):
-        """Return the path of 'branch' in the supermirror area."""
-        return os.path.join(
-            config.supermirror.branchesdest, branch_id_to_path(branch.id))
-
-    def makeCleanDirectory(self, path):
-        """Guarantee an empty branch upload area."""
-        if os.path.exists(path):
-            shutil.rmtree(path)
-        os.makedirs(path)
-
-    def pushToBranch(self, branch, tree=None):
-        """Push a trivial Bazaar branch to a given Launchpad branch.
-
-        :param branch: A Launchpad Branch object.
-        """
-        hosted_path = self.getHostedPath(branch)
-        if tree is None:
-            tree = self.createTemporaryBazaarBranchAndTree()
-        out, err = self.run_bzr(
-            ['push', '--create-prefix', '-d',
-             local_path_from_url(tree.branch.base), hosted_path],
-            retcode=None)
-        # We want to be sure that a new branch was indeed created.
-        self.assertEqual("Created new branch.\n", err)
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.
