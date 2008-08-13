@@ -57,8 +57,11 @@ class BadUrlLaunchpad(BadUrl):
     """Tried to mirror a branch from launchpad.net."""
 
 
-class BadUrlFile(BadUrl):
-    """Tried to mirror a branch from a file:/// URL."""
+class BadUrlScheme(BadUrl):
+    """Found a URL with an untrusted scheme."""
+    def __init__(self, scheme, url):
+        BadUrl.__init__(self, scheme, url)
+        self.scheme = scheme
 
 
 class BranchReferenceForbidden(Exception):
@@ -272,8 +275,8 @@ class MirroredBranchOpener(BranchOpener):
             raise BadUrlLaunchpad(url)
         if uri.scheme in ['sftp', 'bzr+ssh']:
             raise BadUrlSsh(url)
-        if uri.scheme == 'file':
-            raise BadUrlFile(url)
+        elif uri.scheme not in ['http', 'https']:
+            raise BadUrlScheme(uri.scheme, url)
 
 
 class ImportedBranchOpener(BranchOpener):
@@ -474,8 +477,8 @@ class PullerWorker:
             msg = "Launchpad does not mirror branches from Launchpad."
             self._mirrorFailed(msg)
 
-        except BadUrlFile:
-            msg = "Launchpad does not mirror references to file:/// URLs."
+        except BadUrlScheme, e:
+            msg = "Launchpad does not mirror %s:// URLs." % e.scheme
             self._mirrorFailed(msg)
 
         except NotBranchError, e:

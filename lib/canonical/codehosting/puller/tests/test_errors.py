@@ -15,7 +15,7 @@ from bzrlib.errors import (
     NotBranchError)
 
 from canonical.codehosting.puller.worker import (
-    BadUrlFile, BadUrlLaunchpad, BadUrlSsh, BranchOpener,
+    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, PullerWorker,
     PullerWorkerProtocol)
 from canonical.launchpad.interfaces import BranchType
@@ -107,12 +107,20 @@ class TestErrorCatching(unittest.TestCase):
             branch_type=BranchType.HOSTED)
         self.assertEqual(expected_msg, msg)
 
-    def testMirrorLocalBranchReference(self):
+    def testLocalURL(self):
         # A file:// branch reference for a mirror branch must cause an error.
         expected_msg = (
-            "Launchpad does not mirror references to file:/// URLs.")
+            "Launchpad does not mirror file:// URLs.")
         msg = self.getMirrorFailureForException(
-            BadUrlFile('file:///sauces/sikrit'))
+            BadUrlScheme('file', 'file:///sauces/sikrit'))
+        self.assertEqual(expected_msg, msg)
+
+    def testUnknownSchemeURL(self):
+        # A branch reference to a URL with unknown scheme must cause an error.
+        expected_msg = (
+            "Launchpad does not mirror random:// URLs.")
+        msg = self.getMirrorFailureForException(
+            BadUrlScheme('random', 'random:///sauces/sikrit'))
         self.assertEqual(expected_msg, msg)
 
     def testHTTPError(self):

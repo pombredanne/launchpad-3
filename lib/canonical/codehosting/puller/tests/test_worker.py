@@ -17,7 +17,7 @@ from bzrlib.transport import get_transport
 
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.worker import (
-    BadUrl, BadUrlFile, BadUrlLaunchpad, BadUrlSsh, BranchOpener,
+    BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
     ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
     get_canonical_url_for_branch_name, install_worker_ui_factory)
@@ -256,8 +256,14 @@ class TestMirroredBranchOpener(unittest.TestCase):
     def testNoFileURL(self):
         opener = MirroredBranchOpener()
         self.assertRaises(
-            BadUrlFile, opener.checkOneURL,
+            BadUrlScheme, opener.checkOneURL,
             self.factory.getUniqueURL(scheme='file'))
+
+    def testNoUnknownSchemeURLs(self):
+        opener = MirroredBranchOpener()
+        self.assertRaises(
+            BadUrlScheme, opener.checkOneURL,
+            self.factory.getUniqueURL(scheme='decorator+scheme'))
 
     def testNoSSHURL(self):
         opener = MirroredBranchOpener()
