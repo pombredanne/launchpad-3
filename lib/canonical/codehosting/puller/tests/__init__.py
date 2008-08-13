@@ -29,10 +29,13 @@ class PullerWorkerMixin:
             protocol = PullerWorkerProtocol(StringIO())
         if oops_prefix is None:
             oops_prefix = ''
-        class _AcceptAnythingOpener(BranchOpener):
-            def checkOneURL(self, url):
-                pass
-        opener = _AcceptAnythingOpener()
+        if branch_type is None:
+            class _AcceptAnythingOpener(BranchOpener):
+                def checkOneURL(self, url):
+                    pass
+            opener = _AcceptAnythingOpener()
+        else:
+            opener = None
         return PullerWorker(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
             branch_type=branch_type, protocol=protocol, branch_opener=opener,

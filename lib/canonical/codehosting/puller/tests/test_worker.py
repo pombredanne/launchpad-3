@@ -18,11 +18,12 @@ from bzrlib.transport import get_transport
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.worker import (
     BadUrl, BadUrlFile, BadUrlLaunchpad, BadUrlSsh, BranchOpener,
-    BranchReferenceForbidden, BranchReferenceLoopError, MirroredBranchOpener,
-    PullerWorkerProtocol, get_canonical_url_for_branch_name,
-    install_worker_ui_factory)
+    BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
+    ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
+    get_canonical_url_for_branch_name, install_worker_ui_factory)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.launchpad.database import Branch
+from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import LaunchpadScriptLayer, reset_logging
@@ -30,6 +31,24 @@ from canonical.testing import LaunchpadScriptLayer, reset_logging
 
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     """Test the mirroring functionality of PullerWorker."""
+
+    def testMirredOpener(self):
+        # A PullerWorker for a mirrored branch gets a MirroredBranchOpener as
+        # its branch_opener.
+        worker = self.makePullerWorker(branch_type=BranchType.MIRRORED)
+        self.assertIsInstance(worker.branch_opener, MirroredBranchOpener)
+
+    def testHostedOpener(self):
+        # A PullerWorker for a hosted branch gets a HostedBranchOpener as
+        # its branch_opener.
+        worker = self.makePullerWorker(branch_type=BranchType.HOSTED)
+        self.assertIsInstance(worker.branch_opener, HostedBranchOpener)
+
+    def testImportedOpener(self):
+        # A PullerWorker for an imported branch gets a ImportedBranchOpener as
+        # its branch_opener.
+        worker = self.makePullerWorker(branch_type=BranchType.IMPORTED)
+        self.assertIsInstance(worker.branch_opener, ImportedBranchOpener)
 
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
