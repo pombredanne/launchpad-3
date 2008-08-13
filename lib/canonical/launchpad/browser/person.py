@@ -83,7 +83,6 @@ __all__ = [
     'archive_to_person',
     ]
 
-import cgi
 import copy
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
@@ -2995,7 +2994,8 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         sshkey = getUtility(ISSHKeySet).getByID(key_id)
         if sshkey is None:
-            self.error_message = structured("Cannot remove a key that doesn't exist")
+            self.error_message = structured(
+                "Cannot remove a key that doesn't exist")
             return
 
         if sshkey.person != self.user:
@@ -3182,7 +3182,8 @@ class PersonGPGView(LaunchpadView):
         key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
 
         if key_ids is None:
-            self.error_message = structured('No Key(s) selected for deactivation.')
+            self.error_message = structured(
+                'No Key(s) selected for deactivation.')
             return
 
         # verify if we have multiple entries to deactive
@@ -3197,7 +3198,8 @@ class PersonGPGView(LaunchpadView):
             if gpgkey is None:
                 continue
             if gpgkey.owner != self.user:
-                self.error_message = structured("Cannot deactivate someone else's key")
+                self.error_message = structured(
+                    "Cannot deactivate someone else's key")
                 return
             gpgkey.active = False
             deactivated_keys.append(gpgkey.displayname)
@@ -3210,7 +3212,8 @@ class PersonGPGView(LaunchpadView):
         token_fingerprints = self.request.form.get('REMOVE_GPGTOKEN')
 
         if token_fingerprints is None:
-            self.error_message = structured('No key(s) pending validation selected.')
+            self.error_message = structured(
+                'No key(s) pending validation selected.')
             return
 
         logintokenset = getUtility(ILoginTokenSet)
@@ -3233,7 +3236,8 @@ class PersonGPGView(LaunchpadView):
         key_ids = self.request.form.get('REACTIVATE_GPGKEY')
 
         if key_ids is None:
-            self.error_message = structured('No Key(s) selected for reactivation.')
+            self.error_message = structured(
+                'No Key(s) selected for reactivation.')
             return
 
         found = []
