@@ -103,7 +103,12 @@ class TestBranchOpenerCheckSource(unittest.TestCase):
     """Unit tests for `BranchOpener.checkSource`."""
 
     class StubbedBranchOpener(BranchOpener):
-        """BranchOpener that provides canned answers."""
+        """BranchOpener that provides canned answers.
+
+        We implement the methods we need to to be able to control all the
+        inputs to the `BranchOpener.checkSource` method, which is what is
+        being tested in this class.
+        """
 
         def __init__(self, should_follow_references, references,
                      unsafe_urls=None):
@@ -130,13 +135,13 @@ class TestBranchOpenerCheckSource(unittest.TestCase):
                 raise BadUrl(url)
 
     def testCheckInitialURL(self):
-        # checkSource checks that the URL it is initially passed is allowed.
+        # checkSource rejects all URLs that are not allowed.
         opener = self.StubbedBranchOpener(None, [], set(['a']))
         self.assertRaises(BadUrl, opener.checkSource, 'a')
 
     def testNotReference(self):
-        # checkSource does not raise if the source url does not point to a
-        # branch reference, even if branch references are forbidden.
+        # When branch references are forbidden, checkSource does not raise on
+        # non-references.
         opener = self.StubbedBranchOpener(False, ['a', None])
         # This must not raise.
         opener.checkSource('a')
@@ -186,12 +191,6 @@ class TestBranchOpenerCheckSource(unittest.TestCase):
 class TestReferenceMirroring(TestCaseWithTransport):
     """Feature tests for mirroring of branch references."""
 
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-
-    def tearDown(self):
-        TestCaseWithTransport.tearDown(self)
-        reset_logging()
     def createBranchReference(self, url):
         """Create a pure branch reference that points to the specified URL.
 
