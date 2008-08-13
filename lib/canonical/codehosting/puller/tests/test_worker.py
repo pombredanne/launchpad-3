@@ -341,22 +341,21 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
 
     def test_startMirror(self):
         # Calling startMirroring sends 'startMirroring' as a netstring.
-        self.protocol.startMirroring(self.branch_to_mirror)
+        self.protocol.startMirroring()
         self.assertSentNetstrings(['startMirroring', '0'])
 
     def test_mirrorSucceeded(self):
         # Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'.
-        self.protocol.startMirroring(self.branch_to_mirror)
+        self.protocol.startMirroring()
         self.resetBuffers()
-        self.protocol.mirrorSucceeded(self.branch_to_mirror, 1234)
+        self.protocol.mirrorSucceeded(1234)
         self.assertSentNetstrings(['mirrorSucceeded', '1', '1234'])
 
     def test_mirrorFailed(self):
         # Calling 'mirrorFailed' sends the error message.
-        self.protocol.startMirroring(self.branch_to_mirror)
+        self.protocol.startMirroring()
         self.resetBuffers()
-        self.protocol.mirrorFailed(
-            self.branch_to_mirror, 'Error Message', 'OOPS')
+        self.protocol.mirrorFailed('Error Message', 'OOPS')
         self.assertSentNetstrings(
             ['mirrorFailed', '2', 'Error Message', 'OOPS'])
 

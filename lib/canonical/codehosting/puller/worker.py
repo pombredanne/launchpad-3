@@ -108,13 +108,13 @@ class PullerWorkerProtocol:
         for argument in args:
             self.sendNetstring(str(argument))
 
-    def startMirroring(self, branch_to_mirror):
+    def startMirroring(self):
         self.sendEvent('startMirroring')
 
-    def mirrorSucceeded(self, branch_to_mirror, last_revision):
+    def mirrorSucceeded(self, last_revision):
         self.sendEvent('mirrorSucceeded', last_revision)
 
-    def mirrorFailed(self, branch_to_mirror, message, oops_id):
+    def mirrorFailed(self, message, oops_id):
         self.sendEvent('mirrorFailed', message, oops_id)
 
     def progressMade(self):
@@ -416,7 +416,7 @@ class PullerWorker:
 
     def _mirrorFailed(self, error):
         oops_id = self._record_oops(error)
-        self.protocol.mirrorFailed(self, error, oops_id)
+        self.protocol.mirrorFailed(error, oops_id)
 
     def mirrorWithoutChecks(self):
         """Mirror the source branch to the destination branch.
@@ -438,7 +438,7 @@ class PullerWorker:
         """Open source and destination branches and pull source into
         destination.
         """
-        self.protocol.startMirroring(self)
+        self.protocol.startMirroring()
         try:
             dest_branch = self.mirrorWithoutChecks()
         # add further encountered errors from the production runs here
@@ -508,7 +508,7 @@ class PullerWorker:
 
         else:
             last_rev = dest_branch.last_revision()
-            self.protocol.mirrorSucceeded(self, last_rev)
+            self.protocol.mirrorSucceeded(last_rev)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest
