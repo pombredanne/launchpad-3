@@ -699,7 +699,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
         check_lock_id_script = """
         branch.lock_write()
-        protocol.mirrorSucceeded('a', 'b')
+        protocol.mirrorSucceeded('b')
         protocol.sendEvent(
             'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()
