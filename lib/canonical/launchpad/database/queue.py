@@ -624,10 +624,9 @@ class PackageUpload(SQLBase):
         def sanitize_string(s):
             """Make sure string does not trigger 'ascii' codec errors."""
             if isinstance(s, unicode):
-                result = ascii_smash(s)
+                return s
             else:
-                result = guess_encoding(s)
-            return result
+                return guess_encoding(s)
 
         class NewMessage:
             """New message."""
