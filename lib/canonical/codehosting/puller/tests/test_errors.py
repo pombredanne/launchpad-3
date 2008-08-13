@@ -1,29 +1,19 @@
 import httplib
-import os
-import re
 import socket
 import tempfile
 import urllib2
 import unittest
 
-import bzrlib
-from bzrlib.branch import BranchReferenceFormat
-from bzrlib import bzrdir
 from bzrlib.errors import (
     BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
     NotBranchError)
-from bzrlib.tests import TestCaseWithTransport
-from bzrlib.transport import get_transport
 
-from canonical.codehosting import branch_id_to_path
-from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.codehosting.puller.worker import (
     BadUrlFile, BadUrlLaunchpad, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, PullerWorker,
     PullerWorkerProtocol)
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.uri import InvalidURIError
-from canonical.testing import reset_logging
 
 
 class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
@@ -213,71 +203,6 @@ class TestErrorCatching(unittest.TestCase):
             BzrError('A generic bzr error'))
         expected_msg = 'A generic bzr error'
         self.assertEqual(msg, expected_msg)
-
-
-class TestReferenceMirroring(TestCaseWithTransport):
-    """Feature tests for mirroring of branch references."""
-
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-
-    def tearDown(self):
-        TestCaseWithTransport.tearDown(self)
-        reset_logging()
-
-    def testCreateBranchReference(self):
-        # createBranchReference creates a branch reference and returns a URL
-        # that points to that branch reference.
-
-        # First create a branch and a reference to that branch.
-        target_branch = self.make_branch('repo')
-        reference_url = self.createBranchReference(target_branch.base)
-
-        # References are transparent, so we can't test much about them. The
-        # least we can do is confirm that the reference URL isn't the branch
-        # URL.
-        self.assertNotEqual(reference_url, target_branch.base)
-
-        # Open the branch reference and check that the result is indeed the
-        # branch we wanted it to point at.
-        opened_branch = bzrlib.branch.Branch.open(reference_url)
-        self.assertEqual(opened_branch.base, target_branch.base)
-
-    def createBranchReference(self, url):
-        """Create a pure branch reference that points to the specified URL.
-
-        :param url: target of the branch reference.
-        :return: file url to the created pure branch reference.
-        """
-        # XXX DavidAllouche 2007-09-12
-        # We do this manually because the bzrlib API does not support creating
-        # a branch reference without opening it. See bug 139109.
-        t = get_transport(self.get_url('.'))
-        t.mkdir('reference')
-        a_bzrdir = bzrdir.BzrDir.create(self.get_url('reference'))
-        branch_reference_format = BranchReferenceFormat()
-        branch_transport = a_bzrdir.get_branch_transport(
-            branch_reference_format)
-        branch_transport.put_bytes('location', url)
-        branch_transport.put_bytes(
-            'format', branch_reference_format.get_format_string())
-        return a_bzrdir.root_transport.base
-
-    def testGetBranchReferenceValue(self):
-        # PullerWorker._getBranchReference gives the reference value for
-        # a branch reference.
-        reference_value = 'http://example.com/branch'
-        reference_url = self.createBranchReference(reference_value)
-        self.branch.source = reference_url
-        self.assertEqual(
-            self.branch._getBranchReference(reference_url), reference_value)
-
-    def testGetBranchReferenceNone(self):
-        # PullerWorker._getBranchReference gives None for a normal branch.
-        self.make_branch('repo')
-        branch_url = self.get_url('repo')
-        self.assertIs(
-            self.branch._getBranchReference(branch_url), None)
 
 
 

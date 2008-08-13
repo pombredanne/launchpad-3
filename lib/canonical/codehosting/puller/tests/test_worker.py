@@ -8,6 +8,8 @@ from StringIO import StringIO
 import unittest
 
 import bzrlib.branch
+from bzrlib.branch import BranchReferenceFormat
+from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NotBranchError
 from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
@@ -161,6 +163,69 @@ class TestBranchOpenerCheckSource(unittest.TestCase):
         self.assertRaises(
             BranchReferenceLoopError, opener.checkSource, 'a')
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
+
+class TestReferenceMirroring(TestCaseWithTransport):
+    """Feature tests for mirroring of branch references."""
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+
+    def tearDown(self):
+        TestCaseWithTransport.tearDown(self)
+        reset_logging()
+    def createBranchReference(self, url):
+        """Create a pure branch reference that points to the specified URL.
+
+        :param url: target of the branch reference.
+        :return: file url to the created pure branch reference.
+        """
+        # XXX DavidAllouche 2007-09-12
+        # We do this manually because the bzrlib API does not support creating
+        # a branch reference without opening it. See bug 139109.
+        t = get_transport(self.get_url('.'))
+        t.mkdir('reference')
+        a_bzrdir = BzrDir.create(self.get_url('reference'))
+        branch_reference_format = BranchReferenceFormat()
+        branch_transport = a_bzrdir.get_branch_transport(
+            branch_reference_format)
+        branch_transport.put_bytes('location', url)
+        branch_transport.put_bytes(
+            'format', branch_reference_format.get_format_string())
+        return a_bzrdir.root_transport.base
+
+    def testCreateBranchReference(self):
+        # createBranchReference creates a branch reference and returns a URL
+        # that points to that branch reference.
+
+        # First create a branch and a reference to that branch.
+        target_branch = self.make_branch('repo')
+        reference_url = self.createBranchReference(target_branch.base)
+
+        # References are transparent, so we can't test much about them. The
+        # least we can do is confirm that the reference URL isn't the branch
+        # URL.
+        self.assertNotEqual(reference_url, target_branch.base)
+
+        # Open the branch reference and check that the result is indeed the
+        # branch we wanted it to point at.
+        opened_branch = bzrlib.branch.Branch.open(reference_url)
+        self.assertEqual(opened_branch.base, target_branch.base)
+
+    def testFollowReferenceValue(self):
+        # BranchOpener.followReference gives the reference value for
+        # a branch reference.
+        opener = BranchOpener()
+        reference_value = 'http://example.com/branch'
+        reference_url = self.createBranchReference(reference_value)
+        self.assertEqual(
+            reference_value, opener.followReference(reference_url))
+
+    def testFollowReferenceNone(self):
+        # BranchOpener.followReference gives None for a normal branch.
+        self.make_branch('repo')
+        branch_url = self.get_url('repo')
+        opener = BranchOpener()
+        self.assertIs(None, opener.followReference(branch_url))
 
 
 class TestMirroredBranchOpener(unittest.TestCase):
