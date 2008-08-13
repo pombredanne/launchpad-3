@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionNavigation',
-    'DistributionDynMenu',
     'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
@@ -70,11 +69,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.helpers import english_list
-from canonical.launchpad.browser.seriesrelease import (
-    SeriesOrReleasesMixinDynMenu)
-from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp import NavigationMenu
-from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets.image import ImageChangeWidget
 
@@ -1004,33 +999,3 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
     def mirrors(self):
         return self.context.disabled_mirrors
 
-
-class DistributionDynMenu(
-    DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
-
-    menus = {
-        '': 'mainMenu',
-        'meetings': 'meetingsMenu',
-        'series': 'seriesMenu',
-        'milestones': 'milestoneMenu',
-        }
-
-    @neverempty
-    def milestoneMenu(self):
-        """Show milestones more recently than one month ago,
-        or with no due date.
-        """
-        fairly_recent = (
-            datetime.datetime.utcnow() - datetime.timedelta(days=30))
-        for milestone in self.context.milestones:
-            if (milestone.dateexpected is None or
-                milestone.dateexpected > fairly_recent):
-                yield self.makeLink(milestone.title, context=milestone)
-        yield self.makeLink('Show all milestones...', page='+milestones')
-
-    @neverempty
-    def mainMenu(self):
-        yield self.makeLink('Series', page='+series', submenu='serieses')
-        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
-        yield self.makeLink(
-            'Milestones', page='+milestones', submenu='milestones')

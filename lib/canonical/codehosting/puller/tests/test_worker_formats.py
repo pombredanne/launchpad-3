@@ -98,7 +98,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         self.assertEqual(orig, mirrored)
 
     def test_loomBranch(self):
-        # When we mirror a loom branch for the first time....
+        # When we mirror a loom branch for the first time, the mirrored loom
+        # branch matches the original.
         branch = self._createSourceBranch(
             RepositoryFormatPackDevelopment1(),
             BzrDirMetaFormat1())

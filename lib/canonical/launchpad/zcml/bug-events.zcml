@@ -130,6 +130,6 @@
 <subscriber
    for="canonical.launchpad.interfaces.IBugSubscription
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_subscripiton_added" />
+   handler="canonical.launchpad.mailnotification.notify_bug_subscription_added" />
 
 </configure>

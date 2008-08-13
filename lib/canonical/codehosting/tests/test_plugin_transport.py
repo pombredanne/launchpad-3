@@ -38,16 +38,13 @@ from canonical.codehosting.transport import (
     InvalidControlDirectory, LaunchpadInternalServer, LaunchpadServer,
     set_up_logging)
 from canonical.config import config
-from canonical.testing import BaseLayer, reset_logging
+from canonical.testing import reset_logging, TwistedLayer
 
 
 class MixinBaseLaunchpadServerTests:
     """Common tests for _BaseLaunchpadServer subclasses."""
 
-    # bzrlib manipulates 'logging'. The test runner will generate spurious
-    # warnings if these manipulations are not cleaned up. BaseLayer does the
-    # cleanup we need.
-    layer = BaseLayer
+    layer = TwistedLayer
 
     def setUp(self):
         self.authserver = FakeLaunchpad()
@@ -329,6 +326,8 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests, TrialTestCase,
 class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
     """Tests for `AsyncVirtualTransport`."""
 
+    layer = TwistedLayer
+
     class VirtualServer(Server):
         """Very simple server that provides a AsyncVirtualTransport."""
 
@@ -421,7 +420,7 @@ class LaunchpadTransportTests:
     """
 
     # See comment on TestLaunchpadServer.
-    layer = BaseLayer
+    layer = TwistedLayer
 
     def setUp(self):
         self.authserver = FakeLaunchpad()
@@ -766,7 +765,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
     # See comment on TestLaunchpadServer.
-    layer = BaseLayer
+    layer = TwistedLayer
 
     def setUp(self):
         BzrTestCase.setUp(self)

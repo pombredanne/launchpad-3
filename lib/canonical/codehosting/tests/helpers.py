@@ -21,8 +21,6 @@ import os
 import threading
 import unittest
 
-import transaction
-
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
 from bzrlib.plugins.loom import branch as loom_branch
@@ -35,7 +33,6 @@ from canonical.authserver.interfaces import (
     LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
-from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
@@ -148,11 +145,6 @@ class BranchTestCase(TestCaseWithTransport, LoomTestMixin):
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
         return tree
-
-    def emptyPullQueues(self):
-        transaction.begin()
-        cursor().execute("UPDATE Branch SET next_mirror_time = NULL")
-        transaction.commit()
 
     def restrictSecurityPolicy(self):
         """Switch to using 'LaunchpadSecurityPolicy'."""
