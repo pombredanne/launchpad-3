@@ -8,7 +8,7 @@ __metaclass__ = type
 
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.mail import format_address
+from canonical.launchpad.mail import format_address, get_msgid
 from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.webapp import canonical_url
@@ -87,9 +87,9 @@ class BMPMailer(BaseMailer):
     """Send mailings related to BranchMergeProposal events."""
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
-                 from_address, delta=None):
+                 from_address, delta=None, message_id=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
-                            from_address, delta)
+                            from_address, delta, message_id)
         self.merge_proposal = merge_proposal
 
     def sendAll(self):
@@ -117,7 +117,7 @@ class BMPMailer(BaseMailer):
         return klass(
             '%(proposal_title)s',
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
-            from_address)
+            from_address, message_id=get_msgid())
 
     @classmethod
     def forModification(klass, old_merge_proposal, merge_proposal, from_user):
@@ -139,7 +139,7 @@ class BMPMailer(BaseMailer):
         return klass(
             '%(proposal_title)s updated',
             'branch-merge-proposal-updated.txt', recipients,
-            merge_proposal, from_address, delta)
+            merge_proposal, from_address, delta, get_msgid())
 
     @classmethod
     def forReviewRequest(klass, reason, merge_proposal, from_user):
@@ -149,7 +149,7 @@ class BMPMailer(BaseMailer):
         return klass(
             'Request to review proposed merge of %(source_branch)s into '
             '%(target_branch)s', 'review-requested.txt', recipients,
-            merge_proposal, from_address)
+            merge_proposal, from_address, message_id=get_msgid())
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""

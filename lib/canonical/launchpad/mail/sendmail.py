@@ -15,6 +15,7 @@ messaging settings -- stub 2004-10-21
 
 __all__ = [
     'format_address',
+    'get_msgid',
     'sendmail',
     'simple_sendmail',
     'simple_sendmail_from_person',
@@ -185,7 +186,7 @@ def sendmail(message, to_addrs=None):
 
     # Add a Message-Id: header if it isn't already there
     if 'message-id' not in message:
-        message['Message-Id'] = make_msgid('launchpad@canonical')
+        message['Message-Id'] = get_msgid()
 
     # Add a Date: header if it isn't already there
     if 'date' not in message:
@@ -250,6 +251,10 @@ def sendmail(message, to_addrs=None):
         # similar to mailing list software.
         return raw_sendmail(
             config.canonical.bounce_address, to_addrs, raw_message)
+
+
+def get_msgid():
+    return make_msgid('launchpad@canonical')
 
 
 def raw_sendmail(from_addr, to_addrs, raw_message):

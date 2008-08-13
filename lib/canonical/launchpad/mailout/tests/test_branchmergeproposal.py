@@ -49,9 +49,11 @@ class TestMergeProposalMailing(TestCase):
         """Ensure that the contents of the mail are as expected"""
         bmp, subscriber = self.makeProposalWithSubscriber()
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        assert mailer.message_id is not None, 'Message-id should be set'
         mailer.message_id = '<foobar-example-com>'
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0]
+        bmp.root_message_id = None
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual("""\
 Baz Qux has proposed merging foo into bar.
@@ -79,7 +81,7 @@ Baz Qux has proposed merging foo into bar.
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual('<foobar-example-com>', headers['Message-Id'])
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
-        self.assertEqual(None, bmp.root_message_id)
+        bmp.root_message_id = None
         mailer.sendAll()
         notification = pop_notifications()[-1]
         self.assertEqual('<foobar-example-com>', notification['Message-Id'])
@@ -118,6 +120,11 @@ Baz Qux has proposed merging foo into bar.
         mailer, subscriber = self.makeMergeProposalMailerModification()
         self.assertEqual('new commit message',
             mailer.delta.commit_message)
+
+    def test_forModificationHasMsgId(self):
+        """Ensure the right delta is filled out if there is a change."""
+        mailer, subscriber = self.makeMergeProposalMailerModification()
+        assert mailer.message_id is not None, 'message_id not set'
 
     def test_forModificationWithModificationTextDelta(self):
         """Ensure the right delta is filled out if there is a change."""
@@ -178,8 +185,7 @@ new commit message
         persons = zip(*(mailer._recipients.getRecipientPersons()))[1]
         self.assertEqual(set(recipients), set(persons))
 
-    def test_forReviewRequest(self):
-        """Test creating a mailer for a review request."""
+    def makeReviewRequest(self):
         merge_proposal, subscriber_ = self.makeProposalWithSubscriber()
         candidate = self.factory.makePerson(
             displayname='Candidate', email='candidate@example.com')
@@ -188,12 +194,23 @@ new commit message
         request = CodeReviewVoteReference(
             branch_merge_proposal=merge_proposal, reviewer=candidate,
             registrant=requester)
-        request = RecipientReason.forReviewer(request, candidate)
+        return RecipientReason.forReviewer(request, candidate), requester
+
+    def test_forReviewRequest(self):
+        """Test creating a mailer for a review request."""
+        request, requester = self.makeReviewRequest()
         mailer = BMPMailer.forReviewRequest(
-            request, merge_proposal, requester)
+            request, request.merge_proposal, requester)
         self.assertEqual(
             'Requester <requester@example.com>', mailer.from_address)
-        self.assertRecipientsMatches([candidate], mailer)
+        self.assertRecipientsMatches([request.recipient], mailer)
+
+    def test_forReviewRequestMessageId(self):
+        """Test creating a mailer for a review request."""
+        request, requester = self.makeReviewRequest()
+        mailer = BMPMailer.forReviewRequest(
+            request, request.merge_proposal, requester)
+        assert mailer.message_id is not None, 'message_id not set'
 
 
 class TestRecipientReason(TestCaseWithFactory):
