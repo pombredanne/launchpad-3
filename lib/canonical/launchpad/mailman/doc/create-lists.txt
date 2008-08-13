@@ -6,9 +6,8 @@ this and create the mailing list itself.
 
 First, No Privileges Person creates a new team.
 
-    >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
@@ -20,15 +19,11 @@ First, No Privileges Person creates a new team.
 To request a mailing list, No Privileges Person navigates to the 'Configure
 mailing list' page and registers their application for a mailing list.
 
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
 At this point, Mailman has still not created the mailing list.
 
-    # This will time out because no changes have been propagated to Mailman.
-    >>> serial_watcher.wait()
-    'Timed out'
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     []
@@ -40,7 +35,8 @@ In order for Mailman to create the mailing list, a Launchpad 'mailing list
 expert' must approve the application.  This cannot currently be done through
 the web, so we'll go behind the scenes to do this.
 
-    >>> list_one = itest_helper.review_list('itest-one')
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> list_one = helpers.review_list('itest-one')
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
 
@@ -50,7 +46,7 @@ the web, so we'll go behind the scenes to do this.
 Now, No Privileges Person creates another team, and requests a mailing list
 for this new team.
 
-    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'itest-two'
     >>> browser.getControl('Display Name').value = 'ITest Two'
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
@@ -62,9 +58,9 @@ for this new team.
 This time, however, the mailing list expert declines the application for a new
 mailing list.
 
-    >>> from canonical.launchpad.interfaces import MailingListStatus
-    >>> list_two = itest_helper.review_list(
-    ...     'itest-two', MailingListStatus.DECLINED)
-
+    # This will time out because Mailman is never informed of the decline, so
+    # nothing gets written to its log files.
+    >>> helpers.review_list('itest-two', 'decline')
+    Timed out
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']

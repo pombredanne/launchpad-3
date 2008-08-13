@@ -73,6 +73,17 @@ A WikiName's URL can't be empty nor invalid.
     >>> print "\n".join(get_feedback_messages(browser.contents))
     "/this-is-not-a-url/" is not a valid URL.
 
+The invalid value is escaped using HTML entities when displayed back to
+the user.
+
+    >>> browser.getControl(name='newwiki').value = '<script>alert(1);</script>'
+    >>> browser.getControl(name='newwikiname').value = 'FooBar'
+    >>> browser.getControl('Save Changes').click()
+    >>> browser.url
+    'http://localhost/~sabdfl/+editwikinames'
+    >>> print "\n".join(get_feedback_messages(browser.contents))
+    "&lt;script&gt;alert(1);&lt;/script&gt;/" is not a valid URL.
+
 Only http and https URLs are allowed for wikis.
 
     >>> browser.getControl(name='newwiki').value = "javascript:void"

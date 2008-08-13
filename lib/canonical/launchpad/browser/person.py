@@ -2743,12 +2743,13 @@ class PersonEditWikiNamesView(LaunchpadView):
         try:
             uri = URI(url)
             if uri.scheme not in ('http', 'https'):
-                self.error_message = (
-                'The URL scheme "%s" is not allowed.  Only http or https '
-                'URLs may be used.' % uri.scheme)
+                self.error_message = structured(
+                    'The URL scheme "%(scheme)s" is not allowed.  '
+                    'Only http or https URLs may be used.', scheme=uri.scheme)
                 return False
         except InvalidURIError, e:
-            self.error_message = ('"%s" is not a valid URL.' % url)
+            self.error_message = structured(
+                '"%(url)s" is not a valid URL.', url=url)
             return False
         return True
 
@@ -2783,7 +2784,7 @@ class PersonEditWikiNamesView(LaunchpadView):
                 wiki = self._sanitizeWikiURL(form.get('wiki_%d' % w.id))
                 wikiname = form.get('wikiname_%d' % w.id)
                 if not (wiki and wikiname):
-                    self.error_message = (
+                    self.error_message = structured(
                         "Neither Wiki nor WikiName can be empty.")
                     return
                 if not self._validateWikiURL(wiki):
@@ -2797,16 +2798,16 @@ class PersonEditWikiNamesView(LaunchpadView):
             if wiki and wikiname:
                 existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
                 if existingwiki and existingwiki.person != context:
-                    self.error_message = (
+                    self.error_message = structured(
                         'The WikiName %s%s is already registered by '
-                        '<a href="%s">%s</a>.'
-                        % (wiki, wikiname, canonical_url(existingwiki.person),
-                           cgi.escape(existingwiki.person.browsername)))
+                        '<a href="%s">%s</a>.',
+                        wiki, wikiname, canonical_url(existingwiki.person),
+                        existingwiki.person.browsername)
                     return
                 elif existingwiki:
-                    self.error_message = (
-                        'The WikiName %s%s already belongs to you.'
-                        % (wiki, wikiname))
+                    self.error_message = structured(
+                        'The WikiName %s%s already belongs to you.',
+                        wiki, wikiname)
                     return
                 if not self._validateWikiURL(wiki):
                     return
@@ -2814,7 +2815,8 @@ class PersonEditWikiNamesView(LaunchpadView):
             else:
                 self.newwiki = wiki
                 self.newwikiname = wikiname
-                self.error_message = "Neither Wiki nor WikiName can be empty."
+                self.error_message = structured(
+                    "Neither Wiki nor WikiName can be empty.")
                 return
 
 
