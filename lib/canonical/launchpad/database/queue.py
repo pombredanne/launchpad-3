@@ -581,7 +581,7 @@ class PackageUpload(SQLBase):
             # Append a 'Signed-By:' line to the email body if this is a
             # signed upload and the signer/sponsor differs from the
             # maintainer.
-            if self.signing_key:
+            if self.signing_key is not None:
                 # This is a signed upload.
                 signer = self.signing_key.owner
 
