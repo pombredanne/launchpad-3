@@ -563,7 +563,7 @@ class PackageUpload(SQLBase):
         def do_sendmail(message, recipients=recipients, from_addr=None,
                         bcc=None):
             """Perform substitutions on a template and send the email."""
-            # Append maintainer info to the change log.
+            # If the maintainer is set, make it available to the template.
             maintainer = changes.get('maintainer')
             if maintainer:
                 maintainer = sanitize_string(maintainer)
@@ -578,9 +578,8 @@ class PackageUpload(SQLBase):
                 if changed_by != maintainer:
                     message.CHANGEDBY = '\nChanged-By: %s' % changed_by
 
-            # Append a 'Signed-By:' line to the email body if this is a
-            # signed upload and the signer/sponsor differs from the
-            # maintainer.
+            # Add a 'Signed-By:' line if this is a signed upload and the
+            # signer/sponsor differs from the maintainer.
             if self.signing_key is not None:
                 # This is a signed upload.
                 signer = self.signing_key.owner
