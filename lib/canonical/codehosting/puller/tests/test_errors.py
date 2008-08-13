@@ -1,3 +1,9 @@
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+
+"""Unit tests for the error presentation in worker.py."""
+
+__metaclass__ = type
+
 import httplib
 import socket
 import tempfile
