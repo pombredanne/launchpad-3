@@ -54,6 +54,8 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements, Interface
+from zope.formlib import form
+from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 
@@ -106,6 +108,7 @@ from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget)
+from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -1200,6 +1203,52 @@ class ProductChangeTranslatorsView(ProductEditView):
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
+    custom_widget('registrant', SinglePopupWidget)
+
+    def setUpFields(self):
+        """Setup the normal fields from the schema plus adds 'Registrant'.
+
+        The registrant is normally a read-only field and thus does not have a
+        proper widget created by default.  Even though it is read-only admins
+        need the ability to change it.
+        """
+        super(ProductAdminView, self).setUpFields()
+        self.form_fields += self._createRegistrantField()
+
+    def _createRegistrantField(self):
+        """Return a popup widget person selector for the registrant.
+
+        This custom field is necessary because *normally* the registrant is
+        read-only but we want the admins to have the ability to correct legacy
+        data that was set before the registrant field existed.
+        """
+        return form.Fields(
+            Choice(
+                __name__='registrant',
+                title=_('Project Registrant'),
+                vocabulary='ValidPerson',
+                required=True,
+                default=self.context.registrant
+                ),
+            custom_widget=self.custom_widgets['registrant']
+            )
+
+    def updateContextFromData(self, data, context=None):
+        if context is None:
+            context = self.context
+        data_to_apply = data.copy()
+        new_values = data.copy()
+
+        if 'registrant' in data_to_apply:
+            del data_to_apply['registrant']
+
+        super(ProductAdminView, self).updateContextFromData(
+            data_to_apply, context)
+
+        missing = object()
+        new_registrant = new_values.pop('registrant', missing)
+        if new_registrant is not missing:
+            self.context.setRegistrant(new_registrant)
 
     def validate(self, data):
         if data.get('private_bugs') and self.context.bug_supervisor is None:
@@ -1539,6 +1588,7 @@ class ProductAddView(ProductAddViewBase):
             programminglang=data['programminglang'],
             project=data['project'],
             owner=data['owner'],
+            registrant=self.user,
             license_reviewed=data['license_reviewed'],
             licenses = data['licenses'],
             license_info=data['license_info'])
