@@ -243,19 +243,31 @@ class Hierarchy(LaunchpadView):
 
         The list starts with the breadcrumb closest to the hierarchy root.
         """
+        from canonical.launchpad.webapp.url import urlparse, urlappend
+        urlparts = urlparse(self.request.getURL(0, path_only=False))
+        baseurl = "%s://%s" % (urlparts[0], urlparts[1])
+
+        # Construct a list of complete URLs for each URL path segment.
+        pathurls = []
+        working_url = baseurl
+        for segment in urlparts[2].split('/'):
+            working_url = urlappend(working_url, segment)
+            pathurls.append(working_url)
+
+        # We assume a 1:1 relationship between the traversed_objects list and
+        # the URL path segments.  Note that there may be more segments than
+        # there are objects.
+        object_urls = zip(self.request.traversed_objects, pathurls)
+
         breadcrumbs = []
-        for idx, obj in enumerate(reversed(self.request.traversed_objects)):
+        for obj, url in object_urls:
             # If the object has an IBreadcrumbBuilder adaptation, then the
             # object is intended to be shown in the hierarchy.
             builder = queryAdapter(obj, IBreadcrumbBuilder)
             if builder:
                 # The breadcrumb builder hasn't been given a URL yet.
-                # We assume a 1:1 relationship between the URL components and
-                # the traversed_objects list.
-                url = self.request.getURL(idx, path_only=False)
                 builder.url = url
                 breadcrumbs.append(builder.make_breadcrumb())
-        breadcrumbs.reverse()
         return breadcrumbs
 
     def render(self):
