@@ -638,9 +638,12 @@ class PackageUpload(SQLBase):
 
             STATUS = "New"
             SUMMARY = summarystring
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = sanitize_string(changes['changes'])
             DISTRO = self.distroseries.distribution.title
-            ANNOUNCE = announce_list
+            if announce_list:
+                ANNOUNCE = 'Announcing to %s' % announce_list
+            else:
+                ANNOUNCE = 'No announcement sent'
 
         class UnapprovedMessage:
             """Unapproved message."""
