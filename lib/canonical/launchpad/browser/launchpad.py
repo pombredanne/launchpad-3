@@ -99,6 +99,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.webapp.url import urlparse, urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
 
@@ -243,7 +244,6 @@ class Hierarchy(LaunchpadView):
 
         The list starts with the breadcrumb closest to the hierarchy root.
         """
-        from canonical.launchpad.webapp.url import urlparse, urlappend
         urlparts = urlparse(self.request.getURL(0, path_only=False))
         baseurl = "%s://%s" % (urlparts[0], urlparts[1])
 
@@ -261,14 +261,25 @@ class Hierarchy(LaunchpadView):
 
         breadcrumbs = []
         for obj, url in object_urls:
-            # If the object has an IBreadcrumbBuilder adaptation, then the
-            # object is intended to be shown in the hierarchy.
-            builder = queryAdapter(obj, IBreadcrumbBuilder)
-            if builder:
-                # The breadcrumb builder hasn't been given a URL yet.
-                builder.url = url
-                breadcrumbs.append(builder.make_breadcrumb())
+            crumb = self.breadcrumb_for(obj, url)
+            if crumb is not None:
+                breadcrumbs.append(crumb)
         return breadcrumbs
+
+    def breadcrumb_for(self, obj, url):
+        """Return the breadcrumb for the an object, using the supplied URL.
+
+        :returns: A `Breadcrumb` object, or None if a breadcrumb adaptation
+            for the object doesn't exist.
+        """
+        # If the object has an IBreadcrumbBuilder adaptation, then the
+        # object is intended to be shown in the hierarchy.
+        builder = queryAdapter(obj, IBreadcrumbBuilder)
+        if builder:
+            # The breadcrumb builder hasn't been given a URL yet.
+            builder.url = url
+            return builder.make_breadcrumb()
+        return None
 
     def render(self):
         """Render the hierarchy HTML.
