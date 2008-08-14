@@ -205,16 +205,6 @@
           template="launchpad/templates/root-portlet-rosetta.pt" />
     </browser:pages>
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.FOAFSearchView"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-foaf"
-          template="launchpad/templates/root-portlet-foaf.pt" />
-    </browser:pages>
-
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
     <include package="canonical.lazr" />
