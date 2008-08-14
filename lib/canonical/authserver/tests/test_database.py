@@ -1209,6 +1209,12 @@ class BranchPullQueueTest(BranchTestCase):
         self.restrictSecurityPolicy()
         self.storage = DatabaseBranchDetailsStorage(None)
 
+    def restrictSecurityPolicy(self):
+        """Switch to using 'LaunchpadSecurityPolicy'."""
+        old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+        self.addCleanup(lambda: setSecurityPolicy(old_policy))
+
     def assertBranchQueues(self, hosted, mirrored, imported):
         login(ANONYMOUS)
         expected_hosted = [
@@ -1237,7 +1243,7 @@ class BranchPullQueueTest(BranchTestCase):
         """Make a branch of the given type and call requestMirror on it."""
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         transaction.begin()
-        branch = self.makeBranch(branch_type)
+        branch = self.factory.makeBranch(branch_type)
         branch.requestMirror()
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser('authserver')

@@ -136,12 +136,6 @@ class BranchTestCase(TestCaseWithTransport, LoomTestMixin):
         TestCaseWithTransport.setUp(self)
         self.factory = LaunchpadObjectFactory()
 
-    def restrictSecurityPolicy(self):
-        """Switch to using 'LaunchpadSecurityPolicy'."""
-        old_policy = getSecurityPolicy()
-        setSecurityPolicy(LaunchpadSecurityPolicy)
-        self.addCleanup(lambda: setSecurityPolicy(old_policy))
-
 
 class ServerTestCase(TrialTestCase, BranchTestCase):
 
