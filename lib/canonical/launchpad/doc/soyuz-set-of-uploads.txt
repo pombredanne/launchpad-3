@@ -441,12 +441,32 @@ ubututest/breezy-RELEASE:
   >>> simulate_upload(
   ...     'foo_1.0-1', upload_policy='sync', is_new=True,
   ...     loglevel=logging.DEBUG)
-  log> ...
+  log> Initialising connection.
+  ...
+  log> Sent a mail:
+  log>     Subject: [ubuntutest/breezy] foo 1.0-1 (New)
+  log>     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
+  log>     Body:
   log> NEW: foo_1.0.orig.tar.gz
   log> NEW: foo_1.0-1.diff.gz
   log> NEW: foo_1.0-1.dsc
-  ...
-  log> Distribution: breezy
+  log>
+  log> foo (1.0-1) breezy; urgency=low
+  log>
+  log>   * Initial version
+  log>
+  log>
+  log> Your package contains new components which requires manual editing of
+  log> the override file.  It is ok otherwise, so please be patient.  New
+  log> packages are usually added to the overrides about once a week.
+  log>
+  log> You may have gotten the distroseries wrong.  If so, you may get warnings
+  log> above if files already exist in other distroseries.
+  log>
+  log> --
+  log> You are receiving this email because you are the uploader, maintainer or
+  log> signer of the above package.
+  log> Committing the transaction and any mails associated with this upload.
   ...
   Upload complete.
 
