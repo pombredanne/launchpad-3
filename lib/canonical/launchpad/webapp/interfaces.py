@@ -249,8 +249,11 @@ class IBreadcrumbBuilder(IBreadcrumb):
 
 
 class IncompleteBreadcrumbError(AttributeError):
-    """Raised when a breadcrumb being built does not has not had all of the
-    required attributes before the developer tries to construct it.
+    """Raised when a breadcrumb cannot be constructed.
+
+    This error indicates that the user tried to use an `IBreadcrumbBuilder`
+    to construct a breadcrumb before completely specifying the breadcrumb's
+    data.
     """
     pass
 
