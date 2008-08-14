@@ -55,10 +55,12 @@ from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, StandardLaunchpadFacets, stepthrough, structured)
+from canonical.widgets.popup import SinglePopupWidget
 
 
 class ProjectNavigation(Navigation):
@@ -343,6 +345,57 @@ class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project group details"
     field_names = ['name', 'owner', 'active', 'reviewed']
+    custom_widget('registrant', SinglePopupWidget)
+
+    def setUpFields(self):
+        """Setup the normal fields from the schema plus adds 'Registrant'.
+
+        The registrant is normally a read-only field and thus does not have a
+        proper widget created by default.  Even though it is read-only admins
+        need the ability to change it.
+        """
+        super(ProjectReviewView, self).setUpFields()
+        self.form_fields += self._createRegistrantField()
+
+    def _createRegistrantField(self):
+        """Return a popup widget person selector for the registrant.
+
+        This custom field is necessary because *normally* the registrant is
+        read-only but we want the admins to have the ability to correct legacy
+        data that was set before the registrant field existed.
+        """
+        return form.Fields(
+            PublicPersonChoice(
+                __name__='registrant',
+                title=_('Project Registrant'),
+                description=_('The person who originally registered the '
+                              'project group.  Distinct from the current owner.'),
+                vocabulary='ValidPerson',
+                required=True,
+                readonly=False,
+                default=self.context.registrant
+                ),
+            custom_widget=self.custom_widgets['registrant']
+            )
+
+    def updateContextFromData(self, data, context=None):
+        """Update the context from data, but handle registrant specially."""
+
+        if context is None:
+            context = self.context
+        data_to_apply = data.copy()
+        new_values = data.copy()
+
+        if 'registrant' in data_to_apply:
+            del data_to_apply['registrant']
+
+        super(ProjectReviewView, self).updateContextFromData(
+            data_to_apply, context)
+
+        missing = object()
+        new_registrant = new_values.pop('registrant', missing)
+        if new_registrant is not missing:
+            self.context.setRegistrant(new_registrant)
 
 
 class ProjectAddProductView(ProductAddViewBase):
@@ -421,8 +474,15 @@ class ProjectSetView(object):
 class ProjectAddView(LaunchpadFormView):
 
     schema = IProject
-    field_names = ['name', 'displayname', 'title', 'summary',
-                   'description', 'homepageurl',]
+    field_names = [
+        'name',
+        'displayname',
+        'title',
+        'summary',
+        'description',
+        'owner',
+        'homepageurl',
+        ]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project group with Launchpad')
     project = None
@@ -437,7 +497,7 @@ class ProjectAddView(LaunchpadFormView):
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=self.user,
+            owner=data['owner'],
             )
         notify(ObjectCreatedEvent(self.project))
 

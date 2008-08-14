@@ -48,6 +48,7 @@ __all__ = [
     'IHasOwner',
     'IHasProduct',
     'IHasProductAndAssignee',
+    'IHasRegistrant',
     'IHasSecurityContact',
     'ILaunchBag',
     'ILaunchpadCelebrities',
@@ -315,6 +316,18 @@ class IHasOwner(Interface):
 
     owner = Attribute("The object's owner, which is an IPerson.")
 
+
+class IHasRegistrant(Interface):
+    """An object that has a registrant."""
+
+    registrant = Attribute("The object's registrant, which is an IPerson.")
+
+    def setRegistrant(new_registrant):
+        """Sets the registrant.
+
+        The registrant is a read-only attribute but can be set via this method
+        by an admin.
+        """
 
 class IHasDrivers(Interface):
     """An object that has drivers.

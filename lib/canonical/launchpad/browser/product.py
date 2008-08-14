@@ -55,13 +55,13 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements, Interface
 from zope.formlib import form
-from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
 from canonical.lazr import decorates
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
     ICountry, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
@@ -1223,11 +1223,12 @@ class ProductAdminView(ProductEditView):
         data that was set before the registrant field existed.
         """
         return form.Fields(
-            Choice(
+            PublicPersonChoice(
                 __name__='registrant',
                 title=_('Project Registrant'),
                 vocabulary='ValidPerson',
                 required=True,
+                readonly=False,
                 default=self.context.registrant
                 ),
             custom_widget=self.custom_widgets['registrant']
