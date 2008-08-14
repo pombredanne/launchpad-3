@@ -1,5 +1,5 @@
 # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0222
+# pylint: disable-msg=W0222,W0231
 
 __metaclass__ = type
 
@@ -13,23 +13,23 @@ import pytz
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.tests import TestCaseWithTransport
-from bzrlib.urlutils import local_path_to_url
 
 from twisted.internet import defer, error
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
+from zope.component import getUtility
+
 from canonical.codehosting.puller import get_lock_id_for_branch_id, scheduler
+from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp import errorlog
 from canonical.testing import (
-    reset_logging, TwistedLayer, TwistedLaunchpadZopelessLayer)
+    reset_logging, TwistedLayer, TwistedAppServerLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, suppress_stderr, ProcessTestsMixin)
 
@@ -559,18 +559,22 @@ protocol = PullerWorkerProtocol(sys.stdout)
 """
 
 
-class TestPullerMasterIntegration(TrialTestCase, TestCaseWithTransport,
-                                  TestCaseWithFactory):
+class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
     """Tests for the puller master that launch sub-processes."""
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedAppServerLayer
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        TestCaseWithFactory.setUp(self)
-        self.db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        TrialTestCase.setUp(self)
+        PullerBranchTestCase.setUp(self)
+        self.makeCleanDirectory(config.codehosting.branches_root)
+        self.makeCleanDirectory(config.supermirror.branchesdest)
+        branch_id = self.factory.makeBranch(BranchType.HOSTED).id
+        self.layer.txn.commit()
+        self.db_branch = getUtility(IBranchSet).get(branch_id)
         self.bzr_tree = self.make_branch_and_tree('src-branch')
         self.bzr_tree.commit('rev1')
+        self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakeBranchStatusClient()
 
     def run(self, result):
@@ -598,9 +602,10 @@ class TestPullerMasterIntegration(TrialTestCase, TestCaseWithTransport,
             worker command line arguments, the destination branch and an
             instance of PullerWorkerProtocol.
         """
+        hosted_url = str('lp-hosted:///' + self.db_branch.unique_name)
         puller_master = cls(
-            self.db_branch.id, local_path_to_url('src-branch'),
-            self.db_branch.unique_name, self.db_branch.branch_type,
+            self.db_branch.id, hosted_url,
+            self.db_branch.unique_name[1:], self.db_branch.branch_type,
             logging.getLogger(), self.client,
             set([config.error_reports.oops_prefix]))
         puller_master.destination_url = os.path.abspath('dest-branch')
@@ -703,7 +708,7 @@ class TestPullerMasterIntegration(TrialTestCase, TestCaseWithTransport,
 
         check_lock_id_script = """
         branch.lock_write()
-        protocol.mirrorSucceeded('a', 'b')
+        protocol.mirrorSucceeded('b')
         protocol.sendEvent(
             'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()
