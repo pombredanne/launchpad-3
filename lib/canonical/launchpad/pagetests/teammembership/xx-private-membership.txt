@@ -158,7 +158,7 @@ Another team member will see both the icons (otherteam and myteam).
 
 == Restrict Answer Contact ==
 
-To prevent leaking information about a team's private membership, 
+To prevent leaking information about a team's private membership,
 no user can add that team as an answer contact for a project.
 
 Even the owner of the team with private membership should not see
@@ -167,7 +167,7 @@ MyTeam as an option in the +answer-contact form.
     >>> owner_browser = setupBrowser(auth='Basic owner@canonical.com:test')
     >>> owner_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+answer-contact')
-    >>> team_div = find_tag_by_id(owner_browser.contents, 
+    >>> team_div = find_tag_by_id(owner_browser.contents,
     ...                            'answer-contact-teams')
     >>> for label in team_div.findAll('label'):
     ...     print label.contents[1]
@@ -176,7 +176,7 @@ MyTeam as an option in the +answer-contact form.
 
 == Restrict Mentorship ==
 
-To prevent leaking information about a team's private membership, 
+To prevent leaking information about a team's private membership,
 no user can select that team when offering mentorship for a bug
 or a blueprint.
 
@@ -250,11 +250,11 @@ no user can specify that team as a translator.
 == Restrict Project Owner ==
 
 To prevent leaking information about a team's private membership,
-no user can set that team as the owner of a project.
+no user can set that team as the owner/maintainer of a project.
 
     >>> admin_browser.open('http://launchpad.dev/mozilla/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
-    >>> admin_browser.getControl('Change Registrant').click()
+    >>> admin_browser.getControl('Change Maintainer').click()
     >>> admin_browser.url
     'http://launchpad.dev/mozilla/+reassign'
     >>> get_feedback_messages(admin_browser.contents)
@@ -294,7 +294,7 @@ no user can set that team as the registrant of a distribution.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
-    >>> admin_browser.getControl('Change Registrant').click()
+    >>> admin_browser.getControl('Change Owner').click()
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu/+reassign'
     >>> get_feedback_messages(admin_browser.contents)
