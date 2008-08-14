@@ -1060,6 +1060,7 @@ password for the archive):
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.private = True
     >>> cprov_archive.buildd_secret = "secret"
+    >>> cprov_archive.require_virtualized = False
     >>> for build_file in candidate.files:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = True
     >>> commit()
@@ -1079,6 +1080,10 @@ firefox file.  This is because the build slaves are not allowed to
 access the restricted librarian as it cannot provide access via
 credentials, unlike the archive itself.
 
+Finally, the archive purpose is overridden to PRIMARY instead of PPA
+for any archives that have require_virtualized as False.  This is so that
+the mangling tools will run over the built packages.
+
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
@@ -1090,7 +1095,7 @@ credentials, unlike the archive itself.
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
     Suite: hoary
-    Archive Purpose: PPA
+    Archive Purpose: PRIMARY
     Archive Private: True
 
     >>> candidate.destroySelf()
@@ -1141,6 +1146,7 @@ Mark's PPA:
     >>> login('foo.bar@canonical.com')
 
     >>> cprov_archive.private = False
+    >>> cprov_archive.require_virtualized = True
     >>> for build_file in candidate.files:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = False
     >>> sabdfl_archive = getUtility(IPersonSet).getByName('sabdfl').archive
