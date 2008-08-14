@@ -81,8 +81,7 @@ matching the given text.
     Source           Published   Status     Series          Section  Built
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-We will test the deletion without providing a deletion somment using
-sabdfl's archive.
+We will test the deletion without a somment using sabdfl's archive.
 
     >>> admin_browser.open('http://launchpad.dev/~sabdfl/+archive')
     >>> admin_browser.getLink('Delete packages').click()
