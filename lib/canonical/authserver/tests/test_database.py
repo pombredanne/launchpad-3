@@ -22,7 +22,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from bzrlib.tests import TestCase
 
-from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
 
@@ -1198,7 +1197,7 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(row[3], completed.replace(tzinfo=None))
 
 
-class BranchPullQueueTest(BranchTestCase):
+class BranchPullQueueTest(TestCaseWithFactory):
     """Tests for the pull queue methods of `IBranchDetailsStorage`."""
 
     layer = LaunchpadZopelessLayer

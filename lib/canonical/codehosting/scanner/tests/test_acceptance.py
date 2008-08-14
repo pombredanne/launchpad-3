@@ -13,6 +13,7 @@ from subprocess import Popen, PIPE
 from unittest import TestLoader
 
 import bzrlib.branch
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import local_path_from_url
 
@@ -22,13 +23,13 @@ from zope.component import getUtility
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.tests.helpers import (
-    BranchTestCase, create_branch_with_one_revision)
+    create_branch_with_one_revision, LoomTestMixin)
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.testing import ZopelessAppServerLayer
 
 
-class BranchScannerTest(BranchTestCase):
+class BranchScannerTest(TestCaseWithTransport, LoomTestMixin):
     """Tests for cronscripts/branch-scanner.py."""
 
     layer = ZopelessAppServerLayer
@@ -37,7 +38,7 @@ class BranchScannerTest(BranchTestCase):
     branch_id = 7
 
     def setUp(self):
-        BranchTestCase.setUp(self)
+        TestCaseWithTransport.setUp(self)
         self.db_branch = getUtility(IBranchSet)[self.branch_id]
         assert self.db_branch.revision_history.count() == 0
 

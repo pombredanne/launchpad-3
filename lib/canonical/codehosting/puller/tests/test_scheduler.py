@@ -13,6 +13,7 @@ import pytz
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.urlutils import local_path_to_url
 
 from twisted.internet import defer, error
@@ -23,9 +24,9 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting.puller import get_lock_id_for_branch_id, scheduler
 from canonical.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
-from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
 from canonical.testing import (
     reset_logging, TwistedLayer, TwistedLaunchpadZopelessLayer)
@@ -558,13 +559,15 @@ protocol = PullerWorkerProtocol(sys.stdout)
 """
 
 
-class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
+class TestPullerMasterIntegration(TrialTestCase, TestCaseWithTransport,
+                                  TestCaseWithFactory):
     """Tests for the puller master that launch sub-processes."""
 
     layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
-        BranchTestCase.setUp(self)
+        TestCaseWithTransport.setUp(self)
+        TestCaseWithFactory.setUp(self)
         self.db_branch = self.factory.makeBranch(BranchType.HOSTED)
         self.bzr_tree = self.make_branch_and_tree('src-branch')
         self.bzr_tree.commit('rev1')

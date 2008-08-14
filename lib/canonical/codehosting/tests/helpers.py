@@ -27,16 +27,12 @@ from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
 
-from zope.security.management import getSecurityPolicy, setSecurityPolicy
-
 from canonical.authserver.interfaces import (
     LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import LaunchpadFunctionalLayer, TwistedLayer
+from canonical.testing import TwistedLayer
 
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
@@ -127,17 +123,7 @@ class LoomTestMixin:
         return loom_tree
 
 
-class BranchTestCase(TestCaseWithTransport, LoomTestMixin):
-    """Base class for tests that do a lot of things with branches."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        self.factory = LaunchpadObjectFactory()
-
-
-class ServerTestCase(TrialTestCase, BranchTestCase):
+class ServerTestCase(TrialTestCase, TestCaseWithTransport, LoomTestMixin):
 
     server = None
 

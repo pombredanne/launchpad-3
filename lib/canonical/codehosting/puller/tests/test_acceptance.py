@@ -16,19 +16,21 @@ from urlparse import urlparse
 import transaction
 
 from bzrlib.branch import Branch
-from bzrlib.tests import HttpServer
+from bzrlib.tests import HttpServer, TestCaseWithTransport
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.tests.helpers import LoomTestMixin
 from canonical.testing import ZopelessAppServerLayer
 
 
-class TestBranchPuller(BranchTestCase):
+class TestBranchPuller(TestCaseWithTransport, TestCaseWithFactory,
+                       LoomTestMixin):
     """Integration tests for the branch puller.
 
     These tests actually run the supermirror-pull.py script. Instead of
@@ -39,7 +41,8 @@ class TestBranchPuller(BranchTestCase):
     layer = ZopelessAppServerLayer
 
     def setUp(self):
-        super(TestBranchPuller, self).setUp()
+        TestCaseWithTransport.setUp(self)
+        TestCaseWithFactory.setUp(self)
         self._puller_script = os.path.join(
             config.root, 'cronscripts', 'supermirror-pull.py')
         self.makeCleanDirectory(config.codehosting.branches_root)
