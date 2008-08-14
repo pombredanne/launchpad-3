@@ -409,7 +409,7 @@ class IMailingList(Interface):
         """Return the set of all email addresses for members.
 
         :return: an iterator over the all the registered and validated
-            IEmailAddresses for all subscribed members of the mailing list, in
+            IEmailAddresses for all members of the mailing list's team, in
             no particular order.  These represent all the addresses which are
             allowed to post to the mailing list.
         """

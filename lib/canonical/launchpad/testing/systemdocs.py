@@ -166,6 +166,14 @@ def create_view(context, name, form=None, layer=None, server_url=None,
     return getMultiAdapter((context, request), name=name)
 
 
+def create_initialized_view(context, name, form=None, layer=None,
+                            server_url=None, method='GET'):
+    """Return a view that has already been initialized."""
+    view = create_view(context, name, form, layer, server_url, method)
+    view.initialize()
+    return view
+
+
 def ordered_dict_as_string(dict):
     """Return the contents of a dict as an ordered string.
 
@@ -197,6 +205,7 @@ def setGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
     test.globs['create_view'] = create_view
+    test.globs['create_initialized_view'] = create_initialized_view
     test.globs['LaunchpadObjectFactory'] = LaunchpadObjectFactory
     test.globs['ordered_dict_as_string'] = ordered_dict_as_string
     test.globs['verifyObject'] = verifyObject

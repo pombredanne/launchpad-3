@@ -430,21 +430,34 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         # Import here to avoid circular imports.
         from canonical.launchpad.database.emailaddress import EmailAddress
-        return EmailAddress.select("""
-            EmailAddress.person = MailingListSubscription.person AND
-            MailingList.id = MailingListSubscription.mailing_list AND
-            TeamParticipation.person = MailingListSubscription.person AND
-            MailingListSubscription.mailing_list = %s AND
+        team_members = EmailAddress.select("""
             TeamParticipation.team = %s AND
+            TeamParticipation.person = EmailAddress.person AND
+            EmailAddress.person = Person.id AND
+            Person.teamowner is NULL AND
+            MailingList.team = TeamParticipation.team AND
             MailingList.status <> %s AND
             EmailAddress.status IN %s
-            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE,
+            """ % sqlvalues(self.team, MailingListStatus.INACTIVE,
                             (EmailAddressStatus.VALIDATED,
                              EmailAddressStatus.PREFERRED)),
             distinct=True, prejoins=['person'],
-            clauseTables=['MailingListSubscription',
-                          'TeamParticipation',
-                          'MailingList'])
+            clauseTables=['MailingList', 'TeamParticipation', 'Person'])
+        # In addition, anyone who's had a held message approved for the list
+        # gets to post to the list.
+        approved_posters = EmailAddress.select("""
+            MessageApproval.mailing_list = %s AND
+            MessageApproval.status IN %s AND
+            MessageApproval.posted_by = EmailAddress.person AND
+            EmailAddress.status IN %s
+            """ % sqlvalues(self,
+                            (PostedMessageStatus.APPROVED,
+                             PostedMessageStatus.APPROVAL_PENDING),
+                            (EmailAddressStatus.VALIDATED,
+                             EmailAddressStatus.PREFERRED)),
+            distinct=True, prejoins=['person'],
+            clauseTables=['MessageApproval'])
+        return team_members.union(approved_posters)
 
     def holdMessage(self, message):
         """See `IMailingList`."""
