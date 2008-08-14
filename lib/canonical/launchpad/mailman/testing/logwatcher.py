@@ -30,6 +30,7 @@ except AttributeError:
 LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=5)
 SECONDS_TO_SNOOZE = 0.1
 Empty = object()
+NL = '\n'
 
 
 class LogWatcher:
@@ -54,6 +55,7 @@ class LogWatcher:
     synchronization point.
     """
     FILENAME = None
+    expecting_timeout = False
 
     def __init__(self):
         self._log_path = os.path.join(LOG_DIR, self.FILENAME)
@@ -65,6 +67,7 @@ class LogWatcher:
         self._log_file = open(self._log_path)
         self._log_file.seek(0, SEEK_END)
         self._line_cache = []
+        self._last_10_lines_read = []
 
     @property
     def lines(self):
@@ -92,6 +95,10 @@ class LogWatcher:
                 # There's nothing in the file for us.  See if we timed out and
                 # if not, sleep for a little while.
                 if datetime.datetime.now() > until:
+                    if not self.expecting_timeout:
+                        print NL.join(self._last_10_lines_read)
+                    # Resetting expectations so you don't have to.
+                    self.expecting_timeout = False
                     return 'Timed out'
                 time.sleep(SECONDS_TO_SNOOZE)
             elif landmark in line:
@@ -99,8 +106,10 @@ class LogWatcher:
                 return None
             else:
                 # This line did not match our landmark.  Try again with the
-                # next line.
-                pass
+                # next line, but keep a cache of the last 10 lines read so
+                # that a timeout will be able to provide more debugging.
+                self._last_10_lines_read.append(line)
+                del self._last_10_lines_read[0:-10]
 
     def close(self):
         self._log_file.close()
