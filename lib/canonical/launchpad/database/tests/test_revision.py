@@ -1,18 +1,18 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Tests for Revisions."""
 
 __metaclass__ = type
 
 from datetime import datetime, timedelta
+import time
 from unittest import TestCase, TestLoader
 
 import psycopg2
 import pytz
-import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
@@ -20,17 +20,17 @@ from canonical.launchpad.interfaces import (
     IBranchSet, IRevisionSet)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):
     """Test the `getBranch` method of the revision."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
-        TestCaseWithFactory.setUp(self, "foo.bar@canonical.com")
+        TestCaseWithFactory.setUp(self, "admin@canonical.com")
         self.author = self.factory.makePerson()
         self.revision = self.factory.makeRevision(
             author=self.author.preferredemail.email)
@@ -73,11 +73,11 @@ class TestRevisionGetBranch(TestCaseWithFactory):
 class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
     """Test the `getPublicRevisionsForPerson` method of `RevisionSet`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
-        TestCaseWithFactory.setUp(self, "foo.bar@canonical.com")
+        TestCaseWithFactory.setUp(self, "admin@canonical.com")
         self.author = self.factory.makePerson()
         self.revision = self.factory.makeRevision(
             author=self.author.preferredemail.email)
@@ -137,7 +137,7 @@ class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
             list(RevisionSet.getPublicRevisionsForPerson(self.author)))
 
     def testTeamRevisions(self):
-        # Revisions owned by all members of a team are returnded.
+        # Revisions owned by all members of a team are returned.
         team = self.factory.makeTeam(self.author)
         team_member = self.factory.makePerson()
         team.addMember(team_member, self.author)
@@ -165,13 +165,184 @@ class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
             list(RevisionSet.getPublicRevisionsForPerson(self.author)))
 
 
+class TestGetPublicRevisonsForProduct(TestCaseWithFactory):
+    """Test the `getPublicRevisionsForProduct` method of `RevisionSet`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an administrator to set branch privacy easily.
+        TestCaseWithFactory.setUp(self, "admin@canonical.com")
+        self.date_generator = time_counter(
+            datetime(2007, 1, 1, tzinfo=pytz.UTC),
+            delta=timedelta(days=1))
+        self.product = self.factory.makeProduct()
+
+    def _makeRevision(self):
+        """Make a revision using the date generator."""
+        return self.factory.makeRevision(
+            revision_date=self.date_generator.next())
+
+    def _addRevisionsToBranch(self, branch, *revs):
+        # Add the revisions to the the branch.
+        for sequence, rev in enumerate(revs):
+            branch.createBranchRevision(sequence, rev)
+
+    def _makeRevisionInBranch(self, product=None):
+        # Make a revision, and associate it with a branch.  The branch is made
+        # with the product passed in, which means that if there was no product
+        # passed in, the factory makes a new one.
+        if product is None:
+            product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        rev = self._makeRevision()
+        branch.createBranchRevision(1, rev)
+        return rev
+
+    def testRevisionsMustBeInABranchOfProduct(self):
+        # The revision must be in a branch for the product.
+        # returned.
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        rev2 = self._makeRevisionInBranch()
+        self.assertEqual(
+            [rev1],
+            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
+
+    def testRevisionsMustBeInAPublicBranch(self):
+        # A revision for the project must be in a public branch to be
+        # returned.
+        rev1 = self._makeRevision()
+        b = self.factory.makeBranch(product=self.product)
+        b.createBranchRevision(1, rev1)
+        b.private = True
+        self.assertEqual(
+            [],
+            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
+
+    def testNewestRevisionFirst(self):
+        # The revisions are ordered with the newest first.
+        rev1 = self._makeRevision()
+        rev2 = self._makeRevision()
+        rev3 = self._makeRevision()
+        branch = self.factory.makeBranch(product=self.product)
+        self._addRevisionsToBranch(branch, rev1, rev2, rev3)
+        self.assertEqual(
+            [rev3, rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
+
+    def testRevisionsOnlyReturnedOnce(self):
+        # If the revisions appear in multiple branches, they are only returned
+        # once.
+        rev1 = self._makeRevision()
+        rev2 = self._makeRevision()
+        rev3 = self._makeRevision()
+        self._addRevisionsToBranch(
+            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
+        self._addRevisionsToBranch(
+            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
+        self.assertEqual(
+            [rev3, rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForProduct(self.product)))
+
+
+class TestGetPublicRevisonsForProject(TestCaseWithFactory):
+    """Test the `getPublicRevisionsForProject` method of `RevisionSet`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an administrator to set branch privacy easily.
+        TestCaseWithFactory.setUp(self, "admin@canonical.com")
+        self.date_generator = time_counter(
+            datetime(2007, 1, 1, tzinfo=pytz.UTC),
+            delta=timedelta(days=1))
+        self.project = self.factory.makeProject()
+        self.product = self.factory.makeProduct(project=self.project)
+
+    def _makeRevision(self):
+        """Make a revision using the date generator."""
+        return self.factory.makeRevision(
+            revision_date=self.date_generator.next())
+
+    def _addRevisionsToBranch(self, branch, *revs):
+        # Add the revisions to the the branch.
+        for sequence, rev in enumerate(revs):
+            branch.createBranchRevision(sequence, rev)
+
+    def _makeRevisionInBranch(self, product=None):
+        # Make a revision, and associate it with a branch.  The branch is made
+        # with the product passed in, which means that if there was no product
+        # passed in, the factory makes a new one.
+        if product is None:
+            product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        rev = self._makeRevision()
+        branch.createBranchRevision(1, rev)
+        return rev
+
+    def testRevisionsMustBeInABranchOfProduct(self):
+        # The revision must be in a branch for the product.
+        # returned.
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        rev2 = self._makeRevisionInBranch()
+        self.assertEqual(
+            [rev1],
+            list(RevisionSet.getPublicRevisionsForProject(self.project)))
+
+    def testRevisionsMustBeInAPublicBranch(self):
+        # A revision for the project must be in a public branch to be
+        # returned.
+        rev1 = self._makeRevision()
+        b = self.factory.makeBranch(product=self.product)
+        b.createBranchRevision(1, rev1)
+        b.private = True
+        self.assertEqual(
+            [],
+            list(RevisionSet.getPublicRevisionsForProject(self.project)))
+
+    def testNewestRevisionFirst(self):
+        # The revisions are ordered with the newest first.
+        rev1 = self._makeRevision()
+        rev2 = self._makeRevision()
+        rev3 = self._makeRevision()
+        branch = self.factory.makeBranch(product=self.product)
+        self._addRevisionsToBranch(branch, rev1, rev2, rev3)
+        self.assertEqual(
+            [rev3, rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForProject(self.project)))
+
+    def testProjectRevisions(self):
+        # Revisions in all products that are part of the project are returned.
+        another_product = self.factory.makeProduct(project=self.project)
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        rev2 = self._makeRevisionInBranch(product=another_product)
+        rev3 = self._makeRevisionInBranch()
+        self.assertEqual(
+            [rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForProject(self.project)))
+
+    def testRevisionsOnlyReturnedOnce(self):
+        # If the revisions appear in multiple branches, they are only returned
+        # once.
+        rev1 = self._makeRevision()
+        rev2 = self._makeRevision()
+        rev3 = self._makeRevision()
+        self._addRevisionsToBranch(
+            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
+        self._addRevisionsToBranch(
+            self.factory.makeBranch(product=self.product), rev1, rev2, rev3)
+        self.assertEqual(
+            [rev3, rev2, rev1],
+            list(RevisionSet.getPublicRevisionsForProject(self.project)))
+
+
 class TestTipRevisionsForBranches(TestCase):
     """Test that the tip revisions get returned properly."""
 
     # The LaunchpadZopelessLayer is used as the setUp needs to
     # switch database users in order to create revisions for the
     # test branches.
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login('test@canonical.com')
@@ -179,13 +350,8 @@ class TestTipRevisionsForBranches(TestCase):
         factory = LaunchpadObjectFactory()
         branches = [factory.makeBranch() for count in range(5)]
         branch_ids = [branch.id for branch in branches]
-        transaction.commit()
-        launchpad_dbuser = config.launchpad.dbuser
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         for branch in branches:
             factory.makeRevisionsForBranch(branch)
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
         # Retrieve the updated branches (due to transaction boundaries).
         branch_set = getUtility(IBranchSet)
         self.branches = [branch_set.get(id) for id in branch_ids]
@@ -237,6 +403,25 @@ class TestTipRevisionsForBranches(TestCase):
             # revision author has in fact been retrieved already.
             revision_author = revision.revision_author
             self.assertTrue(revision_author is not None)
+
+    def test_timestampToDatetime_with_negative_fractional(self):
+        # timestampToDatetime should convert a negative, fractional timestamp
+        # into a valid, sane datetime object.
+        revision_set = removeSecurityProxy(getUtility(IRevisionSet))
+        UTC = pytz.timezone('UTC')
+        timestamp = -0.5
+        date = revision_set._timestampToDatetime(timestamp)
+        self.assertEqual(
+            date, datetime(1969, 12, 31, 23, 59, 59, 500000, UTC))
+
+    def test_timestampToDatetime(self):
+        # timestampTODatetime should convert a regular timestamp into a valid,
+        # sane datetime object.
+        revision_set = removeSecurityProxy(getUtility(IRevisionSet))
+        UTC = pytz.timezone('UTC')
+        timestamp = time.time()
+        date = datetime.fromtimestamp(timestamp, tz=UTC)
+        self.assertEqual(date, revision_set._timestampToDatetime(timestamp))
 
 
 def test_suite():

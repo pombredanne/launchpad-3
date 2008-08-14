@@ -5,11 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'BaseListView',
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
-    'PeopleListView',
     'PersonActiveReviewsView',
     'PersonAddView',
     'PersonAnswerContactForView',
@@ -76,14 +74,12 @@ __all__ = [
     'TeamAddMyTeamsView',
     'TeamJoinView',
     'TeamLeaveView',
-    'TeamListView',
     'TeamNavigation',
     'TeamOverviewMenu',
     'TeamMembershipView',
     'TeamMugshotView',
     'TeamReassignmentView',
     'TeamSpecsMenu',
-    'UbunteroListView',
     'archive_to_person',
     ]
 
@@ -573,9 +569,8 @@ class PersonSetContextMenu(ContextMenu):
 
     usedfor = IPersonSet
 
-    links = ['products', 'distributions', 'people', 'meetings', 'peoplelist',
-             'teamlist', 'ubunterolist', 'newteam', 'adminpeoplemerge',
-             'adminteammerge', 'mergeaccounts']
+    links = ['products', 'distributions', 'people', 'meetings', 'newteam',
+             'adminpeoplemerge', 'adminteammerge', 'mergeaccounts']
 
     def products(self):
         return Link('/projects/', 'View projects')
@@ -588,18 +583,6 @@ class PersonSetContextMenu(ContextMenu):
 
     def meetings(self):
         return Link('/sprints/', 'View meetings')
-
-    def peoplelist(self):
-        text = 'List all people'
-        return Link('+peoplelist', text, icon='people')
-
-    def teamlist(self):
-        text = 'List all teams'
-        return Link('+teamlist', text, icon='people')
-
-    def ubunterolist(self):
-        text = 'List all Ubunteros'
-        return Link('+ubunterolist', text, icon='people')
 
     def newteam(self):
         text = 'Register a team'
@@ -1401,54 +1384,6 @@ class TeamMembershipView(LaunchpadView):
     @property
     def have_pending_members(self):
         return self.proposed_memberships or self.invited_memberships
-
-
-class BaseListView:
-
-    header = ""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def _getBatchNavigator(self, results):
-        return BatchNavigator(results, self.request)
-
-    def getTeamsList(self):
-        results = getUtility(IPersonSet).getAllTeams()
-        return self._getBatchNavigator(results)
-
-    def getPeopleList(self):
-        results = getUtility(IPersonSet).getAllPersons()
-        return self._getBatchNavigator(results)
-
-    def getUbunterosList(self):
-        results = getUtility(IPersonSet).getUbunteros()
-        return self._getBatchNavigator(results)
-
-
-class PeopleListView(BaseListView):
-
-    header = "People Launchpad knows about"
-
-    def getList(self):
-        return self.getPeopleList()
-
-
-class TeamListView(BaseListView):
-
-    header = "Teams registered in Launchpad"
-
-    def getList(self):
-        return self.getTeamsList()
-
-
-class UbunteroListView(BaseListView):
-
-    header = "Ubunteros registered in Launchpad"
-
-    def getList(self):
-        return self.getUbunterosList()
 
 
 class FOAFSearchView:
@@ -2599,6 +2534,52 @@ class PersonView(LaunchpadView, FeedsMixin):
         else:
             return None
 
+    @cachedproperty
+    def email_address_visibility(self):
+        """The EmailAddressVisibleState of this person or team.
+
+        :return: The state of what a logged in user may know of a
+            person or team's email addresses.
+        :rtype: `EmailAddressVisibleState`
+        """
+        return EmailAddressVisibleState(self)
+
+    @property
+    def visible_email_addresses(self):
+        """The list of email address that can be shown.
+
+        The list contains email addresses when the EmailAddressVisibleState's
+        PUBLIC or ALLOWED attributes are True. The preferred email
+        address is the first in the list, the other validated email addresses
+        are not ordered.
+
+        :return: A list of email address strings that can be seen.
+        """
+        visible_states = (
+            EmailAddressVisibleState.PUBLIC, EmailAddressVisibleState.ALLOWED)
+        if self.email_address_visibility.state in visible_states:
+            emails = sorted(
+                email.email for email in self.context.validatedemails)
+            emails.insert(0, self.context.preferredemail.email)
+            return emails
+        else:
+            return []
+
+    @property
+    def visible_email_address_description(self):
+        """A description of who can see a user's email addresses.
+
+        :return: A string, or None if the email addresses cannot be viewed
+            by any user.
+        """
+        state = self.email_address_visibility.state
+        if state is EmailAddressVisibleState.PUBLIC:
+            return 'This email address is only visible to Launchpad users.'
+        elif state is EmailAddressVisibleState.ALLOWED:
+            return 'This email address is not disclosed to others.'
+        else:
+            return None
+
     def htmlEmail(self):
         if self.context.preferredemail is not None:
             return convertToHtmlCode(self.context.preferredemail.email)
@@ -2648,6 +2629,75 @@ class PersonView(LaunchpadView, FeedsMixin):
             return mailing_list.archive_url
         else:
             return None
+
+
+class EmailAddressVisibleState:
+    """The state of a person's email addresses w.r.t. the logged in user.
+
+    There are five states that describe the visibility of a person or
+    team's addresses to a logged in user, only one will be True:
+
+    * LOGIN_REQUIRED: The user is anonymous; email addresses are never
+      visible to anonymous users.
+    * NONE_AVAILABLE: The person has no validated email addresses or the
+      team has no contact address registered, so there is nothing to show.
+    * PUBLIC: The person is not hiding their email addresses, or the team
+      has a contact address, so any logged in user may view them.
+    * HIDDEN: The person is hiding their email address, so even logged in
+      users cannot view them.  Teams cannot hide their contact address.
+    * ALLOWED: The person is hiding their email address, but the logged in
+      user has permission to see them.  This is either because the user is
+      viewing their own page or because the user is a privileged
+      administrator.
+    """
+    LOGIN_REQUIRED = object()
+    NONE_AVAILABLE = object()
+    PUBLIC = object()
+    HIDDEN = object()
+    ALLOWED = object()
+
+    def __init__(self, view):
+        """Set the state.
+
+        :param view: The view that provides the current user and the
+            context (person or team).
+        :type view: `LaunchpadView`
+        """
+        if view.user is None:
+            self.state = EmailAddressVisibleState.LOGIN_REQUIRED
+        elif view.context.preferredemail is None:
+            self.state = EmailAddressVisibleState.NONE_AVAILABLE
+        elif not view.context.hide_email_addresses:
+            self.state = EmailAddressVisibleState.PUBLIC
+        elif check_permission('launchpad.View',  view.context.preferredemail):
+            self.state = EmailAddressVisibleState.ALLOWED
+        else:
+            self.state = EmailAddressVisibleState.HIDDEN
+
+    @property
+    def is_login_required(self):
+        """Is login required to see the person or team's addresses?"""
+        return self.state is EmailAddressVisibleState.LOGIN_REQUIRED
+
+    @property
+    def are_none_available(self):
+        """Does the person or team not have any email addresses?"""
+        return self.state is EmailAddressVisibleState.NONE_AVAILABLE
+
+    @property
+    def are_public(self):
+        """Are the person's or team's email addresses public to users?"""
+        return self.state is EmailAddressVisibleState.PUBLIC
+
+    @property
+    def are_hidden(self):
+        """Are the person's or team's email addresses hidden from the user?"""
+        return self.state is EmailAddressVisibleState.HIDDEN
+
+    @property
+    def are_allowed(self):
+        """Is the user allowed to see the person's or team's addresses?"""
+        return self.state is EmailAddressVisibleState.ALLOWED
 
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
@@ -2725,12 +2775,13 @@ class PersonEditWikiNamesView(LaunchpadView):
         try:
             uri = URI(url)
             if uri.scheme not in ('http', 'https'):
-                self.error_message = (
-                'The URL scheme "%s" is not allowed.  Only http or https '
-                'URLs may be used.' % uri.scheme)
+                self.error_message = structured(
+                    'The URL scheme "%(scheme)s" is not allowed.  '
+                    'Only http or https URLs may be used.', scheme=uri.scheme)
                 return False
         except InvalidURIError, e:
-            self.error_message = ('"%s" is not a valid URL.' % url)
+            self.error_message = structured(
+                '"%(url)s" is not a valid URL.', url=url)
             return False
         return True
 
@@ -2755,14 +2806,15 @@ class PersonEditWikiNamesView(LaunchpadView):
             UBUNTU_WIKI_URL, ubuntuwikiname)
 
         if not ubuntuwikiname:
-            self.error_message = "Your Ubuntu WikiName cannot be empty."
+            self.error_message = structured(
+                "Your Ubuntu WikiName cannot be empty.")
             return
         elif existingwiki is not None and existingwiki.person != context:
-            self.error_message = (
+            self.error_message = structured(
                 'The Ubuntu WikiName %s is already registered by '
-                '<a href="%s">%s</a>.'
-                % (ubuntuwikiname, canonical_url(existingwiki.person),
-                   cgi.escape(existingwiki.person.browsername)))
+                '<a href="%s">%s</a>.',
+                ubuntuwikiname, canonical_url(existingwiki.person),
+                existingwiki.person.browsername)
             return
         context.ubuntuwiki.wikiname = ubuntuwikiname
 
@@ -2780,7 +2832,7 @@ class PersonEditWikiNamesView(LaunchpadView):
                 wiki = self._sanitizeWikiURL(form.get('wiki_%d' % w.id))
                 wikiname = form.get('wikiname_%d' % w.id)
                 if not (wiki and wikiname):
-                    self.error_message = (
+                    self.error_message = structured(
                         "Neither Wiki nor WikiName can be empty.")
                     return
                 if not self._validateWikiURL(wiki):
@@ -2791,7 +2843,7 @@ class PersonEditWikiNamesView(LaunchpadView):
                 # them look different from UBUNTU_WIKI_URL but still point to
                 # the same place.
                 elif wiki == UBUNTU_WIKI_URL:
-                    self.error_message = (
+                    self.error_message = structured(
                         "You cannot have two Ubuntu WikiNames.")
                     return
                 w.wiki = wiki
@@ -2803,19 +2855,19 @@ class PersonEditWikiNamesView(LaunchpadView):
             if wiki and wikiname:
                 existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
                 if existingwiki and existingwiki.person != context:
-                    self.error_message = (
+                    self.error_message = structured(
                         'The WikiName %s%s is already registered by '
-                        '<a href="%s">%s</a>.'
-                        % (wiki, wikiname, canonical_url(existingwiki.person),
-                           cgi.escape(existingwiki.person.browsername)))
+                        '<a href="%s">%s</a>.',
+                        wiki, wikiname, canonical_url(existingwiki.person),
+                        existingwiki.person.browsername)
                     return
                 elif existingwiki:
-                    self.error_message = (
-                        'The WikiName %s%s already belongs to you.'
-                        % (wiki, wikiname))
+                    self.error_message = structured(
+                        'The WikiName %s%s already belongs to you.',
+                        wiki, wikiname)
                     return
                 elif wiki == UBUNTU_WIKI_URL:
-                    self.error_message = (
+                    self.error_message = structured(
                         "You cannot have two Ubuntu WikiNames.")
                     return
                 if not self._validateWikiURL(wiki):
@@ -2824,7 +2876,8 @@ class PersonEditWikiNamesView(LaunchpadView):
             else:
                 self.newwiki = wiki
                 self.newwikiname = wikiname
-                self.error_message = "Neither Wiki nor WikiName can be empty."
+                self.error_message = structured(
+                    "Neither Wiki nor WikiName can be empty.")
                 return
 
 
