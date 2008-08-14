@@ -152,8 +152,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
-            description=_("Project owner, it can either a valid Person or Team "
-                          "inside Launchpad context.")))
+            description=_("Project owner, it can either a valid Person or "
+                          "Team inside Launchpad context.")))
 
     registrant = exported(
         PublicPersonChoice(

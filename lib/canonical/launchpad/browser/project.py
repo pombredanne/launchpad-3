@@ -369,7 +369,9 @@ class ProjectReviewView(ProjectEditView):
                 __name__='registrant',
                 title=_('Project Registrant'),
                 description=_('The person who originally registered the '
-                              'project group.  Distinct from the current owner.'),
+                              'project group.  Distinct from the current '
+                              'owner.  This is historical data and should '
+                              'not be changed without good cause.'),
                 vocabulary='ValidPerson',
                 required=True,
                 readonly=False,
