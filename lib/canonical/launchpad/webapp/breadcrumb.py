@@ -43,7 +43,7 @@ class BreadcrumbBuilder:
         """Return the value of a possibly callable attribute."""
         attr = getattr(self, attrname, None)
         if attr is None:
-            raise IncompleteObjectError(
+            raise IncompleteBreadcrumbError(
                 "No '%s' attribute was given with which to build the "
                 "Breadcrumb object." % attrname)
         return attr
@@ -54,7 +54,7 @@ class BreadcrumbBuilder:
         return Breadcrumb(url, text)
 
 
-class IncompleteObjectError(AttributeError):
+class IncompleteBreadcrumbError(AttributeError):
     """Raised when an object being built does not has not had all of the
     required attributes supplied to it.
     """
