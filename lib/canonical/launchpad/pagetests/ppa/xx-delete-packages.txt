@@ -159,7 +159,7 @@ An already deleted source:
     ...    name='field.selected_sources').value = ['29']
     Traceback (most recent call last):
     ...
-    ItemNotFoundError: insufficient items with name '27'
+    ItemNotFoundError: insufficient items with name '29'
 
 An nonexistent source:
 
