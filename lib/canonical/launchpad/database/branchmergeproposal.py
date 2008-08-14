@@ -422,10 +422,7 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
-        if parent is None:
-            if self.root_comment is not None:
-                parent_message = self.root_comment.message
-        else:
+        if parent is not None:
             assert parent.branch_merge_proposal == self, \
                     'Replies must use the same merge proposal as their parent'
             parent_message = parent.message
