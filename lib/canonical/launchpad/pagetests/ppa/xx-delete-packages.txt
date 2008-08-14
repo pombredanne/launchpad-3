@@ -81,7 +81,8 @@ matching the given text.
     Source           Published   Status     Series          Section  Built
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-We will test the deletion without a somment using sabdfl's archive.
+The user may delete packages from a PPA without providing a reason
+(deletion comment). Let's try it on sabdfl's archive.
 
     >>> admin_browser.open('http://launchpad.dev/~sabdfl/+archive')
     >>> admin_browser.getLink('Delete packages').click()
@@ -89,8 +90,7 @@ We will test the deletion without a somment using sabdfl's archive.
     Source           Published   Status    Series     Section  Built
     iceweasel - 1.0 (chan...)  2007-07-09  Published  Breezy-autotest Editors
 
-Foo Bar can select one or more sources to be deleted without setting
-the 'deletion_comment' field which is optional.
+Please note that the 'deletion_comment' field (which is optional) is empty.
 
     >>> admin_browser.getControl('Deletion comment').value
     ''
@@ -107,9 +107,11 @@ the 'deletion_comment' field which is optional.
     iceweasel 1.0 in breezy-autotest
     Deletion comment: None
 
+The single package in sabdfl's archive was deleted successfully.
+
     >>> print_ppa_packages(admin_browser.contents)
 
-Back to cprov's archive for the remaining tests.
+Now back to cprov's archive for the remaining tests.
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> admin_browser.getLink('Delete packages').click()
