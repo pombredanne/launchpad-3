@@ -451,10 +451,6 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         if len(data.get('selected_sources', [])) == 0:
             self.setFieldError('selected_sources', 'No sources selected.')
 
-        if data.get('deletion_comment') is None:
-            self.setFieldError(
-                'deletion_comment', 'Deletion comment is required.')
-
     @action(_("Request Deletion"), name="delete", validator="validate_delete")
     def action_delete(self, action, data):
         """Perform the deletion of the selected packages.
