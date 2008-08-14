@@ -2234,6 +2234,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (76, 'commercial-member@canonical.com', 243622, 4, '2008-05-12 17:38:38.798696', 243622);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (77, 'former-user@canonical.com', 70, 3, '2006-05-12 17:38:38.798696', 70);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (78, 'bac@canonical.com', 243623, 4, '2008-06-27 14:49:11.149508', 243623);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (79, 'admin@canonical.com', 16, 2, '2008-08-05 12:01:32.086327', 16);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -3508,6 +3509,7 @@ ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
 ALTER TABLE logintoken DISABLE TRIGGER ALL;
 
 INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype, token, fingerprint, redirection_url, date_consumed) VALUES (1, NULL, NULL, 'bac@canonical.com', '2008-06-27 14:48:38.308457', 3, 'mzsJ6LBvNKjFqP1Csfw7', NULL, 'http://launchpad.dev', '2008-06-27 14:49:11.149508');
+INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype, token, fingerprint, redirection_url, date_consumed) VALUES (2, 16, 'foo.bar@canonical.com', 'admin@canonical.com', '2008-08-05 11:59:42.448213', 4, 'QjhD4dRT341fmk51pphn', NULL, NULL, '2008-08-05 12:01:32.086327');
 
 
 ALTER TABLE logintoken ENABLE TRIGGER ALL;
