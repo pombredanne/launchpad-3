@@ -764,8 +764,8 @@ def notify_bug_modified(modified_bug, event):
         old_bug=event.object_before_modification,
         new_bug=event.object, user=event.user)
 
-    assert bug_delta is not None
-    add_bug_change_notifications(bug_delta)
+    if bug_delta is not None:
+        add_bug_change_notifications(bug_delta)
 
 
 def get_bugtask_indirect_subscribers(bugtask, recipients=None):
@@ -994,7 +994,7 @@ def notify_bug_attachment_removed(bugattachment, event):
 
 
 @block_implicit_flushes
-def notify_bug_subscripiton_added(bug_subscription, event):
+def notify_bug_subscription_added(bug_subscription, event):
     """Notify that a new bug subscription was added."""
     # When a user is subscribed to a bug by someone other
     # than themselves, we send them a notification email.

@@ -34,7 +34,7 @@
     <require
         permission="launchpad.Admin"
         set_attributes="version name status owner nominatedarchindep
-                        changeslist"
+                        changeslist datereleased"
         />
     <!-- IStructuralSubscriptionTarget -->
     <allow attributes="bug_subscriptions getBugNotificationsRecipients
@@ -84,14 +84,6 @@
     permission="launchpad.AnyPerson"
     template="../templates/specification-add.pt"
   />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.IDistroSeries"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.DistroSeriesDynMenu"
-      attribute="__call__"
-      name="+menudata"
-      />
 
   <browser:url
     for="canonical.launchpad.interfaces.IDistroSeries"
@@ -247,21 +239,6 @@
       />
   </browser:pages>
 
-  <!-- NB DO NOT CHANGE WITHOUT THINKING
-       Do not allow people to change the details of the distro series that
-       will affect the way Soyuz publishes the distroseries. Check with
-       SABDFL before modifying this page. -->
-  <browser:editform
-    for="canonical.launchpad.interfaces.IDistroSeries"
-    permission="launchpad.Edit"
-    label="Edit series details"
-    name="+edit"
-    schema="canonical.launchpad.interfaces.IDistroSeries"
-    facet="overview"
-    fields="displayname title summary description"
-    template="../templates/distroseries-edit.pt"
-    />
-
   <browser:page
     name="+translations"
     for="canonical.launchpad.interfaces.IDistroSeries"
@@ -321,14 +298,22 @@
        Do not allow people to change the details of the distro series that
        will affect the way Soyuz publishes the distroseries. Check with
        SABDFL before modifying this page. -->
-  <browser:editform
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    permission="launchpad.Edit"
+    name="+edit"
+    class="canonical.launchpad.browser.distroseries.DistroSeriesEditView"
+    facet="overview"
+    template="../templates/distroseries-edit.pt"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"
     permission="launchpad.Admin"
     name="+admin"
-    schema="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.distroseries.DistroSeriesAdminView"
     facet="overview"
-    fields="name status version changeslist"
-    template="../templates/launchpad-editform.pt"
+    template="../templates/distroseries-admin.pt"
     />
 
   <browser:page

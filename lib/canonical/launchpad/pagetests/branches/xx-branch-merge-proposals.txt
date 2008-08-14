@@ -691,7 +691,7 @@ Also the main development focus is selected.
     ~name12/firefox/main checked
     other
 
-If the user has also targetted a branch other than the development
+If the user has also targeted a branch other than the development
 focus before, then that is also shown as a radio option.
 
     >>> nopriv_browser.getControl('Other').click()

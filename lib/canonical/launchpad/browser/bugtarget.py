@@ -1109,4 +1109,5 @@ class BugTargetBugTagsView(LaunchpadView):
         bug_tag_counts = self.context.getUsedBugTagsWithOpenCounts(self.user)
         return [
             {'tag': tag, 'count': count, 'url': self._getSearchURL(tag)}
-            for tag, count in bug_tag_counts]
+            for tag, count in bug_tag_counts if count > 0]
+

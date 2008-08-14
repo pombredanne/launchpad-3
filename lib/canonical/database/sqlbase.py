@@ -439,7 +439,7 @@ def sqlvalues(*values, **kwvalues):
     ...
     TypeError: Use either positional or keyword values with sqlvalue.
 
-    """
+    """ # ' <- fix syntax highlighting
     if (values and kwvalues) or (not values and not kwvalues):
         raise TypeError(
             "Use either positional or keyword values with sqlvalue.")
@@ -468,6 +468,7 @@ def quoteIdentifier(identifier):
     '''
     return '"%s"' % identifier.replace('"','""')
 
+
 def flush_database_updates():
     """Flushes all pending database updates for the current connection.
 
@@ -492,6 +493,7 @@ def flush_database_updates():
 
     """
     getUtility(IZStorm).get('main').flush()
+
 
 def flush_database_caches():
     """Flush all cached values from the database for the current connection.

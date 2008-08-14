@@ -36,6 +36,17 @@ class IRevision(Interface):
     def getProperties():
         """Return the revision properties as a dict."""
 
+    def getBranch():
+        """Return a public branch associated with this revision.
+
+        The chances are that there will be many branches with any revision
+        that has landed on the trunk branch.  A branch owned by the revision
+        author is chosen over a branch not owned by the author.  A branch with
+        the revision in the history is chosen over a branch that just has the
+        revision in the ancestry.
+
+        :return: A `Branch` or None if an appropriate branch cannot be found.
+        """
 
 class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
@@ -87,6 +98,9 @@ class IRevisionSet(Interface):
             parent_ids, properties):
         """Create a new Revision with the given revision ID."""
 
+    def newFromBazaarRevision(bzr_revision):
+        """Create a new Revision from the given Bazaar Revision object."""
+
     def checkNewVerifiedEmail(email):
         """See if this email address has been used to commit revisions.
 
@@ -110,4 +124,30 @@ class IRevisionSet(Interface):
         In order to get the time the revision was actually created, the time
         extracted from the revision properties is used.  While this may not
         be 100% accurate, it is much more accurate than using date created.
+        """
+
+    def getPublicRevisionsForPerson(person):
+        """Get the public revisions for the person or team specified.
+
+        :return: ResultSet containing all revisions that are in a public
+            branch somewhere where the person is the revision author, or
+            the revision author is in the team.  The results are ordered
+            with the most recent revision_date first.
+        """
+
+    def getPublicRevisionsForProduct(product):
+        """Get the public revisions for the product specified.
+
+        :return: ResultSet containing all revisions that are in a public
+            branch associated with the product.  The results are ordered
+            with the most recent revision_date first.
+        """
+
+    def getPublicRevisionsForProject(project):
+        """Get the public revisions for the project specified.
+
+        :return: ResultSet containing all revisions that are in a public
+            branch associated with a product that is associated with the
+            project.  The results are ordered with the most recent
+            revision_date first.
         """

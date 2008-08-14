@@ -164,7 +164,7 @@ class LaunchpadObjectFactory:
         if password is None:
             password = self.getUniqueString('password')
         # By default, make the email address preferred.
-        if (email_address_status is None 
+        if (email_address_status is None
                 or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
         # Set the password to test in order to allow people that have
@@ -186,23 +186,22 @@ class LaunchpadObjectFactory:
         syncUpdate(email)
         return person
 
-    def makeTeam(self, owner, displayname=None, email=None, name=None):
+    def makeTeam(self, owner, displayname=None, email=None, name=None,
+                 subscription_policy=TeamSubscriptionPolicy.OPEN):
         """Create and return a new, arbitrary Team.
-
-        The subscription policy of this new team will be OPEN.
 
         :param owner: The IPerson to use as the team's owner.
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
         :param email: The email address to use as the team's contact address.
+        :param subscription_policy: The subscription policy of the team.
         """
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
             displayname = name
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname,
-            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+            owner, name, displayname, subscriptionpolicy=subscription_policy)
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
@@ -221,7 +220,8 @@ class LaunchpadObjectFactory:
             name, title, summary, owner)
 
     def makeProduct(self, name=None, project=None, displayname=None,
-                    licenses=None, owner=None):
+                    licenses=None, owner=None, registrant=None,
+                    title=None, summary=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -234,45 +234,62 @@ class LaunchpadObjectFactory:
                 displayname = name.capitalize()
         if licenses is None:
             licenses = [License.GNU_GPL_V2]
+        if title is None:
+            title = self.getUniqueString('title')
+        if summary is None:
+            summary = self.getUniqueString('summary')
         return getUtility(IProductSet).createProduct(
             owner,
             name,
             displayname,
-            self.getUniqueString('title'),
-            self.getUniqueString('summary'),
+            title,
+            summary,
             self.getUniqueString('description'),
             licenses=licenses,
-            project=project)
+            project=project,
+            registrant=registrant)
 
-    def makeProductSeries(self, product=None, name=None):
+    def makeProductSeries(self, product=None, name=None, owner=None,
+                          summary=None):
         """Create and return a new ProductSeries."""
         if product is None:
             product = self.makeProduct()
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString()
-        summary = self.getUniqueString()
+        if summary is None:
+            summary = self.getUniqueString()
         return product.newSeries(owner=owner, name=name, summary=summary)
 
-    def makeProject(self, name=None, displayname=None):
+    def makeProject(self, name=None, displayname=None, title=None,
+                    homepageurl=None, summary=None, owner=None,
+                    description=None):
         """Create and return a new, arbitrary Project."""
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('project-name')
         if displayname is None:
             displayname = self.getUniqueString('displayname')
+        if summary is None:
+            summary = self.getUniqueString('summary')
+        if description is None:
+            description = self.getUniqueString('description')
+        if title is None:
+            title = self.getUniqueString('title')
         return getUtility(IProjectSet).new(
-            name,
-            displayname,
-            self.getUniqueString('title'),
-            None,
-            self.getUniqueString('summary'),
-            self.getUniqueString('description'),
-            owner)
+            name=name,
+            displayname=displayname,
+            title=title,
+            homepageurl=homepageurl,
+            summary=summary,
+            description=description,
+            owner=owner)
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=None, url=None, registrant=None,
-                   explicit_junk=False,
+                   explicit_junk=False, private=False,
                    **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
@@ -301,9 +318,12 @@ class LaunchpadObjectFactory:
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
-        return getUtility(IBranchSet).new(
+        branch = getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
+        if private:
+            removeSecurityProxy(branch).private = True
+        return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):
@@ -359,6 +379,24 @@ class LaunchpadObjectFactory:
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
+
+    def makeRevision(self, author=None, revision_date=None, parent_ids=None,
+                     rev_id=None, log_body=None):
+        """Create a single `Revision`."""
+        if author is None:
+            author = self.getUniqueString('author')
+        if revision_date is None:
+            revision_date = datetime.now(pytz.UTC)
+        if parent_ids is None:
+            parent_ids = []
+        if rev_id is None:
+            rev_id = self.getUniqueString('revision-id')
+        if log_body is None:
+            log_body = self.getUniqueString('log-body')
+        return getUtility(IRevisionSet).new(
+            revision_id=rev_id, log_body=log_body,
+            revision_date=revision_date, revision_author=author,
+            parent_ids=parent_ids, properties={})
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
