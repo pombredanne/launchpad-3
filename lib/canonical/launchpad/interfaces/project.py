@@ -60,7 +60,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
     id = Int(title=_('ID'), readonly=True)
 
     owner = PublicPersonChoice(
-        title=_('Owner'),
+        title=_('Maintainer'),
         required=True,
         vocabulary='ValidOwner',
         description=_("""Project group owner, it can either a valid
