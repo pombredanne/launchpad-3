@@ -7,9 +7,8 @@ reconstitution later.
 First, create the mailing list, which will send notification messages
 to all the members of the mailing list.  We can ignore these messages.
 
-    >>> import itest_helper
-    >>> list_one = itest_helper.create_list('itest-one')
-    >>> smtpd.reset()
+    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> list_one = helpers.create_list('itest-one')
 
 Because the mailing list is active, there is no archived backup file.
 
@@ -22,15 +21,13 @@ Because the mailing list is active, there is no archived backup file.
 
 The team administrator can deactivate the list through the web.
 
-    >>> serial_watcher = itest_helper.LogWatcher('serial')
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
     >>> browser.getControl('Deactivate this Mailing List').click()
-    >>> serial_watcher.wait()
+    >>> xmlrpc_watcher.wait_for_deactivation('itest-one')
 
 As far as Mailman is concerned, the mailing list no longer exists.
 
-    >>> import time; time.sleep(2)
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     []
@@ -42,7 +39,8 @@ gzip'd tarfile containing the list's pickle data.
     True
     >>> import tarfile
     >>> tarball = tarfile.open(backup_file, 'r:gz')
-    >>> tarball.list()
-    -... itest-one/
-    -... itest-one/config.pck
-    -... itest-one/config.pck.last
+    >>> for name in sorted(tarball.getnames()):
+    ...     print name
+    itest-one/
+    itest-one/config.pck
+    itest-one/config.pck.last

@@ -111,6 +111,8 @@ class Branch(SQLBase):
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
     revision_count = IntCol(default=DEFAULT, notNull=True)
+    stacked_on = ForeignKey(
+        dbName='stacked_on', foreignKey='Branch', default=None)
 
     def __repr__(self):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
