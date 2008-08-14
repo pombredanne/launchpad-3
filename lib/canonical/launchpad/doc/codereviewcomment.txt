@@ -40,7 +40,7 @@ default.
     >>> comment2 = merge_proposal.createComment(
     ...     sender, 'No!', 'You are ugly and stupid',
     ...     CodeReviewVote.DISAPPROVE)
-    >>> comment2.message.parent == merge_proposal.root_comment.message
+    >>> comment2.message.parent is None
     True
 
 Comments can be marked as replies to particular comments.
@@ -87,7 +87,7 @@ a notification is produced when the comment is created.
     >>> notifications[0]['Message-Id'] == comment.message.rfc822msgid
     True
     >>> (notifications[0]['In-Reply-To'] ==
-    ...  merge_proposal.root_comment.message.rfc822msgid)
+    ...  merge_proposal.root_message_id)
     True
 
 
