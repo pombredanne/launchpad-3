@@ -146,7 +146,8 @@ class LoginOrRegister:
     registered_origins = {
         'shipit-ubuntu': ShipItConstants.ubuntu_url,
         'shipit-edubuntu': ShipItConstants.edubuntu_url,
-        'shipit-kubuntu': ShipItConstants.kubuntu_url}
+        'shipit-kubuntu': ShipItConstants.kubuntu_url,
+        }
 
     def process_restricted_form(self):
         """Entry-point for the team-restricted login page.

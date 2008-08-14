@@ -653,7 +653,8 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         ShipItConstants.kubuntu_url:
             PersonCreationRationale.OWNER_CREATED_SHIPIT,
         ShipItConstants.edubuntu_url:
-            PersonCreationRationale.OWNER_CREATED_SHIPIT}
+            PersonCreationRationale.OWNER_CREATED_SHIPIT,
+        }
 
     created_person = None
 

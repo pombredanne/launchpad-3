@@ -13,14 +13,16 @@ they can be managed on the +editwikinames page.
     ...     wiki_name_inputs = soup.findAll(
     ...         'input', attrs={'name': re.compile(r'wikiname_\d+')})
     ...     wiki_names = [input['value'] for input in wiki_name_inputs]
-    ...     print zip(wiki_urls, wiki_names)
+    ...     wikis = zip(wiki_urls, wiki_names)
+    ...     print '\n'.join('%s%s' % (wiki_url, wiki_name)
+    ...                     for wiki_url, wiki_name in wikis)
 
 Mark already has one WikiName registered.
 
     >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
     >>> browser.open('http://localhost/~sabdfl/+editwikinames')
     >>> print_existing_wikinames(browser.contents)
-    [(u'https://wiki.ubuntu.com/', u'MarkShuttleworth')]
+    https://wiki.ubuntu.com/MarkShuttleworth
 
 But he wants to register another one.
 
@@ -30,8 +32,8 @@ But he wants to register another one.
     >>> browser.url
     'http://localhost/~sabdfl/+editwikinames'
     >>> print_existing_wikinames(browser.contents)
-    [(u'https://wiki.ubuntu.com/', u'MarkShuttleworth'),
-     (u'http://foo.bar/wiki/', u'FooBar')]
+    https://wiki.ubuntu.com/MarkShuttleworth
+    http://foo.bar/wiki/FooBar
 
 He can't have two identical wiki names, though.
 
@@ -103,4 +105,4 @@ just added.
     >>> browser.url
     'http://localhost/~sabdfl/+editwikinames'
     >>> print_existing_wikinames(browser.contents)
-    [(u'https://wiki.ubuntu.com/', u'MarkShuttleworth')]
+    https://wiki.ubuntu.com/MarkShuttleworth

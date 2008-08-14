@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0213
 """XML-RPC interfaces for the Authserver.
 
 The interfaces here are purely for documentation purposes.  They describe the
