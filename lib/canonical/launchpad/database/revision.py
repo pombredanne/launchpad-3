@@ -141,28 +141,6 @@ class RevisionAuthor(SQLBase):
         else:
             return False
 
-    def _claimRevisionKarma(self):
-        """Claim karma for the revsions by this author.
-
-        This method generates historical karma events for this user.
-        """
-        if self.person is None:
-            # Nothing to do here.
-            return
-
-        from canonical.launchpad.database.branchrevision import BranchRevision
-        revisions = Store.of(self).find(
-            Revision,
-            Revision.revision_author == self,
-            Not(Revision.karma_allocated),
-            Revision.id.is_in(Select(
-                    Revision.id, BranchRevision.revision == Revision.id)))
-
-        # Find the appropriate branch, and allocate karma to it.
-        for revision in revisions:
-            branch = revision.getBranch(allow_private=True)
-            revision.allocateKarma(branch)
-
 
 class RevisionParent(SQLBase):
     """The association between a revision and its parent."""

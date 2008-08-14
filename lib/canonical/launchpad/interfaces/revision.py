@@ -31,7 +31,7 @@ class IRevision(Interface):
         required=True, readonly=True)
     karma_allocated = Bool(
         title=_("Has karma been allocated for this revision?"),
-        required=True, readonly=True, default=False)
+        required=True, default=False)
     parents = Attribute("The RevisionParents for this revision.")
     parent_ids = Attribute("The revision_ids of the parent Revisions.")
     properties = Attribute("The `RevisionProperty`s for this revision.")
@@ -51,7 +51,8 @@ class IRevision(Interface):
         the revision in the history is chosen over a branch that just has the
         revision in the ancestry.
 
-        :param allow_private: Should private branches be returned?
+        :param allow_private: If True, a public or private branch may be
+            returned.  Otherwise only a public branch may be returned.
         :return: A `Branch` or None if an appropriate branch cannot be found.
         """
 

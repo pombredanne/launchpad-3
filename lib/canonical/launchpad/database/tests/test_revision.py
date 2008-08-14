@@ -11,7 +11,6 @@ from unittest import TestCase, TestLoader
 import psycopg2
 import pytz
 from storm.store import Store
-from storm.zope.interfaces import IZStorm
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -19,7 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database.karma import Karma
-from canonical.launchpad.database.revision import Revision, RevisionSet
+from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     IBranchSet, IRevisionSet)
@@ -48,7 +47,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         self.assertEqual(False, rev.karma_allocated)
 
     def test_noKarmaForUnknownAuthor(self):
-        # If the revision author is unknown, karam isn't allocated.
+        # If the revision author is unknown, karma isn't allocated.
         rev = self.factory.makeRevision()
         branch = self.factory.makeBranch()
         branch.createBranchRevision(1, rev)
@@ -100,7 +99,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
         branch.product = self.factory.makeProduct()
-        # Nor is this revision identified as needing karma allocated.
+        # The revision is now identified as needing karma allocated.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
 
@@ -169,7 +168,21 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         b2 = self.makeBranchWithRevision(1, owner=self.author)
         b2.private = True
         self.assertEqual(b1, self.revision.getBranch())
-        # Private branches can be returned if explicitly asked for.
+
+    def testAllowPrivateReturnsPrivateBranch(self):
+        # If the allow_private flag is set, then private branches can be
+        # returned if they are the best match.
+        b1 = self.makeBranchWithRevision(1)
+        b2 = self.makeBranchWithRevision(1, owner=self.author)
+        b2.private = True
+        self.assertEqual(b2, self.revision.getBranch(allow_private=True))
+
+    def testAllowPrivateCanReturnPublic(self):
+        # Allowing private branches does not change the priority ordering of
+        # the branches.
+        b1 = self.makeBranchWithRevision(1)
+        b2 = self.makeBranchWithRevision(1, owner=self.author)
+        b1.private = True
         self.assertEqual(b2, self.revision.getBranch(allow_private=True))
 
 
