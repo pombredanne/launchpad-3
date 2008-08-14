@@ -107,14 +107,17 @@ class BranchHierarchy(Hierarchy):
     def items(self):
         """See `Hierarchy`."""
         if self.context.product is not None:
-            breadcrumb = self.context.product
+            obj = self.context.product
         else:
-            breadcrumb = self.context.owner
+            obj = self.context.owner
 
         url = canonical_url(breadcrumb)
-        text = breadcrumb.displayname
+        breadcrumb = self.breadcrumb_for(obj, url)
 
-        return [Breadcrumb(url, text)]
+        if breadcrumb is None:
+            return []
+        else:
+            return [breadcrumb]
 
 
 class BranchSOP(StructuralObjectPresentation):

@@ -168,6 +168,31 @@ closest to the hierarchy root.
         text='Spam'>]
 
 
+== Customizing the hierarchy ==
+
+We can customize the hierarchy itself by changing the list of objects and
+URLs that it uses to construct the breadcrumbs list.
+
+The user should *not* construct the Breadcrumb object themselves.  They
+should let the hierarchy handle it: this ensures consistencey across the
+site.
+
+    >>> from canonical.launchpad.browser.launchpad import Hierarchy
+
+    >>> class CustomHierarchy(Hierarchy):
+    ...     def items(self):
+    ...         breadcrumb = self.breadcrumb_for(
+    ...             recipe, "http://launchpad.dev/some-spammy-url")
+    ...         # Omitted the check for 'breadcrumb is None'.
+    ...         return [breadcrumb]
+
+    >>> spammy_hierarchy = CustomHierarchy(root, request)
+    >>> spammy_hierarchy.items()
+    [<Breadcrumb
+        url='http://launchpad.dev/some-spammy-url'
+        text='Spam'>]
+
+
 == Rendering the list ==
 
 The Hierarchy object is responsible for rendering the HTML for the location
