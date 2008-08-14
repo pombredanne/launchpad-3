@@ -24,8 +24,9 @@ from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.branch import BranchBadges
 from canonical.launchpad.browser.feeds import (
-    FeedsMixin, PersonBranchesFeedLink, ProductBranchesFeedLink,
-    ProjectBranchesFeedLink)
+    FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
+    ProductBranchesFeedLink, ProductRevisionsFeedLink,
+    ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus,
     BranchLifecycleStatusFilter,
@@ -244,8 +245,11 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     # appropriate to the context.
     feed_types = (
         ProjectBranchesFeedLink,
+        ProjectRevisionsFeedLink,
         ProductBranchesFeedLink,
+        ProductRevisionsFeedLink,
         PersonBranchesFeedLink,
+        PersonRevisionsFeedLink,
         )
 
     @property
