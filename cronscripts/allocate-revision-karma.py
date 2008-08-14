@@ -17,10 +17,10 @@ class RevisonKarmaAllocator(LaunchpadCronScript):
     def main(self):
         """Allocate karma for revisions.
 
-        Under normal circumstances karma is allocated for revisions by the
+        Under normal circumstances, karma is allocated for revisions by the
         branch scanner as it is scanning the revisions.
 
-        There are a number of circumstances where this doesn't happen though:
+        There are a number of circumstances where this doesn't happen:
           * The revision author is not linked to a Launchpad person
           * The branch is +junk
 
