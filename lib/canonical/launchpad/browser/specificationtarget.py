@@ -10,21 +10,19 @@ __all__ = [
 
 from operator import itemgetter
 
-from canonical.launchpad.interfaces import (
-    IDistribution,
-    IDistroSeries,
-    IHasDrivers,
-    IPerson,
-    IProduct,
-    IProductSeries,
-    IProject,
-    IProjectSeries,
-    ISprint,
-    ISpecificationSet,
-    ISpecificationTarget,
-    SpecificationFilter,
-    SpecificationSort,
-    )
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.launchpad import IHasDrivers
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.projectseries import IProjectSeries
+from canonical.launchpad.interfaces.specification import (
+    SpecificationFilter, SpecificationSort)
+from canonical.launchpad.interfaces.specificationtarget import (
+    ISpecificationTarget)
+from canonical.launchpad.interfaces.sprint import ISprint
 
 from canonical.config import config
 from canonical.launchpad import _
@@ -33,7 +31,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
-from zope.component import getUtility, queryMultiAdapter
+from zope.component import queryMultiAdapter
 
 
 class HasSpecificationsView(LaunchpadView):
