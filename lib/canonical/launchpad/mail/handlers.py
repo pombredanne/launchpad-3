@@ -5,6 +5,8 @@ __metaclass__ = type
 import re
 from urlparse import urlunparse, urlparse
 
+from bzrlib.errors import NotAMergeDirective
+from bzrlib.merge_directive import MergeDirective
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
@@ -515,6 +517,10 @@ class NonLaunchpadTarget(Exception):
     """Target branch is not registered with Launchpad."""
 
 
+class MissingMergeDirective(Exception):
+    """Emailed merge proposal lacks a merge directive"""
+
+
 class CodeHandler:
     """Mail handler for the code domain."""
 
@@ -652,6 +658,25 @@ class CodeHandler:
                                      submitter, mp_target.product,
                                      md.source_branch)
         return mp_source, mp_target
+
+    def findMergeDirectiveAndComment(self, message):
+        """Extract the comment and Merge Directive from a SignedMessage."""
+        body = None
+        md = None
+        for part in message.walk():
+            if part.is_multipart():
+                continue
+            payload = part.get_payload()
+            if part['Content-type'].startswith('text/plain'):
+                body = payload
+            try:
+                md = MergeDirective.from_lines(payload.splitlines(True))
+            except NotAMergeDirective:
+                pass
+            if None not in (body, md):
+                return body, md
+        else:
+            raise MissingMergeDirective()
 
 
 class SpecificationHandler:

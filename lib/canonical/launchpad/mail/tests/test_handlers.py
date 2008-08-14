@@ -19,7 +19,8 @@ from canonical.launchpad.ftests import login_person
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
     CodeHandler, InvalidBranchMergeProposalAddress, InvalidVoteString,
-    mail_handlers, MaloneHandler, NonLaunchpadTarget, parse_commands)
+    mail_handlers, MaloneHandler, NonLaunchpadTarget, parse_commands,
+    MissingMergeDirective)
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
@@ -304,23 +305,27 @@ class TestCodeHandler(TestCaseWithFactory):
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, CodeReviewVote.DISAPPROVE)
 
-    @staticmethod
-    def make_merge_directive(source_branch=None, target_branch=None,
+    def makeMergeDirective(self, source_branch=None, target_branch=None,
         source_branch_url=None, target_branch_url=None):
         if source_branch_url is None:
+            if source_branch is None:
+                source_branch = self.factory.makeBranch()
             source_branch_url = (config.codehosting.supermirror_root +
                                  source_branch.unique_name)
         if target_branch_url is None:
+            if target_branch is None:
+                target_branch = self.factory.makeBranch()
             target_branch_url = (config.codehosting.supermirror_root +
                                  target_branch.unique_name)
-        return MergeDirective2(None, None, None, None, target_branch_url,
-                               source_branch=source_branch_url)
+        return MergeDirective2('revid', 'sha', 0, 0, target_branch_url,
+                               source_branch=source_branch_url,
+                               base_revision_id='base-revid')
 
 
     def test_acquireBranchesForProposal(self):
         target_branch = self.factory.makeBranch()
         source_branch = self.factory.makeBranch()
-        md = self.make_merge_directive(source_branch, target_branch)
+        md = self.makeMergeDirective(source_branch, target_branch)
         submitter = self.factory.makePerson()
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
             md, submitter)
@@ -329,8 +334,8 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_acquireBranchesForProposalRemoteTarget(self):
         source_branch = self.factory.makeBranch()
-        md = self.make_merge_directive(source_branch,
-                                       target_branch_url='http://example.com')
+        md = self.makeMergeDirective(source_branch,
+                                     target_branch_url='http://example.com')
         submitter = self.factory.makePerson()
         self.assertRaises(NonLaunchpadTarget,
                           self.code_handler._acquireBranchesForProposal, md,
@@ -339,7 +344,7 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_acquireBranchesForProposalRemoteSource(self):
         target_branch = self.factory.makeBranch()
         source_branch_url = 'http://example.com/suffix'
-        md = self.make_merge_directive(source_branch_url=source_branch_url,
+        md = self.makeMergeDirective(source_branch_url=source_branch_url,
                                        target_branch=target_branch)
         branches = getUtility(IBranchSet)
         self.assertEqual(None, branches.getByUrl(source_branch_url))
@@ -356,8 +361,8 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_acquireBranchesForProposalRemoteSourceDupeName(self):
         target_branch = self.factory.makeBranch()
         source_branch_url = 'http://example.com/suffix'
-        md = self.make_merge_directive(source_branch_url=source_branch_url,
-                                       target_branch=target_branch)
+        md = self.makeMergeDirective(source_branch_url=source_branch_url,
+                                     target_branch=target_branch)
         branches = getUtility(IBranchSet)
         submitter = self.factory.makePerson()
         duplicate_branch = self.factory.makeBranch(
@@ -365,6 +370,31 @@ class TestCodeHandler(TestCaseWithFactory):
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
             md, submitter)
         self.assertEqual('suffix-1', mp_source.name)
+
+    def test_findMergeDirectiveAndComment(self):
+        md = self.makeMergeDirective()
+        message = self.factory.makeSignedMessage(body='Hi!\n',
+            attachment_contents=''.join(md.to_lines()))
+        code_handler = CodeHandler()
+        comment, md2 = code_handler.findMergeDirectiveAndComment(message)
+        self.assertEqual('Hi!\n', comment)
+        self.assertEqual(md.revision_id, md2.revision_id)
+        self.assertEqual(md.target_branch, md2.target_branch)
+
+    def test_findMergeDirectiveAndCommentEmptyBody(self):
+        md = self.makeMergeDirective()
+        message = self.factory.makeSignedMessage(body='',
+            attachment_contents=''.join(md.to_lines()))
+        code_handler = CodeHandler()
+        comment, md2 = code_handler.findMergeDirectiveAndComment(message)
+        self.assertEqual('', comment)
+
+    def test_findMergeDirectiveAndCommentNoMergeDirective(self):
+        md = self.makeMergeDirective()
+        message = self.factory.makeSignedMessage(body='Hi!\n')
+        code_handler = CodeHandler()
+        self.assertRaises(MissingMergeDirective,
+            code_handler.findMergeDirectiveAndComment, message)
 
 
 class TestMaloneHandler(TestCaseWithFactory):

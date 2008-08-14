@@ -13,6 +13,7 @@ __all__ = [
 
 from datetime import datetime, timedelta
 from email.Utils import make_msgid, formatdate
+from email.Message import Message as EmailMessage
 from StringIO import StringIO
 
 import pytz
@@ -529,7 +530,8 @@ class LaunchpadObjectFactory:
         return bug.addAttachment(
             owner, data, comment, filename, content_type=content_type)
 
-    def makeSignedMessage(self, msgid=None, body=None, subject=None):
+    def makeSignedMessage(self, msgid=None, body=None, subject=None,
+            attachment_contents=None):
         mail = SignedMessage()
         mail['From'] = self.getUniqueEmailAddress()
         if subject is None:
@@ -541,7 +543,19 @@ class LaunchpadObjectFactory:
             body = self.getUniqueString('body')
         mail['Message-Id'] = msgid
         mail['Date'] = formatdate()
-        mail.set_payload(body)
+        if attachment_contents is None:
+            mail.set_payload(body)
+            body_part = mail
+        else:
+            body_part = EmailMessage()
+            body_part.set_payload(body)
+            mail.attach(body_part)
+            attach_part = EmailMessage()
+            attach_part.set_payload(attachment_contents)
+            attach_part['Content-type'] = 'application/octet-stream'
+            mail.attach(attach_part)
+            mail['Content-type'] = 'multipart/mixed'
+        body_part['Content-type'] = 'text/plain'
         mail.parsed_string = mail.as_string()
         return mail
 
