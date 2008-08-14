@@ -5,4 +5,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE Build
     ADD CONSTRAINT build__datecreated__key UNIQUE (datecreated);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121,99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121,76, 0);
