@@ -11,7 +11,7 @@
   </tal:comment>
 
   <tr tal:repeat="sourcepackagerelease sourcepackagereleases">
-  <tal:block define="spr sourcepackagerelease;
+  <tal:define define="spr sourcepackagerelease;
                      distroseries spr/upload_distroseries">
     <td>
       <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}"
@@ -37,18 +37,18 @@
       2005-10-24
     </td>
     <td>
-      <tal:block condition="spr/needs_building">
+      <tal:needs_building condition="spr/needs_building">
           Not yet built
-      </tal:block>
-      <tal:block condition="not: spr/needs_building">
-          <tal:block repeat="build spr/failed_builds">
+      </tal:needs_building>
+      <tal:built condition="not: spr/needs_building">
+          <tal:failed repeat="build spr/failed_builds">
              <a tal:attributes="href build/fmt:url"
                 tal:content="build/distroarchseries/architecturetag" />
-          </tal:block>
-          <tal:block condition="not: spr/failed_builds">
+          </tal:failed>
+          <tal:not_failed condition="not: spr/failed_builds">
              None
-          </tal:block>
-      </tal:block>
+          </tal:not_failed>
+      </tal:built>
     </td>
     <td style="text-align: right">
       <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+bugs"
@@ -60,7 +60,7 @@
          tal:content="spr/open_questions">
       </a>
     </td>
-  </tal:block>
+  </tal:define>
   </tr>
 </metal:macro>
 

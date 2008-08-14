@@ -4494,6 +4494,23 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
         return results
 
+    def _getDecoratedPackagesSummary(self, packages):
+        """Helper returning decorated packages for the summary page.
+
+        :param packages: A SelectResults that contains the query
+        :return: A tuple of (packages, header_message).
+
+        The packages returned are limited to self.SUMMARY_PAGE_PACKAGE_LIMIT
+        and decorated with the stats required in the page template.
+        The header_message is the text to be displayed at the top of the
+        results table in the template.
+        """
+        # This code causes two SQL queries to be generated.
+        results = self._addStatsToPackages(
+            packages[:self.SUMMARY_PAGE_PACKAGE_LIMIT])
+        header_message = self._tableHeaderMessage(packages.count())
+        return results, header_message
+
     @property
     def get_latest_uploaded_ppa_packages_with_stats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
@@ -4502,21 +4519,16 @@ class PersonRelatedSoftwareView(LaunchpadView):
         user to see private archives.
         """
         packages = self.context.getLatestUploadedPPAPackages()
-        results = self.filterPPAPackageList(
-            packages[:self.SUMMARY_PAGE_PACKAGE_LIMIT])
-        results = self._addStatsToPackages(results)
-        self.ppa_packages_header_message = self._tableHeaderMessage(
-            packages.count())
-        return results
+        results, header_message = self._getDecoratedPackagesSummary(packages)
+        self.ppa_packages_header_message = header_message
+        return self.filterPPAPackageList(results)
 
     @property
     def get_latest_maintained_packages_with_stats(self):
         """Return the latest maintained packages, including stats."""
         packages = self.context.getLatestMaintainedPackages()
-        results = self._addStatsToPackages(
-            packages[:self.SUMMARY_PAGE_PACKAGE_LIMIT])
-        self.maintained_packages_header_message = self._tableHeaderMessage(
-            packages.count())
+        results, header_message = self._getDecoratedPackagesSummary(packages)
+        self.maintained_packages_header_message = header_message
         return results
 
     @property
@@ -4526,10 +4538,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
         Don't include packages that are maintained by the user.
         """
         packages = self.context.getLatestUploadedButNotMaintainedPackages()
-        results = self._addStatsToPackages(
-            packages[:self.SUMMARY_PAGE_PACKAGE_LIMIT])
-        self.uploaded_packages_header_message = self._tableHeaderMessage(
-            packages.count())
+        results, header_message = self._getDecoratedPackagesSummary(packages)
+        self.uploaded_packages_header_message = header_message
         return results
 
     def _calculateBuildStats(self, package_releases):
