@@ -81,31 +81,6 @@ matching the given text.
     Source           Published   Status     Series          Section  Built
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-Foo Bar can select one or more sources to be deleted and the
-'deletion_comment' field is optional.
-
-    >>> admin_browser.getControl('Deletion comment').value
-    ''
-
-    >>> admin_browser.getControl(
-    ...     name='field.name_filter').value = ''
-    >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['27']
-    >>> admin_browser.getControl("Request Deletion").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    Source and binaries deleted by Foo Bar request:
-    pmount 0.1-1 in warty
-    Deletion comment: None
-    Package deletion can take some time before the packages are actually removed.
-    See the full PPA help page.
-
-    >>> print_ppa_packages(admin_browser.contents)
-    Source            Published     Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Published     Breezy-autotest Editors  i386
-    iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
-
 Deletion requires, at least, one selected a source, otherwise an error
 is issued.
 
@@ -149,6 +124,7 @@ entirely readable content.
     >>> print_ppa_packages(admin_browser.contents)
     Source            Published     Status     Series          Section  Built
     iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
+    pmount - 0.1-1   2007-07-09  Published     Warty           Editors
 
 Here we can check for maliciously submitted forms containing
 invalid data.
@@ -156,10 +132,10 @@ invalid data.
 An already deleted source:
 
     >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['29']
+    ...    name='field.selected_sources').value = ['27']
     Traceback (most recent call last):
     ...
-    ItemNotFoundError: insufficient items with name '29'
+    ItemNotFoundError: insufficient items with name '27'
 
 An nonexistent source:
 
@@ -184,6 +160,7 @@ will use another browser to inspect the results of our deletions.
     >>> print_ppa_packages(cprov_browser.contents)
     Source           Published   Status     Series          Section  Built
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
     >>> cprov_browser.getControl(
     ...    name='field.status_filter').value = ['superseded']
@@ -191,7 +168,6 @@ will use another browser to inspect the results of our deletions.
     >>> print_ppa_packages(cprov_browser.contents)
     Source           Published   Status     Series          Section  Built
     cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors  i386
-    pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
 
     >>> cprov_browser.getControl(
     ...    name='field.status_filter').value = ['any']
@@ -200,7 +176,7 @@ will use another browser to inspect the results of our deletions.
     Source           Published   Status     Series          Section  Built
     cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors  i386
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
-    pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
 Before deleting the remaining sources we will save a in this state for
 the form re-submission tests.
@@ -225,6 +201,7 @@ Multiple packages can be deleted in one single batch.
     ...     print msg
     Source and binaries deleted by Foo Bar request:
     iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
 
 The page doesn't present the form anymore, since there are no sources
@@ -233,6 +210,7 @@ available for deletion.
     >>> print extract_text(find_main_content(admin_browser.contents))
     Source and binaries deleted by Foo Bar request:
     iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
     ...
     Delete packages from PPA for Celso Providelo
@@ -516,4 +494,34 @@ as it would refer to non-existent links.
     Deleted by Celso Providelo (I do not like it.)
     Published on 2006-12-01
     Copied from ubuntu breezy-autotest in Primary Archive for Ubuntu Linux
+
+Last but not least Foo Bar can select one or more sources to be deleted
+without providing any text in the 'deletion_comment' field since the
+latter is optional.
+
+    >>> admin_browser.getControl(
+    ...     name='field.deletion_comment').value = ''
+
+    >>> admin_browser.getControl('Deletion comment').value
+    ''
+
+    >>> admin_browser.getControl(
+    ...     name='field.name_filter').value = ''
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['27']
+    >>> admin_browser.getControl("Request Deletion").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    There is 1 error.
+    Package deletion can take some time before the packages are actually
+        removed.
+    See the full PPA help page.
+    Deletion comment is required.
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Source            Published     Status     Series          Section  Built
+    cdrkit - 1.0     2007-07-09  Published     Breezy-autotest Editors  i386
+    iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
+    pmount - 0.1-1   2007-07-09  Published     Warty           Editors
 
