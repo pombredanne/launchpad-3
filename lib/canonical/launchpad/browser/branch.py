@@ -111,7 +111,7 @@ class BranchHierarchy(Hierarchy):
         else:
             obj = self.context.owner
 
-        url = canonical_url(breadcrumb)
+        url = canonical_url(obj)
         breadcrumb = self.breadcrumb_for(obj, url)
 
         if breadcrumb is None:
