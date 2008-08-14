@@ -39,19 +39,19 @@ class TestRevisionKarma(TestCaseWithFactory):
     def test_revisionWithUnknownEmail(self):
         # A revision when created does not have karma allocated.
         rev = self.factory.makeRevision()
-        self.assertEqual(False, rev.karma_allocated)
+        self.failIf(rev.karma_allocated)
         # Even if the revision author is someone we know.
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        self.assertEqual(False, rev.karma_allocated)
+        self.failIf(rev.karma_allocated)
 
     def test_noKarmaForUnknownAuthor(self):
         # If the revision author is unknown, karma isn't allocated.
         rev = self.factory.makeRevision()
         branch = self.factory.makeBranch()
         branch.createBranchRevision(1, rev)
-        self.assertEqual(False, rev.karma_allocated)
+        self.failIf(rev.karma_allocated)
 
     def test_noRevisionsNeedingAllocation(self):
         # There are no outstanding revisions needing karma allocated.
@@ -65,7 +65,7 @@ class TestRevisionKarma(TestCaseWithFactory):
             author=author.preferredemail.email)
         branch = self.factory.makeBranch()
         branch.createBranchRevision(1, rev)
-        self.assertEqual(True, rev.karma_allocated)
+        self.failUnless(rev.karma_allocated)
         # Get the karma event.
         [karma] = list(Store.of(author).find(
             Karma,
@@ -84,7 +84,7 @@ class TestRevisionKarma(TestCaseWithFactory):
             author=author.preferredemail.email)
         branch = self.factory.makeBranch(explicit_junk=True)
         branch.createBranchRevision(1, rev)
-        self.assertEqual(False, rev.karma_allocated)
+        self.failIf(rev.karma_allocated)
         # Nor is this revision identified as needing karma allocated.
         self.assertEqual(
             [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
@@ -111,7 +111,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         rev = self.factory.makeRevision(author=email)
         branch = self.factory.makeBranch()
         branch.createBranchRevision(1, rev)
-        self.assertEqual(False, rev.karma_allocated)
+        self.failIf(rev.karma_allocated)
         # Since the revision author is not known, the revisions do not at this
         # stage need karma allocated.
         self.assertEqual(
