@@ -835,7 +835,7 @@ class PersonSpecsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
              'subscriber', 'registrant', 'feedback',
-             'workload', 'mentoring', 'roadmap']
+             'workload', 'mentoring']
 
     def registrant(self):
         text = 'Registrant'
@@ -878,11 +878,6 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Workload'
         summary = 'Show all specification work assigned'
         return Link('+specworkload', text, summary, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Show recommended sequence of feature implementation'
-        return Link('+roadmap', text, summary, icon='info')
 
 
 class PersonTranslationsMenu(ApplicationMenu):

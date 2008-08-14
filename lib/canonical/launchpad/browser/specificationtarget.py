@@ -5,7 +5,6 @@ __metaclass__ = type
 
 __all__ = [
     'HasSpecificationsView',
-    'SpecificationRoadmapView',
     'RegisterABlueprintButtonView',
     ]
 
@@ -310,45 +309,6 @@ class HasSpecificationsView(LaunchpadView):
         """
         return self.context.specifications(sort=SpecificationSort.DATE,
             quantity=quantity, prejoin_people=False)
-
-
-class SpecificationRoadmapView(LaunchpadView):
-    """View for the +roadmap pages for specifications."""
-
-    @cachedproperty
-    def spec_plan(self):
-        """Return the optimised sequence of specs for this target.
-
-        Figures out what the best sequence of implementation is for the
-        specs registered on this target. Essentially, orders by
-        decreasing priority, but uses recursion to include dependencies
-        (in decreasing order, too, thanks to getDependencyDict()) first.
-        """
-        filter = [
-            SpecificationFilter.INCOMPLETE,
-            SpecificationFilter.ACCEPTED]
-        specs = self.context.specifications(
-            filter=filter, prejoin_people=False)
-        if specs.count() == 0:
-            return []
-
-        specification_set = getUtility(ISpecificationSet)
-        dependencies = specification_set.getDependencyDict(specs)
-
-        def update_plan(specs, plan):
-            """Update the plan with this spec's dependencies."""
-            for spec in specs:
-                if spec in plan:
-                    continue
-                my_deps = dependencies.get(spec.id)
-                if my_deps is not None:
-                    update_plan(my_deps, plan)
-                plan.append(spec)
-
-        the_plan = []
-        update_plan(specs, the_plan)
-
-        return the_plan
 
 
 class RegisterABlueprintButtonView:
