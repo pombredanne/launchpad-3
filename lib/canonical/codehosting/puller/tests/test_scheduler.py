@@ -1,5 +1,5 @@
 # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0222
+# pylint: disable-msg=W0222,W0231
 
 __metaclass__ = type
 
@@ -600,8 +600,9 @@ class TestPullerMasterIntegration(PullerBranchTestCase, TrialTestCase):
             worker command line arguments, the destination branch and an
             instance of PullerWorkerProtocol.
         """
+        hosted_url = str('lp-hosted:///' + self.db_branch.unique_name)
         puller_master = cls(
-            self.db_branch.id, str('lp-hosted:///' + self.db_branch.unique_name),
+            self.db_branch.id, hosted_url,
             self.db_branch.unique_name[1:], self.db_branch.branch_type,
             logging.getLogger(), self.client,
             set([config.error_reports.oops_prefix]))

@@ -1,4 +1,5 @@
 # Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 """Unit tests for worker.py."""
 
