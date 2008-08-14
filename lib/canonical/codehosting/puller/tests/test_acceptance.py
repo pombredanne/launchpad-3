@@ -100,7 +100,8 @@ class TestBranchPuller(BranchTestCase):
         """
         hosted_path = self.getHostedPath(db_branch)
         if tree is None:
-            tree = self.createTemporaryBazaarBranchAndTree()
+            tree = self.make_branch_and_tree('branch-path')
+            tree.commit('rev1')
         out, err = self.run_bzr(
             ['push', '--create-prefix', '-d', tree.branch.base, hosted_path],
             retcode=None)
@@ -178,7 +179,8 @@ class TestBranchPuller(BranchTestCase):
     def test_mirrorAMirroredBranch(self):
         """Run the puller on a populated mirrored branch pull queue."""
         db_branch = self.factory.makeBranch(BranchType.MIRRORED)
-        tree = self.createTemporaryBazaarBranchAndTree()
+        tree = self.make_branch_and_tree('.')
+        tree.commit('rev1')
         db_branch.url = self.serveOverHTTP()
         db_branch.requestMirror()
         transaction.commit()
@@ -213,7 +215,8 @@ class TestBranchPuller(BranchTestCase):
         # Create the Bazaar branch and serve it in the expected location.
         branch_path = '%08x' % db_branch.id
         os.mkdir(branch_path)
-        self.createTemporaryBazaarBranchAndTree(branch_path)
+        tree = self.make_branch_and_tree(branch_path)
+        tree.commit('rev1')
         self.serveOverHTTP(self._getImportMirrorPort())
 
         # Run the puller.

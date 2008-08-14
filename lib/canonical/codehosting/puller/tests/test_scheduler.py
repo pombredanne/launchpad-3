@@ -566,7 +566,8 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
     def setUp(self):
         BranchTestCase.setUp(self)
         self.db_branch = self.factory.makeBranch(BranchType.HOSTED)
-        self.bzr_tree = self.createTemporaryBazaarBranchAndTree('src-branch')
+        self.bzr_tree = self.make_branch_and_tree('src-branch')
+        self.bzr_tree.commit('rev1')
         self.client = FakeBranchStatusClient()
 
     def run(self, result):
