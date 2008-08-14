@@ -1226,6 +1226,10 @@ class ProductAdminView(ProductEditView):
             PublicPersonChoice(
                 __name__='registrant',
                 title=_('Project Registrant'),
+                description=_('The person who originally registered the '
+                              'product.  Distinct from the current '
+                              'owner.  This is historical data and should '
+                              'not be changed without good cause.'),
                 vocabulary='ValidPerson',
                 required=True,
                 readonly=False,
@@ -1264,7 +1268,7 @@ class ProductAdminView(ProductEditView):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ProductAdminView):
+class ProductReviewLicenseView(ProductEditView):
     label = "Review project licensing"
     field_names = [
         "active",
