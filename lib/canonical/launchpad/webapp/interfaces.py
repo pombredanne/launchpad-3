@@ -248,6 +248,13 @@ class IBreadcrumbBuilder(IBreadcrumb):
         """Return an object implementing the `IBreadcrumb` interface."""
 
 
+class IncompleteBreadcrumbError(AttributeError):
+    """Raised when a breadcrumb being built does not has not had all of the
+    required attributes before the developer tries to construct it.
+    """
+    pass
+
+
 #
 # Canonical URLs
 #

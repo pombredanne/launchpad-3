@@ -13,7 +13,7 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, IBreadcrumbBuilder)
+    IBreadcrumb, IBreadcrumbBuilder, IncompleteBreadcrumbError)
 
 
 class Breadcrumb:
@@ -52,10 +52,3 @@ class BreadcrumbBuilder:
         url = self._get_attribute('url')
         text = self._get_attribute('text')
         return Breadcrumb(url, text)
-
-
-class IncompleteBreadcrumbError(AttributeError):
-    """Raised when an object being built does not has not had all of the
-    required attributes supplied to it.
-    """
-    pass
