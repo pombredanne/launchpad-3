@@ -27,6 +27,7 @@ except AttributeError:
     SEEK_END = 2
 
 
+LINES_TO_CAPTURE = 50
 LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=5)
 SECONDS_TO_SNOOZE = 0.1
 Empty = object()
@@ -53,6 +54,11 @@ class LogWatcher:
     log file, and that process is single threaded.  Further, the messages it
     writes will always be in a predictable order, so this is a reliable
     synchronization point.
+
+    Set `expecting_timeout` to True on the watcher instance just before a
+    wait*() call if you expect a time out.  This will suppress any logging
+    information normally printed when a time out occurs.  `expecting_timeout`
+    is automatically reset to False after the time out occurs.
     """
     FILENAME = None
     expecting_timeout = False
@@ -67,7 +73,7 @@ class LogWatcher:
         self._log_file = open(self._log_path)
         self._log_file.seek(0, SEEK_END)
         self._line_cache = []
-        self._last_10_lines_read = []
+        self._last_lines_read = []
 
     @property
     def lines(self):
@@ -96,7 +102,7 @@ class LogWatcher:
                 # if not, sleep for a little while.
                 if datetime.datetime.now() > until:
                     if not self.expecting_timeout:
-                        print NL.join(self._last_10_lines_read)
+                        print NL.join(self._last_lines_read)
                     # Resetting expectations so you don't have to.
                     self.expecting_timeout = False
                     return 'Timed out'
@@ -108,8 +114,8 @@ class LogWatcher:
                 # This line did not match our landmark.  Try again with the
                 # next line, but keep a cache of the last 10 lines read so
                 # that a timeout will be able to provide more debugging.
-                self._last_10_lines_read.append(line)
-                del self._last_10_lines_read[0:-10]
+                self._last_lines_read.append(line)
+                del self._last_lines_read[0:-LINES_TO_CAPTURE]
 
     def close(self):
         self._log_file.close()
