@@ -43,14 +43,6 @@ def get_logged_in_username(requester=None):
     return user.name
 
 
-class XMLRPCTest(TestCaseWithFactory):
-
-    def assertFaultEqual(self, faultCode, faultString, fault):
-        """Assert that `fault` has the passed-in attributes."""
-        self.assertEqual(fault.faultCode, faultCode)
-        self.assertEqual(fault.faultString, faultString)
-
-
 class TestRunWithLogin(TestCaseWithFactory):
     """Tests for the `run_with_login` decorator."""
 
@@ -106,7 +98,7 @@ class TestRunWithLogin(TestCaseWithFactory):
         self.assertEqual(None, login_id)
 
 
-class BranchPullerTest(XMLRPCTest):
+class BranchPullerTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchPuller`."""
 
     layer = DatabaseFunctionalLayer
@@ -114,6 +106,12 @@ class BranchPullerTest(XMLRPCTest):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.storage = BranchPuller(None, None)
+
+    def assertFaultEqual(self, expected_fault, observed_fault):
+        """Assert that `expected_fault` equals `observed_fault`."""
+        self.assertEqual(expected_fault.faultCode, observed_fault.faultCode)
+        self.assertEqual(
+            expected_fault.faultString, observed_fault.faultString)
 
     def assertMirrorFailed(self, branch, failure_message, num_failures=1):
         """Assert that `branch` failed to mirror.
@@ -280,8 +278,7 @@ class BranchPullerTest(XMLRPCTest):
         stacked_branch = self.factory.makeBranch()
         url = self.factory.getUniqueURL()
         fault = self.storage.setStackedOn(stacked_branch.id, url)
-        self.assertFaultEqual(
-            faults.NoSuchBranch.error_code, "No such branch: %s" % url, fault)
+        self.assertFaultEqual(faults.NoSuchBranch(url), fault)
 
     def test_setStackedOnNoBranchWithID(self):
         # If setStackedOn is called for a branch that doesn't exist, it will
@@ -291,8 +288,7 @@ class BranchPullerTest(XMLRPCTest):
         # We can't be sure until the sample data is gone.
         self.assertIs(getUtility(IBranchSet).get(branch_id), None)
         fault = self.storage.setStackedOn(branch_id, stacked_on_branch.url)
-        self.assertFaultEqual(
-            faults.NoBranchWithID.error_code, 'No branch with ID 999', fault)
+        self.assertFaultEqual(faults.NoBranchWithID(branch_id), fault)
 
 
 class BranchPullQueueTest(TestCaseWithFactory):
@@ -349,7 +345,7 @@ class BranchPullQueueTest(TestCaseWithFactory):
         self.assertBranchQueues([], [], [branch])
 
 
-class BranchFileSystemTest(XMLRPCTest):
+class BranchFileSystemTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchFileSystem`."""
 
     layer = DatabaseFunctionalLayer
@@ -357,6 +353,11 @@ class BranchFileSystemTest(XMLRPCTest):
     def setUp(self):
         super(BranchFileSystemTest, self).setUp()
         self.branchfs = BranchFileSystem(None, None)
+
+    def assertFaultEqual(self, faultCode, faultString, fault):
+        """Assert that `fault` has the passed-in attributes."""
+        self.assertEqual(fault.faultCode, faultCode)
+        self.assertEqual(fault.faultString, faultString)
 
     def test_createBranch(self):
         # createBranch creates a branch with the supplied details and the
