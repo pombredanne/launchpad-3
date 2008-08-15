@@ -12,8 +12,6 @@ __all__ = [
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import (
     get_buglisting_search_filter_url)
-from canonical.launchpad.interfaces.bugtask import (
-    BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
 from canonical.launchpad.webapp.url import urlappend
@@ -162,7 +160,7 @@ class PackageBugReportData(BugReportData):
         # so no permissions check needs to be done in the template.
         self.packaging_url = canonical_url(self.dssp) + "/+edit-packaging"
         self.triaged_bugs_url = urlappend(
-            dsp_bugs_url, get_buglisting_search_filter_url(status=['TRIAGED']))
+            dsp_bugs_url, get_buglisting_search_filter_url(status='TRIAGED'))
 
         # The triaged delta URL links to all bugs that are open but not
         # triaged for the current DistributionSourcePackage.
