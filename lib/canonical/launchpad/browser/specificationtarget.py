@@ -16,8 +16,7 @@ from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.projectseries import IProjectSeries
+from canonical.launchpad.interfaces.project import IProject, IProjectSeries
 from canonical.launchpad.interfaces.specification import (
     SpecificationFilter, SpecificationSort)
 from canonical.launchpad.interfaces.specificationtarget import (
