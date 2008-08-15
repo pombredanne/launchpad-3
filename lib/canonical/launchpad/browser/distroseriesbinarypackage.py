@@ -9,15 +9,10 @@ __all__ = [
     'DistroSeriesBinaryPackageView',
     ]
 
-from zope.app.form.utility import setUpWidgets, getWidgetsData
-from zope.app.form.interfaces import IInputWidget
-
-from zope.component import getUtility
-
 from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation
+    StandardLaunchpadFacets, ApplicationMenu, Navigation
     )
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
