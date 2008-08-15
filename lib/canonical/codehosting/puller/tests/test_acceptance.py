@@ -7,7 +7,6 @@ __all__ = []
 
 
 import os
-import shutil
 from subprocess import PIPE, Popen
 import sys
 import unittest
@@ -17,19 +16,17 @@ import transaction
 
 from bzrlib.branch import Branch
 from bzrlib.tests import HttpServer
-from bzrlib.urlutils import local_path_from_url
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.tests.helpers import BranchTestCase
+from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
-from canonical.codehosting import branch_id_to_path
 from canonical.testing import ZopelessAppServerLayer
 
 
-class TestBranchPuller(BranchTestCase):
+class TestBranchPuller(PullerBranchTestCase):
     """Integration tests for the branch puller.
 
     These tests actually run the supermirror-pull.py script. Instead of
@@ -78,37 +75,6 @@ class TestBranchPuller(BranchTestCase):
         self.assertEqualDiff('', stdout)
         self.assertEqualDiff('', stderr)
 
-    def getHostedPath(self, branch):
-        """Return the path of 'branch' in the upload area."""
-        return os.path.join(
-            config.codehosting.branches_root, branch_id_to_path(branch.id))
-
-    def getMirroredPath(self, branch):
-        """Return the path of 'branch' in the supermirror area."""
-        return os.path.join(
-            config.supermirror.branchesdest, branch_id_to_path(branch.id))
-
-    def makeCleanDirectory(self, path):
-        """Guarantee an empty branch upload area."""
-        if os.path.exists(path):
-            shutil.rmtree(path)
-        os.makedirs(path)
-
-    def pushToBranch(self, branch, tree=None):
-        """Push a trivial Bazaar branch to a given Launchpad branch.
-
-        :param branch: A Launchpad Branch object.
-        """
-        hosted_path = self.getHostedPath(branch)
-        if tree is None:
-            tree = self.createTemporaryBazaarBranchAndTree()
-        out, err = self.run_bzr(
-            ['push', '--create-prefix', '-d',
-             local_path_from_url(tree.branch.base), hosted_path],
-            retcode=None)
-        # We want to be sure that a new branch was indeed created.
-        self.assertEqual("Created new branch.\n", err)
-
     def runSubprocess(self, command):
         """Run the given command in a subprocess.
 
@@ -128,9 +94,7 @@ class TestBranchPuller(BranchTestCase):
             output and error are strings contain the output of the process to
             stdout and stderr respectively.
         """
-        command = [
-            sys.executable, os.path.join(self._puller_script), '-q',
-            branch_type]
+        command = [sys.executable, self._puller_script, '-q', branch_type]
         retcode, output, error = self.runSubprocess(command)
         return command, retcode, output, error
 

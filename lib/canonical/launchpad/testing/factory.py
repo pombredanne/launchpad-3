@@ -138,10 +138,13 @@ class LaunchpadObjectFactory:
         string = "%s%s" % (prefix, self.getUniqueInteger())
         return string.replace('_', '-').lower()
 
-    def getUniqueURL(self):
+    def getUniqueURL(self, scheme=None, host=None):
         """Return a URL unique to this run of the test case."""
-        return 'http://%s.example.com/%s' % (
-            self.getUniqueString('domain'), self.getUniqueString('path'))
+        if scheme is None:
+            scheme = 'http'
+        if host is None:
+            host = "%s.domain.com" % self.getUniqueString('domain')
+        return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, displayname=None):
