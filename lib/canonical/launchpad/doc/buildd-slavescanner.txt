@@ -1081,8 +1081,8 @@ access the restricted librarian as it cannot provide access via
 credentials, unlike the archive itself.
 
 Finally, the archive purpose is overridden to PRIMARY instead of PPA
-for any archives that have require_virtualized as False.  This is so that
-the mangling tools will run over the built packages.
+for any archives that have require_virtualized as False.  This is so
+that the mangling tools will run over the built packages.
 
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
