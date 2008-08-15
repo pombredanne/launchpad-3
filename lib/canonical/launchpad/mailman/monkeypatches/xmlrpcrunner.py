@@ -372,7 +372,6 @@ class XMLRPCRunner(Runner):
             except:
                 log_exception(
                     'xmlrpc', 'List creation error for team: %s', team_name)
-                log_exception()
                 return False
             else:
                 return True
@@ -416,7 +415,6 @@ class XMLRPCRunner(Runner):
                 log_exception(
                     'xmlrpc',
                     'List modification error for team: %s', team_name)
-                log_exception()
                 statuses[team_name] = ('modify', 'failure')
             else:
                 statuses[team_name] = ('modify', 'success')
