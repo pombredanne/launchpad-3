@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -14,12 +14,7 @@
 
 <div metal:fill-slot="main">
 
-  <div>
-    <img alt="" src="/@@/bug" />
-    <a tal:attributes="href context/fmt:url"
-       >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
-    <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
-  </div>
+  <p tal:content="structure context/bug/fmt:link" />
 
   <h1>Add a branch</h1>
 
@@ -30,7 +25,7 @@
     </div>
   </div>
 
-</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+</div>
 
 <metal:block fill-slot="help">
 
@@ -50,8 +45,8 @@
   <p>Each bug-branch association has a status, initially "Fix In Progress" and a
     whiteboard that can be used to write short comments.</p>
 
-</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
+</metal:block>
+
 </body>
 
 </html>
-
