@@ -40,7 +40,11 @@ class BreadcrumbBuilder:
         self.context = context
 
     def _get_attribute(self, attrname):
-        """Return the value of a possibly callable attribute."""
+        """Return the value of one of this class' attributes.
+
+        :raises: `IncompleteBreadcrumbError` if the attribute is missing or
+            None.
+        """
         attr = getattr(self, attrname, None)
         if attr is None:
             raise IncompleteBreadcrumbError(
