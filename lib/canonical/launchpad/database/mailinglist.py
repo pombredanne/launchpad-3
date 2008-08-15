@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IHeldMessageDetails,
     ILaunchpadCelebrities, IMailingList, IMailingListSet,
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
-    IMessageSet, MailingListStatus, PostedMessageStatus)
+    MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
