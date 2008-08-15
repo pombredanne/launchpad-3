@@ -49,8 +49,8 @@ from canonical.launchpad.interfaces.mailinglist import (
     PostedMessageStatus)
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
-    PersonVisibility, TeamContactMethod, TeamMembershipStatus,
-    TeamSubscriptionPolicy)
+    PersonVisibility, TeamContactMethod, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy
 
