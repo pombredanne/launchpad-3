@@ -21,6 +21,9 @@
             permission="launchpad.AnyPerson"
             attributes="addSubscription addBugSubscription
                         removeBugSubscription" />
+        <require
+            permission="launchpad.Admin"
+            set_attributes="registrant" />
     </content>
 
     <adapter

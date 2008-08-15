@@ -9,7 +9,6 @@ __all__ = [
     'Product',
     'ProductSet',
     'ProductWithLicenses',
-    'HasRegistrantMixin',
     ]
 
 
@@ -69,8 +68,8 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, IHasRegistrant, ILaunchpadCelebrities,
-    ILaunchpadUsage, NotFoundError)
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
+    NotFoundError)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -144,21 +143,8 @@ class ProductWithLicenses:
             self.license_approved, self.license_reviewed, self.licenses)
 
 
-class HasRegistrantMixin:
-    """A mixin to be used by classes implementing IHasRegistrant."""
-
-    implements(IHasRegistrant)
-
-    def setRegistrant(self, new_registrant):
-        """See `IHasRegistrant`."""
-        if self.registrant == new_registrant:
-            # Nothing to do.
-            return
-        self.registrant = new_registrant
-
-
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
-              HasRegistrantMixin, HasSpecificationsMixin, HasSprintsMixin,
+              HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               StructuralSubscriptionTargetMixin):

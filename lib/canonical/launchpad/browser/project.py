@@ -351,7 +351,7 @@ class ProjectReviewView(ProjectEditView):
         """Setup the normal fields from the schema plus adds 'Registrant'.
 
         The registrant is normally a read-only field and thus does not have a
-        proper widget created by default.  Even though it is read-only admins
+        proper widget created by default.  Even though it is read-only, admins
         need the ability to change it.
         """
         super(ProjectReviewView, self).setUpFields()
@@ -379,25 +379,6 @@ class ProjectReviewView(ProjectEditView):
                 ),
             custom_widget=self.custom_widgets['registrant']
             )
-
-    def updateContextFromData(self, data, context=None):
-        """Update the context from data, but handle registrant specially."""
-
-        if context is None:
-            context = self.context
-        data_to_apply = data.copy()
-        new_values = data.copy()
-
-        if 'registrant' in data_to_apply:
-            del data_to_apply['registrant']
-
-        super(ProjectReviewView, self).updateContextFromData(
-            data_to_apply, context)
-
-        missing = object()
-        new_registrant = new_values.pop('registrant', missing)
-        if new_registrant is not missing:
-            self.context.setRegistrant(new_registrant)
 
 
 class ProjectAddProductView(ProductAddViewBase):

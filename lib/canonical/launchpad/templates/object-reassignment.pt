@@ -73,7 +73,7 @@
 
       <tr>
         <td></td>
-        <td tal:define="role view/ownerOrMaintainerName/capitalize">
+        <td tal:define="role view/ownerOrMaintainerName">
           <input type="submit" name="CHANGE_OWNER"
                  tal:attributes="value string:Change ${role}"/>
         </td>
