@@ -123,6 +123,9 @@ builder's context object provides the IHasIcon interface.
     >>> builder = BreadcrumbBuilder(iconified_recipe)
     >>> builder.url = "http://foo"
     >>> builder.text = "I have an icon!"
+    >>> builder.icon
+    '/@@/recipe'
+
     >>> builder.make_breadcrumb()
     <Breadcrumb
         url='http://foo'
@@ -139,10 +142,9 @@ the builder's icon attribute to a different value.
         text='I have an icon!'
         icon='/@@/foo-icon'>
 
-We can clear the icon entirely by setting the attribute to something that
-evaluates as False:
+We can clear the icon entirely by setting the attribute to None:
 
-    >>> builder.icon = ''
+    >>> builder.icon = None
     >>> builder.make_breadcrumb()
     <Breadcrumb
         url='http://foo'
