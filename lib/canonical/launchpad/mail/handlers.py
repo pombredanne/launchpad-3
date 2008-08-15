@@ -536,6 +536,13 @@ class CodeHandler:
         }
 
     def process(self, mail, email_addr, file_alias):
+        if email_addr.startswith('merge@'):
+            self.processMergeProposal(mail)
+            return True
+        else:
+            return self.processComment(mail, email_addr, file_alias)
+
+    def processComment(self, mail, email_addr, file_alias):
         """Process an email and create a CodeReviewComment.
 
         The only mail command understood is 'vote', which takes 'approve',
@@ -677,6 +684,14 @@ class CodeHandler:
                 return body, md
         else:
             raise MissingMergeDirective()
+
+    def processMergeProposal(self, message):
+        submitter = getUtility(ILaunchBag).user
+        comment, md = self.findMergeDirectiveAndComment(message)
+        source, target = self._acquireBranchesForProposal(md, submitter)
+        bmp = source.addLandingTarget(submitter, target, needs_review=True)
+        comment = bmp.createComment(submitter, message['Subject'], comment)
+        return bmp, comment
 
 
 class SpecificationHandler:
