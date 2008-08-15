@@ -100,7 +100,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         """See `IBranchPuller`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
-            return False
+            return faults.NoBranchWithID(branch_id)
         # The puller runs as no user and may pull private branches. We need to
         # bypass Zope's security proxy to set the mirroring information.
         removeSecurityProxy(branch).startMirroring()

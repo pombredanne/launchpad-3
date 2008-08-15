@@ -161,15 +161,15 @@ class BranchPullerTest(TestCaseWithFactory):
             branch, 'last_mirror_attempt', UTC_NOW)
         self.assertIs(None, branch.last_mirrored)
 
-    def test_startMirroring_invalid_branch(self):
+    def test_startMirroringInvalidBranch(self):
         # startMirroring returns False when given a branch id which does not
         # exist.
         invalid_id = -1
         branch = getUtility(IBranchSet).get(invalid_id)
         self.assertIs(None, branch)
 
-        success = self.storage.startMirroring(invalid_id)
-        self.assertEqual(success, False)
+        fault = self.storage.startMirroring(invalid_id)
+        self.assertFaultEqual(faults.NoBranchWithID(-1), fault)
 
     def test_mirrorFailed(self):
         branch = self.factory.makeBranch()
