@@ -120,6 +120,8 @@ class BranchPuller(LaunchpadXMLRPCView):
         if stacked_on_branch is None:
             return faults.NoSuchBranch(stacked_on_location)
         stacked_branch = branch_set.get(branch_id)
+        if stacked_branch is None:
+            return faults.NoBranchWithID(branch_id)
         stacked_branch.stacked_on = stacked_on_branch
         return True
 

@@ -283,6 +283,17 @@ class BranchPullerTest(XMLRPCTest):
         self.assertFaultEqual(
             faults.NoSuchBranch.error_code, "No such branch: %s" % url, fault)
 
+    def test_setStackedOnNoBranchWithID(self):
+        # If setStackedOn is called for a branch that doesn't exist, it will
+        # return a Fault.
+        stacked_on_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        branch_id = 999
+        # We can't be sure until the sample data is gone.
+        self.assertIs(getUtility(IBranchSet).get(branch_id), None)
+        fault = self.storage.setStackedOn(branch_id, stacked_on_branch.url)
+        self.assertFaultEqual(
+            faults.NoBranchWithID.error_code, 'No branch with ID 999', fault)
+
 
 class BranchPullQueueTest(TestCaseWithFactory):
     """Tests for the pull queue methods of `IBranchPuller`."""
