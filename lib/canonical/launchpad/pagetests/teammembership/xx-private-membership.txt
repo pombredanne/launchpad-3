@@ -254,7 +254,7 @@ no user can set that team as the owner/maintainer of a project.
 
     >>> admin_browser.open('http://launchpad.dev/mozilla/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
-    >>> admin_browser.getControl('Change Maintainer').click()
+    >>> admin_browser.getControl('Change maintainer').click()
     >>> admin_browser.url
     'http://launchpad.dev/mozilla/+reassign'
     >>> get_feedback_messages(admin_browser.contents)
@@ -294,7 +294,7 @@ no user can set that team as the registrant of a distribution.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
-    >>> admin_browser.getControl('Change Owner').click()
+    >>> admin_browser.getControl('Change owner').click()
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu/+reassign'
     >>> get_feedback_messages(admin_browser.contents)
