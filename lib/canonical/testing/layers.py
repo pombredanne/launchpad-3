@@ -955,20 +955,6 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
         # Disconnect Storm so it doesn't get in the way of database resets
         disconnect_stores()
 
-    @classmethod
-    @profiled
-    def switchDbUser(cls, dbuser):
-        cls.alterConnection(dbuser=dbuser)
-
-    @classmethod
-    @profiled
-    def alterConnection(cls, **kw):
-        """Reset the connection, and reopen the connection by calling
-        initZopeless with the given keyword arguments.
-        """
-        ZopelessTransactionManager.uninstall()
-        initZopeless(**kw)
-
 
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
                                GoogleServiceLayer):

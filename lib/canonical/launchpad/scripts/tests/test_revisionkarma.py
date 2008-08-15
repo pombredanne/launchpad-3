@@ -13,13 +13,13 @@ from canonical.launchpad.database.karma import Karma
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.scripts.revisionkarma import RevisionKarmaAllocator
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestRevisionKarma(TestCaseWithFactory):
     """Test the `getBranch` method of the revision."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         # Use an administrator for the factory
@@ -38,9 +38,9 @@ class TestRevisionKarma(TestCaseWithFactory):
         branch.product = self.factory.makeProduct()
         # Commit and switch to the script db user.
         transaction.commit()
-        self.layer.switchDBUser(config.revisionkarma.dbuser)
+        LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
-            'test', config.revisionkarma.dbuser, [])
+            'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
         # Get the karma event.
         [karma] = list(Store.of(author).find(
@@ -66,9 +66,9 @@ class TestRevisionKarma(TestCaseWithFactory):
         # The person registers with Launchpad.
         author = self.factory.makePerson(email=email)
         transaction.commit()
-        self.layer.switchDBUser(config.revisionkarma.dbuser)
+        LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
-            'test', config.revisionkarma.dbuser, [])
+            'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
         # Get the karma event.
         [karma] = list(Store.of(author).find(
