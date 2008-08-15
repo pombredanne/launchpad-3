@@ -530,7 +530,7 @@ class MailingListSet:
             assert existing_list.team == team, 'Team mismatch'
             # It's in the PURGED state, so just tweak the existing record.
             existing_list.registrant = registrant
-            existing_list.date_registered=UTC_NOW
+            existing_list.date_registered = UTC_NOW
             existing_list.reviewer = None
             existing_list.date_reviewed = None
             existing_list.date_activated = None
