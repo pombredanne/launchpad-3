@@ -73,7 +73,7 @@ class LogWatcher:
         self._log_file = open(self._log_path)
         self._log_file.seek(0, SEEK_END)
         self._line_cache = []
-        self._last_lines_read = []
+        self.last_lines_read = []
 
     @property
     def lines(self):
@@ -89,7 +89,7 @@ class LogWatcher:
             else:
                 yield self._line_cache.pop(0)
 
-    def _wait(self, landmark, return_line=False):
+    def wait(self, landmark):
         """Wait until the landmark string has been seen.
 
         'landmark' must appear on a single line.  Comparison is done with 'in'
@@ -102,23 +102,21 @@ class LogWatcher:
                 # if not, sleep for a little while.
                 if datetime.datetime.now() > until:
                     if not self.expecting_timeout:
-                        print NL.join(self._last_lines_read)
+                        print NL.join(self.last_lines_read)
                     # Resetting expectations so you don't have to.
                     self.expecting_timeout = False
                     return 'Timed out'
                 time.sleep(SECONDS_TO_SNOOZE)
-            elif landmark in line and return_line is True:
-                # Return the line.
-                return line
             elif landmark in line:
                 # Return None on success for doctest convenience.
+                self.last_lines_read.append(line)
                 return None
             else:
                 # This line did not match our landmark.  Try again with the
                 # next line, but keep a cache of the last 10 lines read so
                 # that a timeout will be able to provide more debugging.
-                self._last_lines_read.append(line)
-                del self._last_lines_read[0:-LINES_TO_CAPTURE]
+                self.last_lines_read.append(line)
+                del self.last_lines_read[0:-LINES_TO_CAPTURE]
 
     def close(self):
         self._log_file.close()
@@ -131,30 +129,27 @@ class XMLRPCWatcher(LogWatcher):
 
     def wait_for_create(self, team_name):
         """Wait for the list creation message."""
-        return self._wait('[%s] create/reactivate: success' % team_name)
+        return self.wait('[%s] create/reactivate: success' % team_name)
 
     def wait_for_resynchronization(self, team_name):
-        return self._wait('[%s] resynchronize: success' % team_name)
+        return self.wait('[%s] resynchronize: success' % team_name)
 
     def wait_for_deactivation(self, team_name):
-        return self._wait('[%s] deactivate: success' % team_name)
+        return self.wait('[%s] deactivate: success' % team_name)
 
     wait_for_reactivation = wait_for_create
 
     def wait_for_modification(self, team_name):
-        return self._wait('[%s] modify: success' % team_name)
+        return self.wait('[%s] modify: success' % team_name)
 
     def wait_for_discard(self, message_id):
-        return self._wait('Discarded: <%s>' % message_id)
+        return self.wait('Discarded: <%s>' % message_id)
 
     def wait_for_reject(self, message_id):
-        return self._wait('Rejected: <%s>' % message_id)
+        return self.wait('Rejected: <%s>' % message_id)
 
     def wait_for_approval(self, message_id):
-        return self._wait('Approved: <%s>' % message_id)
-
-    def get_line(self, landmark):
-        return self._wait(landmark, return_line=True)
+        return self.wait('Approved: <%s>' % message_id)
 
 
 class SMTPDWatcher(LogWatcher):
@@ -163,13 +158,13 @@ class SMTPDWatcher(LogWatcher):
     FILENAME = 'smtpd'
 
     def wait_for_mbox_delivery(self, message_id):
-        return self._wait('msgid: <%s>' % message_id)
+        return self.wait('msgid: <%s>' % message_id)
 
     def wait_for_list_traffic(self, team_name):
-        return self._wait('to: %s@lists.launchpad.dev' % team_name)
+        return self.wait('to: %s@lists.launchpad.dev' % team_name)
 
     def wait_for_personal_traffic(self, address):
-        return self._wait('to: ' + address)
+        return self.wait('to: ' + address)
 
 
 class MHonArcWatcher(LogWatcher):
@@ -178,7 +173,7 @@ class MHonArcWatcher(LogWatcher):
     FILENAME = 'mhonarc'
 
     def wait_for_message_number(self, n):
-        return self._wait('%s total' % n)
+        return self.wait('%s total' % n)
 
 
 class VetteWatcher(LogWatcher):
@@ -187,10 +182,10 @@ class VetteWatcher(LogWatcher):
     FILENAME = 'vette'
 
     def wait_for_discard(self, message_id):
-        return self._wait('Message discarded, msgid: <%s>' % message_id)
+        return self.wait('Message discarded, msgid: <%s>' % message_id)
 
     def wait_for_hold(self, message_id):
-        return self._wait(
+        return self.wait(
             'Holding message for LP approval: <%s>' % message_id)
 
 
@@ -200,27 +195,27 @@ class QrunnerWatcher(LogWatcher):
     FILENAME = 'qrunner'
 
     def _wait_for_runner_startup(self):
-        return self._wait('qrunner started.')
+        return self.wait('qrunner started.')
 
     def wait_for_restart(self):
         # Wait for the master qrunner to start 6 runners, in no deterministic
         # order: ArchRunner, BounceRunner, RetryRunner, VirginRunner,
         # IncomingRunner, OutgoingRunner.
         for runner in range(6):
-            result = self._wait_for_runner_startup()
+            result = self.wait_for_runner_startup()
             if result is not None:
                 return result
         return None
 
     def _wait_for_runner_exit(self):
-        return self._wait('Master qrunner detected subprocess exit')
+        return self.wait('Master qrunner detected subprocess exit')
 
     def wait_for_shutdown(self):
         # Wait for the master qrunner to detect 6 runner exits, in no
         # deterministic order: ArchRunner, BounceRunner, RetryRunner,
         # VirginRunner, IncomingRunner, OutgoingRunner.
         for runner in range(6):
-            result = self._wait_for_runner_exit()
+            result = self.wait_for_runner_exit()
             if result is not None:
                 return result
         return None
