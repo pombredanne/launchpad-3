@@ -30,7 +30,9 @@
   </div>
 
   <div id="portlets">
-    <div tal:replace="structure context/bug/@@+portlet-subscribers" />
+    <div metal:use-macro="context/bug/@@+portlet-subscribers/custom">
+      <div metal:fill-slot="heading" />
+    </div>
   </div>
 
 </div>

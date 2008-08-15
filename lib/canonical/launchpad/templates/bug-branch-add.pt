@@ -28,6 +28,12 @@
     </div>
   </div>
 
+  <div id="portlets">
+    <div metal:use-macro="context/bug/@@+portlet-subscribers/custom">
+      <div metal:fill-slot="heading" />
+    </div>
+  </div>
+
 </div>
 
 <metal:block fill-slot="help">
