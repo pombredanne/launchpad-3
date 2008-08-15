@@ -235,6 +235,26 @@ class BranchPullerTest(TestCaseWithFactory):
         self.assertEqual(started, activity.date_started)
         self.assertEqual(completed, activity.date_completed)
 
+    def test_setStackedOnDefaultURLFragment(self):
+        # setStackedOn records that one branch is stacked on another. One way
+        # to find the stacked-on branch is by the URL fragment that's
+        # generated as part of Launchpad's default stacking.
+        stacked_branch = self.factory.makeBranch()
+        stacked_on_branch = self.factory.makeBranch()
+        self.storage.setStackedOn(
+            stacked_branch.id, '/%s' % stacked_on_branch.unique_name)
+        self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
+
+    def test_setStackedOnExternalURL(self):
+        # If set_stacked_on is passed an external URL, rather than a URL
+        # fragment, it will mark the branch as being stacked on the branch in
+        # Launchpad registered with that external URL.
+        # XXX - rephrase.
+        stacked_branch = self.factory.makeBranch()
+        stacked_on_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        self.storage.setStackedOn(stacked_branch.id, stacked_on_branch.url)
+        self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
+
 
 class BranchPullQueueTest(TestCaseWithFactory):
     """Tests for the pull queue methods of `IBranchPuller`."""

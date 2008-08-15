@@ -105,6 +105,19 @@ class BranchPuller(LaunchpadXMLRPCView):
         removeSecurityProxy(branch).startMirroring()
         return True
 
+    def setStackedOn(self, branch_id, stacked_on_location):
+        """See `IBranchPuller`."""
+        # Everything in this method is insecure.
+        branch_set = removeSecurityProxy(getUtility(IBranchSet))
+        if stacked_on_location.startswith('/'):
+            stacked_on_branch = branch_set.getByUniqueName(
+                stacked_on_location.strip('/'))
+        else:
+            stacked_on_branch = branch_set.getByUrl(stacked_on_location)
+        stacked_branch = branch_set.get(branch_id)
+        stacked_branch.stacked_on = stacked_on_branch
+        return True
+
 
 def datetime_from_tuple(time_tuple):
     """Create a datetime from a sequence that quacks like time.struct_time.

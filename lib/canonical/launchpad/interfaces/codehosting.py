@@ -103,6 +103,15 @@ class IBranchPuller(Interface):
         :returns: True if the ScriptActivity record was successfully inserted.
         """
 
+    def setStackedOn(branch_id, stacked_on_location):
+        """Mark a branch as being stacked on another branch.
+
+        :param branch_id: The database ID of the stacked branch.
+        :param stacked_on_location: The location of the stacked-on branch.
+            For hosted branches, this is normally '/~foo/bar/baz' where
+            '~foo/bar/baz' is the unique name of another branch.
+        """
+
 
 class IBranchFileSystemApplication(ILaunchpadApplication):
     """Branch File System end point root."""
