@@ -108,7 +108,9 @@ class BranchPuller(LaunchpadXMLRPCView):
 
     def setStackedOn(self, branch_id, stacked_on_location):
         """See `IBranchPuller`."""
-        # Everything in this method is insecure.
+        # We don't want the security proxy on the branch set because this
+        # method should be able to see all branches and set stacking
+        # information on any of them.
         branch_set = removeSecurityProxy(getUtility(IBranchSet))
         stacked_on_branch = None
         if stacked_on_location.startswith('/'):

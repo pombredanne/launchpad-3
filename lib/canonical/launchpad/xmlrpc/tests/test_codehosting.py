@@ -274,7 +274,6 @@ class BranchPullerTest(TestCaseWithFactory):
         # If setStackedOn is passed an external URL, rather than a URL
         # fragment, it will mark the branch as being stacked on the branch in
         # Launchpad registered with that external URL.
-        # XXX - rephrase.
         stacked_branch = self.factory.makeBranch()
         stacked_on_branch = self.factory.makeBranch(BranchType.MIRRORED)
         self.storage.setStackedOn(stacked_branch.id, stacked_on_branch.url)

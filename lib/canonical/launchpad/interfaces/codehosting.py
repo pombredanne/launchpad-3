@@ -64,6 +64,7 @@ class IBranchPuller(Interface):
 
         :param branchID: The database ID of the given branch.
         :returns: True if the branch status was successfully updated.
+            `NoBranchWithID` fault if there's no branch with the given id.
         """
 
     def mirrorComplete(branchID, lastRevisionID):
@@ -76,6 +77,7 @@ class IBranchPuller(Interface):
         :param branchID: The database ID of the given branch.
         :param lastRevisionID: The last revision ID mirrored.
         :returns: True if the branch status was successfully updated.
+            `NoBranchWithID` fault if there's no branch with the given id.
         """
 
     def mirrorFailed(branchID, reason):
@@ -87,6 +89,7 @@ class IBranchPuller(Interface):
         :param branchID: The database ID of the given branch.
         :param reason: A string giving the reason for the failure.
         :returns: True if the branch status was successfully updated.
+            `NoBranchWithID` fault if there's no branch with the given id.
         """
 
     def recordSuccess(name, hostname, date_started, date_completed):
@@ -110,6 +113,10 @@ class IBranchPuller(Interface):
         :param stacked_on_location: The location of the stacked-on branch.
             For hosted branches, this is normally '/~foo/bar/baz' where
             '~foo/bar/baz' is the unique name of another branch.
+        :return: True if the stacked branch information was set successfully.
+            `NoBranchWithID` fault if there's no branch with the given id.
+            `NoSuchBranch` fault if there's no branch matching
+            'stacked_on_location'.
         """
 
 
