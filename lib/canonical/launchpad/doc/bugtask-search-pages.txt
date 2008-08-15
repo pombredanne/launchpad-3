@@ -1,5 +1,4 @@
-Distribution Search page
-========================
+= Distribution Search page =
 
 In the 'Bugs' facet of a distribution we can find a list of bugs
 reported in that distribution and simple and advanced search forms.
@@ -204,8 +203,8 @@ in each series. In this case, the component search widget is hidden.
     >>> distro_advanced_search_listingview.shouldShowComponentWidget()
     False
 
-Distribution Series search page
-================================
+
+== Distribution Series search page ==
 
     >>> sarge = debian.getSeries('sarge')
 
@@ -283,8 +282,8 @@ The same is true for a sarge package.
     >>> package_advanced_search_view.getMilestoneWidgetValues()
     []
 
-Project Search Page
-===================
+
+== Project Search Page ==
 
     >>> from canonical.launchpad.interfaces import IProjectSet
     >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
