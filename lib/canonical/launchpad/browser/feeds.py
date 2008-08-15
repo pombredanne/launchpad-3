@@ -15,8 +15,11 @@ __all__ = [
     'FeedsRootUrlData',
     'PersonBranchesFeedLink',
     'PersonLatestBugsFeedLink',
+    'PersonRevisionsFeedLink',
     'ProductBranchesFeedLink',
+    'ProductRevisionsFeedLink',
     'ProjectBranchesFeedLink',
+    'ProjectRevisionsFeedLink',
     'RootAnnouncementsFeedLink',
     ]
 
@@ -247,6 +250,33 @@ class PersonBranchesFeedLink(BranchesFeedLinkBase):
     usedfor = IPerson
 
 
+class RevisionsFeedLinkBase(FeedLinkBase):
+    """Base class for objects with revisions."""
+
+    @property
+    def title(self):
+        return 'Latest Revisions for %s' % self.context.displayname
+
+    @property
+    def href(self):
+        """The location of the feed.
+
+        E.g.  http://feeds.launchpad.net/firefox/revisions.atom
+        """
+        return urlappend(canonical_url(self.context, rootsite='feeds'),
+                         'revisions.atom')
+
+
+class ProjectRevisionsFeedLink(RevisionsFeedLinkBase):
+    """Feed links for revisions on a project."""
+    usedfor = IProject
+
+
+class ProductRevisionsFeedLink(RevisionsFeedLinkBase):
+    """Feed links for revisions on a product."""
+    usedfor = IProduct
+
+
 class BranchFeedLink(FeedLinkBase):
     """Feed links for revisions on a branch."""
     usedfor = IBranch
@@ -260,16 +290,17 @@ class BranchFeedLink(FeedLinkBase):
                          'branch.atom')
 
 
-class PersonRevisionFeedLink(FeedLinkBase):
+class PersonRevisionsFeedLink(FeedLinkBase):
     """Feed links for revisions created by a person."""
     usedfor = IPerson
 
     @property
     def title(self):
         if self.context.is_team:
-            return 'Revisions by members of %s' % self.context.displayname
+            return 'Latest Revisions by members of %s' % (
+                self.context.displayname)
         else:
-            return 'Revisions by %s' % self.context.displayname
+            return 'Latest Revisions by %s' % self.context.displayname
 
     @property
     def href(self):
@@ -292,9 +323,11 @@ class FeedsMixin:
         BugTargetLatestBugsFeedLink,
         PersonBranchesFeedLink,
         PersonLatestBugsFeedLink,
-        PersonRevisionFeedLink,
+        PersonRevisionsFeedLink,
         ProductBranchesFeedLink,
+        ProductRevisionsFeedLink,
         ProjectBranchesFeedLink,
+        ProjectRevisionsFeedLink,
         RootAnnouncementsFeedLink,
         )
 

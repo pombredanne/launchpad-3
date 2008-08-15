@@ -162,6 +162,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     owner = ForeignKey(
         foreignKey="Person",
         storm_validator=validate_public_person, dbName="owner", notNull=True)
+    registrant = ForeignKey(
+        foreignKey="Person",
+        storm_validator=validate_public_person, dbName="registrant",
+        notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False, default=None)
@@ -1008,12 +1012,15 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       license_reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=(), license_info=None):
+                      icon=None, licenses=(), license_info=None,
+                      registrant=None):
         """See `IProductSet`."""
+        if registrant is None:
+            registrant = owner
         product = Product(
-            owner=owner, name=name, displayname=displayname,
-            title=title, project=project, summary=summary,
-            description=description, homepageurl=homepageurl,
+            owner=owner, registrant=registrant, name=name,
+            displayname=displayname, title=title, project=project,
+            summary=summary, description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,

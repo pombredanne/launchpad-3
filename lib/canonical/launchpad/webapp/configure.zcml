@@ -499,6 +499,12 @@
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.IFeedsApplication"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        />
 
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
