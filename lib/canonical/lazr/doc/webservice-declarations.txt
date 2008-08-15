@@ -86,8 +86,9 @@ elements.
 Only IField can be exported as entry fields.
 
     >>> from zope.interface import Attribute
-    >>> class NotAField1(Interface):
-    ...     an_attribute = exported(Attribute('A standard attribute'))
+    >>> class Foo(Interface):
+    ...     export_as_webservice_entry()
+    ...     not_a_field = exported(Attribute('A standard attribute'))
     Traceback (most recent call last):
       ...
     TypeError: exported() can only be used on IFields.
