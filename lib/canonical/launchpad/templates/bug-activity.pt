@@ -14,7 +14,7 @@
 
   <div id="maincontent">
     <p tal:content="structure view/current_bugtask/fmt:link" />
-    <h1>Bug activity</h1>
+    <h1>Activity log for bug #<span tal:replace="context/bug/id" /></h1>
 
     <table class="listing">
       <thead>

@@ -14,14 +14,17 @@
 
 <div metal:fill-slot="main">
 
-  <p tal:content="structure context/bug/fmt:link" />
+  <div id="maincontent">
+    <div id="nonportlets">
+      <p tal:content="structure context/bug/fmt:link" />
+      <h1>Add a branch to bug #<span tal:replace="context/bug/id" /></h1>
 
-  <h1>Add a branch</h1>
-
-  <div metal:use-macro="context/@@launchpad_form/form">
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Adding a Bazaar branch to a bug allows you to notify others
-      about where work is going on to fix this bug.
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <div metal:fill-slot="extra_info" class="documentDescription">
+          Adding a Bazaar branch to a bug allows you to notify others
+          about where work is going on to fix this bug.
+        </div>
+      </div>
     </div>
   </div>
 
