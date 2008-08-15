@@ -10,10 +10,14 @@ from unittest import TestCase, TestLoader
 
 import psycopg2
 import pytz
+from storm.store import Store
+import transaction
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
+from canonical.launchpad.database.karma import Karma
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
@@ -21,6 +25,102 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 from canonical.testing import DatabaseFunctionalLayer
+
+
+class TestRevisionKarma(TestCaseWithFactory):
+    """Test the `getBranch` method of the revision."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an administrator to set branch privacy easily.
+        TestCaseWithFactory.setUp(self, "foo.bar@canonical.com")
+
+    def test_revisionWithUnknownEmail(self):
+        # A revision when created does not have karma allocated.
+        rev = self.factory.makeRevision()
+        self.failIf(rev.karma_allocated)
+        # Even if the revision author is someone we know.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(
+            author=author.preferredemail.email)
+        self.failIf(rev.karma_allocated)
+
+    def test_noKarmaForUnknownAuthor(self):
+        # If the revision author is unknown, karma isn't allocated.
+        rev = self.factory.makeRevision()
+        branch = self.factory.makeBranch()
+        branch.createBranchRevision(1, rev)
+        self.failIf(rev.karma_allocated)
+
+    def test_noRevisionsNeedingAllocation(self):
+        # There are no outstanding revisions needing karma allocated.
+        self.assertEqual(
+            [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_karmaAllocatedForKnownAuthor(self):
+        # If the revision author is known, allocate karma.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(
+            author=author.preferredemail.email)
+        branch = self.factory.makeBranch()
+        branch.createBranchRevision(1, rev)
+        self.failUnless(rev.karma_allocated)
+        # Get the karma event.
+        [karma] = list(Store.of(author).find(
+            Karma,
+            Karma.person == author,
+            Karma.product == branch.product))
+        self.assertEqual(karma.datecreated, rev.revision_date)
+        self.assertEqual(karma.product, branch.product)
+        # Since karma has been allocated, the revision isn't in our list.
+        self.assertEqual(
+            [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_noKarmaForJunk(self):
+        # Revisions only associated with junk branches don't get karma.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(
+            author=author.preferredemail.email)
+        branch = self.factory.makeBranch(explicit_junk=True)
+        branch.createBranchRevision(1, rev)
+        self.failIf(rev.karma_allocated)
+        # Nor is this revision identified as needing karma allocated.
+        self.assertEqual(
+            [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_junkBranchMovedToProductNeedsKarma(self):
+        # A junk branch that moves to a product needs karma allocated.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(
+            author=author.preferredemail.email)
+        branch = self.factory.makeBranch(explicit_junk=True)
+        branch.createBranchRevision(1, rev)
+        # Once the branch is connected to the revision, we now specify
+        # a product for the branch.
+        branch.product = self.factory.makeProduct()
+        # The revision is now identified as needing karma allocated.
+        self.assertEqual(
+            [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_newRevisionAuthorLinkNeedsKarma(self):
+        # If Launchpad knows of revisions by a particular author, and later
+        # that authoer registers with launchpad, the revisions need karma
+        # allocated.
+        email = self.factory.getUniqueEmailAddress()
+        rev = self.factory.makeRevision(author=email)
+        branch = self.factory.makeBranch()
+        branch.createBranchRevision(1, rev)
+        self.failIf(rev.karma_allocated)
+        # Since the revision author is not known, the revisions do not at this
+        # stage need karma allocated.
+        self.assertEqual(
+            [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+        # The person registers with Launchpad.
+        author = self.factory.makePerson(email=email)
+        # Now the kama needs allocating.
+        self.assertEqual(
+            [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):
@@ -68,6 +168,22 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         b2 = self.makeBranchWithRevision(1, owner=self.author)
         b2.private = True
         self.assertEqual(b1, self.revision.getBranch())
+
+    def testAllowPrivateReturnsPrivateBranch(self):
+        # If the allow_private flag is set, then private branches can be
+        # returned if they are the best match.
+        b1 = self.makeBranchWithRevision(1)
+        b2 = self.makeBranchWithRevision(1, owner=self.author)
+        b2.private = True
+        self.assertEqual(b2, self.revision.getBranch(allow_private=True))
+
+    def testAllowPrivateCanReturnPublic(self):
+        # Allowing private branches does not change the priority ordering of
+        # the branches.
+        b1 = self.makeBranchWithRevision(1)
+        b2 = self.makeBranchWithRevision(1, owner=self.author)
+        b1.private = True
+        self.assertEqual(b2, self.revision.getBranch(allow_private=True))
 
 
 class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
@@ -339,9 +455,6 @@ class TestGetPublicRevisonsForProject(TestCaseWithFactory):
 class TestTipRevisionsForBranches(TestCase):
     """Test that the tip revisions get returned properly."""
 
-    # The LaunchpadZopelessLayer is used as the setUp needs to
-    # switch database users in order to create revisions for the
-    # test branches.
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
