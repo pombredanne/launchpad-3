@@ -112,7 +112,7 @@ They can be overridden with subclassing and Python properties.
 
 The Hierarchy class builds the breadcrumbs by looking at each object in
 the request.traversed_objects attribute.  If a traversed object can be
-adapted to IBreadcrumb, then it is added to the breadcrumbs list.
+adapted to IBreadcrumbBuilder, then it is added to the breadcrumbs list.
 
 We'll add the objects to the request's list of traversed objects so
 the hierarchy will discover them.
@@ -173,9 +173,9 @@ the breadcrumb closest to the hierarchy root.
 We can customize the hierarchy itself by changing the list of objects and
 URLs that it uses to construct the breadcrumbs list.
 
-The user should *not* construct the Breadcrumb object themselves.  They
-should let the hierarchy handle it: this ensures consistencey across the
-site.
+The Hierarchy should *not* construct the Breadcrumb objects itself.  It
+should let the IBreadcrumbBuilder handle it: this ensures consistencey
+across the site.
 
     >>> from canonical.launchpad.browser.launchpad import Hierarchy
 
