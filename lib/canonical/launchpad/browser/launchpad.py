@@ -94,7 +94,6 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link,
     LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
     canonical_url, custom_widget)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
     IBreadcrumbBuilder, INavigationMenu, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
