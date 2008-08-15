@@ -130,6 +130,7 @@ we'll ask the user to contact a Launchpad admin.
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> login('foo.bar@canonical.com')
     >>> review_list('landscape-developers', MailingListStatus.DECLINED)
+    <MailingList for team "landscape-developers"; status=DECLINED at ...>    
     >>> logout()
     >>> flush_database_updates()
 
@@ -206,6 +207,7 @@ list as last time -- it was rejected and we requested a new one.
 
     >>> login('foo.bar@canonical.com')
     >>> review_list('landscape-developers', MailingListStatus.APPROVED)
+    <MailingList for team "landscape-developers"; status=APPROVED at ...>
     >>> logout()
     >>> flush_database_updates()
     >>> mailing_list = list_set.get('landscape-developers')
@@ -270,6 +272,12 @@ running.
     >>> browser.getLink('Mailing list archive')
     <Link text='Mailing list archive'
           url='http://lists.launchpad.dev/landscape-developers'>
+
+The team's overview page also displays the posting address.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'mailing-list-posting-address'))
+    landscape-developers@lists.launchpad.dev
 
 When the mailing list is constructed and made active, it can be used as
 the team's contact address.
@@ -385,7 +393,6 @@ Eventually Mailman starts the update, via Launchpad's XML-RPC interface.
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> modify
         {'welcome_message': u'Welcome to the test team mailing list.'}
-    landscape-developers --> unsynchronized updating
 
     >>> browser.reload()
     >>> print mailing_list_status_message(browser.contents)
@@ -419,7 +426,6 @@ What if the change fails to propagate? The user will know of this too.
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> modify
         {'welcome_message': u'This change will fail to propagate.'}
-    landscape-developers --> unsynchronized updating
     >>> browser.reload()
     >>> print mailing_list_status_message(browser.contents)
     A change to this team's mailing list is currently being applied.
@@ -494,7 +500,6 @@ An inactive mailing list can be reactivated.
     >>> print_actions(mailinglist_api.getPendingActions())
     landscape-developers --> create
         {'welcome_message': u'This change will fail to propagate.'}
-    landscape-developers --> unsynchronized constructing
     >>> mailinglist_api.reportStatus({'landscape-developers':'success'})
     True
     >>> print_actions(mailinglist_api.getPendingActions())

@@ -11,6 +11,8 @@ import datetime
 import pytz
 import transaction
 
+from storm.zope.interfaces import IZStorm
+
 from twisted.web.xmlrpc import Fault
 
 from zope.component import getUtility
@@ -18,10 +20,14 @@ from zope.interface.verify import verifyObject
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
+from bzrlib.tests import TestCase
+
 from canonical.codehosting.tests.helpers import BranchTestCase
+from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.interfaces.branch import (
     BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE, IBranchSet)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -40,7 +46,8 @@ from canonical.authserver.interfaces import (
 from canonical.authserver.database import (
     DatabaseBranchDetailsStorage, DatabaseUserDetailsStorage,
     DatabaseUserDetailsStorageV2, NOT_FOUND_FAULT_CODE,
-    PERMISSION_DENIED_FAULT_CODE, run_as_requester, writing_transaction)
+    PERMISSION_DENIED_FAULT_CODE, run_as_requester, read_only_transaction,
+    writing_transaction)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 
 from canonical.testing.layers import (
@@ -129,7 +136,7 @@ class TestRunAsRequester(TestCaseWithFactory):
         self.assertEqual(None, login_id)
 
 
-class DatabaseTest(unittest.TestCase):
+class DatabaseTest(TestCase):
     """Base class for authserver database tests.
 
     Runs the tests in using the web database adapter and the stricter Launchpad
@@ -592,7 +599,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         login(ANONYMOUS)
         try:
             person = getUtility(IPersonSet).get(12)
-            login_email = person.preferredemail.email
+            login_email = removeSecurityProxy(person.preferredemail).email
         finally:
             logout()
 
@@ -745,17 +752,30 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
             'some-branch')
         self.assertEqual((branch_id, 'r'), branch_info)
 
-    @writing_transaction
     def _makeProductWithPrivateDevFocus(self):
         """Make a product with a private development focus.
 
         :return: The new Product and the new Branch.
         """
+        login(ANONYMOUS)
         product = self.factory.makeProduct()
+        # Only products that are explicitly specified in
+        # allow_default_stacking will have values for default stacked-on. Here
+        # we add the just-created product to allow_default_stacking so we can
+        # test stacking with private branches.
+        section = (
+            "[codehosting]\n"
+            "allow_default_stacking: %s,%s"
+            % (config.codehosting.allow_default_stacking, product.name))
+        handle = self.factory.getUniqueString()
+        config.push(handle, section)
+        self.addCleanup(lambda: config.pop(handle))
         branch = self.factory.makeBranch(product=product)
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = branch
         removeSecurityProxy(branch).private = True
+        transaction.commit()
+        logout()
         return product, branch
 
     def test_getDefaultStackedOnBranch_invisible(self):
@@ -776,9 +796,10 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         # should be allowed to know such things.
         branch = removeSecurityProxy(branch)
         store = DatabaseUserDetailsStorageV2(None)
+        unique_name = branch.unique_name
         stacked_on_url = store._getDefaultStackedOnBranchInteraction(
             branch.owner.id, product.name)
-        self.assertEqual('/' + branch.unique_name, stacked_on_url)
+        self.assertEqual('/' + unique_name, stacked_on_url)
 
     def test_getDefaultStackedOnBranch_junk(self):
         # getDefaultStackedOnBranch returns the empty string for '+junk'.
@@ -890,6 +911,65 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         storage._mirrorCompleteInteraction(hosted_branch_id, 'rev-1')
 
         self.assertEqual(None, self.getNextMirrorTime(hosted_branch_id))
+
+
+class TestTransactionDecorators(DatabaseTest):
+    """Tests for the transaction decorators used by the authserver."""
+
+    def setUp(self):
+        super(TestTransactionDecorators, self).setUp()
+        self.store = getUtility(IZStorm).get('main')
+        self.no_priv = self.store.find(Person, name='no-priv').one()
+
+    def test_read_only_transaction_reset_store(self):
+        """Make sure that the store is reset after the transaction."""
+        @read_only_transaction
+        def no_op():
+            pass
+        no_op()
+        self.failIf(
+            self.no_priv is self.store.find(Person, name='no-priv').one(),
+            "Store wasn't reset properly.")
+
+    def test_writing_transaction_reset_store(self):
+        """Make sure that the store is reset after the transaction."""
+        @writing_transaction
+        def no_op():
+            pass
+        no_op()
+        self.failIf(
+            self.no_priv is self.store.find(Person, name='no-priv').one(),
+            "Store wasn't reset properly.")
+
+    def test_writing_transaction_reset_store_with_raise(self):
+        """Make sure that the store is reset after the transaction."""
+        @writing_transaction
+        def no_op():
+            raise RuntimeError('die, die, die!')
+        self.assertRaises(RuntimeError, no_op)
+        self.failIf(
+            self.no_priv is self.store.find(Person, name='no-priv').one(),
+            "Store wasn't reset properly.")
+
+    def test_writing_transaction_reset_store_on_commit_failure(self):
+        """The store should be reset even if committing the transaction fails.
+        """
+        class TransactionAborter:
+            """Make the next commit() fails."""
+            def beforeCompletion(self, txn):
+                raise RuntimeError('the commit will fail')
+        aborter = TransactionAborter()
+        transaction.manager.registerSynch(aborter)
+        try:
+            @writing_transaction
+            def no_op():
+                pass
+            self.assertRaises(RuntimeError, no_op)
+            self.failIf(
+                self.no_priv is self.store.find(Person, name='no-priv').one(),
+                "Store wasn't reset properly.")
+        finally:
+            transaction.manager.unregisterSynch(aborter)
 
 
 class UserDetailsStorageV2Test(DatabaseTest):
@@ -1127,21 +1207,24 @@ class BranchPullQueueTest(BranchTestCase):
         LaunchpadScriptLayer.switchDbConfig('authserver')
         super(BranchPullQueueTest, self).setUp()
         self.restrictSecurityPolicy()
-        self.emptyPullQueues()
         self.storage = DatabaseBranchDetailsStorage(None)
 
     def assertBranchQueues(self, hosted, mirrored, imported):
         login(ANONYMOUS)
+        expected_hosted = [
+            self.storage._getBranchPullInfo(branch) for branch in hosted]
+        expected_mirrored = [
+            self.storage._getBranchPullInfo(branch) for branch in mirrored]
+        expected_imported = [
+            self.storage._getBranchPullInfo(branch) for branch in imported]
         self.assertEqual(
-            map(self.storage._getBranchPullInfo, hosted),
+            expected_hosted,
             self.storage._getBranchPullQueueInteraction('HOSTED'))
-        login(ANONYMOUS)
         self.assertEqual(
-            map(self.storage._getBranchPullInfo, mirrored),
+            expected_mirrored,
             self.storage._getBranchPullQueueInteraction('MIRRORED'))
-        login(ANONYMOUS)
         self.assertEqual(
-            map(self.storage._getBranchPullInfo, imported),
+            expected_imported,
             self.storage._getBranchPullQueueInteraction('IMPORTED'))
 
     def test_pullQueuesEmpty(self):

@@ -10,7 +10,7 @@
   i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="main" class="freeform">
+    <div metal:fill-slot="main">
       <h1 class="exception">Invalid Batch Size</h1>
       <p>
       Your requested batch size exceeded the maximum batch size allowed which

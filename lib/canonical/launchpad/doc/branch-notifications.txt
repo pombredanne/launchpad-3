@@ -55,6 +55,8 @@ also sends the email to the list of recipients.
     foo@canonical.com
     >>> print branch_notification['Subject']
     [Branch ~name12/firefox/main] Mozilla Firefox Mainline
+    >>> print branch_notification['X-Launchpad-Project']
+    firefox
     >>> print branch_notification['X-Launchpad-Branch']
     ~name12/firefox/main
     >>> print branch_notification['X-Launchpad-Message-Rationale']

@@ -238,12 +238,6 @@
     </table>
   </div>
   <div class="field">
-    <label style="font-weight: bold" tal:attributes="for string:${view/prefix}.comment_on_change">Comment on most recent change</label>
-    <div style="margin-top: 5px; margin-bottom: 1em">
-      <i tal:content="python:context.statusexplanation or '(none)'" />
-    </div>
-  </div>
-  <div class="field">
     <div>
       <label style="font-weight: bold" tal:attributes="for string:${view/prefix}.comment_on_change">Comment on this change (optional)</label>
       <textarea

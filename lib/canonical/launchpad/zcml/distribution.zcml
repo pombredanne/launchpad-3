@@ -63,6 +63,12 @@
         attributes="setBugSupervisor" />
   </content>
 
+  <adapter
+      for="canonical.launchpad.interfaces.IDistribution"
+      provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+      factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
+      />
+
   <browser:menus
     module="canonical.launchpad.browser.distribution"
     classes="
@@ -82,14 +88,6 @@
     permission="launchpad.AnyPerson"
     template="../templates/specification-add.pt"
   />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IDistribution"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.DistributionDynMenu"
-    attribute="__call__"
-    name="+menudata"
-    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistribution"
@@ -302,6 +300,15 @@
     template="../templates/distribution-cvereport.pt"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionView"
+    permission="zope.Public"
+    name="+series-and-milestones"
+    facet="overview"
+    template="../templates/distribution-series-and-milestones.pt"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistribution"
     permission="zope.Public" >
@@ -325,11 +332,6 @@
       name="+milestones"
       facet="overview"
       template="../templates/object-milestones.pt"
-      />
-    <browser:page
-      name="+series-and-milestones"
-      facet="overview"
-      template="../templates/distribution-series-and-milestones.pt"
       />
     <browser:page
       name="+portlet-bounties"

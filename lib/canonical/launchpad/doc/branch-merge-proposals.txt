@@ -378,7 +378,7 @@ to any other state.
 
 In order to make it easier to propose branches to merge on similar
 branches, there is a method on the branch set that returns the branches that a
-user has previously targetted for merging.
+user has previously targeted for merging.
 
     >>> gnome_terminal = branch.product
     >>> branches = branch_set.getTargetBranchesForUsersMergeProposals(
@@ -526,7 +526,7 @@ new proposal).
 
     >>> new_proposal = proposal.resubmit(sample_person)
     >>> print new_proposal.queue_status.title
-    Work in progress
+    Needs review
     >>> new_proposal == proposal
     False
     >>> new_proposal.supersedes == proposal

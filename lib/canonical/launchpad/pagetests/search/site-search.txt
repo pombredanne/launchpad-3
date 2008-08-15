@@ -14,21 +14,44 @@ bugs, teams, etc.).
 
     # Another helper to make searching convenient
     >>> def search_for(terms):
-    ...     search_text = anon_browser.getControl(name='field.text', index=0)
+    ...     try:
+    ...         search_form = anon_browser.getForm('globalsearch')
+    ...     except LookupError:
+    ...         search_form = anon_browser.getForm(name='sitesearch')
+    ...     search_text = search_form.getControl(name='field.text')
     ...     search_text.value = terms
-    ...     anon_browser.getControl(
-    ...         name='field.actions.search', index=0).click()
+    ...     search_form.submit()
 
-Search is accessible to any user via the root +search url:
+The search form is available on almost every Launchpad page.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu')
+    >>> search_for('test1')
+    >>> print anon_browser.url
+    http://launchpad.dev/+search?field.text=test1
+
+But the search results page has its own search form, so the global one is
+omitted.
+
+    >>> global_search_form = anon_browser.getForm('globalsearch')
+    Traceback (most recent call last):
+    ...
+    LookupError
+
+And on the login and registration pages, the global form is also omitted to
+reduce confusion.
+
+    >>> anon_browser.open('http://launchpad.dev/+login')
+    >>> global_search_form = anon_browser.getForm('globalsearch')
+    Traceback (most recent call last):
+    ...
+    LookupError
+
+If by chance someone ends up at /+search with no search parameters, they get
+an explanation of the search function.
 
     >>> anon_browser.open('http://launchpad.dev/+search')
     >>> print anon_browser.title
     Search Launchpad
-
-The user does not see any search results on the page without submitting
-search text. An explanation of search is included in the page when the
-search field is empty.
-
     >>> print_search_results()
 
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'no-search'))
@@ -42,7 +65,7 @@ sees a result for that exact match in Launchpad.
     Pages matching "firefox" in Launchpad
     >>> print_search_results()
     Exact matches
-    Mozilla Firefox (Unreviewed)
+    Mozilla Firefox (Unspecified)
     The Mozilla Firefox web browser
     Registered by Sample Person
     on 2004-09-24
@@ -109,7 +132,7 @@ matching ...".
     Pages matching "launchpad" in Launchpad
     >>> print_search_results()
     Exact matches
-    Launchpad (Unreviewed)
+    Launchpad (Unspecified)
     Launchpad is a catalogue of libre software projects and products.
     ...
     Registered by Sample Person  on 2006-11-24
@@ -131,7 +154,7 @@ as the most relevant match.
     >>> search_for('firefox')
     >>> print_search_results()
     Exact matches
-    Mozilla Firefox (Unreviewed)
+    Mozilla Firefox (Unspecified)
     The Mozilla Firefox web browser
     Registered by Sample Person
     on 2004-09-24

@@ -15,7 +15,8 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Title, URIField
+from canonical.launchpad.fields import (
+    PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -36,6 +37,9 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+
 
 class ProjectNameField(PillarNameField):
 
@@ -51,23 +55,34 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
                IHasTranslationGroup, IMakesAnnouncements,
                IKarmaContext, IPillar):
     """A Project."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True)
 
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'),
         required=True,
         vocabulary='ValidOwner',
         description=_("""Project group owner, it can either a valid
             Person or Team inside Launchpad context."""))
 
-    name = ProjectNameField(
-        title=_('Name'),
+    registrant = PublicPersonChoice(
+        title=_('Registrant'),
         required=True,
-        description=_("""A unique name, used in URLs, identifying the project
-            group.  All lowercase, no special characters.
-            Examples: apache, mozilla, gimp."""),
-        constraint=name_validator)
+        readonly=True,
+        vocabulary='ValidPersonOrTeam',
+        description=_("""Project group registrant, a valid
+            Person inside Launchpad context."""))
+
+    name = exported(
+        ProjectNameField(
+            title=_('Name'),
+            required=True,
+            description=_(
+                """A unique name, used in URLs, identifying the project
+                group.  All lowercase, no special characters.
+                Examples: apache, mozilla, gimp."""),
+            constraint=name_validator))
 
     displayname = TextLine(
         title=_('Display Name'),
@@ -98,7 +113,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
         description=_(
             """The date this project group was created in Launchpad."""))
 
-    driver = Choice(
+    driver = PublicPersonChoice(
         title=_("Driver"),
         description=_(
             "This is a project group-wide appointment, think carefully here! "
@@ -158,7 +173,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
             "that can be used to identify this project group. The icon will "
             "be displayed in Launchpad everywhere that we link to this "
             "project group. For example in listings or tables of active "
-	    "project groups."))
+            "project groups."))
 
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
@@ -185,7 +200,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
     bugtracker = Choice(title=_('Bug Tracker'), required=False,
         vocabulary='BugTracker',
         description=_(
-	    "The bug tracker the products in this project group use."))
+            "The bug tracker the products in this project group use."))
 
     products = Attribute(
         _("An iterator over the active Products for this project group."))
@@ -241,8 +256,11 @@ class IProjectSet(Interface):
         """
 
     def new(name, displayname, title, homepageurl, summary, description,
-            owner, mugshot=None, logo=None, icon=None):
-        """Create and return a project with the given arguments."""
+            owner, mugshot=None, logo=None, icon=None, registrant=None):
+        """Create and return a project with the given arguments.
+
+        For a description of the parameters see `IProject`.
+        """
 
     def count_all():
         """Return the total number of projects registered in Launchpad."""

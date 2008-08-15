@@ -15,7 +15,7 @@ __all__ = [
         ]
 
 
-from zope.interface import Attribute, Interface
+from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
@@ -180,15 +180,15 @@ class IAccountPublic(Interface):
     """Public information on an `IAccount`."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
+    displayname = StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+                description=_("Your name as you would like it displayed."))
+
 
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
     date_created = Datetime(
             title=_('Date Created'), required=True, readonly=True)
-
-    displayname = StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-                description=_("Your name as you would like it displayed."))
 
     creation_rationale = Choice(
             title=_("Rationale for this account's creation."), required=True,
@@ -210,8 +210,6 @@ class IAccountPrivate(Interface):
 
     password = PasswordField(
             title=_("Password."), readonly=False, required=True)
-
-    openid_identity_url = Attribute("The OpenID identity URL.")
 
 
 class IAccount(IAccountPublic, IAccountPrivate):
@@ -242,4 +240,7 @@ class IAccountSet(Interface):
         :return: An `IAccount`, or None if the given email address
         does not exist in the database or is not linked to an `IAccount`.
         """
+
+    def getByOpenIdIdentifier(openid_identity):
+        """Return the `IAccount` with the given OpenID identifier, or None."""
 

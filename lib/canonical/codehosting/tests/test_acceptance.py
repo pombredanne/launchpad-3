@@ -16,11 +16,9 @@ import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
     LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
-from bzrlib.repofmt.weaverepo import RepositoryFormat7
-from bzrlib.repository import format_registry
 
 from bzrlib.urlutils import local_path_from_url
-from bzrlib.tests import default_transport, TestCaseWithTransport
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
 from twisted.python.util import mergeFunctionMetadata
@@ -30,11 +28,12 @@ from canonical.codehosting.tests.helpers import (
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
-from canonical.testing import TwistedLaunchpadZopelessLayer
+from canonical.testing import TwistedAppServerLayer
 from canonical.testing.layers import disconnect_stores, reconnect_stores
 from canonical.twistedsupport import defer_to_thread
 
@@ -60,13 +59,8 @@ def db_defer_to_thread(function):
 
 class SSHTestCase(ServerTestCase):
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedAppServerLayer
     server = None
-
-    def installServer(self, server):
-        super(SSHTestCase, self).installServer(server)
-        self.default_user = server.authserver.testUser
-        self.default_team = server.authserver.testTeam
 
     def setUp(self):
         super(SSHTestCase, self).setUp()
@@ -175,14 +169,16 @@ class SSHTestCase(ServerTestCase):
         Used to create branches that the test user is not able to create, and
         might not even be able to view.
         """
-        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+        authserver = xmlrpclib.ServerProxy(
+            config.codehosting.authentication_endpoint)
+        branchfs = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
         if creator is None:
             creator_id = authserver.getUser(user)['id']
         else:
             creator_id = authserver.getUser(creator)['id']
         if branch_root is None:
             branch_root = self.server._mirror_root
-        branch_id = authserver.createBranch(creator_id, user, product, branch)
+        branch_id = branchfs.createBranch(creator_id, user, product, branch)
         branch_url = 'file://' + os.path.abspath(
             os.path.join(branch_root, branch_id_to_path(branch_id)))
         self.runInChdir(
@@ -630,22 +626,6 @@ def make_server_tests(base_suite, servers):
 
 
 def make_smoke_tests(base_suite):
-    """Make smoke tests that run against every supported repository type."""
-    # XXX: JonathanLange 2008-08-11: This is a temporary kludge to let us land
-    # this branch before we upgrade Bazaar. This should be removed once
-    # rocketfuel has bzr 1.6b2 or better.
-    from bzrlib.tests import repository_implementations
-    adapter = getattr(
-        repository_implementations, 'RepositoryTestProviderAdapter', None)
-    if adapter is not None:
-        return make_smoke_tests_old_bzr(base_suite)
-    else:
-        return make_smoke_tests_new_bzr(base_suite)
-
-
-def make_smoke_tests_new_bzr(base_suite):
-    # XXX: JonathanLange 2008-08-11: Once rocketfuel has bzr 1.6b2 or better,
-    # this should be renamed to 'make_smoke_tests'.
     from bzrlib import tests
     from bzrlib.tests import repository_implementations
     excluded_scenarios = [
@@ -664,28 +644,13 @@ def make_smoke_tests_new_bzr(base_suite):
     scenarios = repository_implementations.all_repository_format_scenarios()
     scenarios = [
         scenario for scenario in scenarios
-        if scenario[0] not in excluded_scenarios]
+        if scenario[0] not in excluded_scenarios
+        and not scenario[0].startswith('RemoteRepositoryFormat')]
     adapter = tests.TestScenarioApplier()
     adapter.scenarios = scenarios
     new_suite = unittest.TestSuite()
     tests.adapt_tests(base_suite, adapter, new_suite)
     return new_suite
-
-
-def make_smoke_tests_old_bzr(base_suite):
-    # XXX: JonathanLange 2008-08-11: Delete this once rocketfuel has bzr 1.6b2
-    # or better.
-    from bzrlib.tests.repository_implementations import (
-        RepositoryTestProviderAdapter)
-    # We specifically exclude RepositoryFormat7, which is not supported.
-    # See bug 173807 for details.
-    all_formats = [
-        format_registry.get(key) for key in format_registry.keys()
-        if not isinstance(format_registry.get(key), RepositoryFormat7)]
-    adapter = RepositoryTestProviderAdapter(
-        default_transport, None,
-        [(format, format._matchingbzrdir) for format in all_formats])
-    return adapt_suite(adapter, base_suite)
 
 
 def test_suite():

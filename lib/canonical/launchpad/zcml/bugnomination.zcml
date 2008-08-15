@@ -3,6 +3,13 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBugNomination"
+      provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+      factory="canonical.launchpad.browser.bugnomination.BugNominationPrimaryContext"
+      />
+
 <facet facet="bugs">
     <content class="canonical.launchpad.database.BugNomination">
       <require permission="launchpad.View"

@@ -8,9 +8,22 @@
 
   <!-- BugWatch -->
   <content class="canonical.launchpad.database.BugWatch">
-    <allow interface="canonical.launchpad.interfaces.IBugWatch" />
-    <require permission="zope.Public"
-      set_schema="canonical.launchpad.interfaces.IBugWatch" />
+    <implements interface="canonical.launchpad.interfaces.IBugWatch" />
+    <require
+        permission="zope.Public"
+        attributes="bug bugtasks bugtracker datecreated getLastErrorMessage
+                    hasComment id last_error_type lastchanged lastchecked
+                    needscheck owner remote_importance remotebug remotestatus
+                    title url" />
+    <require
+        permission="launchpad.AnyPerson"
+        attributes="destroySelf"
+        set_attributes="bugtracker remotebug" />
+    <require
+        permission="launchpad.Admin"
+        attributes="addComment updateImportance updateStatus"
+        set_attributes="last_error_type lastchanged lastchecked needscheck
+                        remote_importance remotestatus" />
   </content>
 
   <!-- https://launchpad.net/bugs/98639 -->

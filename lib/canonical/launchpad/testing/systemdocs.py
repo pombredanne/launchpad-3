@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'default_optionflags',
     'LayeredDocFileSuite',
     'SpecialOutputChecker',
     'setUp',
@@ -24,11 +25,12 @@ from zope.testing.loggingsupport import Handler
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import reset_logging
 
 
@@ -164,6 +166,14 @@ def create_view(context, name, form=None, layer=None, server_url=None,
     return getMultiAdapter((context, request), name=name)
 
 
+def create_initialized_view(context, name, form=None, layer=None,
+                            server_url=None, method='GET'):
+    """Return a view that has already been initialized."""
+    view = create_view(context, name, form, layer, server_url, method)
+    view.initialize()
+    return view
+
+
 def ordered_dict_as_string(dict):
     """Return the contents of a dict as an ordered string.
 
@@ -188,14 +198,17 @@ def setGlobs(test):
     """Add the common globals for testing system documentation."""
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
+    test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['ILaunchBag'] = ILaunchBag
     test.globs['getUtility'] = getUtility
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
     test.globs['create_view'] = create_view
+    test.globs['create_initialized_view'] = create_initialized_view
     test.globs['LaunchpadObjectFactory'] = LaunchpadObjectFactory
     test.globs['ordered_dict_as_string'] = ordered_dict_as_string
+    test.globs['verifyObject'] = verifyObject
 
 
 def setUp(test):

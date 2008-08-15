@@ -13,7 +13,6 @@ import urlparse
 import xmlrpclib
 
 from StringIO import StringIO
-from cgi import escape
 from datetime import datetime, timedelta
 from httplib import HTTPMessage
 from urllib2 import BaseHandler, HTTPError, Request
@@ -40,6 +39,7 @@ from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.scripts import debbugs
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -135,7 +135,7 @@ def convert_python_status(status, resolution):
 
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
-    login('test@canonical.com')
+    login('foo.bar@canonical.com')
     bug_watch.remotestatus = None
     bug_watch.last_error_type = error_type
     bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
@@ -431,8 +431,13 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     # Map namespaces onto method names.
     methods = {
-        'Bug': ['add_comment', 'comments', 'get_bugs'],
-        'Launchpad': ['login', 'time'],
+        'Launchpad': [
+            'add_comment',
+            'comments',
+            'get_bugs',
+            'login',
+            'time',
+            ],
         'Test': ['login_required']
         }
 
@@ -451,7 +456,8 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get('example.com', {}).get('', {}).get('Bugzilla_logincookie')
+        return cookies.get(
+            'example.com', {}).get('', {}).get('Bugzilla_logincookie')
 
     @property
     def has_valid_auth_cookie(self):
@@ -570,6 +576,16 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         permissive = arguments.get('permissive', False)
         assert permissive, "get_bugs() must be called with permissive=True"
 
+        # If a changed_since argument is specified, marshall it into a
+        # datetime so that we can use it for comparisons.
+        # XXX 2008-08-05 gmb (bug 254999):
+        #     We can remove these lines once we upgrade to python 2.5.
+        changed_since = arguments.get('changed_since')
+        if changed_since is not None:
+            changed_since_timetuple = time.strptime(
+                str(changed_since), '%Y%m%dT%H:%M:%S')
+            changed_since = datetime(*changed_since_timetuple[:6])
+
         for id in bug_ids:
             # If the ID is an int, look up the bug directly. We copy the
             # bug dict into a local variable so we can manipulate the
@@ -579,6 +595,16 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
                 bug_dict = dict(self.bugs[int(id)])
             except ValueError:
                 bug_dict = dict(self.bugs[self.bug_aliases[id]])
+            except KeyError:
+                # We ignore KeyErrors (since permissive == True, which
+                # means that we ignore invalid bug IDs).
+                continue
+
+            # If changed_since is specified, discard all the bugs whose
+            # last_change_time is < changed_since.
+            if (changed_since is not None and
+                bug_dict['last_change_time'] < changed_since):
+                continue
 
             # Update the DateTime fields of the bug dict so that they
             # look like ones that would be sent over XML-RPC.
@@ -604,7 +630,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
         bug_ids = arguments['bug_ids']
         comment_ids = arguments.get('ids')
-        fields_to_return = arguments.get('include')
+        fields_to_return = arguments.get('include_fields')
         comments_by_bug_id = {}
 
         def copy_comment(comment):
@@ -620,7 +646,12 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
         for bug_id in bug_ids:
             comments_for_bug = self.bug_comments[bug_id].values()
-            comments_by_bug_id[bug_id] = [
+
+            # We stringify bug_id when using it as a dict key because
+            # all XML-RPC dict keys are strings (a key for an XML-RPC
+            # dict can have a value but no type; hence Python defaults
+            # to treating them as strings).
+            comments_by_bug_id[str(bug_id)] = [
                 copy_comment(comment) for comment in comments_for_bug
                 if comment_ids is None or comment['id'] in comment_ids]
 
@@ -1178,6 +1209,7 @@ class Urlib2TransportTestInfo:
 
 class Urlib2TransportTestHandler(BaseHandler):
     """A test urllib2 handler returning a hard-coded response."""
+
     def default_open(self, req):
         """Catch all requests and return a hard-coded response.
 
@@ -1192,25 +1224,39 @@ class Urlib2TransportTestHandler(BaseHandler):
             raise HTTPError(
                 req.get_full_url(), 500, 'Internal Error', {}, None)
 
-        response = StringIO("""<?xml version="1.0"?>
-        <methodResponse>
-          <params>
-            <param>
-              <value>%s</value>
-            </param>
-          </params>
-        </methodResponse>
-        """ % escape(req.get_full_url()))
-        info = Urlib2TransportTestInfo()
-        response.info = lambda: info
-        response.geturl = lambda: req.get_full_url()
-        response.code = 200
-        response.msg = ''
+        elif ('testRedirect' in req.data and
+              'redirected' not in req.get_full_url()):
+            # Big hack to make calls to testRedirect act as though a 302
+            # has been received. Note the slightly cheaty check for
+            # 'redirected' in the URL. This is to stop urllib2 from
+            # whinging about infinite loops.
+            redirect_url = urlappend(
+                req.get_full_url(), 'redirected')
+
+            headers = HTTPMessage(StringIO())
+            headers['location'] = redirect_url
+
+            response = StringIO()
+            response.info = lambda: headers
+            response.geturl = lambda: req.get_full_url()
+            response.code = 302
+            response.msg = 'Moved'
+            response = self.parent.error(
+                'http', req, response, 302, 'Moved',
+                headers)
+
+        else:
+            xmlrpc_response = xmlrpclib.dumps(
+                (req.get_full_url(),), methodresponse=True)
+            response = StringIO(xmlrpc_response)
+            info = Urlib2TransportTestInfo()
+            response.info = lambda: info
+            response.code = 200
+            response.geturl = lambda: req.get_full_url()
+            response.msg = ''
+
         return response
 
-
 def patch_transport_opener(transport):
-    """Patch the transport's opener to use a test handler
-    returning a hard-coded response.
-    """
+    """Patch the transport's opener to use a test handler."""
     transport.opener.add_handler(Urlib2TransportTestHandler())

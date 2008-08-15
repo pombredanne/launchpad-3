@@ -50,6 +50,7 @@ from canonical.launchpad.database.distroseries_translations_copy import (
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.publishing import (
@@ -80,7 +81,9 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
-from canonical.launchpad.database.packagecloner import clone_packages
+from canonical.launchpad.interfaces.publishing import active_publishing_status
+
+from canonical.launchpad.mail import signed_message_from_string
 
 from canonical.launchpad.validators.person import validate_public_person
 
@@ -608,6 +611,35 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return DistroSeriesSourcePackageRelease(self, sourcepackagerelease)
 
+    def getCurrentSourceReleases(self, source_package_names):
+        """See `IDistroSeries`."""
+        source_package_ids = [
+            package_name.id for package_name in source_package_names]
+        releases = SourcePackageRelease.select("""
+            SourcePackageName.id IN %s AND
+            SourcePackageRelease.id =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.id = (
+                SELECT max(spph.id)
+                FROM SourcePackagePublishingHistory spph,
+                     SourcePackageRelease spr, SourcePackageName spn
+                WHERE
+                    spn.id = SourcePackageName.id AND
+                    spr.sourcepackagename = spn.id AND
+                    spph.sourcepackagerelease = spr.id AND
+                    spph.archive IN %s AND
+                    spph.status IN %s AND
+                    spph.distroseries = %s)
+            """ % sqlvalues(
+                source_package_ids, self.distribution.all_distro_archive_ids,
+                active_publishing_status, self),
+            clauseTables=[
+                'SourcePackageName', 'SourcePackagePublishingHistory'])
+        return dict(
+            (self.getSourcePackage(release.sourcepackagename),
+             DistroSeriesSourcePackageRelease(self, release))
+            for release in releases)
+
     def __getitem__(self, archtag):
         """See `IDistroSeries`."""
         item = DistroArchSeries.selectOneBy(
@@ -1057,7 +1089,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def searchPackages(self, text):
         """See `IDistroSeries`."""
-        drpcaches = DistroSeriesPackageCache.select("""
+        package_caches = DistroSeriesPackageCache.select("""
             distroseries = %s AND
             archive IN %s AND
             (fti @@ ftq(%s) OR
@@ -1071,7 +1103,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distinct=True)
         return [DistroSeriesBinaryPackage(
             distroseries=self,
-            binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
+            binarypackagename=cache.binarypackagename, cache=cache)
+            for cache in package_caches]
 
     def newArch(self, architecturetag, processorfamily, official, owner,
                 supports_virtualized=False):
@@ -1124,6 +1157,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the content in the changes file (as doing so would be guessing
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
+
+        # The PGP signature is stripped from all changesfiles for PPAs
+        # to avoid replay attacks (see bug 159304).
+        if archive.is_ppa:
+            signed_message = signed_message_from_string(changesfilecontent)
+            if signed_message is not None:
+                # Overwrite `changesfilecontent` with the text stripped
+                # of the PGP signature.
+                new_content = signed_message.signedContent
+                if new_content is not None:
+                    changesfilecontent = signed_message.signedContent
+
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),
             StringIO(changesfilecontent), 'text/plain',
@@ -1284,7 +1329,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug on an IDistroSeries,
         # because internally bugs are reported against IDistroSeries only when
-        # targetted to be fixed in that series, which is rarely the case for a
+        # targeted to be fixed in that series, which is rarely the case for a
         # brand new bug report.
         raise NotImplementedError(
             "A new bug cannot be filed directly on a distribution series, "

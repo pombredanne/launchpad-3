@@ -59,10 +59,6 @@ Now update Tomcat to actually have this data:
 Let's check it out:
 
     >>> browser.open('http://launchpad.dev/tomcat')
-    >>> tag = find_tag_by_id(browser.contents, 'external-links-heading')
-    >>> print extract_text(tag)
-    External Resources
-
     >>> get_urls(browser.contents)
     Home page http://home.page/
     Sourceforge project http://sourceforge.net/projects/sf-tomcat
@@ -73,7 +69,7 @@ Let's check it out:
 
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'product-languages'))
-    C++,Xenon and Purple
+    Languages: C++,Xenon and Purple
 
 When the freshmeat or sourceforge URLs are identical to the homepage, we omit
 the homepage:
@@ -113,20 +109,13 @@ the homepage:
     External downloads http://download.url/
 
 
-= Bug subscriptions =
-
-    >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> user_browser.getLink('Subscribe to bug mail').click()
-    >>> print user_browser.url
-    http://launchpad.dev/firefox/+subscribe
-
 = Licensing alerts =
 
-Any user can see that the project's license has not been reviewed.
+A project that has not set a license is marked as 'Unspecified'.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
-    '<...This project&lsquo;s license has not been reviewed...
+    >>> user_browser.contents
+    '<...This project&rsquo;s license has not been specified...
 
 If the project doesn't have a license, a portlet is displayed
 to direct the owner to set a license.
@@ -135,6 +124,8 @@ to direct the owner to set a license.
     >>> firefox = Product.selectOneBy(name="firefox")
     >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(owner_browser.contents, 'license-status')
+    <...This project&rsquo;s license has not been specified...
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-requires-subscription')
     None
@@ -150,6 +141,35 @@ is missing licensing information.
     ...                      'portlet-missing-license')
     None
 
+A project that includes a license of "Other/Open Source" that has not
+been reviewed by a Launchpad administrator will be displayed as
+'Unreviewed.'
+
+    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> owner_browser.open('http://launchpad.dev/thunderbird/+edit')
+    >>> owner_browser.getControl(name='field.licenses').value = [
+    ...     'OTHER_OPEN_SOURCE']
+    >>> owner_browser.getControl(name='field.license_info').value = 'foo'
+    >>> owner_browser.getControl('Change').click()
+
+Any user can see that the project's license has not been reviewed.
+
+    >>> user_browser.open('http://launchpad.dev/thunderbird')
+    >>> user_browser.contents
+    '<...This project&rsquo;s license has not been reviewed...
+
+Changing the state to reviewed but not approved results in the project
+being shown as proprietary.
+
+    >>> admin_browser.open('http://launchpad.dev/thunderbird/+review-license')
+    >>> admin_browser.getControl(name='field.license_reviewed').value = True
+    >>> admin_browser.getControl(name='field.license_approved').value = False
+    >>> admin_browser.getControl('Change').click()
+
+    >>> user_browser.open('http://launchpad.dev/thunderbird')
+    >>> user_browser.contents
+    '<...This project&rsquo;s license is proprietary...
+
 If the project doesn't qualify for free hosting, or if it doesn't
 have much time left on its commercial subscription, a portlet
 is displayed to direct the owner to purchase a subscription.
@@ -158,6 +178,8 @@ is displayed to direct the owner to purchase a subscription.
     >>> flush_database_updates()
     >>> transaction.commit()
     >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(owner_browser.contents, 'license-status')
+    <...This project&rsquo;s license is proprietary...
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-requires-subscription')
     <div...Purchasing a subscription is required...</div>
@@ -167,16 +189,18 @@ is displayed to direct the owner to purchase a subscription.
     >>> owner_browser.getLink('Purchase a subscription.').click()
     >>> owner_browser.url
     'http://launchpad.dev/firefox/+purchase-subscription'
+    >>> print find_tags_by_class(owner_browser.contents, 'error message')
+    []
     >>> owner_browser.getLink('Canonical Shop')
-    <Link...url='https://shop.canonical.com'...>
+    <Link...url='http://ubuntu.recycledmania.com...'>
     >>> owner_browser.getLink('voucher management page')
     <Link...url='http://launchpad.dev/people/+me/+vouchers'...>
 
 Any user can see that the project's license is proprietary.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
-    '<...This project&lsquo;s license is proprietary...
+    >>> user_browser.contents
+    '<...This project&rsquo;s license is proprietary...
 
 A non-owner does not see that a commercial subscription is due,
 and the +purchase-subscription page will display an error. A user would
@@ -211,11 +235,12 @@ an error.
     <div...class="error message"...
     This project does not require a commercial subscription to be purchased...
 
-Any user can see that the project's license is open source.
+If the project's license is open source, the license status is not displayed
+on the index page, since most projects fall into this category.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
-    '<...This project&lsquo;s license is open source...
+    >>> print find_tag_by_id(owner_browser.contents, 'license-status')
+    None
 
 If the is_subscription_feature_active config variable is false,
 then the owner will not get a warning that the subscription is due.

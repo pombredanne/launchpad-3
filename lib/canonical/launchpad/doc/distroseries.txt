@@ -484,9 +484,6 @@ transaction manager (in this case a fake one) to make these work.
 
     >>> class FakeTransactionManager:
     ...     """Mock transaction manager for test."""
-    ...     # The translations-copying code does not want its connection reset
-    ...     # after every transaction.  Give it a field to change.
-    ...     reset_after_transaction = True
     ...     def begin(self):
     ...         pass
     ...     def commit(self):
@@ -1134,7 +1131,7 @@ publication in question:
    u'web'
 
    >>> warty_mozilla_pub_binaries = warty_pub_source.getPublishedBinaries()
-   >>> warty_mozilla_pub_binaries.count()
+   >>> len(warty_mozilla_pub_binaries)
    4
    >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
 

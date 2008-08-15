@@ -61,25 +61,31 @@
 
     <!-- OpenID persistent identity URLs -->
     <content
-        class="canonical.launchpad.browser.openiddiscovery.OpenIDPersistentIdentity">
+        class="canonical.launchpad.components.openidserver.OpenIDPersistentIdentity">
       <allow
-          interface="canonical.launchpad.interfaces.IOpenIDPersistentIdentity" />
+          interface="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity" />
     </content>
 
+    <adapter
+      for="canonical.launchpad.interfaces.account.IAccount"
+      provides="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
+      factory="canonical.launchpad.components.openidserver.account_to_openidpersistentidentity"
+      />
+
     <browser:url
-        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
-        path_expression="string:+id/${person/openid_identifier}"
+        for="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
+        path_expression="string:${openid_identifier}"
         parent_utility="canonical.launchpad.interfaces.IOpenIdApplication"
         rootsite="openid"
         />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
+        for="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
         name="+index"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
+        for="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
         name="+index"
         template="../templates/openidpersistentidentity-index.pt"
         permission="zope.Public"
@@ -87,7 +93,7 @@
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
+        for="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
         name="+xrds"
         permission="zope.Public"
         class="canonical.launchpad.browser.openiddiscovery.PersistentIdentityView"

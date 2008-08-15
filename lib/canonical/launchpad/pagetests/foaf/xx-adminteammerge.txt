@@ -35,13 +35,12 @@ are merged.
 
 ==  Non-display of merged teams ==
 
-Merged teams shouldn't appear on the team listings:
+Merged teams are not visible anymore.
 
-    >>> browser.open("http://launchpad.dev/people/+teamlist?batch=100")
-    >>> "guadamen" in browser.contents
-    True
-    >>> "landscape-developers" in browser.contents
-    False
+    >>> browser.open("http://launchpad.dev/~landscape-developers-merged")
+    Traceback (most recent call last):
+    ...
+    NotFound:...
 
 
 == Corner cases ==

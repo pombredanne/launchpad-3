@@ -53,6 +53,43 @@
   ...
 
 
+  Trying to add a new WikiName with an invalid URL will not work.
+
+  >>> browser.getControl(name='newwiki').value = '/this-is-not-a-url/'
+  >>> browser.getControl(name='newwikiname').value = 'FooBar'
+  >>> browser.getControl('Save Changes').click()
+  >>> browser.url
+  'http://localhost/~name16/+editwikinames'
+  >>> print browser.contents
+  <...
+  ..."/this-is-not-a-url/" is not a valid URL....
+  ...
+
+ The invalid value is escaped using HTML entities when displayed back to
+ the user.
+
+  >>> browser.getControl(name='newwiki').value = '<script>alert(1);</script>'
+  >>> browser.getControl(name='newwikiname').value = 'FooBar'
+  >>> browser.getControl('Save Changes').click()
+  >>> browser.url
+  'http://localhost/~name16/+editwikinames'
+  >>> print browser.contents
+  <...
+  ..."&lt;script&gt;alert(1);&lt;/script&gt;/" is not a valid URL...
+  ...
+
+ Only http and https URLs are allowed for wikis.
+
+  >>> browser.getControl(name='newwiki').value = "javascript:void"
+  >>> browser.getControl(name='newwikiname').value = 'FooBar'
+  >>> browser.getControl('Save Changes').click()
+  >>> browser.url
+  'http://localhost/~name16/+editwikinames'
+  >>> print browser.contents
+  <...
+  ...The URL scheme "javascript" is not allowed.  Only http or https URLs may be used...
+  ...
+
   Now we finally manage to add a WikiName. :)
 
   >>> browser.getControl(name='newwiki').value = 'http://foo.bar/wiki/'

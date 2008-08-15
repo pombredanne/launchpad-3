@@ -6,14 +6,10 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
   >
 <body>
-
-<metal:portlets fill-slot="portlets">
-   <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
-</metal:portlets>
 
 <div metal:fill-slot="main">
 
@@ -29,14 +25,16 @@
          tal:condition="view/has_sources">
 
       <metal:selectable-sources
-        use-macro="context/@@+form-macros/selectable-sources" />
+        use-macro="context/@@+macros/selectable-sources" />
 
       <tal:actions condition="view/available_sources_size"
                    define="widget nocall:view/widgets/deletion_comment;
                            field_name widget/context/__name__;
                            error python:view.getFieldError(field_name);">
-        <p class="warning message"
-          >Read the page help to understand how removals work.</p>
+        <p class="informational message">
+          Package deletion can take some time before the packages are actually removed.
+          See the full <a href="https://help.launchpad.net/PPA">PPA help page</a>.
+        </p>
         <div style="margin-top: 1em;">
           <label tal:attributes="for widget/name"
                  tal:content="string:${widget/label}:">Label</label>

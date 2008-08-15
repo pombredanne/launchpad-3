@@ -985,8 +985,9 @@ transaction after GET requests in order to persist new entries added to
 the OAuthNonce table.
 
     >>> import time
-    >>> from canonical.launchpad.interfaces import (
-    ...     IOAuthConsumerSet, IPersonSet, OAuthPermission)
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
@@ -1116,12 +1117,15 @@ The feeds implementation always returns the anonymous user.
 
 The webservice implementation returns the principal for the person
 associated with the access token specified in the request.  The
-principal's access_level will be the one specified in the token.
+principal's access_level and scope will match what was specified in the
+token.
 
+    >>> from canonical.launchpad.interfaces.product import IProductSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
-    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC, context=firefox)
     >>> access_token = token.createAccessToken()
     >>> form = dict(
     ...     oauth_consumer_key='foobar123451432',
@@ -1140,6 +1144,8 @@ principal's access_level will be the one specified in the token.
     Guilherme Salgado
     >>> principal.access_level
     <DBItem AccessLevel.WRITE_PUBLIC...
+    >>> principal.scope.name
+    u'firefox'
 
 If the token is expired or doesn't exist, an Unauthorized exception is
 raised, though.

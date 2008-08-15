@@ -21,6 +21,8 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
+XSLTPROC=xsltproc
+
 APPSERVER_ENV = \
   LPCONFIG=${LPCONFIG} \
   PYTHONPATH=$(PYTHONPATH) \
@@ -36,6 +38,14 @@ schema: build clean_codehosting
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
+
+# XXX flacoste 2008/07/31 This is not automatically run and the
+# generated file is stored in the revision control, until IS installs
+# xsltproc on all required machine.
+apidoc:
+	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
+		$(XSLTPROC) ./lib/canonical/lazr/rest/wadl-to-refhtml.xsl - \
+		> ./lib/canonical/launchpad/apidoc/index.html
 
 check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
 
@@ -83,7 +93,7 @@ check_merge_edge: dbfreeze_check check_merge
 	# in database/schema/pending. Used for maintaining the
 	# edge.lauchpad.net branch.
 
-check: build bzr_version_info
+check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
@@ -103,7 +113,7 @@ pagetests: build
 
 inplace: build
 
-build:
+build: bzr_version_info
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
@@ -133,21 +143,22 @@ ftest_inplace: inplace
 	env PYTHONPATH=$(PYTHONPATH) \
 	    $(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
-run: inplace stop bzr_version_info
+run: inplace stop
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,google-webservice -C $(CONFFILE)
 
-run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecode/loggerhead
+start-gdb: inplace stop bzr_version_info
+	rm -f thread*.request
+	$(APPSERVER_ENV) nohup gdb -x run.gdb --args $(PYTHON) -t $(STARTSCRIPT) \
+		-r librarian,restricted-librarian,google-webservice -C $(CONFFILE) \
+		> ${LPCONFIG}-nohup.out 2>&1 &
+
+run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
-
-run_all_quickly_and_quietly: stop_quickly_and_quietly
-	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
-		 -C $(CONFFILE) > /tmp/${LPCONFIG}-quiet.log 2>&1
 
 pull_branches: bzr_version_info
 	# Mirror the hosted branches in the development upload area to the
@@ -186,11 +197,6 @@ stop: build
 	@ $(APPSERVER_ENV) ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
 
-stop_quickly_and_quietly:
-	@ $(APPSERVER_ENV) ${PYTHON} \
-	  utilities/killservice.py librarian buildsequencer launchpad mailman \
-	  > /dev/null 2>&1
-
 shutdown: scheduleoutage stop
 	rm -f +maintenancetime.txt
 
@@ -221,7 +227,7 @@ clean:
 	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
-	rm -rf lib/mailman
+	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
 
 realclean: clean

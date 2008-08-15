@@ -4,10 +4,18 @@
 
 __metaclass__ = type
 __all__ = [
-    'AvatarTestCase', 'CodeHostingTestProviderAdapter',
-    'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
-    'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
-    'deferToThread', 'make_bazaar_branch_and_tree']
+    'AvatarTestCase',
+    'adapt_suite',
+    'BranchTestCase',
+    'CodeHostingTestProviderAdapter',
+    'CodeHostingRepositoryTestProviderAdapter',
+    'create_branch_with_one_revision',
+    'deferToThread',
+    'FakeLaunchpad',
+    'LoomTestMixin',
+    'make_bazaar_branch_and_tree',
+    'ServerTestCase',
+    ]
 
 import os
 import threading
@@ -84,7 +92,45 @@ def exception_names(exceptions):
     return names
 
 
-class BranchTestCase(TestCaseWithTransport):
+class LoomTestMixin:
+    """Mixin to provide Bazaar test classes with limited loom support."""
+
+    def loomify(self, branch):
+        tree = branch.create_checkout('checkout')
+        tree.lock_write()
+        try:
+            tree.branch.nick = 'bottom-thread'
+            loom_branch.loomify(tree.branch)
+        finally:
+            tree.unlock()
+        loom_tree = tree.bzrdir.open_workingtree()
+        loom_tree.lock_write()
+        loom_tree.branch.new_thread('bottom-thread')
+        loom_tree.commit('this is a commit', rev_id='commit-1')
+        loom_tree.unlock()
+        loom_tree.branch.record_loom('sample loom')
+        self.get_transport().delete_tree('checkout')
+        return loom_tree
+
+    def makeLoomBranchAndTree(self, tree_directory):
+        """Make a looms-enabled branch and working tree."""
+        tree = self.make_branch_and_tree(tree_directory)
+        tree.lock_write()
+        try:
+            tree.branch.nick = 'bottom-thread'
+            loom_branch.loomify(tree.branch)
+        finally:
+            tree.unlock()
+        loom_tree = tree.bzrdir.open_workingtree()
+        loom_tree.lock_write()
+        loom_tree.branch.new_thread('bottom-thread')
+        loom_tree.commit('this is a commit', rev_id='commit-1')
+        loom_tree.unlock()
+        loom_tree.branch.record_loom('sample loom')
+        return loom_tree
+
+
+class BranchTestCase(TestCaseWithTransport, LoomTestMixin):
     """Base class for tests that do a lot of things with branches."""
 
     layer = LaunchpadFunctionalLayer
@@ -102,11 +148,6 @@ class BranchTestCase(TestCaseWithTransport):
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
         return tree
-
-    def emptyPullQueues(self):
-        transaction.begin()
-        cursor().execute("UPDATE Branch SET next_mirror_time = NULL")
-        transaction.commit()
 
     def getUniqueInteger(self):
         """Return an integer unique to this run of the test case."""
@@ -159,23 +200,6 @@ class BranchTestCase(TestCaseWithTransport):
         setSecurityPolicy(LaunchpadSecurityPolicy)
         self.addCleanup(lambda: setSecurityPolicy(old_policy))
 
-    def makeLoomBranchAndTree(self, tree_directory):
-        """Make a looms-enabled branch and working tree."""
-        tree = self.make_branch_and_tree(tree_directory)
-        tree.lock_write()
-        try:
-            tree.branch.nick = 'bottom-thread'
-            loom_branch.loomify(tree.branch)
-        finally:
-            tree.unlock()
-        loom_tree = tree.bzrdir.open_workingtree()
-        loom_tree.lock_write()
-        loom_tree.branch.new_thread('bottom-thread')
-        loom_tree.commit('this is a commit', rev_id='commit-1')
-        loom_tree.unlock()
-        loom_tree.branch.record_loom('sample loom')
-        return loom_tree
-
 
 class ServerTestCase(TrialTestCase, BranchTestCase):
 
@@ -194,11 +218,7 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
             self.installServer(self.getDefaultServer())
 
         self.server.setUp()
-
-    def tearDown(self):
-        deferred1 = self.server.tearDown()
-        deferred2 = defer.maybeDeferred(super(ServerTestCase, self).tearDown)
-        return defer.gatherResults([deferred1, deferred2])
+        self.addCleanup(self.server.tearDown)
 
     def __str__(self):
         return self.id()

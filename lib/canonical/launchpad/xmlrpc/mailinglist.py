@@ -10,6 +10,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -45,6 +46,20 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # sequence of 2-tuples giving the team name and any initial values for
         # the mailing list.
         response = {}
+        # Handle unsynchronized lists.
+        unsynchronized = []
+        for mailing_list in list_set.unsynchronized_lists:
+            name = mailing_list.team.name
+            if mailing_list.status == MailingListStatus.CONSTRUCTING:
+                unsynchronized.append((name, 'constructing'))
+            elif mailing_list.status == MailingListStatus.UPDATING:
+                unsynchronized.append((name, 'updating'))
+            else:
+                raise AssertionError(
+                    'Mailing list is neither CONSTRUCTING nor UPDATING: %s'
+                    % name)
+        if len(unsynchronized) > 0:
+            response['unsynchronized'] = unsynchronized
         creates = []
         for mailing_list in list_set.approved_lists:
             initializer = {}
@@ -74,20 +89,6 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             mailing_list.startUpdating()
         if len(modified) > 0:
             response['modify'] = modified
-        # Handle unsynchronized lists.
-        unsynchronized = []
-        for mailing_list in list_set.unsynchronized_lists:
-            name = mailing_list.team.name
-            if mailing_list.status == MailingListStatus.CONSTRUCTING:
-                unsynchronized.append((name, 'constructing'))
-            elif mailing_list.status == MailingListStatus.UPDATING:
-                unsynchronized.append((name, 'updating'))
-            else:
-                raise AssertionError(
-                    'Mailing list is neither CONSTRUCTING nor UPDATING: %s'
-                    % name)
-        if len(unsynchronized) > 0:
-            response['unsynchronized'] = unsynchronized
         return response
 
     def reportStatus(self, statuses):
@@ -144,18 +145,22 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # list, but may not get deliveries of posted messages.
             for email_address in mailing_list.getSenderAddresses():
                 real_name = email_address.person.displayname
+                # Hidden email addresses are usually only visible to the user.
+                email = removeSecurityProxy(email_address).email
                 # We'll mark the status of these addresses as disabled BYUSER,
                 # which seems like the closest mapping to the semantics we
                 # intend.  It doesn't /really/ matter as long as it's disabled
                 # because the reason is only evident in the Mailman web u/i,
                 # which we're not using.
-                members[email_address.email] = (real_name, flags, BYUSER)
+                members[email] = (real_name, flags, BYUSER)
             # Now go through just the subscribed addresses, the main
             # difference now being that these addresses are enabled for
             # delivery.  If there are overlaps, the enabled flag wins.
             for email_address in mailing_list.getSubscribedAddresses():
                 real_name = email_address.person.displayname
-                members[email_address.email] = (real_name, flags, ENABLED)
+                # Hidden email addresses are usually only visible to the user.
+                email = removeSecurityProxy(email_address).email
+                members[email] = (real_name, flags, ENABLED)
             # Finally, add the archive recipient if there is one, and if the
             # team is public.  This address should never be registered in
             # Launchpad, meaning specifically that the

@@ -2,8 +2,8 @@ This file lists all the karma events that Malone produces. First let's
 import some stuff and define a function to help us make the
 documentation cleaner:
 
-    >>> from canonical.launchpad.interfaces import (IPersonSet, IMessageSet,
-    ...     IKarmaActionSet, IDistributionSet, IBugSet)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IDistributionSet, IKarmaActionSet, IPersonSet)
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
 Setup an event listener to help ensure karma is assigned when it should.
@@ -99,10 +99,12 @@ Accept a bug task:
 Change a bug task's importance:
 
     >>> from canonical.launchpad.interfaces import BugTaskImportance
-    >>> bugtask.importance = BugTaskImportance.HIGH
+    >>> bugtask.transitionToImportance(
+    ...     BugTaskImportance.HIGH, getUtility(ILaunchBag).user)
     >>> for importance in BugTaskImportance.items:
     ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    ...     bugtask.importance = importance
+    ...     bugtask.transitionToImportance(
+    ...         importance, getUtility(ILaunchBag).user)
     ...     print importance.name
     ...     notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['importance']))
     UNKNOWN
