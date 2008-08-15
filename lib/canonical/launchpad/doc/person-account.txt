@@ -96,7 +96,7 @@ will cause this spec to be reassigned.
      u'name18', u'ubuntu-team', u'vcs-imports']
 
     >>> [email.email for email in foobar.validatedemails]
-    []
+    [u'admin@canonical.com']
 
     >>> foobar.name
     u'name16'
