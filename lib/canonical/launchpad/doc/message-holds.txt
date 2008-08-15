@@ -286,10 +286,8 @@ Here are some helper functions.
     >>> hold_set = getUtility(IMessageApprovalSet)
     >>> from operator import attrgetter
     >>> def print_hold(message_hold):
-    ...     messages = message_set.get(message_hold.message_id)
-    ...     assert len(messages) <= 1, 'Duplicate message-ids'
     ...     message_id = message_hold.message_id
-    ...     subject = messages[0].subject
+    ...     subject = message_hold.message.subject
     ...     list_name = message_hold.mailing_list.team.name
     ...     print message_id, list_name, subject
 
