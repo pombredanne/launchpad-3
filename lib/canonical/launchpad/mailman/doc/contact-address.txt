@@ -241,6 +241,7 @@ Notifications will no longer be sent to the mailing list.
     >>> browser.getControl('Description').value = 'More detail.'
     >>> browser.getControl('Add').click()
 
+    >>> smtpd_watcher.expecting_timeout = True
     >>> smtpd_watcher.wait_for_list_traffic('itest-one')
     'Timed out'
 
