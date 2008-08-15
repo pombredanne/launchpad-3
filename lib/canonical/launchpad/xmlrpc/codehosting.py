@@ -32,6 +32,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.xmlrpc import faults
 
 
 UTC = pytz.timezone('UTC')
@@ -109,11 +110,15 @@ class BranchPuller(LaunchpadXMLRPCView):
         """See `IBranchPuller`."""
         # Everything in this method is insecure.
         branch_set = removeSecurityProxy(getUtility(IBranchSet))
+        stacked_on_branch = None
         if stacked_on_location.startswith('/'):
             stacked_on_branch = branch_set.getByUniqueName(
                 stacked_on_location.strip('/'))
         else:
-            stacked_on_branch = branch_set.getByUrl(stacked_on_location)
+            stacked_on_branch = branch_set.getByUrl(
+                stacked_on_location.rstrip('/'))
+        if stacked_on_branch is None:
+            return faults.NoSuchBranch(stacked_on_location)
         stacked_branch = branch_set.get(branch_id)
         stacked_branch.stacked_on = stacked_on_branch
         return True

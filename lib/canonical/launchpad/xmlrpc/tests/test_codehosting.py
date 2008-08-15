@@ -25,6 +25,7 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_SERVICES, run_with_login)
+from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer
 
 
@@ -40,6 +41,14 @@ def get_logged_in_username(requester=None):
     if user is None:
         return None
     return user.name
+
+
+class XMLRPCTest(TestCaseWithFactory):
+
+    def assertFaultEqual(self, faultCode, faultString, fault):
+        """Assert that `fault` has the passed-in attributes."""
+        self.assertEqual(fault.faultCode, faultCode)
+        self.assertEqual(fault.faultString, faultString)
 
 
 class TestRunWithLogin(TestCaseWithFactory):
@@ -97,7 +106,7 @@ class TestRunWithLogin(TestCaseWithFactory):
         self.assertEqual(None, login_id)
 
 
-class BranchPullerTest(TestCaseWithFactory):
+class BranchPullerTest(XMLRPCTest):
     """Tests for the implementation of `IBranchPuller`."""
 
     layer = DatabaseFunctionalLayer
@@ -246,7 +255,7 @@ class BranchPullerTest(TestCaseWithFactory):
         self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
 
     def test_setStackedOnExternalURL(self):
-        # If set_stacked_on is passed an external URL, rather than a URL
+        # If setStackedOn is passed an external URL, rather than a URL
         # fragment, it will mark the branch as being stacked on the branch in
         # Launchpad registered with that external URL.
         # XXX - rephrase.
@@ -254,6 +263,25 @@ class BranchPullerTest(TestCaseWithFactory):
         stacked_on_branch = self.factory.makeBranch(BranchType.MIRRORED)
         self.storage.setStackedOn(stacked_branch.id, stacked_on_branch.url)
         self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
+
+    def test_setStackedOnExternalURLWithTrailingSlash(self):
+        # If setStackedOn is passed an external URL with a trailing slash, it
+        # won't make a big deal out of it, it will treat it like any other
+        # URL.
+        stacked_branch = self.factory.makeBranch()
+        stacked_on_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        url = stacked_on_branch.url + '/'
+        self.storage.setStackedOn(stacked_branch.id, url)
+        self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
+
+    def test_setStackedOnBranchNotFound(self):
+        # If setStackedOn can't find a branch for the given location, it will
+        # return a Fault.
+        stacked_branch = self.factory.makeBranch()
+        url = self.factory.getUniqueURL()
+        fault = self.storage.setStackedOn(stacked_branch.id, url)
+        self.assertFaultEqual(
+            faults.NoSuchBranch.error_code, "No such branch: %s" % url, fault)
 
 
 class BranchPullQueueTest(TestCaseWithFactory):
@@ -310,7 +338,7 @@ class BranchPullQueueTest(TestCaseWithFactory):
         self.assertBranchQueues([], [], [branch])
 
 
-class BranchFileSystemTest(TestCaseWithFactory):
+class BranchFileSystemTest(XMLRPCTest):
     """Tests for the implementation of `IBranchFileSystem`."""
 
     layer = DatabaseFunctionalLayer
@@ -318,11 +346,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def setUp(self):
         super(BranchFileSystemTest, self).setUp()
         self.branchfs = BranchFileSystem(None, None)
-
-    def assertFaultEqual(self, faultCode, faultString, fault):
-        """Assert that `fault` has the passed-in attributes."""
-        self.assertEqual(fault.faultCode, faultCode)
-        self.assertEqual(fault.faultString, faultString)
 
     def test_createBranch(self):
         # createBranch creates a branch with the supplied details and the
