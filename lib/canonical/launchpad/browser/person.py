@@ -174,18 +174,18 @@ from canonical.launchpad.components.openidserver import (
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 from canonical.launchpad.validators.email import valid_email
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.login import logoutPerson
-from canonical.launchpad.webapp.menu import structured, NavigationMenu
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
     custom_widget, enabled_with_permission, stepthrough, stepto)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.login import logoutPerson
+from canonical.launchpad.webapp.menu import structured, NavigationMenu
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
 
