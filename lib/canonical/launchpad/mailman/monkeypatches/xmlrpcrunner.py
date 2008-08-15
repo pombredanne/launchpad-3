@@ -25,6 +25,8 @@ from Mailman.Logging.Syslog import syslog
 from Mailman.MailList import MailList
 from Mailman.Queue.Runner import Runner
 
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+
 COMMASPACE = ', '
 
 
@@ -35,15 +37,28 @@ attrmap = {
     }
 
 
-def log_exception():
+class MailManErrorUtility(ErrorReportingUtility):
+    """An error utility that for the MailMan xmlrpc process."""
+
+    _default_config_section = 'mailman'
+
+
+def log_exception(message=None):
     """Write the current exception stacktrace into the Mailman log file.
 
     This is really just a convenience function for a refactored chunk of
     common code.
+
+    :param message: an optional message to appear in the syslog, otherwise
+        a traceback is used.
     """
-    out_file = StringIO()
-    traceback.print_exc(file=out_file)
-    syslog('xmlrpc', out_file.getvalue())
+    error_utility = MailManErrorUtility()
+    error_utility.raising(sys.exc_info())
+    if message is None:
+        out_file = StringIO()
+        traceback.print_exc(file=out_file)
+        message = out_file.getvalue()
+    syslog('xmlrpc', message)
 
 
 class XMLRPCRunner(Runner):
@@ -93,15 +108,21 @@ class XMLRPCRunner(Runner):
         # Snooze for a while.
         return 0
 
+    def _log(self, exc):
+        """Log the exception in a log file and as an OOPS."""
+        Runner._log(self, exc)
+        error_utility = MailManErrorUtility()
+        error_utility.raising(sys.exc_info())
+
     def _check_list_actions(self):
         """See if there are any list actions to perform."""
         try:
             actions = self._proxy.getPendingActions()
         except (xmlrpclib.ProtocolError, socket.error), error:
-            syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
+            log_exception('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
             return
         except xmlrpclib.Fault, error:
-            syslog('xmlrpc', 'Launchpad exception: %s', error)
+            log_exception('xmlrpc', 'Launchpad exception: %s', error)
             return
         if actions:
             syslog('xmlrpc', 'Received these actions: %s',
@@ -148,9 +169,10 @@ class XMLRPCRunner(Runner):
                 self._proxy.reportStatus(this_status)
                 syslog('xmlrpc', '[%s] %s: %s' % (team_name, action, status))
             except (xmlrpclib.ProtocolError, socket.error), error:
-                syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
+                log_exception(
+                    'xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
             except xmlrpclib.Fault, error:
-                syslog('xmlrpc', 'Launchpad exception: %s', error)
+                log_exception('xmlrpc', 'Launchpad exception: %s', error)
 
     def _get_subscriptions(self):
         """Get the latest subscription information."""
@@ -162,10 +184,10 @@ class XMLRPCRunner(Runner):
             info = self._proxy.getMembershipInformation(active_lists)
 ##             syslog('xmlrpc', 'membership info: %s', info)
         except (xmlrpclib.ProtocolError, socket.error), error:
-            syslog('xmlrpc', 'Cannot talk to Launchpad: %s', error)
+            log_exception('xmlrpc', 'Cannot talk to Launchpad: %s', error)
             return
         except xmlrpclib.Fault, error:
-            syslog('xmlrpc', 'Launchpad exception: %s', error)
+            log_exception('xmlrpc', 'Launchpad exception: %s', error)
             return
         for list_name in info:
             # Start with an unlocked list.
@@ -348,8 +370,8 @@ class XMLRPCRunner(Runner):
             # exceptions that Mailman can raise.
             # pylint: disable-msg=W0702
             except:
-                syslog('xmlrpc',
-                       'List creation error for team: %s', team_name)
+                log_exception(
+                    'xmlrpc', 'List creation error for team: %s', team_name)
                 log_exception()
                 return False
             else:
@@ -391,8 +413,9 @@ class XMLRPCRunner(Runner):
             # exceptions that Mailman can raise.
             # pylint: disable-msg=W0702
             except:
-                syslog('xmlrpc',
-                       'List modification error for team: %s', team_name)
+                log_exception(
+                    'xmlrpc',
+                    'List modification error for team: %s', team_name)
                 log_exception()
                 statuses[team_name] = ('modify', 'failure')
             else:
@@ -443,9 +466,8 @@ class XMLRPCRunner(Runner):
             # exceptions that Mailman can raise.
             # pylint: disable-msg=W0702
             except:
-                syslog('xmlrpc',
-                       'List deletion error for team: %s', team_name)
-                log_exception()
+                log_exception(
+                    'xmlrpc', 'List deletion error for team: %s', team_name)
                 statuses[team_name] = ('deactivate', 'failure')
             else:
                 statuses[team_name] = ('deactivate', 'success')
@@ -455,10 +477,10 @@ class XMLRPCRunner(Runner):
         try:
             dispositions = self._proxy.getMessageDispositions()
         except (xmlrpclib.ProtocolError, socket.error), error:
-            syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
+            log_exception('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
             return
         except xmlrpclib.Fault, error:
-            syslog('xmlrpc', 'Launchpad exception: %s', error)
+            log_exception('xmlrpc', 'Launchpad exception: %s', error)
             return
         if dispositions:
             syslog('xmlrpc',
@@ -489,8 +511,9 @@ class XMLRPCRunner(Runner):
             try:
                 mlist = MailList(team_name)
             except Errors.MMUnknownListError:
-                syslog('xmlrpc', 'Skipping dispositions for unknown list: %s',
-                       team_name)
+                log_exception(
+                    'xmlrpc', 'Skipping dispositions for unknown list: %s',
+                    team_name)
                 continue
             try:
                 accepts, declines, discards = by_list[team_name]
@@ -556,7 +579,8 @@ class XMLRPCRunner(Runner):
             except:
                 # Any other exception is also a failure.
                 statuses[name] = ('resynchronize', 'failure')
-                syslog('xmlrpc', 'Mailing list does not load: %s', name)
+                log_exception(
+                    'xmlrpc', 'Mailing list does not load: %s', name)
             else:
                 # The list loaded just fine, so it successfully
                 # resynchronized.  Be sure to unlock it!
@@ -594,4 +618,4 @@ def extractall(tgz_file):
             tgz_file.utime(tarinfo, path)
             tgz_file.chmod(tarinfo, path)
         except tarfile.ExtractError, e:
-            syslog('xmlrpc', 'tarfile: %s' % e)
+            log_exception('xmlrpc', 'tarfile: %s' % e)

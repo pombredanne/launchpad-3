@@ -1,0 +1,82 @@
+= Logging and OOPS reporting =
+
+The MailMan XMLRPCRunner logs errors and reports OOPSes.
+
+
+= MailManErrorUtility =
+
+The MailManErrorUtility is a ErrorReportingUtility that is configured
+in the [mailman] section of config.
+
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.mailman.monkeypatches.xmlrpcrunner import (
+    ...     MailManErrorUtility)
+
+    >>> error_utility = MailManErrorUtility()
+    >>> error_utility._default_config_section
+    'mailman'
+
+    >>> error_utility.prefix
+    'TMMX'
+    >>> config.mailman.oops_prefix
+    'TMMX'
+
+    >>> error_utility.error_dir
+    '/var/tmp/mailman-xmlrpc.test'
+    >>> config.mailman.error_dir
+    '/var/tmp/mailman-xmlrpc.test'
+
+
+= Error logging =
+
+The log_exception() function is used by XMLRPCRunner to report known
+exceptions. It reports the OOPS.
+
+    >>> from canonical.launchpad.mailman.monkeypatches.xmlrpcrunner import (
+    ...     log_exception)
+
+    >>> def test_log_exception(message=None):
+    ...     """Raise an error to test log_exception."""
+    ...     try:
+    ...         raise AssertionError("There is an OOPS in progress.")
+    ...     except AssertionError, error:
+    ...         log_exception(message)
+
+    >>> test_log_exception()
+    >>> oops = error_utility.getLastOopsReport()
+    >>> oops.id
+    'OOPS-...TMMX...'
+    >>> oops.type
+    'AssertionError'
+    >>> oops.value
+    'There is an OOPS in progress.'
+    >>> print oops.tb_text
+    Traceback (innermost last):
+    ...
+    AssertionError: There is an OOPS in progress.
+
+The traceback was also written to the XMLRPCRunner's log.
+
+    >>> print 'log:', xmlrpc_watcher.get_line('Traceback')
+    log: ... Traceback (most recent call last):
+
+When a message is passed to log_exception, it is written to the
+XMLRPCRunner's log. The OOPS report uses the exception.
+
+    >>> test_log_exception('Bedbugs in balleyhoo.')
+
+    >>> print 'log:', xmlrpc_watcher.get_line('Bedbugs')
+    log: ... Bedbugs in balleyhoo.
+
+    >>> oops2 = error_utility.getLastOopsReport()
+    >>> oops2.id != oops.id
+    True
+    >>> print oops.tb_text
+    Traceback (innermost last):
+    ...
+    AssertionError: There is an OOPS in progress.
+
+Unknown exceptions are reported though the _log() method. It is
+unreachable because XMLRPCRunner redefines _oneloop(), the only method
+that calls it.
+

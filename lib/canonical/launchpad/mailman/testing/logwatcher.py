@@ -80,7 +80,7 @@ class LogWatcher:
             else:
                 yield self._line_cache.pop(0)
 
-    def _wait(self, landmark):
+    def _wait(self, landmark, return_line=False):
         """Wait until the landmark string has been seen.
 
         'landmark' must appear on a single line.  Comparison is done with 'in'
@@ -94,6 +94,9 @@ class LogWatcher:
                 if datetime.datetime.now() > until:
                     return 'Timed out'
                 time.sleep(SECONDS_TO_SNOOZE)
+            elif landmark in line and return_line is True:
+                # Return the line.
+                return line
             elif landmark in line:
                 # Return None on success for doctest convenience.
                 return None
@@ -134,6 +137,9 @@ class XMLRPCWatcher(LogWatcher):
 
     def wait_for_approval(self, message_id):
         return self._wait('Approved: <%s>' % message_id)
+
+    def get_line(self, landmark):
+        return self._wait(landmark, return_line=True)
 
 
 class SMTPDWatcher(LogWatcher):
