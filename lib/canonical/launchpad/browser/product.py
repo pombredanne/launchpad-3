@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'PillarSearchItem',
     'ProductActiveReviewsView',
     'ProductAddSeriesView',
     'ProductAddView',
@@ -56,7 +55,7 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.interface import alsoProvides, implements, Interface
+from zope.interface import implements, Interface
 
 from canonical.cachedproperty import cachedproperty
 
@@ -65,9 +64,9 @@ from canonical.lazr import decorates
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
-    ICountry, IDistribution, IHasIcon, ILaunchBag, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IPersonSet, IPillarNameSet, IProductReviewSearch,
-    IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
+    ICountry, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IPersonSet, IPillarNameSet, IProductReviewSearch, IRevisionSet,
+    ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
@@ -792,34 +791,26 @@ class ReleaseWithFiles:
 class ProductDownloadFileMixin:
     """Provides methods for managing download files."""
 
-    def _fetchProductData(self):
-        """Fetch all series, release and file data for the product.
 
-        Decorated classes are created rooted at self.product and they
-        contain cached data obtained with a few queries rather than
-        many iterated queries.
+    @cachedproperty
+    def product(self):
+        """Product with all series, release and file data cached.
+
+        Decorated classes are created, and they contain cached data
+        obtained with a few queries rather than many iterated queries.
         """
         # Create the decorated product and set the list of series.
         original_product = self.context
-        try:
-            original_serieses = original_product.serieses
-        except AttributeError:
-            # PillarSearchItem pretends to provide IProduct but
-            # doesn't really because it does not have a 'serieses'
-            # attribute.  When the attribute isn't present we can just
-            # return.
-            self.product = original_product
-            return
 
-        self.product = ProductWithSeries(original_product)
+        product = ProductWithSeries(original_product)
         serieses = []
-        for series in original_serieses:
+        for series in original_product.serieses:
             series_with_releases = SeriesWithReleases(series)
             serieses.append(series_with_releases)
             if original_product.development_focus == series:
-                self.product.development_focus = series_with_releases
+                product.development_focus = series_with_releases
 
-        self.product.setSeries(serieses)
+        product.setSeries(serieses)
 
         # Get all of the releases for all of the serieses in a single
         # query.  The query sorts the releases properly so we know the
@@ -827,9 +818,9 @@ class ProductDownloadFileMixin:
         release_set = getUtility(IProductReleaseSet)
         release_by_id = {}
         releases = release_set.getReleasesForSerieses(
-            self.product.serieses)
+            product.serieses)
         for release in releases:
-            series = self.product.getSeriesById(
+            series = product.getSeriesById(
                 release.productseries.id)
             decorated_release = ReleaseWithFiles(release)
             series.addRelease(decorated_release)
@@ -841,6 +832,8 @@ class ProductDownloadFileMixin:
         for file in files:
             release = release_by_id[file.productrelease.id]
             release.addFile(file)
+
+        return product
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
@@ -929,7 +922,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def initialize(self):
         self.status_message = None
-        self._fetchProductData()
 
     @property
     def show_license_status(self):
@@ -1059,6 +1051,18 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return (check_permission('launchpad.Edit', self.context)
                 and not self.context.qualifies_for_free_hosting)
 
+    @cachedproperty
+    def effective_driver(self):
+        """Return the product driver or the project driver."""
+        if self.context.driver is not None:
+            driver = self.context.driver
+        elif (self.context.project is not None and
+              self.context.project.driver is not None):
+            driver = self.context.project.driver
+        else:
+            driver = None
+        return driver
+
 
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
@@ -1068,7 +1072,6 @@ class ProductDownloadFilesView(LaunchpadView,
 
     def initialize(self):
         self.form = self.request.form
-        self._fetchProductData()
         # Manually process action for the 'Delete' button.
         self.processDeleteFiles()
 
@@ -1344,34 +1347,6 @@ class Icon:
         return self.library_alias.getURL()
 
 
-class PillarSearchItem:
-    """A search result item representing a Pillar."""
-
-    implements(IHasIcon)
-
-    icon = None
-
-    def __init__(self, pillar_type, name, displayname, summary, icon_id):
-        self.pillar_type = pillar_type
-        self.name = name
-        self.displayname = displayname
-        self.summary = summary
-        if icon_id is not None:
-            self.icon = Icon(icon_id)
-
-        # Even though the object doesn't implement the interface properly, we
-        # still say that it provides them so that the standard image:icon
-        # formatter works.
-        if pillar_type == 'project':
-            alsoProvides(self, IProduct)
-        elif pillar_type == 'distribution':
-            alsoProvides(self, IDistribution)
-        elif pillar_type == 'project group':
-            alsoProvides(self, IProject)
-        else:
-            raise AssertionError("Unknown pillar type: %s" % pillar_type)
-
-
 class ProductSetView(LaunchpadView):
 
     __used_for__ = IProductSet
@@ -1425,14 +1400,7 @@ class ProductSetView(LaunchpadView):
     def searchresults(self):
         search_string = self.search_string.lower()
         limit = self.max_results_to_display
-        return [
-            PillarSearchItem(
-                pillar_type=item['type'], name=item['name'],
-                displayname=item['title'], summary=item['description'],
-                icon_id=item['icon'])
-            for item in getUtility(IPillarNameSet).search(search_string,
-                                                          limit)
-        ]
+        return getUtility(IPillarNameSet).search(search_string, limit)
 
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display

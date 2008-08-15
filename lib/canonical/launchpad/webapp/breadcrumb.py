@@ -13,7 +13,7 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, IBreadcrumbBuilder)
+    IBreadcrumb, IBreadcrumbBuilder, IncompleteBreadcrumbError)
 
 
 class Breadcrumb:
@@ -40,10 +40,14 @@ class BreadcrumbBuilder:
         self.context = context
 
     def _get_attribute(self, attrname):
-        """Return the value of a possibly callable attribute."""
+        """Return the value of one of this class' attributes.
+
+        :raises: `IncompleteBreadcrumbError` if the attribute is missing or
+            None.
+        """
         attr = getattr(self, attrname, None)
         if attr is None:
-            raise IncompleteObjectError(
+            raise IncompleteBreadcrumbError(
                 "No '%s' attribute was given with which to build the "
                 "Breadcrumb object." % attrname)
         return attr
@@ -52,10 +56,3 @@ class BreadcrumbBuilder:
         url = self._get_attribute('url')
         text = self._get_attribute('text')
         return Breadcrumb(url, text)
-
-
-class IncompleteObjectError(AttributeError):
-    """Raised when an object being built does not has not had all of the
-    required attributes supplied to it.
-    """
-    pass

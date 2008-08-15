@@ -1,8 +1,8 @@
 = Hierarchical menus =
 
 The location bar aids users in navigating the depths of Launchpad.  It is
-built from a series of Breadcrumb objects after Zope's object traversal
-step.
+built from a list of Breadcrumb objects collected during Zope's object-
+traversal step.
 
 == A simple object hierarchy ==
 
@@ -84,8 +84,8 @@ builder raises an error if a URL is not explicitly given by the developer.
     >>> builder.make_breadcrumb()
     Traceback (most recent call last):
     ...
-    IncompleteObjectError: No 'url' attribute was given with which to build
-    the Breadcrumb object.
+    IncompleteBreadcrumbError: No 'url' attribute was given with which to
+    build the Breadcrumb object.
 
 The breadcrumb's attributes are given as attributes on the builder class.
 They can be overridden with subclassing and Python properties.
@@ -112,9 +112,9 @@ They can be overridden with subclassing and Python properties.
 
 The Hierarchy class builds the breadcrumbs by looking at each object in
 the request.traversed_objects attribute.  If a traversed object can be
-adapted to IBreadcrumb, then it is added to the breadcrumbs list.
+adapted to IBreadcrumbBuilder, then it is added to the breadcrumbs list.
 
-We'll add the objects to the request's list of traversed objects, so
+We'll add the objects to the request's list of traversed objects so
 the hierarchy will discover them.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -144,8 +144,8 @@ have an IBreadcrumbBuilder adapter.
     []
 
 Adding the adapters causes the Cookbook and Recipe objects to show up
-in the hierarchy.  The hierarchy's breadcrumbs are ordered, starting with the breadcrumb
-closest to the hierarchy root.
+in the hierarchy.  The hierarchy's breadcrumbs are in-order, starting with
+the breadcrumb closest to the hierarchy root.
 
     # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
     # give it a valid .text attribute.
@@ -173,9 +173,9 @@ closest to the hierarchy root.
 We can customize the hierarchy itself by changing the list of objects and
 URLs that it uses to construct the breadcrumbs list.
 
-The user should *not* construct the Breadcrumb object themselves.  They
-should let the hierarchy handle it: this ensures consistencey across the
-site.
+The Hierarchy should *not* construct the Breadcrumb objects itself.  It
+should let the IBreadcrumbBuilder handle it: this ensures consistencey
+across the site.
 
     >>> from canonical.launchpad.browser.launchpad import Hierarchy
 

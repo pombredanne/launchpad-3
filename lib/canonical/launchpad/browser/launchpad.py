@@ -36,6 +36,7 @@ import os
 import re
 import time
 from datetime import timedelta, datetime
+from urlparse import urlunsplit
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
@@ -93,9 +94,8 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link,
     LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
     canonical_url, custom_widget)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    POSTToNonCanonicalURL, IBreadcrumbBuilder, INavigationMenu)
+    IBreadcrumbBuilder, INavigationMenu, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
@@ -245,7 +245,7 @@ class Hierarchy(LaunchpadView):
         The list starts with the breadcrumb closest to the hierarchy root.
         """
         urlparts = urlparse(self.request.getURL(0, path_only=False))
-        baseurl = "%s://%s" % (urlparts[0], urlparts[1])
+        baseurl = urlunsplit((urlparts[0], urlparts[1], '', '', ''))
 
         # Construct a list of complete URLs for each URL path segment.
         pathurls = []
