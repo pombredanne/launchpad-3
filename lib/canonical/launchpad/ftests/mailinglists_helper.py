@@ -295,6 +295,8 @@ class MailmanStub:
         for mailing_list in mailing_list_set.approved_lists:
             mailing_list.startConstructing()
             mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
+        for mailing_list in mailing_list_set.deactivated_lists:
+            mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
         # Simulate acknowledging held messages.
         message_set = getUtility(IMessageApprovalSet)
         message_ids = set()

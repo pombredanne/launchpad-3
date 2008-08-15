@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces.mailinglist import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     IHeldMessageDetails, IMailingList, IMailingListSet,
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
-    MailingListStatus, PostedMessageStatus, UnsafeToPurge)
+    MailingListStatus, PURGE_STATES, PostedMessageStatus, UnsafeToPurge)
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
@@ -485,10 +485,7 @@ class MailingList(SQLBase):
         # mailing list we really want an UnsafeToPurge exception instead of an
         # AssertionError.  Fitting that in to transitionToStatus()'s logic is
         # a bit tortured, so just do it here.
-        if self.status in (MailingListStatus.REGISTERED,
-                           MailingListStatus.DECLINED,
-                           MailingListStatus.FAILED,
-                           MailingListStatus.INACTIVE):
+        if self.status in PURGE_STATES:
             self.status = MailingListStatus.PURGED
         else:
             assert self.status != MailingListStatus.PURGED, 'Already purged'
