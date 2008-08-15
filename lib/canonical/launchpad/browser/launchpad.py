@@ -95,7 +95,7 @@ from canonical.launchpad.webapp import (
     canonical_url, custom_widget)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    POSTToNonCanonicalURL, IBreadcrumbBuilder, INavigationMenu)
+    IBreadcrumbBuilder, INavigationMenu, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
