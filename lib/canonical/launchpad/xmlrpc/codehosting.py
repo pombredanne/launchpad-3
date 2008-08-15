@@ -73,7 +73,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         """See `IBranchPuller`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
-            return False
+            return faults.NoBranchWithID(branch_id)
         # See comment in startMirroring.
         removeSecurityProxy(branch).mirrorComplete(last_revision_id)
         return True
@@ -82,7 +82,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         """See `IBranchPuller`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
-            return False
+            return faults.NoBranchWithID(branch_id)
         # See comment in startMirroring.
         removeSecurityProxy(branch).mirrorFailed(reason)
         return True

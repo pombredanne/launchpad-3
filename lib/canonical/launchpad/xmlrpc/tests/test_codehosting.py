@@ -147,6 +147,13 @@ class BranchPullerTest(TestCaseWithFactory):
         self.assertEqual(0, branch.mirror_failures)
         self.assertIs(None, branch.mirror_status_message)
 
+    def getUnusedBranchID(self):
+        """Return a branch ID that isn't in the database."""
+        branch_id = 999
+        # We can't be sure until the sample data is gone.
+        self.assertIs(getUtility(IBranchSet).get(branch_id), None)
+        return branch_id
+
     def test_startMirroring(self):
         # startMirroring updates last_mirror_attempt to 'now', leaves
         # last_mirrored alone and returns True when passed the id of an
@@ -164,12 +171,9 @@ class BranchPullerTest(TestCaseWithFactory):
     def test_startMirroringInvalidBranch(self):
         # startMirroring returns False when given a branch id which does not
         # exist.
-        invalid_id = -1
-        branch = getUtility(IBranchSet).get(invalid_id)
-        self.assertIs(None, branch)
-
+        invalid_id = self.getUnusedBranchID()
         fault = self.storage.startMirroring(invalid_id)
-        self.assertFaultEqual(faults.NoBranchWithID(-1), fault)
+        self.assertFaultEqual(faults.NoBranchWithID(invalid_id), fault)
 
     def test_mirrorFailed(self):
         branch = self.factory.makeBranch()
@@ -180,6 +184,12 @@ class BranchPullerTest(TestCaseWithFactory):
         success = self.storage.mirrorFailed(branch.id, failure_message)
         self.assertEqual(True, success)
         self.assertMirrorFailed(branch, failure_message)
+
+    def test_mirrorFailedWithNotBranchID(self):
+        branch_id = self.getUnusedBranchID()
+        failure_message = self.factory.getUniqueString()
+        fault = self.storage.mirrorFailed(branch_id, failure_message)
+        self.assertFaultEqual(faults.NoBranchWithID(branch_id), fault)
 
     def test_mirrorComplete(self):
         # mirrorComplete marks the branch as having been successfully
@@ -192,6 +202,14 @@ class BranchPullerTest(TestCaseWithFactory):
         success = self.storage.mirrorComplete(branch.id, revision_id)
         self.assertEqual(True, success)
         self.assertMirrorSucceeded(branch, revision_id)
+
+    def test_mirrorCompleteWithNoBranchID(self):
+        # mirrorComplete returns a Fault if there's no branch with the given
+        # ID.
+        branch_id = self.getUnusedBranchID()
+        fault = self.storage.mirrorComplete(
+            branch_id, self.factory.getUniqueString())
+        self.assertFaultEqual(faults.NoBranchWithID(branch_id), fault)
 
     def test_mirrorComplete_resets_failure_count(self):
         # mirrorComplete marks the branch as successfully mirrored and removes
@@ -284,9 +302,7 @@ class BranchPullerTest(TestCaseWithFactory):
         # If setStackedOn is called for a branch that doesn't exist, it will
         # return a Fault.
         stacked_on_branch = self.factory.makeBranch(BranchType.MIRRORED)
-        branch_id = 999
-        # We can't be sure until the sample data is gone.
-        self.assertIs(getUtility(IBranchSet).get(branch_id), None)
+        branch_id = self.getUnusedBranchID()
         fault = self.storage.setStackedOn(branch_id, stacked_on_branch.url)
         self.assertFaultEqual(faults.NoBranchWithID(branch_id), fault)
 
@@ -657,4 +673,3 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
