@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int
+from zope.schema import Bool, Choice, Date, Int, TextLine
 
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
@@ -23,10 +23,11 @@ from canonical.launchpad.fields import (
     )
 from canonical.launchpad.validators.name import name_validator
 
+from canonical.lazr.interface import copy_field
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
-
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters)
 
 class MilestoneNameField(ContentNameField):
 
@@ -42,7 +43,9 @@ class MilestoneNameField(ContentNameField):
         elif IDistroSeries.providedBy(self.context):
             milestone = self.context.distribution.getMilestone(name)
         else:
-            raise AssertionError, 'Editing a milestone from a weird place.'
+            raise AssertionError, (
+                'Editing a milestone in an unexpected context: %r'
+                % self.context)
         if milestone is not None:
             self.errormessage = _(
                 "The name %%s is already used by a milestone in %s."
@@ -81,15 +84,23 @@ class IMilestone(Interface):
             "The distribution series for which this is a milestone."),
         vocabulary="FilteredDistroSeries",
         required=False) # for now
-    dateexpected = Date(title=_("Date Targeted"), required=False,
-        description=_("Example: 2005-11-24"))
-    visible = Bool(title=_("Active"), description=_("Whether or not this "
-        "milestone should be shown in web forms for bug targeting."))
-    description = Description(
-        title=_("Description"), required=False,
-        description=_(
-            "A detailed description of the features and status of this "
-            "milestone."))
+    dateexpected = exported(
+        Date(title=_("Date Targeted"), required=False,
+             description=_("Example: 2005-11-24")),
+        exported_as='date_targeted')
+    visible = exported(
+        Bool(
+            title=_("Active"),
+            description=_("Whether or not this milestone should be shown "
+                          "in web forms for bug targeting.")),
+        exported_as='is_visible')
+    description = exported(
+        Description(
+            title=_("Description"),
+            required=False,
+            description=_(
+                "A detailed description of the features and status of this "
+                "milestone.")))
     target = exported(
         Reference(
             schema=Interface, # IHasMilestones
@@ -99,7 +110,9 @@ class IMilestone(Interface):
         "The productseries or distroseries of this milestone.")
     displayname = Attribute("A displayname for this milestone, constructed "
         "from the milestone name.")
-    title = Attribute("A milestone context title for pages.")
+    title = exported(
+        TextLine(title=_("A milestone context title for pages."),
+                 readonly=True))
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
 
@@ -148,6 +161,10 @@ class IHasMilestones(Interface):
                     "date expected."),
             value_type=Reference(schema=IMilestone)))
 
+    # operation_parameters(name=copy_field(IMilestone['name'])) cannot be used
+    # since the validator expects the name to not exist in the db.
+    @operation_parameters(name=TextLine())
+    @export_read_operation()
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
 

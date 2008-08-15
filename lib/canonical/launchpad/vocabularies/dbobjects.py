@@ -56,6 +56,7 @@ __all__ = [
     'TranslationGroupVocabulary',
     'TranslationMessageVocabulary',
     'UserTeamsParticipationVocabulary',
+    'UserTeamsParticipationPlusSelfVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
@@ -64,7 +65,6 @@ __all__ = [
     'person_team_participations_vocabulary_factory',
     'project_products_using_malone_vocabulary_factory',
     'project_products_vocabulary_factory',
-    'user_public_team_participations_and_self_vocabulary_factory',
     ]
 
 import cgi
@@ -1080,18 +1080,23 @@ def person_team_participations_vocabulary_factory(context):
         person_term(team) for team in person.teams_participated_in])
 
 
-def user_public_team_participations_and_self_vocabulary_factory(context):
-    """Return a SimpleVocabulary containing the public teams that the logged
+class UserTeamsParticipationPlusSelfVocabulary(
+    UserTeamsParticipationVocabulary):
+    """A vocabulary containing the public teams that the logged
     in user participates in, along with the logged in user themselves.
     """
-    logged_in_user = getUtility(ILaunchBag).user
-    assert logged_in_user is not None
-    terms = [person_term(logged_in_user)]
-    terms.extend([
-            person_term(team)
-            for team in logged_in_user.teams_participated_in
-            if team.visibility == PersonVisibility.PUBLIC])
-    return SimpleVocabulary(terms)
+
+    def __iter__(self):
+        logged_in_user = getUtility(ILaunchBag).user
+        yield logged_in_user
+        super(UserTeamsParticipationPlusSelfVocabulary, self).__iter__()
+
+    def getTermByToken(self, token):
+        logged_in_user = getUtility(ILaunchBag).user
+        if logged_in_user.name == token:
+            return self.getTerm(logged_in_user)
+        super(UserTeamsParticipationPlusSelfVocabulary, self).getTermByToken(
+            token)
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
