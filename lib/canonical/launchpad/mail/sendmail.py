@@ -254,7 +254,7 @@ def sendmail(message, to_addrs=None):
 
 
 def get_msgid():
-    return make_msgid('launchpad@canonical')
+    return make_msgid('launchpad')
 
 
 def raw_sendmail(from_addr, to_addrs, raw_message):
