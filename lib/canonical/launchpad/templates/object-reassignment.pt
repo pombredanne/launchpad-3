@@ -18,7 +18,7 @@
 >
 <body>
 <metal:heading fill-slot="pageheading">
-  <h1>Change the <tal:role replace="view/ownerOrMaintainerAttr" /> of 
+  <h1>Change the <tal:role replace="view/ownerOrMaintainerName" /> of
         <tal:thing replace="view/contextName" />
   </h1>
 </metal:heading>
@@ -53,13 +53,13 @@
         <td align="right">This is:</td>
         <td>
           <label for="existing">
-            <input type="radio" value="existing" id="existing" 
+            <input type="radio" value="existing" id="existing"
               name="existing" checked="checked" />An existing person or team
           </label>
           <br />
 
           <label for="new">
-            <input type="radio" value="new" id="new" 
+            <input type="radio" value="new" id="new"
                    name="existing" />A new team I'm creating here
           </label>
           <br />
@@ -73,15 +73,16 @@
 
       <tr>
         <td></td>
-        <td>
-          <input type="submit" value="Change Registrant" name="CHANGE_OWNER" />
+        <td tal:define="role view/ownerOrMaintainerName">
+          <input type="submit" name="CHANGE_OWNER"
+                 tal:attributes="value string:Change ${role}"/>
         </td>
       </tr>
     </table>
   </form>
   </span>
 
-</div> 
+</div>
 
 </body>
 </html>

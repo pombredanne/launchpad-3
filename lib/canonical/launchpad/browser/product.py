@@ -54,12 +54,14 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements, Interface
+from zope.formlib import form
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
 from canonical.lazr import decorates
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
     ICountry, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
@@ -106,6 +108,7 @@ from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget)
+from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -1200,6 +1203,40 @@ class ProductChangeTranslatorsView(ProductEditView):
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
+    custom_widget('registrant', SinglePopupWidget)
+
+    def setUpFields(self):
+        """Setup the normal fields from the schema plus adds 'Registrant'.
+
+        The registrant is normally a read-only field and thus does not have a
+        proper widget created by default.  Even though it is read-only, admins
+        need the ability to change it.
+        """
+        super(ProductAdminView, self).setUpFields()
+        self.form_fields += self._createRegistrantField()
+
+    def _createRegistrantField(self):
+        """Return a popup widget person selector for the registrant.
+
+        This custom field is necessary because *normally* the registrant is
+        read-only but we want the admins to have the ability to correct legacy
+        data that was set before the registrant field existed.
+        """
+        return form.Fields(
+            PublicPersonChoice(
+                __name__='registrant',
+                title=_('Project Registrant'),
+                description=_('The person who originally registered the '
+                              'product.  Distinct from the current '
+                              'owner.  This is historical data and should '
+                              'not be changed without good cause.'),
+                vocabulary='ValidPerson',
+                required=True,
+                readonly=False,
+                default=self.context.registrant
+                ),
+            custom_widget=self.custom_widgets['registrant']
+            )
 
     def validate(self, data):
         if data.get('private_bugs') and self.context.bug_supervisor is None:
@@ -1214,7 +1251,7 @@ class ProductAdminView(ProductEditView):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ProductAdminView):
+class ProductReviewLicenseView(ProductEditView):
     label = "Review project licensing"
     field_names = [
         "active",
@@ -1539,6 +1576,7 @@ class ProductAddView(ProductAddViewBase):
             programminglang=data['programminglang'],
             project=data['project'],
             owner=data['owner'],
+            registrant=self.user,
             license_reviewed=data['license_reviewed'],
             licenses = data['licenses'],
             license_info=data['license_info'])
@@ -1566,7 +1604,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
             self.context, old_owner, self.context.owner)
         if self.context.owner != old_owner:
             self.request.response.addNotification(
-                "Successfully changed the owner to %s"
+                "Successfully changed the maintainer to %s"
                 % self.context.owner.displayname)
         if self.context.driver != old_driver:
             if self.context.driver is not None:
