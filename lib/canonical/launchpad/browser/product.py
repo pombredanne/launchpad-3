@@ -537,7 +537,7 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'table', 'new']
+    links = ['listall', 'doc', 'table', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -549,12 +549,6 @@ class ProductSpecificationsMenu(ApplicationMenu):
         summary = 'List all complete informational specifications'
         return Link('+documentation', text, summary,
             icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = (
-            'Show the recommended sequence of specification implementation')
-        return Link('+roadmap', text, summary, icon='info')
 
     def table(self):
         text = 'Assignments'
