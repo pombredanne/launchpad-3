@@ -673,7 +673,7 @@ class CodeHandler:
         for part in message.walk():
             if part.is_multipart():
                 continue
-            payload = part.get_payload()
+            payload = part.get_payload(decode=True)
             if part['Content-type'].startswith('text/plain'):
                 body = payload
             try:

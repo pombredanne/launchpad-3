@@ -374,7 +374,8 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_findMergeDirectiveAndComment(self):
         md = self.makeMergeDirective()
         message = self.factory.makeSignedMessage(body='Hi!\n',
-            attachment_contents=''.join(md.to_lines()))
+            attachment_contents=''.join(md.to_lines()),
+            force_transfer_encoding=True)
         code_handler = CodeHandler()
         comment, md2 = code_handler.findMergeDirectiveAndComment(message)
         self.assertEqual('Hi!\n', comment)
