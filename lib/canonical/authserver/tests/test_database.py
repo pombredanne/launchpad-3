@@ -22,7 +22,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from bzrlib.tests import TestCase
 
-from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
 
@@ -1159,7 +1158,7 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(row[3], completed.replace(tzinfo=None))
 
 
-class BranchPullQueueTest(BranchTestCase):
+class BranchPullQueueTest(TestCaseWithFactory):
     """Tests for the pull queue methods of `IBranchDetailsStorage`."""
 
     layer = LaunchpadZopelessLayer
@@ -1169,6 +1168,12 @@ class BranchPullQueueTest(BranchTestCase):
         super(BranchPullQueueTest, self).setUp()
         self.restrictSecurityPolicy()
         self.storage = DatabaseBranchDetailsStorage(None)
+
+    def restrictSecurityPolicy(self):
+        """Switch to using 'LaunchpadSecurityPolicy'."""
+        old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+        self.addCleanup(lambda: setSecurityPolicy(old_policy))
 
     def assertBranchQueues(self, hosted, mirrored, imported):
         login(ANONYMOUS)
@@ -1198,7 +1203,7 @@ class BranchPullQueueTest(BranchTestCase):
         """Make a branch of the given type and call requestMirror on it."""
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         transaction.begin()
-        branch = self.makeBranch(branch_type)
+        branch = self.factory.makeBranch(branch_type)
         branch.requestMirror()
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser('authserver')
