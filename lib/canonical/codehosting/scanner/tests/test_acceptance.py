@@ -8,7 +8,6 @@ __metaclass__ = type
 
 import os
 import shutil
-from shutil import move
 from subprocess import Popen, PIPE
 from unittest import TestLoader
 
@@ -106,10 +105,12 @@ class BranchScannerTest(TestCaseWithTransport, LoomTestMixin):
     def test_branchScannerLooms(self):
         # The branch scanner can scan loomified branches.
         destination = self.getWarehouseLocation(self.db_branch)
-        # makeLoomBranchAndTree creates the branch in a test-specific sandbox.
-        # We want to put it in the store.
-        loom_tree = self.makeLoomBranchAndTree('loom')
-        move(loom_tree.basedir, destination)
+
+        # Build the loom in the destination directory.
+        self.addCleanup(lambda: os.chdir(os.getcwd()))
+        os.chdir(destination)
+        loom_tree = self.makeLoomBranchAndTree('.')
+
         loom_branch = bzrlib.branch.Branch.open(destination)
         self.installTestBranch(self.db_branch, loom_branch)
 

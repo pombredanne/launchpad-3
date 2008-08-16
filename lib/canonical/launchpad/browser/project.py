@@ -28,6 +28,7 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectSetView',
     'ProjectRdfView',
+    'ProjectMaintainerReassignmentView',
     ]
 
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -52,10 +53,14 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
+from canonical.launchpad.browser.objectreassignment import (
+    ObjectReassignmentView)
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, StandardLaunchpadFacets, stepthrough, structured)
+from canonical.widgets.popup import SinglePopupWidget
 
 
 class ProjectNavigation(Navigation):
@@ -185,7 +190,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change owner'
+        text = 'Change maintainer'
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -340,6 +345,40 @@ class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project group details"
     field_names = ['name', 'owner', 'active', 'reviewed']
+    custom_widget('registrant', SinglePopupWidget)
+
+    def setUpFields(self):
+        """Setup the normal fields from the schema plus adds 'Registrant'.
+
+        The registrant is normally a read-only field and thus does not have a
+        proper widget created by default.  Even though it is read-only, admins
+        need the ability to change it.
+        """
+        super(ProjectReviewView, self).setUpFields()
+        self.form_fields += self._createRegistrantField()
+
+    def _createRegistrantField(self):
+        """Return a popup widget person selector for the registrant.
+
+        This custom field is necessary because *normally* the registrant is
+        read-only but we want the admins to have the ability to correct legacy
+        data that was set before the registrant field existed.
+        """
+        return form.Fields(
+            PublicPersonChoice(
+                __name__='registrant',
+                title=_('Project Registrant'),
+                description=_('The person who originally registered the '
+                              'project group.  Distinct from the current '
+                              'owner.  This is historical data and should '
+                              'not be changed without good cause.'),
+                vocabulary='ValidPerson',
+                required=True,
+                readonly=False,
+                default=self.context.registrant
+                ),
+            custom_widget=self.custom_widgets['registrant']
+            )
 
 
 class ProjectAddProductView(ProductAddViewBase):
@@ -418,8 +457,15 @@ class ProjectSetView(object):
 class ProjectAddView(LaunchpadFormView):
 
     schema = IProject
-    field_names = ['name', 'displayname', 'title', 'summary',
-                   'description', 'homepageurl',]
+    field_names = [
+        'name',
+        'displayname',
+        'title',
+        'summary',
+        'description',
+        'owner',
+        'homepageurl',
+        ]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project group with Launchpad')
     project = None
@@ -434,7 +480,7 @@ class ProjectAddView(LaunchpadFormView):
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=self.user,
+            owner=data['owner'],
             )
         notify(ObjectCreatedEvent(self.project))
 
@@ -581,3 +627,8 @@ class ProjectSeriesSpecificationsMenu(ApplicationMenu):
     def assignments(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
+
+
+class ProjectMaintainerReassignmentView(ObjectReassignmentView):
+    """View class for changing project maintainer."""
+    ownerOrMaintainerName = 'maintainer'
