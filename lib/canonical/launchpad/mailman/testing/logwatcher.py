@@ -110,6 +110,7 @@ class LogWatcher:
             elif landmark in line:
                 # Return None on success for doctest convenience.
                 self.last_lines_read.append(line)
+                del self.last_lines_read[0:-LINES_TO_CAPTURE]
                 return None
             else:
                 # This line did not match our landmark.  Try again with the

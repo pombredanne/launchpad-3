@@ -12,7 +12,10 @@ import errno
 import shutil
 import socket
 import tarfile
+import traceback
 import xmlrpclib
+
+from cStringIO import StringIO
 
 # pylint: disable-msg=F0401
 from Mailman import Errors
@@ -22,9 +25,9 @@ from Mailman.Logging.Syslog import syslog
 from Mailman.MailList import MailList
 from Mailman.Queue.Runner import Runner
 
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 # XXX sinzui 2008-08-15 bug=258423:
 # We should be importing from lazr.errorlog.
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 
 
 COMMASPACE = ', '
@@ -44,7 +47,7 @@ class MailmanErrorUtility(ErrorReportingUtility):
 
 
 def log_exception(message, *args):
-    """Write the current exception stacktrace into the Mailman log file.
+    """Write the current exception traceback into the Mailman log file.
 
     This is really just a convenience function for a refactored chunk of
     common code.
@@ -55,7 +58,11 @@ def log_exception(message, *args):
     """
     error_utility = MailmanErrorUtility()
     error_utility.raising(sys.exc_info())
+    out_file = StringIO()
+    traceback.print_exc(file=out_file)
+    tracback_text = out_file.getvalue()
     syslog('xmlrpc', message, *args)
+    syslog('xmlrpc',  tracback_text)
 
 
 class XMLRPCRunner(Runner):

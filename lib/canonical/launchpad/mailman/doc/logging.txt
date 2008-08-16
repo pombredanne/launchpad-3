@@ -63,7 +63,7 @@ The message was written to the XMLRPCRunner's log.
 
 Unknown exceptions are reported though the _log() method. It is
 unreachable because XMLRPCRunner redefines _oneloop(), the only method
-that calls it. It was tested by sabataging the code to force a call
+that calls it. It was tested by sabotaging the code to force a call
 to _log().
 
 
