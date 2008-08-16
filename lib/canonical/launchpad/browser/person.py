@@ -132,7 +132,7 @@ from canonical.launchpad.interfaces import (
     MailingListAutoSubscribePolicy, NotFoundError, PersonCreationRationale,
     PersonVisibility, QuestionParticipation, SSHKeyType, SpecificationFilter,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
@@ -2801,24 +2801,8 @@ class PersonEditWikiNamesView(LaunchpadView):
         form = self.request.form
         context = self.context
         wikinameset = getUtility(IWikiNameSet)
-        ubuntuwikiname = form.get('ubuntuwikiname')
-        existingwiki = wikinameset.getByWikiAndName(
-            UBUNTU_WIKI_URL, ubuntuwikiname)
 
-        if not ubuntuwikiname:
-            self.error_message = structured(
-                "Your Ubuntu WikiName cannot be empty.")
-            return
-        elif existingwiki is not None and existingwiki.person != context:
-            self.error_message = structured(
-                'The Ubuntu WikiName %s is already registered by '
-                '<a href="%s">%s</a>.',
-                ubuntuwikiname, canonical_url(existingwiki.person),
-                existingwiki.person.browsername)
-            return
-        context.ubuntuwiki.wikiname = ubuntuwikiname
-
-        for w in context.otherwikis:
+        for w in context.allwikis:
             # XXX: GuilhermeSalgado 2005-08-25:
             # We're exposing WikiName IDs here because that's the only
             # unique column we have. If we don't do this we'll have to
@@ -2836,15 +2820,6 @@ class PersonEditWikiNamesView(LaunchpadView):
                         "Neither Wiki nor WikiName can be empty.")
                     return
                 if not self._validateWikiURL(wiki):
-                    return
-                # Try to make sure people will have only a single Ubuntu
-                # WikiName registered. Although this is almost impossible
-                # because they can do a lot of tricks with the URLs to make
-                # them look different from UBUNTU_WIKI_URL but still point to
-                # the same place.
-                elif wiki == UBUNTU_WIKI_URL:
-                    self.error_message = structured(
-                        "You cannot have two Ubuntu WikiNames.")
                     return
                 w.wiki = wiki
                 w.wikiname = wikiname
@@ -2865,10 +2840,6 @@ class PersonEditWikiNamesView(LaunchpadView):
                     self.error_message = structured(
                         'The WikiName %s%s already belongs to you.',
                         wiki, wikiname)
-                    return
-                elif wiki == UBUNTU_WIKI_URL:
-                    self.error_message = structured(
-                        "You cannot have two Ubuntu WikiNames.")
                     return
                 if not self._validateWikiURL(wiki):
                     return
