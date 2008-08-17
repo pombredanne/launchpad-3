@@ -83,7 +83,6 @@ __all__ = [
     'archive_to_person',
     ]
 
-import cgi
 import copy
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
@@ -2869,7 +2868,7 @@ class PersonEditIRCNicknamesView(LaunchpadView):
                 nick = form.get('nick_%d' % ircnick.id)
                 network = form.get('network_%d' % ircnick.id)
                 if not (nick and network):
-                    self.error_message = (
+                    self.error_message = structured(
                         "Neither Nickname nor Network can be empty.")
                     return
                 ircnick.nickname = nick
@@ -2883,7 +2882,7 @@ class PersonEditIRCNicknamesView(LaunchpadView):
             else:
                 self.newnick = nick
                 self.newnetwork = network
-                self.error_message = (
+                self.error_message = structured(
                     "Neither Nickname nor Network can be empty.")
                 return
 
@@ -2904,7 +2903,8 @@ class PersonEditJabberIDsView(LaunchpadView):
             else:
                 jabberid = form.get('jabberid_%s' % jabber.jabberid)
                 if not jabberid:
-                    self.error_message = "You cannot save an empty Jabber ID."
+                    self.error_message = structured(
+                        "You cannot save an empty Jabber ID.")
                     return
                 jabber.jabberid = jabberid
 
@@ -2915,15 +2915,15 @@ class PersonEditJabberIDsView(LaunchpadView):
             if existingjabber is None:
                 jabberset.new(self.context, jabberid)
             elif existingjabber.person != self.context:
-                self.error_message = (
+                self.error_message = structured(
                     'The Jabber ID %s is already registered by '
-                    '<a href="%s">%s</a>.'
-                    % (jabberid, canonical_url(existingjabber.person),
-                       cgi.escape(existingjabber.person.browsername)))
+                    '<a href="%s">%s</a>.',
+                    jabberid, canonical_url(existingjabber.person),
+                    existingjabber.person.browsername)
                 return
             else:
-                self.error_message = (
-                    'The Jabber ID %s already belongs to you.' % jabberid)
+                self.error_message = structured(
+                    'The Jabber ID %s already belongs to you.', jabberid)
                 return
 
 
@@ -2953,11 +2953,11 @@ class PersonEditSSHKeysView(LaunchpadView):
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
         except ValueError:
-            self.error_message = 'Invalid public key'
+            self.error_message = structured('Invalid public key')
             return
 
         if not (kind and keytext and comment):
-            self.error_message = 'Invalid public key'
+            self.error_message = structured('Invalid public key')
             return
 
         process = subprocess.Popen(
@@ -2965,7 +2965,7 @@ class PersonEditSSHKeysView(LaunchpadView):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = process.communicate(sshkey.encode('utf-8'))
         if 'compromised' in out.lower():
-            self.error_message = (
+            self.error_message = structured(
                 'This key is known to be compromised due to a security flaw '
                 'in the software used to generate it, so it will not be '
                 'accepted by Launchpad. See the full '
@@ -2979,11 +2979,11 @@ class PersonEditSSHKeysView(LaunchpadView):
         elif kind == 'ssh-dss':
             keytype = SSHKeyType.DSA
         else:
-            self.error_message = 'Invalid public key'
+            self.error_message = structured('Invalid public key')
             return
 
         getUtility(ISSHKeySet).new(self.user, keytype, keytext, comment)
-        self.info_message = 'SSH public key added.'
+        self.info_message = structured('SSH public key added.')
 
     def remove_ssh(self):
         key_id = self.request.form.get('key')
@@ -2992,7 +2992,8 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         sshkey = getUtility(ISSHKeySet).getByID(key_id)
         if sshkey is None:
-            self.error_message = "Cannot remove a key that doesn't exist"
+            self.error_message = structured(
+                "Cannot remove a key that doesn't exist")
             return
 
         if sshkey.person != self.user:
@@ -3000,7 +3001,7 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         comment = sshkey.comment
         sshkey.destroySelf()
-        self.info_message = 'Key "%s" removed' % comment
+        self.info_message = structured('Key "%s" removed' % comment)
 
 
 class PersonTranslationView(LaunchpadView):
@@ -3179,7 +3180,8 @@ class PersonGPGView(LaunchpadView):
         key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
 
         if key_ids is None:
-            self.error_message = 'No Key(s) selected for deactivation.'
+            self.error_message = structured(
+                'No key(s) selected for deactivation.')
             return
 
         # verify if we have multiple entries to deactive
@@ -3194,20 +3196,22 @@ class PersonGPGView(LaunchpadView):
             if gpgkey is None:
                 continue
             if gpgkey.owner != self.user:
-                self.error_message = "Cannot deactivate someone else's key"
+                self.error_message = structured(
+                    "Cannot deactivate someone else's key")
                 return
             gpgkey.active = False
             deactivated_keys.append(gpgkey.displayname)
 
         flush_database_updates()
-        self.info_message = (
-            'Deactivated key(s): %s' % ", ".join(deactivated_keys))
+        self.info_message = structured(
+           'Deactivated key(s): %s', ", ".join(deactivated_keys))
 
     def remove_gpgtoken(self):
         token_fingerprints = self.request.form.get('REMOVE_GPGTOKEN')
 
         if token_fingerprints is None:
-            self.error_message = 'No key(s) pending validation selected.'
+            self.error_message = structured(
+                'No key(s) pending validation selected.')
             return
 
         logintokenset = getUtility(ILoginTokenSet)
@@ -3222,14 +3226,16 @@ class PersonGPGView(LaunchpadView):
                 fingerprint, self.user, LoginTokenType.VALIDATESIGNONLYGPG)
             cancelled_fingerprints.append(fingerprint)
 
-        self.info_message = ('Cancelled validation of key(s): %s'
-                             % ", ".join(cancelled_fingerprints))
+        self.info_message = structured(
+            'Cancelled validation of key(s): %s',
+            ", ".join(cancelled_fingerprints))
 
     def reactivate_gpg(self):
         key_ids = self.request.form.get('REACTIVATE_GPGKEY')
 
         if key_ids is None:
-            self.error_message = 'No Key(s) selected for reactivation.'
+            self.error_message = structured(
+                'No key(s) selected for reactivation.')
             return
 
         found = []
@@ -3274,7 +3280,7 @@ class PersonGPGView(LaunchpadView):
                     'before trying to reactivate them '
                     'again.' % (', '.join(notfound)))
 
-        self.info_message = '\n<br>\n'.join(comments)
+        self.info_message = structured('\n<br />\n'.join(comments))
 
     def _validateGPG(self, key):
         logintokenset = getUtility(ILoginTokenSet)
