@@ -19,9 +19,9 @@
       translation, or <tal:displayname tal:replace="context/displayname" />
       does not have any strings to be translated through Launchpad.  If
       you think this is incorrect, please see if the subject has already
-      come up in the
-      <a href="https://answers.launchpad.net/rosetta/">Answers</a>
-      application.  If it hasn't, file a new question there.  Thank you.
+      come up under
+      <a href="https://answers.launchpad.net/rosetta/">Answers</a>.
+      If it hasn't, file a new question there.  Thank you.
     </p>
   </tal:block>
 

@@ -50,8 +50,8 @@ that there are alternates that may be translated.
 
     >>> anon_browser.open("http://translations.launchpad.dev/"
     ...     "evolution/trunk/+pots/evolution-2.2-test")
-    >>> alternate_notice = find_tags_by_class(
-    ...     anon_browser.contents, 'alternate-notice')[0]
+    >>> main_content = find_main_content(anon_browser.contents)
+    >>> alternate_notice = main_content.findAll('p')[1]
     >>> print extract_text(alternate_notice)
     Other templates from the same source: evolution-2.2.
 
