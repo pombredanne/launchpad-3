@@ -52,8 +52,8 @@ def log_exception(message, *args):
     This is really just a convenience function for a refactored chunk of
     common code.
 
-    :param message: The message to appear in the syslog. It may be a
-        format string.
+    :param message: The message to appear in the xmlrpc and error logs. It
+        may be a format string.
     :param args: Optional arguments to be interpolated into a format string.
     """
     error_utility = MailmanErrorUtility()
@@ -62,7 +62,8 @@ def log_exception(message, *args):
     traceback.print_exc(file=out_file)
     tracback_text = out_file.getvalue()
     syslog('xmlrpc', message, *args)
-    syslog('xmlrpc',  tracback_text)
+    syslog('error', message, *args)
+    syslog('error', tracback_text)
 
 
 class XMLRPCRunner(Runner):
@@ -106,9 +107,13 @@ class XMLRPCRunner(Runner):
         This method always returns 0 to indicate to the base class's main loop
         that it should sleep for a while after calling this method.
         """
-        self._check_list_actions()
-        self._get_subscriptions()
-        self._check_held_messages()
+        try:
+            self._check_list_actions()
+            self._get_subscriptions()
+            self._check_held_messages()
+        except:
+            # Re-raise the exception for logging and oops reporting.
+            log_exception('Unexpected XMLRPCRunner exception')
         # Snooze for a while.
         return 0
 

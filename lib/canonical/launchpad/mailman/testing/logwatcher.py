@@ -220,3 +220,9 @@ class QrunnerWatcher(LogWatcher):
             if result is not None:
                 return result
         return None
+
+
+class ErrorWatcher(LogWatcher):
+    """Watch logs/error."""
+
+    FILENAME = 'error'

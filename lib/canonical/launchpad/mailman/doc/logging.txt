@@ -55,15 +55,26 @@ exceptions. It reports the OOPS.
     ...
     AssertionError: There is an OOPS in progress.
 
-The message was written to the XMLRPCRunner's log.
+The message was written to the XMLRPCRunner's xmlrpc log.
 
     >>> xmlrpc_watcher.wait('Generated')
     >>> print 'log:', xmlrpc_watcher.last_lines_read[-1]
     log: ... Generated Error: There is an OOPS in progress.
 
-Unknown exceptions are reported though the _log() method. It is
-unreachable because XMLRPCRunner redefines _oneloop(), the only method
-that calls it. It was tested by sabotaging the code to force a call
-to _log().
+And the traceback was written to the error log.
 
+    >>> error_watcher.wait('Generated')
+    >>> print 'log:', error_watcher.last_lines_read[-1]
+    log: ... Generated Error: There is an OOPS in progress.
+
+    >>> error_watcher.wait('AssertionError: There')
+    >>> print error_watcher.last_lines_read[-1]
+    AssertionError: There is an OOPS in progress.
+
+XMLRPCRunner's _oneloop() method will log an 'Unexpected XMLRPCRunner
+exception' if any uncaught exception occurs in the loop. The logging was
+tested by sabotaging the code by adding an undefined name ('defect') to
+the _create() method. The create-lists-txt test was run to generate a
+"NameError: global name 'defect' is not defined". The error was written
+to the xmlrpc log, and an OOPS was reported.
 
