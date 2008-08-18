@@ -793,7 +793,16 @@ UTF-8 text in the changes file that is sent on the email is preserved
 in the MIME encoding. Please note also that the person that signed the
 changes file is mentioned toward the end of the email.
 
-  >>> print msgs[0].get_payload() # doctest: -NORMALIZE_WHITESPACE
+  >>> announcement_email = msgs[0]
+  >>> announcement_email.is_multipart()
+  True
+
+  >>> body = announcement_email.get_payload()[0]
+  >>> print body.as_string() # doctest: -NORMALIZE_WHITESPACE
+  Content-Type: text/plain; charset="utf-8"
+  MIME-Version: 1.0
+  Content-Transfer-Encoding: quoted-printable
+  <BLANKLINE>
   bar (1.0-10) breezy; urgency=3Dlow
   <BLANKLINE>
     * Changes file that contains UTF-8
@@ -821,3 +830,29 @@ changes file is mentioned toward the end of the email.
   You are receiving this email because you are the uploader, maintainer or
   signer of the above package.
   <BLANKLINE>
+
+In order to facilitate scripts that parse announcement emails, the changes
+file is enclosed as an attachment.
+
+  >>> import base64
+  >>> attachment = announcement_email.get_payload()[1]
+
+Here's the attachment metadata.
+
+  >>> attachment['Content-Disposition']
+  'attachment; filename="changesfile"'
+
+Show all line of the attachment except for the last which is base64 encoded.
+
+  >>> attachment_lines = attachment.as_string().splitlines()
+  >>> print '\n'.join(attachment_lines[:-1]) # doctest: -NORMALIZE_WHITESPACE
+  Content-Type: application/octet-stream
+  MIME-Version: 1.0
+  Content-Transfer-Encoding: base64
+  Content-Disposition: attachment; filename="changesfile"
+  <BLANKLINE>
+
+And now, the actual attachment content (base64 decoded).
+
+  >>> print base64.decodestring(attachment_lines[-1]) # doctest: -NORMALIZE_WHITESPACE
+  Sorry, the 'changesfile' is not available.

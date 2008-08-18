@@ -11,6 +11,10 @@ __all__ = [
     'PackageUploadSet',
     ]
 
+from email import Encoders
+from email.MIMEBase import MIMEBase
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
 import os
 import shutil
 import tempfile
@@ -46,7 +50,7 @@ from canonical.launchpad.interfaces import (
     QueueStateWriteProtectedError,QueueSourceAcceptError,
     SourcePackageFileType)
 from canonical.launchpad.mail import (
-    format_address, signed_message_from_string, simple_sendmail)
+    format_address, signed_message_from_string, sendmail)
 from canonical.launchpad.scripts.processaccepted import (
     close_bugs_for_queue_item)
 from canonical.librarian.interfaces import DownloadFailed
@@ -81,6 +85,21 @@ def validate_status(self, attr, value):
         raise QueueStateWriteProtectedError(
             'Directly write on queue status is forbidden use the '
             'provided methods to set it.')
+
+
+def sanitize_string(s):
+    """Make sure string does not trigger 'ascii' codec errors.
+
+    Convert string to unicode if needed so that characters outside
+    the (7-bit) ASCII range do not cause errors like these:
+
+        'ascii' codec can't decode byte 0xc4 in position 21: ordinal
+        not in range(128)
+    """
+    if isinstance(s, unicode):
+        return s
+    else:
+        return guess_encoding(s)
 
 
 class PackageUploadQueue:
@@ -618,20 +637,6 @@ class PackageUpload(SQLBase):
             self._sendMail(recipients, subject, body, dry_run,
                            from_addr=from_addr, bcc=bcc)
 
-        def sanitize_string(s):
-            """Make sure string does not trigger 'ascii' codec errors.
-
-            Convert string to unicode if needed so that characters outside
-            the (7-bit) ASCII range do not cause errors like these:
-
-                'ascii' codec can't decode byte 0xc4 in position 21: ordinal
-                not in range(128)
-            """
-            if isinstance(s, unicode):
-                return s
-            else:
-                return guess_encoding(s)
-
         class NewMessage:
             """New message."""
             template = get_email_template('upload-new.txt')
@@ -722,6 +727,7 @@ class PackageUpload(SQLBase):
         # they are usually processed with the sync policy.
         if self.pocket == PackagePublishingPocket.BACKPORTS:
             debug(self.logger, "Skipping announcement, it is a BACKPORT.")
+
             do_sendmail(AcceptedMessage)
             return
 
@@ -926,7 +932,7 @@ class PackageUpload(SQLBase):
                 config.uploader.default_sender_name,
                 config.uploader.default_sender_address)
 
-        # `simple_sendmail`, despite handling unicode message bodies, can't
+        # `sendmail`, despite handling unicode message bodies, can't
         # cope with non-ascii sender/recipient addresses, so ascii_smash
         # is used on all addresses.
 
@@ -962,13 +968,39 @@ class PackageUpload(SQLBase):
             for line in mail_text.splitlines():
                 debug(self.logger, line)
 
-            simple_sendmail(
-                from_addr,
-                recipients,
-                subject,
-                mail_text,
-                extra_headers
-            )
+            # Since we need to send the original changesfile as an
+            # attachment the sendmail() method will be used as opposed to
+            # simple_sendmail().
+            message = MIMEMultipart()
+            message['from'] = from_addr
+            message['subject'] = subject
+            message['to'] = recipients
+
+            # Set the extra headers if any are present.
+            for key, value in extra_headers.iteritems():
+                message.add_header(key, value)
+
+            # Add the email body.
+            message.attach(
+                MIMEText(mail_text.encode('utf-8'), 'plain', 'utf-8'))
+
+            # Add the original changesfile as an attachment.
+            try:
+                changesfile_text = self.changesfile.read().encode('utf-8')
+            except LookupError, err:
+                changesfile_text = (
+                    "Sorry, the 'changesfile' is not available.")
+
+            attachment = MIMEBase(
+                'application', 'octet-stream')
+            attachment.set_payload(changesfile_text)
+            Encoders.encode_base64(attachment)
+            attachment.add_header(
+                'Content-Disposition', 'attachment; filename="changesfile"')
+            message.attach(attachment)
+
+            # And finally send the message.
+            sendmail(message)
 
     @property
     def components(self):
