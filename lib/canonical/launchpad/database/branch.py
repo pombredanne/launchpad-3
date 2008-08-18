@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import Join, LeftJoin
+from storm.expr import And, Join, LeftJoin
 from storm.info import ClassAlias
 from storm.store import Store
 from sqlobject import (
@@ -111,6 +111,8 @@ class Branch(SQLBase):
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
     revision_count = IntCol(default=DEFAULT, notNull=True)
+    stacked_on = ForeignKey(
+        dbName='stacked_on', foreignKey='Branch', default=None)
 
     def __repr__(self):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
@@ -304,7 +306,7 @@ class Branch(SQLBase):
     @property
     def warehouse_url(self):
         """See `IBranch`."""
-        return 'lp-internal:///%s' % self.unique_name
+        return 'lp-mirrored:///%s' % self.unique_name
 
     @property
     def product_name(self):
@@ -515,21 +517,37 @@ class Branch(SQLBase):
         BranchSubscription.delete(subscription.id)
         store.flush()
 
-    def getBranchRevision(self, sequence):
+    def getBranchRevision(self, sequence=None, revision=None,
+                          revision_id=None):
         """See `IBranch`."""
-        assert sequence is not None, \
-               "Only use this to fetch revisions from mainline history."
-        return BranchRevision.selectOneBy(branch=self, sequence=sequence)
+        params = (sequence, revision, revision_id)
+        if len([p for p in params if p is not None]) != 1:
+            raise AssertionError(
+                "One and only one of sequence, revision, or revision_id "
+                "should have a value.")
+        if sequence is not None:
+            query = BranchRevision.sequence == sequence
+        elif revision is not None:
+            query = BranchRevision.revision == revision
+        else:
+            query = And(BranchRevision.revision == Revision.id,
+                        Revision.revision_id == revision_id)
 
-    def getBranchRevisionByRevisionId(self, revision_id):
-        """See `IBranch`."""
-        revision = Revision.selectOneBy(revision_id=revision_id)
-        return BranchRevision.selectOneBy(branch=self, revision=revision)
+        store = Store.of(self)
+
+        return store.find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            query).one()
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
-        return BranchRevision(
+        branch_revision = BranchRevision(
             branch=self, sequence=sequence, revision=revision)
+        # Allocate karma if no karma has been allocated for this revision.
+        if not revision.karma_allocated:
+            revision.allocateKarma(self)
+        return branch_revision
 
     def getTipRevision(self):
         """See `IBranch`."""
@@ -590,7 +608,7 @@ class Branch(SQLBase):
         elif self.branch_type == BranchType.HOSTED:
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
-            return 'lp-internal:///%s' % (self.unique_name,)
+            return 'lp-hosted:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 
@@ -619,7 +637,7 @@ class Branch(SQLBase):
         self.mirror_failures = 0
         self.mirror_status_message = None
         if (self.next_mirror_time != None
-            and self.last_mirror_attempt > self.next_mirror_time):
+            and self.last_mirror_attempt >= self.next_mirror_time):
             # No mirror was requested since we started mirroring.
             if self.branch_type == BranchType.MIRRORED:
                 self.next_mirror_time = (

@@ -58,7 +58,7 @@ his project a soon as he submits the form.
     >>> print h1.renderContents()
     Register an upstream open source project
 
-    >>> tags = find_tags_by_class(user_browser.contents, 
+    >>> tags = find_tags_by_class(user_browser.contents,
     ...     'documentDescription')
     >>> for tag in tags:
     ...     print extract_text(tag)
@@ -204,7 +204,7 @@ The mail is sent when the transaction gets commited:
     >>> msg['Reply-To']
     'Sample Person <test@canonical.com>'
     >>> msg.get_payload()
-    "...Other/Proprietary...
+    "...http://launchpad.dev/testing2...Other/Proprietary...
 
 When a product is created with the license OTHER_OPEN_SOURCE an email
 is also sent to feedback@canonical.com.
@@ -286,7 +286,7 @@ the reviewed value should be on.
     >>> browser = setupBrowser(auth='Basic david.allouche@canonical.com:test')
     >>> browser.open('http://launchpad.dev/projects/+new')
     >>> browser.getControl('Name', index=0).value = 'warpage'
-    >>> browser.getControl('Owner').value = 'XXX'
+    >>> browser.getControl('Maintainer').value = 'XXX'
     >>> browser.getControl('Display Name').value = 'dname'
     >>> browser.getControl('Title').value = 'title'
     >>> browser.getControl('Summary').value = 'summary'
@@ -306,7 +306,7 @@ the reviewed value should be on.
 
 And finally, submit a successful creation by an admin.
 
-    >>> browser.getControl('Owner').value = 'sabdfl'
+    >>> browser.getControl('Maintainer').value = 'sabdfl'
     >>> browser.getControl('Add').click()
     >>> print browser.url
     http://launchpad.dev/warpage
@@ -338,4 +338,3 @@ It's also possible to set the product's icon/emblem at creation time.
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
     'http://launchpad.dev/testing3'
-

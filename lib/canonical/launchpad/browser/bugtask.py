@@ -1452,21 +1452,23 @@ class BugListingPortletView(LaunchpadView):
 
 
 def get_buglisting_search_filter_url(
-        assignee=None, importance=None, status=None):
+        assignee=None, importance=None, status=None, status_upstream=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
-    if assignee:
+    if assignee is not None:
         search_params.append(('field.assignee', assignee))
-    if importance:
+    if importance is not None:
         search_params.append(('field.importance', importance))
-    if status:
+    if status is not None:
         search_params.append(('field.status', status))
+    if status_upstream is not None:
+        search_params.append(('field.status_upstream', status_upstream))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
     search_filter_url = "+bugs?search=Search"
-    if query_string:
+    if query_string != '':
         search_filter_url += "&" + query_string
 
     return search_filter_url

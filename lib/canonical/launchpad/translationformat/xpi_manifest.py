@@ -206,3 +206,25 @@ class XpiManifest:
                 return True
         return False
 
+    def findMatchingXpiPath(self, chrome_path, locale):
+        """Reverse-map a chrome path in a given locale to a file path.
+
+        For example, if given "browser/gui/print.dtd" for locale en-US,
+        may return "jar:locales/en-US.jar!/chrome/gui/print.dtd",
+        assuming that the file path jar:locales/en-US.jar!/chrome/
+        is associated with the chrome path browser.
+
+        If there are multiple matches, this returns the one with the
+        longest file path.
+        """
+        # Since _locales is sorted by path length, scanning it backwards
+        # finds the longest match first.
+        for entry in reversed(self._locales):
+            is_match = (chrome_path.startswith(entry.chrome + '/') and
+                entry.locale == locale)
+            if is_match:
+                return normalize_path(
+                    entry.path + chrome_path[len(entry.chrome):])
+
+        return None
+

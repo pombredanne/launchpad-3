@@ -5,7 +5,6 @@ __metaclass__ = type
 
 from cookielib import domain_match
 from zope.component import getUtility
-from zope.app.session.interfaces import ISession
 from zope.app.session.http import CookieClientIdManager
 
 from storm.zope.interfaces import IZStorm
@@ -79,16 +78,6 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         We also log the referrer url on creation of a new
         requestid so we can track where first time users arrive from.
         """
-        if request.getCookies().has_key(self.namespace):
-            # Session has already been set in a previous request
-            new_session = False
-        elif request.response.getCookie(self.namespace, None) is not None:
-            # Session has already been set for the first time in this request
-            new_session = False
-        else:
-            # Session has never been set
-            new_session = True
-
         # XXX: SteveAlexander, 2007-04-01.
         #      This is on the codepath where anon users get a session cookie
         #      set unnecessarily.
@@ -108,15 +97,5 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         if cookie_domain is not None:
             cookie['domain'] = cookie_domain
 
-        if new_session:
-            session = ISession(request)['launchpad.session']
-            referrer = request.get('HTTP_REFERER', None)
-            if referrer is not None:
-                referrer = referrer.decode('US-ASCII', 'replace')
-            session['initial_referrer'] = referrer
-            url = str(request.URL).decode('US-ASCII', 'replace')
-            if request.get('QUERY_STRING', None):
-                url = url + '?' + request['QUERY_STRING']
-            session['initial_url'] = url
 
 idmanager = LaunchpadCookieClientIdManager()

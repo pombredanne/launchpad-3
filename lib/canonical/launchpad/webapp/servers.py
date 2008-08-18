@@ -64,7 +64,8 @@ from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
-from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.publisher import (
+    get_current_browser_request, RedirectionView)
 from canonical.launchpad.webapp.opstats import OpStats
 
 from canonical.lazr.timeout import set_default_timeout_function
@@ -896,12 +897,15 @@ class FeedsPublication(LaunchpadBrowserPublication):
         Feeds.lp.net should only serve classes that implement the IFeed
         interface or redirect to some other url.
         """
+        # LaunchpadImageFolder is imported here to avoid an import loop.
+        from canonical.launchpad.browser.launchpad import LaunchpadImageFolder
         result = super(FeedsPublication, self).traverseName(request, ob, name)
         if len(request.stepstogo) == 0:
             # The url has been fully traversed. Now we can check that
-            # the result is a feed or a redirection.
+            # the result is a feed, an image, or a redirection.
             naked_result = removeSecurityProxy(result)
             if (IFeed.providedBy(result) or
+                isinstance(naked_result, LaunchpadImageFolder) or
                 getattr(naked_result, 'status', None) == 301):
                 return result
             else:
@@ -1023,6 +1027,9 @@ class WebServicePublication(LaunchpadBrowserPublication):
             resource = queryMultiAdapter((ob, request), IHTTPResource)
         elif IHTTPResource.providedBy(ob):
             # A resource knows how to take care of itself.
+            return ob
+        elif zope_isinstance(ob, RedirectionView):
+            # A redirection should be served as is.
             return ob
         else:
             # This object should not be published on the web service.

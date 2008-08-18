@@ -15,9 +15,12 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Text
 
+from canonical.lazr.rest.declarations import export_as_webservice_entry
 
 class IHasBugs(Interface):
     """An entity which has a collection of bug tasks."""
+
+    export_as_webservice_entry()
 
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
@@ -32,7 +35,7 @@ class IHasBugs(Interface):
         "A list of all BugTasks ever reported for this target.")
 
     def searchTasks(search_params):
-        """Search the IBugTasks related to this entity.
+        """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
 
@@ -40,23 +43,6 @@ class IHasBugs(Interface):
 
         Note: milestone is currently ignored for all IBugTargets
         except IProduct.
-        """
-
-    def searchBugTasks(self, user, order_by=None, search_text=None,
-                       status=None,
-                       importance=None,
-                       assignee=None, bug_reporter=None, bug_supervisor=None,
-                       bug_commenter=None, bug_subscriber=None, owner=None,
-                       has_patch=None, has_cve=None,
-                       tags=None, tags_combinator_all=None,
-                       omit_duplicates=True, omit_targeted=None,
-                       status_upstream=None, milestone_assignment=None,
-                       milestone=None, component=None,
-                       has_no_package=None):
-        """Search the IBugTasks related to this entity.
-
-        This method converts it sparameters to a `BugTaskSearchParams`
-        instance and uses it to call `searchTasks`.
         """
 
     def getUsedBugTags():
@@ -87,6 +73,9 @@ class IBugTarget(IHasBugs):
     Examples include an IDistribution, an IDistroSeries and an
     IProduct.
     """
+
+    export_as_webservice_entry()
+
     # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
     bugtargetdisplayname = Attribute("A display name for this bug target")
     bugtargetname = Attribute("The target as shown in mail notifications.")

@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'PillarSearchItem',
     'ProductActiveReviewsView',
     'ProductAddSeriesView',
     'ProductAddView',
@@ -23,7 +22,6 @@ __all__ = [
     'ProductCodeIndexView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
-    'ProductDynMenu',
     'ProductEditNavigationMenu',
     'ProductEditPeopleView',
     'ProductEditView',
@@ -55,18 +53,20 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.interface import alsoProvides, implements, Interface
+from zope.interface import implements, Interface
+from zope.formlib import form
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
 from canonical.lazr import decorates
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
-    ICountry, IDistribution, IHasIcon, ILaunchBag, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IPersonSet, IPillarNameSet, IProductReviewSearch,
-    IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
+    ICountry, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IPersonSet, IPillarNameSet, IProductReviewSearch, IRevisionSet,
+    ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
@@ -94,9 +94,6 @@ from canonical.launchpad.browser.launchpad import (
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.browser.seriesrelease import (
-    SeriesOrReleasesMixinDynMenu)
-from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -105,13 +102,13 @@ from canonical.launchpad.webapp import (
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget)
+from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -231,6 +228,7 @@ class ProductLicenseMixin:
                 user_browsername=user.browsername,
                 user_name=user.name,
                 product_name=self.product.name,
+                product_url=canonical_url(self.product),
                 product_summary=indent(self.product.summary),
                 license_titles=indent(license_titles),
                 license_info=indent(self.product.license_info))
@@ -539,7 +537,7 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'table', 'new']
+    links = ['listall', 'doc', 'table', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -551,12 +549,6 @@ class ProductSpecificationsMenu(ApplicationMenu):
         summary = 'List all complete informational specifications'
         return Link('+documentation', text, summary,
             icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = (
-            'Show the recommended sequence of specification implementation')
-        return Link('+roadmap', text, summary, icon='info')
 
     def table(self):
         text = 'Assignments'
@@ -787,34 +779,26 @@ class ReleaseWithFiles:
 class ProductDownloadFileMixin:
     """Provides methods for managing download files."""
 
-    def _fetchProductData(self):
-        """Fetch all series, release and file data for the product.
 
-        Decorated classes are created rooted at self.product and they
-        contain cached data obtained with a few queries rather than
-        many iterated queries.
+    @cachedproperty
+    def product(self):
+        """Product with all series, release and file data cached.
+
+        Decorated classes are created, and they contain cached data
+        obtained with a few queries rather than many iterated queries.
         """
         # Create the decorated product and set the list of series.
         original_product = self.context
-        try:
-            original_serieses = original_product.serieses
-        except AttributeError:
-            # PillarSearchItem pretends to provide IProduct but
-            # doesn't really because it does not have a 'serieses'
-            # attribute.  When the attribute isn't present we can just
-            # return.
-            self.product = original_product
-            return
 
-        self.product = ProductWithSeries(original_product)
+        product = ProductWithSeries(original_product)
         serieses = []
-        for series in original_serieses:
+        for series in original_product.serieses:
             series_with_releases = SeriesWithReleases(series)
             serieses.append(series_with_releases)
             if original_product.development_focus == series:
-                self.product.development_focus = series_with_releases
+                product.development_focus = series_with_releases
 
-        self.product.setSeries(serieses)
+        product.setSeries(serieses)
 
         # Get all of the releases for all of the serieses in a single
         # query.  The query sorts the releases properly so we know the
@@ -822,9 +806,9 @@ class ProductDownloadFileMixin:
         release_set = getUtility(IProductReleaseSet)
         release_by_id = {}
         releases = release_set.getReleasesForSerieses(
-            self.product.serieses)
+            product.serieses)
         for release in releases:
-            series = self.product.getSeriesById(
+            series = product.getSeriesById(
                 release.productseries.id)
             decorated_release = ReleaseWithFiles(release)
             series.addRelease(decorated_release)
@@ -836,6 +820,8 @@ class ProductDownloadFileMixin:
         for file in files:
             release = release_by_id[file.productrelease.id]
             release.addFile(file)
+
+        return product
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
@@ -924,7 +910,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def initialize(self):
         self.status_message = None
-        self._fetchProductData()
 
     @property
     def show_license_status(self):
@@ -1054,6 +1039,18 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return (check_permission('launchpad.Edit', self.context)
                 and not self.context.qualifies_for_free_hosting)
 
+    @cachedproperty
+    def effective_driver(self):
+        """Return the product driver or the project driver."""
+        if self.context.driver is not None:
+            driver = self.context.driver
+        elif (self.context.project is not None and
+              self.context.project.driver is not None):
+            driver = self.context.project.driver
+        else:
+            driver = None
+        return driver
+
 
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
@@ -1063,7 +1060,6 @@ class ProductDownloadFilesView(LaunchpadView,
 
     def initialize(self):
         self.form = self.request.form
-        self._fetchProductData()
         # Manually process action for the 'Delete' button.
         self.processDeleteFiles()
 
@@ -1201,6 +1197,40 @@ class ProductChangeTranslatorsView(ProductEditView):
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
+    custom_widget('registrant', SinglePopupWidget)
+
+    def setUpFields(self):
+        """Setup the normal fields from the schema plus adds 'Registrant'.
+
+        The registrant is normally a read-only field and thus does not have a
+        proper widget created by default.  Even though it is read-only, admins
+        need the ability to change it.
+        """
+        super(ProductAdminView, self).setUpFields()
+        self.form_fields += self._createRegistrantField()
+
+    def _createRegistrantField(self):
+        """Return a popup widget person selector for the registrant.
+
+        This custom field is necessary because *normally* the registrant is
+        read-only but we want the admins to have the ability to correct legacy
+        data that was set before the registrant field existed.
+        """
+        return form.Fields(
+            PublicPersonChoice(
+                __name__='registrant',
+                title=_('Project Registrant'),
+                description=_('The person who originally registered the '
+                              'product.  Distinct from the current '
+                              'owner.  This is historical data and should '
+                              'not be changed without good cause.'),
+                vocabulary='ValidPerson',
+                required=True,
+                readonly=False,
+                default=self.context.registrant
+                ),
+            custom_widget=self.custom_widgets['registrant']
+            )
 
     def validate(self, data):
         if data.get('private_bugs') and self.context.bug_supervisor is None:
@@ -1215,7 +1245,7 @@ class ProductAdminView(ProductEditView):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ProductAdminView):
+class ProductReviewLicenseView(ProductEditView):
     label = "Review project licensing"
     field_names = [
         "active",
@@ -1329,24 +1359,6 @@ class ProductRdfView:
         return encodeddata
 
 
-class ProductDynMenu(
-        DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
-
-    menus = {
-        '': 'mainMenu',
-        'meetings': 'meetingsMenu',
-        'series': 'seriesMenu',
-        }
-
-    @neverempty
-    def mainMenu(self):
-        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
-        yield self.makeLink('Milestones', page='+milestones')
-        yield self.makeLink('Series', page='+series', submenu='series')
-        yield self.makeLink(
-            'Related', submenu='related', context=self.context.project)
-
-
 class Icon:
     """An icon for use with image:icon."""
 
@@ -1355,34 +1367,6 @@ class Icon:
 
     def getURL(self):
         return self.library_alias.getURL()
-
-
-class PillarSearchItem:
-    """A search result item representing a Pillar."""
-
-    implements(IHasIcon)
-
-    icon = None
-
-    def __init__(self, pillar_type, name, displayname, summary, icon_id):
-        self.pillar_type = pillar_type
-        self.name = name
-        self.displayname = displayname
-        self.summary = summary
-        if icon_id is not None:
-            self.icon = Icon(icon_id)
-
-        # Even though the object doesn't implement the interface properly, we
-        # still say that it provides them so that the standard image:icon
-        # formatter works.
-        if pillar_type == 'project':
-            alsoProvides(self, IProduct)
-        elif pillar_type == 'distribution':
-            alsoProvides(self, IDistribution)
-        elif pillar_type == 'project group':
-            alsoProvides(self, IProject)
-        else:
-            raise AssertionError("Unknown pillar type: %s" % pillar_type)
 
 
 class ProductSetView(LaunchpadView):
@@ -1438,14 +1422,7 @@ class ProductSetView(LaunchpadView):
     def searchresults(self):
         search_string = self.search_string.lower()
         limit = self.max_results_to_display
-        return [
-            PillarSearchItem(
-                pillar_type=item['type'], name=item['name'],
-                displayname=item['title'], summary=item['description'],
-                icon_id=item['icon'])
-            for item in getUtility(IPillarNameSet).search(search_string,
-                                                          limit)
-        ]
+        return getUtility(IPillarNameSet).search(search_string, limit)
 
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display
@@ -1593,6 +1570,7 @@ class ProductAddView(ProductAddViewBase):
             programminglang=data['programminglang'],
             project=data['project'],
             owner=data['owner'],
+            registrant=self.user,
             license_reviewed=data['license_reviewed'],
             licenses = data['licenses'],
             license_info=data['license_info'])
@@ -1620,7 +1598,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
             self.context, old_owner, self.context.owner)
         if self.context.owner != old_owner:
             self.request.response.addNotification(
-                "Successfully changed the owner to %s"
+                "Successfully changed the maintainer to %s"
                 % self.context.owner.displayname)
         if self.context.driver != old_driver:
             if self.context.driver is not None:
@@ -1687,7 +1665,7 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     @cachedproperty
     def recent_revisions(self):
         """The tip revision for each of the recent revision branches."""
-        return [branch.getBranchRevision(branch.revision_count)
+        return [branch.getBranchRevision(sequence=branch.revision_count)
                 for branch in self.recent_revision_branches]
 
     @cachedproperty
