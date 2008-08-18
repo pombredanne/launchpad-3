@@ -46,7 +46,7 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name autoupdate"
+      set_attributes="name autoupdate registrant"
       />
 
     <require
@@ -93,6 +93,14 @@
     <require
         permission="launchpad.Edit"
         attributes="setBugSupervisor" />
+  </content>
+
+  <!-- ProductWithLicenses
+        This is a decorator for IProduct that eliminates an additional query
+        for the product licenses.
+  -->
+  <content class="canonical.launchpad.database.ProductWithLicenses">
+    <allow interface="canonical.launchpad.interfaces.IProduct" />
   </content>
 
   <adapter
@@ -284,10 +292,6 @@
     <browser:page
       name="+listing-detailed"
       template="../templates/product-listing-detailed.pt"
-      />
-    <browser:page
-      name="+listing-simple"
-      template="../templates/pillar-listing-simple.pt"
       />
     <!-- Products Portlets -->
     <browser:page

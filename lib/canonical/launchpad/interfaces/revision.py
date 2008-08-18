@@ -9,7 +9,7 @@ __all__ = [
     'IRevisionSet']
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Text, TextLine
+from zope.schema import Bool, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -29,6 +29,9 @@ class IRevision(Interface):
     revision_date = Datetime(
         title=_("The date the revision was committed."),
         required=True, readonly=True)
+    karma_allocated = Bool(
+        title=_("Has karma been allocated for this revision?"),
+        required=True, default=False)
     parents = Attribute("The RevisionParents for this revision.")
     parent_ids = Attribute("The revision_ids of the parent Revisions.")
     properties = Attribute("The `RevisionProperty`s for this revision.")
@@ -36,8 +39,11 @@ class IRevision(Interface):
     def getProperties():
         """Return the revision properties as a dict."""
 
-    def getBranch():
-        """Return a public branch associated with this revision.
+    def allocateKarma(branch):
+        """Allocate karma to the revision_author for this revision."""
+
+    def getBranch(allow_private=False):
+        """Return a branch associated with this revision.
 
         The chances are that there will be many branches with any revision
         that has landed on the trunk branch.  A branch owned by the revision
@@ -45,8 +51,11 @@ class IRevision(Interface):
         the revision in the history is chosen over a branch that just has the
         revision in the ancestry.
 
+        :param allow_private: If True, a public or private branch may be
+            returned.  Otherwise only a public branch may be returned.
         :return: A `Branch` or None if an appropriate branch cannot be found.
         """
+
 
 class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
@@ -126,6 +135,22 @@ class IRevisionSet(Interface):
         be 100% accurate, it is much more accurate than using date created.
         """
 
+    def getRevisionsNeedingKarmaAllocated():
+        """Get the revisions needing karma allocated.
+
+        Under normal circumstances karma is allocated for revisions by the
+        branch scanner as it is scanning the revisions.
+
+        There are a number of circumstances where this doesn't happen though:
+          * The revision author is not linked to a Launchpad person
+          * The branch is +junk
+
+        :return: A ResultSet containing revisions where:
+           * karma not allocated
+           * revision author linked to a Launchpad person
+           * revision in a branch associated with a product
+        """
+
     def getPublicRevisionsForPerson(person):
         """Get the public revisions for the person or team specified.
 
@@ -133,4 +158,21 @@ class IRevisionSet(Interface):
             branch somewhere where the person is the revision author, or
             the revision author is in the team.  The results are ordered
             with the most recent revision_date first.
+        """
+
+    def getPublicRevisionsForProduct(product):
+        """Get the public revisions for the product specified.
+
+        :return: ResultSet containing all revisions that are in a public
+            branch associated with the product.  The results are ordered
+            with the most recent revision_date first.
+        """
+
+    def getPublicRevisionsForProject(project):
+        """Get the public revisions for the project specified.
+
+        :return: ResultSet containing all revisions that are in a public
+            branch associated with a product that is associated with the
+            project.  The results are ordered with the most recent
+            revision_date first.
         """

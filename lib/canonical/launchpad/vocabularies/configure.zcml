@@ -266,6 +266,11 @@
     />
 
   <vocabulary
+    name="ValidPerson"
+    factory="canonical.launchpad.vocabularies.ValidPersonVocabulary"
+    />
+
+  <vocabulary
     name="ValidTeamMember"
     factory="canonical.launchpad.vocabularies.ValidTeamMemberVocabulary"
     />

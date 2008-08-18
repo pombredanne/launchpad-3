@@ -897,12 +897,15 @@ class FeedsPublication(LaunchpadBrowserPublication):
         Feeds.lp.net should only serve classes that implement the IFeed
         interface or redirect to some other url.
         """
+        # LaunchpadImageFolder is imported here to avoid an import loop.
+        from canonical.launchpad.browser.launchpad import LaunchpadImageFolder
         result = super(FeedsPublication, self).traverseName(request, ob, name)
         if len(request.stepstogo) == 0:
             # The url has been fully traversed. Now we can check that
-            # the result is a feed or a redirection.
+            # the result is a feed, an image, or a redirection.
             naked_result = removeSecurityProxy(result)
             if (IFeed.providedBy(result) or
+                isinstance(naked_result, LaunchpadImageFolder) or
                 getattr(naked_result, 'status', None) == 301):
                 return result
             else:

@@ -41,6 +41,7 @@ Projects are available at their canonical URL on the API virtual host.
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
+    registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
     resource_type_link: u'http://.../#project'
     screenshots_url: None
@@ -149,6 +150,22 @@ Attributes can be edited via the webservice.patch() method.
     u'http://.../~name12'
     >>> webservice.get(firefox['bug_tracker_link']).jsonBody()['self_link']
     u'http://.../bugs/bugtrackers/mozilla.org'
+
+Read-only attributes, like registrant, cannot be modified via the
+webservice.patch() method.
+
+    >>> patch = {
+    ...     u'registrant_link': u'http://api.launchpad.dev/beta/~sabdfl',
+    ...     }
+    >>> print webservice.patch(
+    ...     '/beta/firefox', 'application/json', dumps(patch))
+    HTTP/1.1 400 Bad Request
+    ...
+    registrant_link: You tried to modify a read-only attribute.
+
+    >>> firefox = webservice.get('/beta/firefox').jsonBody()
+    >>> firefox['registrant_link']
+    u'http://.../~name12'
 
 
 == Project collection ==

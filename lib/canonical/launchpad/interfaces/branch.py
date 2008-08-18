@@ -47,7 +47,7 @@ import re
 import canonical.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6)
+    BzrBranchFormat6, BzrBranchFormat7)
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
 from bzrlib.plugins.loom.branch import (
@@ -57,7 +57,9 @@ from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
-    RepositoryFormatPackDevelopment0Subtree)
+    RepositoryFormatPackDevelopment0Subtree, RepositoryFormatPackDevelopment1,
+    RepositoryFormatPackDevelopment1Subtree, RepositoryFormatKnitPack5,
+    RepositoryFormatKnitPack5RichRoot)
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
@@ -171,11 +173,13 @@ class BranchType(DBEnumeratedType):
         """)
 
 
-def _format_enum(num, format, format_string=None):
+def _format_enum(num, format, format_string=None, description=None):
     instance = format()
     if format_string is None:
         format_string = instance.get_format_string()
-    return DBItem(num, format_string, instance.get_format_description())
+    if description is None:
+        description = instance.get_format_description()
+    return DBItem(num, format_string, description)
 
 
 class BranchFormat(DBEnumeratedType):
@@ -198,9 +202,7 @@ class BranchFormat(DBEnumeratedType):
 
     BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
 
-    # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
-    BZR_BRANCH_7 = DBItem(7, 'Bazaar Branch Format 7 (needs bzr 1.6)\n',
-                          'Description to be added')
+    BZR_BRANCH_7 = _format_enum(7, BzrBranchFormat7)
 
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
@@ -241,13 +243,13 @@ class RepositoryFormat(DBEnumeratedType):
 
     BZR_KNITPACK_4 = _format_enum(204, RepositoryFormatKnitPack4)
 
-    # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
-    BZR_KNITPACK_5 = DBItem(
-        205, 'Bazaar RepositoryFormatKnitPack5 (bzr 1.6)\n',
-        'Description to be added')
-    BZR_KNITPACK_5_RR = DBItem(
-        206, 'Bazaar RepositoryFormatKnitPack5RichRoot (bzr 1.6)\n',
-        'Description to be added')
+    BZR_KNITPACK_5 = _format_enum(
+        205, RepositoryFormatKnitPack5,
+        description='Packs 5 (needs bzr 1.6, supports stacking)\n')
+
+    BZR_KNITPACK_5_RR = _format_enum(
+        206, RepositoryFormatKnitPack5RichRoot,
+        description='Packs 5-Rich Root (needs bzr 1.6, supports stacking)')
 
     BZR_PACK_DEV_0 = _format_enum(
         300, RepositoryFormatPackDevelopment0)
@@ -255,14 +257,11 @@ class RepositoryFormat(DBEnumeratedType):
     BZR_PACK_DEV_0_SUBTREE = _format_enum(
         301, RepositoryFormatPackDevelopment0Subtree)
 
-    # XXX: Tim Penhey 2008-08-08, needs to be updated once bzr 1.6 lands.
-    BZR_DEV_1 = DBItem(
-        302, 'Bazaar development format 1 (needs bzr.dev from before 1.6)\n',
-        'Description to be added')
-    BZR_DEV_1_SUBTREE = DBItem(
-        303, ('Bazaar development format 1 with subtree support '
-              '(needs bzr.dev from before 1.6)\n'),
-        'Description to be added')
+    BZR_DEV_1 = _format_enum(
+        302, RepositoryFormatPackDevelopment1)
+
+    BZR_DEV_1_SUBTREE = _format_enum(
+        303, RepositoryFormatPackDevelopment1Subtree)
 
 
 class ControlFormat(DBEnumeratedType):
@@ -625,6 +624,8 @@ class IBranch(IHasOwner):
         title=_("Revision count"),
         description=_("The revision number of the tip of the branch.")
         )
+
+    stacked_on = Attribute('Stacked-on branch')
 
     warehouse_url = Attribute(
         "URL for accessing the branch by ID. "
