@@ -23,6 +23,7 @@ __all__ = [
 import copy
 from datetime import datetime
 import os
+import sha
 import simplejson
 
 from zope.app import zapi
@@ -46,6 +47,7 @@ from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url, BatchNavigator, and event code should be moved into lazr.
+from canonical.launchpad import versioninfo
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
@@ -136,6 +138,18 @@ class HTTPResource:
     def __call__(self):
         """See `IHTTPResource`."""
         pass
+
+    def getEtag(self, media_type):
+        """Calculate an ETag for a representation of this resource.
+
+        The WADL representation of a resource only changes when
+        Launchpad itself changes. Thus, we can use the Launchpad
+        revision number itself as an ETag. We delegate to subclasses
+        when it comes to calculating ETags for other representations.
+        """
+        if media_type == self.WADL_TYPE:
+            return str(versioninfo.revno)
+        return None
 
     def implementsPOST(self):
         """Returns True if this resource will respond to POST.
@@ -398,10 +412,40 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
 
+    missing = object()
+
     def __init__(self, context, request):
         """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(context, request)
         self.entry = IEntry(context)
+        self._unmarshalled_field_cache = {}
+
+    def getEtag(self, media_type):
+        """Calculate an ETag for a representation of this resource.
+
+        We implement a simple (though not terribly efficient) ETag
+        algorithm that concatenates the current values of all the
+        fields that aren't read-only, and calculates a SHA1 hash of
+        the resulting string.
+        """
+        etag = super(EntryResource, self).getEtag(media_type)
+        if etag is not None:
+            return etag
+
+        if media_type != self.JSON_TYPE:
+            return None
+
+        hash_object = sha.new()
+        for name, field in getFieldsInOrder(self.entry.schema):
+            if self.isModifiableField(name, field):
+                ignored, value = self._unmarshall_field(name, field)
+                hash_object.update(str(value))
+                hash_object.update("\0")
+            # Append the revision number, because the algorithm for
+            # generating the representation might itself change across
+            # versions.
+            hash_object.update(str(versioninfo.revno))
+        return hash_object.hexdigest()
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -413,23 +457,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         data['self_link'] = canonical_url(self.context)
         data['resource_type_link'] = self.type_url
         for name, field in getFields(self.entry.schema).items():
-            field = field.bind(self.context)
-            marshaller = getMultiAdapter((field, self.request),
-                                          IFieldMarshaller)
-            repr_name = marshaller.representation_name
-            try:
-                if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
-                    value = None
-                else:
-                    value = getattr(self.entry, name)
-                repr_value = marshaller.unmarshall(self.entry, value)
-            except Unauthorized:
-                # Either the client doesn't have permission to see
-                # this field, or it doesn't have permission to read
-                # its current value. Rather than denying the client
-                # access to the resource altogether, use our special
-                # 'redacted' tag: URI for the field's value.
-                repr_value = self.REDACTED_VALUE
+            repr_name, repr_value = self._unmarshall_field(name, field)
             data[repr_name] = repr_value
         return data
 
@@ -476,16 +504,17 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # GET, which serves a JSON or WADL representation of the
             # entry.
             if self.getPreferredSupportedContentType() == self.WADL_TYPE:
+                media_type = self.WADL_TYPE
                 result = self.toWADL().encode("utf-8")
-                self.request.response.setHeader(
-                    'Content-Type', self.WADL_TYPE)
-                return result
             else:
-                result = self
+                media_type = self.JSON_TYPE
+                result = simplejson.dumps(self, cls=ResourceJSONEncoder)
 
-        # Serialize the result to JSON.
-        self.request.response.setHeader('Content-Type', self.JSON_TYPE)
-        return simplejson.dumps(result, cls=ResourceJSONEncoder)
+        self.request.response.setHeader('Content-Type', media_type)
+        etag = self.getEtag(media_type)
+        if etag is not None:
+            self.request.response.setHeader('Etag', etag)
+        return result
 
     def do_PUT(self, media_type, representation):
         """Modify the entry's state to match the given representation.
@@ -502,12 +531,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         # Get the fields ordered by name so that we always evaluate them in
         # the same order. This is needed to predict errors when testing.
         for name, field in getFieldsInOrder(self.entry.schema):
-            if (name.startswith('_') or ICollectionField.providedBy(field)
-                or field.readonly):
-                # This attribute is not part of the web service
-                # interface, is a collection link (which means it's
-                # read-only), or is marked read-only. It's okay for
-                # the client to omit a value for this attribute.
+            if not self.isModifiableField(name, field):
                 continue
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
@@ -540,6 +564,48 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             canonical_url(self.request.publication.getApplication(
                     self.request)),
             adapter.singular_type)
+
+    def isModifiableField(self, field_name, field):
+        """Returns true if this field's value can be changed.
+
+        All fields are modifiable except read-only fields,
+        collections, and fields that are not part of the web service
+        interface.
+        """
+        return not (field.readonly
+                    or ICollectionField.providedBy(field)
+                    or field_name.startswith('_'))
+
+    def _unmarshall_field(self, field_name, field):
+        """See what a field would look like in a representation.
+
+        :return: a 2-tuple (representation_name, representation_value).
+        """
+        cached_value = self._unmarshalled_field_cache.get(
+            field_name, self.missing)
+        if cached_value is not self.missing:
+            return cached_value
+
+        field = field.bind(self.context)
+        marshaller = getMultiAdapter((field, self.request),
+                                     IFieldMarshaller)
+        try:
+            if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
+                value = None
+            else:
+                value = getattr(self.entry, field_name)
+            repr_value = marshaller.unmarshall(self.entry, value)
+        except Unauthorized:
+            # Either the client doesn't have permission to see
+            # this field, or it doesn't have permission to read
+            # its current value. Rather than denying the client
+            # access to the resource altogether, use our special
+            # 'redacted' tag: URI for the field's value.
+            repr_value = self.REDACTED_VALUE
+
+        unmarshalled = (marshaller.representation_name, repr_value)
+        self._unmarshalled_field_cache[field_name] = unmarshalled
+        return unmarshalled
 
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
