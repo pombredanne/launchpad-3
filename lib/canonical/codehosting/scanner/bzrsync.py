@@ -17,6 +17,7 @@ import pytz
 from zope.component import getUtility
 from bzrlib.branch import Branch, BzrBranchFormat4
 from bzrlib.diff import show_diff_trees
+from bzrlib.errors import NotStacked, UnstackableBranchFormat
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
@@ -25,8 +26,8 @@ from bzrlib.repofmt.weaverepo import (
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
-    ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
-    NotFoundError, RepositoryFormat)
+    ControlFormat, IBranchRevisionSet, IBranchSet, IBugBranchSet, IBugSet,
+    IRevisionSet, NotFoundError, RepositoryFormat)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
 
@@ -408,6 +409,7 @@ class BzrSync:
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
+        self.db_branch.stacked_on = self._getStackedOnBranch(bzr_branch)
         self.updateBranchStatus(bzr_history)
         self.trans_manager.commit()
 
@@ -604,6 +606,17 @@ class BzrSync:
                 assert sequence is not None
                 self._branch_mailer.generateEmailForRevision(
                     bzr_branch, revision, sequence)
+
+    def _getStackedOnBranch(self, bzr_branch):
+        """Return the branch that the branch being scanned is stacked on."""
+        try:
+            branch_url = bzr_branch.get_stacked_on_url()
+        except (UnstackableBranchFormat, NotStacked):
+            return None
+        branch_set = getUtility(IBranchSet)
+        if branch_url.startswith('/'):
+            return branch_set.getByUniqueName(branch_url.strip('/'))
+        return branch_set.getByUrl(branch_url.rstrip('/'))
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""

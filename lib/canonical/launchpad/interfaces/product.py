@@ -31,7 +31,8 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact, ILaunchpadUsage)
+    IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
+    ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
@@ -113,9 +114,9 @@ class License(DBEnumeratedType):
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
                IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IMakesAnnouncements, IHasOwner, IHasSecurityContact,
-               IHasSprints, IHasTranslationGroup, IKarmaContext,
-               ILaunchpadUsage, ISpecificationTarget, IPillar):
+               IMakesAnnouncements, IHasOwner,
+               IHasSecurityContact,IHasSprints, IHasTranslationGroup,
+               IKarmaContext, ILaunchpadUsage, ISpecificationTarget, IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -148,11 +149,20 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     owner = exported(
         PublicPersonChoice(
-            title=_('Owner'),
+            title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
-            description=_("""Project owner, it can either a valid Person
-                or Team inside Launchpad context.""")))
+            description=_("Project owner, it can either a valid Person or "
+                          "Team inside Launchpad context.")))
+
+    registrant = exported(
+        PublicPersonChoice(
+            title=_('Registrant'),
+            required=True,
+            readonly=True,
+            vocabulary='ValidPersonOrTeam',
+            description=_("Project registrant, a valid Person "
+                          "within Launchpad context.")))
 
     driver = exported(
         PublicPersonChoice(
@@ -525,8 +535,12 @@ class IProductSet(Interface):
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=(), license_info=None):
-        """Create and Return a brand new Product."""
+                      icon=None, licenses=(), license_info=None,
+                      registrant=None):
+        """Create and return a brand new Product.
+
+        See `IProduct` for a description of the parameters.
+        """
 
     def forReview():
         """Return an iterator over products that need to be reviewed."""

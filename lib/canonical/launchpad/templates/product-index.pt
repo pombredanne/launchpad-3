@@ -26,29 +26,27 @@
         <tal:mugshot replace="structure context/image:mugshot" />
         <h1 tal:content="context/title">Name of project</h1>
         <p id="project-admin-whiteboard" class="whiteboard"
-         tal:condition="context/required:launchpad.Commercial">
+           tal:condition="context/required:launchpad.Commercial">
           <span tal:content="context/reviewer_whiteboard" />
           (<a href="+review-license">edit reviewer whiteboard</a>)
         </p>
-        <p
-          tal:condition="not: context/active"
-          class="warning message"
-          id="project-inactive"
-        >
-	  This project is currently inactive
-	  <tal:comment condition="nothing">
-	    This page links to the +review-license form to reactivate
-	    the product since both the admins and commercial-admins
-	    have access to this form unlike the product/+admin form.
-	  </tal:comment>
-	  <a href="+review-license">(change this)</a>
-	</p>
+        <p tal:condition="not: context/active"
+           class="warning message"
+           id="project-inactive" >
+          This project is currently inactive
+          <tal:comment condition="nothing">
+            This page links to the +review-license form to reactivate
+            the product since both the admins and commercial-admins
+            have access to this form unlike the product/+admin form.
+          </tal:comment>
+          <a href="+review-license">(change this)</a>
+        </p>
 
-	<p id="license-status" tal:condition="view/show_license_status">
-	  <strong tal:content="structure context/license_status/description">
-	    This project's license is proprietary.
-	  </strong>
-	</p>
+        <p id="license-status" tal:condition="view/show_license_status">
+          <strong tal:content="structure context/license_status/description">
+            This project's license is proprietary.
+          </strong>
+        </p>
       </div>
   <div class="description" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
@@ -121,8 +119,17 @@
     <strong>Languages:</strong> <span tal:content="context/programminglang">Python</span>
   </p>
 
-  <p id="driver" tal:condition="context/driver">
-    <strong>Driver:</strong> <tal:link replace="structure context/driver/fmt:link" />
+
+  <p id="owner" tal:condition="context/owner">
+    <strong>Maintainer:</strong> <tal:link replace="structure context/owner/fmt:link" />
+  </p>
+
+  <p id="driver" tal:condition="view/effective_driver">
+    <strong>Driver:</strong> <tal:link replace="structure view/effective_driver/fmt:link" />
+  </p>
+
+  <p id="driver" tal:condition="not: view/effective_driver">
+    <strong>Driver:</strong> Not yet appointed
   </p>
 
   <div>
@@ -240,7 +247,9 @@
 
       <div class="section">
         <h2>Registered</h2>
+        <tal:link replace="structure context/registrant/fmt:link" /> on
         <tal:created replace="context/datecreated/fmt:approximatedate" />
+        <p />
         <div tal:define="link context/menu:overview/rdf"
              tal:condition="link/enabled"
              tal:content="structure link/render" />
