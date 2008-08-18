@@ -13,7 +13,7 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, IBreadcrumbBuilder, IncompleteBreadcrumbError)
+    IBreadcrumb, IBreadcrumbBuilder)
 
 
 class Breadcrumb:
@@ -38,21 +38,34 @@ class BreadcrumbBuilder:
 
     def __init__(self, context):
         self.context = context
+        # Storage for user-specified values.
+        self._text = None
+        self._url = None
 
-    def _get_attribute(self, attrname):
-        """Return the value of one of this class' attributes.
+    def _get_text(self):
+        """Return the breadcrumb's 'text' attribute.  See `IBreadcrumb`."""
+        if self._text is not None:
+            return self._text
+        raise NotImplementedError
 
-        :raises: `IncompleteBreadcrumbError` if the attribute is missing or
-            None.
-        """
-        attr = getattr(self, attrname, None)
-        if attr is None:
-            raise IncompleteBreadcrumbError(
-                "No '%s' attribute was given with which to build the "
-                "Breadcrumb object." % attrname)
-        return attr
+    def _set_text(self, value):
+        """Set the breadcrumb's 'text' attribute.  See `IBreadcrumb`."""
+        self._text = value
+
+    text = property(_get_text, _set_text, doc=_get_text.__doc__)
+
+    def _get_url(self):
+        """Return the breadcrumb's 'url' attribute.  See `IBreadcrumb`."""
+        if self._url is not None:
+            return self._url
+        raise NotImplementedError
+
+    def _set_url(self, value):
+        """Set the breadcrumb's 'url' attribute.  See `IBreadcrumb`."""
+        self._url = value
+
+    url = property(_get_url, _set_url, doc=_get_url.__doc__)
 
     def make_breadcrumb(self):
-        url = self._get_attribute('url')
-        text = self._get_attribute('text')
-        return Breadcrumb(url, text)
+        """See `IBreadcrumbBuilder.`"""
+        return Breadcrumb(self.url, self.text)

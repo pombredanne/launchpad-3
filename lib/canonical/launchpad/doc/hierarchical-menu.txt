@@ -84,8 +84,7 @@ builder raises an error if a URL is not explicitly given by the developer.
     >>> builder.make_breadcrumb()
     Traceback (most recent call last):
     ...
-    IncompleteBreadcrumbError: No 'url' attribute was given with which to
-    build the Breadcrumb object.
+    NotImplementedError
 
 The breadcrumb's attributes are given as attributes on the builder class.
 They can be overridden with subclassing and Python properties.
