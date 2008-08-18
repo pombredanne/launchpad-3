@@ -987,7 +987,7 @@ class PackageUpload(SQLBase):
             # Add the original changesfile as an attachment.
             try:
                 changesfile_text = self.changesfile.read().encode('utf-8')
-            except LookupError, err:
+            except:
                 changesfile_text = (
                     "Sorry, the 'changesfile' is not available.")
 

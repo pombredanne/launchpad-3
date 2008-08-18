@@ -842,17 +842,8 @@ Here's the attachment metadata.
   >>> attachment['Content-Disposition']
   'attachment; filename="changesfile"'
 
-Show all line of the attachment except for the last which is base64 encoded.
+And what follows is the content of the attachment.
 
-  >>> attachment_lines = attachment.as_string().splitlines()
-  >>> print '\n'.join(attachment_lines[:-1]) # doctest: -NORMALIZE_WHITESPACE
-  Content-Type: application/octet-stream
-  MIME-Version: 1.0
-  Content-Transfer-Encoding: base64
-  Content-Disposition: attachment; filename="changesfile"
-  <BLANKLINE>
-
-And now, the actual attachment content (base64 decoded).
-
-  >>> print base64.decodestring(attachment_lines[-1]) # doctest: -NORMALIZE_WHITESPACE
+  >>> attachment_lines = attachment.get_payload(decode=True)
+  >>> print attachment_lines # doctest: -NORMALIZE_WHITESPACE
   Sorry, the 'changesfile' is not available.
