@@ -68,7 +68,7 @@
   <tal:merge-revno condition="context/merged_revno">
     This proposal was merged at revision
     <tal:revno replace="context/merged_revno" />
-    <a href="+edit-merged">
+    <a href="+merged">
       <img src="/@@/edit" alt="Edit merge revision"
         title="Edit merge revision" />
     </a>

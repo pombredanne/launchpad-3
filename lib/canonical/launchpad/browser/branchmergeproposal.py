@@ -683,11 +683,12 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     @notify
     def mark_merged_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
+        revno = data['merged_revno']
         if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            self.request.response.addWarningNotification(
-                'The proposal has already been marked as merged.')
+            self.context.merged_revno = revno
+            self.request.response.addNotification(
+                'The proposal\'s merged revision has been updated.')
         else:
-            revno = data['merged_revno']
             self.context.markAsMerged(revno, merge_reporter=self.user)
             self.request.response.addNotification(
                 'The proposal has now been marked as merged.')
