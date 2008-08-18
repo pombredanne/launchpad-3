@@ -33,7 +33,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
-from canonical.launchpad.interfaces.wikiname import IWikiNameSet
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
@@ -232,7 +231,6 @@ class UserDetailsStorageTest(DatabaseTest):
         userDict = storage._getUserInteraction('mark@hbd.com')
         self.assertEqual('Mark Shuttleworth', userDict['displayname'])
         self.assertEqual(['mark@hbd.com'], userDict['emailaddresses'])
-        self.assertEqual('MarkShuttleworth', userDict['wikiname'])
         self.failUnless(userDict.has_key('salt'))
 
         # Getting by ID should give the same result as getting by email
@@ -1030,43 +1028,6 @@ class UserDetailsStorageV2Test(DatabaseTest):
         storage = DatabaseUserDetailsStorageV2(None)
         userDict = storage._getUserInteraction('mark@hbd.com')
         self.assertEqual('sabdfl', userDict['name'])
-
-    def test_getUserNoWikiname(self):
-        # Ensure that the authserver copes gracefully with users with:
-        #    a) no wikinames at all
-        #    b) no wikiname for http://www.ubuntulinux.com/wiki/
-        # (even though in the long run we want to make sure these situations
-        # can never happen, until then the authserver should be robust).
-
-        # First, make sure that the sample user has no wikiname.
-        transaction.begin()
-        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        wiki_names = getUtility(IWikiNameSet).getAllWikisByPerson(person)
-        for wiki_name in wiki_names:
-            wiki_name.destroySelf()
-        transaction.commit()
-
-        # Get the user dict for Sample Person (test@canonical.com).
-        storage = DatabaseUserDetailsStorageV2(None)
-        userDict = storage._getUserInteraction('test@canonical.com')
-
-        # The user dict has results, even though the wikiname is empty
-        self.assertNotEqual({}, userDict)
-        self.assertEqual('', userDict['wikiname'])
-        self.assertEqual(12, userDict['id'])
-
-        # Now lets add a wikiname, but for a different wiki.
-        transaction.begin()
-        login(ANONYMOUS)
-        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        getUtility(IWikiNameSet).new(
-            person, 'http://foowiki/', 'SamplePerson')
-        logout()
-        transaction.commit()
-
-        # The authserver should return exactly the same results.
-        userDict2 = storage._getUserInteraction('test@canonical.com')
-        self.assertEqual(userDict, userDict2)
 
 
 class BranchDetailsStorageTest(DatabaseTest):

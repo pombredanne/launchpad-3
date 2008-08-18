@@ -68,8 +68,8 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadUsage, NotFoundError)
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
+    NotFoundError)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -144,9 +144,10 @@ class ProductWithLicenses:
 
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
-              HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
-              BranchVisibilityPolicyMixin, QuestionTargetMixin,
-              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin):
+              HasSpecificationsMixin, HasSprintsMixin,
+              KarmaContextMixin, BranchVisibilityPolicyMixin,
+              QuestionTargetMixin, HasTranslationImportsMixin,
+              StructuralSubscriptionTargetMixin):
 
     """A Product."""
 
