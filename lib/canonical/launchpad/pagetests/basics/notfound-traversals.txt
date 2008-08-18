@@ -156,7 +156,6 @@ status is returned.
 >>> check("/ubuntu/+bugs")
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
->>> check("/ubuntu/+roadmap")
 >>> check_redirect("/ubuntu/+translations", status=301)
 >>> check("/ubuntu/+translations", host='translations.launchpad.dev')
 >>> check("/ubuntu/+edit", auth=True)

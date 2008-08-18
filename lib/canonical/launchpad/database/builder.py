@@ -454,8 +454,15 @@ class Builder(SQLBase):
         if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (build_queue_item.build.pocket.name.lower())
         args['suite'] = suite
-        archive_purpose = build_queue_item.build.archive.purpose.name
-        args['archive_purpose'] = archive_purpose
+        archive_purpose = build_queue_item.build.archive.purpose
+        if (archive_purpose == ArchivePurpose.PPA and
+            not build_queue_item.build.archive.require_virtualized):
+            # If we're building a non-virtual PPA, override the purpose
+            # to PRIMARY.  This ensures that the package mangling tools
+            # will run over the built packages.
+            args['archive_purpose'] = ArchivePurpose.PRIMARY.name
+        else:
+            args['archive_purpose'] = archive_purpose.name
 
         # Let the build slave know whether this is a build in a private
         # archive.

@@ -22,6 +22,7 @@ GLOBAL_NAMES = set([
     'canonical_url',
     'commit',
     'create_view',
+    'create_initialized_view',
     'flush_database_updates',
     'getUtility',
     'login',

@@ -18,7 +18,7 @@ Now he'll request his key to be reactivated.
     >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('p', 'error message'):
     ...     print tag.renderContents()
-    No Key(s) selected for reactivation.
+    No key(s) selected for reactivation.
 
     >>> browser.getControl('1024D/DFD20543').selected = True
     >>> browser.getControl('Reactivate Key').click()

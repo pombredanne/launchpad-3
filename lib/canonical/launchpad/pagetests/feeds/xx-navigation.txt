@@ -2,12 +2,12 @@
 
 Feeds are served over HTTP, and are heavily cached. Pages which are not
 registered on the Feeds layer should not be served from the feeds.lp.net
-subdomain. 
+subdomain.
 
 
 == Index of a product ==
 
-Trying to view a page which is not registered on the Feeds layer 
+Trying to view a page which is not registered on the Feeds layer
 returns a 404.
 
     >>> browser.open('http://feeds.launchpad.dev/jokosher')
@@ -19,6 +19,10 @@ returns a 404.
     ...
     NotFound: ...
     >>> browser.open('http://feeds.launchpad.dev/+dims')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...
+    >>> browser.open('http://feeds.launchpad.dev/announcements.atom/foo')
     Traceback (most recent call last):
     ...
     NotFound: ...
@@ -37,7 +41,7 @@ before serving the page.
 
 The +index view should redirect to https://help.launchpad.net/Feeds
 
-XXX Edwin Grubbs 2007-12-10 bug=98482: zope.testbrowser does not handle 
+XXX Edwin Grubbs 2007-12-10 bug=98482: zope.testbrowser does not handle
 redirects to remote sites, but http() can be used instead.
 
    >>> response = http(r"""
@@ -84,7 +88,7 @@ on feeds.launchpad.dev and does not work on all the other vhosts.
     ...     except:
     ...         print "Error accessing:", url
     ...         raise
-    ...     prefixes = ('', 'answers.', 'blueprints.', 'bugs.', 
+    ...     prefixes = ('', 'answers.', 'blueprints.', 'bugs.',
     ...         'code.', 'translations.')
     ...     for prefix in prefixes:
     ...         try:
