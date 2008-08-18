@@ -2764,37 +2764,6 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
             </script>""" % replacements
 
 
-class PersonRelatedProjectsView(LaunchpadView):
-
-    implements(IPersonRelatedSoftwareMenu)
-
-    # Safety net for the Registry Admins case which is the owner/driver of
-    # lots of projects.
-    max_results_to_display = config.launchpad.default_batch_size
-
-    def _related_projects(self):
-        """Return all projects owned or driven by this person."""
-        return self.context.getOwnedOrDrivenPillars()
-
-    @cachedproperty
-    def relatedProjects(self):
-        """Return projects owned or driven by this person up to the maximum
-        configured."""
-        return list(self._related_projects()[:self.max_results_to_display])
-
-    @cachedproperty
-    def firstFiveRelatedProjects(self):
-        """Return first five projects owned or driven by this person."""
-        return list(self._related_projects()[:5])
-
-    @cachedproperty
-    def related_projects_count(self):
-        return self._related_projects().count()
-
-    def tooManyRelatedProjectsFound(self):
-        return self.related_projects_count > self.max_results_to_display
-
-
 class PersonCodeOfConductEditView(LaunchpadView):
 
     def performCoCChanges(self):
