@@ -6,7 +6,7 @@ Let's make the sample user the owner of Ubuntu and alsa-utils for this test.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'name12'
-    >>> admin_browser.getControl('Change Registrant').click()
+    >>> admin_browser.getControl('Change owner').click()
 
     >>> admin_browser.open('http://launchpad.dev/alsa-utils/+edit-people')
     >>> admin_browser.getControl(name='field.owner').value = 'name12'

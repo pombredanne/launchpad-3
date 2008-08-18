@@ -674,6 +674,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'sabdfl_oid', NULL, NULL);
@@ -1503,11 +1509,11 @@ INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, dat
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (12, '2006-02-28 00:00:00', 1, 6, 3, '2006-02-28 00:00:01', '00:06:02', 1, 1, 27, 0, 'cpp (>= 4:4.0.1-3), gcc-4.0 (>= 4.0.1-2)', 1, NULL, NULL, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (13, '2006-03-21 00:00:00', 1, 1, 5, '2006-03-21 01:00:03', '00:01:30', 1, 1, 17, 0, NULL, 1, NULL, NULL, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (14, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:02', '00:01:30', 1, 1, 28, 0, NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (15, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 29, 0, NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (16, '2005-03-24 00:00:00', 1, 11, 1, '2005-03-25 00:00:02', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (15, '2006-03-22 00:00:01', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 29, 0, NULL, 1, NULL, NULL, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (16, '2005-03-24 00:00:01', 1, 11, 1, '2005-03-25 00:00:02', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (18, '2004-09-27 11:57:14', 1, 8, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (19, '2005-03-24 00:00:00', 1, 8, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (21, '2006-12-01 00:00:00', 1, 1, 2, NULL, NULL, NULL, NULL, 33, 0, NULL, 1, NULL, NULL, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (19, '2005-03-24 00:00:02', 1, 8, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (21, '2006-12-01 00:00:01', 1, 1, 2, NULL, NULL, NULL, NULL, 33, 0, NULL, 1, NULL, NULL, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (22, '2007-04-20 00:00:00', 1, 8, 7, '2007-04-20 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 1, NULL, NULL, NULL, 91);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (23, '2006-04-11 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 1, NULL, NULL, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (24, '2007-05-30 00:00:00', 1, 1, 2, '2007-05-30 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 11, NULL, NULL, NULL, NULL);
@@ -1516,7 +1522,7 @@ INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, dat
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (27, '2007-07-24 00:00:00', 1, 1, 1, '2007-07-24 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 9, NULL, NULL, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (28, '2007-08-10 00:00:00', 3, 12, 1, '2007-08-10 00:00:13', '00:00:13', 1, 1, 14, 0, NULL, 9, NULL, NULL, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (29, '2007-08-09 21:54:18.553132', 1, 8, 1, '2007-08-09 23:59:59', NULL, NULL, NULL, 36, 0, NULL, 12, NULL, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (30, '2007-08-10 00:00:00', 3, 12, 1, '2007-08-10 00:00:14', '00:00:13', 1, 1, 14, 0, NULL, 1, NULL, NULL, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings, date_first_dispatched, upload_log) VALUES (30, '2007-08-10 00:00:01', 3, 12, 1, '2007-08-10 00:00:14', '00:00:13', 1, 1, 14, 0, NULL, 1, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -2353,6 +2359,13 @@ ALTER TABLE hwdevice DISABLE TRIGGER ALL;
 ALTER TABLE hwdevice ENABLE TRIGGER ALL;
 
 
+ALTER TABLE hwdeviceclass DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwdeviceclass ENABLE TRIGGER ALL;
+
+
 ALTER TABLE hwdevicedriverlink DISABLE TRIGGER ALL;
 
 
@@ -2380,6 +2393,13 @@ INSERT INTO hwsubmission (id, date_created, date_submitted, format, status, priv
 
 
 ALTER TABLE hwsubmission ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwsubmissionbug DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwsubmissionbug ENABLE TRIGGER ALL;
 
 
 ALTER TABLE hwsubmissiondevice DISABLE TRIGGER ALL;
@@ -9822,72 +9842,7 @@ ALTER TABLE webserviceban ENABLE TRIGGER ALL;
 ALTER TABLE wikiname DISABLE TRIGGER ALL;
 
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (1, 1, 'https://wiki.ubuntu.com/', 'MarkShuttleworth');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (2, 11, 'https://wiki.ubuntu.com/', 'SteveAlexander');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (3, 10, 'https://wiki.ubuntu.com/', 'AlexanderLimi');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (4, 8, 'https://wiki.ubuntu.com/', 'JamesBlackwell');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (5, 9, 'https://wiki.ubuntu.com/', 'ChristianReis');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (6, 4, 'https://wiki.ubuntu.com/', 'ColinWatson');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (7, 5, 'https://wiki.ubuntu.com/', 'ScottJamesRemnant');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (8, 7, 'https://wiki.ubuntu.com/', 'AndrewBennetts');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (9, 3, 'https://wiki.ubuntu.com/', 'DaveMiller');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (10, 6, 'https://wiki.ubuntu.com/', 'JeffWaugh');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (11, 2, 'https://wiki.ubuntu.com/', 'RobertCollins');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (12, 12, 'https://wiki.ubuntu.com/', 'SamplePerson');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (13, 13, 'https://wiki.ubuntu.com/', 'CarlosPerellóMarín');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (14, 14, 'https://wiki.ubuntu.com/', 'DafyddHarries');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (15, 16, 'https://wiki.ubuntu.com/', 'FooBar');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (16, 17, 'https://wiki.ubuntu.com/', 'UbuntuTeam');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (17, 18, 'https://wiki.ubuntu.com/', 'UbuntuGnomeTeam');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (18, 19, 'https://wiki.ubuntu.com/', 'WartyGnomeTeam');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (19, 20, 'https://wiki.ubuntu.com/', 'WartySecurityTeam');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (20, 21, 'https://wiki.ubuntu.com/', 'HoaryGnomeTeam');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (21, 22, 'https://wiki.ubuntu.com/', 'StuartBishop');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (22, 23, 'https://wiki.ubuntu.com/', 'DavidAllouche');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (23, 24, 'https://wiki.ubuntu.com/', 'ButtressSourceAdministrators');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (24, 25, 'https://wiki.ubuntu.com/', 'LaunchpadAdministrators');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (25, 26, 'https://wiki.ubuntu.com/', 'DanielSilverstone');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (26, 27, 'https://wiki.ubuntu.com/', 'DanielHenriqueDebonzi');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (27, 28, 'https://wiki.ubuntu.com/', 'CelsoProvidelo');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (28, 29, 'https://wiki.ubuntu.com/', 'GuilhermeSalgado');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (29, 30, 'https://wiki.ubuntu.com/', 'RosettaAdministrators');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (30, 31, 'https://wiki.ubuntu.com/', 'UbuntuTranslators');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (31, 32, 'https://wiki.ubuntu.com/', 'Guadamen');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (32, 33, 'https://wiki.ubuntu.com/', 'EdgarBursic');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (33, 34, 'https://wiki.ubuntu.com/', 'JordiVilalta');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (34, 35, 'https://wiki.ubuntu.com/', 'SigurdGartmann');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (35, 36, 'https://wiki.ubuntu.com/', 'VlastimilSkacel');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (36, 37, 'https://wiki.ubuntu.com/', 'DanielAguayo');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (37, 38, 'https://wiki.ubuntu.com/', 'MartinPitt');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (38, 39, 'https://wiki.ubuntu.com/', 'NicolasVelin');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (39, 40, 'https://wiki.ubuntu.com/', 'FrancescoAccattapà');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (40, 41, 'https://wiki.ubuntu.com/', 'Aloriel');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (41, 42, 'https://wiki.ubuntu.com/', 'DenisBarbier');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (42, 43, 'https://wiki.ubuntu.com/', 'AndréLuísLopes');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (43, 44, 'https://wiki.ubuntu.com/', 'CarlosValdiviaYagüe');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (44, 45, 'https://wiki.ubuntu.com/', 'LukClaes');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (45, 46, 'https://wiki.ubuntu.com/', 'MiroslavKure');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (46, 47, 'https://wiki.ubuntu.com/', 'MortenBrixPedersen');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (47, 48, 'https://wiki.ubuntu.com/', 'MattiPöllä');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (48, 49, 'https://wiki.ubuntu.com/', 'KęstutisBiliūnas');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (49, 50, 'https://wiki.ubuntu.com/', 'ValentinaCommissari');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (50, 51, 'https://wiki.ubuntu.com/', 'HelgeKreutzmann');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (51, 52, 'https://wiki.ubuntu.com/', 'NoPrivilegesPerson');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (52, 62, 'https://wiki.ubuntu.com/', 'BugWatchUpdater');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (53, 65, 'https://wiki.ubuntu.com/', 'LaunchpadJanitor');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (54, 66, 'https://wiki.ubuntu.com/', 'DiogoMatsubara');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (55, 243602, 'https://wiki.ubuntu.com/', 'NoTeamMemberships');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (56, 243603, 'https://wiki.ubuntu.com/', 'OneMembership');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (58, 243606, 'https://wiki.ubuntu.com/', 'JulianEdwards');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (59, 243608, 'https://wiki.ubuntu.com/', 'UbuntuDocTeam');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (60, 243609, 'https://wiki.ubuntu.com/', 'Katie');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (61, 243610, 'https://wiki.ubuntu.com/', 'GoldMember');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (62, 243611, 'https://wiki.ubuntu.com/', 'Owner');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (63, 243614, 'https://wiki.ubuntu.com/', 'Josh');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (64, 243615, 'https://wiki.ubuntu.com/', 'SjoerdSimons');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (65, 243616, 'https://wiki.ubuntu.com/', 'MartinPitt2');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (66, 243617, 'https://wiki.ubuntu.com/', 'TimPenhey');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (67, 243622, 'https://wiki.ubuntu.com/', 'CommercialMember');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (68, 243623, 'https://wiki.ubuntu.com/', 'BradCrittenden');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (2, 29, 'https://wiki.ubuntu.com/', 'GuilhermeSalgado');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;
