@@ -203,7 +203,7 @@ class QrunnerWatcher(LogWatcher):
         # order: ArchRunner, BounceRunner, RetryRunner, VirginRunner,
         # IncomingRunner, OutgoingRunner.
         for runner in range(6):
-            result = self.wait_for_runner_startup()
+            result = self._wait_for_runner_startup()
             if result is not None:
                 return result
         return None
@@ -216,7 +216,7 @@ class QrunnerWatcher(LogWatcher):
         # deterministic order: ArchRunner, BounceRunner, RetryRunner,
         # VirginRunner, IncomingRunner, OutgoingRunner.
         for runner in range(6):
-            result = self.wait_for_runner_exit()
+            result = self._wait_for_runner_exit()
             if result is not None:
                 return result
         return None
