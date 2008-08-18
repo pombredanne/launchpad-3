@@ -65,6 +65,11 @@
     <aside tal:content="structure context/@@+pagelet-subscribers" />
   </div>
 
+  <tal:merge-revno condition="context/merged_revno">
+    This proposal was merged at revision
+    <tal:revno replace="context/merged_revno" />
+  </tal:merge-revno>
+
   <tal:superseded-proposal condition="context/supersedes">
     <p id="superseded-proposal">
       This proposal supersedes a
@@ -81,7 +86,6 @@
         <tal:when replace="context/superseded_by/date_created/fmt:date" /></a>.
     </p>
   </tal:superseded-by>
-
   <div>
 
     <h2>Proposed commit message
