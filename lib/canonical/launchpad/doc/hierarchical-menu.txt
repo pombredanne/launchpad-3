@@ -139,6 +139,9 @@ developer.
 We can also see that an incomplete builder object doesn't fulfill the
 IBreadcrumbBuilder interface.
 
+    # XXX mars 2008-08-18
+    # This should re-raise the NotImplementedError, but it hides it instead.
+    # See bug 259183.
     >>> verifyObject(IBreadcrumbBuilder, builder)
     Traceback (most recent call last):
     ...
