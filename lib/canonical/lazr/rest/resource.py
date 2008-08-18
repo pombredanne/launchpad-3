@@ -503,17 +503,33 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # No custom operation was specified. Implement a standard
             # GET, which serves a JSON or WADL representation of the
             # entry.
+
+            # First, check to see if the client provided an ETag in
+            # the If-None-Match header. If it matches this entry's
+            # ETag, we don't have to serve a representation.
+            incoming_etag = self.request.getHeader('If-None-Match')
+
             if self.getPreferredSupportedContentType() == self.WADL_TYPE:
                 media_type = self.WADL_TYPE
-                result = self.toWADL().encode("utf-8")
             else:
                 media_type = self.JSON_TYPE
+
+            existing_etag = self.getEtag(media_type)
+            if existing_etag is not None and incoming_etag == existing_etag:
+                # The client already has this representation.
+                # No need to send it again.
+                self.request.response.setStatus(204) # No Content
+                return ""
+
+            # No matching ETag was provided, so serve a representation.
+            if media_type == self.WADL_TYPE:
+                result = self.toWADL().encode("utf-8")
+            elif media_type == self.JSON_TYPE:
                 result = simplejson.dumps(self, cls=ResourceJSONEncoder)
+            if existing_etag is not None:
+                self.request.response.setHeader('Etag', existing_etag)
 
         self.request.response.setHeader('Content-Type', media_type)
-        etag = self.getEtag(media_type)
-        if etag is not None:
-            self.request.response.setHeader('Etag', etag)
         return result
 
     def do_PUT(self, media_type, representation):

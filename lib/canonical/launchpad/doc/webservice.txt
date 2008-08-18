@@ -1451,6 +1451,28 @@ release it'll always the same for a given resource with a given state.
     >>> etag_after_get == etag_original
     True
 
+A client can use a previously obtained ETag as the value of
+If-None-Match when making a request. If the ETags match, it means the
+resource hasn't changed since the client's last request. The server
+sends a response code of 204 ("No Content") instead of sending the
+same representation again.
+
+    >>> headers = {'CONTENT_TYPE' : 'application/json',
+    ...            'HTTP_IF_NONE_MATCH' : etag_original }
+    >>> get_request = create_web_service_request(julia_url, environ=headers)
+    >>> get_request.traverse(app)()
+    ''
+    >>> get_request.response.getStatus()
+    204
+
+If the ETags don't match, the server assumes the client has an old
+representation, and sends the new representation.
+
+    >>> headers['HTTP_IF_NONE_MATCH'] = 'bad etag'
+    >>> get_request = create_web_service_request(julia_url, environ=headers)
+    >>> get_request.traverse(app)()
+    '{...}'
+
 Change the state of the resource, and the ETag changes.
 
     >>> julia_object.favorite_recipe = C2_D2
