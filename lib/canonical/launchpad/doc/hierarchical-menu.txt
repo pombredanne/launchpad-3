@@ -140,13 +140,12 @@ We can also see that an incomplete builder object doesn't fulfill the
 IBreadcrumbBuilder interface.
 
     # XXX mars 2008-08-18
-    # This should re-raise the NotImplementedError, but it hides it instead.
+    # This should raise a NotImplementedError, but it hides it instead.
     # See bug 259183.
     >>> verifyObject(IBreadcrumbBuilder, builder)
     Traceback (most recent call last):
     ...
     BrokenImplementation: ... The url attribute was not provided.
-
 
 The breadcrumb's attributes can be overridden with subclassing and
 Python properties.
