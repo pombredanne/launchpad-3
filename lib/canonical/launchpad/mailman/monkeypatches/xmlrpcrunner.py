@@ -60,10 +60,10 @@ def log_exception(message, *args):
     error_utility.raising(sys.exc_info())
     out_file = StringIO()
     traceback.print_exc(file=out_file)
-    tracback_text = out_file.getvalue()
+    traceback_text = out_file.getvalue()
     syslog('xmlrpc', message, *args)
     syslog('error', message, *args)
-    syslog('error', tracback_text)
+    syslog('error', traceback_text)
 
 
 class XMLRPCRunner(Runner):
@@ -112,7 +112,7 @@ class XMLRPCRunner(Runner):
             self._get_subscriptions()
             self._check_held_messages()
         except:
-            # Re-raise the exception for logging and oops reporting.
+            # Log the exception and report an OOPS.
             log_exception('Unexpected XMLRPCRunner exception')
         # Snooze for a while.
         return 0

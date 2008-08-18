@@ -61,7 +61,7 @@ The message was written to the XMLRPCRunner's xmlrpc log.
     >>> print 'log:', xmlrpc_watcher.last_lines_read[-1]
     log: ... Generated Error: There is an OOPS in progress.
 
-And the traceback was written to the error log.
+And the message and traceback was written to the error log.
 
     >>> error_watcher.wait('Generated')
     >>> print 'log:', error_watcher.last_lines_read[-1]
