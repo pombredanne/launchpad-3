@@ -31,12 +31,14 @@ to infer the time zone based on the location given.
     >>> nopriv_browser.getControl(name='field.location.time_zone').value = [
     ...     'Europe/Madrid']
     >>> nopriv_browser.getControl('Update').click()
+    >>> login('test@canonical.com')
     >>> zzz.latitude
     13.0
     >>> zzz.longitude
     17.0
     >>> zzz.time_zone
     u'Europe/Madrid'
+    >>> logout()
 
 If the person provides his own location information, then the data is
 locked, and random people can no longer edit it.
@@ -67,3 +69,47 @@ And so can a Launchpad admin:
     >>> admin_browser.open('http://launchpad.dev/~zzz/+editlocation')
     >>> admin_browser.getControl(name='field.location.latitude').value
     '39.48'
+
+The +editlocation page also allows a person to change his location
+visibility, that is, whether or not others can see it. Unlike the actual
+location (which can be changed by anybody until the person himself sets
+it), the visibility can only be changed by the person himself.
+
+    >>> name12_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> name12_browser.open('http://launchpad.dev/~no-priv/+editlocation')
+    >>> name12_browser.getControl('Hide my location details from others.')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+    >>> nopriv_browser.open('http://launchpad.dev/~no-priv/+editlocation')
+    >>> nopriv_browser.getControl(
+    ...     'Hide my location details from others.').selected = True
+    >>> nopriv_browser.getControl('Update').click()
+    >>> nopriv_browser.url
+    'http://launchpad.dev/~no-priv'
+
+Once hidden, other users can't see nor change it.
+
+    >>> name12_browser.open('http://launchpad.dev/~no-priv')
+    >>> print str(find_tag_by_id(name12_browser.contents, 'portlet-map'))
+    None
+    >>> name12_browser.open('http://launchpad.dev/~no-priv/+editlocation')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+The person himself can still see and change it, though.
+
+    >>> nopriv_browser.open('http://launchpad.dev/~no-priv')
+    >>> print str(find_tag_by_id(nopriv_browser.contents, 'portlet-map'))
+    <div...
+    <h2>Location</h2>
+    ...
+
+    >>> nopriv_browser.open('http://launchpad.dev/~no-priv/+editlocation')
+    >>> nopriv_browser.getControl(
+    ...     'Hide my location details from others.').selected = False
+    >>> nopriv_browser.getControl('Update').click()
+    >>> nopriv_browser.url
+    'http://launchpad.dev/~no-priv'

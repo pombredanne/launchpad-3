@@ -64,7 +64,7 @@ from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.location import (
-    IHasLocation, IObjectWithLocation, ISetLocation)
+    IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
@@ -1302,6 +1302,12 @@ class IPersonEditRestricted(Interface):
         subscription deactivated (using the setMembershipData() method) by
         a team administrator.
         """
+
+    @operation_parameters(
+        visible=copy_field(ILocationRecord['visible'], required=True))
+    @export_write_operation()
+    def setLocationVisibility(visible):
+        """Specify the visibility of a person's location and time zone."""
 
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):

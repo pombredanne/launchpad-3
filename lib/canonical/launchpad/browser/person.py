@@ -99,7 +99,7 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Choice, List, Text, TextLine
+from zope.schema import Bool, Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
@@ -2763,6 +2763,17 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                 renderPersonMapSmall(%(center_lat)s, %(center_lng)s);
             </script>""" % replacements
 
+    def should_show_map_portlet(self):
+        """Should the map portlet be displayed?
+
+        It's displayed only if the person has no location specified or if the
+        location is marked as visible.
+        """
+        if self.context.location is None:
+            return True
+        else:
+            return check_permission('launchpad.View', self.context.location)
+
 
 class PersonCodeOfConductEditView(LaunchpadView):
 
@@ -4802,6 +4813,8 @@ class PersonLocationForm(Interface):
     location = LocationField(
         title=_('Use the map to indicate default location'),
         required=True)
+    hide = Bool(
+        title=_("Hide my location details from others."), required=False)
 
 
 class PersonEditLocationView(LaunchpadFormView):
@@ -4809,6 +4822,20 @@ class PersonEditLocationView(LaunchpadFormView):
 
     schema = PersonLocationForm
     custom_widget('location', LocationWidget)
+
+    @property
+    def field_names(self):
+        if check_permission('launchpad.Edit', self.context):
+            return ['location', 'hide']
+        else:
+            return ['location']
+
+    @property
+    def initial_values(self):
+        if self.context.location is None:
+            return {}
+        else:
+            return {'hide': not self.context.location.visible}
 
     def initialize(self):
         self.next_url = canonical_url(self.context)
@@ -4830,6 +4857,9 @@ class PersonEditLocationView(LaunchpadFormView):
         longitude = new_location.longitude
         time_zone = new_location.time_zone
         self.context.setLocation(latitude, longitude, time_zone, self.user)
+        if 'hide' in self.field_names:
+            visible = not data.get('hide')
+            self.context.setLocationVisibility(visible)
 
 
 def archive_to_person(archive):
