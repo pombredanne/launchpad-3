@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'Breadcrumb',
+    'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
     'canonical_name',
@@ -39,8 +41,9 @@ from canonical.launchpad.layers import (
     WebServiceLayer)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
+    IBreadcrumb, ICanonicalUrlData, ILaunchBag, ILaunchpadApplication,
+    ILaunchpadContainer, ILaunchpadRoot, IOpenLaunchBag, IStructuredString,
+    NoCanonicalUrl, NotFoundError)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -188,6 +191,8 @@ class LaunchpadView(UserAttributeCache):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self._error_message = None
+        self._info_message = None
 
     def initialize(self):
         """Override this in subclasses.
@@ -228,6 +233,54 @@ class LaunchpadView(UserAttributeCache):
             return u''
         else:
             return self.render()
+
+    def _getErrorMessage(self):
+        """Property getter for `error_message`."""
+        return self._error_message
+
+    def _setErrorMessage(self, error_message):
+        """Property setter for `error_message`.
+
+        Enforces `error_message` values that are either None or
+        implement IStructuredString.
+        """
+        if error_message != self._error_message:
+            if (error_message is None or
+                IStructuredString.providedBy(error_message)):
+                # The supplied value is of a compatible type,
+                # assign it to property backing variable.
+                self._error_message = error_message
+            else:
+                raise ValueError(
+                    '%s is not a valid value for error_message, only '
+                    'None and IStructuredString are allowed.' %
+                    type(error_message))
+
+    error_message = property(_getErrorMessage, _setErrorMessage)
+
+    def _getInfoMessage(self):
+        """Property getter for `info_message`."""
+        return self._info_message
+
+    def _setInfoMessage(self, info_message):
+        """Property setter for `info_message`.
+
+        Enforces `info_message` values that are either None or
+        implement IStructuredString.
+        """
+        if info_message != self._info_message:
+            if (info_message is None or
+                IStructuredString.providedBy(info_message)):
+                # The supplied value is of a compatible type,
+                # assign it to property backing variable.
+                self._info_message = info_message
+            else:
+                raise ValueError(
+                    '%s is not a valid value for info_message, only '
+                    'None and IStructuredString are allowed.' %
+                    type(info_message))
+
+    info_message = property(_getInfoMessage, _setInfoMessage)
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):
@@ -459,13 +512,27 @@ class RootObject:
 rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
 
 
+class LaunchpadContainer:
+    implements(ILaunchpadContainer)
+
+    def __init__(self, context):
+        self.context = context
+
+    def isWithin(self, scope):
+        """Is this object within the given scope?
+
+        By default all objects are only within itself.  More specific adapters
+        must override this and implement the logic they want.
+        """
+        return self.context == scope
+
+
 class Breadcrumb:
     implements(IBreadcrumb)
 
-    def __init__(self, url, text, has_menu=False):
+    def __init__(self, url, text):
         self.url = url
         self.text = text
-        self.has_menu = has_menu
 
 
 class Navigation:
@@ -545,16 +612,8 @@ class Navigation:
         request.getURL(1) represents the path traversed so far, but without
         the step we're currently working out how to traverse.
         """
-        # If self.context has a view called +menudata, it has a menu.
-        menuview = queryMultiAdapter(
-            (self.context, self.request), name="+menudata")
-        if menuview is None:
-            has_menu = False
-        else:
-            has_menu = menuview.submenuHasItems('')
         self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=False), text,
-                       has_menu))
+            Breadcrumb(self.request.getURL(1, path_only=False), text))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
@@ -715,9 +774,12 @@ class RenamedView:
         self.rootsite = rootsite
 
     def __call__(self):
-        target_url = "%s/%s" % (
-            canonical_url(self.context, rootsite=self.rootsite),
-            self.new_name)
+        context_url = canonical_url(self.context, rootsite=self.rootsite)
+        # Prevents double slashes on the root object.
+        if context_url.endswith('/'):
+            target_url = "%s%s" % (context_url, self.new_name)
+        else:
+            target_url = "%s/%s" % (context_url, self.new_name)
 
         query_string = self.request.get('QUERY_STRING', '')
         if query_string:

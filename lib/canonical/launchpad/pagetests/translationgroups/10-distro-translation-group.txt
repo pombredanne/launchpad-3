@@ -73,4 +73,3 @@ page.
     >>> anon_browser.title
     '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d
     Launchpad translation group'
-

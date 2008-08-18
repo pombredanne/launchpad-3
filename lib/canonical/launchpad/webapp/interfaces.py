@@ -45,6 +45,13 @@ class InvalidBatchSizeError(AssertionError):
     __lazr_webservice_error__ = 400
 
 
+class ILaunchpadContainer(Interface):
+    """Marker interface for objects used as the context of something."""
+
+    def isWithin(scope):
+        """Return True if this context is within the given scope."""
+
+
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 
@@ -231,8 +238,6 @@ class IBreadcrumb(Interface):
     url = Attribute('Absolute url of this breadcrumb.')
 
     text = Attribute('Text of this breadcrumb.')
-
-    has_menu = Attribute('Whether this breadcrumb has a drop-down menu.')
 
 
 #
@@ -785,3 +790,7 @@ class IBreadcrumbProvider(Interface):
 
     def breadcrumb():
         """Breadcrumb text."""
+
+class IPrimaryContext(Interface):
+    """The primary context that used to determine the tabs for the web UI."""
+    context = Attribute('The primary context.')

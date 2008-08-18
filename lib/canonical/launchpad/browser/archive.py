@@ -47,7 +47,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IStructuralHeaderPresentation, NotFoundError)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
-    inactive_publishing_status)
+    inactive_publishing_status, IPublishingSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -120,7 +120,7 @@ class ArchiveContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def copy(self):
         text = 'Copy packages'
-        return Link('+copy-packages', text, icon='info')
+        return Link('+copy-packages', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
@@ -450,10 +450,6 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         if len(data.get('selected_sources', [])) == 0:
             self.setFieldError('selected_sources', 'No sources selected.')
 
-        if data.get('deletion_comment') is None:
-            self.setFieldError(
-                'deletion_comment', 'Deletion comment is required.')
-
     @action(_("Request Deletion"), name="delete", validator="validate_delete")
     def action_delete(self, action, data):
         """Perform the deletion of the selected packages.
@@ -468,10 +464,8 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         selected_sources = data.get('selected_sources')
 
         # Perform deletion of the source and its binaries.
-        for source in selected_sources:
-            source.requestDeletion(self.user, comment)
-            for bin in source.getPublishedBinaries():
-                bin.requestDeletion(self.user, comment)
+        publishing_set = getUtility(IPublishingSet)
+        publishing_set.requestDeletion(selected_sources, self.user, comment)
 
         # We end up issuing the published_source query twice this way,
         # because we need the original available source vocabulary to

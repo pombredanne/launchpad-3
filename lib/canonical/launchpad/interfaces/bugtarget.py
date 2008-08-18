@@ -15,9 +15,12 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Text
 
+from canonical.lazr.rest.declarations import export_as_webservice_entry
 
 class IHasBugs(Interface):
     """An entity which has a collection of bug tasks."""
+
+    export_as_webservice_entry()
 
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
@@ -70,6 +73,9 @@ class IBugTarget(IHasBugs):
     Examples include an IDistribution, an IDistroSeries and an
     IProduct.
     """
+
+    export_as_webservice_entry()
+
     # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
     bugtargetdisplayname = Attribute("A display name for this bug target")
     bugtargetname = Attribute("The target as shown in mail notifications.")

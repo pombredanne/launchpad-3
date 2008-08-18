@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'get_series_branch_error',
     'ProductSeriesBugsMenu',
-    'ProductSeriesDynMenu',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
@@ -51,7 +50,6 @@ from canonical.launchpad.webapp import (
     Link, Navigation, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -208,7 +206,7 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined', 'new']
+    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -236,11 +234,6 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         summary = 'Show the assignee, drafter and approver of these specs'
         return Link('+assignments', text, summary, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Show the sequence in which specs should be implemented'
-        return Link('+roadmap', text, summary, icon='info')
 
     def new(self):
         text = 'Register a blueprint'
@@ -645,13 +638,6 @@ class ProductSeriesShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.displayname
-
-
-class ProductSeriesDynMenu(DynMenu):
-
-    def mainMenu(self):
-        for release in self.context.releases:
-            yield self.makeLink(release.title, context=release)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):

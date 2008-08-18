@@ -17,9 +17,9 @@ from canonical.codehosting.tests.helpers import (
     CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite)
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
-from canonical.config import config
-from canonical.testing import TwistedLaunchpadZopelessLayer
+from canonical.testing import TwistedAppServerLayer
 from canonical.twistedsupport import defer_to_thread
+
 
 def wait_for_disconnect(method):
     """Run 'method' and wait for it to fully disconnect from the server.
@@ -53,7 +53,7 @@ class TestBranchIDToPath(unittest.TestCase):
 
 class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedAppServerLayer
 
     @defer_to_thread
     def test_remove_branch_directory(self):

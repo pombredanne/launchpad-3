@@ -20,7 +20,7 @@
       <tr tal:repeat="bugtask bug/bugtasks">
         <td class="icon right">
           <img src="/@@/bug"
-            tal:replace="structure bugtask/image:icon:mainsite" />
+            tal:replace="structure bugtask/image:icon" />
         </td>
         <td class="amount">
           <a tal:attributes="href bugtask/fmt:url"

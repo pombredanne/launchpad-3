@@ -27,8 +27,6 @@ from canonical.launchpad.interfaces import (
     SpecificationImplementationStatus, SpecificationSort,
     SprintSpecificationStatus, TranslationPermission)
 
-from canonical.launchpad.components.launchpadcontainer import (
-    LaunchpadContainerMixin)
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
@@ -55,9 +53,9 @@ from canonical.launchpad.helpers import shortlist
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              MakesAnnouncements, HasSprintsMixin, KarmaContextMixin,
-              BranchVisibilityPolicyMixin, StructuralSubscriptionTargetMixin,
-              LaunchpadContainerMixin):
+              MakesAnnouncements, HasSprintsMixin,
+              KarmaContextMixin, BranchVisibilityPolicyMixin,
+              StructuralSubscriptionTargetMixin):
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
@@ -69,6 +67,9 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     # db field names
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=True)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     name = StringCol(dbName='name', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
@@ -447,8 +448,11 @@ class ProjectSet:
         return project
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner, mugshot=None, logo=None, icon=None):
+            description, owner, mugshot=None, logo=None, icon=None,
+            registrant=None):
         """See `canonical.launchpad.interfaces.project.IProjectSet`."""
+        if registrant is None:
+            registrant = owner
         return Project(
             name=name,
             displayname=displayname,
@@ -457,6 +461,7 @@ class ProjectSet:
             description=description,
             homepageurl=homepageurl,
             owner=owner,
+            registrant=registrant,
             datecreated=UTC_NOW,
             mugshot=mugshot,
             logo=logo,

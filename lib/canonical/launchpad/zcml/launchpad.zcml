@@ -231,7 +231,7 @@
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+oauth-authorize"
+      name="+authorize-token"
       class="canonical.launchpad.browser.OAuthAuthorizeTokenView"
       template="../templates/oauth-authorize.pt"
       permission="launchpad.AnyPerson" />
@@ -322,14 +322,6 @@
       permission="zope.Public"
       />
 
-  <!-- breadcrumbs -->
-  <browser:page
-      for="zope.interface.Interface"
-      name="+breadcrumbs"
-      class="canonical.launchpad.browser.launchpad.Breadcrumbs"
-      attribute="__call__"
-      permission="zope.Public"
-      />
   <!-- hierarchy -->
   <browser:page
       for="zope.interface.Interface"

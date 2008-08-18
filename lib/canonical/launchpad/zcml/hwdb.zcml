@@ -167,6 +167,19 @@
             interface="canonical.launchpad.interfaces.IHWDeviceDriverLinkSet" />
     </securedutility>
 
+    <class class="canonical.launchpad.database.HWDeviceClass">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDeviceClass" />
+        <allow attributes="id" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.hwdb.HWDeviceClassSet"
+        provides="canonical.launchpad.interfaces.IHWDeviceClassSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDeviceClassSet" />
+    </securedutility>
+
     <class class="canonical.launchpad.database.HWSubmissionDevice">
         <allow
             interface="canonical.launchpad.interfaces.IHWSubmissionDevice" />
@@ -180,4 +193,16 @@
             interface="canonical.launchpad.interfaces.IHWSubmissionDeviceSet" />
     </securedutility>
 
+    <class class="canonical.launchpad.database.HWSubmissionBug">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWSubmissionBug" />
+        <allow attributes="id" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.HWSubmissionBugSet"
+        provides="canonical.launchpad.interfaces.IHWSubmissionBugSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWSubmissionBugSet" />
+    </securedutility>
 </configure>

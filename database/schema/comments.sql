@@ -71,6 +71,7 @@ COMMENT ON COLUMN BranchMergeProposal.merged_revision_id IS 'The Bazaar revision
 COMMENT ON COLUMN BranchMergeProposal.date_merge_started IS 'If the merge is performed by a bot the time the merge was started is recorded otherwise it is NULL.';
 COMMENT ON COLUMN BranchMergeProposal.date_merge_finished IS 'If the merge is performed by a bot the time the merge was finished is recorded otherwise it is NULL.';
 COMMENT ON COLUMN BranchMergeProposal.merge_log_file IS 'If the merge is performed by a bot the log file is accessible from the librarian.';
+COMMENt ON COLUMN BranchMergeProposal.root_message_id IS 'The root message of this BranchMergeProposal''s mail thread.';
 COMMENT ON COLUMN BranchMergeProposal.superseded_by IS 'The proposal to merge has been superceded by this one.';
 
 
@@ -460,7 +461,7 @@ COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer o
 -- MessageApproval
 
 COMMENT ON TABLE MessageApproval IS 'Track mailing list postings awaiting approval from the team owner.';
-COMMENT ON COLUMN MessageApproval.message_id IS 'The Message-ID header of the held message.';
+COMMENT ON COLUMN MessageApproval.message IS 'Foreign key to message table pointing to the posted message.';
 COMMENT ON COLUMN MessageApproval.posted_by IS 'The person who posted the message.';
 COMMENT ON COLUMN MessageApproval.mailing_list IS 'The mailing list to which the message was posted.';
 COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
@@ -472,7 +473,8 @@ COMMENT ON COLUMN MessageApproval.disposal_date IS 'The date on which this messa
 
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
-COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who createed this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
+COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who created this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
+COMMENT ON COLUMN Product.registrant IS 'The Product registrant is the Person who created the product in Launchpad.  It is set at creation and is never changed thereafter.';
 COMMENT ON COLUMN Product.summary IS 'A brief summary of the product. This will be displayed in bold at the top of the product page, above the description.';
 COMMENT ON COLUMN Product.description IS 'A detailed description of the product, highlighting primary features of the product that may be of interest to end-users. The description may also include links and other references to useful information on the web about this product. The description will be displayed on the product page, below the product summary.';
 COMMENT ON COLUMN Product.project IS 'Every Product belongs to one and only one Project, which is referenced in this column.';
@@ -607,6 +609,7 @@ COMMENT ON COLUMN ProductSeriesCodeImport.codeimport IS 'The CodeImport that was
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
 COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be the person who creates this Project in the system. We will encourage upstream project leaders to take on this role. The Project owner is able to edit the project.';
+COMMENT ON COLUMN Project.registrant IS 'The registrant is the Person who created the project in Launchpad.  It is set at creation and is never changed thereafter.';
 COMMENT ON COLUMN Project.driver IS 'This person or team has the ability to approve specs as goals for any series in any product in the project. Similarly, this person or team can approve bugs as targets for fixing in any series, or backporting of fixes to any series.';
 COMMENT ON COLUMN Project.summary IS 'A brief summary of this project. This
 will be displayed in bold text just above the description and below the
@@ -1916,6 +1919,8 @@ COMMENT ON COLUMN HWSubmission.raw_submission IS 'A reference to a row of Librar
 COMMENT ON COLUMN HWSubmission.system_fingerprint IS 'A reference to an entry of the HWDBSystemFingerPrint table. This table stores the system name as returned by HAL (system.vendor, system.product)';
 COMMENT ON COLUMN HWSubmission.raw_emailaddress IS 'The email address of the submitter.';
 
+COMMENT ON TABLE HWSubmissionBug IS 'Link bugs to HWDB submissions';
+
 COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL system.name, system.vendor) from raw submission data';
 COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 
@@ -1937,6 +1942,11 @@ COMMENT ON COLUMN HWDevice.variant IS 'An optional additional description for a 
 COMMENT ON COLUMN HWDevice.name IS 'The human readable product name of the device.';
 COMMENT ON COLUMN HWDevice.submissions IS 'The number of submissions that contain this device.';
 
+COMMENT ON TABLE HWDeviceClass IS 'Capabilities of a device.';
+COMMENT ON COLUMN HWDeviceClass.device IS 'A reference to a device.';
+COMMENT ON COLUMN HWDeviceClass.main_class IS 'The main class of a device. Legal values are defined by the HWMainClass enumeration.';
+COMMENT ON COLUMN HWDeviceClass.sub_class IS 'The sub-class of a device. Legal values are defined by the HWSubClass enumeration.';
+
 COMMENT ON TABLE HWDeviceNameVariant IS 'Alternative vendor and product names of devices.';
 COMMENT ON COLUMN HWDeviceNameVariant.vendor_name IS 'The alternative vendor name.';
 COMMENT ON COLUMN HWDeviceNameVariant.product_name IS 'The alternative product name.';
@@ -1951,6 +1961,7 @@ COMMENT ON TABLE HWSubmissionDevice IS 'Links between devices and submissions.';
 COMMENT ON COLUMN HWSubmissionDevice.device_driver_link IS 'The combination (device, driver) mentioned in a submission.';
 COMMENT ON COLUMN HWSubmissionDevice.submission IS 'The submission mentioning this (device, driver) combination.';
 COMMENT ON COLUMN HWSubmissionDevice.parent IS 'The parent device of this device.';
+COMMENT ON COLUMN HWSubmissionDevice.hal_device_id IS 'The ID of the HAL node of this device in the submitted data.';
 
 COMMENT ON TABLE HWTest IS 'General information about a device test.';
 COMMENT ON COLUMN HWTest.namespace IS 'The namespace of a test.';
@@ -2049,4 +2060,3 @@ COMMENT ON COLUMN WebServiceBan.token IS 'If set, all all access using this toke
 COMMENT ON COLUMN WebServiceBan.ip IS 'If set, all requests from that host or network should be denied. If either person, consumer or token is also set, then only requests matching both the IP and the other constraint will be denied.';
 COMMENT ON COLUMN WebServiceBan.date_created IS 'When this ban was created.';
 COMMENT ON COLUMN WebServiceBan.active IS 'Is the ban still in effect?';
-

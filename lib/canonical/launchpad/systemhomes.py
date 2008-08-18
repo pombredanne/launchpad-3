@@ -19,8 +19,14 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.interfaces.bug import (
+    CreateBugParams, IBugSet, InvalidBugTargetType)
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
+    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
     ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
@@ -28,6 +34,8 @@ from canonical.launchpad.interfaces import (
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
     IWebServiceApplication)
+from canonical.launchpad.interfaces.codehosting import (
+    IBranchFileSystemApplication, IBranchPullerApplication)
 from canonical.lazr.rest import ServiceRootResource
 
 
@@ -36,6 +44,20 @@ class AuthServerApplication:
     implements(IAuthServerApplication)
 
     title = "Auth Server"
+
+
+class BranchFileSystemApplication:
+    """BranchFileSystem End-Point."""
+    implements(IBranchFileSystemApplication)
+
+    title = "Branch File System"
+
+
+class BranchPullerApplication:
+    """BranchPuller End-Point."""
+    implements(IBranchPullerApplication)
+
+    title = "Puller API"
 
 
 class CodeImportSchedulerApplication:
@@ -73,6 +95,25 @@ class MaloneApplication:
     def searchTasks(self, search_params):
         """See IMaloneApplication."""
         return getUtility(IBugTaskSet).search(search_params)
+
+    def createBug(self, owner, title, description, target,
+                  security_related=False, private=False, tags=None):
+        """See IMaloneApplication."""
+        params = CreateBugParams(
+            title=title, comment=description, owner=owner,
+            security_related=security_related, private=private, tags=tags)
+        if IProduct.providedBy(target):
+            params.setBugTarget(product=target)
+        elif IDistribution.providedBy(target):
+            params.setBugTarget(distribution=target)
+        elif IDistributionSourcePackage.providedBy(target):
+            params.setBugTarget(distribution=target.distribution,
+                                sourcepackagename=target.sourcepackagename)
+        else:
+            raise InvalidBugTargetType(
+                "A bug target must be a Project, a Distribution or a "
+                "DistributionSourcePackage. Got %r." % target)
+        return getUtility(IBugSet).createBug(params)
 
     @property
     def bug_count(self):

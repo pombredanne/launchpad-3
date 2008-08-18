@@ -19,16 +19,19 @@ from zope.interface import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
-from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.karma import IKarmaContext
-from canonical.launchpad.interfaces.launchpad import ILaunchpadContainer
-from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.interfaces import (
-    IBugTarget, IHasAppointedDriver, IHasDrivers, IHasOwner,
-    IHasSecurityContact, ILaunchpadUsage, ISpecificationTarget)
-from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.archive import IArchive
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
+    ILaunchpadUsage)
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
+from canonical.launchpad.interfaces.message import IMessage
+from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.pillar import IPillar
+from canonical.launchpad.interfaces.specificationtarget import (
+    ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -51,7 +54,7 @@ class DistributionNameField(PillarNameField):
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     IHasMentoringOffers, IHasMilestones, IMakesAnnouncements, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, ISpecificationTarget, IPillar, ILaunchpadContainer):
+    ILaunchpadUsage, ISpecificationTarget, IPillar):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -236,6 +239,16 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         Receives a sourcepackagerelease.
         """
 
+    def getCurrentSourceReleases(source_package_names):
+        """Get the current release of a list of source packages.
+
+        :param source_package_names: a list of `ISourcePackageName`
+            instances.
+
+        :return: a dict where the key is a `IDistributionSourcePackage`
+            and the value is a `IDistributionSourcePackageRelease`.
+        """
+
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this distribution. Return
         None.
@@ -350,8 +363,8 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         tuples containing IProducts and three different bug counts:
             - open bugs
             - triaged bugs
-            - triaged bugs with an upstream task
-            - triaged bugs with upstream tasks that are either linked to
+            - open bugs with an upstream task
+            - open bugs with upstream tasks that are either linked to
               bug watches or to products that use_malone.
         """
 
@@ -364,6 +377,11 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
 
     def userCanEdit(user):
         """Can the user edit this distribution?"""
+
+
+# We are forced to define this now to avoid circular import problems.
+IMessage['distribution'].schema = IDistribution
+
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""

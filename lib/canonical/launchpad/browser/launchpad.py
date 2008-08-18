@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
-    'Breadcrumbs',
     'BrowserWindowDimensions',
     'ContribIcingFolder',
     'DefaultShortLink',
@@ -41,6 +40,7 @@ from datetime import timedelta, datetime
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
+from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.app.traversing.interfaces import ITraversable
@@ -237,28 +237,41 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
+    def getElements(self):
+        return list(self.request.breadcrumbs)
+
     def render(self):
         """Render the hierarchy HTML.
 
         The hierarchy elements are taken from the request.breadcrumbs list.
         For each element, element.text is cgi escaped.
         """
-        elements = list(self.request.breadcrumbs)
+        elements = self.getElements()
+
+        if config.launchpad.site_message:
+            site_message = (
+                '<div id="globalheader" xml:lang="en" lang="en" dir="ltr">'
+                '<div class="sitemessage">%s</div></div>'
+                % config.launchpad.site_message)
+        else:
+            site_message = ""
 
         if len(elements) > 0:
             # We're not on the home page.
-            prefix = '<div id="lp-hierarchy">'
+            prefix = ('<div id="lp-hierarchy">'
+                     '<span class="first-rounded"></span>')
             suffix = ('</div><span class="last-rounded">&nbsp;</span>'
-                     '<div class="apps-separator"><!-- --></div>')
+                     '%s<div class="apps-separator"><!-- --></div>'
+                     % site_message)
 
             if len(elements) == 1:
-                first_class = 'before-last'
+                first_class = 'before-last item'
             else:
-                first_class = 'first'
+                first_class = 'item'
 
             steps = []
             steps.append(
-                '<span class="%s item">'
+                '<span class="%s">'
                 '<a href="/" class="breadcrumb container"'
                 ' id="homebreadcrumb">'
                 '<img alt="Launchpad"'
@@ -272,11 +285,6 @@ class Hierarchy(LaunchpadView):
                 before_last_element = None
             for element in elements:
                 cssclass = 'item'
-                if element.has_menu:
-                    menudata = ' lpm:mid="%s/+menudata"' % element.url
-                    cssclass = ' '.join([cssclass, 'container'])
-                else:
-                    menudata = ''
                 if element is before_last_element:
                     cssclass = ' '.join(['before-last', cssclass])
                 elif element is last_element:
@@ -284,10 +292,10 @@ class Hierarchy(LaunchpadView):
                 else:
                     # No extra CSS class.
                     pass
-                steps.append('<span class="%s"%s>'
+                steps.append('<span class="%s">'
                          '<a href="%s">%s</a>'
                          '</span>'
-                         % (cssclass, menudata, element.url,
+                         % (cssclass, element.url,
                             cgi.escape(element.text)))
             hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
         else:
@@ -297,49 +305,10 @@ class Hierarchy(LaunchpadView):
                         '<img alt="Launchpad" '
                         ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
                         '</a></div>'
-                        '<span class="last-rounded">&nbsp;</span>'
-                        '<div class="apps-separator"><!-- --></div>')
+                        '%s<div class="apps-separator"><!-- --></div>' %
+                        site_message)
 
         return hierarchy
-
-
-class Breadcrumbs(LaunchpadView):
-    """Page fragment to display the breadcrumbs text."""
-
-    def render(self):
-        """Render the breadcrumbs text.
-
-        The breadcrumbs are taken from the request.breadcrumbs list.
-        For each breadcrumb, breadcrumb.text is cgi escaped.
-        """
-        crumbs = list(self.request.breadcrumbs)
-
-        L = []
-        firsttext = 'Home'
-        firsturl = allvhosts.configs['mainsite'].rooturl
-
-        L.append(
-            '<li lpm:mid="root" class="item">'
-            '<a href="%s" class="breadcrumb container" id="homebreadcrumb">'
-            '<em><span>%s</span></em></a></li>'
-            % (firsturl, cgi.escape(firsttext)))
-
-        if crumbs:
-
-            for crumb in crumbs:
-                if crumb.has_menu:
-                    menudata = ' lpm:mid="%s/+menudata"' % crumb.url
-                    cssclass = 'breadcrumb container'
-                else:
-                    menudata = ''
-                    cssclass = 'breadcrumb'
-                L.append('<li class="item"%s>'
-                         '<a href="%s" class="%s"><em>%s</em></a>'
-                         '</li>'
-                         % (menudata, crumb.url, cssclass,
-                            cgi.escape(crumb.text)))
-
-        return u'\n'.join(L)
 
 
 class MaintenanceMessage:
@@ -845,6 +814,52 @@ class EdubuntuIcingFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing-edubuntu/')
+
+
+
+class LaunchpadTourFolder(ExportedFolder):
+    """Export a launchpad tour folder.
+
+    This exported folder supports traversing to subfolders.
+    """
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../tour/')
+
+    export_subdirectories = True
+
+    def publishTraverse(self, request, name):
+        """Hide the source directory.
+
+        The source directory contains source material that we don't want
+        published over the web.
+        """
+        if name == 'source':
+            raise NotFound(request, name)
+        return super(LaunchpadTourFolder, self).publishTraverse(request, name)
+
+    def browserDefault(self, request):
+        """Redirect to index.html if the directory itself is requested."""
+        if len(self.names) == 0:
+            return RedirectionView(
+                "%s+tour/index" % canonical_url(self.context),
+                self.request, status=302), ()
+        else:
+            return self, ()
+
+
+class LaunchpadAPIDocFolder(ExportedFolder):
+    """Export the API documentation."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../apidoc/')
+
+    def browserDefault(self, request):
+        """Traverse to index.html if the directory itself is requested."""
+        if len(self.names) == 0:
+            return self, ('index.html', )
+        else:
+            return self, ()
 
 
 class StructuralHeaderPresentationView(LaunchpadView):
