@@ -519,15 +519,15 @@ Gone from the target branch.
       This is the whiteboard
       Needs review
 
-Now if the other browser attempts to also mark as merged,
-an error is shown.
+Now if the other browser attempts to also mark as merged, it updates the merged
+proposal to the new revno.
 
     >>> sample_browser.getControl('Merged Revision Number').value = '42'
     >>> sample_browser.getControl('Mark as Merged').click()
 
     >>> for message in get_feedback_messages(sample_browser.contents):
     ...     print extract_text(message)
-    The proposal has already been marked as merged.
+    The proposal's merged revision has been updated.
 
 No email notification is triggered.
 
