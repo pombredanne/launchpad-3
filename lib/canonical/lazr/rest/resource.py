@@ -437,14 +437,14 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         hash_object = sha.new()
         for name, field in getFieldsInOrder(self.entry.schema):
-            if self.isModifiableField(name, field):
+            if self.isModifiableField(name, field, False):
                 ignored, value = self._unmarshall_field(name, field)
                 hash_object.update(str(value))
                 hash_object.update("\0")
             # Append the revision number, because the algorithm for
             # generating the representation might itself change across
             # versions.
-            hash_object.update(str(versioninfo.revno))
+        hash_object.update(str(versioninfo.revno))
         return hash_object.hexdigest()
 
     def toDataForJSON(self):
@@ -531,7 +531,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         # Get the fields ordered by name so that we always evaluate them in
         # the same order. This is needed to predict errors when testing.
         for name, field in getFieldsInOrder(self.entry.schema):
-            if not self.isModifiableField(name, field):
+            if not self.isModifiableField(name, field, True):
                 continue
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
@@ -565,16 +565,23 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                     self.request)),
             adapter.singular_type)
 
-    def isModifiableField(self, field_name, field):
+    def isModifiableField(self, field_name, field, is_external_client):
         """Returns true if this field's value can be changed.
 
-        All fields are modifiable except read-only fields,
-        collections, and fields that are not part of the web service
-        interface.
+        Collection fields, and fields that are not part of the web
+        service interface, are never modifiable. Read-only fields are
+        not modifiable by external clients.
+
+        :param is_external_client: Whether the code trying to modify
+        the field is an external client. Read-only fields cannot be
+        modified from external clients, but might change due to
+        internal changes.
         """
-        return not (field.readonly
-                    or ICollectionField.providedBy(field)
-                    or field_name.startswith('_'))
+        if ICollectionField.providedBy(field) or field_name.startswith('_'):
+            return False
+        if field.readonly:
+            return not is_external_client
+        return True
 
     def _unmarshall_field(self, field_name, field):
         """See what a field would look like in a representation.

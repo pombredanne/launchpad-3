@@ -22,13 +22,14 @@ dish. Users may comment on cookbooks and on individual recipes.
     >>> __metaclass__ = type
 
     >>> from zope.interface import Interface, Attribute
-    >>> from zope.schema import Bool, Bytes, Int, Text, TextLine, Object
+    >>> from zope.schema import (Bool, Bytes, Int, Text, TextLine, Object)
 
     >>> class IAuthor(Interface):
     ...     name = TextLine(title=u"Name", required=True)
     ...     # favorite_recipe.schema will be set to IRecipe once
     ...     # IRecipe is defined.
     ...     favorite_recipe = Object(schema=Interface)
+    ...     popularity = Int(readonly=True)
 
     >>> class ICommentTarget(Interface):
     ...     comments = Attribute('List of comments about this object.')
@@ -99,6 +100,7 @@ and IRecipe.
     ...     def __init__(self, name):
     ...         self.name = name
     ...         self.favorite_recipe = None
+    ...         self.popularity = 1
     >>> protect_schema(Author, IAuthor, write_permission=CheckerPublic)
 
     >>> class Comment(object):
@@ -1013,7 +1015,7 @@ works. Here's page one, with two cookbooks on it.
     >>> representation = simplejson.loads(collection())
 
     >>> sorted(representation.keys())
-    [u'entries', u'next_collection_link', u'resource_type_link', 
+    [u'entries', u'next_collection_link', u'resource_type_link',
      u'start', u'total_size']
     >>> representation['next_collection_link']
     u'http://api.launchpad.dev/beta/cookbooks?ws.start=2&ws.size=2'
@@ -1427,6 +1429,49 @@ exception.
     TypeError: Could not serialize object [<object object...>] to JSON.
 
 
+== ETags ==
+
+Every entry resource has a short opaque string called an ETag that
+summarizes the resource's current state. The ETag is sent as the
+response header 'ETag'.
+
+    >>> julia_object = A1
+    >>> julia_url = quote('/beta/authors/Julia Child')
+    >>> get_request = create_web_service_request(julia_url)
+    >>> ignored = get_request.traverse(app)()
+    >>> etag_original = get_request.response.getHeader('ETag')
+
+The ETag is different across revisions of the software, but within a
+release it'll always the same for a given resource with a given state.
+
+    >>> get_request = create_web_service_request(julia_url)
+    >>> ignored = get_request.traverse(app)()
+    >>> etag_after_get = get_request.response.getHeader('ETag')
+
+    >>> etag_after_get == etag_original
+    True
+
+Change the state of the resource, and the ETag changes.
+
+    >>> julia_object.favorite_recipe = C2_D2
+    >>> get_request = create_web_service_request(julia_url)
+    >>> ignored = get_request.traverse(app)()
+    >>> etag_after_modification = get_request.response.getHeader('ETag')
+
+    >>> etag_after_modification == etag_original
+    False
+
+The client can't modify read-only fields, but they might be modified
+behind the scenes. If one of them changes, the ETag will change.
+
+    >>> julia_object.popularity = 5
+    >>> get_request = create_web_service_request(julia_url)
+    >>> ignored = get_request.traverse(app)()
+    >>> etag_after_readonly_change = get_request.response.getHeader('ETag')
+    >>> etag_after_readonly_change == etag_original
+    False
+
+
 == Resource Visibility ==
 
 Certain resources might not be visible to every user. In this example,
@@ -1716,6 +1761,8 @@ their URLs, we make the change by modifying the cookbook's
 
     >>> change_joy_author(u'http://api.launchpad.dev' + path)
     ''
+    >>> joy_resource = create_web_service_request(
+    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking').traverse(app)
     >>> joy = simplejson.loads(joy_resource())
     >>> joy['author_link']
     u'http://api.launchpad.dev/beta/authors/Julia%20Child'
