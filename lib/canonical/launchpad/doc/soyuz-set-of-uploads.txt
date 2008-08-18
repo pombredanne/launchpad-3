@@ -274,7 +274,7 @@ A helper function, simulate_upload does that with all the checking.
   ...     for message in pop_notifications(commit=False):
   ...         print "To:", message['to']
   ...         print "Subject:", message['subject']
-  ...         print message.get_payload()
+  ...         print message.get_payload()[0].as_string()
   ...         print ''
 
 The 'bar' package' is an arch-all package. We have four stages to the
@@ -332,6 +332,7 @@ testing, as unsigned uploads are allowed.
   >>> read_email()
   To: Celso Providelo <celso.providelo@canonical.com>
   Subject: unstable_1.0-1_source.changes rejected
+  ...
   Rejected:
   Unable to find distroseries: unstable
   ...
