@@ -139,6 +139,29 @@ class HTTPResource:
         """See `IHTTPResource`."""
         pass
 
+    def handleConditionalGET(self):
+        """Handle a possible conditional GET request.
+
+        :return: The media type to serve. If this is None, the
+            incoming ETag matched the generated ETag and there is no
+            need to serve antyhing else.
+        """
+        incoming_etag = self.request.getHeader('If-None-Match')
+
+        if self.getPreferredSupportedContentType() == self.WADL_TYPE:
+            media_type = self.WADL_TYPE
+        else:
+            media_type = self.JSON_TYPE
+        existing_etag = self.getEtag(media_type)
+        if existing_etag is not None:
+            self.request.response.setHeader('ETag', existing_etag)
+            if incoming_etag == existing_etag:
+                # The client already has this representation.
+                # No need to send it again.
+                self.request.response.setStatus(204) # No Content
+                media_type = None
+        return media_type
+
     def getEtag(self, media_type):
         """Calculate an ETag for a representation of this resource.
 
@@ -503,31 +526,14 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # No custom operation was specified. Implement a standard
             # GET, which serves a JSON or WADL representation of the
             # entry.
-
-            # First, check to see if the client provided an ETag in
-            # the If-None-Match header. If it matches this entry's
-            # ETag, we don't have to serve a representation.
-            incoming_etag = self.request.getHeader('If-None-Match')
-
-            if self.getPreferredSupportedContentType() == self.WADL_TYPE:
-                media_type = self.WADL_TYPE
-            else:
-                media_type = self.JSON_TYPE
-
-            existing_etag = self.getEtag(media_type)
-            if existing_etag is not None and incoming_etag == existing_etag:
-                # The client already has this representation.
-                # No need to send it again.
-                self.request.response.setStatus(204) # No Content
+            media_type = self.handleConditionalGET()
+            if media_type is None:
+                # The conditional GET succeeded. Serve nothing.
                 return ""
-
-            # No matching ETag was provided, so serve a representation.
-            if media_type == self.WADL_TYPE:
+            elif media_type == self.WADL_TYPE:
                 result = self.toWADL().encode("utf-8")
             elif media_type == self.JSON_TYPE:
                 result = simplejson.dumps(self, cls=ResourceJSONEncoder)
-            if existing_etag is not None:
-                self.request.response.setHeader('Etag', existing_etag)
 
         self.request.response.setHeader('Content-Type', media_type)
         return result
@@ -933,16 +939,19 @@ class ServiceRootResource(HTTPResource):
     def do_GET(self):
         """Describe the capabilities of the web service in WADL."""
 
-        if self.getPreferredSupportedContentType() == self.WADL_TYPE:
+        media_type = self.handleConditionalGET()
+        if media_type is None:
+            # The conditional GET succeeded. Serve nothing.
+            return ""
+        elif media_type == self.WADL_TYPE:
             result = self.toWADL().encode("utf-8")
-            self.request.response.setHeader('Content-Type', self.WADL_TYPE)
-            return result
+        elif media_type == self.JSON_TYPE:
+            # Serve a JSON map containing links to all the top-level
+            # resources.
+            result = simplejson.dumps(self, cls=ResourceJSONEncoder)
 
-        # The client didn't want WADL, so we'll give them JSON.
-        # Specifically, a JSON map containing links to all the
-        # top-level resources.
-        self.request.response.setHeader('Content-type', self.JSON_TYPE)
-        return simplejson.dumps(self, cls=ResourceJSONEncoder)
+        self.request.response.setHeader('Content-Type', media_type)
+        return result
 
     def toWADL(self):
         # Find all resource types.
