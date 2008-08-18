@@ -460,7 +460,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         hash_object = sha.new()
         for name, field in getFieldsInOrder(self.entry.schema):
-            if self.isModifiableField(name, field, False):
+            if self.isModifiableField(field, False):
                 ignored, value = self._unmarshall_field(name, field)
                 hash_object.update(str(value))
                 hash_object.update("\0")
@@ -553,7 +553,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         # Get the fields ordered by name so that we always evaluate them in
         # the same order. This is needed to predict errors when testing.
         for name, field in getFieldsInOrder(self.entry.schema):
-            if not self.isModifiableField(name, field, True):
+            if not self.isModifiableField(field, True):
                 continue
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
@@ -587,7 +587,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                     self.request)),
             adapter.singular_type)
 
-    def isModifiableField(self, field_name, field, is_external_client):
+    def isModifiableField(self, field, is_external_client):
         """Returns true if this field's value can be changed.
 
         Collection fields, and fields that are not part of the web
@@ -599,7 +599,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         modified from external clients, but might change due to
         internal changes.
         """
-        if ICollectionField.providedBy(field) or field_name.startswith('_'):
+        if ICollectionField.providedBy(field) or field.__name__.startswith('_'):
             return False
         if field.readonly:
             return not is_external_client

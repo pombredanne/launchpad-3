@@ -22,7 +22,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     >>> __metaclass__ = type
 
     >>> from zope.interface import Interface, Attribute
-    >>> from zope.schema import (Bool, Bytes, Int, Text, TextLine, Object)
+    >>> from zope.schema import Bool, Bytes, Int, Text, TextLine, Object
 
     >>> class IAuthor(Interface):
     ...     name = TextLine(title=u"Name", required=True)
@@ -737,7 +737,6 @@ called 'find_recipes'. Each custom operation is implemented as a class
 that implementsIResourceGETOperation.
 
     >>> from canonical.lazr.rest import ResourceGETOperation
-    >>> from zope.schema import TextLine
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
     >>> from canonical.lazr.fields import Reference
     >>> from canonical.lazr.interfaces import IResourceGETOperation
