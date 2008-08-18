@@ -53,21 +53,7 @@ adapted to IBreadcrumbBuilder, then it is added to the breadcrumbs list.
 We'll add the objects to the request's list of traversed objects so
 the hierarchy will discover them.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.webapp import urlsplit
-
-    >>> def make_fake_request(url, traversed_objects=None):
-    ...     """Return a fake request object for testing."""
-    ...     url_parts = urlsplit(url)
-    ...     server_url = '://'.join(url_parts[0:2])
-    ...     path_info = url_parts[2]
-    ...     request = LaunchpadTestRequest(
-    ...         SERVER_URL=server_url,
-    ...         PATH_INFO=path_info)
-    ...     request._traversed_names = path_info.split('/')[1:]
-    ...     request.traversed_objects = traversed_objects
-    ...     return request
-
+    >>> from canonical.lazr.testing.menus import make_fake_request
     >>> request = make_fake_request(
     ...     'http://launchpad.dev/joy-of-cooking/spam',
     ...     [root, cookbook, recipe])
