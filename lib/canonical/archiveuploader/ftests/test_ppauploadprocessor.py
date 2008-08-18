@@ -93,7 +93,10 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         msg = message_from_string(raw_msg)
-        body = msg.get_payload(decode=True)
+
+        # This is now a MIMEMultipart message.
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
 
         clean_recipients = [r.strip() for r in to_addrs]
         for recipient in list(recipients):
@@ -706,7 +709,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         msg = message_from_string(raw_msg)
-        body = msg.get_payload(decode=True)
+
+        # This is now a MIMEMultipart message.
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
 
         self.assertTrue(
             "-----BEGIN PGP SIGNED MESSAGE-----" not in body,
