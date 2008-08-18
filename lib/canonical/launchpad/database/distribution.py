@@ -343,10 +343,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See BugTargetBase."""
         return "BugTask.distribution = %d" % self.id
 
-    def searchTasks(self, search_params):
-        """See `IHasBugs`."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this distribution."""
         search_params.setDistribution(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See `IBugTarget`."""

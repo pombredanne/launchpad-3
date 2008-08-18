@@ -80,11 +80,9 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         title = 'Milestone %s for %s' % (self.name, self.target.displayname)
         return title
 
-    def searchTasks(self, search_params):
-        """See `IHasBugs`."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this milestone."""
         search_params.milestone = self
-        return getUtility(IBugTaskSet).search(search_params)
-
 
 
 class MilestoneSet:

@@ -12,8 +12,7 @@
                   releases publishing_history binary_package_names
                   current_publishing_records bug_reporting_guidelines
                   latest_overall_publication __getitem__ getVersion
-                  __eq__ __ne__
-                  bugtasks searchTasks searchBugTasks
+                  __eq__ __ne__ bugtasks searchTasks
                   open_bugtasks closed_bugtasks critical_bugtasks
                   inprogress_bugtasks unassigned_bugtasks new_bugtasks
                   all_bugtasks

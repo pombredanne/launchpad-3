@@ -1893,11 +1893,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             size=config.malone.buglist_batch_size)
 
     def buildBugTaskSearchParams(self, searchtext=None, extra_params=None):
-        """Build the parameters to submit to the `searchBugTasks` method.
+        """Build the parameters to submit to the `searchTasks` method.
 
         Use the data submitted in the form to populate a dictionary
         which, when expanded (using **params notation) can serve as the
-        input for searchBugTasks().
+        input for searchTasks().
         """
         data = {}
         self._validate(None, data)
@@ -1983,7 +1983,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
 
         search_params = self.buildBugTaskSearchParams(
             searchtext=searchtext, extra_params=extra_params)
-        tasks = context.searchBugTasks(self.user, **search_params)
+        tasks = context.searchTasks(None, self.user, **search_params)
         return tasks
 
     def getWidgetValues(

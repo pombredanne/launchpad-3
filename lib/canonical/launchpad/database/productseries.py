@@ -355,10 +355,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 
-    def searchTasks(self, search_params):
-        """See `IHasBugs`."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See IBugTarget."""

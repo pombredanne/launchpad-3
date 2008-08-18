@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.interface import Attribute
 
 from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.interfaces.bugtarget import IHasBugs
+from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from canonical.lazr.fields import Reference

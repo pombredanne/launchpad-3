@@ -16,7 +16,7 @@ from canonical.launchpad.database.bugtask import get_bug_privacy_filter
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import (
-    BugTaskImportance, BugTaskSearchParams, BugTaskStatus,
+    BugTaskImportance, BugTaskSearchParams, BugTaskStatus, IBugTaskSet,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
 
 
@@ -26,29 +26,32 @@ class HasBugsBase:
     All IHasBugs implementations should inherit from this class
     or from `BugTargetBase`.
     """
-    def searchTasks(self, search_params):
+    def searchTasks(self, search_params, user=None,
+                    order_by=('-importance',), search_text=None,
+                    status=list(UNRESOLVED_BUGTASK_STATUSES),
+                    importance=None,
+                    assignee=None, bug_reporter=None, bug_supervisor=None,
+                    bug_commenter=None, bug_subscriber=None, owner=None,
+                    has_patch=None, has_cve=None,
+                    tags=None, tags_combinator_all=True,
+                    omit_duplicates=True, omit_targeted=None,
+                    status_upstream=None, milestone_assignment=None,
+                    milestone=None, component=None, nominated_for=None,
+                    distribution=None, scope=None, sourcepackagename=None,
+                    has_no_package=None):
         """See `IHasBugs`."""
-        raise NotImplementedError
+        if search_params is None:
+            kwargs = dict(**locals())
+            del kwargs['self']
+            del kwargs['user']
+            del kwargs['search_params']
+            search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
+        self._customizeSearchParams(search_params)
+        return getUtility(IBugTaskSet).search(search_params)
 
-    def searchBugTasks(self, user,
-                       order_by=('-importance',), search_text=None,
-                       status=list(UNRESOLVED_BUGTASK_STATUSES),
-                       importance=None,
-                       assignee=None, bug_reporter=None, bug_supervisor=None,
-                       bug_commenter=None, bug_subscriber=None, owner=None,
-                       has_patch=None, has_cve=None,
-                       tags=None, tags_combinator_all=True,
-                       omit_duplicates=True, omit_targeted=None,
-                       status_upstream=None, milestone_assignment=None,
-                       milestone=None, component=None, nominated_for=None,
-                       distribution=None, scope=None, sourcepackagename=None,
-                       has_no_package=None):
-        """See `IHasBugs`."""
-        kwargs = dict(**locals())
-        del kwargs['self']
-        del kwargs['user']
-        search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
-        return self.searchTasks(search_params)
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for a specific target."""
+        raise NotImplementedError
 
     def _getBugTaskContextWhereClause(self):
         """Return an SQL snippet to filter bugtasks on this context."""

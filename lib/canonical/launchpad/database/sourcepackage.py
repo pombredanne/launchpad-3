@@ -399,10 +399,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
 
-    def searchTasks(self, search_params):
-        """See `IHasBugs`."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See `IBugTarget`."""
