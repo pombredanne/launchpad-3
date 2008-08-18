@@ -83,6 +83,8 @@ address.
 The mail body contains a list of files that were accepted:
 
   >>> print notification.get_payload(0) # doctest: -NORMALIZE_WHITESPACE
+  From nobody ...
+  ...
   NEW: netapplet_1.0-1.dsc
   NEW: netapplet_1.0.orig.tar.gz
   NEW: netapplet_1.0-1.diff.gz
@@ -157,6 +159,8 @@ The mail 'From:' addresses are the uploader and the changer.
 The mail body contains the same list of files again:
 
   >>> print notification.get_payload(0) # doctest: -NORMALIZE_WHITESPACE
+  From nobody ...
+  ...
   NEW: netapplet_1.0-1.dsc
   NEW: netapplet_1.0.orig.tar.gz
   NEW: netapplet_1.0-1.diff.gz
@@ -211,6 +215,8 @@ The mail headers are the same as before:
 The mail body contains the same list of files again:
 
   >>> print notification.get_payload(0) # doctest: -NORMALIZE_WHITESPACE
+  From nobody ...
+  ...
   NEW: netapplet_1.0-1.dsc
   NEW: netapplet_1.0.orig.tar.gz
   NEW: netapplet_1.0-1.diff.gz
