@@ -73,14 +73,28 @@
         <h2>What&#8217;s new?</h2>
         <ul>
           <li class="news">
-            <a href="http://news.launchpad.net/?p=105">
-              <strong>New simpler web interface</strong><br />
-              Learn more about Launchpad's new layout and navigation
+            <a href="http://news.launchpad.net/?p=115">
+              <strong>Faster branch uploads</strong><br />
+              Faster uploads when you're uploading a branch of a project
+              that's already got code on Launchpad.
+            </a>
+         </li>
+         <li class="news">
+            <a href="http://news.launchpad.net/?p=114">
+              <strong>Karma for commits</strong><br />
+              You'll now get karma for each commit you make to a branch that's
+              registered in Launchpad.
+            </a>
+         </li>
+         <li class="news">
+            <a href="https://help.launchpad.net/FrontPage#user-guide">
+              <strong>New Launchpad user guide</strong><br />
+              If you're new to Launchpad, our new user guide will take you
+              through each application step by step.
             </a>
          </li>
          <li class="news">
             <a href="http://news.launchpad.net/?p=106">
-
               <strong>Help test Launchpad's new API!</strong><br />
               Our new internet-services API is now in beta test.
             </a>
@@ -91,11 +105,10 @@
               New GPLed plugins allow comment sharing between Launchpad
               and external trackers.
             </a>
-
          </li>
         </ul>
         <div class="discreet" style="text-align: right">
-          Updated 2008-07-28.
+          Updated 2008-08-20.
           <a href="http://news.launchpad.net">More...</a>
         </div>
       </div>
