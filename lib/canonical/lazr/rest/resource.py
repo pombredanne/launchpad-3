@@ -165,8 +165,8 @@ class HTTPResource:
     def getEtag(self, media_type):
         """Calculate an ETag for a representation of this resource.
 
-        The WADL representation of a resource only changes when
-        Launchpad itself changes. Thus, we can use the Launchpad
+        The WADL representation of a resource only changes when the
+        software itself changes. Thus, we can use the Launchpad
         revision number itself as an ETag. We delegate to subclasses
         when it comes to calculating ETags for other representations.
         """
@@ -927,6 +927,15 @@ class ServiceRootResource(HTTPResource):
     def request(self):
         """Fetch the current browser request."""
         return get_current_browser_request()
+
+    def getEtag(self, media_type):
+        """Calculate an ETag for a representation of this resource.
+
+        The service root resource changes only when the software
+        itself changes. Thus, we can use the revision number itself as
+        an ETag.
+        """
+        return str(versioninfo.revno)
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
