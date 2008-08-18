@@ -180,7 +180,11 @@ class LaunchpadObjectFactory:
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname)
 
-        person.setLocation(latitude, longitude, time_zone, person)
+        # Remove the security proxy because setLocation() is protected with
+        # launchpad.EditLocation.
+        removeSecurityProxy(person).setLocation(
+            latitude, longitude, time_zone, person)
+
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.PREFERRED:
