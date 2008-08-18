@@ -42,7 +42,7 @@ class BreadcrumbBuilder:
         self._text = None
         self._url = None
 
-    def _get_text(self):
+    def text(self):
         """Return the breadcrumb's 'text' attribute.  See `IBreadcrumb`."""
         if self._text is not None:
             return self._text
@@ -52,9 +52,9 @@ class BreadcrumbBuilder:
         """Set the breadcrumb's 'text' attribute.  See `IBreadcrumb`."""
         self._text = value
 
-    text = property(_get_text, _set_text, doc=_get_text.__doc__)
+    text = property(text, _set_text, doc=text.__doc__)
 
-    def _get_url(self):
+    def url(self):
         """Return the breadcrumb's 'url' attribute.  See `IBreadcrumb`."""
         if self._url is not None:
             return self._url
@@ -64,7 +64,7 @@ class BreadcrumbBuilder:
         """Set the breadcrumb's 'url' attribute.  See `IBreadcrumb`."""
         self._url = value
 
-    url = property(_get_url, _set_url, doc=_get_url.__doc__)
+    url = property(url, _set_url, doc=url.__doc__)
 
     def make_breadcrumb(self):
         """See `IBreadcrumbBuilder.`"""

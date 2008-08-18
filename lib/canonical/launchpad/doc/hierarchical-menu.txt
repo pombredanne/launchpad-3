@@ -1,8 +1,8 @@
 = Hierarchical menus =
 
-The location bar aids users in navigating the depths of Launchpad.  It is
-built from a list of Breadcrumb objects collected during Zope's object-
-traversal step.
+The location bar aids users in navigating the depths of Launchpad.  It
+is built from a list of Breadcrumb objects collected during Zope's
+object-traversal step.
 
 == A simple object hierarchy ==
 
@@ -44,69 +44,6 @@ Today we'll be cooking with Spam!
     >>> recipe = Recipe('spam', cookbook)
 
 
-== Building IBreadcrumb objects ==
-
-The construction of breadcrumb objects is handled by an IBreadcrumbBuilder
-factory.  The factory adapts a context object and produces an
-IBreadcrumb object for that context.
-
-The builder holds a temporary copy of a breadcrumb until the breadcrumb is
-in a usable state.  This allows us to adapt the breadcrumb context object
-in one place, and to defer setting the breadcrumb's URL.  We can ask the
-builder for a finished breadcrumb after both the text and the URL have
-been specified.
-
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     IBreadcrumb, IBreadcrumbBuilder)
-    >>> from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-
-    >>> builder = BreadcrumbBuilder(cookbook)
-    >>> IBreadcrumbBuilder.providedBy(builder)
-    True
-
-    >>> builder.text = 'Joy of cooking'
-    >>> builder.url = 'http://launchpad.dev/joy-of-cooking'
-
-    >>> breadcrumb = builder.make_breadcrumb()
-    >>> IBreadcrumb.providedBy(breadcrumb)
-    True
-    >>> breadcrumb
-    <Breadcrumb
-        url='http://launchpad.dev/joy-of-cooking'
-        text='Joy of cooking'>
-
-The builder enforces the requirement for breadcrumbs to have valid URL.  The
-builder raises an error if a URL is not explicitly given by the developer.
-
-    >>> builder = BreadcrumbBuilder(cookbook)
-    >>> builder.text = 'Oops!'
-
-    >>> builder.make_breadcrumb()
-    Traceback (most recent call last):
-    ...
-    NotImplementedError
-
-The breadcrumb's attributes are given as attributes on the builder class.
-They can be overridden with subclassing and Python properties.
-
-    >>> from canonical.launchpad.webapp.publisher import canonical_url
-
-    >>> class DynamicBreadcrumbBuilder(BreadcrumbBuilder):
-    ...     @property
-    ...     def text(self):
-    ...         return self.context.name.capitalize().replace('-', ' ')
-    ...
-    ...     @property
-    ...     def url(self):
-    ...         return canonical_url(self.context)
-
-    >>> builder = DynamicBreadcrumbBuilder(cookbook)
-    >>> builder.make_breadcrumb()
-    <Breadcrumb
-        url='http://launchpad.dev/joy-of-cooking'
-        text='Joy of cooking'>
-
-
 == Discovering breadcrumbs ==
 
 The Hierarchy class builds the breadcrumbs by looking at each object in
@@ -143,8 +80,10 @@ have an IBreadcrumbBuilder adapter.
     []
 
 Adding the adapters causes the Cookbook and Recipe objects to show up
-in the hierarchy.  The hierarchy's breadcrumbs are in-order, starting with
-the breadcrumb closest to the hierarchy root.
+in the hierarchy.  The hierarchy's breadcrumbs are in-order, starting
+with the breadcrumb closest to the hierarchy root.
+
+    >>> from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
     # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
     # give it a valid .text attribute.
@@ -152,6 +91,8 @@ the breadcrumb closest to the hierarchy root.
     ...     @property
     ...     def text(self):
     ...         return self.context.name.capitalize().replace('-', ' ')
+
+    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumbBuilder
 
     >>> provideAdapter(
     ...     TextualBreadcrumbBuilder, [ICookbook], IBreadcrumbBuilder)
@@ -167,10 +108,82 @@ the breadcrumb closest to the hierarchy root.
         text='Spam'>]
 
 
+== Building IBreadcrumb objects ==
+
+The construction of breadcrumb objects is handled by an
+IBreadcrumbBuilder factory.  The factory adapts a context object and
+produces an IBreadcrumb object for that context.
+
+The builder holds a temporary copy of a breadcrumb until the breadcrumb
+is in a usable state.  This allows us to adapt the breadcrumb context
+object in one place, and to defer setting the breadcrumb's URL.  We can
+ask the builder for a finished breadcrumb after both the text and the
+URL have been specified.
+
+    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
+    >>> from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+    >>> from zope.interface.verify import verifyObject
+
+    >>> builder = BreadcrumbBuilder(cookbook)
+    >>> builder.text = 'Joy of cooking'
+    >>> builder.url = 'http://launchpad.dev/joy-of-cooking'
+    >>> verifyObject(IBreadcrumbBuilder, builder)
+    True
+
+    >>> breadcrumb = builder.make_breadcrumb()
+    >>> verifyObject(IBreadcrumb, breadcrumb)
+    True
+    >>> breadcrumb
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking'
+        text='Joy of cooking'>
+
+The builder enforces the requirement for breadcrumbs to have valid URL.
+The builder raises an error if a URL is not explicitly given by the
+developer.
+
+    >>> builder = BreadcrumbBuilder(cookbook)
+    >>> builder.text = 'Oops!'
+
+    >>> builder.make_breadcrumb()
+    Traceback (most recent call last):
+    ...
+    NotImplementedError
+
+We can also see that an incomplete builder object doesn't fulfill the
+IBreadcrumbBuilder interface.
+
+    >>> verifyObject(IBreadcrumbBuilder, builder)
+    Traceback (most recent call last):
+    ...
+    BrokenImplementation: ... The url attribute was not provided.
+
+
+The breadcrumb's attributes can be overridden with subclassing and
+Python properties.
+
+    >>> from canonical.launchpad.webapp.publisher import canonical_url
+
+    >>> class DynamicBreadcrumbBuilder(BreadcrumbBuilder):
+    ...     @property
+    ...     def text(self):
+    ...         return self.context.name.capitalize().replace('-', ' ')
+    ...
+    ...     @property
+    ...     def url(self):
+    ...         return canonical_url(self.context)
+
+    >>> builder = DynamicBreadcrumbBuilder(cookbook)
+    >>> builder.make_breadcrumb()
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking'
+        text='Joy of cooking'>
+
+
 == Customizing the hierarchy ==
 
-We can customize the hierarchy itself by changing the list of objects and
-URLs that it uses to construct the breadcrumbs list.
+We can customize the hierarchy itself by changing the list of objects
+and URLs that it uses to construct the breadcrumbs list.
 
 The Hierarchy should *not* construct the Breadcrumb objects itself.  It
 should let the IBreadcrumbBuilder handle it: this ensures consistencey
@@ -194,8 +207,8 @@ across the site.
 
 == Rendering the list ==
 
-The Hierarchy object is responsible for rendering the HTML for the location
-bar.
+The Hierarchy object is responsible for rendering the HTML for the
+location bar.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> from canonical.launchpad.testing.pages import extract_text
