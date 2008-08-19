@@ -169,5 +169,6 @@ class BMPMailer(BaseMailer):
             'proposal_title': self.merge_proposal.title,
             'proposal_url': canonical_url(self.merge_proposal),
             'edit_subscription': '',
+            'whiteboard': self.merge_proposal.whiteboard
             })
         return params

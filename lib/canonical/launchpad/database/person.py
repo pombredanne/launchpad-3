@@ -15,6 +15,7 @@ __all__ = [
     'PersonSet',
     'SSHKey',
     'SSHKeySet',
+    'ValidPersonCache',
     'WikiName',
     'WikiNameSet']
 
@@ -112,8 +113,7 @@ from canonical.launchpad.interfaces.teammembership import (
     TeamMembershipStatus)
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
-from canonical.launchpad.interfaces.wikiname import (
-    IWikiName, IWikiNameSet, UBUNTU_WIKI_URL)
+from canonical.launchpad.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.launchpad.database.archive import Archive
@@ -1237,9 +1237,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return Karma.selectBy(person=self,
             orderBy='-datecreated')[:quantity]
 
-    # XXX: StuartBishop 2006-05-10:
-    # This cache should no longer be needed once CrowdControl lands,
-    # as apparently it will also cache this information.
+    # This is to cache TeamParticipation information as that's used tons of
+    # times in each request.
     _inTeam_cache = None
 
     def inTeam(self, team):
@@ -1250,9 +1249,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # Translate the team name to an ITeam if we were passed a team.
         if isinstance(team, str):
             team = PersonSet().getByName(team)
-
-        if team.id == self.id: # Short circuit - would return True anyway
-            return True
 
         if self._inTeam_cache is None: # Initialize cache
             self._inTeam_cache = {}
@@ -1519,16 +1515,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query = AND(EmailAddress.q.personID==self.id,
                     EmailAddress.q.status==status)
         return EmailAddress.select(query)
-
-    @property
-    def ubuntuwiki(self):
-        """See `IPerson`."""
-        return getUtility(IWikiNameSet).getUbuntuWikiByPerson(self)
-
-    @property
-    def otherwikis(self):
-        """See `IPerson`."""
-        return getUtility(IWikiNameSet).getOtherWikisByPerson(self)
 
     @property
     def allwikis(self):
@@ -2467,11 +2453,7 @@ class PersonSet:
 
     def _newPerson(self, name, displayname, hide_email_addresses,
                    rationale, comment=None, registrant=None, account=None):
-        """Create and return a new Person with the given attributes.
-
-        Also generate a wikiname for this person that's not yet used in the
-        Ubuntu wiki.
-        """
+        """Create and return a new Person with the given attributes."""
         if not valid_name(name):
             raise InvalidName(
                 "%s is not a valid name for a person." % name)
@@ -2489,11 +2471,6 @@ class PersonSet:
             name=name, displayname=displayname, account=account,
             creation_rationale=rationale, creation_comment=comment,
             hide_email_addresses=hide_email_addresses, registrant=registrant)
-
-        wikinameset = getUtility(IWikiNameSet)
-        wikiname = nickname.generate_wikiname(
-            person.displayname, wikinameset.exists)
-        wikinameset.new(person, UBUNTU_WIKI_URL, wikiname)
         return person
 
     def ensurePerson(self, email, displayname, rationale, comment=None,
@@ -2521,32 +2498,22 @@ class PersonSet:
     def updateStatistics(self, ztm):
         """See `IPersonSet`."""
         stats = getUtility(ILaunchpadStatisticSet)
-        stats.update('people_count', self.getAllPersons().count())
+        people_count = Person.select(
+            AND(Person.q.teamownerID==None, Person.q.mergedID==None)).count()
+        stats.update('people_count', people_count)
         ztm.commit()
-        stats.update('teams_count', self.getAllTeams().count())
+        teams_count = Person.select(
+            AND(Person.q.teamownerID!=None, Person.q.mergedID==None)).count()
+        stats.update('teams_count', teams_count)
         ztm.commit()
 
     def peopleCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('people_count')
 
-    def getAllPersons(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
-        return Person.select(query, orderBy=orderBy)
-
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
-
-    def getAllTeams(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
-        return Person.select(query, orderBy=orderBy)
 
     def getAllValidPersonsAndTeams(self):
         """See `IPersonSet`."""
@@ -2702,22 +2669,6 @@ class PersonSet:
             return None
         assert emailaddress.person is not None
         return emailaddress.person
-
-    def getUbunteros(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            # The fact that the query below is unique makes it
-            # impossible to use person_sort_key(), and rewriting it to
-            # use a subselect is more expensive. -- kiko
-            orderBy = ["Person.displayname", "Person.name"]
-        sigset = getUtility(ISignedCodeOfConductSet)
-        lastdate = sigset.getLastAcceptedDate()
-
-        query = AND(Person.q.id==SignedCodeOfConduct.q.ownerID,
-                    SignedCodeOfConduct.q.active==True,
-                    SignedCodeOfConduct.q.datecreated>=lastdate)
-
-        return Person.select(query, distinct=True, orderBy=orderBy)
 
     def getPOFileContributors(self, pofile):
         """See `IPersonSet`."""
@@ -2915,22 +2866,6 @@ class PersonSet:
                 """ % vars()
                 )
         skip.append(('openidauthorization', 'person'))
-
-        # Update WikiName. Delete the from entry for our internal wikis
-        # so it can be reused. Migrate the non-internal wikinames.
-        # Note we only allow one wikiname per person for the UBUNTU_WIKI_URL
-        # wiki.
-        quoted_internal_wikiname = quote(UBUNTU_WIKI_URL)
-        cur.execute("""
-            DELETE FROM WikiName
-            WHERE person=%(from_id)d AND wiki=%(quoted_internal_wikiname)s
-            """ % vars()
-            )
-        cur.execute("""
-            UPDATE WikiName SET person=%(to_id)d WHERE person=%(from_id)d
-            """ % vars()
-            )
-        skip.append(('wikiname', 'person'))
 
         # Update shipit shipments.
         cur.execute('''
@@ -3630,15 +3565,6 @@ class WikiNameSet:
         """See `IWikiNameSet`."""
         return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname)
 
-    def getUbuntuWikiByPerson(self, person):
-        """See `IWikiNameSet`."""
-        return WikiName.selectOneBy(person=person, wiki=UBUNTU_WIKI_URL)
-
-    def getOtherWikisByPerson(self, person):
-        """See `IWikiNameSet`."""
-        return WikiName.select(AND(WikiName.q.personID==person.id,
-                                   WikiName.q.wiki!=UBUNTU_WIKI_URL))
-
     def getAllWikisByPerson(self, person):
         """See `IWikiNameSet`."""
         return WikiName.selectBy(person=person)
@@ -3653,10 +3579,6 @@ class WikiNameSet:
     def new(self, person, wiki, wikiname):
         """See `IWikiNameSet`."""
         return WikiName(person=person, wiki=wiki, wikiname=wikiname)
-
-    def exists(self, wikiname, wiki=UBUNTU_WIKI_URL):
-        """See `IWikiNameSet`."""
-        return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname) is not None
 
 
 class JabberID(SQLBase, HasOwnerMixin):

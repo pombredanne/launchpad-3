@@ -308,7 +308,7 @@ for every link in the JSON representation.
 
     >>> def name_attrib(tag):
     ...     return tag.attrib['name']
-    >>> bug_set_param, me_param, person_set_param = sorted(
+    >>> bug_set_param, me_param, person_set_param, project_set_param = sorted(
     ...    [param for param in service_root_repr], key=name_attrib)
 
     >>> person_set_param.tag
@@ -520,7 +520,8 @@ First let's look at the different collection resource types defined in the
 WADL file, and their representations.
 
     >>> sorted([type.attrib['id'] for type in collection_resource_types])
-    ['bugs', 'people']
+    ['bugs', 'people', 'projects']
+
 
 There's one <resource_type> tag for every top-level collection on the
 site. We'll be taking a close look at the resource type for the
@@ -545,13 +546,11 @@ custom operations.
      ('GET', 'people-findPerson'),
      ('GET', 'people-findTeam'),
      ('GET', 'people-get'),
-     ('GET', 'people-getAllPersons'),
-     ('GET', 'people-getAllTeams'),
      ('GET', 'people-getByEmail'),
      ('POST', 'people-newTeam')]
 
-    >>> (find, findPerson, findTeam, get, getAllPerson, getAllTeams,
-    ...  getByEmail, newTeam) = sorted(methods, key=lambda i: i.attrib['id'])
+    >>> (find, findPerson, findTeam, get, getByEmail, newTeam) = sorted(
+    ...     methods, key=lambda i: i.attrib['id'])
 
 The standard GET operation is a way of getting either a page of the
 collection (see "The representation of a collection" later in this

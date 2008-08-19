@@ -44,8 +44,7 @@ from canonical.launchpad.interfaces import (
     GPGVerificationError, IEmailAddressSet, IGPGHandler, IGPGKeySet,
     IGPGKeyValidationForm, ILoginToken, ILoginTokenSet, INewPersonForm,
     IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, LoginTokenType,
-    PersonCreationRationale, ShipItConstants, UBUNTU_WIKI_URL,
-    UnexpectedFormData)
+    PersonCreationRationale, ShipItConstants, UnexpectedFormData)
 from canonical.launchpad.interfaces.account import AccountStatus
 
 
@@ -655,7 +654,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             PersonCreationRationale.OWNER_CREATED_SHIPIT,
         ShipItConstants.edubuntu_url:
             PersonCreationRationale.OWNER_CREATED_SHIPIT,
-        UBUNTU_WIKI_URL: PersonCreationRationale.OWNER_CREATED_UBUNTU_WIKI}
+        }
 
     created_person = None
 

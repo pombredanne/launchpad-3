@@ -156,7 +156,6 @@ status is returned.
 >>> check("/ubuntu/+bugs")
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
->>> check("/ubuntu/+roadmap")
 >>> check_redirect("/ubuntu/+translations", status=301)
 >>> check("/ubuntu/+translations", host='translations.launchpad.dev')
 >>> check("/ubuntu/+edit", auth=True)
@@ -393,9 +392,6 @@ Approving/declining a bug nomination.
 Test /people traversals.
 
 >>> check("/people/")
->>> check("/people/+peoplelist")
->>> check("/people/+teamlist")
->>> check("/people/+ubunterolist")
 >>> check("/people/+requestmerge", auth=True)
 >>> check_redirect("/people/+mergerequest-sent", auth=True)
 >>> check("/people/+portlet-about")
