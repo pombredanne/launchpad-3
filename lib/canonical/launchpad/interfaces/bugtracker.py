@@ -21,7 +21,7 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, StrippedTextLine, URIField)
+    ContentNameField, ProductBugTracker, StrippedTextLine, URIField)
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -259,6 +259,8 @@ class IBugTracker(Interface):
     def destroySelf():
         """Delete this bug tracker."""
 
+# Set the ProductBugTracker schema to the newly defined interface.
+ProductBugTracker.schema = IBugTracker
 
 class IBugTrackerSet(Interface):
     """A set of IBugTracker's.

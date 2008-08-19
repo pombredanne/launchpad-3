@@ -484,6 +484,8 @@ class ProductBugTracker(Choice):
     This field uses two attributes to model its state, 'official_malone'
     and 'bugtracker'
     """
+    implements(IReferenceChoice)
+    schema = IObject # This will be set to IBugTracker once it is defined.
     malone_marker = object()
 
     def get(self, ob):
