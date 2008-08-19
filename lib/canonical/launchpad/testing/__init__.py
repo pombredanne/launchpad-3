@@ -90,7 +90,6 @@ class TestCase(unittest.TestCase):
         # XXX Probably does not belong here, but better location not clear.
         # Used primarily for testing ORM objects, which ought to use factory.
         sql_object = removeSecurityProxy(sql_object)
-        sql_object.syncUpdate()
         sql_class = type(sql_object)
         found_object = sql_class.selectOne(
             ('id=%s AND ' + attribute_name + '=%s')
