@@ -8,6 +8,8 @@ import datetime
 import pytz
 import unittest
 
+from bzrlib.tests import adapt_tests, TestScenarioApplier
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -99,13 +101,17 @@ class TestRunWithLogin(TestCaseWithFactory):
 
 
 class BranchPullerTest(TestCaseWithFactory):
-    """Tests for the implementation of `IBranchPuller`."""
+    """Tests for the implementation of `IBranchPuller`.
+
+    :ivar endpoint_factory: A nullary callable used to construct the endpoint.
+        This variable is set by the `PullerEndpointScenarioApplier`.
+    """
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.storage = BranchPuller(None, None)
+        self.storage = self.endpoint_factory()
 
     def assertFaultEqual(self, expected_fault, observed_fault):
         """Assert that `expected_fault` equals `observed_fault`."""
@@ -670,13 +676,20 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch, 'next_mirror_time', UTC_NOW)
 
 
+class PullerEndpointScenarioApplier(TestScenarioApplier):
+
+    scenarios = [
+        ('real', {'endpoint_factory': lambda: BranchPuller(None, None)})]
+
+
 def test_suite():
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
+    puller_tests = loader.loadTestsFromTestCase(BranchPullerTest)
+    adapt_tests(puller_tests, PullerEndpointScenarioApplier(), suite)
     suite.addTests(
         map(loader.loadTestsFromTestCase,
             [TestRunWithLogin,
-             BranchPullerTest,
              BranchPullQueueTest,
              BranchFileSystemTest,
              ]))
