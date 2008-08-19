@@ -91,9 +91,11 @@ class TestCase(unittest.TestCase):
         # Used primarily for testing ORM objects, which ought to use factory.
         sql_object = removeSecurityProxy(sql_object)
         sql_class = type(sql_object)
-        found_object = sql_class.selectOne(
-            ('id=%s AND ' + attribute_name + '=%s')
-            % sqlvalues(sql_object.id, date))
+        store = sql_class._get_store()
+        found_object = store.find(
+            sql_class,
+            sql_class.id == sql_object.id
+            and getattr(sql_class, attribute_name) == date)
         if found_object is None:
             self.fail(
                 "Expected %s to be %s, but it was %s."
