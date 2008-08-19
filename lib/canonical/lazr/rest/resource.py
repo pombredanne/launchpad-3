@@ -860,6 +860,8 @@ class ServiceRootResource(HTTPResource):
         site_manager = zapi.getGlobalSiteManager()
         entry_classes = []
         collection_classes = []
+        singular_names = set()
+        plural_names = set()
         for registration in site_manager.registrations():
             provided = registration.provided
             if IInterface.providedBy(provided):
@@ -870,7 +872,17 @@ class ServiceRootResource(HTTPResource):
                     # schemas; they're functions. We can ignore these
                     # functions because their return value will be one
                     # of the classes with schemas, which we do describe.
-                    entry_classes.append(registration.value)
+                    entry_class = registration.value
+                    tags = provided.queryTaggedValue(LAZR_WEBSERVICE_NAME)
+                    singular = tags['singular']
+                    assert singular not in singular_names, (
+                        "Singular name '%s' is used more than once.")
+                    singular_names.add(singular)
+                    plural = tags['plural']
+                    assert plural not in plural_names, (
+                        "Plural name '%s' is used more than once.")
+                    singular_names.add(singular)
+                    entry_classes.append(entry_classes)
                 elif (provided.isOrExtends(ICollection)
                       and ICollection.implementedBy(registration.value)
                       and not IScopedCollection.implementedBy(
