@@ -65,9 +65,10 @@ have an IBreadcrumbBuilder adapter.
     >>> hierarchy.items()
     []
 
-Adding the adapters causes the Cookbook and Recipe objects to show up
-in the hierarchy.  The hierarchy's breadcrumbs are in-order, starting
-with the breadcrumb closest to the hierarchy root.
+The Cookbook and Recipe objects to show up in the hierarchy after an
+IBreadcrumbBuilder adapter is registered for them.  The hierarchy's
+breadcrumbs are in-order, starting with the breadcrumb closest to the
+hierarchy root.
 
     >>> from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
@@ -173,9 +174,9 @@ Python properties.
 We can customize the hierarchy itself by changing the list of objects
 and URLs that it uses to construct the breadcrumbs list.
 
-The Hierarchy should *not* construct the Breadcrumb objects itself.  It
-should let the IBreadcrumbBuilder handle it: this ensures consistencey
-across the site.
+The Hierarchy object should *not* construct the Breadcrumb objects
+itself.  It should let the IBreadcrumbBuilder handle it: this ensures
+consistency across the site.
 
     >>> from canonical.launchpad.browser.launchpad import Hierarchy
 
