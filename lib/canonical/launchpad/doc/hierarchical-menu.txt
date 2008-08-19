@@ -182,8 +182,8 @@ builder's context object provides the IHasIcon interface.
         text='I have an icon!'
         icon='/@@/recipe'>
 
-An interesting trick is to override the icon attribute by setting
-the builder's icon attribute to a different value.
+You can override the builder's default icon by assigning a new value to
+the 'icon' attribute.
 
     >>> builder.icon = '/@@/foo-icon'
     >>> builder.make_breadcrumb()
@@ -192,7 +192,7 @@ the builder's icon attribute to a different value.
         text='I have an icon!'
         icon='/@@/foo-icon'>
 
-We can clear the icon entirely by setting the attribute to None:
+We can clear the icon entirely by setting the 'icon' attribute to None.
 
     >>> builder.icon = None
     >>> builder.make_breadcrumb()
