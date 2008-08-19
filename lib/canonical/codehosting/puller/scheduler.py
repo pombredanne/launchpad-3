@@ -1,15 +1,16 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0702
 
 __metaclass__ = type
-__all__ = ['BadMessage',
-           'BranchStatusClient',
-           'JobScheduler',
-           'LockError',
-           'PullerMaster',
-           'PullerMonitorProtocol',
-           'TimeoutError',
-           ]
+__all__ = [
+    'BadMessage',
+    'BranchStatusClient',
+    'JobScheduler',
+    'LockError',
+    'PullerMaster',
+    'PullerMonitorProtocol',
+    'TimeoutError',
+    ]
 
 
 import os

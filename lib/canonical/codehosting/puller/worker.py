@@ -343,8 +343,8 @@ class PullerWorker:
         :param branch_type: A member of the BranchType enum.  It is expected
             that tests that do not depend on its value will pass None.
         :param protocol: An instance of `PullerWorkerProtocol`.
-        :param branch_opener: An instance of `BranchOpener`.  If not passed, one will
-            be chosen based on the value of `branch_type`.
+        :param branch_opener: An instance of `BranchOpener`.  If not passed,
+            one will be chosen based on the value of `branch_type`.
         :param oops_prefix: An oops prefix to pass to `setOopsToken` on the
             global ErrorUtility.
         """
