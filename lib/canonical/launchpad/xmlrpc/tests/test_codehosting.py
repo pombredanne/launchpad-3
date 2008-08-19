@@ -114,9 +114,11 @@ class BranchPullerTest(TestCaseWithFactory):
         self.storage = frontend.getEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.branch_getter = frontend.getBranch
+        self.getLastActivity = frontend.getLastActivity
 
     def assertFaultEqual(self, expected_fault, observed_fault):
         """Assert that `expected_fault` equals `observed_fault`."""
+        self.assertIsInstance(observed_fault, faults.LaunchpadFault)
         self.assertEqual(expected_fault.faultCode, observed_fault.faultCode)
         self.assertEqual(
             expected_fault.faultString, observed_fault.faultString)
@@ -262,8 +264,7 @@ class BranchPullerTest(TestCaseWithFactory):
             'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
         self.assertEqual(True, success)
 
-        activity = getUtility(IScriptActivitySet).getLastActivity(
-            'test-recordsuccess')
+        activity = self.getLastActivity('test-recordsuccess')
         self.assertEqual('vostok', activity.hostname)
         self.assertEqual(started, activity.date_started)
         self.assertEqual(completed, activity.date_completed)
@@ -688,6 +689,9 @@ class RealLaunchpadFrontend:
 
     def getBranch(self, branch_id):
         return getUtility(IBranchSet).get(branch_id)
+
+    def getLastActivity(self, activity_name):
+        return getUtility(IScriptActivitySet).getLastActivity(activity_name)
 
 
 class PullerEndpointScenarioApplier(TestScenarioApplier):
