@@ -461,7 +461,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         hash_object = sha.new()
         for name, field in getFieldsInOrder(self.entry.schema):
             if self.isModifiableField(field, False):
-                ignored, value = self._unmarshall_field(name, field)
+                ignored, value = self._unmarshallField(name, field)
                 hash_object.update(str(value))
                 hash_object.update("\0")
             # Append the revision number, because the algorithm for
@@ -480,7 +480,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         data['self_link'] = canonical_url(self.context)
         data['resource_type_link'] = self.type_url
         for name, field in getFields(self.entry.schema).items():
-            repr_name, repr_value = self._unmarshall_field(name, field)
+            repr_name, repr_value = self._unmarshallField(name, field)
             data[repr_name] = repr_value
         return data
 
@@ -606,7 +606,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             return not is_external_client
         return True
 
-    def _unmarshall_field(self, field_name, field):
+    def _unmarshallField(self, field_name, field):
         """See what a field would look like in a representation.
 
         :return: a 2-tuple (representation_name, representation_value).
