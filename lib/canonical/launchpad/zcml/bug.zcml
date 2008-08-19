@@ -148,6 +148,9 @@
       <browser:page
           name="+portlet-subscribers"
           template="../templates/bug-portlet-subscribers.pt" />
+      <browser:page
+          name="+portlet-notified"
+          template="../templates/bug-portlet-notified.pt" />
     </browser:pages>
 
 

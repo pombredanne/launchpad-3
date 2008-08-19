@@ -28,11 +28,8 @@
     </div>
   </div>
 
-  <div id="portlets">
-    <div metal:use-macro="context/bug/@@+portlet-subscribers/custom">
-      <div metal:fill-slot="heading" />
-    </div>
-  </div>
+  <div id="portlets"
+       tal:content="structure context/bug/@@+portlet-notified" />
 
 </div>
 
