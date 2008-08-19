@@ -671,4 +671,13 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    loader = unittest.TestLoader()
+    suite = unittest.TestSuite()
+    suite.addTests(
+        map(loader.loadTestsFromTestCase,
+            [TestRunWithLogin,
+             BranchPullerTest,
+             BranchPullQueueTest,
+             BranchFileSystemTest,
+             ]))
+    return suite
