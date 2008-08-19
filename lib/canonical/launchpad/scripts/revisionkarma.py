@@ -43,7 +43,10 @@ class RevisionKarmaAllocator(LaunchpadCronScript):
         while len(revisions) > 0:
             for revision in revisions:
                 # Find the appropriate branch, and allocate karma to it.
-                branch = revision.getBranch(allow_private=True)
+                # Make sure we don't grab a junk branch though, as we don't
+                # allocate karma for junk branches.
+                branch = revision.getBranch(
+                    allow_private=True, allow_junk=False)
                 revision.allocateKarma(branch)
                 count += 1
             self.logger.debug("%s processed", count)

@@ -29,13 +29,13 @@ from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestRevisionKarma(TestCaseWithFactory):
-    """Test the `getBranch` method of the revision."""
+    """Test the allocation of karma for revisions."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator to set branch privacy easily.
-        TestCaseWithFactory.setUp(self, "foo.bar@canonical.com")
+        TestCaseWithFactory.setUp(self, "admin@canonical.com")
 
     def test_revisionWithUnknownEmail(self):
         # A revision when created does not have karma allocated.
@@ -152,8 +152,8 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         self.revision = self.factory.makeRevision(
             author=self.author.preferredemail.email)
 
-    def makeBranchWithRevision(self, sequence, owner=None):
-        branch = self.factory.makeBranch(owner=owner)
+    def makeBranchWithRevision(self, sequence, **kwargs):
+        branch = self.factory.makeBranch(**kwargs)
         branch.createBranchRevision(sequence, self.revision)
         return branch
 
@@ -201,6 +201,15 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         b2 = self.makeBranchWithRevision(1, owner=self.author)
         b1.private = True
         self.assertEqual(b2, self.revision.getBranch(allow_private=True))
+
+    def testGetBranchNotJunk(self):
+        # If allow_junk is set to False, then branches without products are
+        # not retuned.
+        b1 = self.makeBranchWithRevision(1)
+        b2 = self.makeBranchWithRevision(
+            1, owner=self.author, explicit_junk=True)
+        self.assertEqual(
+            b1, self.revision.getBranch(allow_private=True, allow_junk=False))
 
 
 class TestGetPublicRevisonsForPerson(TestCaseWithFactory):
