@@ -9,6 +9,8 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.archiveuploader.tests.test_uploadprocessor import (
+    MockLogger as TestLogger)
 from canonical.config import config
 from canonical.launchpad.components.packagelocation import (
     PackageLocationError)
@@ -292,7 +294,7 @@ class TestCopyPackage(unittest.TestCase):
         self.assertEqual(updates.pocket, PackagePublishingPocket.UPDATES)
         self.assertEqual(len(updates.getBuilds()), 1)
 
-    def testCannotCopyTwice(self):
+    def testWillNotCopyTwice(self):
         """When invoked twice, copy package doesn't re-copy publications.
 
         As reported in bug #237353, duplicates are generally cruft and may
@@ -309,8 +311,17 @@ class TestCopyPackage(unittest.TestCase):
 
         copy_helper = self.getCopier(
             from_suite='warty', to_suite='warty-updates')
+
+        # Use a TestLogger object to store log messages issued during
+        # the copy.
+        copy_helper.logger = TestLogger()
+
         copied = copy_helper.mainTask()
         self.assertEqual(len(copied), 0)
+
+        # The script output informs the user that no packages were copied.
+        self.assertEqual(
+            copy_helper.logger.lines[-1], 'No packages copied.')
 
     def testCopyAcrossPartner(self):
         """Check the copy operation across PARTNER archive.
