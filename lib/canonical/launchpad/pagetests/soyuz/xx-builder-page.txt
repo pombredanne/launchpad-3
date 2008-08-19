@@ -253,7 +253,7 @@ Farm list. Celso cannot see the link to it.
     Register a new build machine
     PPA build machines
     386    0 builds waiting in queue
-    The frog builder    Disabled
+    The frog builder    AUTO   Disabled
     Official distribution build machines
     Generated at ...
 

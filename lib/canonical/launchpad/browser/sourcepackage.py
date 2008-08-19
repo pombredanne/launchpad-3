@@ -36,9 +36,10 @@ from canonical.launchpad.webapp import (
     redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+from canonical.launchpad.webapp.menu import structured
+
 from canonical.lazr.utils import smartquote
 
 
@@ -211,7 +212,7 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
                 self.productseries_widget.setRenderedValue(new_ps)
                 self.status_message = 'Upstream link updated, thank you!'
             else:
-                self.error_message = 'Invalid series given.'
+                self.error_message = structured('Invalid series given.')
 
     def published_by_pocket(self):
         """This morfs the results of ISourcePackage.published_by_pocket into
