@@ -21,13 +21,11 @@ from canonical.codehosting.puller.worker import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
     ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
-    get_canonical_url_for_branch_name, install_worker_ui_factory)
+    install_worker_ui_factory)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
-from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing import LaunchpadScriptLayer, reset_logging
+from canonical.testing import reset_logging
 
 
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
