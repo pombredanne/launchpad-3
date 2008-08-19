@@ -22,6 +22,7 @@ from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     IBranchSet, IRevisionSet)
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 from canonical.testing import DatabaseFunctionalLayer
@@ -74,6 +75,22 @@ class TestRevisionKarma(TestCaseWithFactory):
         self.assertEqual(karma.datecreated, rev.revision_date)
         self.assertEqual(karma.product, branch.product)
         # Since karma has been allocated, the revision isn't in our list.
+        self.assertEqual(
+            [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_karmaNotAllocatedForKnownAuthorWithInactiveAccount(self):
+        # If the revision author is known, but the account is not active,
+        # don't allocate karma.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(
+            author=author.preferredemail.email)
+        author.account.status = AccountStatus.SUSPENDED
+        branch = self.factory.makeBranch()
+        branch.createBranchRevision(1, rev)
+        self.failIf(rev.karma_allocated)
+        # Even though the revision author is connected to the person, since
+        # the account status is suspended, the person is not "valid", and so
+        # the revisions are not returned as needing karma allocated.
         self.assertEqual(
             [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
 

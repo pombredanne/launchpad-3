@@ -78,8 +78,9 @@ class Revision(SQLBase):
             # against.
             karma = author.assignKarma('revisionadded', branch.product)
             # Backdate the karma to the time the revision was created.
-            karma.datecreated = self.revision_date
-            self.karma_allocated = True
+            if karma is not None:
+                karma.datecreated = self.revision_date
+                self.karma_allocated = True
 
     def getBranch(self, allow_private=False):
         """See `IRevision`."""
@@ -286,6 +287,7 @@ class RevisionSet:
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
+        from canonical.launchpad.database.person import ValidPersonCache
 
         store = getUtility(IZStorm).get('main')
 
@@ -294,7 +296,7 @@ class RevisionSet:
         return store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
-            Not(RevisionAuthor.person == None),
+            RevisionAuthor.person == ValidPersonCache.id,
             Not(Revision.karma_allocated),
             Exists(
                 Select(True,
