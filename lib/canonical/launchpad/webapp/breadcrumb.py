@@ -36,36 +36,20 @@ class BreadcrumbBuilder:
     """
     implements(IBreadcrumbBuilder)
 
+    text = None
+    url = None
+
     def __init__(self, context):
         self.context = context
-        # Storage for user-specified values.
-        self._text = None
-        self._url = None
-
-    def text(self):
-        """Return the breadcrumb's 'text' attribute.  See `IBreadcrumb`."""
-        if self._text is not None:
-            return self._text
-        raise NotImplementedError
-
-    def _set_text(self, value):
-        """Set the breadcrumb's 'text' attribute.  See `IBreadcrumb`."""
-        self._text = value
-
-    text = property(text, _set_text, doc=text.__doc__)
-
-    def url(self):
-        """Return the breadcrumb's 'url' attribute.  See `IBreadcrumb`."""
-        if self._url is not None:
-            return self._url
-        raise NotImplementedError
-
-    def _set_url(self, value):
-        """Set the breadcrumb's 'url' attribute.  See `IBreadcrumb`."""
-        self._url = value
-
-    url = property(url, _set_url, doc=url.__doc__)
 
     def make_breadcrumb(self):
         """See `IBreadcrumbBuilder.`"""
+        if self.text is None:
+            raise AssertionError(
+                "The builder has not been given valid text for the "
+                "breadcrumb.")
+        if self.url is None:
+            raise AssertionError(
+               "The builder has not been given a valid breadcrumb URL.")
+
         return Breadcrumb(self.url, self.text)

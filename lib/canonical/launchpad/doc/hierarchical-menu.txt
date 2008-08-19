@@ -65,9 +65,9 @@ have an IBreadcrumbBuilder adapter.
     >>> hierarchy.items()
     []
 
-The Cookbook and Recipe objects to show up in the hierarchy after an
-IBreadcrumbBuilder adapter is registered for them.  The hierarchy's
-breadcrumbs are in-order, starting with the breadcrumb closest to the
+The ICookbook and IRecipe breadcrumb objects show up in the hierarchy
+after IBreadcrumbBuilder adapters are registered for them.  The hierarchy
+builds a list of breadcrumbs starting with the breadcrumb closest to the
 hierarchy root.
 
     >>> from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
@@ -108,14 +108,14 @@ ask the builder for a finished breadcrumb after both the text and the
 URL have been specified.
 
     >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
-    >>> from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
     >>> from zope.interface.verify import verifyObject
 
     >>> builder = BreadcrumbBuilder(cookbook)
-    >>> builder.text = 'Joy of cooking'
-    >>> builder.url = 'http://launchpad.dev/joy-of-cooking'
     >>> verifyObject(IBreadcrumbBuilder, builder)
     True
+
+    >>> builder.text = 'Joy of cooking'
+    >>> builder.url = 'http://launchpad.dev/joy-of-cooking'
 
     >>> breadcrumb = builder.make_breadcrumb()
     >>> verifyObject(IBreadcrumb, breadcrumb)
@@ -125,7 +125,7 @@ URL have been specified.
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
 
-The builder enforces the requirement for breadcrumbs to have valid URL.
+The builder enforces the requirement for breadcrumbs to have a valid URL.
 The builder raises an error if a URL is not explicitly given by the
 developer.
 
@@ -135,18 +135,7 @@ developer.
     >>> builder.make_breadcrumb()
     Traceback (most recent call last):
     ...
-    NotImplementedError
-
-We can also see that an incomplete builder object doesn't fulfill the
-IBreadcrumbBuilder interface.
-
-    # XXX mars 2008-08-18
-    # This should raise a NotImplementedError, but it hides it instead.
-    # See bug 259183.
-    >>> verifyObject(IBreadcrumbBuilder, builder)
-    Traceback (most recent call last):
-    ...
-    BrokenImplementation: ... The url attribute was not provided.
+    AssertionError: The builder has not been given a valid breadcrumb URL.
 
 The breadcrumb's attributes can be overridden with subclassing and
 Python properties.

@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'summarise_tal_links',
+    'make_fake_request',
     ]
 
 
@@ -15,6 +16,7 @@ from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.webapp import urlsplit
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
 
 def summarise_tal_links(links):
     """List the links and their attributes in the dict or list.
@@ -38,6 +40,7 @@ def summarise_tal_links(links):
             if not safe_hasattr(link, attrname):
                 continue
             print '    %s:' % attrname, getattr(link, attrname)
+
 
 def make_fake_request(url, traversed_objects=None):
     """Return a fake request object for menu testing.
