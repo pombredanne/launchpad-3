@@ -104,17 +104,16 @@ class TestRunWithLogin(TestCaseWithFactory):
 class BranchPullerTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchPuller`.
 
-    :ivar endpoint_factory: A nullary callable used to construct the endpoint.
-        This variable is set by the `PullerEndpointScenarioApplier`.
+    :ivar frontend: A nullary callable that returns an object that implements
+        getEndpoint, getLaunchpadObjectFactory and getBranch.
     """
-
-    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.storage = self.endpoint_factory()
-        self.factory = self.lp_factory_factory()
-        self.branch_getter = self.branch_getter_factory()
+        frontend = self.frontend()
+        self.storage = frontend.getEndpoint()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        self.branch_getter = frontend.getBranch
 
     def assertFaultEqual(self, expected_fault, observed_fault):
         """Assert that `expected_fault` equals `observed_fault`."""
@@ -679,13 +678,24 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch, 'next_mirror_time', UTC_NOW)
 
 
+class RealLaunchpadFrontend:
+
+    def getEndpoint(self):
+        return BranchPuller(None, None)
+
+    def getLaunchpadObjectFactory(self):
+        return LaunchpadObjectFactory()
+
+    def getBranch(self, branch_id):
+        return getUtility(IBranchSet).get(branch_id)
+
+
 class PullerEndpointScenarioApplier(TestScenarioApplier):
 
     scenarios = [
-        ('real',
-         {'endpoint_factory': lambda: BranchPuller(None, None),
-          'lp_factory_factory': lambda: LaunchpadObjectFactory(),
-          'branch_getter_factory': lambda: getUtility(IBranchSet).get})]
+        ('real', {'frontend': RealLaunchpadFrontend,
+                  'layer': DatabaseFunctionalLayer}),
+        ]
 
 
 def test_suite():
