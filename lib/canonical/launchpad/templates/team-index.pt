@@ -62,6 +62,8 @@
     </tal:not-restricted>
   </ul>
 
+  <div class="section" tal:content="structure context/@@+portlet-map" />
+
   <div class="left">
     <tal:recent-members>
     <div class="section">
@@ -172,7 +174,6 @@
     </div>
     </tal:recent-members>
 
-    <div class="section" tal:content="structure context/@@+portlet-map" />
     <div class="section"
          tal:content="structure context/@@+portlet-related-projects" />
 

@@ -430,10 +430,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setLocationVisibility(self, visible):
         """See `ISetLocation`."""
         assert not self.is_team, 'Cannot edit team location.'
-        if self.location is not None:
-            self.location.visible = visible
-        else:
+        if self.location is None:
             self._location = PersonLocation(person=self, visible=visible)
+        else:
+            self.location.visible = visible
 
     def setLocation(self, latitude, longitude, time_zone, user):
         """See `ISetLocation`."""

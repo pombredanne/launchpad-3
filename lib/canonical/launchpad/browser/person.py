@@ -2763,11 +2763,13 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                 renderPersonMapSmall(%(center_lat)s, %(center_lng)s);
             </script>""" % replacements
 
+    @property
     def should_show_map_portlet(self):
         """Should the map portlet be displayed?
 
-        It's displayed only if the person has no location specified or if the
-        location is marked as visible.
+        The map portlet is displayed only if the person has no location
+        specified, or if the user has permission to view the person's
+        location.
         """
         if self.context.location is None:
             return True
@@ -4658,7 +4660,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     def setUpBatch(self, packages):
         """Set up the batch navigation for the page being viewed.
-        
+
         This method creates the BatchNavigator and converts its
         results batch into a list of decorated sourcepackagereleases.
         """
@@ -4814,7 +4816,8 @@ class PersonLocationForm(Interface):
         title=_('Use the map to indicate default location'),
         required=True)
     hide = Bool(
-        title=_("Hide my location details from others."), required=False)
+        title=_("Hide my location details from others."),
+        required=True, default=False)
 
 
 class PersonEditLocationView(LaunchpadFormView):
@@ -4825,6 +4828,12 @@ class PersonEditLocationView(LaunchpadFormView):
 
     @property
     def field_names(self):
+        """See `LaunchpadFormView`.
+
+        If the user has launchpad.Edit on this context, then allow him to set
+        whether or not the location should be visible.  The field for setting
+        the person's location is always shown.
+        """
         if check_permission('launchpad.Edit', self.context):
             return ['location', 'hide']
         else:
@@ -4832,6 +4841,11 @@ class PersonEditLocationView(LaunchpadFormView):
 
     @property
     def initial_values(self):
+        """See `LaunchpadFormView`.
+
+        Set the initial value for the 'hide' field.  The initial value for the
+        'location' field is set by its widget.
+        """
         if self.context.location is None:
             return {}
         else:
@@ -4858,7 +4872,7 @@ class PersonEditLocationView(LaunchpadFormView):
         time_zone = new_location.time_zone
         self.context.setLocation(latitude, longitude, time_zone, self.user)
         if 'hide' in self.field_names:
-            visible = not data.get('hide')
+            visible = not data['hide']
             self.context.setLocationVisibility(visible)
 
 

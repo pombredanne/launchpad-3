@@ -607,14 +607,18 @@ class EditPersonLocation(AuthorizationBase):
         """
         location = self.obj.location
         if location is None:
-            # No location has been specified yet.
+            # No PersonLocation entry exists for this person, so anybody can
+            # change this person's location.
             return True
 
+        # There is a PersonLocation entry for this person, so we'll check its
+        # details to find out whether or not the user can edit them.
         if (location.visible
             and (location.latitude is None
                  or location.last_modified_by != self.obj)):
             # No location has been specified yet or it has been specified
-            # by a non-authoritative source (not the person himself).
+            # by a non-authoritative source (not the person himself), so
+            # anybody can change it.
             return True
         else:
             admins = getUtility(ILaunchpadCelebrities).admin
