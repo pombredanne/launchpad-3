@@ -38,7 +38,7 @@ class DistroSeriesBinaryPackageNavigation(Navigation):
 
 
 class DistroSeriesBinaryPackageBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IDistroSeriesBinaryPackage`."""
+    """Builds a breadcrumb for an `IDistroSeriesBinaryPackage`."""
     @property
     def text(self):
         return self.context.binarypackagename.name

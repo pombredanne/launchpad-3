@@ -173,7 +173,7 @@ class DistributionSOP(StructuralObjectPresentation):
 
 
 class DistributionBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IDistribution`."""
+    """Builds a breadcrumb for an `IDistribution`."""
     @property
     def text(self):
         return self.context.displayname
@@ -208,7 +208,7 @@ class DistributionSetSOP(StructuralObjectPresentation):
 
 
 class DistributionSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IDistributionSet`."""
+    """Builds a breadcrumb for an `IDistributionSet`."""
     text = 'Distributions'
 
 

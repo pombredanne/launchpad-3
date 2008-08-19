@@ -38,7 +38,7 @@ class CodeImportMachineSetNavigation(Navigation):
 
 
 class CodeImportMachineSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `ICodeImportMachineSet`."""
+    """Builds a breadcrumb for an `ICodeImportMachineSet`."""
     text = u'Machines'
 
 

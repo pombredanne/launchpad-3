@@ -372,7 +372,7 @@ class TeamNavigation(PersonNavigation):
 
 
 class TeamBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `ITeam`."""
+    """Builds a breadcrumb for an `ITeam`."""
     @property
     def text(self):
         return smartquote('"%s" team') % self.context.displayname
@@ -632,7 +632,7 @@ class PersonSOP(StructuralObjectPresentation):
 
 
 class PersonBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IPerson`."""
+    """Builds a breadcrumb for an `IPerson`."""
     @property
     def text(self):
         return self.context.displayname

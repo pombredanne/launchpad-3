@@ -95,7 +95,7 @@ class SourcePackageSOP(StructuralObjectPresentation):
 
 
 class SourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `ISourcePackage`."""
+    """Builds a breadcrumb for an `ISourcePackage`."""
     @property
     def text(self):
         return smartquote('"%s" package') % (self.context.name)

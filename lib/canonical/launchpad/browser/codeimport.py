@@ -53,7 +53,7 @@ class CodeImportSetNavigation(Navigation):
 
 
 class CodeImportSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `ICodeImportSet`."""
+    """Builds a breadcrumb for an `ICodeImportSet`."""
     text = u'Code Import System'
 
 

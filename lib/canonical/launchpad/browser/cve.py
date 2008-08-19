@@ -33,7 +33,7 @@ class CveSetNavigation(GetitemNavigation):
 
 
 class CveBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `ICve`."""
+    """Builds a breadcrumb for an `ICve`."""
     text = "CVE reports"
 
 

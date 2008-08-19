@@ -61,7 +61,7 @@ class BugTrackerSetNavigation(GetitemNavigation):
 
 
 class BugTrackerSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IBugTrackerSet`."""
+    """Builds a breadcrumb for an `IBugTrackerSet`."""
     text = 'Remote Bug Trackers'
 
 
@@ -325,7 +325,7 @@ class BugTrackerNavigation(Navigation):
 
 
 class BugTrackerBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IBugTracker`."""
+    """Builds a breadcrumb for an `IBugTracker`."""
     @property
     def text(self):
         return self.context.title

@@ -70,7 +70,7 @@ class SprintNavigation(Navigation):
 
 
 class SprintBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `ISprint`."""
+    """Builds a breadcrumb for an `ISprint`."""
     @property
     def text(self):
         return self.context.title
@@ -151,7 +151,7 @@ class SprintSetNavigation(GetitemNavigation):
 
 
 class SprintSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `ISprintSet`."""
+    """Builds a breadcrumb for an `ISprintSet`."""
     text = 'Meetings'
 
 

@@ -257,7 +257,7 @@ class ProductSOP(StructuralObjectPresentation):
 
 
 class ProductBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IProduct`."""
+    """Builds a breadcrumb for an `IProduct`."""
     @property
     def text(self):
         return self.context.displayname

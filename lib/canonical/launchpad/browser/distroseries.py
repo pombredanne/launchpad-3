@@ -147,7 +147,7 @@ class DistroSeriesSOP(StructuralObjectPresentation):
 
 
 class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IDistroSeries`."""
+    """Builds a breadcrumb for an `IDistroSeries`."""
     @property
     def text(self):
         return self.context.version

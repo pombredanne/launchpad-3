@@ -108,14 +108,14 @@ class ProjectSOP(StructuralObjectPresentation):
 
 
 class ProjectBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IProject`."""
+    """Builds a breadcrumb for an `IProject`."""
     @property
     def text(self):
         return self.context.displayname
 
 
 class ProjectSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IProjectSet`."""
+    """Builds a breadcrumb for an `IProjectSet`."""
     text = 'Project Groups'
 
 
