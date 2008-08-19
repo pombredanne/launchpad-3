@@ -58,7 +58,7 @@ the hierarchy will discover them.
     ...     'http://launchpad.dev/joy-of-cooking/spam',
     ...     [root, cookbook, recipe])
 
-The Hierarchy's list of breadcrumbs is empty since none of the objects
+The hierarchy's list of breadcrumbs is empty since none of the objects
 have an IBreadcrumbBuilder adapter.
 
     >>> hierarchy = getMultiAdapter((recipe, request), name='+hierarchy')
