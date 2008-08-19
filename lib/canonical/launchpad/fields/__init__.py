@@ -485,8 +485,13 @@ class ProductBugTracker(Choice):
     and 'bugtracker'
     """
     implements(IReferenceChoice)
-    schema = IObject # This will be set to IBugTracker once it is defined.
     malone_marker = object()
+
+    @property
+    def schema(self):
+        # The IBugTracker needs to be imported here to avoid an import loop.
+        from canonical.launchpad.interfaces.bugtracker import IBugTracker
+        return IBugTracker
 
     def get(self, ob):
         if ob.official_malone:
