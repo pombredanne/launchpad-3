@@ -173,7 +173,7 @@ class DistributionSOP(StructuralObjectPresentation):
 
 
 class DistributionBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IDistribution`."""
+    """Builds a breadcrumb for an `IDistribution`."""
     @property
     def text(self):
         return self.context.displayname
@@ -208,7 +208,7 @@ class DistributionSetSOP(StructuralObjectPresentation):
 
 
 class DistributionSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IDistributionSet`."""
+    """Builds a breadcrumb for an `IDistributionSet`."""
     text = 'Distributions'
 
 
@@ -516,15 +516,11 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
+    links = ['listall', 'doc', 'assignments', 'new']
 
     def listall(self):
         text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        return Link('+roadmap', text, icon='info')
 
     def assignments(self):
         text = 'Assignments'

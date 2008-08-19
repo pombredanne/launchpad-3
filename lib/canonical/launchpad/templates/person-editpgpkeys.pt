@@ -20,11 +20,11 @@
     <h1>Change your OpenPGP keys</h1>
 
     <p tal:condition="view/error_message"
-       tal:content="structure view/error_message" class="error message"
+       tal:content="structure view/error_message/escapedtext" class="error message"
       >Error message.</p>
 
     <p tal:condition="view/info_message"
-       tal:content="structure view/info_message" class="informational message"
+       tal:content="structure view/info_message/escapedtext" class="informational message"
       >Informational message.</p>
 
     <div tal:condition="view/invalid_fingerprint" class="error message">

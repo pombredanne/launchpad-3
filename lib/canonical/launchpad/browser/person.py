@@ -86,7 +86,6 @@ __all__ = [
     'archive_to_person',
     ]
 
-import cgi
 import copy
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
@@ -135,7 +134,7 @@ from canonical.launchpad.interfaces import (
     MailingListAutoSubscribePolicy, NotFoundError, PersonCreationRationale,
     PersonVisibility, QuestionParticipation, SSHKeyType, SpecificationFilter,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
@@ -372,7 +371,7 @@ class TeamNavigation(PersonNavigation):
 
 
 class TeamBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `ITeam`."""
+    """Builds a breadcrumb for an `ITeam`."""
     @property
     def text(self):
         return smartquote('"%s" team') % self.context.displayname
@@ -632,7 +631,7 @@ class PersonSOP(StructuralObjectPresentation):
 
 
 class PersonBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IPerson`."""
+    """Builds a breadcrumb for an `IPerson`."""
     @property
     def text(self):
         return self.context.displayname
@@ -849,7 +848,7 @@ class PersonSpecsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
              'subscriber', 'registrant', 'feedback',
-             'workload', 'mentoring', 'roadmap']
+             'workload', 'mentoring']
 
     def registrant(self):
         text = 'Registrant'
@@ -892,11 +891,6 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Workload'
         summary = 'Show all specification work assigned'
         return Link('+specworkload', text, summary, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Show recommended sequence of feature implementation'
-        return Link('+roadmap', text, summary, icon='info')
 
 
 class PersonTranslationsMenu(ApplicationMenu):
@@ -1152,6 +1146,38 @@ class PersonOverviewNavigationMenu(
     def karma(self):
         target = '+karma'
         text = 'Karma'
+        return Link(target, text)
+
+
+class PersonRelatedSoftwareNavigationMenu(NavigationMenu):
+
+    usedfor = IPersonRelatedSoftwareMenu
+    facet = 'overview'
+    links = ('summary', 'maintained', 'uploaded', 'ppa', 'projects')
+
+    def summary(self):
+        target = '+related-software'
+        text = 'Summary'
+        return Link(target, text)
+
+    def maintained(self):
+        target = '+maintained-packages'
+        text = 'Maintained Packages'
+        return Link(target, text)
+
+    def uploaded(self):
+        target = '+uploaded-packages'
+        text = 'Uploaded Packages'
+        return Link(target, text)
+
+    def ppa(self):
+        target = '+ppa-packages'
+        text = 'PPA Packages'
+        return Link(target, text)
+
+    def projects(self):
+        target = '+related-projects'
+        text = 'Related Projects'
         return Link(target, text)
 
 
@@ -2783,24 +2809,8 @@ class PersonEditWikiNamesView(LaunchpadView):
         form = self.request.form
         context = self.context
         wikinameset = getUtility(IWikiNameSet)
-        ubuntuwikiname = form.get('ubuntuwikiname')
-        existingwiki = wikinameset.getByWikiAndName(
-            UBUNTU_WIKI_URL, ubuntuwikiname)
 
-        if not ubuntuwikiname:
-            self.error_message = structured(
-                "Your Ubuntu WikiName cannot be empty.")
-            return
-        elif existingwiki is not None and existingwiki.person != context:
-            self.error_message = structured(
-                'The Ubuntu WikiName %s is already registered by '
-                '<a href="%s">%s</a>.',
-                ubuntuwikiname, canonical_url(existingwiki.person),
-                existingwiki.person.browsername)
-            return
-        context.ubuntuwiki.wikiname = ubuntuwikiname
-
-        for w in context.otherwikis:
+        for w in context.allwikis:
             # XXX: GuilhermeSalgado 2005-08-25:
             # We're exposing WikiName IDs here because that's the only
             # unique column we have. If we don't do this we'll have to
@@ -2818,15 +2828,6 @@ class PersonEditWikiNamesView(LaunchpadView):
                         "Neither Wiki nor WikiName can be empty.")
                     return
                 if not self._validateWikiURL(wiki):
-                    return
-                # Try to make sure people will have only a single Ubuntu
-                # WikiName registered. Although this is almost impossible
-                # because they can do a lot of tricks with the URLs to make
-                # them look different from UBUNTU_WIKI_URL but still point to
-                # the same place.
-                elif wiki == UBUNTU_WIKI_URL:
-                    self.error_message = structured(
-                        "You cannot have two Ubuntu WikiNames.")
                     return
                 w.wiki = wiki
                 w.wikiname = wikiname
@@ -2847,10 +2848,6 @@ class PersonEditWikiNamesView(LaunchpadView):
                     self.error_message = structured(
                         'The WikiName %s%s already belongs to you.',
                         wiki, wikiname)
-                    return
-                elif wiki == UBUNTU_WIKI_URL:
-                    self.error_message = structured(
-                        "You cannot have two Ubuntu WikiNames.")
                     return
                 if not self._validateWikiURL(wiki):
                     return
@@ -2885,7 +2882,7 @@ class PersonEditIRCNicknamesView(LaunchpadView):
                 nick = form.get('nick_%d' % ircnick.id)
                 network = form.get('network_%d' % ircnick.id)
                 if not (nick and network):
-                    self.error_message = (
+                    self.error_message = structured(
                         "Neither Nickname nor Network can be empty.")
                     return
                 ircnick.nickname = nick
@@ -2899,7 +2896,7 @@ class PersonEditIRCNicknamesView(LaunchpadView):
             else:
                 self.newnick = nick
                 self.newnetwork = network
-                self.error_message = (
+                self.error_message = structured(
                     "Neither Nickname nor Network can be empty.")
                 return
 
@@ -2920,7 +2917,8 @@ class PersonEditJabberIDsView(LaunchpadView):
             else:
                 jabberid = form.get('jabberid_%s' % jabber.jabberid)
                 if not jabberid:
-                    self.error_message = "You cannot save an empty Jabber ID."
+                    self.error_message = structured(
+                        "You cannot save an empty Jabber ID.")
                     return
                 jabber.jabberid = jabberid
 
@@ -2931,15 +2929,15 @@ class PersonEditJabberIDsView(LaunchpadView):
             if existingjabber is None:
                 jabberset.new(self.context, jabberid)
             elif existingjabber.person != self.context:
-                self.error_message = (
+                self.error_message = structured(
                     'The Jabber ID %s is already registered by '
-                    '<a href="%s">%s</a>.'
-                    % (jabberid, canonical_url(existingjabber.person),
-                       cgi.escape(existingjabber.person.browsername)))
+                    '<a href="%s">%s</a>.',
+                    jabberid, canonical_url(existingjabber.person),
+                    existingjabber.person.browsername)
                 return
             else:
-                self.error_message = (
-                    'The Jabber ID %s already belongs to you.' % jabberid)
+                self.error_message = structured(
+                    'The Jabber ID %s already belongs to you.', jabberid)
                 return
 
 
@@ -2969,11 +2967,11 @@ class PersonEditSSHKeysView(LaunchpadView):
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
         except ValueError:
-            self.error_message = 'Invalid public key'
+            self.error_message = structured('Invalid public key')
             return
 
         if not (kind and keytext and comment):
-            self.error_message = 'Invalid public key'
+            self.error_message = structured('Invalid public key')
             return
 
         process = subprocess.Popen(
@@ -2981,7 +2979,7 @@ class PersonEditSSHKeysView(LaunchpadView):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = process.communicate(sshkey.encode('utf-8'))
         if 'compromised' in out.lower():
-            self.error_message = (
+            self.error_message = structured(
                 'This key is known to be compromised due to a security flaw '
                 'in the software used to generate it, so it will not be '
                 'accepted by Launchpad. See the full '
@@ -2995,11 +2993,11 @@ class PersonEditSSHKeysView(LaunchpadView):
         elif kind == 'ssh-dss':
             keytype = SSHKeyType.DSA
         else:
-            self.error_message = 'Invalid public key'
+            self.error_message = structured('Invalid public key')
             return
 
         getUtility(ISSHKeySet).new(self.user, keytype, keytext, comment)
-        self.info_message = 'SSH public key added.'
+        self.info_message = structured('SSH public key added.')
 
     def remove_ssh(self):
         key_id = self.request.form.get('key')
@@ -3008,7 +3006,8 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         sshkey = getUtility(ISSHKeySet).getByID(key_id)
         if sshkey is None:
-            self.error_message = "Cannot remove a key that doesn't exist"
+            self.error_message = structured(
+                "Cannot remove a key that doesn't exist")
             return
 
         if sshkey.person != self.user:
@@ -3016,7 +3015,7 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         comment = sshkey.comment
         sshkey.destroySelf()
-        self.info_message = 'Key "%s" removed' % comment
+        self.info_message = structured('Key "%s" removed' % comment)
 
 
 class PersonTranslationView(LaunchpadView):
@@ -3195,7 +3194,8 @@ class PersonGPGView(LaunchpadView):
         key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
 
         if key_ids is None:
-            self.error_message = 'No Key(s) selected for deactivation.'
+            self.error_message = structured(
+                'No key(s) selected for deactivation.')
             return
 
         # verify if we have multiple entries to deactive
@@ -3210,20 +3210,22 @@ class PersonGPGView(LaunchpadView):
             if gpgkey is None:
                 continue
             if gpgkey.owner != self.user:
-                self.error_message = "Cannot deactivate someone else's key"
+                self.error_message = structured(
+                    "Cannot deactivate someone else's key")
                 return
             gpgkey.active = False
             deactivated_keys.append(gpgkey.displayname)
 
         flush_database_updates()
-        self.info_message = (
-            'Deactivated key(s): %s' % ", ".join(deactivated_keys))
+        self.info_message = structured(
+           'Deactivated key(s): %s', ", ".join(deactivated_keys))
 
     def remove_gpgtoken(self):
         token_fingerprints = self.request.form.get('REMOVE_GPGTOKEN')
 
         if token_fingerprints is None:
-            self.error_message = 'No key(s) pending validation selected.'
+            self.error_message = structured(
+                'No key(s) pending validation selected.')
             return
 
         logintokenset = getUtility(ILoginTokenSet)
@@ -3238,14 +3240,16 @@ class PersonGPGView(LaunchpadView):
                 fingerprint, self.user, LoginTokenType.VALIDATESIGNONLYGPG)
             cancelled_fingerprints.append(fingerprint)
 
-        self.info_message = ('Cancelled validation of key(s): %s'
-                             % ", ".join(cancelled_fingerprints))
+        self.info_message = structured(
+            'Cancelled validation of key(s): %s',
+            ", ".join(cancelled_fingerprints))
 
     def reactivate_gpg(self):
         key_ids = self.request.form.get('REACTIVATE_GPGKEY')
 
         if key_ids is None:
-            self.error_message = 'No Key(s) selected for reactivation.'
+            self.error_message = structured(
+                'No key(s) selected for reactivation.')
             return
 
         found = []
@@ -3290,7 +3294,7 @@ class PersonGPGView(LaunchpadView):
                     'before trying to reactivate them '
                     'again.' % (', '.join(notfound)))
 
-        self.info_message = '\n<br>\n'.join(comments)
+        self.info_message = structured('\n<br />\n'.join(comments))
 
     def _validateGPG(self, key):
         logintokenset = getUtility(ILoginTokenSet)
@@ -4445,7 +4449,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
     """View for +related-software."""
     implements(IPersonRelatedSoftwareMenu)
 
-    PACKAGE_LIMIT = 50
+    SUMMARY_PAGE_PACKAGE_LIMIT = 30
     # Safety net for the Registry Admins case which is the owner/driver of
     # lots of projects.
     max_results_to_display = config.launchpad.default_batch_size
@@ -4490,15 +4494,25 @@ class PersonRelatedSoftwareView(LaunchpadView):
         """Return all projects owned or driven by this person."""
         return self.context.getOwnedOrDrivenPillars()
 
-    @property
-    def get_latest_uploaded_ppa_packages_with_stats(self):
-        """Return the sourcepackagereleases uploaded to PPAs by this person.
+    def _tableHeaderMessage(self, count):
+        """Format a header message for the tables on the summary page."""
+        if count > self.SUMMARY_PAGE_PACKAGE_LIMIT:
+            packages_header_message = (
+                "Displaying first %d packages out of %d total" % (
+                    self.SUMMARY_PAGE_PACKAGE_LIMIT, count))
+        else:
+            packages_header_message = "%d package" % count
+            if count > 1:
+                packages_header_message += "s"
 
-        Results are filtered according to the permission of the requesting
-        user to see private archives.
+        return packages_header_message
+
+    def filterPPAPackageList(self, packages):
+        """Remove packages that the user is not allowed to see.
+
+        Given a list of PPA packages, some might be in a PPA that the
+        user is not allowed to see, so they are filtered out of the list.
         """
-        packages = self.context.getLatestUploadedPPAPackages()
-
         # For each package we find out which archives it was published in.
         # If the user has permission to see any of those archives then
         # the user is permitted to see the package.
@@ -4507,7 +4521,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
         # query is virtually impossible!
         results = []
-        for package in packages[:self.PACKAGE_LIMIT]:
+        for package in packages:
             # Make a shallow copy to remove the Zope security.
             archives = set(package.published_archives)
             # Ensure the SPR.upload_archive is also considered.
@@ -4516,13 +4530,45 @@ class PersonRelatedSoftwareView(LaunchpadView):
                 if check_permission('launchpad.View', archive):
                     results.append(package)
                     break
-        return self._addStatsToPackages(results)
+
+        return results
+
+    def _getDecoratedPackagesSummary(self, packages):
+        """Helper returning decorated packages for the summary page.
+
+        :param packages: A SelectResults that contains the query
+        :return: A tuple of (packages, header_message).
+
+        The packages returned are limited to self.SUMMARY_PAGE_PACKAGE_LIMIT
+        and decorated with the stats required in the page template.
+        The header_message is the text to be displayed at the top of the
+        results table in the template.
+        """
+        # This code causes two SQL queries to be generated.
+        results = self._addStatsToPackages(
+            packages[:self.SUMMARY_PAGE_PACKAGE_LIMIT])
+        header_message = self._tableHeaderMessage(packages.count())
+        return results, header_message
+
+    @property
+    def get_latest_uploaded_ppa_packages_with_stats(self):
+        """Return the sourcepackagereleases uploaded to PPAs by this person.
+
+        Results are filtered according to the permission of the requesting
+        user to see private archives.
+        """
+        packages = self.context.getLatestUploadedPPAPackages()
+        results, header_message = self._getDecoratedPackagesSummary(packages)
+        self.ppa_packages_header_message = header_message
+        return self.filterPPAPackageList(results)
 
     @property
     def get_latest_maintained_packages_with_stats(self):
         """Return the latest maintained packages, including stats."""
         packages = self.context.getLatestMaintainedPackages()
-        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
+        results, header_message = self._getDecoratedPackagesSummary(packages)
+        self.maintained_packages_header_message = header_message
+        return results
 
     @property
     def get_latest_uploaded_but_not_maintained_packages_with_stats(self):
@@ -4531,7 +4577,9 @@ class PersonRelatedSoftwareView(LaunchpadView):
         Don't include packages that are maintained by the user.
         """
         packages = self.context.getLatestUploadedButNotMaintainedPackages()
-        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
+        results, header_message = self._getDecoratedPackagesSummary(packages)
+        self.uploaded_packages_header_message = header_message
+        return results
 
     def _calculateBuildStats(self, package_releases):
         """Calculate failed builds and needs_build state.
@@ -4593,6 +4641,60 @@ class PersonRelatedSoftwareView(LaunchpadView):
                 builds_by_package[package],
                 needs_build_by_package[package])
             for package in package_releases]
+
+    def setUpBatch(self, packages):
+        """Set up the batch navigation for the page being viewed.
+        
+        This method creates the BatchNavigator and converts its
+        results batch into a list of decorated sourcepackagereleases.
+        """
+        self.batchnav = BatchNavigator(packages, self.request)
+        packages_batch = list(self.batchnav.currentBatch())
+        self.batch = self._addStatsToPackages(packages_batch)
+
+
+class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
+    """View for +maintained-packages."""
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        packages = self.context.getLatestMaintainedPackages()
+        self.setUpBatch(packages)
+
+
+class PersonUploadedPackagesView(PersonRelatedSoftwareView):
+    """View for +uploaded-packages."""
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        packages = self.context.getLatestUploadedButNotMaintainedPackages()
+        self.setUpBatch(packages)
+
+
+class PersonPPAPackagesView(PersonRelatedSoftwareView):
+    """View for +ppa-packages."""
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        # We can't use the base class's setUpBatch() here because
+        # the batch needs to be filtered.  It would be nice to not have
+        # to filter like this, but as the comment in filterPPAPackage() says,
+        # it's very hard to write the SQL for the original query.
+        packages = self.context.getLatestUploadedPPAPackages()
+        self.batchnav = BatchNavigator(packages, self.request)
+        packages_batch = list(self.batchnav.currentBatch())
+        packages_batch = self.filterPPAPackageList(packages_batch)
+        self.batch = self._addStatsToPackages(packages_batch)
+
+
+class PersonRelatedProjectsView(PersonRelatedSoftwareView):
+    """View for +related-projects."""
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        self.batchnav = BatchNavigator(
+            self.related_projects, self.request)
+        self.batch = list(self.batchnav.currentBatch())
 
 
 class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):

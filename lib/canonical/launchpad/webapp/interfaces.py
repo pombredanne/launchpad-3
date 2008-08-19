@@ -246,18 +246,8 @@ class IBreadcrumbBuilder(IBreadcrumb):
     """An object that builds `IBreadcrumb` objects."""
     # We subclass IBreadcrumb to minimize interface drift.
 
-    def make_breadcrumb(self):
+    def make_breadcrumb():
         """Return an object implementing the `IBreadcrumb` interface."""
-
-
-class IncompleteBreadcrumbError(AttributeError):
-    """Raised when a breadcrumb cannot be constructed.
-
-    This error indicates that the user tried to use an `IBreadcrumbBuilder`
-    to construct a breadcrumb before completely specifying the breadcrumb's
-    data.
-    """
-    pass
 
 
 #

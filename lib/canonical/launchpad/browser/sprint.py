@@ -70,7 +70,7 @@ class SprintNavigation(Navigation):
 
 
 class SprintBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `ISprint`."""
+    """Builds a breadcrumb for an `ISprint`."""
     @property
     def text(self):
         return self.context.title
@@ -116,7 +116,7 @@ class SprintSpecificationsMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'declined', 'settopics', 'roadmap', 'addspec']
+    links = ['assignments', 'declined', 'settopics', 'addspec']
 
     def assignments(self):
         text = 'Assignments'
@@ -134,11 +134,6 @@ class SprintSpecificationsMenu(ApplicationMenu):
         summary = 'Approve or defer topics for discussion'
         return Link('+settopics', text, summary, icon='edit')
 
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Suggest a sequence of implementation for these features'
-        return Link('+roadmap', text, summary, icon='info')
-
     def addspec(self):
         text = 'Register a blueprint'
         summary = 'Register a new blueprint for this meeting'
@@ -151,7 +146,7 @@ class SprintSetNavigation(GetitemNavigation):
 
 
 class SprintSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `ISprintSet`."""
+    """Builds a breadcrumb for an `ISprintSet`."""
     text = 'Meetings'
 
 

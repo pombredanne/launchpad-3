@@ -14,7 +14,7 @@ from zope.interface import implements
 from zope.component import queryAdapter
 
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, IBreadcrumbBuilder, IncompleteBreadcrumbError)
+    IBreadcrumb, IBreadcrumbBuilder)
 
 
 class Breadcrumb:
@@ -43,30 +43,16 @@ class BreadcrumbBuilder:
     """
     implements(IBreadcrumbBuilder)
 
+    text = None
+    url = None
+
     def __init__(self, context):
         self.context = context
-        # Storage for user-assigned values.
         self._icon = None
         self._icon_from_user = False
 
-    def _get_attribute(self, attrname):
-        """Return the value of one of this class' attributes.
-
-        :raises: `IncompleteBreadcrumbError` if the attribute is missing or
-            None.
-        """
-        attr = getattr(self, attrname, None)
-        if attr is None:
-            raise IncompleteBreadcrumbError(
-                "No '%s' attribute was given with which to build the "
-                "Breadcrumb object." % attrname)
-        return attr
-
-    def _get_icon(self):
-        """Return the icon URL for the builder's context.
-
-        :returns: A URL, or None if the context doesn't have an icon.
-        """
+    def icon(self):
+        """See `IBreadcrumb`."""
         if self._icon_from_user:
             return self._icon
 
@@ -78,12 +64,20 @@ class BreadcrumbBuilder:
             return None
 
     def _set_icon(self, value):
+        """Set the icon attribute and flag it as a user-defined value."""
         self._icon = value
         self._icon_from_user = True
 
-    icon = property(_get_icon, _set_icon)
+    icon = property(icon, _set_icon, doc=icon.__doc__)
 
     def make_breadcrumb(self):
-        url = self._get_attribute('url')
-        text = self._get_attribute('text')
-        return Breadcrumb(url, text, icon=self.icon)
+        """See `IBreadcrumbBuilder.`"""
+        if self.text is None:
+            raise AssertionError(
+                "The builder has not been given valid text for the "
+                "breadcrumb.")
+        if self.url is None:
+            raise AssertionError(
+               "The builder has not been given a valid breadcrumb URL.")
+
+        return Breadcrumb(self.url, self.text, icon=self.icon)

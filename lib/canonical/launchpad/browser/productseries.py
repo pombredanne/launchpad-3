@@ -103,7 +103,7 @@ class ProductSeriesSOP(StructuralObjectPresentation):
 
 
 class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IProductSeries`."""
+    """Builds a breadcrumb for an `IProductSeries`."""
     @property
     def text(self):
         return 'Series ' + self.context.name
@@ -212,7 +212,7 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined', 'new']
+    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -240,11 +240,6 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         summary = 'Show the assignee, drafter and approver of these specs'
         return Link('+assignments', text, summary, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Show the sequence in which specs should be implemented'
-        return Link('+roadmap', text, summary, icon='info')
 
     def new(self):
         text = 'Register a blueprint'

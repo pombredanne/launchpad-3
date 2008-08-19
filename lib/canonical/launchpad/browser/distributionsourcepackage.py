@@ -53,7 +53,7 @@ class DistributionSourcePackageSOP(StructuralObjectPresentation):
 
 
 class DistributionSourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IDistributionSourcePackage`."""
+    """Builds a breadcrumb for an `IDistributionSourcePackage`."""
     @property
     def text(self):
         return smartquote('"%s" package') % (

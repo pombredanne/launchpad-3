@@ -61,7 +61,7 @@ class BuilderSetNavigation(GetitemNavigation):
 
 
 class BuilderSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IBuilderSet`."""
+    """Builds a breadcrumb for an `IBuilderSet`."""
     text = 'Build Farm'
 
 
@@ -71,7 +71,7 @@ class BuilderNavigation(Navigation):
 
 
 class BuilderBreadcrumbBuilder(BreadcrumbBuilder):
-    """Returns a breadcrumb for an `IBuilder`."""
+    """Builds a breadcrumb for an `IBuilder`."""
     @property
     def text(self):
         return self.context.title
