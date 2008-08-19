@@ -12,10 +12,12 @@ import email
 import pytz
 from storm.expr import And, Asc, Desc, Exists, Not, Select
 from storm.store import Store
+from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
+    BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
+    SQLMultipleJoin)
 
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
@@ -44,6 +46,8 @@ class Revision(SQLBase):
                             alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
 
+    karma_allocated = BoolCol(default=False, notNull=True)
+
     properties = SQLMultipleJoin('RevisionProperty', joinColumn='revision')
 
     @property
@@ -65,18 +69,32 @@ class Revision(SQLBase):
         """See `IRevision`."""
         return dict((prop.name, prop.value) for prop in self.properties)
 
-    def getBranch(self):
+    def allocateKarma(self, branch):
+        """See `IRevision`."""
+        # If we know who the revision author is, give them karma.
+        author = self.revision_author.person
+        if (author is not None and branch.product is not None):
+            # No karma for junk branches as we need a product to link
+            # against.
+            karma = author.assignKarma('revisionadded', branch.product)
+            # Backdate the karma to the time the revision was created.
+            if karma is not None:
+                karma.datecreated = self.revision_date
+                self.karma_allocated = True
+
+    def getBranch(self, allow_private=False):
         """See `IRevision`."""
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
 
         store = Store.of(self)
 
-        result_set = store.find(
-            Branch,
+        query = And(
             self.id == BranchRevision.revisionID,
-            BranchRevision.branchID == Branch.id,
-            Not(Branch.private))
+            BranchRevision.branchID == Branch.id)
+        if not allow_private:
+            query = And(query, Not(Branch.private))
+        result_set = store.find(Branch, query)
         if self.revision_author.person is None:
             result_set.order_by(Asc(BranchRevision.sequence))
         else:
@@ -262,6 +280,30 @@ class RevisionSet:
             AND Revision.revision_date >= %s
             """ % sqlvalues(product, cut_off_date),
             prejoins=['revision_author'])
+
+    @staticmethod
+    def getRevisionsNeedingKarmaAllocated():
+        """See `IRevisionSet`."""
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+        from canonical.launchpad.database.person import ValidPersonCache
+
+        store = getUtility(IZStorm).get('main')
+
+        # XXX: Tim Penhey 2008-08-12, bug 244768
+        # Using Not(column == None) rather than column != None.
+        return store.find(
+            Revision,
+            Revision.revision_author == RevisionAuthor.id,
+            RevisionAuthor.person == ValidPersonCache.id,
+            Not(Revision.karma_allocated),
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
+                           Not(Branch.product == None)),
+                       (Branch, BranchRevision))))
 
     @staticmethod
     def getPublicRevisionsForPerson(person):

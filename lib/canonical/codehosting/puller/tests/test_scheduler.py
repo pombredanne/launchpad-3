@@ -559,19 +559,21 @@ protocol = PullerWorkerProtocol(sys.stdout)
 """
 
 
-class TestPullerMasterIntegration(PullerBranchTestCase, TrialTestCase):
+class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
     """Tests for the puller master that launch sub-processes."""
 
     layer = TwistedAppServerLayer
 
     def setUp(self):
+        TrialTestCase.setUp(self)
         PullerBranchTestCase.setUp(self)
         self.makeCleanDirectory(config.codehosting.branches_root)
         self.makeCleanDirectory(config.supermirror.branchesdest)
-        branch_id = self.makeBranch(BranchType.HOSTED).id
+        branch_id = self.factory.makeBranch(BranchType.HOSTED).id
         self.layer.txn.commit()
         self.db_branch = getUtility(IBranchSet).get(branch_id)
-        self.bzr_tree = self.createTemporaryBazaarBranchAndTree('src-branch')
+        self.bzr_tree = self.make_branch_and_tree('src-branch')
+        self.bzr_tree.commit('rev1')
         self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakeBranchStatusClient()
 

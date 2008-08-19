@@ -31,7 +31,8 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact, ILaunchpadUsage)
+    IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
+    ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
@@ -113,9 +114,9 @@ class License(DBEnumeratedType):
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
                IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IMakesAnnouncements, IHasOwner, IHasSecurityContact,
-               IHasSprints, IHasTranslationGroup, IKarmaContext,
-               ILaunchpadUsage, ISpecificationTarget, IPillar):
+               IMakesAnnouncements, IHasOwner,
+               IHasSecurityContact,IHasSprints, IHasTranslationGroup,
+               IKarmaContext, ILaunchpadUsage, ISpecificationTarget, IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -148,11 +149,11 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     owner = exported(
         PublicPersonChoice(
-            title=_('Owner'),
+            title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
-            description=_("Project owner, it can either a valid Person or Team "
-                          "inside Launchpad context.")))
+            description=_("Project owner, it can either a valid Person or "
+                          "Team inside Launchpad context.")))
 
     registrant = exported(
         PublicPersonChoice(
