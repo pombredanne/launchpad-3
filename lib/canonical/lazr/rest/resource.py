@@ -872,17 +872,16 @@ class ServiceRootResource(HTTPResource):
                     # schemas; they're functions. We can ignore these
                     # functions because their return value will be one
                     # of the classes with schemas, which we do describe.
-                    entry_class = registration.value
-                    tags = provided.queryTaggedValue(LAZR_WEBSERVICE_NAME)
-                    singular = tags['singular']
-                    assert singular not in singular_names, (
+                    adapter = EntryAdapterUtility.forSchemaInterface(
+                        registration.required[0])
+                    adapter.singular_type
+                    assert adapter.singular_type not in singular_names, (
                         "Singular name '%s' is used more than once.")
-                    singular_names.add(singular)
-                    plural = tags['plural']
-                    assert plural not in plural_names, (
+                    singular_names.add(adapter.singular_type)
+                    assert adapter.plural_type not in plural_names, (
                         "Plural name '%s' is used more than once.")
-                    singular_names.add(singular)
-                    entry_classes.append(entry_classes)
+                    plural_names.add(adapter.plural_type)
+                    entry_classes.append(registration.value)
                 elif (provided.isOrExtends(ICollection)
                       and ICollection.implementedBy(registration.value)
                       and not IScopedCollection.implementedBy(
