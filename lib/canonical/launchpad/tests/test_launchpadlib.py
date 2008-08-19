@@ -25,8 +25,8 @@ class TestLaunchpadLib(unittest.TestCase):
         for name in attribute_names:
             getattr(element, name)
 
-    def test_product(self):
-        """Test product attributes."""
+    def test_project(self):
+        """Test project attributes."""
         self.verifyAttributes(self.launchpad.projects['firefox'])
 
     def test_person(self):
