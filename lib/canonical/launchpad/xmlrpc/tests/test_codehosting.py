@@ -319,11 +319,11 @@ class BranchPullerTest(TestCaseWithFactory):
 class BranchPullQueueTest(TestCaseWithFactory):
     """Tests for the pull queue methods of `IBranchPuller`."""
 
-    layer = DatabaseFunctionalLayer
-
     def setUp(self):
         super(BranchPullQueueTest, self).setUp()
-        self.storage = BranchPuller(None, None)
+        frontend = self.frontend()
+        self.storage = frontend.getEndpoint()
+        self.factory = frontend.getLaunchpadObjectFactory()
 
     def assertBranchQueues(self, hosted, mirrored, imported):
         expected_hosted = [
@@ -682,8 +682,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
 class FakeBranch:
 
-    def __init__(self, branch_id, url=None, unique_name=None):
+    def __init__(self, branch_id, branch_type, url=None, unique_name=None):
         self.id = branch_id
+        self.branch_type = branch_type
         self.last_mirror_attempt = None
         self.last_mirrored = None
         self.last_mirrored_id = None
@@ -713,7 +714,7 @@ class FakeBranch:
         return FakeStore()
 
     def requestMirror(self):
-        pass
+        self.next_mirror_time = UTC_NOW
 
 
 class FakeScriptActivity:
@@ -738,7 +739,8 @@ class FakeObjectFactory(ObjectFactory):
         else:
             url = None
         branch = FakeBranch(
-            branch_id, url=url, unique_name=self.getUniqueString())
+            branch_id, branch_type, url=url,
+            unique_name=self.getUniqueString())
         self._branch_source._branches[branch_id] = branch
         return branch
 
@@ -747,6 +749,18 @@ class FakeBranchPuller:
 
     def __init__(self, branch_source):
         self._branch_source = branch_source
+
+    def _getBranchPullInfo(self, branch):
+        return branch
+
+    def getBranchPullQueue(self, branch_type):
+        queue = []
+        branch_type = BranchType.items[branch_type]
+        for branch in self._branch_source._branches.itervalues():
+            if (branch.branch_type == branch_type
+                and branch.next_mirror_time < UTC_NOW):
+                queue.append(branch)
+        return queue
 
     def startMirroring(self, branch_id):
         branch = self._branch_source.getBranch(branch_id)
@@ -762,6 +776,7 @@ class FakeBranchPuller:
         branch.last_mirrored_id = last_revision_id
         branch.last_mirrored = UTC_NOW
         branch.mirror_failures = 0
+        branch.next_mirror_time = None
         return True
 
     def mirrorFailed(self, branch_id, reason):
@@ -843,12 +858,13 @@ class PullerEndpointScenarioApplier(TestScenarioApplier):
 def test_suite():
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
-    puller_tests = loader.loadTestsFromTestCase(BranchPullerTest)
+    puller_tests = unittest.TestSuite(
+        [loader.loadTestsFromTestCase(BranchPullerTest),
+         loader.loadTestsFromTestCase(BranchPullQueueTest)])
     adapt_tests(puller_tests, PullerEndpointScenarioApplier(), suite)
     suite.addTests(
         map(loader.loadTestsFromTestCase,
             [TestRunWithLogin,
-             BranchPullQueueTest,
              BranchFileSystemTest,
              ]))
     return suite
