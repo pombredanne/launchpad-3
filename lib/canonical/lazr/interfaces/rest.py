@@ -49,7 +49,7 @@ class IHTTPResource(Interface):
     def __call__():
         """Publish the object."""
 
-    def getEtag(media_type):
+    def getETag(media_type):
         "An ETag for this resource's current state."
 
 

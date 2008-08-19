@@ -152,7 +152,7 @@ class HTTPResource:
             media_type = self.WADL_TYPE
         else:
             media_type = self.JSON_TYPE
-        existing_etag = self.getEtag(media_type)
+        existing_etag = self.getETag(media_type)
         if existing_etag is not None:
             self.request.response.setHeader('ETag', existing_etag)
             if incoming_etag == existing_etag:
@@ -162,7 +162,7 @@ class HTTPResource:
                 media_type = None
         return media_type
 
-    def getEtag(self, media_type):
+    def getETag(self, media_type):
         """Calculate an ETag for a representation of this resource.
 
         The WADL representation of a resource only changes when the
@@ -443,7 +443,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         self.entry = IEntry(context)
         self._unmarshalled_field_cache = {}
 
-    def getEtag(self, media_type):
+    def getETag(self, media_type):
         """Calculate an ETag for a representation of this resource.
 
         We implement a simple (though not terribly efficient) ETag
@@ -451,7 +451,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         fields that aren't read-only, and calculates a SHA1 hash of
         the resulting string.
         """
-        etag = super(EntryResource, self).getEtag(media_type)
+        etag = super(EntryResource, self).getETag(media_type)
         if etag is not None:
             return etag
 
@@ -599,7 +599,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         modified from external clients, but might change due to
         internal changes.
         """
-        if ICollectionField.providedBy(field) or field.__name__.startswith('_'):
+        if (ICollectionField.providedBy(field)
+            or field.__name__.startswith('_')):
             return False
         if field.readonly:
             return not is_external_client
@@ -928,7 +929,7 @@ class ServiceRootResource(HTTPResource):
         """Fetch the current browser request."""
         return get_current_browser_request()
 
-    def getEtag(self, media_type):
+    def getETag(self, media_type):
         """Calculate an ETag for a representation of this resource.
 
         The service root resource changes only when the software
