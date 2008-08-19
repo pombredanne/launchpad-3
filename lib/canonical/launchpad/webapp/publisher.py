@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'Breadcrumb',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
@@ -39,11 +38,12 @@ from zope.publisher.interfaces import NotFound
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer,
     WebServiceLayer)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, ICanonicalUrlData, ILaunchBag, ILaunchpadApplication,
-    ILaunchpadContainer, ILaunchpadRoot, IOpenLaunchBag, IStructuredString,
-    NoCanonicalUrl, NotFoundError)
+    ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
+    ILaunchpadRoot, IOpenLaunchBag, IStructuredString, NoCanonicalUrl,
+    NotFoundError)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -525,14 +525,6 @@ class LaunchpadContainer:
         must override this and implement the logic they want.
         """
         return self.context == scope
-
-
-class Breadcrumb:
-    implements(IBreadcrumb)
-
-    def __init__(self, url, text):
-        self.url = url
-        self.text = text
 
 
 class Navigation:
