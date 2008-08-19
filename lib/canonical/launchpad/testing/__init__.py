@@ -93,9 +93,7 @@ class TestCase(unittest.TestCase):
         sql_class = type(sql_object)
         store = sql_class._get_store()
         found_object = store.find(
-            sql_class,
-            sql_class.id == sql_object.id
-            and getattr(sql_class, attribute_name) == date)
+            sql_class, **({'id': sql_object.id, attribute_name: date}))
         if found_object is None:
             self.fail(
                 "Expected %s to be %s, but it was %s."
