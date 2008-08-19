@@ -240,7 +240,7 @@ class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
     def items(self):
-        """Return a list of Breadcrumb objects visible in the hierarchy.
+        """Return a list of `IBreadcrumb` objects visible in the hierarchy.
 
         The list starts with the breadcrumb closest to the hierarchy root.
         """
@@ -269,13 +269,13 @@ class Hierarchy(LaunchpadView):
     def breadcrumb_for(self, obj, url):
         """Return the breadcrumb for the an object, using the supplied URL.
 
-        :returns: A `Breadcrumb` object, or None if a breadcrumb adaptation
+        :return: An `IBreadcrumb` object, or None if a breadcrumb adaptation
             for the object doesn't exist.
         """
-        # If the object has an IBreadcrumbBuilder adaptation, then the
+        # If the object has an IBreadcrumbBuilder adaptation then the
         # object is intended to be shown in the hierarchy.
         builder = queryAdapter(obj, IBreadcrumbBuilder)
-        if builder:
+        if builder is not None:
             # The breadcrumb builder hasn't been given a URL yet.
             builder.url = url
             return builder.make_breadcrumb()
