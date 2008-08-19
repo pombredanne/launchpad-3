@@ -37,12 +37,17 @@ class RevisionKarmaAllocator(LaunchpadCronScript):
 
         count = 0
         revision_set = getUtility(IRevisionSet)
-        for revision in revision_set.getRevisionsNeedingKarmaAllocated():
-            # Find the appropriate branch, and allocate karma to it.
-            branch = revision.getBranch(allow_private=True)
-            revision.allocateKarma(branch)
-            count += 1
-            if count % 1000 == 0:
-                self.logger.debug("%s processed", count)
-        transaction.commit()
+        # Break into bits.
+        revisions = list(
+            revision_set.getRevisionsNeedingKarmaAllocated()[:100])
+        while len(revisions) > 0:
+            for revision in revisions:
+                # Find the appropriate branch, and allocate karma to it.
+                branch = revision.getBranch(allow_private=True)
+                revision.allocateKarma(branch)
+                count += 1
+            self.logger.debug("%s processed", count)
+            transaction.commit()
+            revisions = list(
+                revision_set.getRevisionsNeedingKarmaAllocated()[:100])
         self.logger.info("Finished updating revision karma")
