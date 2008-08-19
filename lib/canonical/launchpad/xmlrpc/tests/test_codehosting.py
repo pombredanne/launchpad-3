@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import (
+    LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_SERVICES, run_with_login)
@@ -112,6 +113,8 @@ class BranchPullerTest(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.storage = self.endpoint_factory()
+        self.factory = self.lp_factory_factory()
+        self.branch_getter = self.branch_getter_factory()
 
     def assertFaultEqual(self, expected_fault, observed_fault):
         """Assert that `expected_fault` equals `observed_fault`."""
@@ -157,7 +160,7 @@ class BranchPullerTest(TestCaseWithFactory):
         """Return a branch ID that isn't in the database."""
         branch_id = 999
         # We can't be sure until the sample data is gone.
-        self.assertIs(getUtility(IBranchSet).get(branch_id), None)
+        self.assertIs(self.branch_getter(branch_id), None)
         return branch_id
 
     def test_startMirroring(self):
@@ -679,7 +682,10 @@ class BranchFileSystemTest(TestCaseWithFactory):
 class PullerEndpointScenarioApplier(TestScenarioApplier):
 
     scenarios = [
-        ('real', {'endpoint_factory': lambda: BranchPuller(None, None)})]
+        ('real',
+         {'endpoint_factory': lambda: BranchPuller(None, None),
+          'lp_factory_factory': lambda: LaunchpadObjectFactory(),
+          'branch_getter_factory': lambda: getUtility(IBranchSet).get})]
 
 
 def test_suite():
