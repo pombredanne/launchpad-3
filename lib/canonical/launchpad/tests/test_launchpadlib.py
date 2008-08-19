@@ -33,6 +33,10 @@ class TestLaunchpadLib(unittest.TestCase):
         """Test person attributes."""
         self.verifyAttributes(self.launchpad.me)
 
+    def test_bug(self):
+        """Test bug attributes."""
+        self.verifyAttributes(self.launchpad.bugs[1])
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
