@@ -28,6 +28,7 @@ from canonical.codehosting.puller.worker import (
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.xmlrpc import faults
 from canonical.testing import (
     reset_logging, TwistedLayer, TwistedAppServerLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
@@ -44,6 +45,11 @@ class FakeBranchStatusClient:
         return defer.succeed(self.branch_queues[branch_type])
 
     def setStackedOn(self, branch_id, stacked_on_location):
+        if stacked_on_location == 'raise-branch-not-found':
+            try:
+                raise faults.NoSuchBranch(stacked_on_location)
+            except faults.NoSuchBranch:
+                return defer.fail()
         self.calls.append(('setStackedOn', branch_id, stacked_on_location))
         return defer.succeed(None)
 
@@ -461,6 +467,15 @@ class TestPullerMaster(TrialTestCase):
                 [('setStackedOn', self.arbitrary_branch_id,
                   stacked_on_location)],
                 self.status_client.calls)
+
+        return deferred.addCallback(checkSetStackedOn)
+
+    def test_setStackedOnBranchNotFound(self):
+        stacked_on_location = 'raise-branch-not-found'
+        deferred = self.eventHandler.setStackedOn(stacked_on_location)
+
+        def checkSetStackedOn(ignored):
+            self.assertEqual([], self.status_client.calls)
 
         return deferred.addCallback(checkSetStackedOn)
 
