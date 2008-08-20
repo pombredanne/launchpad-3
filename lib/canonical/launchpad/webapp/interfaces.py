@@ -378,10 +378,6 @@ class IBasicLaunchpadRequest(Interface):
         'The StepsToGo object for this request, allowing you to inspect and'
         ' alter the remaining traversal steps.')
 
-    breadcrumbs = Attribute(
-        'List of IBreadcrumb objects.  This is appended to during traversal'
-        ' so that a page can render appropriate breadcrumbs.')
-
     traversed_objects = Attribute(
         'List of traversed objects.  This is appended to during traversal.')
 
