@@ -363,27 +363,6 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         self.assertSentNetstrings(['progressMade', '0'])
 
 
-class TestCanonicalUrl(unittest.TestCase):
-    """Test cases for rendering the canonical url of a branch."""
-
-    layer = LaunchpadScriptLayer
-
-    def testCanonicalUrlConsistent(self):
-        # worker.get_canonical_url_for_branch_name is consistent with
-        # webapp.canonical_url, if the provided unique_name is correct.
-        branch = Branch.get(15)
-        # Check that the unique_name used in this test is consistent with the
-        # sample data. This is an invariant of the test, so use a plain
-        # assert.
-        unique_name = 'name12/gnome-terminal/main'
-        assert branch.unique_name == '~' + unique_name
-        # Now check that our implementation of canonical_url is consistent
-        # with the canonical one.
-        self.assertEqual(
-            canonical_url(branch),
-            get_canonical_url_for_branch_name(unique_name))
-
-
 class TestWorkerProgressReporting(TestCaseWithTransport):
     """Tests for the WorkerProgressBar progress reporting mechanism."""
 

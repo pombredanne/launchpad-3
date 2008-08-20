@@ -109,7 +109,7 @@ class SprintSpecificationsMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'declined', 'settopics', 'roadmap', 'addspec']
+    links = ['assignments', 'declined', 'settopics', 'addspec']
 
     def assignments(self):
         text = 'Assignments'
@@ -126,11 +126,6 @@ class SprintSpecificationsMenu(ApplicationMenu):
         text = 'Set agenda'
         summary = 'Approve or defer topics for discussion'
         return Link('+settopics', text, summary, icon='edit')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Suggest a sequence of implementation for these features'
-        return Link('+roadmap', text, summary, icon='info')
 
     def addspec(self):
         text = 'Register a blueprint'

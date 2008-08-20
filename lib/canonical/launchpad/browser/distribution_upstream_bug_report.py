@@ -8,9 +8,13 @@ __all__ = [
     'DistributionUpstreamBugReport'
 ]
 
+
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp import (
+from canonical.launchpad.browser.bugtask import (
+    get_buglisting_search_filter_url)
+from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
+from canonical.launchpad.webapp.url import urlappend
 
 
 # TODO: fix column sorting to work for the different colspans, or
@@ -133,7 +137,11 @@ class PackageBugReportData(BugReportData):
         self.product = product
 
         dsp_url = canonical_url(dsp)
-        self.open_bugs_url = dsp_url
+        dsp_bugs_url = canonical_url(dsp, rootsite='bugs')
+
+        self.open_bugs_url = urlappend(
+            dsp_bugs_url, get_buglisting_search_filter_url())
+
         self.official_malone = bool(product and product.official_malone)
         self.series_branch = (
             product and product.development_focus.series_branch)
@@ -151,22 +159,42 @@ class PackageBugReportData(BugReportData):
         # Note that the +edit-packaging page allows launchpad.AnyPerson
         # so no permissions check needs to be done in the template.
         self.packaging_url = canonical_url(self.dssp) + "/+edit-packaging"
-        self.triaged_bugs_url = (
-            dsp_url + "?field.status%3Alist=TRIAGED")
-        self.triaged_bugs_delta_url = (
-            dsp_url + "?field.status%3Alist=NEW"
-                      "&field.status%3Alist=INCOMPLETE_WITH_RESPONSE"
-                      "&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE"
-                      "&field.status%3Alist=CONFIRMED")
-        self.upstream_bugs_url = (
-            dsp_url + "?field.status_upstream=open_upstream"
-                      "&field.status%3Alist=TRIAGED")
-        self.upstream_bugs_delta_url = (
-            dsp_url + "?field.status_upstream=hide_upstream"
-                      "&field.status%3Alist=TRIAGED")
-        self.watched_bugs_delta_url = (
-            dsp_url + "?field.status_upstream=pending_bugwatch"
-                      "&field.status%3Alist=TRIAGED")
+        self.triaged_bugs_url = urlappend(
+            dsp_bugs_url, get_buglisting_search_filter_url(status='TRIAGED'))
+
+        # The triaged delta URL links to all bugs that are open but not
+        # triaged for the current DistributionSourcePackage.
+        untriaged_bug_statuses = [
+            'CONFIRMED',
+            'INCOMPLETE_WITHOUT_RESPONSE',
+            'INCOMPLETE_WITH_RESPONSE',
+            'NEW',
+            ]
+        untriaged_search_filter_url = get_buglisting_search_filter_url(
+            status=untriaged_bug_statuses)
+        self.triaged_bugs_delta_url = urlappend(
+            dsp_bugs_url, untriaged_search_filter_url)
+
+        # The upstream URL links to all bugs that are open and have an
+        # open upstream bug task or bug watch.
+        upstream_search_filter_url = get_buglisting_search_filter_url(
+            status_upstream='open_upstream')
+        self.upstream_bugs_url = urlappend(
+            dsp_bugs_url, upstream_search_filter_url)
+
+        # The upstream delta URL links to all bugs that are open without
+        # an upstream bug task or bug watch.
+        non_upstream_search_filter_url = get_buglisting_search_filter_url(
+            status_upstream='hide_upstream')
+        self.upstream_bugs_delta_url = urlappend(
+            dsp_bugs_url, non_upstream_search_filter_url)
+
+        # The watch delta URL links to all open upstream bugs that don't
+        # have a bugwatch.
+        unwatched_bugs_search_filter_url = get_buglisting_search_filter_url(
+            status_upstream='pending_bugwatch')
+        self.watched_bugs_delta_url = urlappend(
+            dsp_bugs_url, unwatched_bugs_search_filter_url)
 
 
 class DistributionUpstreamBugReport(LaunchpadView):

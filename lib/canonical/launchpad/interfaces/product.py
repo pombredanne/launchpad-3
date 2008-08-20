@@ -39,6 +39,7 @@ from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -48,7 +49,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
-from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_read_operation, exported,
@@ -133,10 +134,11 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     id = Int(title=_('The Project ID'))
 
     project = exported(
-        Choice(
+        ReferenceChoice(
             title=_('Part of'),
             required=False,
             vocabulary='Project',
+            schema=IProject,
             description=_(
                 'Super-project. In Launchpad, we can setup a special '
                 '"project group" that is an overarching initiative that '
@@ -359,9 +361,10 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         exported_as='series')
 
     development_focus = exported(
-        Choice(
+        ReferenceChoice(
             title=_('Development focus'), required=True,
             vocabulary='FilteredProductSeries',
+            schema=IProductSeries,
             description=_('The "trunk" series where development is focused')))
 
     default_stacked_on_branch = Attribute(

@@ -263,7 +263,7 @@ class ProjectSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
+    links = ['listall', 'doc', 'assignments', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -273,10 +273,6 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         text = 'List documentation'
         summary = 'Show all completed informational specifications'
         return Link('+documentation', text, summary, icon="info")
-
-    def roadmap(self):
-        text = 'Roadmap'
-        return Link('+roadmap', text, icon='info')
 
     def assignments(self):
         text = 'Assignments'
@@ -609,7 +605,7 @@ class ProjectSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProjectSeries
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments']
+    links = ['listall', 'doc', 'assignments']
 
     def listall(self):
         text = 'List all blueprints'
@@ -619,10 +615,6 @@ class ProjectSeriesSpecificationsMenu(ApplicationMenu):
         text = 'List documentation'
         summary = 'Show all completed informational specifications'
         return Link('+documentation', text, summary, icon="info")
-
-    def roadmap(self):
-        text = 'Roadmap'
-        return Link('+roadmap', text, icon='info')
 
     def assignments(self):
         text = 'Assignments'

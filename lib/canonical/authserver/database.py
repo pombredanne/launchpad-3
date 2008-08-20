@@ -181,12 +181,10 @@ class UserDetailsStorageMixin:
         else:
             salt = ''
 
-        wikiname = getattr(person.ubuntuwiki, 'wikiname', '')
         return {
             'id': person.id,
             'displayname': person.displayname,
             'emailaddresses': self._getEmailAddresses(person),
-            'wikiname': wikiname,
             'salt': salt,
         }
 
