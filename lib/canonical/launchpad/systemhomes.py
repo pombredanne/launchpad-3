@@ -19,6 +19,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.interfaces.bug import (
     CreateBugParams, IBugSet, InvalidBugTargetType)
 from canonical.launchpad.interfaces.product import IProduct
@@ -86,7 +87,7 @@ class FeedsApplication:
     implements(IFeedsApplication)
 
 
-class MaloneApplication:
+class MaloneApplication(HasBugsBase):
     implements(IMaloneApplication)
 
     def __init__(self):

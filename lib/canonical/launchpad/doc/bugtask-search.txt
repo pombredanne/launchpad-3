@@ -667,3 +667,67 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     10 another test bug [2 comments]
     9 Thunderbird crashes [1 comments]
     19 Bug to be fixed in trunk [0 comments]
+
+
+== Searching using a flat interface ==
+
+An alternative, simplified interface for searching bug tasks is available
+by passing all search parameters as function arguments to searchTasks.
+This interface corresponds to the search options available from the web
+search form and the public API.
+
+    >>> def print_bugtasks(bugtasks):
+    ...     for bugtask in bugtasks:
+    ...         print '%s %s %s %s %s' % (
+    ...             bugtask.bug.id, bugtask.bugtargetdisplayname,
+    ...             bugtask.bug.title, bugtask.status.title.upper(),
+    ...             bugtask.importance.title.upper())
+
+
+When we call the method on Ubuntu, without any parameters, the result is
+identical to calling searchTasks.
+
+    >>> print_bugtasks(ubuntu.searchTasks(None, user=None))
+    1 mozilla-firefox (Ubuntu) Firefox does not support SVG NEW MEDIUM
+    9 thunderbird (Ubuntu) Thunderbird crashes CONFIRMED MEDIUM
+    2 Ubuntu Blackhole Trash folder NEW MEDIUM
+    19 cdrkit (Ubuntu) Bug to be fixed in trunk NEW UNDECIDED
+
+If we want to restrict the search using certain parameters pass them to
+the function directly. Hete we search Ubuntu again, but only bugs for
+the firefox package.
+
+    >>> from canonical.launchpad.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> source_package_name_set = getUtility(ISourcePackageNameSet)
+    >>> firefox_source_package = source_package_name_set['mozilla-firefox']
+    >>> print_bugtasks(ubuntu.searchTasks(
+    ...     None, user=None, sourcepackagename=firefox_source_package))
+    1 mozilla-firefox (Ubuntu) Firefox does not support SVG NEW MEDIUM
+
+Or search for bugs on a distribution source package directly.
+
+    >>> print_bugtasks(ubuntu_firefox.searchTasks(None, user=None))
+    1 mozilla-firefox (Ubuntu) Firefox does not support SVG NEW MEDIUM
+
+Or we can search a certain milestone (only getting bugs targeted to it).
+
+    >>> firefox_milestone_1 = firefox.getMilestone('1.0')
+    >>> print_bugtasks(firefox_milestone_1.searchTasks(None, user=None))
+    1 Mozilla Firefox Firefox does not support SVG NEW LOW
+    1 Mozilla Firefox 1.0 Firefox does not support SVG NEW UNDECIDED
+
+We can restrict our search for firefox bugs with a text search.
+
+    >>> print_bugtasks(firefox.searchTasks(
+    ...     None, user=None, search_text='instructions'))
+    5 Mozilla Firefox Firefox install instructions should be complete NEW CRITICAL
+
+Or restrict our search (over the mozilla project this time) to a list of
+relevant importance values.
+
+    >>> print_bugtasks(mozilla.searchTasks(
+    ...     None, user=None,
+    ...     importance=[BugTaskImportance.LOW, BugTaskImportance.MEDIUM]))
+    4 Mozilla Firefox Reflow problems with complex page layouts NEW MEDIUM
+    1 Mozilla Firefox Firefox does not support SVG NEW LOW

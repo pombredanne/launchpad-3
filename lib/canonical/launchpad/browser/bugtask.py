@@ -1892,6 +1892,64 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
 
+    def buildBugTaskSearchParams(self, searchtext=None, extra_params=None):
+        """Build the parameters to submit to the `searchTasks` method.
+
+        Use the data submitted in the form to populate a dictionary
+        which, when expanded (using **params notation) can serve as the
+        input for searchTasks().
+        """
+        data = {}
+        self._validate(None, data)
+
+        searchtext = data.get("searchtext")
+        if searchtext and searchtext.isdigit():
+            try:
+                bug = getUtility(IBugSet).get(searchtext)
+            except NotFoundError:
+                pass
+            else:
+                self.request.response.redirect(canonical_url(bug))
+
+        if extra_params:
+            data.update(extra_params)
+
+        params = {}
+
+        # A mapping of parameters that appear in the destination
+        # with a different name, or are being dropped altogether
+        param_names_map = {
+            'searchtext': 'search_text',
+            # We're assigning the relevant value to tags_combinator_all
+            'tags_combinator': None,
+            'omit_dupes': 'omit_duplicates',
+            'subscriber': 'bug_subscriber',
+            'tag': 'tags',
+            # The correct value is being retrieved
+            # using get_sortorder_from_request()
+            'orderby': None,
+            }
+
+        for key, value in data.items():
+            if key in param_names_map:
+                param_name = param_names_map[key]
+                if param_name is not None:
+                    params[param_name] = value
+            else:
+                params[key] = value
+
+        assignee_option = self.request.form.get("assignee_option")
+        if assignee_option == "none":
+            params['assignee'] = NULL
+
+        params['tags_combinator_all'] = (
+            'tags_combinator' in data and
+            data['tags_combinator'] == BugTagsSearchCombinator.ALL)
+
+        params['order_by'] = get_sortorder_from_request(self.request)
+
+        return params
+
     def search(self, searchtext=None, context=None, extra_params=None):
         """Return an `ITableBatchNavigator` for the GET search criteria.
 
@@ -1923,9 +1981,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         if not context:
             context = self.context
 
-        search_params = self.buildSearchParams(
+        search_params = self.buildBugTaskSearchParams(
             searchtext=searchtext, extra_params=extra_params)
-        tasks = context.searchTasks(search_params)
+        tasks = context.searchTasks(None, self.user, **search_params)
         return tasks
 
     def getWidgetValues(
@@ -2402,12 +2460,12 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
             'Content-type', 'text/plain')
 
         # This uses the BugTaskSet internal API instead of using the
-        # standard searchTasks() because this can retrieve a lot of 
-        # bugs and we don't want to load all of that data in memory. 
+        # standard searchTasks() because this can retrieve a lot of
+        # bugs and we don't want to load all of that data in memory.
         # Retrieving only the bug numbers is much more efficient.
         search_params = self.buildSearchParams()
 
-        # XXX flacoste 2008/04/24 This should be moved to a 
+        # XXX flacoste 2008/04/24 This should be moved to a
         # BugTaskSearchParams.setTarget().
         if IDistroSeries.providedBy(self.context):
             search_params.setDistroSeries(self.context)

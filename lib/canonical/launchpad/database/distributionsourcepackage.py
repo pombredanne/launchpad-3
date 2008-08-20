@@ -289,10 +289,9 @@ class DistributionSourcePackage(BugTargetBase,
             "BugTask.distribution = %d AND BugTask.sourcepackagename = %d" % (
             self.distribution.id, self.sourcepackagename.id))
 
-    def searchTasks(self, search_params):
-        """See `IBugTarget`."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this distribution source package."""
         search_params.setSourcePackage(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See `IBugTarget`."""

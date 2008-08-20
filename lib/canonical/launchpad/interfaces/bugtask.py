@@ -43,6 +43,7 @@ from zope.schema import (
     Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -53,9 +54,11 @@ from canonical.launchpad.interfaces.bugwatch import (
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
+from canonical.launchpad.interfaces.bugattachment import BugAttachmentType
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -992,6 +995,86 @@ class BugTaskSearchParams:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
+
+    @classmethod
+    def _anyfy(cls, value):
+        """If value is a sequence, wrap its items with the `any` combinator.
+
+        Otherwise, return value as is, or None if it's a zero-length sequence.
+        """
+        if zope_isinstance(value, (list, tuple)):
+            if len(value) > 0:
+                return any(*value)
+            else:
+                return None
+        else:
+            return value
+
+
+    @classmethod
+    def fromSearchForm(cls, user,
+                       order_by=('-importance',), search_text=None,
+                       status=list(UNRESOLVED_BUGTASK_STATUSES),
+                       importance=None,
+                       assignee=None, bug_reporter=None, bug_supervisor=None,
+                       bug_commenter=None, bug_subscriber=None, owner=None,
+                       has_patch=None, has_cve=None,
+                       tags=None, tags_combinator_all=True,
+                       omit_duplicates=True, omit_targeted=None,
+                       status_upstream=None, milestone_assignment=None,
+                       milestone=None, component=None, nominated_for=None,
+                       distribution=None, scope=None, sourcepackagename=None,
+                       has_no_package=None):
+        """Create and return a new instance using the parameter list."""
+        search_params = cls(user=user, orderby=order_by)
+
+        search_params.searchtext = search_text
+        search_params.status = cls._anyfy(status)
+        search_params.importance = cls._anyfy(importance)
+        search_params.assignee = assignee
+        search_params.bug_reporter = bug_reporter
+        search_params.bug_supervisor = bug_supervisor
+        search_params.bug_commenter = bug_commenter
+        search_params.subscriber = bug_subscriber
+        search_params.owner = owner
+        if has_patch:
+            search_params.attachmenttype = BugAttachmentType.PATCH
+            search_params.has_patch = has_patch
+        search_params.has_cve = has_cve
+        if zope_isinstance(tags, (list, tuple)):
+            if len(tags) > 0:
+                if tags_combinator_all:
+                    search_params.tag = all(*tags)
+                else:
+                    search_params.tag = any(*tags)
+        elif zope_isinstance(tags, str):
+            search_params.tag = tags
+        elif tags is None:
+            pass # tags not supplied
+        else:
+            raise AssertionError(
+                'Tags can only be supplied as a list or a string.')
+        search_params.omit_dupes = omit_duplicates
+        search_params.omit_targeted = omit_targeted
+        if status_upstream is not None:
+            if 'pending_bugwatch' in status_upstream:
+                search_params.pending_bugwatch_elsewhere = True
+            if 'resolved_upstream' in status_upstream:
+                search_params.resolved_upstream = True
+            if 'open_upstream' in status_upstream:
+                search_params.open_upstream = True
+            if 'hide_upstream' in status_upstream:
+                search_params.has_no_upstream_bugtask = True
+        search_params.milestone = cls._anyfy(milestone)
+        search_params.component = cls._anyfy(component)
+        search_params.distribution = distribution
+        search_params.scope = scope
+        search_params.sourcepackagename = sourcepackagename
+        if has_no_package:
+            search_params.sourcepackagename = NULL
+        search_params.nominated_for = nominated_for
+
+        return search_params
 
 
 class IBugTaskSet(Interface):

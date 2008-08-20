@@ -48,6 +48,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.answercontact import AnswerContact
+from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.oauth import OAuthAccessToken
@@ -69,7 +70,7 @@ from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.interfaces.codeofconduct import (
     ISignedCodeOfConductSet)
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -179,10 +180,11 @@ def validate_person_visibility(person, attr, value):
     return value
 
 
-class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
+class Person(
+    SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
-    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
+    implements(IPerson, IHasBugs, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -980,7 +982,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return None
 
     def searchTasks(self, search_params, *args):
-        """See `IPerson`."""
+        """See `IHasBugs`."""
         return getUtility(IBugTaskSet).search(search_params, *args)
 
     def getProjectsAndCategoriesContributedTo(self, limit=5):

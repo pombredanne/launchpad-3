@@ -260,24 +260,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 
-    # XXX: Bjorn Tillenius 2006-08-17:
-    #      A Project shouldn't provide IBugTarget, since it's not really
-    #      a bug target, thus bugtargetdisplayname and createBug don't make
-    #      sense here. IBugTarget should be split into two interfaces; one
-    #      that makes sense for Project to implement, and one containing the
-    #      rest of IBugTarget.
-    bugtargetdisplayname = None
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        raise NotImplementedError('Cannot file bugs against a project')
-
-    def searchTasks(self, search_params):
-        """See `IBugTarget`."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this milestone."""
         search_params.setProject(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
-        """See `IBugTarget`."""
+        """See `IHasBugs`."""
         if not self.products:
             return []
         product_ids = sqlvalues(*self.products)
@@ -285,7 +273,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "BugTask.product IN (%s)" % ",".join(product_ids))
 
     def getUsedBugTagsWithOpenCounts(self, user):
-        """See `IBugTarget`."""
+        """See `IHasBugs`."""
         if not self.products:
             return []
         product_ids = sqlvalues(*self.products)
@@ -293,7 +281,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "BugTask.product IN (%s)" % ",".join(product_ids), user)
 
     def _getBugTaskContextClause(self):
-        """See `BugTargetBase`."""
+        """See `HasBugsBase`."""
         return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
 
     # IQuestionCollection

@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.interface import Attribute
 
 from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from canonical.lazr.fields import Reference
@@ -22,7 +22,7 @@ __all__ = [
     ]
 
 
-class IMaloneApplication(ILaunchpadApplication):
+class IMaloneApplication(ILaunchpadApplication, IHasBugs):
     """Application root for malone."""
     export_as_webservice_collection(IBug)
 

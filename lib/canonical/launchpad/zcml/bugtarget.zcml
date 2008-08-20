@@ -7,21 +7,21 @@
   <facet facet="bugs">
 
     <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
+        for="canonical.launchpad.interfaces.IHasBugs"
         class="canonical.launchpad.browser.BugTargetView"
         name="+portlet-latestbugs"
         permission="zope.Public"
         template="../templates/bugtarget-portlet-latestbugs.pt" />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
+        for="canonical.launchpad.interfaces.IHasBugs"
         class="canonical.launchpad.browser.BugTargetView"
         name="+portlet-recently-touched-bugs"
         permission="zope.Public"
         template="../templates/bugtarget-portlet-recently-touched-bugs.pt" />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
+        for="canonical.launchpad.interfaces.IHasBugs"
         class="canonical.launchpad.browser.BugListingPortletView"
         permission="zope.Public"
         name="+portlet-bugfilters"
@@ -29,7 +29,7 @@
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
+        for="canonical.launchpad.interfaces.IHasBugs"
         class="canonical.launchpad.browser.BugTargetBugTagsView"
         permission="zope.Public"
         name="+portlet-bugtags"
@@ -37,14 +37,14 @@
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
+        for="canonical.launchpad.interfaces.IHasBugs"
         class="canonical.launchpad.browser.TextualBugTaskSearchListingView"
         permission="zope.Public"
         name="+bugs-text"
         attribute="__call__" />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
+        for="canonical.launchpad.interfaces.IHasBugs"
         class="canonical.launchpad.browser.BugTaskSearchListingView"
         permission="zope.Public"
         name="+bugs"
