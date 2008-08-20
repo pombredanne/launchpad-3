@@ -723,17 +723,6 @@ We can restrict our search for firefox bugs with a text search.
     ...     None, user=None, search_text='instructions'))
     5 Mozilla Firefox Firefox install instructions should be complete NEW CRITICAL
 
-We can restrict our search by a list of statuses, and order it, just
-like we would from the search form.
-
-    >>> print_bugtasks(foo_bar.searchTasks(
-    ...     None, user=None,
-    ...     status=[BugTaskStatus.CONFIRMED], order_by='datecreated'))
-    1 mozilla-firefox (Debian) Firefox does not support SVG CONFIRMED LOW
-    2 mozilla-firefox (Debian) Blackhole Trash folder CONFIRMED LOW
-    9 thunderbird (Ubuntu) Thunderbird crashes CONFIRMED MEDIUM
-    12 Jokosher Copy, Cut and Delete operations should work on selections CONFIRMED CRITICAL
-
 Or restrict our search (over the mozilla project this time) to a list of
 relevant importance values.
 
