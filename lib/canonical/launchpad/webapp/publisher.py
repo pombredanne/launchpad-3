@@ -543,12 +543,6 @@ class Navigation:
     # Set this if you want to set a new layer before doing any traversal.
     newlayer = None
 
-    def breadcrumb(self):
-        """Return the text of the context object's breadcrumb, or None for
-        no breadcrumb.
-        """
-        return None
-
     def traverse(self, name):
         """Override this method to handle traversal.
 
@@ -596,16 +590,6 @@ class Navigation:
             if value is not None:
                 combined_info.update(value)
         return combined_info
-
-    def _append_breadcrumb(self, text):
-        """Add a breadcrumb to the request, at the current URL with the given
-        text.
-
-        request.getURL(1) represents the path traversed so far, but without
-        the step we're currently working out how to traverse.
-        """
-        self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=False), text))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
@@ -662,12 +646,6 @@ class Navigation:
         # store the current context object in the request's
         # traversed_objects list:
         request.traversed_objects.append(self.context)
-
-        # Next, if there is a breadcrumb for the context, add it to the
-        # request's list of breadcrumbs.
-        breadcrumb_text = self.breadcrumb()
-        if breadcrumb_text is not None:
-            self._append_breadcrumb(breadcrumb_text)
 
         # Next, see if we're being asked to stepto somewhere.
         stepto_traversals = self.stepto_traversals
