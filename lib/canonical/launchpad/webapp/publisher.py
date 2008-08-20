@@ -38,7 +38,6 @@ from zope.publisher.interfaces import NotFound
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer,
     WebServiceLayer)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
@@ -82,18 +81,6 @@ class DecoratorAdvisor:
 class stepthrough(DecoratorAdvisor):
 
     magic_class_attribute = '__stepthrough_traversals__'
-
-    def __init__(self, name, breadcrumb=None):
-        """Register a stepthrough traversal with the name stepped through.
-
-        You can optionally provide a breadcrumb function that is called
-        with the argument 'self'.  So, a method will do.
-        """
-        DecoratorAdvisor.__init__(self, name)
-        self.breadcrumb = breadcrumb
-
-    def getValueToStore(self):
-        return (self.fn, self.breadcrumb)
 
 
 class stepto(DecoratorAdvisor):
@@ -669,11 +656,7 @@ class Navigation:
                 stepstogo = request.stepstogo
                 if stepstogo:
                     nextstep = stepstogo.consume()
-                    handler, breadcrumb_fn = namespace_traversals[name]
-                    if breadcrumb_fn is not None:
-                        breadcrumb_text = breadcrumb_fn(self)
-                        if breadcrumb_text is not None:
-                            self._append_breadcrumb(breadcrumb_text)
+                    handler = namespace_traversals[name]
                     try:
                         nextobj = handler(self, nextstep)
                     except NotFoundError:
