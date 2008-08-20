@@ -32,7 +32,6 @@ __all__ = [
     'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
-    'IBreadcrumb',
     'ICrowd',
     'IFeedsApplication',
     'IHWDBApplication',
