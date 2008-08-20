@@ -994,7 +994,6 @@ class BugTaskSearchParams:
         else:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
-
         self.sourcepackagename = sourcepackage.sourcepackagename
 
     @classmethod
