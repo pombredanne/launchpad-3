@@ -99,14 +99,14 @@ class TestRevisionKarma(TestCaseWithFactory):
         # Put the author's revision in the ancestry.
         b2.createBranchRevision(None, rev)
 
-        # Since the revision author is not known, the revisions do not at this
-        # stage need karma allocated.
-        self.assertEqual(
-            [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
-
         # Now link the revision author to the author.
         author.validateAndEnsurePreferredEmail(
             EmailAddressSet().new(email, author))
+        # Now that the revision author is linked to the person, the revision
+        # needs karma allocated.
+        self.assertEqual(
+            [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
         # Commit and switch to the script db user.
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)

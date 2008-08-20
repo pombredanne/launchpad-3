@@ -204,7 +204,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
 
     def testGetBranchNotJunk(self):
         # If allow_junk is set to False, then branches without products are
-        # not retuned.
+        # not returned.
         b1 = self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(
             1, owner=self.author, explicit_junk=True)
