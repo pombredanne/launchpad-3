@@ -71,10 +71,7 @@ Setup BuilddMaster class:
 
     >>> bm.addDistroArchSeries(hoary_i386)
     >>> bm.setupBuilders(hoary_i386)
-    WARNING:root.builders.x86:frog (http://localhost:9221/) marked as failed due to: (111, 'Connection refused')
-    Traceback (most recent call last):
-    ...
-    error: (111, 'Connection refused')
+    WARNING:root.builders.x86:frog (http://localhost:9221/) will be reset due to: (111, 'Connection refused')
 
 Check if there are builders available:
 

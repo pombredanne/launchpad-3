@@ -87,13 +87,19 @@ class BuilderGroup:
                 "%s (%s) marked as failed due to: %s",
                 builder.name, builder.url, builder.failnotes, exc_info=True)
         except socket.error, reason:
+            error_message = str(reason)
+            # Is this a PPA builder? Reset it if so.
             if builder.virtualized:
+                self.logger.warn(
+                    "%s (%s) will be reset due to: %s",
+                    builder.name, builder.url, error_message,
+                    exc_info=True)
                 builder.resumeSlaveHost()
             else:
-                builder.failbuilder(str(reason))
+                builder.failbuilder(error_message)
                 self.logger.warn(
                     "%s (%s) marked as failed due to: %s",
-                    builder.name, builder.url, builder.failnotes,
+                    builder.name, builder.url, error_message,
                     exc_info=True)
 
     def rescueBuilderIfLost(self, builder):
