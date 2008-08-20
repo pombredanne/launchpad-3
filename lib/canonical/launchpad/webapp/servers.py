@@ -376,7 +376,7 @@ class NotFoundRequestPublicationFactory:
 
 
 class BasicLaunchpadRequest:
-    """Mixin request class to provide stepstogo and breadcrumbs."""
+    """Mixin request class to provide stepstogo."""
 
     implements(IBasicLaunchpadRequest)
 
