@@ -12,8 +12,8 @@ import urllib2
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
-    BzrError, NotBranchError, ParamikoNotPresent,
-    UnknownFormatError, UnsupportedFormatError)
+    BzrError, NotBranchError, NotStacked, ParamikoNotPresent,
+    UnknownFormatError, UnstackableBranchFormat, UnsupportedFormatError)
 from bzrlib.progress import DummyProgress
 from bzrlib.transport import get_transport
 import bzrlib.ui
@@ -437,6 +437,12 @@ class PullerWorker:
         server.setUp()
         try:
             source_branch = self.branch_opener.open(self.source)
+            try:
+                stacked_on_location = source_branch.get_stacked_on_url()
+            except (NotStacked, UnstackableBranchFormat):
+                pass
+            else:
+                self.protocol.setStackedOn(stacked_on_location)
             return self._mirrorToDestBranch(source_branch)
         finally:
             server.tearDown()

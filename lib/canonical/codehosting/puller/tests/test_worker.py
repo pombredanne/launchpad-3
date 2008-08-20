@@ -28,6 +28,22 @@ from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import reset_logging
 
 
+def get_netstrings(line):
+    """Parse `line` as a sequence of netstrings.
+
+    :return: A list of strings.
+    """
+    strings = []
+    while len(line) > 0:
+        colon_index = line.find(':')
+        length = int(line[:colon_index])
+        strings.append(line[colon_index+1:colon_index+1+length])
+        assert ',' == line[colon_index+1+length], (
+            'Expected %r == %r' % (',', line[colon_index+1+length]))
+        line = line[colon_index+length+2:]
+    return strings
+
+
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     """Test the mirroring functionality of PullerWorker."""
 
@@ -95,6 +111,45 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         new_http = get_transport('http://example.com')
         self.assertEqual(get_transport('http://example.com').base, http.base)
         self.assertEqual(new_http.__class__, http.__class__)
+
+    def testDoesntSendStackedInfoUnstackableFormat(self):
+        # Mirroring an unstackable branch doesn't send the stacked-on location
+        # to the master.
+        source_branch = self.make_branch('source-branch')
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            source_branch.base,
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual([], get_netstrings(protocol_output.getvalue()))
+
+    def testDoesntSendStackedInfoNotStacked(self):
+        # Mirroring a non-stacked branch doesn't send the stacked-on location
+        # to the master.
+        source_branch = self.make_branch('source-branch', format='development')
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            source_branch.base,
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual([], get_netstrings(protocol_output.getvalue()))
+
+    def testSendsStackedInfo(self):
+        # Mirroring a non-stacked branch doesn't send the stacked-on location
+        # to the master.
+        base_branch = self.make_branch('base_branch', format='development')
+        stacked_branch = self.make_branch(
+            'stacked-branch', format='development')
+        stacked_branch.set_stacked_on_url(base_branch.base)
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            stacked_branch.base,
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual(
+            ['setStackedOn', str(to_mirror.branch_id),
+             stacked_branch.get_stacked_on_url()],
+            get_netstrings(protocol_output.getvalue()))
 
 
 class TestBranchOpenerCheckSource(unittest.TestCase):
@@ -307,22 +362,8 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
 
     def assertSentNetstrings(self, expected_netstrings):
         """Assert that the protocol sent the given netstrings (in order)."""
-        observed_netstrings = self.getNetstrings(self.output.getvalue())
+        observed_netstrings = get_netstrings(self.output.getvalue())
         self.assertEqual(expected_netstrings, observed_netstrings)
-
-    def getNetstrings(self, line):
-        """Parse `line` as a sequence of netstrings.
-
-        :return: A list of strings.
-        """
-        strings = []
-        while len(line) > 0:
-            colon_index = line.find(':')
-            length = int(line[:colon_index])
-            strings.append(line[colon_index+1:colon_index+1+length])
-            self.assertEqual(',', line[colon_index+1+length])
-            line = line[colon_index+length+2:]
-        return strings
 
     def resetBuffers(self):
         # Empty the test output and error buffers.
