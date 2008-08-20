@@ -8,13 +8,15 @@ import os
 import shutil
 from StringIO import StringIO
 
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.urlutils import local_path_from_url
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     BranchOpener, PullerWorker, PullerWorkerProtocol)
-from canonical.codehosting.tests.helpers import BranchTestCase
+from canonical.codehosting.tests.helpers import LoomTestMixin
 from canonical.config import config
+from canonical.launchpad.testing import TestCaseWithFactory
 
 
 class AcceptAnythingOpener(BranchOpener):
@@ -57,8 +59,13 @@ class PullerWorkerMixin:
             oops_prefix=oops_prefix)
 
 
-class PullerBranchTestCase(BranchTestCase):
+class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
+                           LoomTestMixin):
     """Some useful code for the more-integration-y puller tests."""
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        TestCaseWithFactory.setUp(self)
 
     def getHostedPath(self, branch):
         """Return the path of 'branch' in the upload area."""
@@ -85,7 +92,8 @@ class PullerBranchTestCase(BranchTestCase):
         """
         hosted_path = self.getHostedPath(branch)
         if tree is None:
-            tree = self.createTemporaryBazaarBranchAndTree()
+            tree = self.make_branch_and_tree('branch-path')
+            tree.commit('rev1')
         out, err = self.run_bzr(
             ['push', '--create-prefix', '-d',
              local_path_from_url(tree.branch.base), hosted_path],

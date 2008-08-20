@@ -46,7 +46,7 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name autoupdate"
+      set_attributes="name autoupdate registrant"
       />
 
     <require

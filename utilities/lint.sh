@@ -59,9 +59,13 @@ if [ -z "$1" ]; then
         exit 1
     fi
     files=`bzr st --short $rev_option | sed '/^.[MN]/!d; s/.* //'`
+    database_changes=$(
+        bzr st --short $rev_option database | sed '/^P/d;s/.* //')
 else
     # Add newlines so grep filters out pyfiles correctly later.
     files=`echo $* | tr " " "\n"`
+    database_changes=$(
+        bzr st --short "$@" | sed '/^P/d;s/.* //;/^database/!d')
 fi
 
 
@@ -101,9 +105,19 @@ group_lines_by_file() {
 sample_dir="database/sampledata"
 current_sql="${sample_dir}/current.sql"
 newsampledata_sql="${sample_dir}/newsampledata.sql"
-make newsampledata > /dev/null
-sql_diff=`diff -q ${sample_dir}/current.sql ${sample_dir}/newsampledata.sql`
+
+if [ -n "${database_changes}" ]; then
+    make newsampledata > /dev/null
+    sql_diff=$(diff -q "${current_sql}" "${newsampledata_sql}")
+    if [ -z "$sql_diff" ]; then
+        rm $newsampledata_sql
+    fi
+else
+    sql_diff=""
+fi
+
 karma_bombs=`sed '/INTO karma /!d; /2000-/d; /2001-/d' $current_sql`
+
 if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
     echo ""
     echo ""
@@ -113,8 +127,6 @@ if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
 fi
 if [ -n "$sql_diff" ]; then
     echo "    Current sampledata is out of date; run 'make newsampledata'."
-else
-    rm $newsampledata_sql
 fi
 if [ -n "$karma_bombs" ]; then
     echo "    Karma time bombs were added to sampledata."
