@@ -9,13 +9,12 @@
   metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
-
 <body>
 
 <div metal:fill-slot="main">
 
   <div id="maincontent">
-    <div id="nonportlets">
+    <div id="nonportlets" class="readable">
       <p tal:content="structure context/bug/fmt:link" />
       <h1>Add a branch to bug #<span tal:replace="context/bug/id" /></h1>
 
@@ -54,5 +53,4 @@
 </metal:block>
 
 </body>
-
 </html>
