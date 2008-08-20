@@ -34,7 +34,19 @@ class IHasBugs(Interface):
     all_bugtasks = Attribute(
         "A list of all BugTasks ever reported for this target.")
 
-    def searchTasks(search_params):
+    def searchTasks(search_params, user=None,
+                    order_by=('-importance',), search_text=None,
+                    status=[],
+                    importance=None,
+                    assignee=None, bug_reporter=None, bug_supervisor=None,
+                    bug_commenter=None, bug_subscriber=None, owner=None,
+                    has_patch=None, has_cve=None,
+                    tags=None, tags_combinator_all=True,
+                    omit_duplicates=True, omit_targeted=None,
+                    status_upstream=None, milestone_assignment=None,
+                    milestone=None, component=None, nominated_for=None,
+                    distribution=None, scope=None, sourcepackagename=None,
+                    has_no_package=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
