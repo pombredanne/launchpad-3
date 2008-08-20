@@ -244,7 +244,8 @@ class WadlAPITestCase(WebServiceTestCase):
 class DuplicateNameTestCase(WebServiceTestCase):
     """Test AssertionError when two resources expose the same name.
 
-    This class contains no tests on its own
+    This class contains no tests of its own. It's up to the subclass
+    to define IDuplicate and call doDuplicateTest().
     """
 
     def setUp(self):
