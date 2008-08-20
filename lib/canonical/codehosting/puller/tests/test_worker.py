@@ -360,11 +360,11 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         self.protocol.progressMade()
         self.assertSentNetstrings(['progressMade', '0'])
 
-    def test_stackedOn(self):
-        # Calling 'stackedOn' sends the location of the stacked-on branch, if
-        # any.
-        self.protocol.stackedOn('/~foo/bar/baz')
-        self.assertSentNetstrings(['stackedOn', '1', '/~foo/bar/baz'])
+    def test_setStackedOn(self):
+        # Calling 'setStackedOn' sends the location of the stacked-on branch,
+        # if any.
+        self.protocol.setStackedOn('/~foo/bar/baz')
+        self.assertSentNetstrings(['setStackedOn', '1', '/~foo/bar/baz'])
 
 
 class TestWorkerProgressReporting(TestCaseWithTransport):

@@ -228,8 +228,8 @@ class TestPullerMonitorProtocol(
         def __init__(self):
             self.calls = []
 
-        def stackedOn(self, stacked_on_location):
-            self.calls.append(('stackedOn', stacked_on_location))
+        def setStackedOn(self, stacked_on_location):
+            self.calls.append(('setStackedOn', stacked_on_location))
 
         def startMirroring(self):
             self.calls.append('startMirroring')
@@ -259,10 +259,11 @@ class TestPullerMonitorProtocol(
         self.assertEqual(['startMirroring'], self.listener.calls)
         self.assertProtocolSuccess()
 
-    def test_stackedOn(self):
-        # Receiving a stackedOn message notifies the listener.
-        self.protocol.do_stackedOn('/~foo/bar/baz')
-        self.assertEqual([('stackedOn', '/~foo/bar/baz')], self.listener.calls)
+    def test_setStackedOn(self):
+        # Receiving a setStackedOn message notifies the listener.
+        self.protocol.do_setStackedOn('/~foo/bar/baz')
+        self.assertEqual(
+            [('setStackedOn', '/~foo/bar/baz')], self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorSucceeded(self):
