@@ -21,8 +21,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.database.files import BinaryPackageFile
-from canonical.launchpad.helpers import shortlist
-
 
 
 class BinaryPackageRelease(SQLBase):
