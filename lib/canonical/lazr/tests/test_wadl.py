@@ -4,61 +4,30 @@
 
 __metaclass__ = type
 
+import sys
+from types import ModuleType
 import unittest
 
 from zope.component import getGlobalSiteManager
 from zope.configuration import xmlconfig
-from zope.interface import Interface
+from zope.interface import implements, Interface
 from zope.schema import TextLine
+from zope.security.management import endInteraction, newInteraction
 from zope.testing.cleanup import CleanUp
 
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from canonical.launchpad.webapp.servers import (
+    WebServicePublication, WebServiceTestRequest)
+
+from canonical.lazr.interfaces import IServiceRootResource
+from canonical.lazr.rest import HTTPResource, ServiceRootResource
 from canonical.lazr.rest.declarations import (
     collection_default_content, exported, export_as_webservice_collection,
     export_as_webservice_entry, export_read_operation, operation_parameters)
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, WebServiceLayer)
 from canonical.lazr.testing.tales import test_tales
-
-
-# Define a simple model for our API.
-class IAnEntry(Interface):
-    """A simple entry.
-
-    This is the description of the entry.
-    """
-    export_as_webservice_entry()
-
-    # pylint: disable-msg=E0213
-    a_field = exported(
-        TextLine(
-            title=u'A "field"',
-            description=u'The only field that can be <> 0 in the entry.'))
-
-    @operation_parameters(
-        message=TextLine(title=u'Message to say'))
-    @export_read_operation()
-    def greet(message):
-        """Print an appropriate greeting based on the message.
-
-        :param message: This will be included in the greeting.
-        """
-
-
-class IACollection(Interface):
-    """A simple collection containing `IAnEntry`."""
-    export_as_webservice_collection(IAnEntry)
-
-    # pylint: disable-msg=E0211
-    @collection_default_content()
-    def getAll():
-        """Returns all the entries."""
-
-
-# This one is used to test when docstrings are missing.
-class IUndocumentedEntry(Interface):
-    export_as_webservice_entry()
-
-    a_field = exported(TextLine())
+from canonical.launchpad.ftests._login import ANONYMOUS, login
 
 
 def get_resource_factory(model_interface, resource_interface):
@@ -87,13 +56,70 @@ def get_operation_factory(model_interface, name):
             (model_interface, WebServiceLayer), IResourceGETOperation,
             name=name)
 
+class IDummyWebServiceApplication(ILaunchpadApplication,
+                               IServiceRootResource):
+    """Marker interface for the dummy web service."""
 
-class WadlAPITestCase(CleanUp, unittest.TestCase):
-    """Tests for the WADL generation."""
 
-    def setUp(self):
-        """Set the component registry with our simple model."""
-        super(WadlAPITestCase, self).setUp()
+class DummyServiceRootResource(ServiceRootResource):
+    """A dummy web service implementation."""
+    implements(IDummyWebServiceApplication)
+
+
+class DummyWebServicePublication(WebServicePublication):
+    """A dummy web service publication."""
+    def getApplication(self, request):
+        return DummyServiceRootResource()
+
+
+class IGenericEntry(Interface):
+    """A simple, reusable entry interface.
+
+    This is the description of the entry.
+    """
+    export_as_webservice_entry()
+
+    # pylint: disable-msg=E0213
+    a_field = exported(
+        TextLine(
+            title=u'A "field"',
+            description=u'The only field that can be <> 0 in the entry.'))
+
+    @operation_parameters(
+        message=TextLine(title=u'Message to say'))
+    @export_read_operation()
+    def greet(message):
+        """Print an appropriate greeting based on the message.
+
+        :param message: This will be included in the greeting.
+        """
+
+
+class IGenericCollection(Interface):
+    """A simple collection containing `IGenericEntry`."""
+    export_as_webservice_collection(IGenericEntry)
+
+    # pylint: disable-msg=E0211
+    @collection_default_content()
+    def getAll():
+        """Returns all the entries."""
+
+
+class WebServiceTestCase(CleanUp, unittest.TestCase):
+    """A test case for web service operations."""
+
+    def setUp(self, exposed_resources):
+        """Set the component registry with the given model."""
+        super(WebServiceTestCase, self).setUp()
+
+        # Build a test module that exposes the given resource interfaces.
+        testmodule = ModuleType('testmodule')
+        for interface in exposed_resources:
+            setattr(testmodule, interface.__name__, interface)
+        sys.modules['canonical.lazr.testmodule'] = testmodule
+
+        # Register the test module in the ZCML configuration: adapter
+        # classes will be built automatically.
         xmlconfig.string("""
         <configure
            xmlns="http://namespaces.zope.org/zope"
@@ -106,42 +132,83 @@ class WadlAPITestCase(CleanUp, unittest.TestCase):
             factory="zope.app.traversing.adapters.DefaultTraversable"
             provides="zope.app.traversing.interfaces.ITraversable" />
 
-         <webservice:register module="canonical.lazr.tests.test_wadl" />
+        <webservice:register module="canonical.lazr.testmodule" />
         </configure>
         """)
 
+    def createWebServiceRequest(self, path_info, method='GET', body=None,
+                                environ=None, media_type="application/json",
+                                http_host='api.launchpad.dev'):
+        """Build a WebServiceTestRequest with the given parameters."""
+        test_environ = {
+            'SERVER_URL': 'http://%s' % http_host,
+            'HTTP_HOST': http_host,
+            'PATH_INFO': path_info,
+            'HTTP_ACCEPT' : media_type,
+            }
+        if environ is not None:
+            test_environ.update(environ)
+        if body is None:
+            body_instream = body
+        else:
+            test_environ['CONTENT_LENGTH'] = len(body)
+            body_instream = StringIO(body)
+        request = WebServiceTestRequest(
+            body_instream=body_instream, environ=test_environ,
+            method=method)
+        request.setPublication(DummyWebServicePublication(None))
+        # Set the "current" request.
+        newInteraction(request)
+        request.processInputs()
+        return request
+
+
+class WadlAPITestCase(WebServiceTestCase):
+    """Test the docstring generation."""
+
+    # This one is used to test when docstrings are missing.
+    class IUndocumentedEntry(Interface):
+        export_as_webservice_entry()
+
+        a_field = exported(TextLine())
+
+    def setUp(self):
+        super(WadlAPITestCase, self).setUp(
+            [IGenericEntry, IGenericCollection,
+             self.IUndocumentedEntry])
+
     def test_wadl_entry_doc(self):
         """Test the wadl:doc generated for an entry adapter."""
-        entry = get_resource_factory(IAnEntry, IEntry)
+        entry = get_resource_factory(IGenericEntry, IEntry)
         doclines = test_tales(
             'entry/wadl_entry:doc', entry=entry).splitlines()
         self.assertEquals([
             '<wadl:doc xmlns="http://www.w3.org/1999/xhtml">',
-            '<p>A simple entry.</p>',
+            '<p>A simple, reusable entry interface.</p>',
             '<p>This is the description of the entry.</p>',
             '',
             '</wadl:doc>'], doclines)
 
     def test_empty_wadl_entry_doc(self):
         """Test that no docstring on an entry results in no wadl:doc."""
-        entry = get_resource_factory(IUndocumentedEntry, IEntry)
+        entry = get_resource_factory(self.IUndocumentedEntry, IEntry)
         self.assertEquals(
             None, test_tales('entry/wadl_entry:doc', entry=entry))
 
     def test_wadl_collection_doc(self):
         """Test the wadl:doc generated for a collection adapter."""
-        collection = get_resource_factory(IACollection, ICollection)
+        collection = get_resource_factory(IGenericCollection, ICollection)
         doclines = test_tales(
             'collection/wadl_collection:doc', collection=collection
             ).splitlines()
         self.assertEquals([
             '<wadl:doc xmlns="http://www.w3.org/1999/xhtml">',
-            'A simple collection containing IAnEntry.',
+            'A simple collection containing IGenericEntry.',
             '</wadl:doc>'], doclines)
 
     def test_field_wadl_doc (self):
         """Test the wadl:doc generated for an exported field."""
-        entry = get_resource_factory(IAnEntry, IEntry)
+        entry = get_resource_factory(IGenericEntry, IEntry)
         field = entry.schema['a_field']
         doclines = test_tales(
             'field/wadl:doc', field=field).splitlines()
@@ -154,13 +221,13 @@ class WadlAPITestCase(CleanUp, unittest.TestCase):
 
     def test_field_empty_wadl_doc(self):
         """Test that no docstring on a collection results in no wadl:doc."""
-        entry = get_resource_factory(IUndocumentedEntry, IEntry)
+        entry = get_resource_factory(self.IUndocumentedEntry, IEntry)
         field = entry.schema['a_field']
         self.assertEquals(None, test_tales('field/wadl:doc', field=field))
 
     def test_wadl_operation_doc(self):
         """Test the wadl:doc generated for an operation adapter."""
-        operation = get_operation_factory(IAnEntry, 'greet')
+        operation = get_operation_factory(IGenericEntry, 'greet')
         doclines = test_tales(
             'operation/wadl_operation:doc', operation=operation).splitlines()
         # Only compare the first 2 lines and the last one.
@@ -172,6 +239,51 @@ class WadlAPITestCase(CleanUp, unittest.TestCase):
         self.assertEquals('</wadl:doc>', doclines[-1])
         self.failUnless(len(doclines) > 3,
             'Missing the parameter table: %s' % "\n".join(doclines))
+
+
+class DuplicateNameTestCase(WebServiceTestCase):
+    """Test AssertionError when two resources expose the same name.
+
+    This class contains no tests on its own
+    """
+
+    def setUp(self):
+        """Initiate with the generic entry and one that steals its name."""
+        super(DuplicateNameTestCase, self).setUp(
+            [IGenericEntry, self.IDuplicate])
+
+    def doDuplicateTest(self):
+        """Try to generate a WADL representation of the root.
+
+        This will fail due to a name conflict.
+        """
+        app = DummyServiceRootResource()
+        request = self.createWebServiceRequest(
+            "/beta/", media_type=HTTPResource.WADL_TYPE)
+        resource = request.traverse(app)
+        self.assertRaises(AssertionError, resource, request)
+
+
+class DuplicateSingularNameTestCase(DuplicateNameTestCase):
+    """Test AssertionError when resource types share a singular name."""
+
+    class IDuplicate(Interface):
+        """An entry that reuses the singular name of IGenericEntry."""
+        export_as_webservice_entry('generic_entry')
+
+    def test_duplicate_singular(self):
+        self.doDuplicateTest()
+
+
+class DuplicatePluralNameTestCase(DuplicateNameTestCase):
+    """Test AssertionERror when resource types share a plural name."""
+
+    class IDuplicate(Interface):
+        """An entry that reuses the plural name of IGenericEntry."""
+        export_as_webservice_entry(plural_name='generic_entrys')
+
+    def test_duplicate_plural(self):
+        self.doDuplicateTest()
 
 
 def test_suite():

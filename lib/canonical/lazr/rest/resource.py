@@ -872,15 +872,21 @@ class ServiceRootResource(HTTPResource):
                     # schemas; they're functions. We can ignore these
                     # functions because their return value will be one
                     # of the classes with schemas, which we do describe.
+
+                    # Make sure that no other entry class is using this
+                    # class's singular or plural names.
                     adapter = EntryAdapterUtility.forSchemaInterface(
                         registration.required[0])
-                    adapter.singular_type
-                    assert adapter.singular_type not in singular_names, (
-                        "Singular name '%s' is used more than once.")
-                    singular_names.add(adapter.singular_type)
-                    assert adapter.plural_type not in plural_names, (
-                        "Plural name '%s' is used more than once.")
-                    plural_names.add(adapter.plural_type)
+                    singular = adapter.singular_type
+                    assert singular not in singular_names, (
+                        "Singular name '%s' is used more than once."
+                        % singular)
+                    singular_names.add(singular)
+                    plural = adapter.plural_type
+                    assert plural not in plural_names, (
+                        "Plural name '%s' is used more than once." % plural)
+                    plural_names.add(plural)
+
                     entry_classes.append(registration.value)
                 elif (provided.isOrExtends(ICollection)
                       and ICollection.implementedBy(registration.value)
