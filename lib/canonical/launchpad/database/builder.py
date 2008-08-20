@@ -415,14 +415,20 @@ class Builder(SQLBase):
             ******************
             """ % (self.name, self.url, filemap, args, status, info)
             logger.info(message)
-        except (xmlrpclib.Fault, socket.error), info:
+        except xmlrpclib.Fault, info:
+            # Mark builder as 'failed'.
+            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
+            self.failbuilder(
+                "Exception (%s) when setting up to new job" % info)
+            raise BuildSlaveFailure
+        except socket.error, info:
             if self.virtualized:
                 self.resumeSlaveHost()
             else:
                 # Mark builder as 'failed'.
                 logger.debug("Disabling builder: %s" % self.url, exc_info=1)
-            self.failbuilder(
-                "Exception (%s) when setting up to new job" % info)
+                self.failbuilder(
+                    "Exception (%s) when setting up to new job" % info)
             raise BuildSlaveFailure
 
     def startBuild(self, build_queue_item, logger):
