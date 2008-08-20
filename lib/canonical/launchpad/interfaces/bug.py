@@ -540,6 +540,20 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no such bugtask is found.
         """
 
+    def getBugTasksByPackageName(bugtasks):
+        """Return a mapping from `ISourcePackageName` to its bug tasks.
+
+        This mapping is suitable to pass as the bugtasks_by_package
+        cache to getConjoinedMaster().
+
+        The mapping is from a `ISourcePackageName` to all the bug tasks
+        that are targeted to such a package name, no matter which
+        distribution or distro series it is.
+
+        All the tasks that don't have a package will be available under
+        None.
+        """
+
 # We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug

@@ -2593,7 +2593,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Build a cache we can pass on to getConjoinedMaster(), so that
         # it doesn't have to iterate over all the bug tasks in each loop
         # iteration.
-        bugtasks_by_package = bugtask.getBugTasksByPackageName(all_bugtasks)
+        bugtasks_by_package = bug.getBugTasksByPackageName(all_bugtasks)
 
         for bugtask in all_bugtasks:
             conjoined_master = bugtask.getConjoinedMaster(
