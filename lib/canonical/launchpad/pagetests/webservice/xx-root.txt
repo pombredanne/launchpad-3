@@ -58,7 +58,7 @@ current ETag, the representation won't be served again.
   >>> conditional_response = webservice.get(
   ...     '/beta/', headers={'If-None-Match' : etag})
   >>> conditional_response.getStatus()
-  204
+  304
   >>> conditional_response.getBody()
   ''
 

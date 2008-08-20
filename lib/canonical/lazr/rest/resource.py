@@ -142,9 +142,14 @@ class HTTPResource:
     def handleConditionalGET(self):
         """Handle a possible conditional GET request.
 
-        :return: The media type to serve. If this is None, the
+        This method has side effects. If the resource provides a
+        generated ETag, it sets this value as the "ETag" response
+        header. If the "ETag" request header matches the generated
+        ETag, it sets the response code to 304 ("Not Modified").
+
+        :return: The media type to serve. If this value is None, the
             incoming ETag matched the generated ETag and there is no
-            need to serve antyhing else.
+            need to serve anything else.
         """
         incoming_etag = self.request.getHeader('If-None-Match')
 
@@ -158,7 +163,7 @@ class HTTPResource:
             if incoming_etag == existing_etag:
                 # The client already has this representation.
                 # No need to send it again.
-                self.request.response.setStatus(204) # No Content
+                self.request.response.setStatus(304) # Not Modified
                 media_type = None
         return media_type
 
@@ -458,15 +463,18 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         if media_type != self.JSON_TYPE:
             return None
 
-        hash_object = sha.new()
+        values = []
         for name, field in getFieldsInOrder(self.entry.schema):
             if self.isModifiableField(field, False):
                 ignored, value = self._unmarshallField(name, field)
-                hash_object.update(str(value))
-                hash_object.update("\0")
-            # Append the revision number, because the algorithm for
-            # generating the representation might itself change across
-            # versions.
+                values.append(str(value))
+
+        hash_object = sha.new()
+        hash_object.update("\0".join(values))
+
+        # Append the revision number, because the algorithm for
+        # generating the representation might itself change across
+        # versions.
         hash_object.update(str(versioninfo.revno))
         return hash_object.hexdigest()
 
@@ -596,8 +604,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         :param is_external_client: Whether the code trying to modify
         the field is an external client. Read-only fields cannot be
-        modified from external clients, but might change due to
-        internal changes.
+        directly modified from external clients, but they might change
+        as side effects of other changes.
         """
         if (ICollectionField.providedBy(field)
             or field.__name__.startswith('_')):

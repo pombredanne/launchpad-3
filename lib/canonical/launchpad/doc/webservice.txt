@@ -1453,7 +1453,7 @@ release it'll always the same for a given resource with a given state.
 A client can use a previously obtained ETag as the value of
 If-None-Match when making a request. If the ETags match, it means the
 resource hasn't changed since the client's last request. The server
-sends a response code of 204 ("No Content") instead of sending the
+sends a response code of 304 ("Not Modified") instead of sending the
 same representation again.
 
     >>> headers = {'CONTENT_TYPE' : 'application/json',
@@ -1462,7 +1462,7 @@ same representation again.
     >>> get_request.traverse(app)()
     ''
     >>> get_request.response.getStatus()
-    204
+    304
 
 If the ETags don't match, the server assumes the client has an old
 representation, and sends the new representation.
@@ -1782,6 +1782,7 @@ their URLs, we make the change by modifying the cookbook's
 
     >>> change_joy_author(u'http://api.launchpad.dev' + path)
     ''
+
     >>> joy_resource = create_web_service_request(
     ...     '/beta/cookbooks/The%20Joy%20of%20Cooking').traverse(app)
     >>> joy = simplejson.loads(joy_resource())
