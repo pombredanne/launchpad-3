@@ -365,13 +365,6 @@ class PullerWorker:
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
-    def _openSourceBranch(self, source):
-        """Open the branch to pull from.
-
-        This only exists as a separate method to be overriden in tests.
-        """
-        return Branch.open(source)
-
     def _mirrorToDestBranch(self, source_branch):
         """Open the branch to pull to, creating a new one if necessary.
 
