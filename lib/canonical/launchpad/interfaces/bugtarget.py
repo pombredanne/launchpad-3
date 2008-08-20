@@ -15,25 +15,53 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Text
 
-from canonical.lazr.rest.declarations import export_as_webservice_entry
+from canonical.launchpad import _
+from canonical.lazr.rest.declarations import (
+   call_with, collection_default_content, export_as_webservice_collection,
+   export_as_webservice_entry, export_factory_operation,
+   export_read_operation, export_write_operation, exported,
+   operation_parameters, operation_returns_collection_of,
+   operation_returns_entry, rename_parameters_as, REQUEST_USER,
+   webservice_error)
+from canonical.lazr.fields import CollectionField, Reference
 
 class IHasBugs(Interface):
     """An entity which has a collection of bug tasks."""
 
     export_as_webservice_entry()
 
-    open_bugtasks = Attribute("A list of open bugTasks for this target.")
-    closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
-    inprogress_bugtasks = Attribute(
-        "A list of in-progress bugTasks for this target.")
-    critical_bugtasks = Attribute(
-        "A list of critical BugTasks for this target.")
-    new_bugtasks = Attribute("A list of New BugTasks for this target.")
-    unassigned_bugtasks = Attribute(
-        "A list of unassigned BugTasks for this target.")
-    all_bugtasks = Attribute(
-        "A list of all BugTasks ever reported for this target.")
+    open_bugtasks = exported(CollectionField(
+        title=_("A list of open bugTasks for this target."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))) # IBugTask
+    closed_bugtasks = exported(CollectionField(
+        title=_("A list of closed bugTasks for this target."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))) # IBugTask
+    inprogress_bugtasks = exported(CollectionField(
+        title=_("A list of in-progress bugTasks for this target."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))) # IBugTask
+    critical_bugtasks = exported(CollectionField(
+        title=_("A list of critical BugTasks for this target."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))) # IBugTask
+    new_bugtasks = exported(CollectionField(
+        title=_("A list of New BugTasks for this target."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))) # IBugTask
+    unassigned_bugtasks = exported(CollectionField(
+        title=_("A list of unassigned BugTasks for this target."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))) # IBugTask
+    all_bugtasks = exported(CollectionField(
+        title=_("A list of all BugTasks ever reported for this target."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))) # IBugTask
 
+#     @operation_parameters()
+#     @operation_returns_collection_of(Interface) # Actually, IBugTask
+#     @export_read_operation()
     def searchTasks(search_params, user=None,
                     order_by=('-importance',), search_text=None,
                     status=[],

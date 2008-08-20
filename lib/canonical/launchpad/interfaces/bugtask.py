@@ -55,7 +55,7 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.bugattachment import BugAttachmentType
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.searchbuilder import all, any, NULL
@@ -652,6 +652,11 @@ IBugTask['related_tasks'].value_type.schema = IBugTask
 
 # We are forced to define this now to avoid circular import problems.
 IBugWatch['bugtasks'].value_type.schema = IBugTask
+
+for attrname in ('open_bugtasks', 'closed_bugtasks',
+                 'inprogress_bugtasks', 'critical_bugtasks',
+                 'new_bugtasks', 'unassigned_bugtasks', 'all_bugtasks'):
+    IHasBugs[attrname].value_type.schema = IBugTask
 
 
 class INullBugTask(IBugTask):

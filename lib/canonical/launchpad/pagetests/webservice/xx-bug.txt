@@ -623,3 +623,46 @@ the same time.
     u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'),
    (u'start', 0),
    (u'total_size', 1)]
+
+
+== Collections of bugs ==
+
+  >>> ubuntu = webservice.get(
+  ...     'http://api.launchpad.dev/beta/ubuntu').jsonBody()
+  >>> show(ubuntu)
+  [(u'all_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/all_bugtasks'),
+   (u'closed_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/closed_bugtasks'),
+   (u'critical_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/critical_bugtasks'),
+   (u'inprogress_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/inprogress_bugtasks'),
+   (u'new_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/new_bugtasks'),
+   (u'open_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/open_bugtasks'),
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#bug_target'),
+   (u'self_link', u'http://api.launchpad.dev/beta/ubuntu'),
+   (u'unassigned_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/unassigned_bugtasks')]
+
+  >>> show(webservice.get(ubuntu['all_bugtasks_collection_link']).jsonBody())
+  [(u'entries',
+    [{...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/thunderbird/+bug/9',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/2',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/17',
+      ...
+   (u'next_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/all_bugtasks?ws.start=5&ws.size=5'),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#bug_task-page-resource'),
+   (u'start', 0),
+   (u'total_size', 6)]
