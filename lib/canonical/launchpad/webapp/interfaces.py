@@ -233,7 +233,7 @@ class IStructuredString(Interface):
 
 
 class IBreadcrumb(Interface):
-    """A breadcrumb link.  IBreadcrumbs get put into request.breadcrumbs."""
+    """A breadcrumb link."""
 
     url = Attribute('Absolute url of this breadcrumb.')
 
