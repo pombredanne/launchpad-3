@@ -252,7 +252,7 @@ class DuplicateNameTestCase(WebServiceTestCase):
         super(DuplicateNameTestCase, self).setUp(
             [IGenericEntry, self.IDuplicate])
 
-    def doDuplicateTest(self):
+    def doDuplicateTest(self, expected_error):
         """Try to generate a WADL representation of the root.
 
         This will fail due to a name conflict.
@@ -262,6 +262,10 @@ class DuplicateNameTestCase(WebServiceTestCase):
             "/beta/", media_type=HTTPResource.WADL_TYPE)
         resource = request.traverse(app)
         self.assertRaises(AssertionError, resource, request)
+        try:
+            resource(request)
+        except AssertionError, e:
+            self.assertEquals(str(e), expected_error)
 
 
 class DuplicateSingularNameTestCase(DuplicateNameTestCase):
@@ -272,7 +276,8 @@ class DuplicateSingularNameTestCase(DuplicateNameTestCase):
         export_as_webservice_entry('generic_entry')
 
     def test_duplicate_singular(self):
-        self.doDuplicateTest()
+        self.doDuplicateTest("Singular name 'generic_entry' is used more "
+                             "than once.")
 
 
 class DuplicatePluralNameTestCase(DuplicateNameTestCase):
@@ -283,7 +288,8 @@ class DuplicatePluralNameTestCase(DuplicateNameTestCase):
         export_as_webservice_entry(plural_name='generic_entrys')
 
     def test_duplicate_plural(self):
-        self.doDuplicateTest()
+        self.doDuplicateTest("Plural name 'generic_entrys' is used more "
+                             "than once.")
 
 
 def test_suite():
