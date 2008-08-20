@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+from StringIO import StringIO
 import sys
 from types import ModuleType
 import unittest
@@ -12,7 +13,7 @@ from zope.component import getGlobalSiteManager
 from zope.configuration import xmlconfig
 from zope.interface import implements, Interface
 from zope.schema import TextLine
-from zope.security.management import endInteraction, newInteraction
+from zope.security.management import newInteraction
 from zope.testing.cleanup import CleanUp
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -27,7 +28,6 @@ from canonical.lazr.rest.declarations import (
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, WebServiceLayer)
 from canonical.lazr.testing.tales import test_tales
-from canonical.launchpad.ftests._login import ANONYMOUS, login
 
 
 def get_resource_factory(model_interface, resource_interface):
