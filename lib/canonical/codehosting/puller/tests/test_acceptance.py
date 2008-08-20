@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """End-to-end tests for the branch puller."""
 
@@ -7,7 +7,6 @@ __all__ = []
 
 
 import os
-import shutil
 from subprocess import PIPE, Popen
 import sys
 import unittest
@@ -17,19 +16,17 @@ import transaction
 
 from bzrlib.branch import Branch
 from bzrlib.tests import HttpServer
-from bzrlib.urlutils import local_path_from_url
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.tests.helpers import BranchTestCase
+from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
-from canonical.codehosting import branch_id_to_path
 from canonical.testing import ZopelessAppServerLayer
 
 
-class TestBranchPuller(BranchTestCase):
+class TestBranchPuller(PullerBranchTestCase):
     """Integration tests for the branch puller.
 
     These tests actually run the supermirror-pull.py script. Instead of
@@ -40,7 +37,7 @@ class TestBranchPuller(BranchTestCase):
     layer = ZopelessAppServerLayer
 
     def setUp(self):
-        super(TestBranchPuller, self).setUp()
+        PullerBranchTestCase.setUp(self)
         self._puller_script = os.path.join(
             config.root, 'cronscripts', 'supermirror-pull.py')
         self.makeCleanDirectory(config.codehosting.branches_root)
@@ -78,37 +75,6 @@ class TestBranchPuller(BranchTestCase):
         self.assertEqualDiff('', stdout)
         self.assertEqualDiff('', stderr)
 
-    def getHostedPath(self, branch):
-        """Return the path of 'branch' in the upload area."""
-        return os.path.join(
-            config.codehosting.branches_root, branch_id_to_path(branch.id))
-
-    def getMirroredPath(self, branch):
-        """Return the path of 'branch' in the supermirror area."""
-        return os.path.join(
-            config.supermirror.branchesdest, branch_id_to_path(branch.id))
-
-    def makeCleanDirectory(self, path):
-        """Guarantee an empty branch upload area."""
-        if os.path.exists(path):
-            shutil.rmtree(path)
-        os.makedirs(path)
-
-    def pushToBranch(self, branch, tree=None):
-        """Push a trivial Bazaar branch to a given Launchpad branch.
-
-        :param branch: A Launchpad Branch object.
-        """
-        hosted_path = self.getHostedPath(branch)
-        if tree is None:
-            tree = self.createTemporaryBazaarBranchAndTree()
-        out, err = self.run_bzr(
-            ['push', '--create-prefix', '-d',
-             local_path_from_url(tree.branch.base), hosted_path],
-            retcode=None)
-        # We want to be sure that a new branch was indeed created.
-        self.assertEqual("Created new branch.\n", err)
-
     def runSubprocess(self, command):
         """Run the given command in a subprocess.
 
@@ -128,9 +94,7 @@ class TestBranchPuller(BranchTestCase):
             output and error are strings contain the output of the process to
             stdout and stderr respectively.
         """
-        command = [
-            sys.executable, os.path.join(self._puller_script), '-q',
-            branch_type]
+        command = [sys.executable, self._puller_script, '-q', branch_type]
         retcode, output, error = self.runSubprocess(command)
         return command, retcode, output, error
 
@@ -147,51 +111,52 @@ class TestBranchPuller(BranchTestCase):
         # XXX: JonathanLange 2007-08-21, This test will fail if run by itself,
         # due to an unidentified bug in bzrlib.trace, possibly related to bug
         # 124849.
-        branch = self.makeBranch(BranchType.HOSTED)
-        self.pushToBranch(branch)
-        branch.requestMirror()
+        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        self.pushToBranch(db_branch)
+        db_branch.requestMirror()
         transaction.commit()
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(self.getHostedPath(branch), branch)
+        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
     def test_mirrorAHostedLoomBranch(self):
         """Run the puller over a branch with looms enabled."""
-        branch = self.makeBranch(BranchType.HOSTED)
+        db_branch = self.factory.makeBranch(BranchType.HOSTED)
         loom_tree = self.makeLoomBranchAndTree('loom')
-        self.pushToBranch(branch, loom_tree)
-        branch.requestMirror()
+        self.pushToBranch(db_branch, loom_tree)
+        db_branch.requestMirror()
         transaction.commit()
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(self.getHostedPath(branch), branch)
+        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
     def test_mirrorAPrivateBranch(self):
         """Run the puller with a private branch in the queue."""
-        branch = self.makeBranch(BranchType.HOSTED)
-        self.pushToBranch(branch)
-        branch.requestMirror()
-        branch.private = True
+        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        self.pushToBranch(db_branch)
+        db_branch.requestMirror()
+        db_branch.private = True
         transaction.commit()
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(self.getHostedPath(branch), branch)
+        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
     def test_mirrorAMirroredBranch(self):
         """Run the puller on a populated mirrored branch pull queue."""
-        branch = self.makeBranch(BranchType.MIRRORED)
-        tree = self.createTemporaryBazaarBranchAndTree()
-        branch.url = self.serveOverHTTP()
-        branch.requestMirror()
+        db_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        tree = self.make_branch_and_tree('.')
+        tree.commit('rev1')
+        db_branch.url = self.serveOverHTTP()
+        db_branch.requestMirror()
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-        # XXX: The first argument used to be branch.url, but this triggered
+        # XXX: The first argument used to be db_branch.url, but this triggered
         # Bug #193253 where for some reason Branch.open via HTTP makes
         # an incomplete request to the HttpServer leaving a dangling thread.
         # Our test suite now fails tests leaving dangling threads.
         # -- StuartBishop 20080312
-        self.assertMirrored(tree.basedir, branch)
+        self.assertMirrored(tree.basedir, db_branch)
 
     def _getImportMirrorPort(self):
         """Return the port used to serve imported branches, as specified in
@@ -208,14 +173,15 @@ class TestBranchPuller(BranchTestCase):
     def test_mirrorAnImportedBranch(self):
         """Run the puller on a populated imported branch pull queue."""
         # Create the branch in the database.
-        branch = self.makeBranch(BranchType.IMPORTED)
-        branch.requestMirror()
+        db_branch = self.factory.makeBranch(BranchType.IMPORTED)
+        db_branch.requestMirror()
         transaction.commit()
 
         # Create the Bazaar branch and serve it in the expected location.
-        branch_path = '%08x' % branch.id
+        branch_path = '%08x' % db_branch.id
         os.mkdir(branch_path)
-        self.createTemporaryBazaarBranchAndTree(branch_path)
+        tree = self.make_branch_and_tree(branch_path)
+        tree.commit('rev1')
         self.serveOverHTTP(self._getImportMirrorPort())
 
         # Run the puller.
@@ -225,7 +191,7 @@ class TestBranchPuller(BranchTestCase):
         # XXX: Because of Bug #193253, check the branch is mirrored by going
         # straight to the filesystem, rather than over HTTP. This is to
         # avoid Bazaar opening an HTTP connection that never closes.
-        self.assertMirrored(branch_path, branch)
+        self.assertMirrored(branch_path, db_branch)
 
     def test_mirrorEmpty(self):
         """Run the puller on an empty pull queue."""

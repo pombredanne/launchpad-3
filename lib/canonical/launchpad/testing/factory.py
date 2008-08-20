@@ -22,46 +22,19 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
-    AccountStatus,
-    BranchMergeProposalStatus,
-    BranchSubscriptionNotificationLevel,
-    BranchType,
-    CodeImportMachineState,
-    CodeImportResultStatus,
-    CodeImportReviewStatus,
-    CodeReviewNotificationLevel,
-    CreateBugParams,
-    DistroSeriesStatus,
-    EmailAddressStatus,
-    IBranchSet,
-    IBugSet,
-    IBugWatchSet,
-    ICodeImportJobWorkflow,
-    ICodeImportMachineSet,
-    ICodeImportEventSet,
-    ICodeImportResultSet,
-    ICodeImportSet,
-    ICountrySet,
-    IDistributionSet,
-    IDistroSeriesSet,
-    IEmailAddressSet,
-    ILibraryFileAliasSet,
-    IPersonSet,
-    IProductSet,
-    IProjectSet,
-    IRevisionSet,
-    IShippingRequestSet,
-    ISpecificationSet,
-    IStandardShipItRequestSet,
-    ITranslationGroupSet,
-    License,
-    PersonCreationRationale,
-    RevisionControlSystems,
-    ShipItFlavour,
-    ShippingRequestStatus,
-    SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy,
-    UnknownBranchTypeError,
+    AccountStatus, BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
+    CodeImportResultStatus, CodeImportReviewStatus,
+    CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
+    EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
+    ICodeImportJobWorkflow, ICodeImportMachineSet, ICodeImportEventSet,
+    ICodeImportResultSet, ICodeImportSet, ICountrySet, IDistributionSet,
+    IDistroSeriesSet, IEmailAddressSet, ILibraryFileAliasSet, IPersonSet,
+    IProductSet, IProjectSet, IRevisionSet, IShippingRequestSet,
+    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
+    License, PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
+    ShippingRequestStatus, SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy, UnknownBranchTypeError,
     )
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -138,10 +111,13 @@ class LaunchpadObjectFactory:
         string = "%s%s" % (prefix, self.getUniqueInteger())
         return string.replace('_', '-').lower()
 
-    def getUniqueURL(self):
+    def getUniqueURL(self, scheme=None, host=None):
         """Return a URL unique to this run of the test case."""
-        return 'http://%s.example.com/%s' % (
-            self.getUniqueString('domain'), self.getUniqueString('path'))
+        if scheme is None:
+            scheme = 'http'
+        if host is None:
+            host = "%s.domain.com" % self.getUniqueString('domain')
+        return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, displayname=None):

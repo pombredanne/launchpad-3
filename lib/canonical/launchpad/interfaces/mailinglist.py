@@ -28,6 +28,7 @@ from zope.schema import Bool, Choice, Datetime, Object, Set, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IEmailAddress
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -672,9 +673,15 @@ class IMessageApproval(Interface):
         required=True, readonly=True)
 
     posted_message = Object(
-        schema=IMessage,
+        schema=ILibraryFileAlias,
         title=_('Posted message'),
-        description=_('The message that was posted and held.'),
+        description=_('An alias to the posted message in the librarian.'),
+        required=True, readonly=True)
+
+    message = Object(
+        schema=IMessage,
+        title=_('The posted message object'),
+        description=_('The posted message'),
         required=True, readonly=True)
 
     posted_date = Datetime(
@@ -760,6 +767,7 @@ class IMessageApprovalSet(Interface):
 
         :param status: A PostedMessageStatus enum value.
         :return: An iterator over all the matching held messages.
+        :rtype: sequence of MessageApproval
         """
 
 
