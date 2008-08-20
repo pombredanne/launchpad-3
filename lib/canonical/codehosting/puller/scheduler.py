@@ -363,6 +363,10 @@ class PullerMaster:
         deferred.addBoth(self.releaseOopsPrefix)
         return deferred
 
+    def setStackedOn(self, stacked_on_location):
+        return self.branch_status_client.setStackedOn(
+            self.branch_id, stacked_on_location)
+
     def startMirroring(self):
         self.logger.info(
             'Mirroring branch %d: %s to %s', self.branch_id, self.source_url,

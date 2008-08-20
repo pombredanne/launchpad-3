@@ -43,6 +43,10 @@ class FakeBranchStatusClient:
     def getBranchPullQueue(self, branch_type):
         return defer.succeed(self.branch_queues[branch_type])
 
+    def setStackedOn(self, branch_id, stacked_on_location):
+        self.calls.append(('setStackedOn', branch_id, stacked_on_location))
+        return defer.succeed(None)
+
     def startMirroring(self, branch_id):
         self.calls.append(('startMirroring', branch_id))
         return defer.succeed(None)
@@ -447,6 +451,18 @@ class TestPullerMaster(TrialTestCase):
                 self.status_client.calls)
 
         return deferred.addCallback(checkMirrorStarted)
+
+    def test_setStackedOn(self):
+        stacked_on_location = '/~foo/bar/baz'
+        deferred = self.eventHandler.setStackedOn(stacked_on_location)
+
+        def checkSetStackedOn(ignored):
+            self.assertEqual(
+                [('setStackedOn', self.arbitrary_branch_id,
+                  stacked_on_location)],
+                self.status_client.calls)
+
+        return deferred.addCallback(checkSetStackedOn)
 
     def test_mirrorComplete(self):
         arbitrary_revision_id = 'rev1'
