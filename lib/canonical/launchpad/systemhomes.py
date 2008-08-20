@@ -87,7 +87,7 @@ class FeedsApplication:
     implements(IFeedsApplication)
 
 
-class MaloneApplication(HasBugsBase):
+class MaloneApplication:
     implements(IMaloneApplication)
 
     def __init__(self):
