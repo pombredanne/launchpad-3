@@ -36,13 +36,6 @@
   </browser:pages>
 
   <browser:page
-    name="+roadmap"
-    for="canonical.launchpad.interfaces.IHasSpecifications"
-    class="canonical.launchpad.browser.SpecificationRoadmapView"
-    permission="zope.Public"
-    template="../templates/specificationtarget-roadmap.pt" />
-
-  <browser:page
     name="+register-a-blueprint-button"
     for="canonical.launchpad.interfaces.ISpecificationTarget"
     class="canonical.launchpad.browser.RegisterABlueprintButtonView"

@@ -1,5 +1,4 @@
-Distribution Search page
-========================
+= Distribution Search page =
 
 In the 'Bugs' facet of a distribution we can find a list of bugs
 reported in that distribution and simple and advanced search forms.
@@ -204,8 +203,8 @@ in each series. In this case, the component search widget is hidden.
     >>> distro_advanced_search_listingview.shouldShowComponentWidget()
     False
 
-Distribution Series search page
-================================
+
+== Distribution Series search page ==
 
     >>> sarge = debian.getSeries('sarge')
 
@@ -283,8 +282,8 @@ The same is true for a sarge package.
     >>> package_advanced_search_view.getMilestoneWidgetValues()
     []
 
-Project Search Page
-===================
+
+== Project Search Page ==
 
     >>> from canonical.launchpad.interfaces import IProjectSet
     >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
@@ -500,3 +499,69 @@ The unassigned bug counts consider only bugs with an unresolved status.
 
     >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
     1
+
+
+== Constructing search filter urls ==
+
+There is a helper method, get_buglisting_search_filter_url(), which can
+be used to construct bug search URLs. It takes keyword parameters for
+the assignee, importance, status and status_upstream fields of a bug
+search and returns the correct URL for a bug listing with those
+parameters. The URL returned isn't tied to any specific bugtarget, so
+it's up to the callsite to urljoin() the results of
+get_buglisting_search_filter_url() with a bugtarget URL to make it
+useful.
+
+    >>> from canonical.launchpad.browser import (
+    ...     get_buglisting_search_filter_url)
+
+Calling get_buglisting_search_filter_url() without any parameters will
+return a plain search URL which, when visited, will display all open
+bugs.
+
+    >>> print get_buglisting_search_filter_url()
+    +bugs?search=Search
+
+Passing an assignee will add an assignee field to the query string. Not
+that get_buglisting_search_filter_url() doesn't check any of the data
+that's passed to it; that's for the target search to do.
+
+    >>> print get_buglisting_search_filter_url(assignee='gmb')
+    +bugs?search=Search&field.assignee=gmb
+
+Passing an importance will add an importance field to the query string.
+
+    >>> print get_buglisting_search_filter_url(importance='UNDECIDED')
+    +bugs?search=Search&field.importance=UNDECIDED
+
+Importance can be a single item or a list of items:
+
+    >>> print get_buglisting_search_filter_url(importance=['LOW', 'HIGH'])
+    +bugs?search=Search&field.importance=LOW&field.importance=HIGH
+
+Passing a status will add a status field to the query string:
+
+    >>> print get_buglisting_search_filter_url(status='TRIAGED')
+    +bugs?search=Search&field.status=TRIAGED
+
+Status, like importance, can be a list:
+
+    >>> print get_buglisting_search_filter_url(status=['NEW', 'INCOMPLETE'])
+    +bugs?search=Search&field.status=NEW&field.status=INCOMPLETE
+
+Passing a status_upstream parameter will add a status_upstream field to
+the query string.
+
+    >>> print get_buglisting_search_filter_url(
+    ...     status_upstream='open_upstream')
+    +bugs?search=Search&field.status_upstream=open_upstream
+
+The fields will always be rendered in the order assignee, importance,
+status, status_upstream, regardless of what order they're passed to
+get_buglisting_search_filter_url().
+
+    >>> print get_buglisting_search_filter_url(
+    ...     status_upstream='open_upstream', status='NEW',
+    ...     importance='WISHLIST', assignee='sabdfl')
+    +bugs?search=Search&field.assignee=sabdfl&field.importance=WISHLIST&field.status=NEW&field.status_upstream=open_upstream
+

@@ -186,7 +186,6 @@ Teams don't have a time zone field.
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
     Email: No contact address ...
-    Wiki: .../Guadamen
 
 
 == Table of contributions ==

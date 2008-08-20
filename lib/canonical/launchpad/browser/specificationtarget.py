@@ -5,27 +5,23 @@ __metaclass__ = type
 
 __all__ = [
     'HasSpecificationsView',
-    'SpecificationRoadmapView',
     'RegisterABlueprintButtonView',
     ]
 
 from operator import itemgetter
 
-from canonical.launchpad.interfaces import (
-    IDistribution,
-    IDistroSeries,
-    IHasDrivers,
-    IPerson,
-    IProduct,
-    IProductSeries,
-    IProject,
-    IProjectSeries,
-    ISprint,
-    ISpecificationSet,
-    ISpecificationTarget,
-    SpecificationFilter,
-    SpecificationSort,
-    )
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.launchpad import IHasDrivers
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.project import IProject, IProjectSeries
+from canonical.launchpad.interfaces.specification import (
+    SpecificationFilter, SpecificationSort)
+from canonical.launchpad.interfaces.specificationtarget import (
+    ISpecificationTarget)
+from canonical.launchpad.interfaces.sprint import ISprint
 
 from canonical.config import config
 from canonical.launchpad import _
@@ -34,7 +30,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
-from zope.component import getUtility, queryMultiAdapter
+from zope.component import queryMultiAdapter
 
 
 class HasSpecificationsView(LaunchpadView):
@@ -310,45 +306,6 @@ class HasSpecificationsView(LaunchpadView):
         """
         return self.context.specifications(sort=SpecificationSort.DATE,
             quantity=quantity, prejoin_people=False)
-
-
-class SpecificationRoadmapView(LaunchpadView):
-    """View for the +roadmap pages for specifications."""
-
-    @cachedproperty
-    def spec_plan(self):
-        """Return the optimised sequence of specs for this target.
-
-        Figures out what the best sequence of implementation is for the
-        specs registered on this target. Essentially, orders by
-        decreasing priority, but uses recursion to include dependencies
-        (in decreasing order, too, thanks to getDependencyDict()) first.
-        """
-        filter = [
-            SpecificationFilter.INCOMPLETE,
-            SpecificationFilter.ACCEPTED]
-        specs = self.context.specifications(
-            filter=filter, prejoin_people=False)
-        if specs.count() == 0:
-            return []
-
-        specification_set = getUtility(ISpecificationSet)
-        dependencies = specification_set.getDependencyDict(specs)
-
-        def update_plan(specs, plan):
-            """Update the plan with this spec's dependencies."""
-            for spec in specs:
-                if spec in plan:
-                    continue
-                my_deps = dependencies.get(spec.id)
-                if my_deps is not None:
-                    update_plan(my_deps, plan)
-                plan.append(spec)
-
-        the_plan = []
-        update_plan(specs, the_plan)
-
-        return the_plan
 
 
 class RegisterABlueprintButtonView:

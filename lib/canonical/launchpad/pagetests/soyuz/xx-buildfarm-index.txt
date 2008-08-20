@@ -8,16 +8,17 @@ this, since the audience of this page is still restricted.
 
 The BuildFarm contains a list of all builders registered in Launchpad
 ordered by architecture and a short summary about what they are
-processing.
+processing. Please note that the builder's manual/automatic status is
+shown in a separate column and all in upper case letters.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Launchpad build machines
     PPA build machines
     386  0 builds waiting in queue
-    The frog builder   Disabled
+    The frog builder   AUTO    Disabled
     Official distribution build machines
     386  1 builds waiting in queue
-    Bob The Builder    Disabled
+    Bob The Builder    AUTO    Disabled
     Generated at ...
 
 As we can see, this page also presents the number of builds waiting

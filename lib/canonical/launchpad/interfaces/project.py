@@ -55,12 +55,12 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
                IHasTranslationGroup, IMakesAnnouncements,
                IKarmaContext, IPillar):
     """A Project."""
-    export_as_webservice_entry()
+    export_as_webservice_entry('project_group')
 
     id = Int(title=_('ID'), readonly=True)
 
     owner = PublicPersonChoice(
-        title=_('Owner'),
+        title=_('Maintainer'),
         required=True,
         vocabulary='ValidOwner',
         description=_("""Project group owner, it can either a valid
