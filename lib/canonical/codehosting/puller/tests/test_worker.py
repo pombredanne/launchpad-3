@@ -97,7 +97,6 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         self.assertEqual(new_http.__class__, http.__class__)
 
 
-
 class TestBranchOpenerCheckSource(unittest.TestCase):
     """Unit tests for `BranchOpener.checkSource`."""
 
@@ -186,6 +185,7 @@ class TestBranchOpenerCheckSource(unittest.TestCase):
         self.assertRaises(
             BranchReferenceLoopError, opener.checkSource, 'a')
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
+
 
 class TestReferenceMirroring(TestCaseWithTransport):
     """Feature tests for mirroring of branch references."""
