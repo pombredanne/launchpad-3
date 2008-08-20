@@ -55,9 +55,11 @@ Now the team owner deactivates the mailing list.  When this completes
 successfully, the mailing list will have been archived and removed on the
 Mailman side.
 
+    >>> import transaction
     >>> view = create_view(an_admin)
     >>> list_one.deactivate()
     >>> mailinglists_helper.mailman.act()
+    >>> transaction.commit()
 
 The team owner cannot purge his list...
 

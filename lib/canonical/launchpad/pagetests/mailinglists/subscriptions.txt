@@ -36,6 +36,7 @@ contact address.
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> login('foo.bar@canonical.com')
     >>> mailinglists_helper.mailman.act()
+    >>> transaction.commit()
     >>> logout()
 
     >>> admin_browser.open('http://launchpad.dev/~admins')

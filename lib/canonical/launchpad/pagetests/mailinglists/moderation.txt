@@ -14,6 +14,7 @@ member in good standing (as is the default).
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> login('foo.bar@canonical.com')
     >>> mailinglists_helper.mailman.act()
+    >>> transaction.commit()
     >>> logout()
 
     # Ignore any notifications up to this point.
