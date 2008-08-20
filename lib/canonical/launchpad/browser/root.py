@@ -308,7 +308,8 @@ class LaunchpadSearchView(LaunchpadFormView):
                     if check_permission("launchpad.View", bug):
                         self._bug = bug
                 except NotFoundError:
-                    self._bug = None
+                    # Let self._bug remain None.
+                    pass
                 self._question = getUtility(IQuestionSet).get(numeric_token)
 
             name_token = self._getNameToken(self.text)
