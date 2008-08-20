@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = []
 
 from zope.interface import implements, Interface
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.announcement import IAnnouncement
@@ -1423,19 +1423,42 @@ class AccessBranch(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBranch
 
-    def checkAuthenticated(self, user):
-        if not self.obj.private:
+    def _checkBranchAuthenticated(self, branch, user):
+        if not branch.private:
             return True
-        if user.inTeam(self.obj.owner):
+        if user.inTeam(branch.owner):
             return True
-        for subscriber in self.obj.subscribers:
+        for subscriber in branch.subscribers:
             if user.inTeam(subscriber):
                 return True
         celebs = getUtility(ILaunchpadCelebrities)
         return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
 
-    def checkUnauthenticated(self):
-        return not self.obj.private
+    def checkAuthenticated(self, user, checked_branches=None):
+        if checked_branches is None:
+            checked_branches = []
+        if self.obj in checked_branches:
+            return True
+        can_access = self._checkBranchAuthenticated(self.obj, user)
+        if can_access and self.obj.stacked_on is not None:
+            checked_branches.append(self.obj)
+            access = getAdapter(
+                self.obj.stacked_on, IAuthorization, name='launchpad.View')
+            can_access = access.checkAuthenticated(user, checked_branches)
+        return can_access
+
+    def checkUnauthenticated(self, checked_branches=None):
+        if checked_branches is None:
+            checked_branches = []
+        if self.obj in checked_branches:
+            return True
+        can_access = not self.obj.private
+        if can_access and self.obj.stacked_on is not None:
+            checked_branches.append(self.obj)
+            access = getAdapter(
+                self.obj.stacked_on, IAuthorization, name='launchpad.View')
+            can_access = access.checkUnauthenticated(checked_branches)
+        return can_access
 
 
 class EditBranch(AuthorizationBase):
