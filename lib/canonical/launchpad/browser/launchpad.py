@@ -7,7 +7,6 @@ __all__ = [
     'ApplicationButtons',
     'BrowserWindowDimensions',
     'ContribIcingFolder',
-    'DefaultShortLink',
     'EdubuntuIcingFolder',
     'Hierarchy',
     'IcingFolder',
@@ -21,10 +20,8 @@ __all__ = [
     'MaloneContextMenu',
     'MenuBox',
     'NavigationMenuTabs',
-    'OneZeroTemplateStatus',
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
-    'StructuralHeaderPresentationView',
     'StructuralObjectPresentation',
     'UbuntuIcingFolder',
     ]
@@ -33,7 +30,6 @@ import cgi
 import urllib
 import operator
 import os
-import re
 import time
 from datetime import timedelta, datetime
 
@@ -45,49 +41,21 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.app.traversing.interfaces import ITraversable
 
-from BeautifulSoup import BeautifulStoneSoup, Comment
-
 import canonical.launchpad.layers
 from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
-    IAnnouncementSet,
-    IAppFrontPageSearchForm,
-    IBazaarApplication,
-    IBinaryPackageNameSet,
-    IBountySet,
-    IBugSet,
-    IBugTrackerSet,
-    IBuilderSet,
-    ICodeImportSet,
-    ICodeOfConductSet,
-    ICveSet,
-    IDistributionSet,
-    IHWDBApplication,
-    IKarmaActionSet,
-    ILanguageSet,
-    ILaunchBag,
-    ILaunchpadCelebrities,
-    ILaunchpadRoot,
-    ILaunchpadStatisticSet,
-    ILoginTokenSet,
-    IMailingListSet,
-    IMaloneApplication,
-    IMentoringOfferSet,
-    IPersonSet,
-    IPillarNameSet,
-    IProductSet,
-    IProjectSet,
-    IQuestionSet,
-    IRosettaApplication,
-    ISourcePackageNameSet,
-    ISpecificationSet,
-    ISprintSet,
-    IStructuralObjectPresentation,
-    IStructuralHeaderPresentation,
-    ITranslationGroupSet,
-    ITranslationImportQueue,
+    IAnnouncementSet, IAppFrontPageSearchForm, IBazaarApplication,
+    IBinaryPackageNameSet, IBountySet, IBugSet, IBugTrackerSet, IBuilderSet,
+    ICodeImportSet, ICodeOfConductSet, ICveSet, IDistributionSet,
+    IHWDBApplication, IKarmaActionSet, ILanguageSet, ILaunchBag,
+    ILaunchpadCelebrities, ILaunchpadRoot, ILaunchpadStatisticSet,
+    ILoginTokenSet, IMailingListSet, IMaloneApplication, IMentoringOfferSet,
+    IPersonSet, IPillarNameSet, IProductSet, IProjectSet, IQuestionSet,
+    IRosettaApplication, ISourcePackageNameSet, ISpecificationSet, ISprintSet,
+    IStructuralObjectPresentation, IStructuralHeaderPresentation,
+    ITranslationGroupSet, ITranslationImportQueue,
     )
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link,
@@ -684,95 +652,6 @@ class ObjectForTemplate:
             setattr(self, name, value)
 
 
-class OneZeroTemplateStatus(LaunchpadView):
-    """A list showing how ready each template is for one-zero."""
-
-    here = os.path.dirname(os.path.realpath(__file__))
-
-    templatesdir = os.path.abspath(
-            os.path.normpath(os.path.join(here, '..', 'templates'))
-            )
-
-    excluded_templates = set(['launchpad-onezerostatus.pt'])
-
-    class PageStatus(ObjectForTemplate):
-        filename = None
-        status = None
-        comment = ''
-        helptext = ''
-
-    valid_status_values = set(['new', 'todo', 'inprogress', 'done'])
-
-    onezero_re = re.compile(r'\W*1-0\W+(\w+)\W+(.*)', re.DOTALL)
-
-    def listExcludedTemplates(self):
-        return sorted(self.excluded_templates)
-
-    def initialize(self):
-        self.pages = []
-        self.portlets = []
-        excluded = []
-        filenames = [filename
-                     for filename in os.listdir(self.templatesdir)
-                     if filename.lower().endswith('.pt')
-                        and filename not in self.excluded_templates
-                     ]
-        filenames.sort()
-        for filename in filenames:
-            data = open(os.path.join(self.templatesdir, filename)).read()
-            soup = BeautifulStoneSoup(data)
-
-            is_portlet = 'portlet' in filename
-
-            if is_portlet:
-                output_category = self.portlets
-            else:
-                output_category = self.pages
-
-            num_one_zero_comments = 0
-            html_comments = soup.findAll(
-                text=lambda text:isinstance(text, Comment))
-            for html_comment in html_comments:
-                matchobj = self.onezero_re.match(html_comment)
-                if matchobj:
-                    num_one_zero_comments += 1
-                    status, comment = matchobj.groups()
-                    if status not in self.valid_status_values:
-                        status = 'error'
-                        comment = 'status not one of %s' % ', '.join(
-                            sorted(self.valid_status_values))
-
-            if num_one_zero_comments == 0:
-                is_page = soup.html is not None
-                if is_page or is_portlet:
-                    status = 'new'
-                    comment = ''
-                else:
-                    excluded.append(filename)
-                    continue
-            elif num_one_zero_comments > 1:
-                status = "error"
-                comment = (
-                    "There were %s one-zero comments in the document." %
-                    num_one_zero_comments)
-
-            xmlcomment = cgi.escape(comment)
-            xmlcomment = xmlcomment.replace('\n', '<br />')
-
-            helptextsoup = soup.find(attrs={'metal:fill-slot':'help'})
-            if helptextsoup:
-                helptext = unicode(helptextsoup)
-            else:
-                helptext = ''
-            output_category.append(self.PageStatus(
-                filename=filename,
-                status=status,
-                comment=xmlcomment,
-                helptext=helptext))
-
-        self.excluded_from_run = sorted(excluded)
-
-
 class IcingFolder(ExportedFolder):
     """Export the Launchpad icing."""
 
@@ -860,18 +739,6 @@ class LaunchpadAPIDocFolder(ExportedFolder):
             return self, ('index.html', )
         else:
             return self, ()
-
-
-class StructuralHeaderPresentationView(LaunchpadView):
-
-    def initialize(self):
-        self.headerpresentation = IStructuralHeaderPresentation(self.context)
-
-    def getIntroHeading(self):
-        return self.headerpresentation.getIntroHeading()
-
-    def getMainHeading(self):
-        return self.headerpresentation.getMainHeading()
 
 
 class StructuralHeaderPresentation:
@@ -1027,27 +894,6 @@ class ApplicationButtons(LaunchpadView):
             raise AssertionError(
                 'Max of one path item after +applicationbuttons')
         return self
-
-
-class DefaultShortLink(LaunchpadView):
-    """Render a short link to an object.
-
-    This is a default implementation that assumes that context.title exists
-    and is what we want.
-
-    This class can be used as a base class for simple short links by
-    overriding the getLinkText() method.
-    """
-
-    def getLinkText(self):
-        return self.context.title
-
-    def render(self):
-        L = []
-        L.append('<a href="%s">' % canonical_url(self.context))
-        L.append(cgi.escape(self.getLinkText()).replace(' ', '&nbsp;'))
-        L.append('</a>')
-        return u''.join(L)
 
 
 class AppFrontPageSearchView(LaunchpadFormView):

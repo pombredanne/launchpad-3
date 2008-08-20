@@ -178,35 +178,6 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-malone"
-          template="launchpad/templates/root-portlet-malone.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.BountySetView"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-bounties"
-          template="launchpad/templates/root-portlet-bounties.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.RosettaApplicationView"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-rosetta"
-          template="launchpad/templates/root-portlet-rosetta.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.FOAFSearchView"
         permission="zope.Public"
         >
