@@ -148,7 +148,7 @@ class SpecialOutputChecker(doctest.OutputChecker):
 
 
 def create_view(context, name, form=None, layer=None, server_url=None,
-                method='GET', principal=None):
+                method='GET'):
     """Return a view based on the given arguments.
 
     :param context: The context for the view.
@@ -157,23 +157,19 @@ def create_view(context, name, form=None, layer=None, server_url=None,
     :param layer: The layer where the page we are interested in is located.
     :param server_url: The URL from where this request was done.
     :param method: The method used in the request. Defaults to 'GET'.
-    :param principal: The principal for the request, if there is one.
     :return: The view class for the given context and the name.
     """
     request = LaunchpadTestRequest(
         form=form, SERVER_URL=server_url, method=method)
-    if principal is not None:
-        request.setPrincipal(principal)
     if layer is not None:
         setFirstLayer(request, layer)
     return getMultiAdapter((context, request), name=name)
 
 
 def create_initialized_view(context, name, form=None, layer=None,
-                            server_url=None, method='GET', principal=None):
+                            server_url=None, method='GET'):
     """Return a view that has already been initialized."""
-    view = create_view(
-        context, name, form, layer, server_url, method, principal)
+    view = create_view(context, name, form, layer, server_url, method)
     view.initialize()
     return view
 

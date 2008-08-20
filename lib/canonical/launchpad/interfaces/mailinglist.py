@@ -17,7 +17,6 @@ __all__ = [
     'IMessageApproval',
     'IMessageApprovalSet',
     'MailingListStatus',
-    'PURGE_STATES',
     'PostedMessageStatus',
     'UnsafeToPurge',
     ]
@@ -137,14 +136,6 @@ class MailingListStatus(DBEnumeratedType):
         list can be treated as if it never existed, except for foreign key
         references such as from a MessageApproval.
         """)
-
-
-PURGE_STATES = (
-    MailingListStatus.REGISTERED,
-    MailingListStatus.DECLINED,
-    MailingListStatus.FAILED,
-    MailingListStatus.INACTIVE,
-    )
 
 
 class PostedMessageStatus(DBEnumeratedType):
