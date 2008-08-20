@@ -8,7 +8,6 @@ This module should not have any actual tests.
 __metaclass__ = type
 __all__ = [
     'LaunchpadObjectFactory',
-    'ObjectFactory',
     'time_counter',
     ]
 
@@ -99,8 +98,19 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-class ObjectFactory:
-    """Factory methods for creating useful Python objects."""
+# NOTE:
+#
+# The LaunchpadObjectFactory is driven purely by use.  The version here
+# is by no means complete for Launchpad objects.  If you need to create
+# anonymous objects for your tests then add methods to the factory.
+#
+class LaunchpadObjectFactory:
+    """Factory methods for creating Launchpad objects.
+
+    All the factory methods should be callable with no parameters.
+    When this is done, the returned object should have unique references
+    for any other required objects.
+    """
 
     def __init__(self):
         # Initialise the unique identifier.
@@ -135,21 +145,6 @@ class ObjectFactory:
         if host is None:
             host = "%s.domain.com" % self.getUniqueString('domain')
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
-
-
-# NOTE:
-#
-# The LaunchpadObjectFactory is driven purely by use.  The version here
-# is by no means complete for Launchpad objects.  If you need to create
-# anonymous objects for your tests then add methods to the factory.
-#
-class LaunchpadObjectFactory(ObjectFactory):
-    """Factory methods for creating Launchpad objects.
-
-    All the factory methods should be callable with no parameters.
-    When this is done, the returned object should have unique references
-    for any other required objects.
-    """
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, displayname=None):
