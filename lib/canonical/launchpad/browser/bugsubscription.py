@@ -5,7 +5,6 @@
 __metaclass__ = type
 __all__ = ['BugSubscriptionAddView']
 
-from zope.component import getUtility
 from zope.event import notify
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
