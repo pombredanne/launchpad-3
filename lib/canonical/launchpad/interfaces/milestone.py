@@ -23,7 +23,6 @@ from canonical.launchpad.fields import (
     )
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr.interface import copy_field
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_read_operation, exported,
