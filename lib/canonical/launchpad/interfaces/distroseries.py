@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
+from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
 
@@ -96,7 +97,7 @@ class DistroSeriesStatus(DBEnumeratedType):
 
 
 class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                     ISpecificationGoal):
+                     ISpecificationGoal, IHasMilestones):
     """A series of an operating system distribution."""
     id = Attribute("The distroseries's unique number.")
     name = TextLine(
@@ -170,12 +171,6 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
-    milestones = Attribute(_(
-        "The visible milestones associated with this series, "
-        "ordered by date expected."))
-    all_milestones = Attribute(_(
-        "All milestones associated with this distroseries, ordered "
-        "by date expected."))
     drivers = Attribute(
         'A list of the people or teams who are drivers for this series. '
         'This list is made up of any drivers or owners from this '

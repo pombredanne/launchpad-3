@@ -6,14 +6,42 @@ Project groups are available at their canonical URL on the API virtual host.
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
 
-    >>> mozilla_project = webservice.get('/beta/mozilla').jsonBody()
-    >>> pprint_entry(mozilla_project)
+    >>> mozilla = webservice.get('/beta/mozilla').jsonBody()
+    >>> pprint_entry(mozilla)
     active: True
     all_milestones_collection_link: u'http://.../mozilla/all_milestones'
     milestones_collection_link: u'http://.../mozilla/milestones'
     name: u'mozilla'
     resource_type_link: u'...'
     self_link: u'http://.../mozilla'
+
+The milestones can be accessed through the milestones_collection_link
+and the all_milestones_collection_link.
+
+    >>> response = webservice.get(mozilla['milestones_collection_link'])
+    >>> milestones = response.jsonBody()
+    >>> print_self_link_of_entries(milestones)
+    http://.../mozilla/+milestone/1.0
+
+    >>> response = webservice.get(mozilla['all_milestones_collection_link'])
+    >>> all_milestones = response.jsonBody()
+    >>> print_self_link_of_entries(all_milestones)
+    http://.../mozilla/+milestone/1.0
+
+A single milestone can be accessed by name.
+
+    >>> milestone = webservice.get(
+    ...     '/beta/mozilla?ws.op=getMilestone&name=1.0').jsonBody()
+    >>> pprint_entry(milestone)
+    date_targeted: u'2056-10-16T18:31:44.293448'
+    description: None
+    is_visible: True
+    name: u'1.0'
+    resource_type_link: u'http://.../#milestone'
+    self_link: u'http://.../mozilla/+milestone/1.0'
+    series_target_link: None
+    target_link: u'http://.../mozilla'
+    title: u'Milestone 1.0 for the Mozilla Project due 2056-10-16'
 
 
 == Project entry ==
@@ -87,6 +115,7 @@ A single milestone can be accessed by name.
     name: u'1.0'
     resource_type_link: u'http://.../#milestone'
     self_link: u'http://.../firefox/+milestone/1.0'
+    series_target_link: u'http://.../firefox/trunk'
     target_link: u'http://.../firefox'
     title: u'Milestone 1.0 for Mozilla Firefox'
 
@@ -206,9 +235,10 @@ the ws.op=search parameter.
 The entry for a project series is available at its canonical URL on the
 virtual host.
 
-
     >>> firefox_1_0 = webservice.get('/beta/firefox/1.0').jsonBody()
     >>> pprint_entry(firefox_1_0)
+    all_milestones_collection_link: u'http://.../firefox/1.0/all_milestones'
+    milestones_collection_link: u'http://.../firefox/1.0/milestones'
     name: u'1.0'
     project_link: u'http://.../firefox'
     resource_type_link: u'...'
@@ -241,5 +271,6 @@ host.
     name: u'1.0'
     resource_type_link: u'...'
     self_link: u'http://.../firefox/+milestone/1.0'
+    series_target_link: u'http://.../firefox/trunk'
     target_link: u'http://.../firefox'
     title: u'Milestone 1.0 for Mozilla Firefox'

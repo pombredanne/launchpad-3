@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'IHasMilestoneSearch',
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
@@ -15,8 +16,6 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description
@@ -35,6 +34,11 @@ class MilestoneNameField(ContentNameField):
         return IMilestone
 
     def _getByName(self, name):
+        # IProductSeries and IDistroSeries are imported here to
+        # avoid an import loop.
+        from canonical.launchpad.interfaces.productseries import (
+            IProductSeries)
+        from canonical.launchpad.interfaces.distroseries import IDistroSeries
         if IMilestone.providedBy(self.context):
             milestone = self.context.target.getMilestone(name)
         elif IProductSeries.providedBy(self.context):
@@ -105,8 +109,11 @@ class IMilestone(Interface):
             schema=Interface, # IHasMilestones
             title=_("The product or distribution of this milestone."),
             required=False))
-    series_target = Attribute(
-        "The productseries or distroseries of this milestone.")
+    series_target = exported(
+        Reference(
+            schema=Interface, # IHasMilestones
+            title=_("The productseries or distroseries of this milestone."),
+            required=False))
     displayname = Attribute("A displayname for this milestone, constructed "
         "from the milestone name.")
     title = exported(
@@ -146,7 +153,6 @@ class IProjectMilestone(IMilestone):
 
 class IHasMilestones(Interface):
     """An interface for classes providing milestones."""
-    export_as_webservice_entry()
 
     milestones = exported(
         CollectionField(
@@ -160,8 +166,13 @@ class IHasMilestones(Interface):
                     "date expected."),
             value_type=Reference(schema=IMilestone)))
 
+
+class IHasMilestoneSearch(Interface):
+    """ An interface for classes providing getMilestone(name)."""
+
     # operation_parameters(name=copy_field(IMilestone['name'])) cannot be used
-    # since the validator expects the name to not exist in the db.
+    # since that field's validator expects the name to be for a new milestone
+    # so it raises an exception if the name conflicts in the db.
     @operation_parameters(name=TextLine())
     @export_read_operation()
     def getMilestone(name):
@@ -170,3 +181,4 @@ class IHasMilestones(Interface):
 
 # Fix cyclic references.
 IMilestone['target'].schema = IHasMilestones
+IMilestone['series_target'].schema = IHasMilestones
