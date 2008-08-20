@@ -584,12 +584,6 @@ class Builder(SQLBase):
         try:
             slavestatus = self.slaveStatusSentence()
         except (xmlrpclib.Fault, socket.error), info:
-            # is_available() is called by the slave-scanner for *each* builder
-            # and resuming a PPA builder takes on the order of 10 seconds.
-            # Not quite sure whether resumeSlaveHost() is too expensive an
-            # operation to be invoked here.
-            if self.virtualized:
-                self.resumeSlaveHost()
             return False
         if slavestatus[0] != BuilderStatus.IDLE:
             return False

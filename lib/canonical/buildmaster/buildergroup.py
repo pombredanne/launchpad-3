@@ -82,7 +82,10 @@ class BuilderGroup:
         # main refactoring of this area.
         except (ValueError, TypeError, xmlrpclib.Fault,
                 socket.error, BuildDaemonError), reason:
-            builder.failbuilder(str(reason))
+            if self.virtualized:
+                builder.resumeSlaveHost()
+            else:
+                builder.failbuilder(str(reason))
             self.logger.warn(
                 "%s (%s) marked as failed due to: %s",
                 builder.name, builder.url, builder.failnotes, exc_info=True)
