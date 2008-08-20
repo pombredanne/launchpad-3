@@ -17,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductBranchesView',
     'ProductBrandingView',
+    'ProductBreadcrumbBuilder',
     'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductCodeIndexView',
@@ -32,6 +33,7 @@ __all__ = [
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSOP',
+    'ProductSetBreadcrumbBuilder',
     'ProductSetContextMenu',
     'ProductSetFacets',
     'ProductSetNavigation',
@@ -102,6 +104,7 @@ from canonical.launchpad.webapp import (
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.date import DateWidget
@@ -118,9 +121,6 @@ class ProductNavigation(
     FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
 
     usedfor = IProduct
-
-    def breadcrumb(self):
-        return self.context.displayname
 
     @stepto('.bzr')
     def dotbzr(self):
@@ -152,9 +152,6 @@ class ProductNavigation(
 class ProductSetNavigation(Navigation):
 
     usedfor = IProductSet
-
-    def breadcrumb(self):
-        return 'Projects'
 
     def traverse(self, name):
         # Raise a 404 on an invalid product name
@@ -260,6 +257,13 @@ class ProductSOP(StructuralObjectPresentation):
 
     def listAltChildren(self, num):
         return None
+
+
+class ProductBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProduct`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -633,6 +637,11 @@ class ProductSetSOP(StructuralObjectPresentation):
 
     def listAltChildren(self, num):
         return None
+
+
+class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Return a breadcrumb for an `IProductSet`."""
+    text = "Projects"
 
 
 class ProductSetFacets(StandardLaunchpadFacets):

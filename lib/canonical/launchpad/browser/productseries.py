@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
+    'ProductSeriesBreadcrumbBuilder',
     'ProductSeriesBugsMenu',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
@@ -50,6 +51,7 @@ from canonical.launchpad.webapp import (
     Link, Navigation, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -61,9 +63,6 @@ def quote(text):
 class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     usedfor = IProductSeries
-
-    def breadcrumb(self):
-        return 'Series ' + self.context.name
 
     @stepto('.bzr')
     def dotbzr(self):
@@ -101,6 +100,13 @@ class ProductSeriesSOP(StructuralObjectPresentation):
 
     def countAltChildren(self):
         raise NotImplementedError
+
+
+class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProductSeries`."""
+    @property
+    def text(self):
+        return 'Series ' + self.context.name
 
 
 class ProductSeriesFacets(StandardLaunchpadFacets):

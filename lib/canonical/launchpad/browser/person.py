@@ -17,6 +17,7 @@ __all__ = [
     'PersonBranchesMenu',
     'PersonBranchesView',
     'PersonBrandingView',
+    'PersonBreadcrumbBuilder',
     'PersonBugsMenu',
     'PersonChangePasswordView',
     'PersonClaimView',
@@ -46,6 +47,7 @@ __all__ = [
     'PersonRelatedBugsView',
     'PersonRelatedSoftwareView',
     'PersonSearchQuestionsView',
+    'PersonSetBreadcrumbBuilder',
     'PersonSetContextMenu',
     'PersonSetFacets',
     'PersonSetNavigation',
@@ -73,6 +75,7 @@ __all__ = [
     'SubscribedBugTaskSearchListingView',
     'TeamAddMyTeamsView',
     'TeamJoinView',
+    'TeamBreadcrumbBuilder',
     'TeamLeaveView',
     'TeamNavigation',
     'TeamOverviewMenu',
@@ -170,17 +173,18 @@ from canonical.launchpad.components.openidserver import (
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 from canonical.launchpad.validators.email import valid_email
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.login import logoutPerson
-from canonical.launchpad.webapp.menu import structured, NavigationMenu
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
     custom_widget, enabled_with_permission, stepthrough, stepto)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.login import logoutPerson
+from canonical.launchpad.webapp.menu import structured, NavigationMenu
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
 
@@ -290,9 +294,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     usedfor = IPerson
 
-    def breadcrumb(self):
-        return self.context.displayname
-
     @stepthrough('+expiringmembership')
     def traverse_expiring_membership(self, name):
         # Return the found membership regardless of its status as we know
@@ -345,9 +346,6 @@ class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
 
-    def breadcrumb(self):
-        return smartquote('"%s" team') % self.context.displayname
-
     @stepthrough('+poll')
     def traverse_poll(self, name):
         return getUtility(IPollSet).getByTeamAndName(self.context, name)
@@ -370,6 +368,13 @@ class TeamNavigation(PersonNavigation):
             return None
         return getUtility(ITeamMembershipSet).getByPersonAndTeam(
             person, self.context)
+
+
+class TeamBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ITeam`."""
+    @property
+    def text(self):
+        return smartquote('"%s" team') % self.context.displayname
 
 
 class TeamMembershipSelfRenewalView(LaunchpadFormView):
@@ -522,9 +527,6 @@ class PersonSetNavigation(Navigation):
 
     usedfor = IPersonSet
 
-    def breadcrumb(self):
-        return 'People'
-
     def traverse(self, name):
         # Raise a 404 on an invalid Person name
         person = self.context.getByName(name)
@@ -554,6 +556,11 @@ class PersonSetSOP(StructuralObjectPresentation):
 
     def listAltChildren(self, num):
         return None
+
+
+class PersonSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Return a breadcrumb for an `IPersonSet`."""
+    text = "People"
 
 
 class PersonSetFacets(StandardLaunchpadFacets):
@@ -621,6 +628,13 @@ class PersonSOP(StructuralObjectPresentation):
 
     def countAltChildren(self):
         raise NotImplementedError
+
+
+class PersonBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IPerson`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class PersonFacets(StandardLaunchpadFacets):
