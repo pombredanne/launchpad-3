@@ -87,7 +87,7 @@ class BuilderGroup:
                 "%s (%s) marked as failed due to: %s",
                 builder.name, builder.url, builder.failnotes, exc_info=True)
         except socket.error, reason:
-            if self.virtualized:
+            if builder.virtualized:
                 builder.resumeSlaveHost()
             else:
                 builder.failbuilder(str(reason))
