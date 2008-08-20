@@ -20,9 +20,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 # These import shims are actually necessary if we don't go over the
 # entire codebase and fix where the import should come from.
 from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
-    IOpenLaunchBag, NotFoundError, UnexpectedFormData,
-    UnsafeFormGetSubmissionError)
+    IBasicLaunchpadRequest, ILaunchBag, ILaunchpadRoot, IOpenLaunchBag,
+    NotFoundError, UnexpectedFormData, UnsafeFormGetSubmissionError)
 
 
 __all__ = [
