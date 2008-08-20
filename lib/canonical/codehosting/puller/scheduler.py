@@ -253,6 +253,9 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
     def errReceived(self, data):
         self._stderr.write(data)
 
+    def do_stackedOn(self, stacked_on_location):
+        self.runNotification(self.listener.stackedOn, stacked_on_location)
+
     def do_startMirroring(self):
         self.resetTimeout()
         self.runNotification(self.listener.startMirroring)

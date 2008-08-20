@@ -111,6 +111,9 @@ class PullerWorkerProtocol:
         for argument in args:
             self.sendNetstring(str(argument))
 
+    def stackedOn(self, stacked_on_location):
+        self.sendEvent('stackedOn', stacked_on_location)
+
     def startMirroring(self):
         self.sendEvent('startMirroring')
 
