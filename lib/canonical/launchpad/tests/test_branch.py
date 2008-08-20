@@ -1,12 +1,21 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Unit tests for methods of Branch and BranchSet."""
 
 import unittest
 
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.database.branch import (
     BranchSet, DEFAULT_BRANCH_LISTING_SORT)
-from canonical.launchpad.interfaces import BranchListingSort
+from canonical.launchpad.interfaces import (
+    BranchListingSort, BranchSubscriptionNotificationLevel,
+    BranchSubscriptionDiffSize, CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.security import AccessBranch
+from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestListingToSortOrder(unittest.TestCase):
@@ -53,6 +62,81 @@ class TestListingToSortOrder(unittest.TestCase):
             BranchListingSort.REGISTRANT)
         self.assertEquals(registrant_order[0], 'owner.name')
         self.assertEquals(registrant_order[1:], DEFAULT_BRANCH_LISTING_SORT)
+
+
+class TestAccessBranch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assertAuthenticatedAccess(self, branch, person, can_access):
+        branch = removeSecurityProxy(branch)
+        self.assertEqual(
+            can_access, AccessBranch(branch).checkAuthenticated(person))
+
+    def assertUnauthenticatedAccess(self, branch, can_access):
+        branch = removeSecurityProxy(branch)
+        self.assertEqual(
+            can_access, AccessBranch(branch).checkUnauthenticated())
+
+    def test_publicBranchUnauthenticated(self):
+        # Public branches can be accessed without authentication.
+        branch = self.factory.makeBranch()
+        self.assertUnauthenticatedAccess(branch, True)
+
+    def test_publicBranchArbitraryUser(self):
+        # Public branches can be accessed by anyone.
+        branch = self.factory.makeBranch()
+        person = self.factory.makePerson()
+        self.assertAuthenticatedAccess(branch, person, True)
+
+    def test_privateBranchUnauthenticated(self):
+        # Private branches cannot be accessed without authentication.
+        branch = self.factory.makeBranch(private=True)
+        self.assertUnauthenticatedAccess(branch, False)
+
+    def test_privateBranchOwner(self):
+        # The owner of a branch can always access it.
+        owner = self.factory.makePerson()
+        branch = self.factory.makeBranch(private=True, owner=owner)
+        self.assertAuthenticatedAccess(branch, owner, True)
+
+    def test_privateBranchOwnerMember(self):
+        # Any member of the team that owns the branch can access it.
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(team_owner)
+        person = self.factory.makePerson()
+        removeSecurityProxy(team).addMember(person, team_owner)
+        branch = self.factory.makeBranch(private=True, owner=team)
+        self.assertAuthenticatedAccess(branch, person, True)
+
+    def test_privateBranchBazaarExperts(self):
+        # The Bazaar experts can access any branch.
+        celebs = getUtility(ILaunchpadCelebrities)
+        branch = self.factory.makeBranch(private=True)
+        self.assertAuthenticatedAccess(branch, celebs.bazaar_experts, True)
+
+    def test_privateBranchAdmins(self):
+        # Launchpad admins can access any branch.
+        celebs = getUtility(ILaunchpadCelebrities)
+        branch = self.factory.makeBranch(private=True)
+        self.assertAuthenticatedAccess(branch, celebs.admin, True)
+
+    def test_privateBranchSubscriber(self):
+        # If you are subscribed to a branch, you can access it.
+        branch = self.factory.makeBranch(private=True)
+        person = self.factory.makePerson()
+        removeSecurityProxy(branch).subscribe(
+            person, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL)
+        self.assertAuthenticatedAccess(branch, person, True)
+
+    def test_privateBranchAnyoneElse(self):
+        # In general, you can't access a private branch.
+        branch = self.factory.makeBranch(private=True)
+        person = self.factory.makePerson()
+        self.assertAuthenticatedAccess(branch, person, False)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
