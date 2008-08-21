@@ -10,8 +10,9 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
+from zope.app.traversing.interfaces import IPathAdapter
 from zope.component import queryAdapter
+from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import (
     IBreadcrumb, IBreadcrumbBuilder)
@@ -48,27 +49,19 @@ class BreadcrumbBuilder:
 
     def __init__(self, context):
         self.context = context
-        self._icon = None
-        self._icon_from_user = False
 
+    @property
     def icon(self):
         """See `IBreadcrumb`."""
-        if self._icon_from_user:
-            return self._icon
+        # Get the <img> tag from the path adapter.
+        icon = queryAdapter(
+            self.context, IPathAdapter, name='image').icon()
 
-        # FIXME: Yay for circular imports!
-        from canonical.launchpad.interfaces.launchpad import IHasIcon
-        if IHasIcon.providedBy(self.context):
-            return self.context.icon
-        else:
+        # Borrowed from webapp.tales.CustomizableFormatter.
+        if 'src="/@@/nyet-icon"' in icon:
             return None
-
-    def _set_icon(self, value):
-        """Set the icon attribute and flag it as a user-defined value."""
-        self._icon = value
-        self._icon_from_user = True
-
-    icon = property(icon, _set_icon, doc=icon.__doc__)
+        else:
+            return icon
 
     def make_breadcrumb(self):
         """See `IBreadcrumbBuilder.`"""

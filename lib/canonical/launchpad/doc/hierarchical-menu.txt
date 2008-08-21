@@ -157,66 +157,6 @@ Python properties.
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
 
-Breadcrumbs may also have icons.  The icon is set if the breadcrumb
-builder's context object provides the IHasIcon interface.
-
-    >>> from canonical.launchpad.interfaces.launchpad import IHasIcon
-
-    >>> class IconifiedRecipe(Recipe):
-    ...     implements(IHasIcon)
-    ...     icon = '/@@/recipe'
-
-    >>> iconified_recipe = IconifiedRecipe('iconified-recipe', cookbook)
-    >>> IHasIcon.providedBy(iconified_recipe)
-    True
-
-    >>> builder = BreadcrumbBuilder(iconified_recipe)
-    >>> builder.url = "http://foo"
-    >>> builder.text = "I have an icon!"
-    >>> builder.icon
-    '/@@/recipe'
-
-    >>> builder.make_breadcrumb()
-    <Breadcrumb
-        url='http://foo'
-        text='I have an icon!'
-        icon='/@@/recipe'>
-
-You can override the builder's default icon by assigning a new value to
-the 'icon' attribute.
-
-    >>> builder.icon = '/@@/foo-icon'
-    >>> builder.make_breadcrumb()
-    <Breadcrumb
-        url='http://foo'
-        text='I have an icon!'
-        icon='/@@/foo-icon'>
-
-We can clear the icon entirely by setting the 'icon' attribute to None.
-
-    >>> builder.icon = None
-    >>> builder.make_breadcrumb()
-    <Breadcrumb
-        url='http://foo'
-        text='I have an icon!'>
-
-We can set the breadcrumb icon for context objects that lack the
-IHasIcon marker:
-
-    >>> IHasIcon.providedBy(recipe)
-    False
-
-    >>> builder = BreadcrumbBuilder(recipe)
-    >>> builder.url = 'http://launchpad.dev/joy-of-cooking/spam'
-    >>> builder.text = 'spam'
-    >>> builder.icon = '/@@/spam'
-
-    >>> builder.make_breadcrumb()
-    <Breadcrumb
-        url='http://launchpad.dev/joy-of-cooking/spam'
-        text='spam'
-        icon='/@@/spam'>
-
 
 == Customizing the hierarchy ==
 

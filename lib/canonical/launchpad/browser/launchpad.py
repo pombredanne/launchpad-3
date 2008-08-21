@@ -324,20 +324,20 @@ class Hierarchy(LaunchpadView):
                 before_last_element = elements[-2]
             else:
                 before_last_element = None
+
             for element in elements:
-                cssclass = 'item'
+
                 if element is before_last_element:
-                    cssclass = ' '.join(['before-last', cssclass])
+                    cssclass = 'before-last'
                 elif element is last_element:
-                    cssclass = ' '.join(['last', cssclass])
+                    cssclass = 'last'
                 else:
                     # No extra CSS class.
-                    pass
-                steps.append('<span class="%s">'
-                         '<a href="%s">%s</a>'
-                         '</span>'
-                         % (cssclass, element.url,
-                            cgi.escape(element.text)))
+                    cssclass = ''
+
+                steps.append(
+                    self._html_for_breadcrumb(element, cssclass))
+
             hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
         else:
             # We're on the home page.
@@ -350,6 +350,22 @@ class Hierarchy(LaunchpadView):
                         site_message)
 
         return hierarchy
+
+    def _html_for_breadcrumb(self, breadcrumb, extra_css_class=None):
+        """Return the HTML to display an `IBreadcrumb` object.
+
+        :param extra_css_class: A string of additional CSS classes
+            to apply to the breadcrumb.
+        """
+        bodytext = cgi.escape(breadcrumb.text)
+
+        if breadcrumb.icon:
+            bodytext = '%s %s' % (breadcrumb.icon, bodytext)
+
+        cssclass = 'item ' + extra_css_class
+        return (
+            '<span class="%s"><a href="%s">%s</a></span>'
+            % (cssclass, breadcrumb.url, bodytext))
 
 
 class MaintenanceMessage:
