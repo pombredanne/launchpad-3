@@ -10,6 +10,9 @@ SAMPLEDATA=../sampledata/current.sql
 # The database dump to create
 NEWSAMPLEDATA=../sampledata/newsampledata.sql
 
+# The database dump to create for lint reports
+LINTDATA=../sampledata/lintdata.sql
+
 # The development database
 DBNAME=launchpad_dev
 
@@ -141,6 +144,14 @@ newsampledata:
 	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
 	| $(PYTHON) sort_sql.py \
 	> $(NEWSAMPLEDATA)
+	$(PYTHON) fti.py --force -d launchpad_dev -q
+
+lintdata:
+	$(PYTHON) fti.py --null -d launchpad_dev -q
+	pg_dump --schema=public --disable-triggers -a -D -O -d ${TEST_DBNAME} \
+	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
+	| $(PYTHON) sort_sql.py \
+	> $(LINTDATA)
 	$(PYTHON) fti.py --force -d launchpad_dev -q
 
 .PHONY: default base all
