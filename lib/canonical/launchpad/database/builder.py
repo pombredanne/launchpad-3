@@ -422,13 +422,8 @@ class Builder(SQLBase):
                 "Exception (%s) when setting up to new job" % info)
             raise BuildSlaveFailure
         except socket.error, info:
-            if self.virtualized:
-                self.resumeSlaveHost()
-            else:
-                # Mark builder as 'failed'.
-                logger.debug("Disabling builder: %s" % self.url, exc_info=1)
-                self.failbuilder(
-                    "Exception (%s) when setting up to new job" % info)
+            error_message = "Exception (%s) when setting up new job" % info
+            self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
     def startBuild(self, build_queue_item, logger):
@@ -702,6 +697,21 @@ class Builder(SQLBase):
             self.startBuild(candidate, logger)
         except (BuildSlaveFailure, CannotBuild), err:
             logger.warn('Could not build: %s' % err)
+
+    def handleTimeout(self, logger, error_message):
+        """See IBuilder."""
+        if self.virtualized:
+            # Virtualized/PPA builder: attempt a reset.
+            logger.warn(
+                "Resetting builder: %s -- %s" % (self.url, error_message),
+                exc_info=True)
+            self.resumeSlaveHost()
+        else:
+            # Mark builder as 'failed'.
+            logger.warn(
+                "Disabling builder: %s -- s" % (self.url, error_message),
+                exc_info=True)
+            self.failbuilder(error_message)
 
 
 class BuilderSet(object):

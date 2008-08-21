@@ -272,6 +272,19 @@ class IBuilder(IHasOwner):
         it will actually issues the XMLRPC call to the buildd-slave.
         """
 
+    def handleTimeout(logger, error_message):
+        """Handle buildd slave communication timeout situations.
+
+        In case of a virtualized/PPA builder an attempt will be made to
+        reset it (using `resumeSlaveHost`). In the opposite case the
+        builder in question will be marked as failed (using `failbuilder`).
+
+        :param logger: The logger object to be used for logging.
+        :param error_message: The error message to be used for logging.
+        :raises: CannotResumeHost: if the builder is virtual and its
+            configuration command has failed.
+        """
+
 
 class IBuilderSet(Interface):
     """Collections of builders.

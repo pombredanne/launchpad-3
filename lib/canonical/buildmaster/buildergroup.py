@@ -88,19 +88,7 @@ class BuilderGroup:
                 builder.name, builder.url, builder.failnotes, exc_info=True)
         except socket.error, reason:
             error_message = str(reason)
-            # Is this a PPA builder? Reset it if so.
-            if builder.virtualized:
-                self.logger.warn(
-                    "%s (%s) will be reset due to: %s",
-                    builder.name, builder.url, error_message,
-                    exc_info=True)
-                builder.resumeSlaveHost()
-            else:
-                builder.failbuilder(error_message)
-                self.logger.warn(
-                    "%s (%s) marked as failed due to: %s",
-                    builder.name, builder.url, error_message,
-                    exc_info=True)
+            builder.handleTimeout(self.logger, error_message)
 
     def rescueBuilderIfLost(self, builder):
         """Reset Builder slave if job information doesn't match with DB.
