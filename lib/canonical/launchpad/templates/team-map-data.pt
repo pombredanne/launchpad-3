@@ -9,6 +9,7 @@
     lat participant/latitude;
     lng participant/longitude;
     displayname participant/browsername;
+    local_time participant/fmt:local_time;
     logo_html participant/image:logo;
     url participant/fmt:url;
     name participant/name" />

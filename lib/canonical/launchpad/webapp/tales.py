@@ -845,7 +845,7 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
     implements(ITraversable)
 
     allowed_names = set([
-        'url',
+        'url', 'local_time'
         ])
 
     def traverse(self, name, furtherPath):
@@ -866,6 +866,13 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
             return getattr(self, name)()
         else:
             raise TraversalError(name)
+
+    def local_time(self):
+        """Return the local time for this person."""
+        time_zone = 'UTC'
+        if self._context.time_zone is not None:
+            time_zone = self._context.time_zone
+        return datetime.now(pytz.timezone(time_zone)).strftime('%T %Z')
 
     def link(self, extra_path, rootsite=None):
         """Return an HTML link to the person's page containing an icon
