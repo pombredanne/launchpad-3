@@ -54,13 +54,8 @@ class BreadcrumbBuilder:
     def icon(self):
         """See `IBreadcrumb`."""
         # Get the <img> tag from the path adapter.
-        icon = queryAdapter(
+        return queryAdapter(
             self.context, IPathAdapter, name='image').icon()
-
-        # Borrowed from webapp.tales.CustomizableFormatter.
-        if 'src="/@@/nyet-icon"' in icon:
-            return None
-        return icon
 
     def make_breadcrumb(self):
         """See `IBreadcrumbBuilder.`"""

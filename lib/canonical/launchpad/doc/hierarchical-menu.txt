@@ -181,15 +181,16 @@ the builder's context has an IPathAdapter registration.
         text='Spam'
         icon='<img src="/@@/recipe"/>'>
 
-The icon is not set if the object uses the default, or 'nyet', icon.
+The icon is not set if the the default image adapter can not find an
+icon for the object.
 
     # We'll use the default image adapter, which doesn't know about
     # ICookbook objects.
     >>> provideAdapter(
     ...     ObjectImageDisplayAPI, [ICookbook], IPathAdapter, 'image')
 
-    >>> queryAdapter(cookbook, IPathAdapter, name='image').icon()
-    '<img ..."/@@/nyet-icon"...>'
+    >>> print queryAdapter(cookbook, IPathAdapter, name='image').icon()
+    None
 
     >>> builder = DynamicBreadcrumbBuilder(cookbook)
     >>> builder.make_breadcrumb()
