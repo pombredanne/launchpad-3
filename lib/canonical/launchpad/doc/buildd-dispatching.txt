@@ -67,11 +67,17 @@ Clean up previous BuildQueue results from sampledata:
     u'bob'
     >>> lost_job.destroySelf()
 
-Setup BuilddMaster class:
+The BuilddMaster will be set up next. This involves checking the various
+builders and resetting the virtualized/PPA if needed.
+Please note that 'frog' is a PPA builder and was reset due to a
+communication time-out.
 
     >>> bm.addDistroArchSeries(hoary_i386)
     >>> bm.setupBuilders(hoary_i386)
     WARNING:root.builders.x86:frog (http://localhost:9221/) will be reset due to: (111, 'Connection refused')
+    Traceback (most recent call last):
+    ...
+    error: (111, 'Connection refused')
 
 Check if there are builders available:
 
@@ -82,16 +88,6 @@ Check if there are builders available:
     False
     >>> bob_builder.is_available
     True
-
-Verify how the nonexistent builder was excluded, marked as failed:
-
-    >>> frog_builder = builder_set['frog']
-    >>> frog_builder.builderok
-    False
-    >>> print frog_builder.failnotes
-    (111, 'Connection refused')
-    >>> frog_builder.is_available
-    False
 
 
 == Builder dispatching API ==
