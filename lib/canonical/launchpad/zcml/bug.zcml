@@ -40,7 +40,7 @@
                         canBeNominatedFor getNominationFor getNominations
                         date_last_message number_of_duplicates
                         message_count getQuestionCreatedFromBug
-                        canBeAQuestion"
+                        canBeAQuestion getBugTasksByPackageName"
             />
         <require
             permission="launchpad.Edit"
