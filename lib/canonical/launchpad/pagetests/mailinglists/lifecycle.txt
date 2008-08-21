@@ -282,10 +282,14 @@ What if Mailman failed to apply the change?
 
     # Fake a failure on the Mailman side.
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_list = removeSecurityProxy(mailing_list)
-    >>> removeSecurityProxy(mailing_list).status = MailingListStatus.MOD_FAILED
-    >>> transaction.commit()
-    >>> logout()
+    >>> def set_list_state(team_name, status):
+    ...     login('foo.bar@canonical.com')
+    ...     mailing_list = getUtility(IMailingListSet).get(team_name)
+    ...     naked_list = removeSecurityProxy(mailing_list)
+    ...     naked_list.status = status
+    ...     transaction.commit()
+    ...     logout()
+    >>> set_list_state('landscape-developers', MailingListStatus.MOD_FAILED)
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+mailinglist')
     >>> print mailing_list_status_message(browser.contents)
@@ -293,10 +297,7 @@ What if Mailman failed to apply the change?
 
     # Now we have to maneuver the mailing list back into a consistent
     # state for the next test.
-    >>> login('foo.bar@canonical.com')
-    >>> removeSecurityProxy(mailing_list).status = MailingListStatus.ACTIVE
-    >>> transaction.commit()
-    >>> logout()
+    >>> set_list_state('landscape-developers', MailingListStatus.ACTIVE)
     >>> browser.reload()
     >>> mailing_list_status_message(browser.contents)
     ''
@@ -469,3 +470,168 @@ database.
 
     >>> email_set.getByEmail(mailing_list.address)
     <EmailAddress at...
+
+
+== Purging mailing lists ==
+
+A mailing list may be 'purged' when it is in one of several safe states.  By
+'safe' we mean that there are no artifacts of the mailing list on the Mailman
+side that need to be preserved.  This is not guaranteed by the code, except by
+the state of the mailing list, so if for example we want to delete the
+archives of an INACTIVE list, this must be done manually.
+
+    # Create a team without a mailing list owned by no-priv so the owner of
+    # the team has no additional privileges.
+    >>> login('foo.bar@canonical.com')
+    >>> team = mailinglists_helper.new_team('aardvarks')
+    >>> logout()
+
+    >>> def print_list_state(team_name='aardvarks'):
+    ...     login('foo.bar@canonical.com')
+    ...     mailing_list = getUtility(IMailingListSet).get(team_name)
+    ...     print mailing_list.status.name
+    ...     logout()
+
+The team owner cannot purge a mailing list.
+
+    >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
+    >>> user_browser.getControl('Apply for Mailing List').click()
+    >>> user_browser.title
+    'Aardvarks in Launchpad'
+    >>> print_list_state()
+    REGISTERED
+
+    >>> user_browser.getLink('Configure mailing list').click()
+    >>> print find_tag_by_id(user_browser.contents, 'mailing_list_purge')
+    None
+
+But a Launchpad administrator can purge a registered list.
+
+    >>> admin_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
+    >>> print find_tag_by_id(admin_browser.contents,
+    ...     'mailing_list_purge').p.string
+    Purge it
+
+    # Make Sample Person, who is not a Launchpad administrator, a mailing list
+    # expert for the following tests.
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> test = getUtility(IPersonSet).getByName('name12')
+    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    >>> test.join(experts)
+    >>> logout()
+
+Spiv (Andrew Bennetts), a member of the mailing list experts team, can also
+purge a registered list.
+
+    >>> expert_browser = setupBrowser('Basic test@ubuntulinux.com:test')
+    >>> expert_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
+    >>> expert_browser.getLink('Configure mailing list').click()
+    >>> print find_tag_by_id(
+    ...     expert_browser.contents, 'mailing_list_purge').p.string
+    Purge it
+
+Nobody can purge an approved or active mailing list.
+
+    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
+    >>> admin_browser.getControl(name='field.aardvarks').value = ['approve']
+    >>> admin_browser.getControl('Submit').click()
+    >>> print_list_state()
+    APPROVED
+
+    >>> expert_browser.reload()
+    >>> find_tag_by_id(admin_browser.contents, 'mailing_list_purge').p.string
+    ''
+    >>> find_tag_by_id(expert_browser.contents, 'mailing_list_purge').p.string
+    ''
+
+    >>> act()
+    >>> print_list_state()
+    ACTIVE
+    >>> admin_browser.reload()
+    >>> expert_browser.reload()
+    >>> find_tag_by_id(admin_browser.contents, 'mailing_list_purge').p.string
+    ''
+    >>> find_tag_by_id(expert_browser.contents, 'mailing_list_purge').p.string
+    ''
+
+A constructing, modified, updating, or deactivating or mod-failed list cannot
+be purged.
+
+    >>> for status in (MailingListStatus.CONSTRUCTING,
+    ...                MailingListStatus.MODIFIED,
+    ...                MailingListStatus.UPDATING,
+    ...                MailingListStatus.DEACTIVATING,
+    ...                MailingListStatus.MOD_FAILED):
+    ...     set_list_state('aardvarks', status)
+    ...     print_list_state()
+    ...     admin_browser_reload()
+    ...     expert_browser.reload()
+    ...     find_tag_by_id(
+    ...         admin_browser.contents, 'mailing_list_purge').p.string
+    ...     find_tag_by_id(
+    ...         expert_browser.contents, 'mailing_list_purge').p.string
+    CONSTRUCTING
+    ''
+    ''
+    MODIFIED
+    ''
+    ''
+    UPDATING
+    ''
+    ''
+    DEACTIVATING
+    ''
+    ''
+    MOD_FAILED
+    ''
+    ''
+
+A declined or failed list can be purged.
+
+    >>> for status in (MailingListStatus.DECLINED,
+    ...                MailingListStatus.FAILED):
+    ...     set_list_state('aardvarks', status)
+    ...     print_list_state()
+    ...     admin_browser_reload()
+    ...     expert_browser.reload()
+    ...     print find_tag_by_id(
+    ...         admin_browser.contents, 'mailing_list_purge').p.string
+    ...     print find_tag_by_id(
+    ...         expert_browser.contents, 'mailing_list_purge').p.string
+    DECLINED
+    Purge it
+    Purge it
+    FAILED
+    Purge it
+    Purge it
+
+A purged list acts as if it doesn't even exist.
+
+    >>> set_list_state('aardvarks', MailingListStatus.PURGED)
+    >>> print_list_state()
+    PURGED
+    >>> admin_browser.reload()
+    >>> expert_browser.reload()
+    >>> admin_browser.getControl('Apply for Mailing List').click()
+    >>> expert_browser.getControl('Apply for Mailing List').click()
+
+To the team owner, an inactive list can merely be reactivated, it still cannot
+be purged.
+
+    >>> set_list_state('aardvarks', MailingListStatus.INACTIVE)
+    >>> expert_browser.reload()
+    >>> expert_browser.getLink('Reactivate this Mailing List')
+    >>> print find_tag_by_id(
+    ...     expert_browser.contents, 'mailing_list_purge').p.string
+    ''
+
+However to the LP administrator or mailing list expert, the list can also be
+purged.
+
+XXX TODO
+  - show the purge happening
+  - show that a purged list can be re-registered
+  - show that a team with a purged list can be renamed
+  - show that a team with a purged list can be merged

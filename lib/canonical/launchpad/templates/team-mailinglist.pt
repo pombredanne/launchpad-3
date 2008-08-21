@@ -49,6 +49,18 @@
         </p>
       </div>
 
+      <div id="mailing_list_purge"
+           tal:condition="view/list_can_be_purged">
+        You can purge this mailing list so that the team can be merged or
+        renamed, or so that the mailing list can be re-registered.  By purging
+        this list, you guarantee that there are no artifacts of this mailing
+        list (such as its persistent archives) that need to be manually
+        changed, backed up, deleted, or renamed.
+        <p>
+          <input tal:replace="structure view/purge_list/render" />
+        </p>
+      </div>
+
       <p id="mailing_list_not_contact_address"
          tal:condition="view/list_is_usable_but_not_contact_method">
         The mailing list is not set as the team contact

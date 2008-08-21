@@ -485,6 +485,22 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             "The mailing list will be reactivated within a few minutes.")
         self.next_url = canonical_url(self.context)
 
+    def purge_list_validator(self, action, data):
+        """Adds an error if the list is not safe to purge.
+
+        This can only happen through bypassing the UI.
+        """
+        if not self.list_can_be_purged:
+            self.addError('This list cannot be purged.')
+
+    @action('Purge this Mailing List', name='purge_list',
+            validator=purge_list_validator)
+    def purge_list(self, action, data):
+        getUtility(IMailingListSet).get(self.context.name).purge()
+        self.request.response.addInfoNotification(
+            'The mailing list has been purged.')
+        self.next_url = canonical_url(self.context)
+
     @property
     def list_is_usable_but_not_contact_method(self):
         """The list could be the contact method for its team, but isn't.
