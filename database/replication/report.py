@@ -56,9 +56,42 @@ class HtmlReport:
         return out.getvalue()
 
 
+class TextReport:
+    def alert(self, text):
+        return text
+
+    def table(self, table):
+        max_col_widths = []
+        for label in table.labels:
+            max_col_widths.append(len(label))
+        for row in table.rows:
+            row = list(row) # We need len()
+            for col_idx in range(0,len(row)):
+                col = row[col_idx]
+                max_col_widths[col_idx] = max(
+                    len(str(row[col_idx])), max_col_widths[col_idx])
+
+        out = StringIO()
+        for label_idx in range(0, len(table.labels)):
+            print >> out, table.labels[label_idx].ljust(
+                max_col_widths[label_idx]),
+        print >> out
+        for width in max_col_widths:
+            print >> out, '='*width,
+        print >> out
+        for row in table.rows:
+            row = list(row)
+            for col_idx in range(0, len(row)):
+                print >> out, str(row[col_idx]).ljust(max_col_widths[col_idx]),
+            print >> out
+        print >> out
+
+        return out.getvalue()
+
+
 def node_overview_report(cur, options):
 
-    report = HtmlReport()
+    report = options.mode()
     table = Table(["Node", "Comment", "Active"])
 
     cur.execute("""
@@ -78,7 +111,7 @@ def node_overview_report(cur, options):
 
 
 def paths_report(cur, options):
-    report = HtmlReport()
+    report = options.mode()
     table = Table(["From client node", "To server node", "Via connection"])
 
     cur.execute("""
@@ -93,7 +126,7 @@ def paths_report(cur, options):
 
 
 def listen_report(cur, options):
-    report = HtmlReport()
+    report = options.mode()
     table = Table(["Node", "Listens To", "Via"])
 
     cur.execute("""
@@ -106,7 +139,7 @@ def listen_report(cur, options):
 
 
 def subscribe_report(cur, options):
-    report = HtmlReport()
+    report = options.mode()
     table = Table([
         "Set", "Is Privided By", "Is Received By",
         "Is Forwardable", "Is Active"])
@@ -126,7 +159,7 @@ def subscribe_report(cur, options):
 
 
 def tables_report(cur, options):
-    report = HtmlReport()
+    report = options.mode()
     table = Table(["Set", "Schema", "Table", "Table Id", "Key", "Comment"])
     cur.execute("""
         SELECT tab_set, nspname, relname, tab_id, tab_idxname, tab_comment
@@ -142,7 +175,7 @@ def tables_report(cur, options):
 
 
 def sequences_report(cur, options):
-    report = HtmlReport()
+    report = options.mode()
     table = Table(["Set", "Schema", "Sequence", "Sequence Id", "Comment"])
     cur.execute("""
         SELECT seq_set, nspname, relname, seq_id, seq_comment
@@ -161,11 +194,22 @@ def main():
 
     # Default should be pulled from a config file.
     parser.add_option(
-            "-c", "--cluster", dest="cluster", default="dev",
-            help="Report on cluster CLUSTER_NAME", metavar="CLUSTER_NAME")
+        "-c", "--cluster", dest="cluster", default="lpsl",
+        help="Report on cluster CLUSTER_NAME", metavar="CLUSTER_NAME")
+    parser.add_option(
+        "-f", "--format", dest="mode", default="text",
+        choices=['text', 'html'],
+        help="Output format MODE", metavar="MODE")
     db_options(parser)
 
     options, args = parser.parse_args()
+
+    if options.mode == "text":
+        options.mode = TextReport
+    elif options.mode == "html":
+        options.mode = HtmlReport
+    else:
+        assert False, "Unknown mode %s" % options.mode
 
     cluster_schema = "_%s" % options.cluster
 
