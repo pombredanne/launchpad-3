@@ -537,6 +537,7 @@ def flush_database_updates():
 
 
 
+
 def flush_database_caches():
     """Flush all cached values from the database for the current connection.
     SQLObject compatibility - DEPRECATED.
