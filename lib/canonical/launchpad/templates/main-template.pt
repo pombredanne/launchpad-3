@@ -94,9 +94,14 @@
       <script type="text/javascript"
         tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
     </tal:needs_json>
+    <tal:comment condition="nothing">
+      XXX: salgado, 2008-08-19: For some reason the 2.122 and above versions of
+      the gmap javascript don't work properly when displaying a team's map, so we
+      use v=2.121 rather than v=2 for now.
+    </tal:comment>
     <script tal:condition="request/needs_gmap2"
             type="text/javascript"
-            tal:attributes="src string:http://maps.google.com/maps?file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};"
+            tal:attributes="src string:http://maps.google.com/maps?file=api&amp;v=2.121&amp;key=${modules/canonical.config/config/google/maps_api_key};"
             ></script>
     <link rel="shortcut icon" tal:attributes="href string:${icingroot}/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
