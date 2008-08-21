@@ -4,7 +4,7 @@ The service root (/[version]/) is a resource that responds to GET by
 describing the web service. The description is a JSON map full of
 links to the top-level web service objects.
 
-  >>> top_level_links = webservice.get("/beta/").jsonBody()
+  >>> top_level_links = webservice.get("").jsonBody()
   >>> sorted(top_level_links.keys())
   [u'bugs_collection_link', u'me_link', u'people_collection_link', u'projects_collection_link']
   >>> top_level_links['bugs_collection_link']
@@ -24,7 +24,7 @@ particular resource supports only GET. Eventually it will also support
 HEAD and OPTIONS.
 
   >>> for method in ['HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']:
-  ...     print webservice("/beta/", method)
+  ...     print webservice("", method)
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...

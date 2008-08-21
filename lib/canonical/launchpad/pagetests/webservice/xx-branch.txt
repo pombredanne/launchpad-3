@@ -49,7 +49,7 @@ At the moment, it's not scheduled to be mirrored.
 
 But we can ask for it to be mirrored using the webservice:
 
-    >>> branch_url = '/beta/' + branch.unique_name
+    >>> branch_url = '' + branch.unique_name
     >>> start_time = datetime.now(pytz.UTC)
     >>> response = webservice.named_post(branch_url, 'requestMirror')
     >>> end_time = datetime.now(pytz.UTC)
@@ -69,7 +69,7 @@ request for a mirror:
 Branches have the following attributes.
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
-    >>> project = webservice.get('/beta/firefox').jsonBody()
+    >>> project = webservice.get('firefox').jsonBody()
     >>> result = webservice.get(project['branches_collection_link'])
     >>> branches = result.jsonBody()
     >>> pprint_entry(branches['entries'][0])
