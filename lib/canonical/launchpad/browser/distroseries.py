@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistroSeriesAddView',
+    'DistroSeriesAdminView',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesFullLanguagePackRequestView',
@@ -16,31 +17,41 @@ __all__ = [
     'DistroSeriesView',
     ]
 
-from zope.component import getUtility
-from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
+from zope.component import getUtility
+from zope.event import notify
+from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
+from canonical.database.constants import UTC_NOW
+from canonical.launchpad import _
 from canonical.launchpad import helpers
-from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough, stepto,
-    LaunchpadEditFormView, action)
-
-from canonical.launchpad.interfaces import (
-    IDistroSeriesLanguageSet, IDistroSeries, ICountry, IDistroSeriesSet,
-    ILaunchBag, ILanguageSet, NotFoundError)
-
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
-
-from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.interfaces.country import ICountry
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
+from canonical.launchpad.interfaces.distroserieslanguage import (
+    IDistroSeriesLanguageSet)
+from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchBag, NotFoundError)
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
+from canonical.launchpad.webapp.menu import (
+    ApplicationMenu, Link, enabled_with_permission)
+from canonical.launchpad.webapp.publisher import (
+    canonical_url, stepthrough, stepto)
+from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -150,6 +161,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
              'add_port', 'add_milestone', 'admin', 'builds', 'queue',
              'subscribe']
 
+    @enabled_with_permission('launchpad.Admin')
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
@@ -230,7 +242,7 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined', 'new']
+    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -258,11 +270,6 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         summary = 'Show the assignee, drafter and approver of these specs'
         return Link('+assignments', text, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Show the sequence in which specs should be implemented'
-        return Link('+roadmap', text, icon='info')
 
     def new(self):
         text = 'Register a blueprint'
@@ -406,14 +413,109 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         return self.request.response.redirect(distro_url + "/+filebug")
 
 
-class DistroSeriesEditView(SQLObjectEditView):
+class DistroSeriesEditView(LaunchpadEditFormView):
     """View class that lets you edit a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
     """
+    schema = IDistroSeries
+    field_names = ['displayname', 'title', 'summary', 'description']
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+    def initialize(self):
+        """See `LaunchpadEditFormView`.
+
+        Additionally set the 'label' attribute which will be used in the
+        template.
+        """
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Change %s details' % self.context.title
+
+    @action("Change")
+    def change_action(self, action, data):
+        """Update the context and redirects to its overviw page."""
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+        self.next_url = canonical_url(self.context)
+
+
+class DistroSeriesAdminView(LaunchpadEditFormView):
+    """View class for administering a DistroSeries object.
+
+    It redirects to the main distroseries page after a successful edit.
+    """
+    schema = IDistroSeries
+    field_names = ['name', 'version', 'changeslist']
+    custom_widget('status', LaunchpadDropdownWidget)
+
+    def initialize(self):
+        """See `LaunchpadEditFormView`.
+
+        Additionally set the 'label' attribute which will be used in the
+        template.
+        """
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Administer %s' % self.context.title
+
+    def setUpFields(self):
+        """Override `LaunchpadFormView`.
+
+        In addition to setting schema fields, also initialize the
+        'status' field. See `createStatusField` method.
+        """
+        LaunchpadEditFormView.setUpFields(self)
+        self.form_fields = (
+            self.form_fields + self.createStatusField())
+
+    def createStatusField(self):
+        """Create the 'status' field.
+
+        Create the status vocabulary according the current distroseries
+        status:
+         * stable   -> CURRENT, SUPPORTED, OBSOLETE
+         * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
+        """
+        stable_status = (
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED,
+            DistroSeriesStatus.OBSOLETE,
+            )
+
+        if self.context.status not in stable_status:
+            terms = [status for status in DistroSeriesStatus.items
+                     if status not in stable_status]
+            terms.append(DistroSeriesStatus.CURRENT)
+        else:
+            terms = stable_status
+
+        status_vocabulary = SimpleVocabulary(
+            [SimpleTerm(item, item.name, item.title) for item in terms])
+
+        return form.Fields(
+            Choice(__name__='status',
+                   title=_('Status'),
+                   vocabulary=status_vocabulary,
+                   description=_("Select the the distroseries status."),
+                   required=True),
+            custom_widget=self.custom_widgets['status'])
+
+    @action("Change")
+    def change_action(self, action, data):
+        """Update the context and redirects to its overviw page.
+
+        Also, set 'datereleased' when a unstable distroseries is made
+        CURRENT.
+        """
+        status = data.get('status')
+        if (self.context.datereleased is None and
+            status == DistroSeriesStatus.CURRENT):
+            self.context.datereleased = UTC_NOW
+
+        self.updateContextFromData(data)
+
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+        self.next_url = canonical_url(self.context)
 
 
 class DistroSeriesAddView(AddView):

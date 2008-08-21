@@ -11,24 +11,31 @@ import random
 import time
 import unittest
 
-from bzrlib.revision import NULL_REVISION
+from bzrlib.branch import Branch
+from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
+from bzrlib.transport import (
+    get_transport, register_transport, unregister_transport)
+from bzrlib.transport.chroot import ChrootServer
 from bzrlib.uncommit import uncommit
+from bzrlib.urlutils import (
+    local_path_from_url, join as urljoin)
 from bzrlib.tests import TestCaseWithTransport
-from bzrlib.transport import register_transport, unregister_transport
 import pytz
 from zope.component import getUtility
 
+from canonical.codehosting.bzrutils import HttpAsLocalTransport
 from canonical.config import config
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    ControlFormat, IBranchSet, IPersonSet, IRevisionSet, RepositoryFormat)
+    BranchSubscriptionNotificationLevel, BranchType,
+    CodeReviewNotificationLevel, ControlFormat, IBranchSet, IPersonSet,
+    IRevisionSet, RepositoryFormat)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
-    BzrSync, RevisionModifiedError, get_diff, get_revision_message)
+    BzrSync, get_diff, get_revision_message)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -46,26 +53,40 @@ class BzrSyncTestCase(TestCaseWithTransport):
         # The lp-mirrored transport is set up by the branch_scanner module.
         # Here we set up a fake so that we can test without worrying about
         # authservers and the like.
-        self._url_prefix = 'lp-mirrored:///'
-        register_transport(self._url_prefix, self._fakeTransportFactory)
         self.factory = LaunchpadObjectFactory()
         self.makeFixtures()
         self.lp_db_user = config.launchpad.dbuser
         self.switchDbUser(config.branchscanner.dbuser)
+        self._setUpFakeTransport()
         self._setUpAuthor()
+
+    def _setUpFakeTransport(self):
+        # The scanner tests assume that branches live on a Launchpad virtual
+        # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
+        # entire virtual filesystem here, we fake it by having a chrooted file
+        # transport do the work.
+        #
+        # The related method `makeBzrBranchAndTree` takes a database branch
+        # and creates the branch in the correct location on our fake
+        # filesystem.
+        self._url_prefix = 'lp-mirrored:///'
+        register_transport(self._url_prefix, self._fakeTransportFactory)
+        self._chroot_server = ChrootServer(self.get_transport())
+        self._chroot_server.setUp()
+        self.addCleanup(self._chroot_server.tearDown)
+        self.addCleanup(
+            lambda: unregister_transport(
+                self._url_prefix, self._fakeTransportFactory))
 
     def _fakeTransportFactory(self, url):
         self.assertTrue(url.startswith(self._url_prefix))
-        return self.get_transport(url[len(self._url_prefix):])
+        url = self._chroot_server.get_url() + url[len(self._url_prefix):]
+        return get_transport(url)
 
     def switchDbUser(self, user):
         """We need to reset the config warehouse root after a switch."""
         LaunchpadZopelessLayer.switchDbUser(user)
         self.txn = LaunchpadZopelessLayer.txn
-
-    def tearDown(self):
-        unregister_transport('lp-mirrored:///', self._fakeTransportFactory)
-        TestCaseWithTransport.tearDown(self)
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
@@ -429,6 +450,64 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertNotInMainline('trunk', db_branch)
         self.assertInMainline('branch', db_branch)
 
+    def test_external_stacked_branch(self):
+        # When we scan a branch 'foo' that's stacked on an external branch
+        # 'bar' that is mirrored by Launchpad, we mark 'foo' as being stacked
+        # on 'bar'.
+        stacked_format = 'development'
+
+        # Make the stacked-on branch.
+        self.switchDbUser(self.lp_db_user)
+        db_base_branch = self.makeDatabaseBranch()
+        bzr_base_tree = self.makeBzrBranchAndTree(
+            db_base_branch, format=stacked_format)
+
+        # db_base_branch needs to have a URL that can be opened and is a valid
+        # branch URL. This means that we register a fake HTTP transport so
+        # that the URL can *look* valid and still be opened.
+        HttpAsLocalTransport.register()
+        self.addCleanup(HttpAsLocalTransport.unregister)
+        db_base_branch.branch_type = BranchType.MIRRORED
+        db_base_branch.url = urljoin(
+            'http://localhost',
+            local_path_from_url(bzr_base_tree.branch.base)).rstrip('/')
+
+        # Make the stacked branch.
+        db_stacked_branch = self.makeDatabaseBranch()
+        bzr_stacked_tree = self.makeBzrBranchAndTree(
+            db_stacked_branch, format=stacked_format)
+
+        bzr_stacked_tree.branch.set_stacked_on_url(db_base_branch.url)
+
+        self.makeBzrSync(db_stacked_branch).syncBranchAndClose()
+        self.assertEqual(db_stacked_branch.stacked_on.id, db_base_branch.id)
+
+    def test_hosted_stacked_branch(self):
+        # By default, hosted branches will be stacked on other hosted branches
+        # using URL fragments like '/~foo/bar/baz'. When the scanner sees such
+        # branches, it will record the stacking relationship.
+        stacked_format = 'development'
+
+        # Make the stacked-on branch.
+        self.switchDbUser(self.lp_db_user)
+        db_base_branch = self.makeDatabaseBranch()
+        bzr_base_tree = self.makeBzrBranchAndTree(
+            db_base_branch, format=stacked_format)
+
+        # Make the stacked branch.
+        db_stacked_branch = self.makeDatabaseBranch()
+        bzr_stacked_tree = self.makeBzrBranchAndTree(
+            db_stacked_branch, format=stacked_format)
+        bzr_stacked_branch = Branch.open(
+            'lp-mirrored:///%s' % db_stacked_branch.unique_name)
+
+        # Stack 'em up.
+        bzr_stacked_branch.set_stacked_on_url(
+            '/' + db_base_branch.unique_name)
+
+        self.makeBzrSync(db_stacked_branch).syncBranchAndClose()
+        self.assertEqual(db_stacked_branch.stacked_on.id, db_base_branch.id)
+
     def test_sync_merging_to_merged(self):
         # When replacing a branch by one of the branches it merged, the
         # database must be updated appropriately.
@@ -487,28 +566,12 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(expected_mapping, db_branch_revision_map)
 
 
-class TestBzrSyncModified(BzrSyncTestCase):
+class TestBzrSyncOneRevision(BzrSyncTestCase):
+    """Tests for `BzrSync.syncOneRevision`."""
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
         self.bzrsync = self.makeBzrSync(self.db_branch)
-
-    def test_timestampToDatetime_with_negative_fractional(self):
-        # timestampToDatetime should convert a negative, fractional timestamp
-        # into a valid, sane datetime object.
-        UTC = pytz.timezone('UTC')
-        timestamp = -0.5
-        date = self.bzrsync._timestampToDatetime(timestamp)
-        self.assertEqual(
-            date, datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC))
-
-    def test_timestampToDatetime(self):
-        # timestampTODatetime should convert a regular timestamp into a valid,
-        # sane datetime object.
-        UTC = pytz.timezone('UTC')
-        timestamp = time.time()
-        date = datetime.datetime.fromtimestamp(timestamp, tz=UTC)
-        self.assertEqual(date, self.bzrsync._timestampToDatetime(timestamp))
 
     def test_ancient_revision(self):
         # Test that we can sync revisions with negative, fractional
@@ -519,82 +582,66 @@ class TestBzrSyncModified(BzrSyncTestCase):
         old_timestamp = -0.5
         old_date = datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC)
 
-        class FakeRevision:
-            """A revision with a negative, fractional timestamp.
-            """
-            revision_id = 'rev42'
-            parent_ids = ['rev1', 'rev2']
-            committer = self.AUTHOR
-            message = self.LOG
-            timestamp = old_timestamp
-            timezone = 0
-            properties = {}
-            def get_apparent_author(self):
-                return self.committer
+        # Fake revision with negative timestamp.
+        fake_rev = BzrRevision(
+            revision_id='rev42', parent_ids=['rev1', 'rev2'],
+            committer=self.AUTHOR, message=self.LOG, timestamp=old_timestamp,
+            timezone=0, properties={})
 
         # Sync the revision.  The second parameter is a dict of revision ids
         # to revnos, and will error if the revision id is not in the dict.
-        self.bzrsync.syncOneRevision(FakeRevision(), {'rev42': None})
+        self.bzrsync.syncOneRevision(fake_rev, {'rev42': None})
 
         # Find the revision we just synced and check that it has the correct
         # date.
         revision = getUtility(IRevisionSet).getByRevisionId(
-            FakeRevision.revision_id)
+            fake_rev.revision_id)
         self.assertEqual(old_date, revision.revision_date)
 
-    def test_revision_modified(self):
-        # test that modifications to the list of parents get caught.
-        class FakeRevision:
-            revision_id = 'rev42'
-            parent_ids = ['rev1', 'rev2']
-            committer = self.AUTHOR
-            message = self.LOG
-            timestamp = 1000000000.0
-            timezone = 0
-            properties = {}
-            def get_apparent_author(self):
-                return self.committer
 
-        # Synchronise the fake revision:
+class TestBzrSyncModified(BzrSyncTestCase):
+    """Tests for BzrSync.syncOneRevision when the revision has been modified.
+    """
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        self.bzrsync = self.makeBzrSync(self.db_branch)
+
+    def makeRevision(self, parent_ids):
+        """Make a fake Bazaar revision for testing `syncOneRevision`."""
+        return BzrRevision(
+            revision_id=self.factory.getUniqueString(), parent_ids=parent_ids,
+            committer=self.AUTHOR, message=self.LOG, timestamp=1000000000.0,
+            timezone=0, properties={})
+
+    def makeSyncedRevision(self):
+        """Return a fake revision that has already been synced.
+
+        :param parent_ids: The list of parent IDs for the revision.
+        """
+        revision_id = self.factory.getUniqueString()
+        parent_ids = [
+            self.factory.getUniqueString(), self.factory.getUniqueString()]
+        fake_revision = self.makeRevision(parent_ids)
         counts = self.getCounts()
-        fake_revision = FakeRevision()
-        fake_revision_dict = {'rev42': None}
-        self.bzrsync.syncOneRevision(fake_revision, fake_revision_dict)
+        self.bzrsync.syncOneRevision(
+            fake_revision, {fake_revision.revision_id: None})
         self.assertCounts(
             counts, new_revisions=1, new_numbers=0,
-            new_parents=2, new_authors=0)
+            new_parents=len(parent_ids), new_authors=0)
+        return fake_revision
 
+    def test_sync_twice(self):
+        # Synchronise the fake revision:
         # Verify that synchronising the revision twice passes and does
         # not create a second revision object:
+        fake_revision = self.makeSyncedRevision()
         counts = self.getCounts()
-        self.bzrsync.syncOneRevision(fake_revision, fake_revision_dict)
+        self.bzrsync.syncOneRevision(
+            fake_revision, {fake_revision.revision_id: None})
         self.assertCounts(
             counts, new_revisions=0, new_numbers=0,
             new_parents=0, new_authors=0)
-
-        # Verify that adding a parent gets caught:
-        fake_revision.parent_ids.append('rev3')
-        self.assertRaises(
-            RevisionModifiedError,
-            self.bzrsync.syncOneRevision,
-            fake_revision,
-            fake_revision_dict)
-
-        # Verify that removing a parent gets caught:
-        fake_revision.parent_ids = ['rev1']
-        self.assertRaises(
-            RevisionModifiedError,
-            self.bzrsync.syncOneRevision,
-            fake_revision,
-            fake_revision_dict)
-
-        # Verify that reordering the parents gets caught:
-        fake_revision.parent_ids = ['rev2', 'rev1']
-        self.assertRaises(
-            RevisionModifiedError,
-            self.bzrsync.syncOneRevision,
-            fake_revision,
-            fake_revision_dict)
 
 
 class TestBzrSyncEmail(BzrSyncTestCase):
@@ -911,6 +958,20 @@ class TestScanFormatKnit(BzrSyncTestCase):
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(self.db_branch.branch_format,
                          BranchFormat.BZR_BRANCH_5)
+
+
+class TestScanBranchFormat7(BzrSyncTestCase):
+    """Test scanning of development format branchs."""
+
+    def makeBzrBranchAndTree(self, db_branch):
+        return BzrSyncTestCase.makeBzrBranchAndTree(
+            self, db_branch, 'development1')
+
+    def testRecognizeDevelopment(self):
+        """Ensure scanner records correct format for development branches."""
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(
+            self.db_branch.branch_format, BranchFormat.BZR_BRANCH_7)
 
 
 class TestScanFormatWeave(BzrSyncTestCase):

@@ -15,13 +15,10 @@ from optparse import OptionParser
 import tempfile
 from textwrap import dedent
 import time
-
-import psycopg2
 import psycopg2.extensions
 
 import upgrade
 from canonical import lp
-from canonical.config import config
 from canonical.database.sqlbase import (
     connect, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED)
 from canonical.launchpad.scripts import logger, logger_options, db_options
@@ -326,11 +323,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
             """
 
         log.debug('Installing tsearch2')
-        if config.database.dbhost:
-            cmd = 'psql -d %s -h %s -f -' % (
-                config.database.dbname, config.database.dbhost)
-        else:
-            cmd = 'psql -d %s -f -' % (config.database.dbname, )
+        cmd = 'psql -f - -d %s' % lp.dbname
+        if lp.dbhost:
+            cmd += ' -h %s' % lp.dbhost
         if options.dbuser:
             cmd += ' -U %s' % options.dbuser
         p = popen2.Popen4(cmd)
