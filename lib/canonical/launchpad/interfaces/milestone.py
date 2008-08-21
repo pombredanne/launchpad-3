@@ -153,6 +153,7 @@ class IProjectMilestone(IMilestone):
 
 class IHasMilestones(Interface):
     """An interface for classes providing milestones."""
+    export_as_webservice_entry()
 
     milestones = exported(
         CollectionField(
