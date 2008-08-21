@@ -38,7 +38,6 @@ from zope.publisher.interfaces import NotFound
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer,
     WebServiceLayer)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
@@ -82,18 +81,6 @@ class DecoratorAdvisor:
 class stepthrough(DecoratorAdvisor):
 
     magic_class_attribute = '__stepthrough_traversals__'
-
-    def __init__(self, name, breadcrumb=None):
-        """Register a stepthrough traversal with the name stepped through.
-
-        You can optionally provide a breadcrumb function that is called
-        with the argument 'self'.  So, a method will do.
-        """
-        DecoratorAdvisor.__init__(self, name)
-        self.breadcrumb = breadcrumb
-
-    def getValueToStore(self):
-        return (self.fn, self.breadcrumb)
 
 
 class stepto(DecoratorAdvisor):
@@ -543,12 +530,6 @@ class Navigation:
     # Set this if you want to set a new layer before doing any traversal.
     newlayer = None
 
-    def breadcrumb(self):
-        """Return the text of the context object's breadcrumb, or None for
-        no breadcrumb.
-        """
-        return None
-
     def traverse(self, name):
         """Override this method to handle traversal.
 
@@ -596,16 +577,6 @@ class Navigation:
             if value is not None:
                 combined_info.update(value)
         return combined_info
-
-    def _append_breadcrumb(self, text):
-        """Add a breadcrumb to the request, at the current URL with the given
-        text.
-
-        request.getURL(1) represents the path traversed so far, but without
-        the step we're currently working out how to traverse.
-        """
-        self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=False), text))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
@@ -663,12 +634,6 @@ class Navigation:
         # traversed_objects list:
         request.traversed_objects.append(self.context)
 
-        # Next, if there is a breadcrumb for the context, add it to the
-        # request's list of breadcrumbs.
-        breadcrumb_text = self.breadcrumb()
-        if breadcrumb_text is not None:
-            self._append_breadcrumb(breadcrumb_text)
-
         # Next, see if we're being asked to stepto somewhere.
         stepto_traversals = self.stepto_traversals
         if stepto_traversals is not None:
@@ -691,11 +656,7 @@ class Navigation:
                 stepstogo = request.stepstogo
                 if stepstogo:
                     nextstep = stepstogo.consume()
-                    handler, breadcrumb_fn = namespace_traversals[name]
-                    if breadcrumb_fn is not None:
-                        breadcrumb_text = breadcrumb_fn(self)
-                        if breadcrumb_text is not None:
-                            self._append_breadcrumb(breadcrumb_text)
+                    handler = namespace_traversals[name]
                     try:
                         nextobj = handler(self, nextstep)
                     except NotFoundError:
