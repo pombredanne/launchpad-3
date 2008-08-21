@@ -259,3 +259,24 @@ considered to be on the home page if there are no breadcrumbs.
     >>> print_hierarchy(homepage_hierarchy.render())
     Location:
 
+Breadcrumbs in the hierarchy that have icons are rendered with an <img>
+tag.  Breadcrumbs without icons are not.
+
+    >>> breadcrumb_no_icon, breadcrumb_with_icon = hierarchy.items()
+
+    >>> breadcrumb_no_icon
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking'
+        text='Joy of cooking'>
+
+    >>> print hierarchy.html_for_breadcrumb(breadcrumb_no_icon)
+    <span ...><a ...>Joy of cooking</a></span>
+
+    >>> breadcrumb_with_icon
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking/spam'
+        text='Spam'
+        icon='<img src="/@@/recipe"/>'>
+
+    >>> print hierarchy.html_for_breadcrumb(breadcrumb_with_icon)
+    <span ...><a ...><img src="/@@/recipe"/> Spam</a></span>

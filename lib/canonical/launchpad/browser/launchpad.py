@@ -336,7 +336,7 @@ class Hierarchy(LaunchpadView):
                     cssclass = ''
 
                 steps.append(
-                    self._html_for_breadcrumb(element, cssclass))
+                    self.html_for_breadcrumb(element, cssclass))
 
             hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
         else:
@@ -351,7 +351,7 @@ class Hierarchy(LaunchpadView):
 
         return hierarchy
 
-    def _html_for_breadcrumb(self, breadcrumb, extra_css_class=None):
+    def html_for_breadcrumb(self, breadcrumb, extra_css_class=''):
         """Return the HTML to display an `IBreadcrumb` object.
 
         :param extra_css_class: A string of additional CSS classes
