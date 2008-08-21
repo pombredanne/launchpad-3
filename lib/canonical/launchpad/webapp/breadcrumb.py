@@ -60,8 +60,7 @@ class BreadcrumbBuilder:
         # Borrowed from webapp.tales.CustomizableFormatter.
         if 'src="/@@/nyet-icon"' in icon:
             return None
-        else:
-            return icon
+        return icon
 
     def make_breadcrumb(self):
         """See `IBreadcrumbBuilder.`"""
