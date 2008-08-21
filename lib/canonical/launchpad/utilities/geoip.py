@@ -170,6 +170,8 @@ def ensure_address_is_not_private(ip_address):
     """Return the given IP address if it doesn't start with '127.'.
 
     If it does start with '127.' then we return a South African IP address.
+    Notice that we have no specific reason for using a South African IP
+    address here -- we could have used any other non-private IP address.
     """
     private_prefixes = (
         '127.',
@@ -180,6 +182,8 @@ def ensure_address_is_not_private(ip_address):
 
     for prefix in private_prefixes:
         if ip_address.startswith(prefix):
+            # This is an arbitrary South African IP which was handy at the
+            # time of writing; it's not special in any way.
             return '196.36.161.227'
     return ip_address
 
