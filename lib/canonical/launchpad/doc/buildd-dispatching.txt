@@ -68,9 +68,8 @@ Clean up previous BuildQueue results from sampledata:
     >>> lost_job.destroySelf()
 
 The BuilddMaster will be set up next. This involves checking the various
-builders and resetting the virtualized/PPA if needed.
-Please note that 'frog' is a PPA builder and was reset due to a
-communication time-out.
+builders and resetting the virtualized ones if needed. Please note that
+'frog' is a PPA builder and was reset due to a communication time-out.
 
     >>> bm.addDistroArchSeries(hoary_i386)
     >>> bm.setupBuilders(hoary_i386)
