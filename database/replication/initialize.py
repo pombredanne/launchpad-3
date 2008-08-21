@@ -1,7 +1,11 @@
 #!/usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Initialize the cluster."""
+"""Initialize the cluster.
+
+This script is run once to convert a singledb Launchpad instance to
+a replicated setup.
+"""
 
 import _pythonpath
 
@@ -11,12 +15,12 @@ import sys
 
 import helpers
 
-from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase import connect
 from canonical.database.postgresql import (
-        all_sequences_in_schema, all_tables_in_schema, replication_set,
+        all_sequences_in_schema, all_tables_in_schema
         )
 from canonical.launchpad.scripts import (
-        execute_zcml_for_scripts, logger, logger_options,
+        execute_zcml_for_scripts, logger, logger_options, db_options
         )
 
 __metaclass__ = type
@@ -25,14 +29,16 @@ __all__ = []
 
 def main():
     parser = OptionParser()
-    #db_options(parser)
+    db_options(parser)
     logger_options(parser)
+
+    parser.set_defaults(dbuser='slony')
 
     options, args = parser.parse_args()
 
     log = logger(options)
 
-    execute_zcml_for_scripts()
+    #execute_zcml_for_scripts()
 
     # Confirm each database exists and is connectable.
 
@@ -51,41 +57,25 @@ def main():
         "pg_dump -x -s -U slony launchpad_dev "
         "| psql -q -U slony launchpad_dev_slave1", shell=True)
     if rv != 0:
-        print >> sys.stderr, "ERR: Schema dumplcation returned %d" % rv
+        print >> sys.stderr, "ERR: Schema duplication returned %d" % rv
         sys.exit(rv)
 
     # Generate lists of sequences and tables for our replication sets.
-    cur = cursor()
-    authdb_tables, authdb_sequences = replication_set(
-            cur, [
-                ('public', 'account'),
-                ('public', 'openidassociations'),
-                ('public', 'oauthnonce'),
-                ])
-    lpmain_tables, lpmain_sequences = replication_set(
-            cur, [
-                ('public', 'person'),
-                ('public', 'launchpaddatabaserevision'),
-                ('public', 'fticache'),
-                ('public', 'nameblacklist'),
-                ('public', 'codeimportmachine'),
-                ('public', 'scriptactivity'),
-                ('public', 'standardshipitrequest'),
-                ('public', 'bugtag'),
-                ('public', 'launchpadstatistic'),
-                ('public', 'packagebugsupervisor'), # Dud fk definition!
-                ])
-    # These tables will exist in a developer's database and should
-    # be ignored.
-    session_tables = set(
-            ['public.secret', 'public.sessiondata', 'public.sessionpkgdata'])
+    log.debug("Connecting as %s" % options.dbuser)
+    con = connect(options.dbuser)
+    cur = con.cursor()
+    authdb_tables, authdb_sequences = helpers.calculate_replication_set(
+        cur, helpers.AUTHDB_SEED)
+    lpmain_tables, lpmain_sequences = helpers.calculate_replication_set(
+        cur, helpers.LPMAIN_SEED)
 
     # Sanity check these lists - we want all objects in the public
     # schema to be in one and only one replication set.
     fails = 0
     for table in all_tables_in_schema(cur, 'public'):
         times_seen = 0
-        for table_set in [authdb_tables, lpmain_tables, session_tables]:
+        for table_set in [
+            authdb_tables, lpmain_tables, helpers.IGNORED_TABLES]:
             if table in table_set:
                 times_seen += 1
         if times_seen == 0:
@@ -219,6 +209,8 @@ def main():
         """)
     helpers.execute_slonik('\n'.join(script), sync=600)
 
+    helpers.validate_replication(cur) # Explode now if we have messed up.
+
     # Generate and run a slonik script subscribing the slave databases
     # to replication set #1.
     log.info('Subscribing slaves to replication sets.')
@@ -232,13 +224,17 @@ def main():
             provider=@master_id, receiver=@slave1_id,
             forward=no);
         """)
+    helpers.validate_replication(cur) # Explode now if we have messed up.
+
     log.info('Waiting for synchronization.')
     helpers.execute_slonik("""
         sync (id=1);
         wait for event (
-            origin=@master_id, confirmed=@slave1_id, wait on=@master_id);
+            origin=ALL, confirmed=ALL, wait on=@master_id);
         """)
     log.info('Synchronized.')
+
+    helpers.validate_replication(cur) # Explode now if we have messed up.
 
 
 if __name__ == '__main__':

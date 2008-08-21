@@ -5,10 +5,54 @@
 import subprocess
 import sys
 
+from canonical.database.sqlbase import sqlvalues
+from canonical.database.postgresql import (
+    fqn, all_tables_in_schema, all_sequences_in_schema
+    )
 from canonical.launchpad.scripts.logger import log
 
 __metaclass__ = type
 __all__ = []
+
+
+# The Slony-I clustername we use with Launchpad.
+CLUSTERNAME = 'lpsl'
+
+# The namespace in the database used to contain all the Slony-I tables.
+CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
+
+
+# Seed tables for the authdb replication set to be passed to
+# calculate_replication_set().
+AUTHDB_SEED = set([
+    ('public', 'account'),
+    ('public', 'openidassociations'),
+    ('public', 'oauthnonce'),
+    ])
+
+
+# Seed tables for the lpmain replication set to be passed to
+# calculate_replication_set().
+LPMAIN_SEED = set([
+    ('public', 'person'),
+    ('public', 'launchpaddatabaserevision'),
+    ('public', 'fticache'),
+    ('public', 'nameblacklist'),
+    ('public', 'codeimportmachine'),
+    ('public', 'scriptactivity'),
+    ('public', 'standardshipitrequest'),
+    ('public', 'bugtag'),
+    ('public', 'launchpadstatistic'),
+    ('public', 'packagebugsupervisor'), # Dud fk definition!
+    ])
+
+
+# Explicitly list tables that should not be replicated. This includes the
+# session tables, as these might exist in developer databases but will not
+# exist in the production launchpad database.
+IGNORED_TABLES = set([
+    'public.secret', 'public.sessiondata', 'public.sessionpkgdata'])
+
 
 def sync(timeout=60):
     """Generate a sync event and wait for it to complete on all nodes.
@@ -78,3 +122,153 @@ def preamble():
     # preamble based on LPCONFIG. Or better yet, pull it from the master
     # database if we are not initializing the cluster.
     return "include <preamble.sk>;\n"
+
+
+def calculate_replication_set(cur, seeds):
+    """Return the minimal set of tables and sequences needed in a
+    replication set containing the seed table.
+
+    A replication set must contain all tables linked by foreign key
+    reference to the given table, and sequences used to generate keys.
+
+    :param seeds: [(namespace, tablename), ...]
+
+    :returns: (tables, sequences)
+    """
+    # Results
+    tables = set()
+    sequences = set()
+
+    # Our pending set to check
+    pending_tables = set(seeds)
+
+    # Generate the set of tables that reference the seed directly
+    # or indirectly via foreign key constraints, including the seed itself.
+    while pending_tables:
+        namespace, tablename = pending_tables.pop()
+        tables.add((namespace, tablename))
+        # Find all tables that reference the current (seed) table
+        # and all tables that the seed table references.
+        cur.execute("""
+            SELECT ref_namespace.nspname, ref_class.relname
+            FROM
+                pg_class AS seed_class,
+                pg_namespace AS seed_namespace,
+                pg_class AS ref_class,
+                pg_namespace AS ref_namespace,
+                pg_constraint
+            WHERE
+                seed_class.relnamespace = seed_namespace.oid
+                AND ref_class.relnamespace = ref_namespace.oid
+                AND pg_constraint.contype = 'f'
+                AND seed_namespace.nspname = %s
+                AND seed_class.relname = %s
+                AND ((pg_constraint.conrelid = ref_class.oid
+                        AND pg_constraint.confrelid = seed_class.oid)
+                    OR (pg_constraint.conrelid = seed_class.oid
+                        AND pg_constraint.confrelid = ref_class.oid)
+                    )
+            """ % sqlvalues(namespace, tablename))
+        for namespace, tablename in cur.fetchall():
+            key = (namespace, tablename)
+            if key not in tables and key not in pending_tables:
+                pending_tables.add(key)
+
+    # Generate the set of sequences that are linked to any of our set of
+    # tables. We assume these are all sequences created by creation of
+    # serial or bigserial columns, or other sequences OWNED BY a particular
+    # column.
+    for namespace, tablename in tables:
+        cur.execute("""
+            SELECT seq
+            FROM (
+                SELECT pg_get_serial_sequence(%s, attname) AS seq
+                FROM pg_namespace, pg_class, pg_attribute
+                WHERE pg_namespace.nspname = %s
+                    AND pg_class.relnamespace = pg_namespace.oid
+                    AND pg_class.relname = %s
+                    AND pg_attribute.attrelid = pg_class.oid
+                    AND pg_attribute.attisdropped IS FALSE
+                ) AS whatever
+            WHERE seq IS NOT NULL;
+            """ % sqlvalues(fqn(namespace, tablename), namespace, tablename))
+        for row in cur.fetchall():
+            sequences.add(row[0])
+
+    # We can't easily convert the sequence name to (namespace, name) tuples,
+    # so we might as well convert the tables to dot notation for consistancy.
+    tables = set(fqn(namespace, tablename) for namespace,tablename in tables)
+
+    return tables, sequences
+
+
+def discover_unreplicated_set(cur):
+    """Inspect the database for tables and sequences in the public schema
+    that are not in a replication set.
+    
+    :returns: (unreplicated_tables_set, unreplicated_sequences_set)
+    """
+    cur.execute("SHOW session_authorization")
+    name = cur.fetchone()[0]
+    log.info("Connected as %s" % name)
+    all_tables = all_tables_in_schema(cur, 'public')
+    all_sequences = all_sequences_in_schema(cur, 'public')
+
+    cur.execute("""
+        SELECT tab_nspname, tab_relname FROM %s
+        WHERE tab_nspname = 'public'
+        """ % fqn(CLUSTER_NAMESPACE, "sl_table"))
+    replicated_tables = set(fqn(*row) for row in cur.fetchall())
+
+    cur.execute("""
+        SELECT seq_nspname, seq_relname FROM %s
+        WHERE seq_nspname = 'public'
+        """ % fqn(CLUSTER_NAMESPACE, "sl_sequence"))
+    replicated_sequences = set(fqn(*row) for row in cur.fetchall())
+
+    return (
+        all_tables - replicated_tables - IGNORED_TABLES,
+        all_sequences - replicated_sequences)
+
+
+class ReplicationConfigError(Exception):
+    """Exception raised by validate_replication_sets() when our replication
+    setup is misconfigured.
+    """
+
+
+def validate_replication(cur):
+    """Raise a ReplicationSetupError if there is something wrong with
+    our replication sets.
+
+    This might include tables exist that are not in a replication set,
+    or tables that exist in multiple replication sets for example.
+
+    These is not necessarily limits with what Slony-I allows, but might
+    be due to policies we have made (eg. a table allowed in just one
+    replication set).
+    """
+    unrepl_tables, unrepl_sequences = discover_unreplicated_set(cur)
+    if unrepl_tables:
+        raise ReplicationConfigError(
+            "Unreplicated tables: %s" % repr(unrepl_tables))
+    if unrepl_sequences:
+        raise ReplicationConfigError(
+            "Unreplicated sequences: %s" % repr(unrepl_sequences))
+
+    authdb_tables, authdb_sequences = calculate_replication_set(
+        cur, AUTHDB_SEED)
+    lpmain_tables, lpmain_sequences = calculate_replication_set(
+        cur, LPMAIN_SEED)
+
+    confused_tables = authdb_tables.intersection(lpmain_tables)
+    if confused_tables:
+        raise ReplicationConfigError(
+            "Tables exist in multiple replication sets: %s"
+            % repl(confused_tables))
+    confused_sequences = authdb_sequences.intersection(lpmain_sequences)
+    if confused_sequences:
+        raise ReplicationConfigError(
+            "Sequences exist in multiple replication sets: %s"
+            % repl(confused_sequences))
+

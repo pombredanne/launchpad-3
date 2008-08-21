@@ -1,6 +1,6 @@
 # Every slonik script must start with a clustername, which cannot be changed
 # once the cluster is initialized.
-cluster name = dev;
+cluster name = lpsl;
 
 # Define some constants to make changes easier.
 
