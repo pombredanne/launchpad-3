@@ -139,20 +139,20 @@ diagram:
 	${PYTHON} diagram.py
 
 newsampledata:
-	$(PYTHON) fti.py --null -d launchpad_dev -q
+	$(PYTHON) fti.py --null -d ${DBNAME} -q
 	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
 	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
 	| $(PYTHON) sort_sql.py \
 	> $(NEWSAMPLEDATA)
-	$(PYTHON) fti.py --force -d launchpad_dev -q
+	$(PYTHON) fti.py --force -d ${DBNAME} -q
 
 lintdata:
-	$(PYTHON) fti.py --null -d launchpad_dev -q
+	$(PYTHON) fti.py --null -d ${TEST_DBNAME} -q
 	pg_dump --schema=public --disable-triggers -a -D -O -d ${TEST_DBNAME} \
 	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
 	| $(PYTHON) sort_sql.py \
 	> $(LINTDATA)
-	$(PYTHON) fti.py --force -d launchpad_dev -q
+	$(PYTHON) fti.py --force -d ${TEST_DBNAME} -q
 
 .PHONY: default base all
 
