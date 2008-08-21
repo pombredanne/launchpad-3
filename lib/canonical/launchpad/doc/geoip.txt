@@ -20,6 +20,17 @@ African IP address in that case.
     >>> geoip.getCountryByAddr('127.0.0.88').name
     u'South Africa'
 
+We do the same trick for any IP addresses on private networks.
+
+    >>> geoip.getCountryByAddr('10.0.0.88').name
+    u'South Africa'
+
+    >>> geoip.getCountryByAddr('192.168.0.7').name
+    u'South Africa'
+
+    >>> geoip.getCountryByAddr('172.16.0.1').name
+    u'South Africa'
+
 IGeoIP also provides a getRecordByAddress() method, which returns a
 GeoIPRecord object, containing a bunch more information about that IP's
 location.
