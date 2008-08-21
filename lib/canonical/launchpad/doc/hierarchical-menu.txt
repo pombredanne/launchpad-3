@@ -8,7 +8,8 @@ object-traversal step.
 
 First, we need a hierarchy of objects to build upon:
 
-    >>> from zope.component import getMultiAdapter, provideAdapter
+    >>> from zope.component import (getMultiAdapter, provideAdapter,
+    ...     queryAdapter)
     >>> from zope.interface import Interface, implements
 
     >>> class ICookbook(Interface):
@@ -157,6 +158,45 @@ Python properties.
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
 
+Breadcrumbs may have icons.  The icon is only set for a breadcrumb if
+the builder's context has an IPathAdapter registration.
+
+    >>> from zope.app.traversing.interfaces import IPathAdapter
+    >>> from canonical.launchpad.webapp.tales import (
+    ...     ObjectImageDisplayAPI)
+
+    # We need a custom image display adapter that overrides the
+    # default 'nyet' icon.
+    >>> class RecipeImageDisplayAPI(ObjectImageDisplayAPI):
+    ...     def icon(self):
+    ...         return '<img src="/@@/recipe"/>'
+
+    >>> provideAdapter(
+    ...     RecipeImageDisplayAPI, [IRecipe], IPathAdapter, 'image')
+
+    >>> builder = DynamicBreadcrumbBuilder(recipe)
+    >>> builder.make_breadcrumb()
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking/spam'
+        text='Spam'
+        icon='<img src="/@@/recipe"/>'>
+
+The icon is not set if the object uses the default, or 'nyet', icon.
+
+    # We'll use the default image adapter, which doesn't know about
+    # ICookbook objects.
+    >>> provideAdapter(
+    ...     ObjectImageDisplayAPI, [ICookbook], IPathAdapter, 'image')
+
+    >>> queryAdapter(cookbook, IPathAdapter, name='image').icon()
+    '<img ..."/@@/nyet-icon"...>'
+
+    >>> builder = DynamicBreadcrumbBuilder(cookbook)
+    >>> builder.make_breadcrumb()
+    <Breadcrumb
+        url='http://launchpad.dev/joy-of-cooking'
+        text='Joy of cooking'>
+
 
 == Customizing the hierarchy ==
 
@@ -180,7 +220,8 @@ consistency across the site.
     >>> spammy_hierarchy.items()
     [<Breadcrumb
         url='http://launchpad.dev/some-spammy-url'
-        text='Spam'>]
+        text='Spam'
+        icon='<img src="/@@/recipe"/>'>]
 
 
 == Rendering the list ==
