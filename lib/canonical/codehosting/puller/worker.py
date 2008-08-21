@@ -12,8 +12,9 @@ import urllib2
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
-    BzrError, NotBranchError, ParamikoNotPresent,
-    UnknownFormatError, UnsupportedFormatError)
+    BzrError, NotBranchError, NotStacked, ParamikoNotPresent,
+    UnknownFormatError, UnstackableBranchFormat, UnstackableRepositoryFormat,
+    UnsupportedFormatError)
 from bzrlib.progress import DummyProgress
 from bzrlib.transport import get_transport
 import bzrlib.ui
@@ -384,7 +385,7 @@ class PullerWorker:
             # source.
             if identical_formats(source_branch, branch):
                 # The destination exists, and is in the same format.  So all
-                # we need to do is pull the new revisions.
+                # we need to do is update it.
 
                 # If the branch is locked, try to break it.  Our special UI
                 # factory will allow the breaking of locks that look like they
@@ -393,6 +394,20 @@ class PullerWorker:
                 # the timeout expires (currently 5 minutes).
                 if branch.get_physical_lock_status():
                     branch.break_lock()
+
+                # Make sure the mirrored branch is stacked the same way as the
+                # source branch.
+                try:
+                    stacked_on_url = source_branch.get_stacked_on_url()
+                except (UnstackableRepositoryFormat, UnstackableBranchFormat,
+                        NotStacked):
+                    stacked_on_url = None
+                try:
+                    branch.set_stacked_on_url(stacked_on_url)
+                except (UnstackableRepositoryFormat, UnstackableBranchFormat):
+                    if stacked_on_url is not None:
+                        raise AssertionError(
+                            "Couldn't set stacked_on_url %r" % stacked_on_url)
                 branch.pull(source_branch, overwrite=True)
             else:
                 # The destination is in a different format to the source, so
