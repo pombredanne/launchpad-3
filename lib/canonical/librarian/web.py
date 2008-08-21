@@ -103,9 +103,10 @@ class LibraryFileAliasResource(resource.Resource):
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
 
-            # This fix is in response to Bug 173096.  The Ubuntu team wants
-            # their log files to be automatically unzipped.  Previously this
-            # was done by having Apache add an encoding for all content that
+            # This fix is in response to Bug 173096 and 246534.  The Ubuntu
+            # team wants their log files to be automatically unzipped, i.e
+            # rendered in-line in their browsers. Previously this was done
+            # by having Apache add an encoding for all content that
             # was .gz or .tgz.  Doing so violates the intent of the
             # Content-Encoding header and caused other gzipped files served
             # from the Librarian to be treated incorrectly by browsers.  The
@@ -113,6 +114,9 @@ class LibraryFileAliasResource(resource.Resource):
             # files while allowing others to pass with no encoding.  Apache
             # will be changed to remove the Content-Encoding header for gzip.
             if filename.endswith(".txt.gz"):
+                encoding = "gzip"
+                mimetype = "text/plain"
+            elif filename.endswith(".diff.gz"):
                 encoding = "gzip"
                 mimetype = "text/plain"
             else:
