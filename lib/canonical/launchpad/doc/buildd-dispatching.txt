@@ -90,8 +90,10 @@ If the specified buildd slave reset command (used inside resumeSlaveHost())
 fails, the slave will still be marked as failed.
 
     >>> from canonical.config import config
-    >>> default_resume_command = config.builddmaster.vm_resume_command
-    >>> config.builddmaster.vm_resume_command = "false"
+    >>> reset_fail_config = '''
+    ...     [builddmaster]
+    ...     vm_resume_command: /bin/false'''
+    >>> config.push('reset fail', reset_fail_config)
     >>> frog_builder.handleTimeout(logger, 'The universe just collapsed')
     WARNING:root:Resetting builder: http://localhost:9221/ -- The universe just collapsed
     ...
@@ -108,7 +110,7 @@ Since we were unable to reset the 'frog' builder it was marked as 'failed'.
 
 Restore default value for resume command.
 
-    >>> config.builddmaster.vm_resume_command = default_resume_command
+    >>> ignored_config = config.pop('reset fail')
 
 The 'bob' builder is available for build jobs.
 

@@ -275,9 +275,12 @@ class IBuilder(IHasOwner):
     def handleTimeout(logger, error_message):
         """Handle buildd slave communication timeout situations.
 
-        In case of a virtualized/PPA builder an attempt will be made to
-        reset it (using `resumeSlaveHost`). In the opposite case the
-        builder in question will be marked as failed (using `failbuilder`).
+        In case of a virtualized/PPA buildd slave an attempt will be made
+        to reset it first (using `resumeSlaveHost`). Only if that fails
+        will it be (marked as) failed (using `failbuilder`).
+
+        Conversely, a non-virtualized buildd slave will be (marked as)
+        failed straightaway.
 
         :param logger: The logger object to be used for logging.
         :param error_message: The error message to be used for logging.
