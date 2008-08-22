@@ -471,6 +471,9 @@ class ObjectImageDisplayAPI:
         self._context = context
 
     def default_icon_resource(self, context):
+        # XXX: mars 2008-08-22 bug=260468
+        # This should be refactored.  We shouldn't have to do type-checking
+        # using interfaces.
         if IProduct.providedBy(context):
             return '/@@/product'
         elif IProject.providedBy(context):
@@ -492,6 +495,9 @@ class ObjectImageDisplayAPI:
         return None
 
     def default_logo_resource(self, context):
+        # XXX: mars 2008-08-22 bug=260468
+        # This should be refactored.  We shouldn't have to do type-checking
+        # using interfaces.
         if IProject.providedBy(context):
             return '/@@/project-logo'
         elif IPerson.providedBy(context):
@@ -511,6 +517,9 @@ class ObjectImageDisplayAPI:
         return None
 
     def default_mugshot_resource(self, context):
+        # XXX: mars 2008-08-22 bug=260468
+        # This should be refactored.  We shouldn't have to do type-checking
+        # using interfaces.
         if IProject.providedBy(context):
             return '/@@/project-mugshot'
         elif IPerson.providedBy(context):
@@ -530,7 +539,11 @@ class ObjectImageDisplayAPI:
         return None
 
     def icon(self, rootsite=None):
-        """Return the appropriate <img> tag for this object's icon."""
+        """Return the appropriate <img> tag for this object's icon.
+
+        :return: A string, or None if the context object doesn't have
+            an icon.
+        """
         context = self._context
         if context is None:
             # we handle None specially and return an empty string
@@ -556,7 +569,11 @@ class ObjectImageDisplayAPI:
         return icon % url
 
     def logo(self):
-        """Return the appropriate <img> tag for this object's logo."""
+        """Return the appropriate <img> tag for this object's logo.
+
+        :return: A string, or None if the context object doesn't have
+            a logo.
+        """
         context = self._context
         if not IHasLogo.providedBy(context):
             context = nearest(context, IHasLogo)
@@ -576,7 +593,11 @@ class ObjectImageDisplayAPI:
         return logo % url
 
     def mugshot(self):
-        """Return the appropriate <img> tag for this object's mugshot."""
+        """Return the appropriate <img> tag for this object's mugshot.
+
+        :return: A string, or None if the context object doesn't have
+            a mugshot.
+        """
         context = self._context
         assert IHasMugshot.providedBy(context), 'No Mugshot for this item'
         if context.mugshot is not None:

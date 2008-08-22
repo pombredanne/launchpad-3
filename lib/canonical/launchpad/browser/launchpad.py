@@ -359,13 +359,13 @@ class Hierarchy(LaunchpadView):
         """
         bodytext = cgi.escape(breadcrumb.text)
 
-        if breadcrumb.icon:
+        if breadcrumb.icon is not None:
             bodytext = '%s %s' % (breadcrumb.icon, bodytext)
 
-        cssclass = 'item ' + extra_css_class
+        css_class = 'item ' + extra_css_class
         return (
             '<span class="%s"><a href="%s">%s</a></span>'
-            % (cssclass, breadcrumb.url, bodytext))
+            % (css_class, breadcrumb.url, bodytext))
 
 
 class MaintenanceMessage:
