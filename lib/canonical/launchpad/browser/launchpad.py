@@ -328,15 +328,15 @@ class Hierarchy(LaunchpadView):
             for element in elements:
 
                 if element is before_last_element:
-                    cssclass = 'before-last'
+                    css_class = 'before-last'
                 elif element is last_element:
-                    cssclass = 'last'
+                    css_class = 'last'
                 else:
                     # No extra CSS class.
-                    cssclass = ''
+                    css_class = ''
 
                 steps.append(
-                    self.html_for_breadcrumb(element, cssclass))
+                    self.getHtmlForBreadcrumb(element, css_class))
 
             hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
         else:
@@ -351,7 +351,7 @@ class Hierarchy(LaunchpadView):
 
         return hierarchy
 
-    def html_for_breadcrumb(self, breadcrumb, extra_css_class=''):
+    def getHtmlForBreadcrumb(self, breadcrumb, extra_css_class=''):
         """Return the HTML to display an `IBreadcrumb` object.
 
         :param extra_css_class: A string of additional CSS classes

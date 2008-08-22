@@ -270,8 +270,8 @@ tag.  Breadcrumbs without icons are not.
         url='http://launchpad.dev/joy-of-cooking'
         text='Joy of cooking'>
 
-    >>> print hierarchy.html_for_breadcrumb(breadcrumb_no_icon)
-    <span ...><a ...>Joy of cooking</a></span>
+    >>> 'img' in hierarchy.getHtmlForBreadcrumb(breadcrumb_no_icon)
+    False
 
     >>> breadcrumb_with_icon
     <Breadcrumb
@@ -279,5 +279,5 @@ tag.  Breadcrumbs without icons are not.
         text='Spam'
         icon='<img src="/@@/recipe"/>'>
 
-    >>> print hierarchy.html_for_breadcrumb(breadcrumb_with_icon)
+    >>> print hierarchy.getHtmlForBreadcrumb(breadcrumb_with_icon)
     <span ...><a ...><img src="/@@/recipe"/> Spam</a></span>
