@@ -481,10 +481,17 @@ class ProductBugTracker(Choice):
 
     It accepts all the values in the vocabulary, as well as a special
     marker object, which represents the Malone bug tracker.
-    This field uses two attributes to model its state, 'official_malone'
-    and 'bugtracker'
+    This field uses two attributes on the Product to model its state:
+    'official_malone' and 'bugtracker'
     """
+    implements(IReferenceChoice)
     malone_marker = object()
+
+    @property
+    def schema(self):
+        # The IBugTracker needs to be imported here to avoid an import loop.
+        from canonical.launchpad.interfaces.bugtracker import IBugTracker
+        return IBugTracker
 
     def get(self, ob):
         if ob.official_malone:

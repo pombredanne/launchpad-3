@@ -82,7 +82,7 @@ class Revision(SQLBase):
                 karma.datecreated = self.revision_date
                 self.karma_allocated = True
 
-    def getBranch(self, allow_private=False):
+    def getBranch(self, allow_private=False, allow_junk=True):
         """See `IRevision`."""
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
@@ -94,6 +94,10 @@ class Revision(SQLBase):
             BranchRevision.branchID == Branch.id)
         if not allow_private:
             query = And(query, Not(Branch.private))
+        if not allow_junk:
+            # XXX: Tim Penhey 2008-08-20, bug 244768
+            # Using Not(column == None) rather than column != None.
+            query = And(query, Not(Branch.product == None))
         result_set = store.find(Branch, query)
         if self.revision_author.person is None:
             result_set.order_by(Asc(BranchRevision.sequence))
