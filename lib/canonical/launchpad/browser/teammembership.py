@@ -21,9 +21,6 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadCelebrities, TeamMembershipStatus,
     UnexpectedFormData)
-from canonical.launchpad.browser.launchpad import (
-    StructuralHeaderPresentation)
-
 from canonical.widgets import DateWidget
 
 
