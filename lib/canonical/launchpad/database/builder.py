@@ -700,16 +700,28 @@ class Builder(SQLBase):
 
     def handleTimeout(self, logger, error_message):
         """See IBuilder."""
+        builder_should_be_failed = True
+
         if self.virtualized:
             # Virtualized/PPA builder: attempt a reset.
             logger.warn(
                 "Resetting builder: %s -- %s" % (self.url, error_message),
                 exc_info=True)
-            self.resumeSlaveHost()
-        else:
+            try:
+                self.resumeSlaveHost()
+            except CannotResumeHost, err:
+                # Failed to reset builder.
+                logger.warn(
+                    "Failed to reset builder: %s -- %s" %
+                    (self.url, str(err)), exc_info=True)
+            else:
+                # Builder was reset, do *not* mark it as failed.
+                builder_should_be_failed = False
+                
+        if builder_should_be_failed:
             # Mark builder as 'failed'.
             logger.warn(
-                "Disabling builder: %s -- s" % (self.url, error_message),
+                "Disabling builder: %s -- %s" % (self.url, error_message),
                 exc_info=True)
             self.failbuilder(error_message)
 
