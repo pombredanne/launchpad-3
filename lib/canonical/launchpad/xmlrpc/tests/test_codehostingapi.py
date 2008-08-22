@@ -44,10 +44,7 @@ class TestExpandURL(TestCaseWithFactory):
             self.factory.makeBranch(BranchType.HOSTED, product=self.product))
 
     def makePrivateBranch(self, **kwargs):
-        """Create an arbitrary private branch using `makeBranch`.
-
-        See `BranchTestCase`.
-        """
+        """Create an arbitrary private branch using `makeBranch`."""
         branch = self.factory.makeBranch(**kwargs)
         naked_branch = removeSecurityProxy(branch)
         naked_branch.private = True
@@ -66,14 +63,13 @@ class TestExpandURL(TestCaseWithFactory):
 
     def assertFault(self, lp_url_path, expected_fault):
         """Trying to resolve lp_url_path raises the expected fault."""
-        try:
-            fault = self.api.resolve_lp_path(lp_url_path)
-        except xmlrpclib.Fault, fault:
-            self.assertEqual(expected_fault.__class__, fault.__class__)
-            self.assertEqual(expected_fault.faultString, fault.faultString)
-        else:
-            self.fail(
-                "resolve_lp_path(%r) did not raise a Fault." % lp_url_path)
+        fault = self.api.resolve_lp_path(lp_url_path)
+        self.assertTrue(
+            isinstance(fault, xmlrpclib.Fault),
+            "resolve_lp_path(%r) returned %r, not a Fault."
+            % (lp_url_path, fault))
+        self.assertEqual(expected_fault.__class__, fault.__class__)
+        self.assertEqual(expected_fault.faultString, fault.faultString)
 
     def test_resultDict(self):
         """A given lp url path maps to a single branch available from a number

@@ -62,7 +62,7 @@ test: create
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
-	@if [ "$$((`psql -l | grep ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
+	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
 	    then ${CREATEDB} template1 ${SESSION_DBNAME} ; \
 	    createlang plpgsql ${SESSION_DBNAME}; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
@@ -72,7 +72,7 @@ test: create
 
 dev: test
 	@ echo "* Creating ${DBNAME}"
-	@if [ "$$((`psql -l | grep ${DBNAME} | wc -l`))" = '1' ]; \
+	@if [ "$$((`psql -l | grep -w ${DBNAME} | wc -l`))" = '1' ]; \
 	    then ${DROPDB} ${DBNAME} | grep : | cat ; \
 	fi
 	@ sleep 2
@@ -82,14 +82,14 @@ create: check
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
-	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '1' ]; \
+	@if [ "$$((`psql -l | grep -w ${TEST_DBNAME} | wc -l`))" = '1' ]; \
 	    then ${DROPDB} ${TEST_DBNAME} | grep : | cat ; \
 	fi
-	@if [ "$$((`psql -l | grep ${EMPTY_DBNAME} | wc -l`))" = '1' ]; \
+	@if [ "$$((`psql -l | grep -w ${EMPTY_DBNAME} | wc -l`))" = '1' ]; \
 	    then ${DROPDB} ${EMPTY_DBNAME} | grep : | cat ; \
 	fi
 	@ echo "* Creating database \"$(TEST_DBNAME)\" with sample data."
-	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '0' ]; \
+	@if [ "$$((`psql -l | grep -w ${TEST_DBNAME} | wc -l`))" = '0' ]; \
 	    then ${CREATEDB} template1 ${TEST_DBNAME} ; \
 	    else echo ${TEST_DBNAME} already exists; \
 	fi

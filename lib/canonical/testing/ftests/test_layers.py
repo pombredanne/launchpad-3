@@ -25,7 +25,7 @@ from canonical.testing.layers import (
     AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
     LaunchpadFunctionalLayer, LaunchpadLayer, LaunchpadScriptLayer,
     LaunchpadZopelessLayer, LayerInvariantError, LayerIsolationError,
-    LibrarianLayer, ZopelessLayer)
+    LibrarianLayer, ZopelessLayer, _BaseAppServerLayer)
 
 
 class BaseTestCase(unittest.TestCase):
@@ -343,26 +343,26 @@ class AppServerTestCase(BaseTestCase):
             "Home page couldn't be retrieved:\n%s" % home_page)
 
     def testSetUpTwiceRaisesInvariantError(self):
-        # Calling setUp another time should raises an isolation error.
-        self.assertRaises(LayerInvariantError, AppServerLayer.setUp)
+        # Calling setUp another time should raise an isolation error.
+        self.assertRaises(LayerInvariantError, _BaseAppServerLayer.setUp)
 
 
-class AppServerSetupTestCase(unittest.TestCase):
+class BaseAppServerSetupTestCase(unittest.TestCase):
     """Tests for the setUp and tearDown components of AppServerLayer."""
-    # We need the layer below AppServerLayer
-    layer = LaunchpadFunctionalLayer
+    # We need the database to be set up, no more.
+    layer = DatabaseLayer
 
     def tearDown(self):
         # If the app server was started, kill it.
-        if AppServerLayer.appserver is not None:
-            AppServerLayer.tearDown()
+        if _BaseAppServerLayer.appserver is not None:
+            _BaseAppServerLayer.tearDown()
 
     def test_tearDown(self):
         # Test that tearDown kills the app server and remove the PID file.
-        AppServerLayer.setUp()
+        _BaseAppServerLayer.setUp()
         pid = AppServerLayer.appserver.pid
-        pid_file = pidfile_path('launchpad', AppServerLayer.appserver_config)
-        AppServerLayer.tearDown()
+        pid_file = pidfile_path('launchpad', _BaseAppServerLayer.appserver_config)
+        _BaseAppServerLayer.tearDown()
         self.assertRaises(OSError, os.kill, pid, 0)
         self.failIf(os.path.exists(pid_file), "PID file wasn't removed")
         self.failUnless(AppServerLayer.appserver is None,
@@ -370,17 +370,17 @@ class AppServerSetupTestCase(unittest.TestCase):
 
     def test_testTearDownRaisesIsolationError(self):
         # A LayerIsolationError should be raised if the app server dies.
-        AppServerLayer.setUp()
-        AppServerLayer.testSetUp()
+        _BaseAppServerLayer.setUp()
+        _BaseAppServerLayer.testSetUp()
         os.kill(AppServerLayer.appserver.pid, signal.SIGTERM)
-        AppServerLayer.appserver.wait()
-        self.assertRaises(LayerIsolationError, AppServerLayer.testTearDown)
+        _BaseAppServerLayer.appserver.wait()
+        self.assertRaises(LayerIsolationError, _BaseAppServerLayer.testTearDown)
 
     def test_testTearDownResetsDB(self):
         # The database should be reset after each test since 
-        AppServerLayer.setUp()
-        AppServerLayer.testSetUp()
-        AppServerLayer.testTearDown()
+        _BaseAppServerLayer.setUp()
+        _BaseAppServerLayer.testSetUp()
+        _BaseAppServerLayer.testTearDown()
         self.assertEquals(True, LaunchpadTestSetup()._reset_db)
 
 

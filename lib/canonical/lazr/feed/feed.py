@@ -139,7 +139,11 @@ class FeedBase(LaunchpadView):
     @property
     def feed_format(self):
         """See `IFeed`."""
-        path = self.request['PATH_INFO']
+        # If the full URL is http://feeds.launchpad.dev/announcements.atom/foo
+        # getURL() will return http://feeds.launchpad.dev/announcements.atom
+        # when traversing the feed, which will allow os.path.splitext()
+        # to split off ".atom" correctly.
+        path = self.request.getURL()
         extension = os.path.splitext(path)[1]
         if extension in SUPPORTED_FEEDS:
             return extension[1:]
@@ -301,6 +305,7 @@ class FeedTypedData:
                 convertEntities=BeautifulSoup.HTML_ENTITIES)
             altered_content = unicode(soup)
         return altered_content
+
 
 class FeedPerson:
     """See `IFeedPerson`.

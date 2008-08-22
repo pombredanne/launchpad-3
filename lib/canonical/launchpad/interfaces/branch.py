@@ -47,7 +47,7 @@ import re
 import canonical.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6)
+    BzrBranchFormat6, BzrBranchFormat7)
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
 from bzrlib.plugins.loom.branch import (
@@ -57,7 +57,9 @@ from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
-    RepositoryFormatPackDevelopment0Subtree)
+    RepositoryFormatPackDevelopment0Subtree, RepositoryFormatPackDevelopment1,
+    RepositoryFormatPackDevelopment1Subtree, RepositoryFormatKnitPack5,
+    RepositoryFormatKnitPack5RichRoot)
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
@@ -76,6 +78,8 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_write_operation)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -169,11 +173,13 @@ class BranchType(DBEnumeratedType):
         """)
 
 
-def _format_enum(num, format, format_string=None):
+def _format_enum(num, format, format_string=None, description=None):
     instance = format()
     if format_string is None:
         format_string = instance.get_format_string()
-    return DBItem(num, format_string, instance.get_format_description())
+    if description is None:
+        description = instance.get_format_description()
+    return DBItem(num, format_string, description)
 
 
 class BranchFormat(DBEnumeratedType):
@@ -195,6 +201,8 @@ class BranchFormat(DBEnumeratedType):
     BZR_BRANCH_5 = _format_enum(5, BzrBranchFormat5)
 
     BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
+
+    BZR_BRANCH_7 = _format_enum(7, BzrBranchFormat7)
 
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
@@ -235,11 +243,25 @@ class RepositoryFormat(DBEnumeratedType):
 
     BZR_KNITPACK_4 = _format_enum(204, RepositoryFormatKnitPack4)
 
+    BZR_KNITPACK_5 = _format_enum(
+        205, RepositoryFormatKnitPack5,
+        description='Packs 5 (needs bzr 1.6, supports stacking)\n')
+
+    BZR_KNITPACK_5_RR = _format_enum(
+        206, RepositoryFormatKnitPack5RichRoot,
+        description='Packs 5-Rich Root (needs bzr 1.6, supports stacking)')
+
     BZR_PACK_DEV_0 = _format_enum(
         300, RepositoryFormatPackDevelopment0)
 
     BZR_PACK_DEV_0_SUBTREE = _format_enum(
         301, RepositoryFormatPackDevelopment0Subtree)
+
+    BZR_DEV_1 = _format_enum(
+        302, RepositoryFormatPackDevelopment1)
+
+    BZR_DEV_1_SUBTREE = _format_enum(
+        303, RepositoryFormatPackDevelopment1Subtree)
 
 
 class ControlFormat(DBEnumeratedType):
@@ -430,6 +452,7 @@ class IBranchNavigationMenu(Interface):
 
 class IBranch(IHasOwner):
     """A Bazaar branch."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
@@ -563,8 +586,10 @@ class IBranch(IHasOwner):
                       "successfully scanned."))
     revision_count = Int(
         title=_("Revision count"),
-        description=_("The number of revisions in the branch")
+        description=_("The revision number of the tip of the branch.")
         )
+
+    stacked_on = Attribute('Stacked-on branch')
 
     warehouse_url = Attribute(
         "URL for accessing the branch by ID. "
@@ -727,16 +752,15 @@ class IBranch(IHasOwner):
         :return: An SQLObject query result.
         """
 
-    def getBranchRevision(sequence):
-        """Get the `BranchRevision` for the given sequence number.
+    def getBranchRevision(sequence=None, revision=None, revision_id=None):
+        """Get the associated `BranchRevision`.
 
-        If no such `BranchRevision` exists, None is returned.
-        """
+        One and only one parameter is to be not None.
 
-    def getBranchRevisionByRevisionId(revision_id):
-        """Get the `BranchRevision for the given revision id.
-
-        If no such `BranchRevision` exists, None is returned.
+        :param sequence: The revno of the revision in the mainline history.
+        :param revision: A `Revision` object.
+        :param revision_id: A revision id string.
+        :return: A `BranchRevision` or None.
         """
 
     def createBranchRevision(sequence, revision):
@@ -782,6 +806,7 @@ class IBranch(IHasOwner):
     def getPullURL():
         """Return the URL used to pull the branch into the mirror area."""
 
+    @export_write_operation()
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
@@ -1026,7 +1051,7 @@ class IBranchSet(Interface):
         """
 
     def getTargetBranchesForUsersMergeProposals(user, product):
-        """Return a sequence of branches the user has targetted before."""
+        """Return a sequence of branches the user has targeted before."""
 
     def isBranchNameAvailable(owner, product, branch_name):
         """Is the specified branch_name valid for the owner and product.

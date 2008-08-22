@@ -50,7 +50,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
-    NoCanonicalUrl)
+    IPrimaryContext, NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url
@@ -165,7 +165,13 @@ class MenuAPI:
     def facet(self):
         """Return the IFacetMenu related to the context."""
         try:
-            menu = nearest_adapter(self._context, IFacetMenu)
+            try:
+                context = IPrimaryContext(self._context).context
+            except TypeError:
+                # Could not adapt raises a type error.  If there was no
+                # way to adapt, then just use self._context.
+                context = self._context
+            menu = nearest_adapter(context, IFacetMenu)
         except NoCanonicalUrl:
             menu = None
 
@@ -570,16 +576,6 @@ class ObjectImageDisplayAPI:
     def badges(self):
         raise NotImplementedError(
             "Badge display not implemented for this item")
-
-
-class PillarSearchItemAPI(ObjectImageDisplayAPI):
-    """Provides image:icon for a PillarSearchItem."""
-
-    def mugshot(self):
-        raise NotImplementedError("A PillarSearchItem doesn't have a mugshot")
-
-    def logo(self):
-        raise NotImplementedError("A PillarSearchItem doesn't have a logo")
 
 
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):

@@ -86,8 +86,9 @@ elements.
 Only IField can be exported as entry fields.
 
     >>> from zope.interface import Attribute
-    >>> class NotAField1(Interface):
-    ...     an_attribute = exported(Attribute('A standard attribute'))
+    >>> class Foo(Interface):
+    ...     export_as_webservice_entry()
+    ...     not_a_field = exported(Attribute('A standard attribute'))
     Traceback (most recent call last):
       ...
     TypeError: exported() can only be used on IFields.
@@ -706,7 +707,6 @@ base interface isn't exported itself.
     type: 'write_operation'
 
 
-
 == Generating the webservice ==
 
 === Entry ==
@@ -726,6 +726,11 @@ name, and is in the same module
     '__builtin__'
     >>> entry_interface.__name__
     'IBookEntry'
+
+The original interface docstring is copied over to the new interface:
+
+    >>> entry_interface.__doc__
+    'A simple book data model.'
 
 It extends IEntry.
 
@@ -786,6 +791,11 @@ The resulting class is named based on the interface:
 
     >>> entry_adapter_factory.__name__
     'BookEntryAdapter'
+
+Its docstring is also copied over from the original interface:
+
+    >>> entry_adapter_factory.__doc__
+    'A simple book data model.'
 
 The resulting adapter has its schema attribute set to the exported
 interface, and proxies all attributes to the underlying object.
@@ -868,6 +878,11 @@ with the @collection_default_content decorator.
     >>> collection_adapter.find()
     ['A book', 'Another book']
 
+The adapter's docstring is taken from the original interface.
+
+    >>> collection_adapter.__doc__
+    'Set of all the books in the system.'
+
 If parameters were specified, they'll be passed in to the method by
 find(). The REQUEST_USER marker value will be replaced by the logged in
 user.
@@ -933,6 +948,11 @@ the ResourceOperation base class.
     >>> issubclass(read_method_adapter_factory, ResourceOperation)
     True
 
+The adapter's docstring is taken from the decorated method docstring.
+
+    >>> read_method_adapter_factory.__doc__
+    "Return list of books containing 'text'."
+
 The adapter's params attribute contains the specification of the
 parameters accepted by the operation.
 
@@ -963,6 +983,8 @@ The call() method calls the underlying method and returns its result.
     ...     BookSetOnSteroids(), request)
     >>> verifyObject(IResourceGETOperation, read_method_adapter)
     True
+    >>> read_method_adapter.send_modification_event
+    False
 
     >>> read_method_adapter.context.result = []
 
@@ -1004,6 +1026,8 @@ The adapter's params property also contains the available parameters
 
     >>> verifyObject(IResourcePOSTOperation, write_method_adapter)
     True
+    >>> write_method_adapter.send_modification_event
+    True
 
 The call() method invokes the exported method on the context object. In
 this case, the underlying parameters were set using call_with. The
@@ -1025,6 +1049,8 @@ IResourcePOSTOperation.
     ...     BookSetOnSteroids(), FakeRequest())
     >>> verifyObject(IResourcePOSTOperation, factory_method_adapter)
     True
+    >>> factory_method_adapter.send_modification_event
+    False
 
 The generated adapter class name is also POST_<interface>_<operation>.
 
@@ -1107,15 +1133,15 @@ the underlying content security checker will still apply.)
 
     >>> print debug_proxy(ProxyFactory(read_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: __call__, return_type
+        public: __call__, return_type, send_modification_event
 
     >>> print debug_proxy(ProxyFactory(write_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: __call__
+        public: __call__, send_modification_event
 
     >>> print debug_proxy(ProxyFactory(factory_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: __call__
+        public: __call__, send_modification_event
 
 
 == ZCML Registration ==

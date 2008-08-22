@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'Breadcrumb',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
@@ -40,9 +41,9 @@ from canonical.launchpad.layers import (
     WebServiceLayer)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError,
-    ILaunchpadContainer)
+    IBreadcrumb, ICanonicalUrlData, ILaunchBag, ILaunchpadApplication,
+    ILaunchpadContainer, ILaunchpadRoot, IOpenLaunchBag, IStructuredString,
+    NoCanonicalUrl, NotFoundError)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -190,6 +191,8 @@ class LaunchpadView(UserAttributeCache):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self._error_message = None
+        self._info_message = None
 
     def initialize(self):
         """Override this in subclasses.
@@ -230,6 +233,54 @@ class LaunchpadView(UserAttributeCache):
             return u''
         else:
             return self.render()
+
+    def _getErrorMessage(self):
+        """Property getter for `error_message`."""
+        return self._error_message
+
+    def _setErrorMessage(self, error_message):
+        """Property setter for `error_message`.
+
+        Enforces `error_message` values that are either None or
+        implement IStructuredString.
+        """
+        if error_message != self._error_message:
+            if (error_message is None or
+                IStructuredString.providedBy(error_message)):
+                # The supplied value is of a compatible type,
+                # assign it to property backing variable.
+                self._error_message = error_message
+            else:
+                raise ValueError(
+                    '%s is not a valid value for error_message, only '
+                    'None and IStructuredString are allowed.' %
+                    type(error_message))
+
+    error_message = property(_getErrorMessage, _setErrorMessage)
+
+    def _getInfoMessage(self):
+        """Property getter for `info_message`."""
+        return self._info_message
+
+    def _setInfoMessage(self, info_message):
+        """Property setter for `info_message`.
+
+        Enforces `info_message` values that are either None or
+        implement IStructuredString.
+        """
+        if info_message != self._info_message:
+            if (info_message is None or
+                IStructuredString.providedBy(info_message)):
+                # The supplied value is of a compatible type,
+                # assign it to property backing variable.
+                self._info_message = info_message
+            else:
+                raise ValueError(
+                    '%s is not a valid value for info_message, only '
+                    'None and IStructuredString are allowed.' %
+                    type(info_message))
+
+    info_message = property(_getInfoMessage, _setInfoMessage)
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):

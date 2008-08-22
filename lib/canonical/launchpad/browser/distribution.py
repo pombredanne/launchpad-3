@@ -92,7 +92,7 @@ class UsesLaunchpadMixin:
             url = canonical_url(self.context, rootsite='bugs')
             uses.append(href_template % (url, 'Bug Tracking'))
         if IProduct.providedBy(self.context):
-            if self.context.official_rosetta:
+            if self.context.official_codehosting:
                 url = canonical_url(self.context, rootsite='code')
                 uses.append(href_template % (url, 'Code'))
         if self.context.official_rosetta:
@@ -507,15 +507,11 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
+    links = ['listall', 'doc', 'assignments', 'new']
 
     def listall(self):
         text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        return Link('+roadmap', text, icon='info')
 
     def assignments(self):
         text = 'Assignments'

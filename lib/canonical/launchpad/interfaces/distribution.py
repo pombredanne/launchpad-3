@@ -363,8 +363,8 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         tuples containing IProducts and three different bug counts:
             - open bugs
             - triaged bugs
-            - triaged bugs with an upstream task
-            - triaged bugs with upstream tasks that are either linked to
+            - open bugs with an upstream task
+            - open bugs with upstream tasks that are either linked to
               bug watches or to products that use_malone.
         """
 

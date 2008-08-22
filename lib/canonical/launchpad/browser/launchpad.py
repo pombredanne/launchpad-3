@@ -236,13 +236,16 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
+    def getElements(self):
+        return list(self.request.breadcrumbs)
+
     def render(self):
         """Render the hierarchy HTML.
 
         The hierarchy elements are taken from the request.breadcrumbs list.
         For each element, element.text is cgi escaped.
         """
-        elements = list(self.request.breadcrumbs)
+        elements = self.getElements()
 
         if config.launchpad.site_message:
             site_message = (
@@ -840,6 +843,20 @@ class LaunchpadTourFolder(ExportedFolder):
             return RedirectionView(
                 "%s+tour/index" % canonical_url(self.context),
                 self.request, status=302), ()
+        else:
+            return self, ()
+
+
+class LaunchpadAPIDocFolder(ExportedFolder):
+    """Export the API documentation."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../apidoc/')
+
+    def browserDefault(self, request):
+        """Traverse to index.html if the directory itself is requested."""
+        if len(self.names) == 0:
+            return self, ('index.html', )
         else:
             return self, ()
 
