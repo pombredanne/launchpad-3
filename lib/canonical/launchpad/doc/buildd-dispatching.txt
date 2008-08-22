@@ -87,7 +87,7 @@ The 'frog' builder was not marked as failed.
     True
 
 If the specified buildd slave reset command (used inside resumeSlaveHost())
-fails, the slave will be marked as failed.
+fails, the slave will still be marked as failed.
 
     >>> from canonical.config import config
     >>> default_resume_command = config.builddmaster.vm_resume_command
