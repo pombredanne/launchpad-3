@@ -788,14 +788,10 @@ validated yet, 1 the value that says it is correct and 2 the value noting that
 there was an unknown error with the validation.';
 COMMENT ON COLUMN TranslationMessage.is_current IS 'Whether this translation
 is being used in Launchpad.';
-COMMENT ON COLUMN TranslationMessage.is_fuzzy IS 'Whether this translation
-must be checked before use it.';
 COMMENT ON COLUMN TranslationMessage.is_imported IS 'Whether this translation
 is being used in latest imported file.';
 COMMENT ON COLUMN TranslationMessage.was_obsolete_in_last_import IS 'Whether
 this translation was obsolete in last imported file.';
-COMMENT ON COLUMN TranslationMessage.was_fuzzy_in_last_import IS 'Whether this
-imported translation must be checked before use it.';
 
 -- Question
 COMMENT ON TABLE Question IS 'A question, or support request, for a distribution or for an application. Such questions are created by end users who need support on a particular feature or package or product.';
