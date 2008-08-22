@@ -9,7 +9,7 @@ import unittest
 from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
-from bzrlib.repofmt.pack_repo import RepositoryFormatPackDevelopment1
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
 from bzrlib.repofmt.weaverepo import RepositoryFormat6, RepositoryFormat7
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
@@ -84,7 +84,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         # When we mirror a stacked branch for the first time, the mirrored
         # branch has the same stacked-on branch.
         base_branch = self._createSourceBranch(
-            RepositoryFormatPackDevelopment1(),
+            RepositoryFormatKnitPack5(),
             BzrDirMetaFormat1(),
             branch_format=BzrBranchFormat7())
         stacked_branch = self._makeStackedBranch(
@@ -102,7 +102,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         # stacking information.
         # Create and mirror a stacked branch as in the previous test.
         base_branch = self._createSourceBranch(
-            RepositoryFormatPackDevelopment1(),
+            RepositoryFormatKnitPack5(),
             BzrDirMetaFormat1(),
             branch_format=BzrBranchFormat7())
         stacked_branch = self._makeStackedBranch(
@@ -128,7 +128,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         # When we mirror a loom branch for the first time, the mirrored loom
         # branch matches the original.
         branch = self._createSourceBranch(
-            RepositoryFormatPackDevelopment1(),
+            RepositoryFormatKnitPack5(),
             BzrDirMetaFormat1())
         self.loomify(branch)
         self.worker.mirror()
