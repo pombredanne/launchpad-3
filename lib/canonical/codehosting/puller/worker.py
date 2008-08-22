@@ -396,7 +396,9 @@ class PullerWorker:
                     branch.break_lock()
 
                 # Make sure the mirrored branch is stacked the same way as the
-                # source branch.
+                # source branch.  Note that we expect this to be fairly
+                # common, as, as of r6889, it is possible for a branch to be
+                # pulled before the stacking information is set at all.
                 try:
                     stacked_on_url = source_branch.get_stacked_on_url()
                 except (UnstackableRepositoryFormat, UnstackableBranchFormat,
