@@ -281,8 +281,6 @@ class IBuilder(IHasOwner):
 
         :param logger: The logger object to be used for logging.
         :param error_message: The error message to be used for logging.
-        :raises: CannotResumeHost: if the builder is virtual and its
-            configuration command has failed.
         """
 
 
