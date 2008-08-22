@@ -1222,7 +1222,7 @@ class ProductAdminView(ProductEditView):
                               'product.  Distinct from the current '
                               'owner.  This is historical data and should '
                               'not be changed without good cause.'),
-                vocabulary='ValidPerson',
+                vocabulary='ValidPersonOrTeam',
                 required=True,
                 readonly=False,
                 default=self.context.registrant
