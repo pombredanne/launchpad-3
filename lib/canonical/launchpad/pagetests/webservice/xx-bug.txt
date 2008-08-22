@@ -22,11 +22,11 @@ At the top level we provide a collection of bugs.
   >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
   >>> show(bug_entries[0])
   [(u'attachments_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/11/attachments'),
+    u'http://.../bugs/11/attachments'),
    (u'bug_tasks_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/11/bug_tasks'),
+    u'http://.../bugs/11/bug_tasks'),
    (u'bug_watches_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/11/bug_watches'),
+    u'http://.../bugs/11/bug_watches'),
    (u'date_created', u'2007-03-15T20:33:56.678930+00:00'),
    (u'date_last_message', None),
    (u'date_last_updated', u'2007-03-15T20:37:51.603369+00:00'),
@@ -34,18 +34,18 @@ At the top level we provide a collection of bugs.
    (u'description', u"I've had problems when switching..."),
    (u'duplicate_of_link', None),
    (u'duplicates_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/11/duplicates'),
+    u'http://.../bugs/11/duplicates'),
    (u'id', 11),
    (u'messages_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/11/messages'),
+    u'http://.../bugs/11/messages'),
    (u'name', None),
-   (u'owner_link', u'http://api.launchpad.dev/beta/~name16'),
+   (u'owner_link', u'http://.../~name16'),
    (u'private', False),
-   (u'resource_type_link', u'http://api.launchpad.dev/beta/#bug'),
+   (u'resource_type_link', u'http://.../#bug'),
    (u'security_related', False),
-   (u'self_link', u'http://api.launchpad.dev/beta/bugs/11'),
+   (u'self_link', u'http://.../bugs/11'),
    (u'subscriptions_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/11/subscriptions'),
+    u'http://.../bugs/11/subscriptions'),
    (u'tags', []),
    (u'title', u'Make Jokosher use autoaudiosink'),
    (u'who_made_private_link', None)]
@@ -73,7 +73,7 @@ Bugs have relationships to other bugs, like "duplicate_of".
   >>> bug_six_url = get_path(duplicates_of_five[0]['self_link'])
   >>> bug_six = webservice.get(bug_six_url).jsonBody()
   >>> bug_six['duplicate_of_link']
-  u'http://api.launchpad.dev/beta/bugs/5'
+  u'http://.../bugs/5'
 
 To create a new bug we use the createBug operation.  That operation
 takes a target parameter which must be a either a Product, a
@@ -88,25 +88,25 @@ Distribution or a DistributionSourcePackage.
     ...     target=firefox['self_link'])
     HTTP/1.1 201 Created
     ...
-    Location: http://api.launchpad.dev/beta/bugs/...
+    Location: http://.../bugs/...
     <BLANKLINE>
 
     >>> print webservice.named_post(
     ...     'bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
-    ...     target='http://api.launchpad.dev/beta/ubuntu')
+    ...     target=webservice.getAbsoluteUrl('ubuntu'))
     HTTP/1.1 201 Created
     ...
-    Location: http://api.launchpad.dev/beta/bugs/...
+    Location: http://.../bugs/...
     <BLANKLINE>
 
     >>> print webservice.named_post(
     ...     'bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
-    ...     target='http://api.launchpad.dev/beta/ubuntu/+source/evolution')
+    ...     target=webservice.getAbsoluteUrl('ubuntu/+source/evolution'))
     HTTP/1.1 201 Created
     ...
-    Location: http://api.launchpad.dev/beta/bugs/...
+    Location: http://.../bugs/...
     <BLANKLINE>
 
 A ProductSeries can't be the target of a new bug.
@@ -114,7 +114,7 @@ A ProductSeries can't be the target of a new bug.
     >>> print webservice.named_post(
     ...     'bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
-    ...     target='http://api.launchpad.dev/beta/firefox/1.0')
+    ...     target=webservice.getAbsoluteUrl('firefox/1.0'))
     HTTP/1.1 400 Bad Request
     ...
     A bug target must be a Project, a Distribution or a
@@ -138,16 +138,16 @@ Each bug has a collection of messages.
   >>> messages = webservice.get("bugs/5/messages").jsonBody()['entries']
   >>> show(messages[0])
   [(u'bug_attachments_collection_link',
-    u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/0/bug_attachments'),
+    u'http://.../firefox/+bug/5/comments/0/bug_attachments'),
    (u'content',
     u'All ways of downloading firefox should provide...'),
    (u'date_created', u'2005-01-14T17:27:03.702622+00:00'),
-   (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
+   (u'owner_link', u'http://.../~name12'),
    (u'parent_link', None),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#message'),
+    u'http://.../#message'),
    (u'self_link',
-    u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/0'),
+    u'http://.../firefox/+bug/5/comments/0'),
    (u'subject', u'Firefox install instructions should be complete')]
 
 The messages are stored beneath the bug-specific collection. Their
@@ -183,10 +183,10 @@ data in a bug task is derived from the bug.
 
   >>> show(bug_one_bugtasks[0])
   [(u'assignee_link', None),
-   (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+   (u'bug_link', u'http://.../bugs/1'),
    (u'bug_target_display_name', u'mozilla-firefox (Debian)'),
    (u'bug_target_name', u'mozilla-firefox (Debian)'),
-   (u'bug_watch_link', u'http://api.launchpad.dev/beta/bugs/1/+watch/8'),
+   (u'bug_watch_link', u'http://.../bugs/1/+watch/8'),
    (u'date_assigned', u'2005-01-04T11:07:20.584746+00:00'),
    (u'date_closed', None),
    (u'date_confirmed', None),
@@ -198,11 +198,11 @@ data in a bug task is derived from the bug.
    (u'date_triaged', None),
    (u'importance', u'Low'),
    (u'is_complete', False),
-   (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
+   (u'owner_link', u'http://.../~name12'),
    (u'related_tasks_collection_link',
     u'http://api.../debian/+source/mozilla-firefox/+bug/1/related_tasks'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#bug_task'),
+    u'http://.../#bug_task'),
    (u'self_link',
     u'http://api.../debian/+source/mozilla-firefox/+bug/1'),
    (u'status', u'Confirmed'),
@@ -222,7 +222,8 @@ The collection of bug tasks is not exposed as a resource:
 It's possible to change the task's assignee.
 
   >>> print webservice.named_post(
-  ...     bugtask_path, 'transitionToAssignee', assignee='http://api.launchpad.dev/beta/~cprov')
+  ...     bugtask_path, 'transitionToAssignee',
+  ...     assignee=webservice.getAbsoluteUrl('~cprov'))
   HTTP/1.1 200 Ok
   ...
   Content-Type: application/json
@@ -230,7 +231,7 @@ It's possible to change the task's assignee.
   null
 
   >>> print webservice.get(bugtask_path).jsonBody()['assignee_link']
-  http://api.launchpad.dev/beta/~cprov
+  http://.../~cprov
 
 Let's try modifying the importance of a task.
 
@@ -271,40 +272,40 @@ We can get the the collection of subscriptions to a bug.
   ...     subscriptions['entries'], key=itemgetter('self_link'))
   >>> for entry in subscription_entries:
   ...     show(entry)
-  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
-   (u'person_link', u'http://api.launchpad.dev/beta/~name12'),
+  [(u'bug_link', u'http://.../bugs/1'),
+   (u'person_link', u'http://.../~name12'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#bug_subscription'),
+    u'http://.../#bug_subscription'),
    (u'self_link',
-    u'http://api.launchpad.dev/beta/bugs/1/+subscription/name12'),
-   (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
-  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
-   (u'person_link', u'http://api.launchpad.dev/beta/~stevea'),
+    u'http://.../bugs/1/+subscription/name12'),
+   (u'subscribed_by_link', u'http://.../~janitor')]
+  [(u'bug_link', u'http://.../bugs/1'),
+   (u'person_link', u'http://.../~stevea'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#bug_subscription'),
+    u'http://.../#bug_subscription'),
    (u'self_link',
-    u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea'),
-   (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
+    u'http://.../bugs/1/+subscription/stevea'),
+   (u'subscribed_by_link', u'http://.../~janitor')]
 
 Each subscription can be accessed individually.
 
   >>> subscription = webservice.get(
   ...     subscription_entries[1]['self_link']).jsonBody()
   >>> show(subscription)
-  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
-   (u'person_link', u'http://api.launchpad.dev/beta/~stevea'),
-   (u'resource_type_link', u'http://api.launchpad.dev/beta/#bug_subscription'),
-   (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea'),
-   (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
+  [(u'bug_link', u'http://.../bugs/1'),
+   (u'person_link', u'http://.../~stevea'),
+   (u'resource_type_link', u'http://.../#bug_subscription'),
+   (u'self_link', u'http://.../bugs/1/+subscription/stevea'),
+   (u'subscribed_by_link', u'http://.../~janitor')]
 
 We can also create new subscriptions.
 
     >>> new_subscription = webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     person='http://api.launchpad.dev/beta/~cprov').jsonBody()
+    ...     person=webservice.getAbsoluteUrl('~cprov')).jsonBody()
     >>> pprint(new_subscription)
     {...u'self_link':
-        u'http://api.launchpad.dev/beta/bugs/1/+subscription/cprov'...}
+        u'http://.../bugs/1/+subscription/cprov'...}
 
 But we can only unsubscribe ourselves.
 
@@ -332,22 +333,22 @@ report described by the bugwatch.
   ...     if bug_watch['remote_bug'] == u'2000']
 
   >>> show(bug_watch_2000)
-  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+  [(u'bug_link', u'http://.../bugs/1'),
    (u'bug_tasks_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/1/+watch/2/bug_tasks'),
+    u'http://.../bugs/1/+watch/2/bug_tasks'),
    (u'bug_tracker_link',
-    u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org'),
+    u'http://.../bugs/bugtrackers/mozilla.org'),
    (u'date_created', u'2004-10-04T01:00:00+00:00'),
    (u'date_last_changed', u'2004-10-04T01:00:00+00:00'),
    (u'date_last_checked', u'2004-10-04T01:00:00+00:00'),
    (u'last_error_type', None),
-   (u'owner_link', u'http://api.launchpad.dev/beta/~sabdfl'),
+   (u'owner_link', u'http://.../~sabdfl'),
    (u'remote_bug', u'2000'),
    (u'remote_importance', None),
    (u'remote_status', u''),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#bug_watch'),
-   (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+watch/2'),
+    u'http://.../#bug_watch'),
+   (u'self_link', u'http://.../bugs/1/+watch/2'),
    (u'title', u'The Mozilla.org Bug Tracker #2000'),
    (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000')]
 
@@ -399,29 +400,29 @@ associated with a bug.
   HTTP/1.1 201 Created
   Content-Length: 0
   Content-Type: text/plain;charset=utf-8
-  Location: http://api.launchpad.dev/beta/bugs/1/+watch/13
+  Location: http://.../bugs/1/+watch/13
 
 Following the redirect, we can see the new bug watch:
 
   >>> new_bug_watch_path = get_path(response.getHeader('Location'))
   >>> new_bug_watch = webservice.get(new_bug_watch_path).jsonBody()
   >>> show(new_bug_watch)
-  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+  [(u'bug_link', u'http://.../bugs/1'),
    (u'bug_tasks_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/1/+watch/13/bug_tasks'),
+    u'http://.../bugs/1/+watch/13/bug_tasks'),
    (u'bug_tracker_link',
-    u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org'),
+    u'http://.../bugs/bugtrackers/mozilla.org'),
    (u'date_created', u'...'),
    (u'date_last_changed', None),
    (u'date_last_checked', None),
    (u'last_error_type', None),
-   (u'owner_link', u'http://api.launchpad.dev/beta/~salgado'),
+   (u'owner_link', u'http://.../~salgado'),
    (u'remote_bug', u'9876'),
    (u'remote_importance', None),
    (u'remote_status', None),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#bug_watch'),
-   (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+watch/13'),
+    u'http://.../#bug_watch'),
+   (u'self_link', u'http://.../bugs/1/+watch/13'),
    (u'title', u'The Mozilla.org Bug Tracker #9876'),
    (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876')]
 
@@ -437,16 +438,16 @@ Following the redirect, we can see the new bug watch:
    (u'bug_tracker_type', u'Bugzilla'),
    (u'contact_details', u'Carrier pigeon only'),
    (u'name', u'mozilla.org'),
-   (u'registrant_link', u'http://api.launchpad.dev/beta/~name12'),
+   (u'registrant_link', u'http://.../~name12'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#bug_tracker'),
+    u'http://.../#bug_tracker'),
    (u'self_link',
-    u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org'),
+    u'http://.../bugs/bugtrackers/mozilla.org'),
    (u'summary',
     u'The Mozilla.org bug tracker is the grand-daddy of bugzillas...'),
    (u'title', u'The Mozilla.org Bug Tracker'),
    (u'watches_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org/watches')]
+    u'http://.../bugs/bugtrackers/mozilla.org/watches')]
 
   >>> bug_tracker_path = get_path(bug_tracker['self_link'])
 
@@ -467,7 +468,7 @@ We can change various aspects of bug trackers.
   HTTP/1.1 301 Moved Permanently
   Content-Length: 0
   Content-Type: text/plain
-  Location: http://api.launchpad.dev/beta/bugs/bugtrackers/bob
+  Location: http://.../bugs/bugtrackers/bob
   <BLANKLINE>
 
 Note the 301 response. We changed the name, so the API URL at which
@@ -499,14 +500,14 @@ renamed bug tracker.
    (u'bug_tracker_type', u'Bugzilla'),
    (u'contact_details', u'bob@example.com'),
    (u'name', u'bob'),
-   (u'registrant_link', u'http://api.launchpad.dev/beta/~name12'),
+   (u'registrant_link', u'http://.../~name12'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#bug_tracker'),
-   (u'self_link', u'http://api.launchpad.dev/beta/bugs/bugtrackers/bob'),
+    u'http://.../#bug_tracker'),
+   (u'self_link', u'http://.../bugs/bugtrackers/bob'),
    (u'summary', u'Where Bob files his bugs.'),
    (u'title', u"Bob's Tracker"),
    (u'watches_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/bugtrackers/bob/watches')]
+    u'http://.../bugs/bugtrackers/bob/watches')]
 
 
 == Bug attachments ==
@@ -518,7 +519,7 @@ Bug 1 has no attachments:
   >>> show(attachments)
   [(u'entries', []),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'),
+    u'http://.../#bug_attachment-page-resource'),
    (u'start', None),
    (u'total_size', 0)]
 
@@ -532,7 +533,7 @@ An attachment can be added to the bug:
   HTTP/1.1 201 Created
   Content-Length: 0
   Content-Type: text/plain;charset=utf-8
-  Location: http://api.launchpad.dev/beta/bugs/1/attachments/1
+  Location: http://.../bugs/1/attachments/1
 
 Now, bug 1 has one attachment:
 
@@ -540,15 +541,15 @@ Now, bug 1 has one attachment:
   ...     bug_one['attachments_collection_link']).jsonBody()
   >>> show(attachments)
   [(u'entries',
-    [{u'bug_link': u'http://api.launchpad.dev/beta/bugs/1',
-      u'data_link': u'http://api.launchpad.dev/beta/bugs/1/attachments/1/data',
-      u'message_link': u'http://api.launchpad.dev/beta/firefox/+bug/1/comments/2',
-      u'resource_type_link': u'http://api.launchpad.dev/beta/#bug_attachment',
-      u'self_link': u'http://api.launchpad.dev/beta/bugs/1/attachments/1',
+    [{u'bug_link': u'http://.../bugs/1',
+      u'data_link': u'http://.../bugs/1/attachments/1/data',
+      u'message_link': u'http://.../firefox/+bug/1/comments/2',
+      u'resource_type_link': u'http://.../#bug_attachment',
+      u'self_link': u'http://.../bugs/1/attachments/1',
       u'title': u'numbers.txt',
       u'type': u'Unspecified'}]),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'),
+    u'http://.../#bug_attachment-page-resource'),
    (u'start', 0),
    (u'total_size', 1)]
 
@@ -556,14 +557,14 @@ The attachment can be fetched directly:
 
   >>> [attachment] = attachments['entries']
   >>> show(webservice.get(attachment['self_link']).jsonBody())
-  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+  [(u'bug_link', u'http://.../bugs/1'),
    (u'data_link',
-    u'http://api.launchpad.dev/beta/bugs/1/attachments/1/data'),
+    u'http://.../bugs/1/attachments/1/data'),
    (u'message_link',
-    u'http://api.launchpad.dev/beta/firefox/+bug/1/comments/2'),
+    u'http://.../firefox/+bug/1/comments/2'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#bug_attachment'),
-   (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/attachments/1'),
+    u'http://.../#bug_attachment'),
+   (u'self_link', u'http://.../bugs/1/attachments/1'),
    (u'title', u'numbers.txt'),
    (u'type', u'Unspecified')]
 
@@ -602,14 +603,14 @@ attachment. This is where our comment is recorded.
   >>> message = webservice.get(attachment['message_link']).jsonBody()
   >>> show(message)
   [(u'bug_attachments_collection_link',
-    u'http://api.launchpad.dev/beta/firefox/+bug/1/comments/2/bug_attachments'),
+    u'http://.../firefox/+bug/1/comments/2/bug_attachments'),
    (u'content', u'The numbers you asked for.'),
    (u'date_created', u'...'),
-   (u'owner_link', u'http://api.launchpad.dev/beta/~salgado'),
+   (u'owner_link', u'http://.../~salgado'),
    (u'parent_link', None),
-   (u'resource_type_link', u'http://api.launchpad.dev/beta/#message'),
+   (u'resource_type_link', u'http://.../#message'),
    (u'self_link',
-    u'http://api.launchpad.dev/beta/firefox/+bug/1/comments/2'),
+    u'http://.../firefox/+bug/1/comments/2'),
    (u'subject', None)]
 
 The message also links back to the attachments that were uploaded at
@@ -620,6 +621,6 @@ the same time.
   >>> show(attachments)
   [(u'entries', [...]),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'),
+    u'http://.../#bug_attachment-page-resource'),
    (u'start', 0),
    (u'total_size', 1)]

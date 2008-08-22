@@ -67,6 +67,9 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 class WebServiceCaller:
     """A class for making calls to Launchpad web services."""
 
+    DEV_SERVER_URL = 'http://api.launchpad.dev'
+    DEFAULT_API_VERSION = 'beta'
+
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
                  handle_errors=True, *args, **kwargs):
         """Create a WebServiceCaller.
@@ -93,16 +96,36 @@ class WebServiceCaller:
         # Set up a delegate to make the actual HTTP calls.
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
 
-    def __call__(self, path_or_url, method='GET', data=None, headers=None):
-        if path_or_url.startswith('http:'):
-            scheme, netloc, path, query, fragment = urlsplit(path_or_url)
+    def getAbsoluteUrl(self, *url_parts, **kw):
+        """Convenience method for creating a url in tests.
+
+        :param url_parts: zero or more url sections to be joined.
+        :param kw: api_version is the only valid keyword argument, and
+                   it defaults to DEFAULT_API_VERSION.
+        """
+        if 'api_version' in kw:
+            api_version = kw['api_version']
+            del kw['api_version']
         else:
-            path = path_or_url
-        path = str(path)
+            api_version = self.DEFAULT_API_VERSION
+        if len(kw) > 0:
+            raise TypeError("Invalid named parameters: %s"
+                            % ', '.join('%s=%r' % item for item in kw))
+        all_parts = (api_version,) + url_parts
+        relative_url = os.path.join(*all_parts)
+        return urljoin(self.DEV_SERVER_URL, relative_url)
+
+    def __call__(self, path_or_url, method='GET', data=None, headers=None,
+                 api_version=DEFAULT_API_VERSION):
+        path_or_url = str(path_or_url)
+        if not path_or_url.startswith('http:'):
+            path_or_url = self.getAbsoluteUrl(path_or_url,
+                                              api_version=api_version)
+        scheme, netloc, path, query, fragment = urlsplit(path_or_url)
         # Make an HTTP request.
         full_headers = {'Host' : 'api.launchpad.dev'}
         if self.consumer is not None and self.access_token is not None:
-            full_url = 'http://api.launchpad.dev/' + path
+            full_url = self.getAbsoluteUrl(path)
             request = OAuthRequest.from_consumer_and_token(
                 self.consumer, self.access_token, http_url = full_url,
                 )
@@ -113,7 +136,10 @@ class WebServiceCaller:
             full_headers.update(headers)
         header_strings = ["%s: %s" % (header, str(value))
                           for header, value in full_headers.items()]
-        request_string = "%s %s HTTP/1.1\n%s\n" % (method, path,
+        path_and_query = path
+        if len(query) != 0:
+            path_and_query += '?%s' % query
+        request_string = "%s %s HTTP/1.1\n%s\n" % (method, path_and_query,
                                                    "\n".join(header_strings))
         if data:
             request_string += "\n" + data

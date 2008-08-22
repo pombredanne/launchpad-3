@@ -13,11 +13,11 @@ collection.
 
   >>> people_collection = webservice.get("people").jsonBody()
   >>> people_collection['resource_type_link']
-  u'http://api.launchpad.dev/beta/#people'
+  u'http://.../#people'
   >>> people_collection['total_size']
   59
   >>> people_collection['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
+  u'http://.../people?ws.start=5&ws.size=5'
   >>> people_collection.get('prev_collection_link') is None
   True
 
@@ -29,7 +29,7 @@ collection.
   >>> people_entries[0]['display_name']
   u'Brad Crittenden'
   >>> people_entries[0]['self_link']
-  u'http://api.launchpad.dev/beta/~bac'
+  u'http://.../~bac'
   >>> people_entries[-1]['display_name']
   u'Carlos Perell\xf3 Mar\xedn'
 
@@ -38,9 +38,9 @@ You can get other pages of the collection by following links:
   >>> result = webservice.get("people?ws.start=5&ws.size=5")
   >>> second_batch = result.jsonBody()
   >>> second_batch['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.start=10&ws.size=5'
+  u'http://.../people?ws.start=10&ws.size=5'
   >>> second_batch['prev_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.start=0&ws.size=5'
+  u'http://.../people?ws.start=0&ws.size=5'
 
   >>> people_entries = sorted(
   ...     second_batch['entries'], key=itemgetter('name'))
@@ -53,7 +53,7 @@ You can also get a larger batch than the default:
   >>> len(big_batch['entries'])
   50
   >>> big_batch.get('next_collection_link')
-  u'http://api.launchpad.dev/beta/people?ws.start=50&ws.size=50'
+  u'http://.../people?ws.start=50&ws.size=50'
 
   >>> bigger_batch = webservice.get("people?ws.size=75").jsonBody()
   >>> len(bigger_batch['entries'])
@@ -156,7 +156,7 @@ The elements of a collection can be looked up by unique identifier:
   preferred_email_address_link: None
   proposed_members_collection_link: http://.../~admins/proposed_members
   renewal_policy: invite them to apply for renewal
-  resource_type_link: http://api.launchpad.dev/beta/#team
+  resource_type_link: http://.../#team
   self_link: http://.../~admins
   sub_teams_collection_link: http://.../~admins/sub_teams
   subscription_policy: Moderated Team
@@ -171,7 +171,7 @@ A collection may be scoped to an element:
 
   >>> result = webservice.get("~admins/members").jsonBody()
   >>> result['resource_type_link']
-  u'http://api.launchpad.dev/beta/#person-page-resource'
+  u'http://.../#person-page-resource'
   >>> team_members = sorted(
   ...     result['entries'], key=itemgetter('name'))
   >>> len(team_members)
@@ -207,7 +207,7 @@ like a collection.
   >>> s_people['total_size']
   8
   >>> s_people['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.op=find&text=s&ws.start=5&ws.size=5'
+  u'http://.../people?ws.op=find&text=s&ws.start=5&ws.size=5'
   >>> sorted(p['name'] for p in s_people['entries'])
   [u'keybuk', u'salgado', u'sigurd-ubuntu', u'sjoerd', u'stevea']
 
@@ -248,7 +248,7 @@ the collection of people.
   >>> print create_team("serviceteam", "Service Team")
   HTTP/1.1 201 Created
   ...
-  Location: http://api.launchpad.dev/beta/~serviceteam
+  Location: http://.../~serviceteam
   <BLANKLINE>
 
   >>> print webservice.get('~serviceteam')
@@ -258,7 +258,7 @@ the collection of people.
   >>> print create_team("serviceteam2", "Service Team")
   HTTP/1.1 201 Created
   ...
-  Location: http://api.launchpad.dev/beta/~serviceteam2
+  Location: http://.../~serviceteam2
   <BLANKLINE>
 
   >>> print webservice.get('~serviceteam2')

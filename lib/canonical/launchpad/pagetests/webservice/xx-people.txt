@@ -8,7 +8,7 @@ people and teams
     >>> len(people['entries'])
     5
     >>> people['next_collection_link']
-    u'http://api.launchpad.dev/beta/people?ws.start=5...'
+    u'http://.../people?ws.start=5...'
 
 
 == Custom operations ==
@@ -41,7 +41,7 @@ belongs to a particular team.
     # it should be re-enabled after the operation is exported again.
     # >>> response = webservice.named_get(
     # ...     '~salgado', 'findPathToTeam',
-    # ...     team='http://api.launchpad.dev/beta/~mailing-list-experts')
+    # ...     team=webservice.getAbsoluteUrl('~mailing-list-experts'))
 
     # >>> path = response.jsonBody()
     # >>> path['total_size']

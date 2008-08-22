@@ -157,11 +157,11 @@ Attributes can be edited via the webservice.patch() method.
 
     >>> from simplejson import dumps
     >>> patch = {
-    ...     u'driver_link': u'http://api.launchpad.dev/beta/~sabdfl',
+    ...     u'driver_link': webservice.getAbsoluteUrl('~sabdfl'),
     ...     u'homepage_url': u'http://sf.net/firefox',
     ...     u'licenses': [u'Python License', u'GNU GPL v2'],
     ...     u'bug_tracker_link':
-    ...         u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org',
+    ...         webservice.getAbsoluteUrl('bugs/bugtrackers/mozilla.org'),
     ...     }
     >>> print webservice.patch(
     ...     'firefox', 'application/json', dumps(patch))
@@ -184,7 +184,7 @@ Read-only attributes, like registrant, cannot be modified via the
 webservice.patch() method.
 
     >>> patch = {
-    ...     u'registrant_link': u'http://api.launchpad.dev/beta/~sabdfl',
+    ...     u'registrant_link': webservice.getAbsoluteUrl('~sabdfl'),
     ...     }
     >>> print webservice.patch(
     ...     'firefox', 'application/json', dumps(patch))

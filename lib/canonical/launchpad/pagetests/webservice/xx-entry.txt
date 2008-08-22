@@ -30,7 +30,7 @@ that person's canonical URL.
   >>> print webservice.get('people/+me').getOutput()
   HTTP/1.1 303 See Other
   ...
-  Location: http://api.launchpad.dev/beta/~salgado
+  Location: http://.../~salgado
 
 
 == Content negotiation ==
@@ -159,7 +159,7 @@ use the web service to change the person's name to 'salgado2'.
   >>> print modify_person('salgado', {'name' : 'salgado2'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/beta/~salgado2
+  Location: http://.../~salgado2
   <BLANKLINE>
 
 At this point we can no longer manipulate the 'salgado' Person by
@@ -171,7 +171,7 @@ http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
   >>> print modify_person('salgado2', {'name' : 'salgado'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
-  Location: http://api.launchpad.dev/beta/~salgado
+  Location: http://.../~salgado
   <BLANKLINE>
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
@@ -257,7 +257,7 @@ You can't change the link to an entry's associated collection.
 Again, you can send a document that includes a value for an associated
 collection link; you just can't _change_ the value.
 
-  >>> link = 'http://api.launchpad.dev/beta/~salgado/memberships_details'
+  >>> link = webservice.getAbsoluteUrl('~salgado/memberships_details')
   >>> print modify_person('salgado',
   ...                     {'memberships_details_collection_link' : link },
   ...                      'PATCH')
@@ -319,8 +319,8 @@ relationships to other objects. Here we change the owner of the
 
   >>> admins = webservice.get('~admins').jsonBody()
   >>> admins['team_owner_link']
-  u'http://api.launchpad.dev/beta/~sabdfl'
-  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/~salgado'
+  u'http://.../~sabdfl'
+  >>> admins['team_owner_link'] = webservice.getAbsoluteUrl('~salgado')
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 200 Ok
   ...
@@ -352,16 +352,16 @@ service.
 This URL would be valid, but it uses the wrong protocol (HTTPS instead
 of HTTP).
 
-  >>> admins['team_owner_link'] = u'https://api.launchpad.dev/beta/~admins'
+  >>> admins['team_owner_link'] = u'https://.../~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  team_owner_link: No such object "https://api.launchpad.dev/beta/~admins".
+  team_owner_link: No such object "https://.../~admins".
 
 Even a URL that identifies an object in the web service won't work, if
 the object isn't the right kind of object. A bug can't own a team:
 
-  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/bugs/1'
+  >>> admins['team_owner_link'] = webservice.getAbsoluteUrl('bugs/1')
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
@@ -370,7 +370,7 @@ the object isn't the right kind of object. A bug can't own a team:
 And a bug can't be a duplicate of a person:
 
   >>> representation = { 'duplicate_of_link' :
-  ...                    'http://api.launchpad.dev/beta/~sabdfl' }
+  ...                    webservice.getAbsoluteUrl('~sabdfl') }
   >>> print webservice.patch('bugs/1', 'application/json',
   ...                        simplejson.dumps(representation))
   HTTP/1.1 400 Bad Request
@@ -381,7 +381,7 @@ And even if the URL identifies the right kind of object, it might
 violate some other constraint. For instance, a team can't be its own
 owner.
 
-  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/~admins'
+  >>> admins['team_owner_link'] = webservice.getAbsoluteUrl('~admins')
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
