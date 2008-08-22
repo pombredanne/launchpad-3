@@ -15,27 +15,11 @@ from the sampledata which happens to be in FAILEDTOBUILD status.
     ...      build_state=BuildStatus.FAILEDTOBUILD)[0]
 
 
-== Build Structural Header and Menu ==
+== Build Menu ==
 
-The IBuild record is adapted to a IStructuralHeaderPresentation by a
-custom factory function, build_to_structuralheading, which reuses the
-IBuild.archive header.
-
-    >>> from canonical.launchpad.browser import build_to_structuralheading
-    >>> import zope.i18n
-
-As mentioned above, the build is targeted to the ubuntu PRIMARY
-archive, so the page header refers to the distribution source package (see
-browser.archive.archive_to_structuralheading).
-
-    >>> hoary_failed_build_shp = build_to_structuralheading(
-    ...     hoary_failed_build)
-    >>> print zope.i18n.translate(hoary_failed_build_shp.getMainHeading())
-    pmount
-
-In a similar way, the menu presented in the build page depends on the
-targeted archive. For instance the 'PPA' action-menu link is not
-enabled for builds targeted to the PRIMARY archive.
+The menu presented in the build page depends on the targeted archive.
+For instance the 'PPA' action-menu link is not enabled for builds
+targeted to the PRIMARY archive.
 
     >>> from canonical.launchpad.browser import BuildContextMenu
     >>> build_menu = BuildContextMenu(hoary_failed_build)
@@ -49,22 +33,14 @@ enabled for builds targeted to the PRIMARY archive.
     >>> build_menu.ppa().enabled
     False
 
-On the other hand, if we modify the build to be targeted to Celso's
-PPA, its header will refer to the PPA owner.
+The 'PPA' action-menu item will be enabled if we target the build to
+Celso's PPA.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_failed_build = cprov.archive.getBuildRecords(
     ...      build_state=BuildStatus.FAILEDTOBUILD)[0]
-
-    >>> cprov_failed_build_shp = build_to_structuralheading(
-    ...     cprov_failed_build)
-    >>> print zope.i18n.translate(cprov_failed_build_shp.getMainHeading())
-    Celso Providelo
-
-Now we have a enabled 'PPA' action-menu item, since the build is
-targeted to a PPA.
 
     >>> build_menu = BuildContextMenu(cprov_failed_build)
 
