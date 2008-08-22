@@ -42,7 +42,7 @@ class IRevision(Interface):
     def allocateKarma(branch):
         """Allocate karma to the revision_author for this revision."""
 
-    def getBranch(allow_private=False):
+    def getBranch(allow_private=False, allow_junk=True):
         """Return a branch associated with this revision.
 
         The chances are that there will be many branches with any revision
@@ -53,6 +53,8 @@ class IRevision(Interface):
 
         :param allow_private: If True, a public or private branch may be
             returned.  Otherwise only a public branch may be returned.
+        :param allow_junk: If True junk branches are acceptable, if False,
+            only non-junk branches are returned.
         :return: A `Branch` or None if an appropriate branch cannot be found.
         """
 
