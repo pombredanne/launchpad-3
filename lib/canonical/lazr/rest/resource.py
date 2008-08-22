@@ -944,7 +944,7 @@ class ServiceRootResource(HTTPResource):
         itself changes. Thus, we can use the revision number itself as
         an ETag.
         """
-        return str(versioninfo.revno)
+        return str(versioninfo.revno) + '-' + media_type
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
