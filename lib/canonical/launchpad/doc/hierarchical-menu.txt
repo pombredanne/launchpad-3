@@ -166,7 +166,7 @@ the builder's context has an IPathAdapter registration.
     ...     ObjectImageDisplayAPI)
 
     # We need a custom image display adapter that overrides the
-    # default 'nyet' icon.
+    # the icon() method and returns an <img> tag.
     >>> class RecipeImageDisplayAPI(ObjectImageDisplayAPI):
     ...     def icon(self):
     ...         return '<img src="/@@/recipe"/>'
