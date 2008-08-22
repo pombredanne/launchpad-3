@@ -15,6 +15,7 @@ __all__ = [
     'PersonSet',
     'SSHKey',
     'SSHKeySet',
+    'ValidPersonCache',
     'WikiName',
     'WikiNameSet']
 
