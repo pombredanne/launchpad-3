@@ -151,7 +151,7 @@ class HTTPResource:
             incoming ETag matched the generated ETag and there is no
             need to serve anything else.
         """
-        incoming_etag = self.request.getHeader('If-None-Match')
+        incoming_etags = self._parseETags('If-None-Match')
 
         if self.getPreferredSupportedContentType() == self.WADL_TYPE:
             media_type = self.WADL_TYPE
@@ -160,12 +160,44 @@ class HTTPResource:
         existing_etag = self.getETag(media_type)
         if existing_etag is not None:
             self.request.response.setHeader('ETag', existing_etag)
-            if incoming_etag == existing_etag:
+            if existing_etag in incoming_etags or '*' in incoming_etags:
                 # The client already has this representation.
                 # No need to send it again.
                 self.request.response.setStatus(304) # Not Modified
                 media_type = None
         return media_type
+
+    def handleConditionalWrite(self):
+        """Handle a possible conditional PUT or PATCH request.
+
+        This method has side effects. If the write operation should
+        not continue, because the incoming ETag doesn't match the
+        generated ETag, it sets the response code to 412
+        ("Precondition Failed").
+
+        :return: The media type of the incoming representation. If
+            this value is None, the incoming ETag didn't match the
+            generated ETag and the incoming representation should be
+            ignored.
+        """
+        media_type = self.request.headers.get('Content-Type', self.JSON_TYPE)
+        incoming_etags = self._parseETags('If-Match')
+        if len(incoming_etags) == 0:
+            # This is not a conditional write.
+            return media_type
+        if '*' in incoming_etags:
+            # The client wants its write to succeed only if this
+            # resource already exists. We know it exists, so let the
+            # write happen.
+            return media_type
+        existing_etag = self.getETag(media_type)
+        if existing_etag in incoming_etags:
+            # The conditional write can continue.
+            return media_type
+        # The resource has changed since the client requested it.
+        # Don't let the write go through.
+        self.request.response.setStatus(412) # Precondition Failed
+        return None
 
     def getETag(self, media_type):
         """Calculate an ETag for a representation of this resource.
@@ -176,7 +208,7 @@ class HTTPResource:
         when it comes to calculating ETags for other representations.
         """
         if media_type == self.WADL_TYPE:
-            return str(versioninfo.revno)
+            return '"%s"' % str(versioninfo.revno)
         return None
 
     def implementsPOST(self):
@@ -223,6 +255,18 @@ class HTTPResource:
         """Find which content types the client prefers to receive."""
         return self._parseAcceptStyleHeader(self.request.get('HTTP_ACCEPT'))
 
+    def _parseETags(self, header_name):
+        """Extract a list of ETags from a header and parse the list.
+
+        RFC2616 allows multiple comma-separated ETags.
+        """
+        header = self.request.getHeader(header_name)
+        if header is None:
+            return []
+        # We're kind of cheating, because entity tags can technically
+        # have commas in them, but none of our tags contain commas, so
+        # this will work.
+        return [etag.strip() for etag in header.split(',')]
 
     def _fieldValueIsObject(self, field):
         """Does the given field expect a data model object as its value?
@@ -419,12 +463,13 @@ class ReadWriteResource(HTTPResource):
         if self.request.method == "GET":
             return self.do_GET()
         elif self.request.method in ["PUT", "PATCH"]:
-            type = self.request.headers['Content-Type']
-            representation = self.request.bodyStream.getCacheStream().read()
-            if self.request.method == "PUT":
-                return self.do_PUT(type, representation)
-            else:
-                return self.do_PATCH(type, representation)
+            media_type = self.handleConditionalWrite()
+            if media_type is not None:
+                representation = self.request.bodyStream.getCacheStream().read()
+                if self.request.method == "PUT":
+                    return self.do_PUT(media_type, representation)
+                else:
+                    return self.do_PATCH(media_type, representation)
         elif self.request.method == "POST" and self.implementsPOST():
             return self.do_POST()
         else:
@@ -476,7 +521,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         # generating the representation might itself change across
         # versions.
         hash_object.update(str(versioninfo.revno))
-        return hash_object.hexdigest()
+        return '"%s"' % hash_object.hexdigest()
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -944,7 +989,7 @@ class ServiceRootResource(HTTPResource):
         itself changes. Thus, we can use the revision number itself as
         an ETag.
         """
-        return str(versioninfo.revno) + '-' + media_type
+        return '"%s"' % (str(versioninfo.revno) + '-' + media_type)
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""

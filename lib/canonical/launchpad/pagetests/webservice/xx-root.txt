@@ -62,12 +62,33 @@ current ETag, the representation won't be served again.
   >>> conditional_response.getBody()
   ''
 
-If the value of 'If-None-Match' doesn't match the current ETag, you'll
-get a new representation.
-
   >>> conditional_response = webservice.get(
-  ...     '/beta/', headers={'If-None-Match' : 'a-very-old-etag'})
+  ...     '/beta/', headers={'If-None-Match' : '"a-very-old-etag"'})
   >>> conditional_response.getStatus()
   200
   >>> conditional_response.jsonBody()
   {...}
+
+You can specify a number of etags in If-None-Match. You'll get a new
+representation only if *none* of them match:
+
+  >>> conditional_response = webservice.get(
+  ...     '/beta/',
+  ...     headers={'If-None-Match' : '"a-very-old-etag", %s' %  etag})
+  >>> conditional_response.getStatus()
+  304
+
+  >>> conditional_response = webservice.get(
+  ...     '/beta/',
+  ...     headers={'If-None-Match' : '"a-very-old-etag", "another-etag"'})
+  >>> conditional_response.getStatus()
+  200
+
+If you specify '*' for If-None-Match, you'll never get a new
+representation.
+
+  >>> conditional_response = webservice.get(
+  ...     '/beta/', headers={'If-None-Match' : '*'})
+  >>> conditional_response.getStatus()
+  304
+
