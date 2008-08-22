@@ -164,33 +164,52 @@ class POTMsgSet(SQLBase):
         query.append('POFile.id = TranslationMessage.pofile')
 
         query.append('''
-                potmsgset IN (
-                    SELECT POTMsgSet.id FROM POTMsgSet
-                        JOIN POTemplate ON POTMsgSet.potemplate = POTemplate.id
-                        LEFT JOIN ProductSeries ON
-                            POTemplate.productseries = ProductSeries.id
-                        LEFT JOIN Product ON ProductSeries.product = Product.id
-                        LEFT JOIN DistroSeries ON
-                            POTemplate.distroseries = DistroSeries.id
-                        LEFT JOIN Distribution ON
-                            DistroSeries.distribution = Distribution.id
-                      WHERE POTMsgSet.id!=%s AND
-                          msgid_singular=%s AND
-                          POTemplate.iscurrent AND
-                          (Product.official_rosetta OR
-                           Distribution.official_rosetta)
-                          )''' % sqlvalues(self, self.msgid_singular))
+            potmsgset IN (
+                SELECT POTMsgSet.id
+                FROM POTMsgSet
+                JOIN POTemplate ON
+                    POTMsgSet.potemplate = POTemplate.id
+                LEFT JOIN ProductSeries ON
+                    POTemplate.productseries = ProductSeries.id
+                LEFT JOIN Product ON
+                    ProductSeries.product = Product.id
+                LEFT JOIN DistroSeries ON
+                    POTemplate.distroseries = DistroSeries.id
+                LEFT JOIN Distribution ON
+                    DistroSeries.distribution = Distribution.id
+                WHERE
+                    POTMsgSet.id <> %s AND
+                    msgid_singular = %s AND
+                    POTemplate.iscurrent AND
+                    (Product.official_rosetta OR Distribution.official_rosetta)
+            )''' % sqlvalues(self, self.msgid_singular))
 
-        result = TranslationMessage.select(' AND '.join(query),
-                                           clauseTables=['POFile'])
-        # XXX 2007-11-20 Danilo: We do filtering of duplicates in
-        # the browser code, which is how it was before DB refactoring.
-        # We should move this to SQL queries above, and lower the limit
-        # below.
-        # The numbers were gotten from our production data, by finding
-        # the largest number of external "suggestions" we may get, with
-        # the maximum turning out to be 1943.
-        return shortlist(result, longest_expected=1000, hardlimit=2000)
+        # Subquery to find the ids of TranslationMessages that are
+        # matching suggestions.
+        # We're going to get a lot of duplicates, sometimes resulting in
+        # thousands of suggstions.  Weed out most of that duplication by
+        # excluding older messages that are identical to newer ones in
+        # all translated forms.  The Python code can later sort out the
+        # distinct translations per form.
+        msgstrs = ', '.join([
+            'COALESCE(msgstr%d, -1)' % form
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+        ids_query_params = {
+            'msgstrs': msgstrs,
+            'where': ' AND '.join(query)
+        }
+        ids_query = '''
+            SELECT DISTINCT ON (%(msgstrs)s)
+                TranslationMessage.id
+            FROM TranslationMessage
+            JOIN POFile ON POFile.id = TranslationMessage.pofile
+            WHERE %(where)s
+            ORDER BY %(msgstrs)s, date_created DESC
+            ''' % ids_query_params
+
+        result = TranslationMessage.select('id IN (%s)' % ids_query)
+
+        return shortlist(result, longest_expected=100, hardlimit=2000)
 
     def getExternallyUsedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
