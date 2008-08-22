@@ -686,15 +686,14 @@ Both access methods work as expected, remove the temporary file used here.
 
     >>> os.remove(fname)
 
-In order to make it easier for users to access the buildlog contents,
-the Librarian server was modified to serve them using 'gzip' encoding
-and 'text/plain' content-type. It will indicate to the browsers that
-the file content can be rendered in-line instead of using a external
-application.
+The Librarian serves buildlog files with 'gzip' content-encoding and
+'text/plain' content-type. This combination instructs the browser to
+decompress the file and display it inline, which makes it easier for
+users to view it.
 
     >>> from canonical.launchpad.webapp.url import urlparse
-    >>> (scheme, netloc, path, params, query, fragment) = urlparse(
-    ...     logfile.http_url)
+    >>> parsed_url = urlparse(logfile.http_url)
+    >>> netloc, path = parsed_url[1:3]
 
     >>> import httplib
     >>> con = httplib.HTTPConnection(netloc)

@@ -103,16 +103,14 @@ class LibraryFileAliasResource(resource.Resource):
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
 
-            # This fix is in response to Bug 173096 and 246534.  The Ubuntu
-            # team wants their log files to be automatically unzipped, i.e
-            # rendered in-line in their browsers. Previously this was done
-            # by having Apache add an encoding for all content that
-            # was .gz or .tgz.  Doing so violates the intent of the
-            # Content-Encoding header and caused other gzipped files served
-            # from the Librarian to be treated incorrectly by browsers.  The
-            # fix shown here is to still support the encoding of Ubuntu log
-            # files while allowing others to pass with no encoding.  Apache
-            # will be changed to remove the Content-Encoding header for gzip.
+            # Files with the following extensions will be served as
+            # 'Content-Encoding: gzip' and 'Content-Type: text/plain',
+            # which indicates to browsers that, after being unzipped,
+            # their contents can be rendered inline.
+            #
+            #  * 'txt.gz': gzipped sources buildlogs;
+            #  * 'diff.gz': gzipped sources diffs;
+            #
             if filename.endswith(".txt.gz"):
                 encoding = "gzip"
                 mimetype = "text/plain"
