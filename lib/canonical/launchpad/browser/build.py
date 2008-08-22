@@ -11,7 +11,6 @@ __all__ = [
     'BuildRescoringView',
     'BuildUrl',
     'BuildView',
-    'build_to_structuralheading',
     ]
 
 from zope.component import getUtility
@@ -22,8 +21,7 @@ from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords)
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
-from canonical.launchpad.interfaces.launchpad import (
-    IStructuralHeaderPresentation, UnexpectedFormData)
+from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, ContextMenu,
     GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
@@ -31,15 +29,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-
-
-def build_to_structuralheading(build):
-    """Adapts an `IBuild` into an `IStructuralHeaderPresentation`."""
-    if build.archive.is_ppa:
-        return IStructuralHeaderPresentation(build.archive)
-    else:
-        return IStructuralHeaderPresentation(
-            build.distributionsourcepackagerelease)
 
 
 class BuildUrl:
