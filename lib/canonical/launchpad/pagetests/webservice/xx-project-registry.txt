@@ -76,20 +76,6 @@ and the all_milestones_collection_link.
     >>> print_self_link_of_entries(all_milestones)
     http://.../firefox/+milestone/1.0
 
-A single milestone can be accessed by name.
-
-    >>> milestone = webservice.get(
-    ...     '/beta/firefox?ws.op=getMilestone&name=1.0').jsonBody()
-    >>> pprint_entry(milestone)
-    date_targeted: u'2056-10-16T18:31:44.293448'
-    description: None
-    is_visible: True
-    name: u'1.0'
-    resource_type_link: u'http://.../#milestone'
-    self_link: u'http://.../firefox/+milestone/1.0'
-    target_link: u'http://.../firefox'
-    title: u'Milestone 1.0 for Mozilla Firefox'
-
 The project group can be accessed through the project_group_link.
 
     >>> webservice.get(firefox['project_group_link']).jsonBody()['self_link']

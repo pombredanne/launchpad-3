@@ -76,8 +76,8 @@ Branches have the following attributes.
     author_link: u'http://.../~name12'
     branch_format: None
     control_format: None
-    date_created: u'2006-10-16T18:31:42.982170+00:00'
-    date_last_modified: u'2007-12-06T19:58:26.837773+00:00'
+    date_created: u'...'
+    date_last_modified: u'...'
     is_private: False
     mirror_status_message: None
     name: u'main'

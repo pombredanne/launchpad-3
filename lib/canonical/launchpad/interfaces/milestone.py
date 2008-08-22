@@ -160,10 +160,6 @@ class IHasMilestones(Interface):
                     "date expected."),
             value_type=Reference(schema=IMilestone)))
 
-    # operation_parameters(name=copy_field(IMilestone['name'])) cannot be used
-    # since the validator expects the name to not exist in the db.
-    @operation_parameters(name=TextLine())
-    @export_read_operation()
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
 
