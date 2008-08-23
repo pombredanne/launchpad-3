@@ -62,3 +62,42 @@ request for a mirror:
 
     >>> print start_time < branch.next_mirror_time < end_time
     True
+
+
+== Basic branch attributes ==
+
+Not everything about a branch is exposed.  Hopefully most of what users
+really care about is exposed, and we will undoubtedly expand this as
+time goes on.
+
+    >>> login(ANONYMOUS)
+    >>> eric = factory.makePerson(name='eric')
+    >>> fooix = factory.makeProduct(name='fooix')
+    >>> branch = factory.makeBranch(
+    ...     BranchType.HOSTED, owner=eric, product=fooix, name='trunk',
+    ...     title='The Fooix Trunk')
+    >>> branch_url = '/beta/' + branch.unique_name
+    >>> logout()
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> service = webservice_for_person(eric)
+    >>> details = webservice.get(branch_url).jsonBody()
+    >>> from pprint import pprint
+    >>> pprint(sorted(details.iteritems()))
+    [(u'branch_type', u'Hosted'),
+     (u'date_created', ...),
+     (u'date_last_modified', ...),
+     (u'display_name', u'The Fooix Trunk'),
+     (u'lifecycle_status', u'New'),
+     (u'name', u'trunk'),
+     (u'owner', {...}),
+     (u'project_link', u'http://api.launchpad.dev/beta/fooix'),
+     (u'registrant_link', u'http://api.launchpad.dev/beta/~eric'),
+     (u'resource_type_link', u'http://api.launchpad.dev/beta/#branch'),
+     (u'reviewer_link', None),
+     (u'self_link', u'http://api.launchpad.dev/beta/~eric/fooix/trunk'),
+     (u'summary', None),
+     (u'title', u'The Fooix Trunk'),
+     (u'unique_name', u'~eric/fooix/trunk'),
+     (u'url', None),
+     (u'whiteboard', None)]

@@ -31,6 +31,7 @@ from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 
@@ -570,6 +571,26 @@ def setupBrowser(auth=None):
 def safe_canonical_url(*args, **kwargs):
     """Generate a bytestring URL for an object"""
     return str(canonical_url(*args, **kwargs))
+
+
+def webservice_for_person(person, consumer_key='launchpad-library',
+                          permission=OAuthPermission.READ_PUBLIC,
+                          context=None):
+    """Return a valid WebServiceCaller for the person.
+
+    Ues this method to create a way to test the webservice that doesn't depend
+    on sample data.
+    """
+    login(ANONYMOUS)
+    oacs = getUtility(IOAuthConsumerSet)
+    consumer = oacs.getByKey(consumer_key)
+    if consumer is None:
+        consumer = oacs.new(consumer_key)
+    request_token = consumer.newRequestToken()
+    request_token.review(person, permission, context)
+    access_token = request_token.createAccessToken()
+    logout()
+    return WebServiceCaller(consumer_key, access_token.key, port=9000)
 
 
 def setUpGlobs(test):

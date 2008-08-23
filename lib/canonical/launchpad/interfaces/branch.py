@@ -569,7 +569,8 @@ class IBranch(IHasOwner):
     product = exported(
         Choice(
             title=_('Project'), required=False, vocabulary='Product',
-            description=_("The project this branch belongs to.")))
+            description=_("The project this branch belongs to.")),
+        exported_as='project')
 
     product_name = Attribute("The name of the project, or '+junk'.")
 
@@ -582,15 +583,17 @@ class IBranch(IHasOwner):
     displayname = exported(
         Text(title=_('Display name'), readonly=True,
              description=_(
-                "The branch title if provided, or the unique_name.")))
+                "The branch title if provided, or the unique_name.")),
+        exported_as='display_name')
 
     sort_key = Attribute(
         "Key for sorting branches for display.")
 
     # Stats and status attributes
-    lifecycle_status = Choice(
-        title=_('Status'), vocabulary=BranchLifecycleStatus,
-        default=BranchLifecycleStatus.NEW)
+    lifecycle_status = exported(
+        Choice(
+            title=_('Status'), vocabulary=BranchLifecycleStatus,
+            default=BranchLifecycleStatus.NEW))
 
     # Mirroring attributes
     last_mirrored = Datetime(
