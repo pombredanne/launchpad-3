@@ -117,7 +117,7 @@ class RequestLocalLanguages(object):
             # set by Zope
             ip_addr = '127.0.0.1'
         gi = getUtility(IGeoIP)
-        country = gi.country_by_addr(ip_addr)
+        country = gi.getCountryByAddr(ip_addr)
         if country in [None, 'A0', 'A1', 'A2']:
             return []
 
