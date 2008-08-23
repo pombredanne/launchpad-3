@@ -121,7 +121,7 @@ class LaunchpadObjectFactory:
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, displayname=None,
-                   time_zone='Europe/London', latitude=None, longitude=None):
+                   time_zone=None, latitude=None, longitude=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -153,10 +153,12 @@ class LaunchpadObjectFactory:
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname)
 
-        # Remove the security proxy because setLocation() is protected with
-        # launchpad.EditLocation.
-        removeSecurityProxy(person).setLocation(
-            latitude, longitude, time_zone, person)
+        if (time_zone is not None or latitude is not None or
+            longitude is not None):
+            # Remove the security proxy because setLocation() is protected
+            # with launchpad.EditLocation.
+            removeSecurityProxy(person).setLocation(
+                latitude, longitude, time_zone, person)
 
         # To make the person someone valid in Launchpad, validate the
         # email.
