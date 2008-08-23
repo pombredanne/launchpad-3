@@ -455,8 +455,6 @@ class IBranchNavigationMenu(Interface):
 
 class IBranch(IHasOwner):
     """A Bazaar branch."""
-    export_as_webservice_entry()
-
     # Mark branches as exported entries for the Launchpad API.
     export_as_webservice_entry()
 
