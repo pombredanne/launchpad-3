@@ -80,7 +80,7 @@
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
         PersonSetFacets PersonSetContextMenu PersonTranslationsMenu
         PersonOverviewNavigationMenu PersonEditNavigationMenu
-        TeamOverviewNavigationMenu"
+        PersonRelatedSoftwareNavigationMenu TeamOverviewNavigationMenu"
     />
 
   <browser:url
@@ -248,11 +248,50 @@
   </browser:pages>
 
   <browser:page
+    for="*"
+    name="+person-macros"
+    permission="zope.Public"
+    template="../templates/person-macros.pt"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     permission="zope.Public"
     class="canonical.launchpad.browser.person.PersonRelatedSoftwareView"
     name="+related-software"
     template="../templates/person-related-software.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.person.PersonMaintainedPackagesView"
+    name="+maintained-packages"
+    template="../templates/person-maintained-packages.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.person.PersonUploadedPackagesView"
+    name="+uploaded-packages"
+    template="../templates/person-uploaded-packages.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.person.PersonPPAPackagesView"
+    name="+ppa-packages"
+    template="../templates/person-ppa-packages.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.person.PersonRelatedProjectsView"
+    name="+related-projects"
+    template="../templates/person-related-projects.pt"
     />
 
   <browser:renamed-page

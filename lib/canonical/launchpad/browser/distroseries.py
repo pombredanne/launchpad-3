@@ -242,7 +242,7 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined', 'new']
+    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -270,11 +270,6 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         summary = 'Show the assignee, drafter and approver of these specs'
         return Link('+assignments', text, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Show the sequence in which specs should be implemented'
-        return Link('+roadmap', text, icon='info')
 
     def new(self):
         text = 'Register a blueprint'
