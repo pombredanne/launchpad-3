@@ -38,7 +38,6 @@ __all__ = [
     'ProductSetReviewLicensesView',
     'ProductSetSOP',
     'ProductSetView',
-    'ProductShortLink',
     'ProductSpecificationsMenu',
     'ProductTranslationsMenu',
     'ProductView',
@@ -89,8 +88,7 @@ from canonical.launchpad.browser.distribution import UsesLaunchpadMixin
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import (
     FeedsMixin, ProductBranchesFeedLink)
-from canonical.launchpad.browser.launchpad import (
-    StructuralObjectPresentation, DefaultShortLink)
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
@@ -1631,12 +1629,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
-
-class ProductShortLink(DefaultShortLink):
-
-    def getLinkText(self):
-        return self.context.displayname
-
 
 class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     """View for the product code overview."""

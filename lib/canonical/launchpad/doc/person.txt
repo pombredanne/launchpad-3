@@ -791,6 +791,7 @@ question to any PPA.
     ...     print (sprelease.name,
     ...            sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
+    (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
     (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')

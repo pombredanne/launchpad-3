@@ -331,15 +331,6 @@
       permission="zope.Public"
       />
 
-  <!-- one-zero status page -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+1-0-templates"
-      class="canonical.launchpad.browser.OneZeroTemplateStatus"
-      template="../templates/launchpad-onezerostatus.pt"
-      permission="zope.Public"
-      />
-
   <!-- Test page for soft timeouts. The permission checking is done in
        the view class, only Launchpad developers have access to the
        page -->
@@ -489,26 +480,10 @@ these URLs in Apache.
   />
 
 <browser:page
-  for="zope.interface.Interface"
-  class="canonical.launchpad.browser.StructuralHeaderPresentationView"
-  permission="zope.Public"
-  name="+structural-header"
-  template="../templates/launchpad-structuralheader.pt"
-  />
-
-<browser:page
   for="*"
   name="+applicationbuttons"
   permission="zope.Public"
   class="canonical.launchpad.browser.ApplicationButtons"
-  attribute="__call__"
-  />
-
-<browser:page
-  for="*"
-  name="+shortlink"
-  permission="zope.Public"
-  class="canonical.launchpad.browser.DefaultShortLink"
   attribute="__call__"
   />
 
