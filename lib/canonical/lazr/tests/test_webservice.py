@@ -56,21 +56,6 @@ def get_operation_factory(model_interface, name):
             (model_interface, WebServiceLayer), IResourceGETOperation,
             name=name)
 
-class IDummyWebServiceApplication(ILaunchpadApplication,
-                               IServiceRootResource):
-    """Marker interface for the dummy web service."""
-
-
-class DummyServiceRootResource(ServiceRootResource):
-    """A dummy web service implementation."""
-    implements(IDummyWebServiceApplication)
-
-
-class DummyWebServicePublication(WebServicePublication):
-    """A dummy web service publication."""
-    def getApplication(self, request):
-        return DummyServiceRootResource()
-
 
 class IGenericEntry(Interface):
     """A simple, reusable entry interface.
@@ -108,13 +93,15 @@ class IGenericCollection(Interface):
 class WebServiceTestCase(CleanUp, unittest.TestCase):
     """A test case for web service operations."""
 
-    def setUp(self, exposed_resources):
+    testmodule_objects = []
+
+    def setUp(self):
         """Set the component registry with the given model."""
         super(WebServiceTestCase, self).setUp()
 
         # Build a test module that exposes the given resource interfaces.
         testmodule = ModuleType('testmodule')
-        for interface in exposed_resources:
+        for interface in self.testmodule_objects:
             setattr(testmodule, interface.__name__, interface)
         sys.modules['canonical.lazr.testmodule'] = testmodule
 
@@ -136,32 +123,6 @@ class WebServiceTestCase(CleanUp, unittest.TestCase):
         </configure>
         """)
 
-    def createWebServiceRequest(self, path_info, method='GET', body=None,
-                                environ=None, media_type="application/json",
-                                http_host='api.launchpad.dev'):
-        """Build a WebServiceTestRequest with the given parameters."""
-        test_environ = {
-            'SERVER_URL': 'http://%s' % http_host,
-            'HTTP_HOST': http_host,
-            'PATH_INFO': path_info,
-            'HTTP_ACCEPT' : media_type,
-            }
-        if environ is not None:
-            test_environ.update(environ)
-        if body is None:
-            body_instream = body
-        else:
-            test_environ['CONTENT_LENGTH'] = len(body)
-            body_instream = StringIO(body)
-        request = WebServiceTestRequest(
-            body_instream=body_instream, environ=test_environ,
-            method=method)
-        request.setPublication(DummyWebServicePublication(None))
-        # Set the "current" request.
-        newInteraction(request)
-        request.processInputs()
-        return request
-
 
 class WadlAPITestCase(WebServiceTestCase):
     """Test the docstring generation."""
@@ -172,10 +133,8 @@ class WadlAPITestCase(WebServiceTestCase):
 
         a_field = exported(TextLine())
 
-    def setUp(self):
-        super(WadlAPITestCase, self).setUp(
-            [IGenericEntry, IGenericCollection,
-             self.IUndocumentedEntry])
+    testmodule_objects = [
+        IGenericEntry, IGenericCollection, IUndocumentedEntry]
 
     def test_wadl_entry_doc(self):
         """Test the wadl:doc generated for an entry adapter."""
@@ -248,25 +207,17 @@ class DuplicateNameTestCase(WebServiceTestCase):
     to define IDuplicate and call doDuplicateTest().
     """
 
-    def setUp(self):
-        """Initiate with the generic entry and one that steals its name."""
-        super(DuplicateNameTestCase, self).setUp(
-            [IGenericEntry, self.IDuplicate])
-
-    def doDuplicateTest(self, expected_error):
+    def doDuplicateTest(self, expected_error_message):
         """Try to generate a WADL representation of the root.
 
         This will fail due to a name conflict.
         """
-        app = DummyServiceRootResource()
-        request = self.createWebServiceRequest(
-            "/beta/", media_type=HTTPResource.WADL_TYPE)
-        resource = request.traverse(app)
-        self.assertRaises(AssertionError, resource, request)
+        resource = ServiceRootResource()
         try:
-            resource(request)
+            resource.toWADL()
+            self.fail('Expected toWADL to fail with an AssertionError')
         except AssertionError, e:
-            self.assertEquals(str(e), expected_error)
+            self.assertEquals(str(e), expected_error_message)
 
 
 class DuplicateSingularNameTestCase(DuplicateNameTestCase):
@@ -276,9 +227,11 @@ class DuplicateSingularNameTestCase(DuplicateNameTestCase):
         """An entry that reuses the singular name of IGenericEntry."""
         export_as_webservice_entry('generic_entry')
 
+    testmodule_objects = [IGenericEntry, IDuplicate]
+
     def test_duplicate_singular(self):
-        self.doDuplicateTest("Singular name 'generic_entry' is used more "
-                             "than once.")
+        self.doDuplicateTest("Both IDuplicate and IGenericEntry expose the "
+                             "singular name 'generic_entry'.")
 
 
 class DuplicatePluralNameTestCase(DuplicateNameTestCase):
@@ -288,9 +241,11 @@ class DuplicatePluralNameTestCase(DuplicateNameTestCase):
         """An entry that reuses the plural name of IGenericEntry."""
         export_as_webservice_entry(plural_name='generic_entrys')
 
+    testmodule_objects = [IGenericEntry, IDuplicate]
+
     def test_duplicate_plural(self):
-        self.doDuplicateTest("Plural name 'generic_entrys' is used more "
-                             "than once.")
+        self.doDuplicateTest("Both IDuplicate and IGenericEntry expose the "
+                             "plural name 'generic_entrys'.")
 
 
 def test_suite():

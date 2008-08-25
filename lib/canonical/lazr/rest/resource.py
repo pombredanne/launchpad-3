@@ -517,7 +517,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         # Append the revision number, because the algorithm for
         # generating the representation might itself change across
         # versions.
-        hash_object.update(str(versioninfo.revno))
+        hash_object.update("\0" + str(versioninfo.revno))
         return '"%s"' % hash_object.hexdigest()
 
     def toDataForJSON(self):
@@ -1018,9 +1018,9 @@ class ServiceRootResource(HTTPResource):
         site_manager = zapi.getGlobalSiteManager()
         entry_classes = []
         collection_classes = []
-        singular_names = set()
-        plural_names = set()
-        for registration in site_manager.registrations():
+        singular_names = {}
+        plural_names = {}
+        for registration in sorted(site_manager.registrations()):
             provided = registration.provided
             if IInterface.providedBy(provided):
                 if (provided.isOrExtends(IEntry)
@@ -1033,17 +1033,23 @@ class ServiceRootResource(HTTPResource):
 
                     # Make sure that no other entry class is using this
                     # class's singular or plural names.
+                    schema = registration.required[0]
                     adapter = EntryAdapterUtility.forSchemaInterface(
-                        registration.required[0])
+                        schema)
+
                     singular = adapter.singular_type
-                    assert singular not in singular_names, (
-                        "Singular name '%s' is used more than once."
-                        % singular)
-                    singular_names.add(singular)
+                    assert not singular_names.has_key(singular), (
+                        "Both %s and %s expose the singular name '%s'."
+                        % (singular_names[singular].__name__,
+                           schema.__name__, singular))
+                    singular_names[singular] = schema
+
                     plural = adapter.plural_type
-                    assert plural not in plural_names, (
-                        "Plural name '%s' is used more than once." % plural)
-                    plural_names.add(plural)
+                    assert not plural_names.has_key(plural), (
+                        "Both %s and %s expose the plural name '%s'."
+                        % (plural_names[plural].__name__,
+                           schema.__name__, plural))
+                    plural_names[plural] = schema
 
                     entry_classes.append(registration.value)
                 elif (provided.isOrExtends(ICollection)
