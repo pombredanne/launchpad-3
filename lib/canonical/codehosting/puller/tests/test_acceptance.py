@@ -16,6 +16,7 @@ import transaction
 
 from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import format_registry
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
 from bzrlib.tests import HttpServer
 from bzrlib.upgrade import upgrade
 
@@ -134,7 +135,7 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertMirrored(self.getHostedPath(db_branch), db_branch)
         # Then we upgrade the to a different format and ask for it to be
         # mirrored again.
-        upgrade(self.getHostedPath(db_branch), format_registry.get('1.6'))
+        upgrade(self.getHostedPath(db_branch), format_registry.get('1.6')())
         transaction.begin()
         db_branch.requestMirror()
         transaction.commit()
@@ -145,6 +146,8 @@ class TestBranchPuller(PullerBranchTestCase):
         # area is what we expect.
         mirrored_branch = Branch.open(self.getMirroredPath(db_branch))
         self.assertIsInstance(mirrored_branch._format, BzrBranchFormat7)
+        self.assertIsInstance(
+            mirrored_branch.repository._format, RepositoryFormatKnitPack5)
 
     def test_mirrorAHostedLoomBranch(self):
         """Run the puller over a branch with looms enabled."""
