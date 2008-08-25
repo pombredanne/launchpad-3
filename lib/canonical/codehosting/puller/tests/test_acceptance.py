@@ -7,6 +7,7 @@ __all__ = []
 
 
 import os
+import shutil
 from subprocess import PIPE, Popen
 import sys
 import unittest
@@ -126,11 +127,8 @@ class TestBranchPuller(PullerBranchTestCase):
         self.pushToBranch(db_branch, pack_tree)
         db_branch.requestMirror()
         transaction.commit()
-        command, retcode, output, error = self.runPuller('upload')
-        self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
+        self.runPuller('upload')
 
-        import shutil
         shutil.rmtree(self.getHostedPath(db_branch))
         one6_tree = self.make_branch_and_tree('1.6', format='1.6')
         self.pushToBranch(db_branch, one6_tree)
