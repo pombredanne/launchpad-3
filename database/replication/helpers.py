@@ -2,8 +2,10 @@
 
 """Common helpers for replication scripts."""
 
+import os.path
 import subprocess
 import sys
+from tempfile import NamedTemporaryFile
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.database.postgresql import (
@@ -54,12 +56,29 @@ IGNORED_TABLES = set([
     'public.secret', 'public.sessiondata', 'public.sessionpkgdata'])
 
 
+def slony_installed(con):
+    """Return True if the connected database is part of a Launchpad Slony-I
+    cluster.
+    """
+    cur = con.cursor()
+    cur.execute("""
+        SELECT TRUE FROM pg_class,pg_namespace
+        WHERE
+            nspname = %s
+            AND relname = 'sl_table'
+            AND pg_class.relnamespace = pg_namespace.oid
+        """ % sqlvalues(CLUSTER_NAMESPACE))
+    return cur.fetchone() is not None
+
+
 def sync(timeout=60):
     """Generate a sync event and wait for it to complete on all nodes.
    
     This means that all pending events have propagated and are in sync
     to the point in time this method was called. This might take several
     hours if there is a large backlog of work to replicate.
+
+    Specify a timeout of 0 to block indefinitely.
     """
     return execute_slonik("""
         sync (id = 1);
@@ -74,12 +93,11 @@ def execute_slonik(script, sync=None, exit_on_fail=True):
 
     :param script: The script as a string. Preamble should not be included.
 
-    :param sync: Number of seconds to wait for sync before failing.
+    :param sync: Number of seconds to wait for sync before failing. 0 to
+                 block indefinitely.
     """
-    slonik_process = subprocess.Popen(
-            ['slonik'], stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
+    # Add the preamble and optional sync to the script.
     if sync is not None:
         script = preamble() + script + """
             sync (id = 1);
@@ -90,30 +108,23 @@ def execute_slonik(script, sync=None, exit_on_fail=True):
     else:
         script = preamble() + script
 
-    #log.debug("executing script:\n%s" % script)
+    # Copy the script to a NamedTemporaryFile rather than just pumping it
+    # to slonik via stdin. This way it can be examined if slonik appears
+    # to hang.
+    script_on_disk = NamedTemporaryFile(prefix="slonik", suffix=".sk")
+    print >> script_on_disk, script
+    script_on_disk.flush()
 
-    (out, err) = slonik_process.communicate(script)
-    out = [line for line in out.strip().split('\n') if line]
+    # Run slonik
+    log.debug("Executing slonik script %s" % script_on_disk.name)
+    returncode = subprocess.call(['slonik', script_on_disk.name])
 
-    if slonik_process.returncode != 0:
+    if returncode != 0:
         log.error("slonik script failed")
-        for line in out:
-            log.error(line)
         if exit_on_fail:
             sys.exit(1)
-    elif out:
-        for line in out:
-            log.debug(line)
 
-    return slonik_process.returncode == 0
-
-
-def execute_sql(script):
-    """Use the slonik command line tool to run a SQL script.
-
-    :param sql_script: The script as a string.
-    """
-    raise NotImplementedError
+    return returncode == 0
 
 
 def preamble():
@@ -121,7 +132,8 @@ def preamble():
     # This is just a place holder. We need to generate or select a
     # preamble based on LPCONFIG. Or better yet, pull it from the master
     # database if we are not initializing the cluster.
-    return "include <preamble.sk>;\n"
+    return "include <%s>;\n" % os.path.abspath(
+        os.path.join(os.path.dirname(__file__), 'preamble.sk'))
 
 
 def calculate_replication_set(cur, seeds):
