@@ -119,6 +119,29 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
+    def test_reMirrorAHostedBranch(self):
+        # When the format of a branch changes, we completely remirror it.
+        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        pack_tree = self.make_branch_and_tree('pack', format='pack-0.92')
+        self.pushToBranch(db_branch, pack_tree)
+        db_branch.requestMirror()
+        transaction.commit()
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
+
+        import shutil
+        shutil.rmtree(self.getHostedPath(db_branch))
+        one6_tree = self.make_branch_and_tree('1.6', format='1.6')
+        self.pushToBranch(db_branch, one6_tree)
+        transaction.begin()
+        db_branch.requestMirror()
+        transaction.commit()
+
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
+
     def test_mirrorAHostedLoomBranch(self):
         """Run the puller over a branch with looms enabled."""
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
