@@ -672,7 +672,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
         # Refresh the selected_sources, it changes when sources get
         # copied within the PPA.
-        self.refreshSelectedSourcesWidget()
+        # self.refreshSelectedSourcesWidget()
 
         # Present a page notification describing the action.
         messages = []
@@ -686,6 +686,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
         notification = "\n".join(messages)
         self.request.response.addNotification(structured(notification))
+        self.request.response.redirect(self.request.URL)
 
 
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
