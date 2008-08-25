@@ -4,13 +4,9 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionSourcePackageReleaseNavigation',
-    'DistributionSourcePackageReleaseShortLink',
     ]
 
 from zope.component import getUtility
-
-from canonical.launchpad.browser.launchpad import (
-    DefaultShortLink)
 
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistributionSourcePackageRelease, NotFoundError)
@@ -40,10 +36,3 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
             return getUtility(IBuildSet).getByBuildID(build_id)
         except NotFoundError:
             return None
-
-
-class DistributionSourcePackageReleaseShortLink(DefaultShortLink):
-
-    def getLinkText(self):
-        return self.context.sourcepackagerelease.version
-

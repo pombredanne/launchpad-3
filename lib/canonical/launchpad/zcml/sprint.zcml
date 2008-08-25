@@ -72,9 +72,6 @@
       name="+specs"
       template="../templates/hasspecifications-specs.pt" />
     <browser:page
-      name="+categorized"
-      template="../templates/specificationtarget-categorized.pt" />
-    <browser:page
       name="+assignments"
       template="../templates/specificationtarget-assignments.pt" />
     <browser:page

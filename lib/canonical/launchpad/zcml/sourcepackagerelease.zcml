@@ -19,10 +19,6 @@
       for="canonical.launchpad.interfaces.ISourcePackageRelease"
       permission="zope.Public">
       <browser:page
-        name="+body-summary"
-        template="../templates/sourcepackagerelease-body-summary.pt"
-        />
-      <browser:page
         name="+portlet-builds"
         template="../templates/sourcepackagerelease-portlet-builds.pt"
         />

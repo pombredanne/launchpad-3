@@ -610,12 +610,6 @@ class ProductSeriesSourceListView(LaunchpadView):
         self.batchnav = BatchNavigator(results, self.request)
 
 
-class ProductSeriesShortLink(DefaultShortLink):
-
-    def getLinkText(self):
-        return self.context.displayname
-
-
 class ProductSeriesFileBugRedirect(LaunchpadView):
     """Redirect to the product's +filebug page."""
 

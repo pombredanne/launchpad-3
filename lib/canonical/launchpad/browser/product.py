@@ -36,7 +36,6 @@ __all__ = [
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
     'ProductSetView',
-    'ProductShortLink',
     'ProductSpecificationsMenu',
     'ProductTranslationsMenu',
     'ProductView',
@@ -1597,12 +1596,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
-
-class ProductShortLink(DefaultShortLink):
-
-    def getLinkText(self):
-        return self.context.displayname
-
 
 class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     """View for the product code overview."""

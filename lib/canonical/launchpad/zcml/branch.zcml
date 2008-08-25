@@ -109,9 +109,6 @@
             name="+portlet-details"
             template="../templates/branch-portlet-details.pt" />
         <browser:page
-            name="+series-reference"
-            template="../templates/branch-series-reference.pt" />
-        <browser:page
             name="+associations"
             template="../templates/branch-associations.pt" />
         <browser:page
@@ -128,9 +125,6 @@
     <browser:page
         name="+portlet-privacy"
         template="../templates/branch-portlet-privacy.pt" />
-    <browser:page
-        name="+portlet-specifications"
-        template="../templates/branch-portlet-specifications.pt" />
     <browser:page
         name="+heading"
         template="../templates/branch-heading.pt" />
@@ -159,16 +153,6 @@
       class="canonical.launchpad.browser.BranchInProductView" >
     <browser:page
         name="+product-summary-listing"
-        template="../templates/branch-summary-listing.pt" />
-  </browser:pages>
-
-  <browser:pages
-      for="canonical.launchpad.interfaces.IBranch"
-      facet="overview"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.BranchInPersonView" >
-    <browser:page
-        name="+person-summary-listing"
         template="../templates/branch-summary-listing.pt" />
   </browser:pages>
 
