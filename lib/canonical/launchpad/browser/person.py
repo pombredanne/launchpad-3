@@ -73,6 +73,7 @@ __all__ = [
     'SearchSubscribedQuestionsView',
     'SubscribedBugTaskSearchListingView',
     'TeamAddMyTeamsView',
+    'TeamEditLocationView',
     'TeamJoinView',
     'TeamLeaveView',
     'TeamNavigation',
@@ -4874,6 +4875,17 @@ class PersonEditLocationView(LaunchpadFormView):
         if 'hide' in self.field_names:
             visible = not data['hide']
             self.context.setLocationVisibility(visible)
+
+
+class TeamEditLocationView(LaunchpadView):
+    """Redirect to the team's +map page.
+
+    We do that because it doesn't make sense to specify the location of a
+    team."""
+
+    def initialize(self):
+        self.request.response.redirect(
+            canonical_url(self.context, view_name="+map"))
 
 
 def archive_to_person(archive):

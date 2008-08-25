@@ -4,9 +4,9 @@
 if [ ! -e /usr/share/GeoIP/GeoLiteCity.dat -a \
      ! -e /usr/share/GeoIP/GeoIPCity.dat ]
   then 
-    echo "****************************************************"
-    echo "No GeoIP db found.  Plese run utilities/get-geoip-db"
-    echo "****************************************************"
+    echo "********************************************************"
+    echo "No GeoIP db found.  Plese install launchpad-dependencies"
+    echo "********************************************************"
     exit 1
 fi
 exit 0

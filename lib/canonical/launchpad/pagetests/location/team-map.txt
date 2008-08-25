@@ -75,10 +75,10 @@ person.
     >>> admin_browser.url
     'http://launchpad.dev/~guadamen/+map'
 
-We cannot edit the location of the team itself, even if we are an admin.
+It doesn't make sense to edit the location of the team itself, not even
+if we are an admin, so a team's +editlocation page will simply redirect
+to +map.
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen/+editlocation')
-    >>> admin_browser.getControl(name='field.location.latitude')
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.location.latitude'
+    >>> print admin_browser.url
+    http://launchpad.dev/~guadamen/+map

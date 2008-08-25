@@ -45,7 +45,13 @@ class GeoIP:
     def getRecordByAddress(self, ip_address):
         """See `IGeoIP`."""
         ip_address = ensure_address_is_not_private(ip_address)
-        return self._gi.record_by_addr(ip_address)
+        try:
+            return self._gi.record_by_addr(ip_address)
+        except SystemError:
+            # libGeoIP may raise a SystemError if it doesn't find a record for
+            # some IP addresses (e.g. 255.255.255.255), so we need to catch
+            # that and return None here.
+            return None
 
     def getCountryByAddr(self, ip_address):
         """See `IGeoIP`."""

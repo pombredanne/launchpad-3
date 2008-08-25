@@ -69,6 +69,12 @@ And again we'll use a South African IP if the address starts with '127.'.
     region_name: ...
     time_zone: ...
 
+If it can't find a GeoIPRecord for the given IP address, it will return
+None.
+
+    >>> print geoip.getRecordByAddress('255.255.255.255')
+    None
+
 We also have GeoIPRequest, which adapts an IBrowserRequest into an
 IGeoIPRecord, providing the latitude, longitude and time zone of the
 request's originating IP address.
@@ -86,9 +92,9 @@ same South African IP address.
     None
     >>> geoip_request = IGeoIPRecord(request)
     >>> geoip_request.latitude
-    -26...
+    -33...
     >>> geoip_request.longitude
-    28...
+    18...
     >>> geoip_request.time_zone
     'Africa/Johannesburg'
 
@@ -101,6 +107,6 @@ we adapted it into an IGeoIPRecord.
     >>> geoip_request.latitude
     -23...
     >>> geoip_request.longitude
-    -47...
+    -45...
     >>> geoip_request.time_zone
     'Brazil/Acre'

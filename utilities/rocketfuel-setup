@@ -413,10 +413,6 @@ if [ $? -ne 0 ]; then
 fi
 
 
-# Make sure we have a copy of the GeoIP "city" database.
-~/canonical/lp-branches/trunk/utilities/get-geoip-db
-
-
 # Make sure we have all the right code in place for source dependencies
 /usr/local/bin/rocketfuel-get
 
