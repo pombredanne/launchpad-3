@@ -10,7 +10,6 @@ __all__ = [
     'POFileFilteredView',
     'POFileNavigation',
     'POFileNavigationMenu',
-    'POFileSOP',
     'POFileTranslateView',
     'POFileUploadView',
     'POFileView',
@@ -28,8 +27,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.translationmessage import (
     BaseTranslationView, CurrentTranslationMessageView)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
-from canonical.launchpad.browser.potemplate import (
-    POTemplateSOP, POTemplateFacets)
+from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     IPersonSet, IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
@@ -93,12 +91,6 @@ class POFileFacets(POTemplateFacets):
 
     def __init__(self, context):
         POTemplateFacets.__init__(self, context.potemplate)
-
-
-class POFileSOP(POTemplateSOP):
-
-    def __init__(self, context):
-        POTemplateSOP.__init__(self, context.potemplate)
 
 
 class POFileMenuMixin:
