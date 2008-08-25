@@ -24,6 +24,13 @@ Let's start a new series of ed (0.2-20) and publish it:
 
 Check if the publication is available through the Soyuz package stack:
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu.getSeries('hoary')
+
     >>> ed_sp = hoary.getSourcePackage('ed')
     >>> ed_dsspr = ed_sp['0.2-20']
     >>> ed_dsspr.publishing_history.count()

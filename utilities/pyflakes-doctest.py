@@ -72,6 +72,9 @@ GLOBAL_NAMES = set([
     'test_dbuser',
     # For Mailman tests
     'xmlrpc_watcher',
+    # For archiveuploader tests.
+    'getUploadForSource',
+    'getUploadForBinary',
     ])
 
 

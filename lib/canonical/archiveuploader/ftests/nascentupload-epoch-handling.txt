@@ -7,15 +7,18 @@ http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Version
 Note that for this tests we already have getUploadFor{Source, Binary}
 helper functions added in the globals by test_nascentupload_documentation.py.
 
-Test loader also prepares ubuntu/hoary in sampledata to receive upload
-in RELEASE pocket, 'ubuntu' & 'hoary' objects are also part of the
-globals:
+Ubuntu/hoary in sampledata is already ready receive upload in RELEASE
+pocket.
 
-   >>> ubuntu.name
-   u'ubuntu'
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
 
-   >>> hoary.status.name
-   'DEVELOPMENT'
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu.getSeries('hoary')
+
+    >>> print hoary.status.name
+    DEVELOPMENT
 
 
 == Epoch Version Conflicts ==
@@ -64,7 +67,7 @@ Upload 'epoched' bar version:
     ...     'suite/bar_1.0-1_epoched/bar_1.0-1_source.changes')
     >>> bar_src_upload.process()
     >>> print bar_src_upload.rejection_message
-    MD5 sum of uploaded file does not match existing file in archive
+    Uploaded file bar_1.0-1.diff.gz does not match extant file in Primary Archive for Ubuntu Linux.
     Files specified in DSC are broken or missing, skipping package unpack verification.
 
 We rely on uploadprocessor to abort the transaction at this point not

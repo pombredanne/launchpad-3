@@ -301,7 +301,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield error
 
     def _getFileByName(self, filename):
-        """Return the corresponding library file in the policy context.
+        """Return the corresponding file reference in the policy context.
 
         If the filename ends in '.orig.tar.gz', then we look for it in the
         distribution primary archive as well, with the PPA file taking
@@ -310,6 +310,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         This is needed so that PPA uploaders don't have to waste bandwidth
         uploading huge upstream tarballs that are already published in the
         target distribution.
+
+        When the file reference is found, its corresponding LibraryFileAlias
+        and Archive are returned.
 
         Raises NotFoundError if the wanted file could not be found.
         """
@@ -326,7 +329,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     filename, source=True, binary=False, archive=archive)
                 self.logger.debug(
                     "%s found in %s" % (filename, archive.title))
-                return library_file
+                return library_file, archive
             except NotFoundError:
                 pass
 
@@ -343,11 +346,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         for sub_dsc_file in self.files:
             if sub_dsc_file.filename.endswith("tar.gz"):
                 has_tar = True
-
             try:
-                library_file = self._getFileByName(sub_dsc_file.filename)
+                library_file, file_archive = self._getFileByName(
+                    sub_dsc_file.filename)
             except NotFoundError, error:
                 library_file = None
+                file_archive = None
             else:
                 # try to check dsc-mentioned file against its copy already
                 # in librarian, if it's new (aka not found in librarian)
@@ -356,8 +360,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 # bug # 38636 and friends.
                 if sub_dsc_file.digest != library_file.content.md5:
                     yield UploadError(
-                        "MD5 sum of uploaded file does not match existing "
-                        "file in archive")
+                        "Uploaded file %s does not match extant "
+                        "file in %s." %
+                        (sub_dsc_file.filename, file_archive.title))
                     files_missing = True
                     continue
 

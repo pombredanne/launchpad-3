@@ -1068,21 +1068,21 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
-            "MD5 sum of uploaded file does not match existing file "
-                 "in archive",
+            "Uploaded file bar_1.0.orig.tar.gz does not match extant file "
+                 "in Primary Archive for Ubuntu Linux.",
             "Files specified in DSC are broken or missing, skipping package "
                  "unpack verification."]
         self.assertEmail(contents)
 
         self.log.lines = []
-        # The happens with higher versions of 'bar' depending on the
+        # The same happens with higher versions of 'bar' depending on the
         # unofficial 'orig.tar.gz'.
         upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
             "Subject: bar_1.0-10_source.changes rejected",
-            "MD5 sum of uploaded file does not match existing file "
-                 "in archive",
+            "Uploaded file bar_1.0.orig.tar.gz does not match extant file "
+                 "in Primary Archive for Ubuntu Linux.",
             "Files specified in DSC are broken or missing, skipping package "
                  "unpack verification."]
         self.assertEmail(contents)

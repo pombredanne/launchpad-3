@@ -15,7 +15,7 @@ from canonical.launchpad.database import (
     ComponentSelection, LibraryFileAlias)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IComponentSet, IDistributionSet)
+    IComponentSet, IDistributionSet)
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setGlobs)
 from canonical.testing import LaunchpadZopelessLayer
@@ -48,17 +48,17 @@ def testGlobalsSetup(test):
 def prepareHoaryForUploads(test):
     """Prepare ubuntu/hoary to receive uploads.
 
-    Ensure ubuntu/hoary is ready to receive uploads in pocket
-    RELEASE (DEVELOPMENT releasestate).
+    Ensure ubuntu/hoary is ready to receive and build new uploads in
+    the RELEASE pocket (they are auto-overridden to the 'universe'
+    component).
     """
     ubuntu = getUtility(IDistributionSet)['ubuntu']
     hoary = ubuntu['hoary']
-    hoary.status = DistroSeriesStatus.DEVELOPMENT
-    test.globs['ubuntu'] = ubuntu
-    test.globs['hoary'] = hoary
-    # Hoary needs to allow uploads for universe.
+
+    # Allow uploads to the universe component.
     universe = getUtility(IComponentSet)['universe']
     ComponentSelection(distroseries=hoary, component=universe)
+
     # Create a fake hoary/i386 chroot.
     fake_chroot = LibraryFileAlias.get(1)
     hoary['i386'].addOrUpdateChroot(fake_chroot)
