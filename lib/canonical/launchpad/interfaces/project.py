@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasOwner)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import (
-    IHasMilestoneSearch, IHasMilestones)
+    IMilestoneGetter, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.specificationtarget import (
@@ -51,7 +51,7 @@ class ProjectNameField(PillarNameField):
 
 class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
                IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestoneSearch, IHasMilestones,
+               IHasMentoringOffers, IMilestoneGetter, IHasMilestones,
                IHasMugshot, IHasOwner, IHasSpecifications, IHasSprints,
                IHasTranslationGroup, IMakesAnnouncements,
                IKarmaContext, IPillar):

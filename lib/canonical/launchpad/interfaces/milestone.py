@@ -6,9 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'IHasMilestoneSearch',
     'IHasMilestones',
     'IMilestone',
+    'IMilestoneGetter',
     'IMilestoneSet',
     'IProjectMilestone',
     ]
@@ -167,7 +167,7 @@ class IHasMilestones(Interface):
             value_type=Reference(schema=IMilestone)))
 
 
-class IHasMilestoneSearch(Interface):
+class IMilestoneGetter(Interface):
     """ An interface for classes providing getMilestone(name)."""
 
     def getMilestone(name):
