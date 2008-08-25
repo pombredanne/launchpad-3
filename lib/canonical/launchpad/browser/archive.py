@@ -472,7 +472,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         # validade the the submitted deletion request. Once the deletion
         # request is validated and performed we call 'flush_database_caches'
         # and rebuild the 'selected_sources' widget.
-        self.refreshSelectedSourcesWidget()
+        # self.refreshSelectedSourcesWidget()
 
         # Present a page notification describing the action.
         messages = []
@@ -489,6 +489,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         notification = "\n".join(messages)
         self.request.response.addNotification(
             structured(notification, comment=comment))
+        self.request.response.redirect(self.request.URL)
 
 
 class DestinationArchiveRadioWidget(LaunchpadDropdownWidget):
