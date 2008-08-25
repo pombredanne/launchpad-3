@@ -91,7 +91,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         http = get_transport('http://example.com')
         source_branch = self.make_branch('source-branch')
         to_mirror = self.makePullerWorker(source_branch.base)
-        to_mirror.mirror()
+        to_mirror.mirrorWithoutChecks()
         new_http = get_transport('http://example.com')
         self.assertEqual(get_transport('http://example.com').base, http.base)
         self.assertEqual(new_http.__class__, http.__class__)

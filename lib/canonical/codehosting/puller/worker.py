@@ -9,9 +9,11 @@ import urllib2
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import (
-    BzrError, NotBranchError, ParamikoNotPresent, UnknownFormatError,
-    UnsupportedFormatError)
+from bzrlib import errors
+
+#import (
+#    BzrError, NotBranchError, ParamikoNotPresent, UnknownFormatError,
+#    UnsupportedFormatError)
 from bzrlib.progress import DummyProgress
 from bzrlib.transport import get_transport
 import bzrlib.ui
@@ -373,7 +375,7 @@ class PullerWorker:
         """
         try:
             branch = BzrDir.open(self.dest).open_branch()
-        except NotBranchError:
+        except errors.NotBranchError:
             # Make a new branch in the same format as the source branch.
             branch = self._createDestBranch(source_branch)
         else:
@@ -465,15 +467,15 @@ class PullerWorker:
             msg = 'A socket error occurred: %s' % str(e)
             self._mirrorFailed(msg)
 
-        except UnsupportedFormatError, e:
+        except errors.UnsupportedFormatError, e:
             msg = ("Launchpad does not support branches from before "
                    "bzr 0.7. Please upgrade the branch using bzr upgrade.")
             self._mirrorFailed(msg)
 
-        except UnknownFormatError, e:
+        except errors.UnknownFormatError, e:
             self._mirrorFailed(e)
 
-        except (ParamikoNotPresent, BadUrlSsh), e:
+        except (errors.ParamikoNotPresent, BadUrlSsh), e:
             msg = ("Launchpad cannot mirror branches from SFTP and SSH URLs."
                    " Please register a HTTP location for this branch.")
             self._mirrorFailed(msg)
@@ -486,8 +488,9 @@ class PullerWorker:
             msg = "Launchpad does not mirror %s:// URLs." % e.scheme
             self._mirrorFailed(msg)
 
-        except NotBranchError, e:
-            hosted_branch_error = NotBranchError("lp:~%s" % self.unique_name)
+        except errors.NotBranchError, e:
+            hosted_branch_error = errors.NotBranchError(
+                "lp:~%s" % self.unique_name)
             message_by_type = {
                 BranchType.HOSTED: str(hosted_branch_error),
                 BranchType.IMPORTED: "Not a branch.",
@@ -504,7 +507,7 @@ class PullerWorker:
             msg = "Circular branch reference."
             self._mirrorFailed(msg)
 
-        except BzrError, e:
+        except errors.BzrError, e:
             self._mirrorFailed(e)
 
         except InvalidURIError, e:

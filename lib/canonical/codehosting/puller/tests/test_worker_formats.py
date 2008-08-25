@@ -135,12 +135,12 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
 
         # Create and mirror a branch in weave format.
         self._createSourceBranch(RepositoryFormat7(), BzrDirMetaFormat1())
-        self.worker.mirrorWithoutChecks()
+        self.worker.mirror()
 
         # Change the branch to knit format and mirror again.
         self.get_transport().delete_tree(self._source_branch_path)
         self._createSourceBranch(RepositoryFormatKnit1(), BzrDirMetaFormat1())
-        self.worker.mirrorWithoutChecks()
+        self.worker.mirror()
 
         # The mirrored branch should now be in knit format.
         self.assertMirrored(
