@@ -1018,6 +1018,8 @@ class ServiceRootResource(HTTPResource):
         site_manager = zapi.getGlobalSiteManager()
         entry_classes = []
         collection_classes = []
+        singular_names = set()
+        plural_names = set()
         for registration in site_manager.registrations():
             provided = registration.provided
             if IInterface.providedBy(provided):
@@ -1028,6 +1030,21 @@ class ServiceRootResource(HTTPResource):
                     # schemas; they're functions. We can ignore these
                     # functions because their return value will be one
                     # of the classes with schemas, which we do describe.
+
+                    # Make sure that no other entry class is using this
+                    # class's singular or plural names.
+                    adapter = EntryAdapterUtility.forSchemaInterface(
+                        registration.required[0])
+                    singular = adapter.singular_type
+                    assert singular not in singular_names, (
+                        "Singular name '%s' is used more than once."
+                        % singular)
+                    singular_names.add(singular)
+                    plural = adapter.plural_type
+                    assert plural not in plural_names, (
+                        "Plural name '%s' is used more than once." % plural)
+                    plural_names.add(plural)
+
                     entry_classes.append(registration.value)
                 elif (provided.isOrExtends(ICollection)
                       and ICollection.implementedBy(registration.value)
