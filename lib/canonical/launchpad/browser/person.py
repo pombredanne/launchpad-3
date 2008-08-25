@@ -1393,9 +1393,6 @@ class FOAFSearchView:
     def peopleCount(self):
         return getUtility(IPersonSet).peopleCount()
 
-    def topPeople(self):
-        return getUtility(IPersonSet).topPeople()
-
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
 

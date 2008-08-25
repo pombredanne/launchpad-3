@@ -31,9 +31,7 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.expr import And, LeftJoin, Not, Or
 from storm.store import Store
-from storm.zope.interfaces import IZStorm
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -2366,20 +2364,22 @@ class PersonSet:
     def __init__(self):
         self.title = 'People registered with Launchpad'
 
-    def topPeople(self):
+    def getTopContributors(self, limit=50):
         """See `IPersonSet`."""
         # The odd ordering here is to ensure we hit the PostgreSQL
         # indexes. It will not make any real difference outside of tests.
         query = """
-            id in (
+            id IN (
                 SELECT person FROM KarmaTotalCache
                 ORDER BY karma_total DESC, person DESC
-                LIMIT 5
+                LIMIT %s
                 )
-            """
+            """ % limit
         top_people = shortlist(Person.select(query))
-        top_people.sort(key=lambda obj: (obj.karma, obj.id), reverse=True)
-        return top_people
+        return sorted(
+            top_people,
+            key=lambda obj: (obj.karma, obj.displayname, obj.id),
+            reverse=True)
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -2512,26 +2512,6 @@ class PersonSet:
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
-
-    def getAllValidPersonsAndTeams(self):
-        """See `IPersonSet`."""
-        store = getUtility(IZStorm).get('main')
-        tables = [
-            Person,
-            LeftJoin(EmailAddress, EmailAddress.person == Person.id),
-            LeftJoin(Account, EmailAddress.account == Account.id),
-            ]
-        result = store.using(*tables).find(
-            Person,
-            And(
-                Person.merged == None,
-                Or(# A valid person-or-team is either a team...
-                   Not(Person.teamowner == None), # 'Not' due to Bug 244768
-
-                   # or has an active account and a preferred email address.
-                   And(Account.status == AccountStatus.ACTIVE,
-                       EmailAddress.status == EmailAddressStatus.PREFERRED))))
-        return result.order_by(Person.sortingColumns)
 
     def find(self, text, orderBy=None):
         """See `IPersonSet`."""
