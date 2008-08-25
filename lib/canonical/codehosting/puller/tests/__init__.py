@@ -42,9 +42,9 @@ class PullerWorkerMixin:
                          protocol=None, oops_prefix=None):
         """Anonymous creation method for PullerWorker."""
         if src_dir is None:
-            src_dir = self.get_transport('source-branch').base
+            src_dir = self.get_url('source-branch')
         if dest_dir is None:
-            dest_dir = './dest-branch'
+            dest_dir = self.get_url('dest-branch')
         if protocol is None:
             protocol = PullerWorkerProtocol(StringIO())
         if oops_prefix is None:
