@@ -81,11 +81,14 @@ class BuilderGroup:
         # exceptions raised in the Builder API since we already started the
         # main refactoring of this area.
         except (ValueError, TypeError, xmlrpclib.Fault,
-                socket.error, BuildDaemonError), reason:
+                BuildDaemonError), reason:
             builder.failbuilder(str(reason))
             self.logger.warn(
                 "%s (%s) marked as failed due to: %s",
                 builder.name, builder.url, builder.failnotes, exc_info=True)
+        except socket.error, reason:
+            error_message = str(reason)
+            builder.handleTimeout(self.logger, error_message)
 
     def rescueBuilderIfLost(self, builder):
         """Reset Builder slave if job information doesn't match with DB.

@@ -352,7 +352,8 @@ the mailing list, she will not get a copy of the message.
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.join(team_one)
     >>> transaction.commit()
-    >>> helpers.ensure_membership('itest-one', anne)
+    >>> helpers.ensure_addresses_are_disabled(
+    ... 'itest-one', 'anne.person@example.com')
     >>> logout()
 
     >>> inject('itest-one', """\
