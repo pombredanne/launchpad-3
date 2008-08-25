@@ -14,7 +14,6 @@ __all__ = [
     'ProjectEditView',
     'ProjectReviewView',
     'ProjectSetNavigation',
-    'ProjectSOP',
     'ProjectFacets',
     'ProjectOverviewMenu',
     'ProjectSeriesSpecificationsMenu',
@@ -49,7 +48,6 @@ from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
@@ -99,22 +97,6 @@ class ProjectSetNavigation(Navigation):
         if project is None:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(project))
-
-
-class ProjectSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: Products, alphabetically
-        return list(self.context.products[:num])
-
-    def listAltChildren(self, num):
-        return None
 
 
 class ProjectSetContextMenu(ContextMenu):

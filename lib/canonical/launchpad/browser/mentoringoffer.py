@@ -9,7 +9,6 @@ __all__ = [
     'HasMentoringOffersView',
     'MentoringOfferSetFacets',
     'MentoringOfferSetOverviewMenu',
-    'MentoringOfferSetSOP',
     'MentoringOfferSetView',
     'MentoringOfferAddView',
     'MentoringOfferRetractView',
@@ -40,7 +39,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView, LaunchpadFormView, action)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 
 class MentoringOfferSetFacets(StandardLaunchpadFacets):
@@ -63,21 +61,6 @@ class MentoringOfferSetOverviewMenu(ApplicationMenu):
     def successful(self):
         text = 'Recent successes'
         return Link('+success', text, icon='info')
-
-
-class MentoringOfferSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
 
 
 class CanBeMentoredView:

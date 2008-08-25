@@ -49,8 +49,6 @@ __all__ = [
     'PersonSetContextMenu',
     'PersonSetFacets',
     'PersonSetNavigation',
-    'PersonSetSOP',
-    'PersonSOP',
     'PersonSpecFeedbackView',
     'PersonSpecsMenu',
     'PersonSpecWorkloadView',
@@ -152,7 +150,6 @@ from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchmergeproposallisting import (
     BranchMergeProposalListingView)
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.browser.openiddiscovery import (
@@ -541,21 +538,6 @@ class PersonSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(me), status=303)
 
 
-class PersonSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return 'People and Teams'
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
-
-
 class PersonSetFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for the IPersonSet."""
 
@@ -600,27 +582,6 @@ class PersonSetContextMenu(ContextMenu):
     def adminteammerge(self):
         text = 'Admin merge teams'
         return Link('+adminteammerge', text, icon='edit')
-
-
-class PersonSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
 
 
 class PersonFacets(StandardLaunchpadFacets):
@@ -4630,7 +4591,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     def setUpBatch(self, packages):
         """Set up the batch navigation for the page being viewed.
-        
+
         This method creates the BatchNavigator and converts its
         results batch into a list of decorated sourcepackagereleases.
         """

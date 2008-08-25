@@ -20,7 +20,6 @@ from zope.app import zapi
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
@@ -71,29 +70,6 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             sourcepackage.name)
 
         return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
-
-
-class SourcePackageSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return self.context.distribution.displayname + ' ' + \
-               self.context.distroseries.version + ' source package:'
-
-    def getMainHeading(self):
-        return self.context.sourcepackagename
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: Versions published, earliest first.
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
 
 
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):

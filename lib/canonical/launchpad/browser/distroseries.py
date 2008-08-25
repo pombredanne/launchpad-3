@@ -12,7 +12,6 @@ __all__ = [
     'DistroSeriesFullLanguagePackRequestView',
     'DistroSeriesLanguagePackAdminView',
     'DistroSeriesNavigation',
-    'DistroSeriesSOP',
     'DistroSeriesTranslationsAdminView',
     'DistroSeriesView',
     ]
@@ -31,7 +30,6 @@ from canonical.launchpad import _
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces.country import ICountry
@@ -122,29 +120,6 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
             return None
         else:
             return self.context.last_delta_language_pack_exported.file
-
-
-class DistroSeriesSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.fullseriesname
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: list architectures, alphabetically
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        # XXX mpt 2006-10-04: list series, most recent first
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
 
 
 class DistroSeriesFacets(StandardLaunchpadFacets):

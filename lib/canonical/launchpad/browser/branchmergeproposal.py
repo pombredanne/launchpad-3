@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'BranchMergeCandidateView',
-    'BranchMergeProposalSOP',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
     'BranchMergeProposalDequeueView',
@@ -38,7 +37,6 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
@@ -85,25 +83,6 @@ def update_and_notify(func):
             view.context, view.form_fields, data, view.adapters)
         return result
     return decorator
-
-
-class BranchMergeProposalSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IBranchMergeProposal`.
-
-    Delegates the method calls to the SOP of the source branch.
-    """
-    def __init__(self, context):
-        StructuralObjectPresentation.__init__(self, context)
-        self.delegate = IStructuralObjectPresentation(
-            self.context.source_branch)
-
-    def getIntroHeading(self):
-        """See `IStructuralHeaderPresentation`."""
-        return self.delegate.getIntroHeading()
-
-    def getMainHeading(self):
-        """See `IStructuralHeaderPresentation`."""
-        return self.delegate.getMainHeading()
 
 
 class BranchMergeCandidateView(LaunchpadView):

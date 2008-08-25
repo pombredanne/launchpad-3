@@ -7,12 +7,10 @@ __metaclass__ = type
 __all__ = [
     'FAQContextMenu',
     'FAQEditView',
-    'FAQStructuralObjectPresentation',
     ]
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import IFAQ
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, LaunchpadEditFormView,
@@ -44,14 +42,3 @@ class FAQEditView(LaunchpadEditFormView):
         """Update the FAQ details."""
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
-
-
-class FAQStructuralObjectPresentation(StructuralObjectPresentation):
-    """Provides the structural heading for `IFAQ`."""
-
-    def getMainHeading(self):
-        """See `IStructuralHeaderPresentation`."""
-        faq = self.context
-        return _('FAQ #${id} in ${target}',
-                 mapping=dict(
-                    id=faq.id, target=faq.target.displayname))

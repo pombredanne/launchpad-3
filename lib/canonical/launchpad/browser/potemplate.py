@@ -11,7 +11,6 @@ __all__ = [
     'POTemplateExportView',
     'POTemplateNavigation',
     'POTemplateSetNavigation',
-    'POTemplateSOP',
     'POTemplateSubsetNavigation',
     'POTemplateSubsetURL',
     'POTemplateSubsetView',
@@ -30,7 +29,6 @@ from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.productseries import (
     ProductSeriesSOP, ProductSeriesFacets)
@@ -146,38 +144,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         # See bug 183433 about changing the target.
         # branches_link.target = self.target
         return branches_link
-
-
-class POTemplateSOP(StructuralObjectPresentation):
-
-    def __init__(self, context):
-        StructuralObjectPresentation.__init__(self, context)
-        target = context.translationtarget
-        if IProductSeries.providedBy(target):
-            self.target_sop = ProductSeriesSOP(target)
-        elif ISourcePackage.providedBy(target):
-            self.target_sop = SourcePackageSOP(target)
-        else:
-            # We don't know yet how to handle this target.
-            raise NotImplementedError
-
-    def getIntroHeading(self):
-        return self.target_sop.getIntroHeading()
-
-    def getMainHeading(self):
-        return self.target_sop.getMainHeading()
-
-    def listChildren(self, num):
-        return self.target_sop.listChildren(num)
-
-    def countChildren(self):
-        return self.parent.countChildren()
-
-    def listAltChildren(self, num):
-        return self.parent.listAltChildren(num)
-
-    def countAltChildren(self):
-        return self.parent.countAltChildren()
 
 
 class POTemplateAppMenus(ApplicationMenu):
