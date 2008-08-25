@@ -202,15 +202,12 @@ def calculate_replication_set(cur, seeds):
     return tables, sequences
 
 
-def discover_unreplicated_set(cur):
+def discover_unreplicated(cur):
     """Inspect the database for tables and sequences in the public schema
     that are not in a replication set.
     
     :returns: (unreplicated_tables_set, unreplicated_sequences_set)
     """
-    cur.execute("SHOW session_authorization")
-    name = cur.fetchone()[0]
-    log.info("Connected as %s" % name)
     all_tables = all_tables_in_schema(cur, 'public')
     all_sequences = all_sequences_in_schema(cur, 'public')
 
@@ -248,7 +245,7 @@ def validate_replication(cur):
     be due to policies we have made (eg. a table allowed in just one
     replication set).
     """
-    unrepl_tables, unrepl_sequences = discover_unreplicated_set(cur)
+    unrepl_tables, unrepl_sequences = discover_unreplicated(cur)
     if unrepl_tables:
         raise ReplicationConfigError(
             "Unreplicated tables: %s" % repr(unrepl_tables))
