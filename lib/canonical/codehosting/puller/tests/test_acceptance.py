@@ -7,7 +7,6 @@ __all__ = []
 
 
 import os
-import shutil
 from subprocess import PIPE, Popen
 import sys
 import unittest
@@ -15,8 +14,10 @@ from urlparse import urlparse
 
 import transaction
 
-from bzrlib.branch import Branch
+from bzrlib.branch import Branch, BzrBranchFormat7
+from bzrlib.bzrdir import format_registry
 from bzrlib.tests import HttpServer
+from bzrlib.upgrade import upgrade
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -122,23 +123,28 @@ class TestBranchPuller(PullerBranchTestCase):
 
     def test_reMirrorAHostedBranch(self):
         # When the format of a branch changes, we completely remirror it.
+        # First we push up and mirror the branch in one format.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
         pack_tree = self.make_branch_and_tree('pack', format='pack-0.92')
         self.pushToBranch(db_branch, pack_tree)
         db_branch.requestMirror()
         transaction.commit()
-        self.runPuller('upload')
-
-        shutil.rmtree(self.getHostedPath(db_branch))
-        one6_tree = self.make_branch_and_tree('1.6', format='1.6')
-        self.pushToBranch(db_branch, one6_tree)
-        transaction.begin()
-        db_branch.requestMirror()
-        transaction.commit()
-
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(db_branch), db_branch)
+        # Then we upgrade the to a different format and ask for it to be
+        # mirrored again.
+        upgrade(self.getHostedPath(db_branch), format_registry.get('1.6'))
+        transaction.begin()
+        db_branch.requestMirror()
+        transaction.commit()
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
+        # In addition, we check that the format of the branch in the mirrored
+        # area is what we expect.
+        mirrored_branch = Branch.open(self.getMirroredPath(db_branch))
+        self.assertIsInstance(mirrored_branch._format, BzrBranchFormat7)
 
     def test_mirrorAHostedLoomBranch(self):
         """Run the puller over a branch with looms enabled."""
