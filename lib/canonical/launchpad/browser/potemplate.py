@@ -218,7 +218,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
         """
         # This inline import is needed to workaround a circular import problem
         # because canonical.launchpad.browser.pofile imports
-        # canonical.launchpad.browser.potemplate.POTemplateSOP
+        # canonical.launchpad.browser.potemplate.
         from canonical.launchpad.browser.pofile import POFileView
 
         languages = self.translatable_languages
