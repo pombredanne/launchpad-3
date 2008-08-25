@@ -23,13 +23,16 @@ from zope.interface import Interface, Attribute
 from CVS.protocol import CVSRoot, CvsRootError
 
 from canonical.launchpad.fields import (
-    ContentNameField, PublicPersonChoice, URIField)
+    ContentNameField, PublicPersonChoice, Title, URIField)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
+
 from canonical.launchpad.interfaces.validation import validate_url
 
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -37,6 +40,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
 
@@ -185,19 +189,24 @@ def validate_release_glob(value):
 class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                      ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
-    export_as_webservice_entry()
+    export_as_webservice_entry('project_series')
 
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
     # instead of using object.id.
     id = Int(title=_('ID'))
+
     product = exported(
         Choice(title=_('Project'), required=True, vocabulary='Product'),
         exported_as='project')
-    status = Choice(
-        title=_('Status'), required=True, vocabulary=DistroSeriesStatus,
-        default=DistroSeriesStatus.DEVELOPMENT)
+
+    status = exported(
+        Choice(
+            title=_('Status'), required=True, vocabulary=DistroSeriesStatus,
+            default=DistroSeriesStatus.DEVELOPMENT))
+
     parent = Attribute('The structural parent of this series - the product')
+
     name = exported(
         ProductSeriesNameField(
             title=_('Name'),
@@ -205,59 +214,108 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                 "The name of the series is a short, unique name "
                 "that identifies it, being used in URLs. It must be all "
                 "lowercase, with no special characters. For example, '2.0' "
-                "or 'trunk'."), constraint=name_validator))
-    datecreated = Datetime(title=_('Date Registered'), required=True,
-        readonly=True)
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_('Project owner, either a valid Person or Team'))
-    driver = PublicPersonChoice(
-        title=_("Driver"),
-        description=_(
-            "The person or team responsible for decisions about features "
-            "and bugs that will be targeted to this series. If you don't "
-            "nominate someone here, then the owner of this series will "
-            "automatically have those permissions."),
-        required=False, vocabulary='ValidPersonOrTeam')
-    title = Attribute('Title')
-    displayname = Attribute(
-        'Display name, in this case we have removed the underlying '
-        'database field, and this attribute just returns the name.')
-    summary = Text(title=_("Summary"),
-        description=_('A single paragraph introduction or overview '
-        'of this series. For example: "The 2.0 series of Apache represents '
-        'the current stable series, and is recommended for all new '
-        'deployments".'), required=True)
+                "or 'trunk'."),
+            constraint=name_validator))
 
-    releases = Attribute("An iterator over the releases in this "
-        "Series, sorted with latest release first.")
+    datecreated = exported(
+        Datetime(title=_('Date Registered'),
+                 required=True,
+                 readonly=True),
+        exported_as='date_created')
+
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'), required=True, vocabulary='ValidOwner',
+            description=_('Project owner, either a valid Person or Team')))
+
+    driver = exported(
+        PublicPersonChoice(
+            title=_("Driver"),
+            description=_(
+                "The person or team responsible for decisions about features "
+                "and bugs that will be targeted to this series. If you don't "
+                "nominate someone here, then the owner of this series will "
+                "automatically have those permissions."),
+            required=False, vocabulary='ValidPersonOrTeam'))
+
+    title = exported(
+        Title(
+            title=_('Title'),
+            description=_("The product series title.  "
+                          "Should be just a few words.")))
+
+    displayname = exported(
+        TextLine(
+            title=_('Display Name'),
+            description=_('Display name, in this case we have removed the '
+                          'underlying database field, and this attribute '
+                          'just returns the name.')),
+        exported_as='display_name')
+
+    summary = exported(
+        Text(title=_("Summary"),
+             description=_('A single paragraph introduction or overview '
+                           'of this series. For example: "The 2.0 series '
+                           'of Apache represents the current stable series, '
+                           'and is recommended for all new deployments".'),
+             required=True))
+
+    releases = exported(
+        CollectionField(
+            title=_("An iterator over the releases in this "
+                    "Series, sorted with latest release first."),
+            readonly=True,
+            value_type=Reference(schema=IProductRelease)))
 
     release_files = Attribute("An iterator over the release files in this "
         "Series, sorted with latest release first.")
 
     packagings = Attribute("An iterator over the Packaging entries "
         "for this product series.")
+
     specifications = Attribute("The specifications targeted to this "
         "product series.")
+
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
 
-    milestones = Attribute(_(
-        "The visible milestones associated with this productseries, "
-        "ordered by date expected."))
-    all_milestones = Attribute(_(
-        "All milestones associated with this productseries, ordered by "
-        "date expected."))
+    milestones = exported(
+        CollectionField(
+            title=_("The visible milestones associated with this "
+                    "productseries, ordered by date expected."),
+            readonly=True,
+            value_type=Reference(schema=Interface))) # Specified later.
 
-    drivers = Attribute(
-        'A list of the people or teams who are drivers for this series. '
-        'This list is made up of any drivers or owners from this '
-        'ProductSeries, the Product and if it exists, the relevant '
-        'Project.')
-    bug_supervisor = Attribute(
-        'Currently just a reference to the Product bug supervisor.')
-    security_contact = Attribute(
-        'Currently just a reference to the Product security contact.')
+    all_milestones = exported(
+        CollectionField(
+            title=_("All milestones associated with this productseries, "
+                    "ordered by date expected."),
+            readonly=True,
+            value_type=Reference(schema=Interface))) # Specified later.
+
+    drivers = exported(
+        CollectionField(
+            title=_(
+                'A list of the people or teams who are drivers for this '
+                'series. This list is made up of any drivers or owners '
+                'from this ProductSeries, the Product and if it exists, '
+                'the relevant Project.'),
+            readonly=True,
+            value_type=Reference(schema=IPerson)))
+
+    bug_supervisors = exported(
+        CollectionField(
+            title=_('Currently just a reference to the Product bug '
+                    'supervisor.'),
+            readonly=True,
+            value_type=Reference(schema=IPerson)))
+
+    security_contact = exported(
+        PublicPersonChoice(
+            title=_('Security Contact'),
+            description=_('Currently just a reference to the Product '
+                          'security contact.'),
+            required=False, vocabulary='ValidPersonOrTeam'))
 
     # XXX: jamesh 2006-09-05:
     # While it would be more sensible to call this ProductSeries.branch,
@@ -393,6 +451,10 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
 
+# We are forced to define this now to avoid circular import problems.
+from canonical.launchpad.interfaces.milestone import IMilestone
+IProductSeries['milestones'].value_type.schema = IMilestone
+IProductSeries['all_milestones'].value_type.schema = IMilestone
 
 class IProductSeriesSourceAdmin(Interface):
     """Administrative interface to approve syncing on a Product Series
