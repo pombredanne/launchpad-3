@@ -180,13 +180,6 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.ISprintSet"
-    factory="canonical.launchpad.browser.SprintSetSOP"
-    permission="zope.Public"
-    />
-
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprintSet"
     name="+index" />

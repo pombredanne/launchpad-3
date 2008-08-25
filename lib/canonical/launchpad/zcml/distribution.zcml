@@ -118,13 +118,6 @@
     classes="DistributionNavigation"
     />
 
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IDistribution"
-    factory="canonical.launchpad.browser.DistributionSOP"
-    permission="zope.Public"
-    />
-
   <browser:pages
     for="canonical.launchpad.interfaces.IDistribution"
     class="canonical.launchpad.browser.BugTargetBugListingView"
@@ -496,13 +489,6 @@
     provides="canonical.launchpad.interfaces.IDistributionSet">
     <allow interface="canonical.launchpad.interfaces.IDistributionSet" />
   </securedutility>
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IDistributionSet"
-    factory="canonical.launchpad.browser.DistributionSetSOP"
-    permission="zope.Public"
-    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSet"

@@ -17,12 +17,6 @@
         for="canonical.launchpad.interfaces.IBranchSubscription"
         name="+index" />
 
-  <adapter
-    for="canonical.launchpad.interfaces.IBranchSubscription"
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    factory="canonical.launchpad.browser.BranchSubscriptionSOP"
-    />
-
   <browser:page
     name="+index"
     for="canonical.launchpad.interfaces.IBranchSubscription"

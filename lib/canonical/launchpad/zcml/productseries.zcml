@@ -61,13 +61,6 @@
 	/>
 
     <adapter
-        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-        for="canonical.launchpad.interfaces.IProductSeries"
-        factory="canonical.launchpad.browser.ProductSeriesSOP"
-        permission="zope.Public"
-        />
-
-    <adapter
         provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
         for="canonical.launchpad.interfaces.IProductSeries"
         factory="canonical.launchpad.components.productseries.productseries_to_product"

@@ -53,12 +53,6 @@
   </securedutility>
 
   <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IDistroSeries"
-    factory="canonical.launchpad.browser.DistroSeriesSOP"
-    permission="zope.Public"
-    />
-  <adapter
     for="canonical.launchpad.interfaces.IDistroSeries"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
     factory="canonical.launchpad.components.answertracker.series_to_questiontarget"

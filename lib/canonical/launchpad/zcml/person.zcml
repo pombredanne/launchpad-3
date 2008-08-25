@@ -14,13 +14,6 @@
     />
 
   <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IPerson"
-    factory="canonical.launchpad.browser.PersonSOP"
-    permission="zope.Public"
-    />
-
-  <adapter
     provides="canonical.lazr.interfaces.IObjectPrivacy"
     for="canonical.launchpad.interfaces.ITeam"
     factory="canonical.launchpad.browser.TeamPrivacyAdapter"
@@ -868,13 +861,6 @@
     <allow
       interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData" />
   </securedutility>
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IPersonSet"
-    factory="canonical.launchpad.browser.PersonSetSOP"
-    permission="zope.Public"
-    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPersonSet"

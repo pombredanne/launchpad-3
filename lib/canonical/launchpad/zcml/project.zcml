@@ -37,13 +37,6 @@
         classes="ProjectNavigation"
         />
 
-    <adapter
-        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-        for="canonical.launchpad.interfaces.IProject"
-        factory="canonical.launchpad.browser.ProjectSOP"
-        permission="zope.Public"
-        />
-
     <browser:menus
         module="canonical.launchpad.browser.project"
         classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu

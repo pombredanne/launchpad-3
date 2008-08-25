@@ -46,7 +46,6 @@ from canonical.launchpad.interfaces import (
     BranchType,
     IBranchMergeProposal,
     IMessageSet,
-    IStructuralObjectPresentation,
     WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.branchsubscription import (
     CodeReviewNotificationLevel)

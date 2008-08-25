@@ -49,13 +49,6 @@
     <allow interface="canonical.launchpad.interfaces.IMentoringOfferSet" />
   </securedutility>
 
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IMentoringOfferSet"
-    factory="canonical.launchpad.browser.MentoringOfferSetSOP"
-    permission="zope.Public"
-    />
-
   <browser:url
     for="canonical.launchpad.interfaces.IMentoringOfferSet"
     path_expression="string:+mentoring"

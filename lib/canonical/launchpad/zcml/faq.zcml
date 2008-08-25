@@ -70,11 +70,6 @@
     permission="launchpad.Edit"
     template="../templates/faq-edit.pt"
     />
-  <adapter
-    for="canonical.launchpad.interfaces.IFAQ"
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    factory="canonical.launchpad.browser.FAQStructuralObjectPresentation"
-    />
   <browser:menus
     module="canonical.launchpad.browser"
     classes="FAQContextMenu"

@@ -53,13 +53,6 @@
     classes="SourcePackageNavigation"
     />
 
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.ISourcePackage"
-    factory="canonical.launchpad.browser.SourcePackageSOP"
-    permission="zope.Public"
-    />
-
   <browser:url
     for="canonical.launchpad.interfaces.ISourcePackage"
     path_expression="string:+source/${name}"
