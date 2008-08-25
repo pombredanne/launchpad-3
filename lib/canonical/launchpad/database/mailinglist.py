@@ -39,7 +39,8 @@ from canonical.launchpad.interfaces.mailinglist import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     IHeldMessageDetails, IMailingList, IMailingListSet,
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
-    MailingListStatus, PURGE_STATES, PostedMessageStatus, UnsafeToPurge)
+    MailingListStatus, PostedMessageStatus, UnsafeToPurge)
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -493,7 +494,10 @@ class MailingList(SQLBase):
         # mailing list we really want an UnsafeToPurge exception instead of an
         # AssertionError.  Fitting that in to transitionToStatus()'s logic is
         # a bit tortured, so just do it here.
-        if self.status in PURGE_STATES:
+        if self.status in (MailingListStatus.REGISTERED,
+                           MailingListStatus.DECLINED,
+                           MailingListStatus.FAILED,
+                           MailingListStatus.INACTIVE):
             self.status = MailingListStatus.PURGED
         else:
             assert self.status != MailingListStatus.PURGED, 'Already purged'
@@ -538,7 +542,7 @@ class MailingListSet:
             assert existing_list.team == team, 'Team mismatch'
             # It's in the PURGED state, so just tweak the existing record.
             existing_list.registrant = registrant
-            existing_list.date_registered = UTC_NOW
+            existing_list.date_registered=UTC_NOW
             existing_list.reviewer = None
             existing_list.date_reviewed = None
             existing_list.date_activated = None

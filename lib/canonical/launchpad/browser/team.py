@@ -29,7 +29,6 @@ from canonical.widgets import (
     HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
@@ -37,20 +36,14 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, UnexpectedFormData)
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.logintoken import (
-    ILoginTokenSet, LoginTokenType)
-from canonical.launchpad.interfaces.mailinglist import (
-    IMailingList, IMailingListSet, MailingListStatus, PURGE_STATES,
-    PostedMessageStatus)
-from canonical.launchpad.interfaces.person import (
-    IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
-    PersonVisibility, TeamContactMethod, TeamSubscriptionPolicy)
-from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
+from canonical.launchpad.browser.branding import BrandingChangeView
+from canonical.launchpad.interfaces import (
+    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingList,
+    IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
+    ITeamCreation, LoginTokenType, MailingListStatus, PersonVisibility,
+    PostedMessageStatus, TeamContactMethod, TeamMembershipStatus,
+    TeamSubscriptionPolicy, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy
 
@@ -590,11 +583,10 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """Can a mailing list be requested for this team?
 
         It can only be requested if there's no mailing list associated with
-        this team, or the mailing list has been purged.
+        this team.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        return (mailing_list is None or
-                mailing_list.status == MailingListStatus.PURGED)
+        return mailing_list is None
 
     @property
     def list_can_be_deactivated(self):
@@ -611,22 +603,6 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         The list must exist and be in the INACTIVE state.
         """
         return self.getListInState(MailingListStatus.INACTIVE) is not None
-
-    @property
-    def list_can_be_purged(self):
-        """Is this team's list in a state where it can be purged?
-
-        The list must exist and be in one of the REGISTERED, DECLINED, FAILED,
-        or INACTIVE states.  Further, the user doing the purging, must be
-        a Launchpad administrator or mailing list expert.
-        """
-        requester = IPerson(self.request.principal, None)
-        celebrities = getUtility(ILaunchpadCelebrities)
-        if (requester is None or
-            (not requester.inTeam(celebrities.admin) and
-             not requester.inTeam(celebrities.mailing_list_experts))):
-            return False
-        return self.getListInState(*PURGE_STATES) is not None
 
 
 class TeamMailingListModerationView(MailingListTeamBaseView):
