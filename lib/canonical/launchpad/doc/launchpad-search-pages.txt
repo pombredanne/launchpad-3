@@ -99,6 +99,31 @@ more bugs than questions.
     >>> print search_view.question
     None
 
+Private bugs are not matched if the user does not have permission to
+see them. For example, Sample Person can see a private bug that he
+created because he is the owner.
+
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> factory = LaunchpadObjectFactory()
+    >>> private_bug = factory.makeBug(owner=sample_person, private=True)
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': private_bug.id})
+    >>> search_view.bug.private
+    True
+
+But anonymous and unprivileged users cannot see the private bug.
+
+    >>> login(ANONYMOUS)
+    >>> search_view = getSearchView(
+    ...     form={'field.text': private_bug.id})
+    >>> print search_view.bug
+    None
+
 The text and punctuation in the search text is ignored, and only the
 first group of numbers is matched. For example a user searches for three
 questions by number ('Question #15, #7, and 5.'). Only the first number
