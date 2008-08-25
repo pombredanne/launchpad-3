@@ -14,7 +14,6 @@ __all__ = [
     'ProductSeriesOverviewMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
-    'ProductSeriesShortLink',
     'ProductSeriesSourceListView',
     'ProductSeriesSourceSetView',
     'ProductSeriesSpecificationsMenu',
