@@ -314,7 +314,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         When the file reference is found, its corresponding LibraryFileAlias
         and Archive are returned.
 
-        Raises NotFoundError if the wanted file could not be found.
+        :param filename: string containing the exact name of the wanted file.
+
+        :return: a tuple containing a `ILibraryFileAlias` corresponding to
+            the matching file and an `Archive` where it was published.
+
+        :raise: `NotFoundError` when the wanted file could not be found.
         """
         if (self.policy.archive.purpose == ArchivePurpose.PPA and
             filename.endswith('.orig.tar.gz')):

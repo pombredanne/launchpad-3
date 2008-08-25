@@ -14,8 +14,8 @@ from canonical.archiveuploader.tests import (
 from canonical.launchpad.database import (
     ComponentSelection, LibraryFileAlias)
 from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.interfaces import (
-    IComponentSet, IDistributionSet)
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setGlobs)
 from canonical.testing import LaunchpadZopelessLayer
