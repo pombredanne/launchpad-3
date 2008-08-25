@@ -2,3 +2,19 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+doc/request_country.txt
+    is failing locally with a SystemError from GeoIP
+
+File "lib/launchpadlib/docs/people.txt", line 159, in people.txt
+Failed example:
+    len(launchpad.people.find(text='a')[1:3])
+Exception raised:
+    Traceback (most recent call last):
+      File "/home/salgado/devel/launchpad/i-am-fixing-a-four-digit-bug/utilities/../lib/zope/testing/doctest.py", line 1260, in __run
+        compileflags, 1) in test.globs
+      File "<doctest people.txt[39]>", line 1, in ?
+        len(launchpad.people.find(text='a')[1:3])
+    TypeError: unhashable type
+
+

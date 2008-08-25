@@ -38,7 +38,7 @@ the request.
     7
     >>> widget.center_lat
     -23...
-    >>> widget.center_long
+    >>> widget.center_lng
     -47...
 
 Since salgado's location hasn't been specified yet, there'll be no
@@ -57,7 +57,7 @@ request doesn't come from salgado's browser), so we won't try to do so.
     2
     >>> widget.center_lat
     15.0
-    >>> widget.center_long
+    >>> widget.center_lng
     0.0
     >>> widget.show_marker
     0
@@ -75,7 +75,7 @@ location.
     9
     >>> widget.center_lat
     52...
-    >>> widget.center_long
+    >>> widget.center_lng
     0.29...
     >>> widget.show_marker
     1
