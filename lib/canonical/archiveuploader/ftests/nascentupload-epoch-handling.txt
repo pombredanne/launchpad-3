@@ -10,7 +10,6 @@ helper functions added in the globals by test_nascentupload_documentation.py.
 Ubuntu/hoary in sampledata is already ready receive upload in RELEASE
 pocket.
 
-    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
 
@@ -67,8 +66,12 @@ Upload 'epoched' bar version:
     ...     'suite/bar_1.0-1_epoched/bar_1.0-1_source.changes')
     >>> bar_src_upload.process()
     >>> print bar_src_upload.rejection_message
-    Uploaded file bar_1.0-1.diff.gz does not match extant file in Primary Archive for Ubuntu Linux.
-    Files specified in DSC are broken or missing, skipping package unpack verification.
+    File bar_1.0-1.diff.gz already exists in Primary Archive for Ubuntu
+        Linux, but uploaded version has different contents. See more
+        information about this error in
+        https://help.launchpad.net/PPA#Possible%20upload%20errors.
+    Files specified in DSC are broken or missing, skipping package
+        unpack verification.
 
 We rely on uploadprocessor to abort the transaction at this point not
 storing the respective SourcePackageRelease.

@@ -167,7 +167,7 @@ class NascentUpload:
                     ]
                 if self.is_ppa:
                     messages.append(
-                    "See https://help.launchpad.net/PPAQuickStart/ for more "
+                    "See https://help.launchpad.net/PPA for more "
                     "information.")
                 self.reject(" ".join(messages))
 

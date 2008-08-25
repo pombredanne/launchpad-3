@@ -360,8 +360,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 # bug # 38636 and friends.
                 if sub_dsc_file.digest != library_file.content.md5:
                     yield UploadError(
-                        "Uploaded file %s does not match extant "
-                        "file in %s." %
+                        "File %s already exists in %s, but uploaded version "
+                        "has different contents. See more information about "
+                        "this error in https://help.launchpad.net/PPA"
+                        "#Possible%%20upload%%20errors." %
                         (sub_dsc_file.filename, file_archive.title))
                     files_missing = True
                     continue

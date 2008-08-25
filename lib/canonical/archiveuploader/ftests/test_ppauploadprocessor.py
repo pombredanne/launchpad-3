@@ -1068,8 +1068,9 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
-            "Uploaded file bar_1.0.orig.tar.gz does not match extant file "
-                 "in Primary Archive for Ubuntu Linux.",
+            "File bar_1.0.orig.tar.gz already exists in Primary Archive "
+                 "for Ubuntu Linux, but uploaded version has different "
+                 "contents.",
             "Files specified in DSC are broken or missing, skipping package "
                  "unpack verification."]
         self.assertEmail(contents)
@@ -1081,8 +1082,9 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
             "Subject: bar_1.0-10_source.changes rejected",
-            "Uploaded file bar_1.0.orig.tar.gz does not match extant file "
-                 "in Primary Archive for Ubuntu Linux.",
+            "File bar_1.0.orig.tar.gz already exists in Primary Archive "
+                 "for Ubuntu Linux, but uploaded version has different "
+                 "contents.",
             "Files specified in DSC are broken or missing, skipping package "
                  "unpack verification."]
         self.assertEmail(contents)
