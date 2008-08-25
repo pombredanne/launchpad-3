@@ -469,7 +469,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
 
         # We end up issuing the published_source query twice this way,
         # because we need the original available source vocabulary to
-        # validade the the submitted deletion request. Once the deletion
+        # validate the the submitted deletion request. Once the deletion
         # request is validated and performed we call 'flush_database_caches'
         # and rebuild the 'selected_sources' widget.
         # self.refreshSelectedSourcesWidget()
