@@ -65,12 +65,7 @@ Bugs have relationships to other bugs, like "duplicate_of".
   >>> duplicates_of_five[0]['id']
   6
 
-  >>> from urlparse import urlsplit
-  >>> def get_path(url):
-  ...     scheme, netloc, path, query, fragment = urlsplit(url)
-  ...     return path
-
-  >>> bug_six_url = get_path(duplicates_of_five[0]['self_link'])
+  >>> bug_six_url = duplicates_of_five[0]['self_link']
   >>> bug_six = webservice.get(bug_six_url).jsonBody()
   >>> bug_six['duplicate_of_link']
   u'http://.../bugs/5'
@@ -155,11 +150,10 @@ URLs are based on their position with respect to the
 bug. /firefox/+bug/5/comments/0 is the first message for bug 5, and it's
 different from /firefox/+bug/1/comments/0.
 
-  >>> message_path = get_path(messages[0]['self_link'])
-  >>> message_path
-  u'firefox/+bug/5/comments/0'
+  >>> messages[0]['self_link']
+  u'http://.../firefox/+bug/5/comments/0'
 
-  >>> message = webservice.get(message_path).jsonBody()
+  >>> message = webservice.get(messages[0]['self_link']).jsonBody()
   >>> message == messages[0]
   True
 
@@ -175,7 +169,7 @@ relation to some bug.
 Each bug may be associated with one or more bug tasks. Much of the
 data in a bug task is derived from the bug.
 
-  >>> bug_one_bugtasks_url = get_path(bug_one['bug_tasks_collection_link'])
+  >>> bug_one_bugtasks_url = bug_one['bug_tasks_collection_link']
   >>> bug_one_bugtasks = sorted(webservice.get(
   ...     bug_one_bugtasks_url).jsonBody()['entries'])
   >>> len(bug_one_bugtasks)
@@ -209,7 +203,7 @@ data in a bug task is derived from the bug.
    (u'title',
     u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"')]
 
-  >>> bugtask_path = get_path(bug_one_bugtasks[0]['self_link'])
+  >>> bugtask_path = bug_one_bugtasks[0]['self_link']
   >>> bugtask = webservice.get(bugtask_path).jsonBody()
   >>> bugtask == bug_one_bugtasks[0]
   True
@@ -265,8 +259,7 @@ pillar are authorised to edit the importance.
 
 We can get the the collection of subscriptions to a bug.
 
-  >>> bug_one_subscriptions_url = urlsplit(
-  ...     bug_one['subscriptions_collection_link'])[2]
+  >>> bug_one_subscriptions_url = bug_one['subscriptions_collection_link']
   >>> subscriptions = webservice.get(bug_one_subscriptions_url).jsonBody()
   >>> subscription_entries = sorted(
   ...     subscriptions['entries'], key=itemgetter('self_link'))
@@ -321,10 +314,8 @@ be optionally associated with one of the bugtasks in a bug, in which
 case aspects of the bugtask (like status) are slaved to the remote bug
 report described by the bugwatch.
 
-  >>> bug_one_bug_watches_url = get_path(
-  ...     bug_one['bug_watches_collection_link'])
   >>> bug_one_bug_watches = sorted(webservice.get(
-  ...     bug_one_bug_watches_url).jsonBody()['entries'])
+  ...     bug_one['bug_watches_collection_link']).jsonBody()['entries'])
   >>> len(bug_one_bug_watches)
   4
 
@@ -352,8 +343,7 @@ report described by the bugwatch.
    (u'title', u'The Mozilla.org Bug Tracker #2000'),
    (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000')]
 
-  >>> bug_watch_path = get_path(bug_watch_2000['self_link'])
-  >>> bug_watch = webservice.get(bug_watch_path).jsonBody()
+  >>> bug_watch = webservice.get(bug_watch_2000['self_link']).jsonBody()
   >>> bug_watch == bug_watch_2000
   True
 
@@ -370,9 +360,9 @@ We can modify the remote bug.
   >>> from simplejson import dumps
   >>> patch = {u'remote_bug': u'1234'}
   >>> response = webservice.patch(
-  ...     bug_watch_path, 'application/json', dumps(patch))
+  ...     bug_watch_2000['self_link'], 'application/json', dumps(patch))
 
-  >>> bug_watch = webservice.get(bug_watch_path).jsonBody()
+  >>> bug_watch = webservice.get(bug_watch_2000['self_link']).jsonBody()
   >>> bug_watch['remote_bug']
   u'1234'
 
@@ -380,7 +370,7 @@ But we can't change other things, like the URL.
 
   >>> patch = {u'url': u'http://www.example.com/'}
   >>> response = webservice.patch(
-  ...     bug_watch_path, 'application/json', dumps(patch))
+  ...     bug_watch_2000['self_link'], 'application/json', dumps(patch))
   >>> print response.getOutput()
   HTTP/1.1 400 Bad Request
   Content-Length: 47
@@ -393,8 +383,8 @@ associated with a bug.
 
   >>> response = webservice.named_post(
   ...     bug_one['self_link'], 'addWatch',
-  ...     bug_tracker=('http://api.launchpad.dev'
-  ...                  'bugs/bugtrackers/mozilla.org'),
+  ...     bug_tracker=webservice.getAbsoluteUrl(
+  ...                      'bugs/bugtrackers/mozilla.org'),
   ...     remote_bug='9876')
   >>> print response.getOutput()
   HTTP/1.1 201 Created
@@ -404,7 +394,7 @@ associated with a bug.
 
 Following the redirect, we can see the new bug watch:
 
-  >>> new_bug_watch_path = get_path(response.getHeader('Location'))
+  >>> new_bug_watch_path = response.getHeader('Location')
   >>> new_bug_watch = webservice.get(new_bug_watch_path).jsonBody()
   >>> show(new_bug_watch)
   [(u'bug_link', u'http://.../bugs/1'),
@@ -429,8 +419,7 @@ Following the redirect, we can see the new bug watch:
 
 == Bug Trackers ==
 
-  >>> bug_tracker_url = get_path(bug_watch['bug_tracker_link'])
-  >>> bug_tracker = webservice.get(bug_tracker_url).jsonBody()
+  >>> bug_tracker = webservice.get(bug_watch['bug_tracker_link']).jsonBody()
 
   >>> show(bug_tracker)
   [(u'base_url', u'https://bugzilla.mozilla.org/'),
@@ -449,8 +438,6 @@ Following the redirect, we can see the new bug watch:
    (u'watches_collection_link',
     u'http://.../bugs/bugtrackers/mozilla.org/watches')]
 
-  >>> bug_tracker_path = get_path(bug_tracker['self_link'])
-
 We can change various aspects of bug trackers.
 
   >>> patch = {
@@ -463,7 +450,7 @@ We can change various aspects of bug trackers.
   ...     u'contact_details': u'bob@example.com',
   ...     }
   >>> response = webservice.patch(
-  ...     bug_tracker_path, 'application/json', dumps(patch))
+  ...     bug_tracker['self_link'], 'application/json', dumps(patch))
   >>> print response.getOutput()
   HTTP/1.1 301 Moved Permanently
   Content-Length: 0
@@ -474,7 +461,7 @@ We can change various aspects of bug trackers.
 Note the 301 response. We changed the name, so the API URL at which
 the bug tracker can be found has changed.
 
-  >>> print webservice.get(bug_tracker_path).getOutput()
+  >>> print webservice.get(bug_tracker['self_link']).getOutput()
   HTTP/1.1 404 Not Found
   Content-Length: ...
   Content-Type: text/plain
@@ -490,7 +477,7 @@ the bug tracker can be found has changed.
 Naturally, if we follow the Location: header then we'll get the
 renamed bug tracker.
 
-  >>> bug_tracker_path = get_path(response.getHeader('Location'))
+  >>> bug_tracker_path = response.getHeader('Location')
   >>> bug_tracker = webservice.get(bug_tracker_path).jsonBody()
   >>> show(bug_tracker)
   [(u'base_url', u'http://bugs.example.com/'),
