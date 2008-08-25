@@ -3,8 +3,6 @@
 __metaclass__ = type
 
 import httplib
-import os
-import shutil
 import socket
 import sys
 import urllib2
@@ -12,15 +10,14 @@ import urllib2
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
-    BzrError, NotBranchError, ParamikoNotPresent,
-    UnknownFormatError, UnsupportedFormatError)
+    BzrError, NotBranchError, ParamikoNotPresent, UnknownFormatError,
+    UnsupportedFormatError)
 from bzrlib.progress import DummyProgress
 from bzrlib.transport import get_transport
 import bzrlib.ui
 
 from canonical.config import config
 from canonical.codehosting import ProgressUIFactory
-from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.codehosting.transport import get_puller_server
 from canonical.launchpad.interfaces import BranchType
@@ -402,11 +399,11 @@ class PullerWorker:
 
     def _createDestBranch(self, source_branch):
         """Create the branch to pull to, and copy the source's contents."""
-        if os.path.exists(self.dest):
-            shutil.rmtree(self.dest)
-        ensure_base(get_transport(self.dest))
+        dest_transport = get_transport(self.dest)
+        if dest_transport.has('.'):
+            dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
-        bzrdir.clone(self.dest, preserve_stacking=True)
+        bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
         return Branch.open(self.dest)
 
     def _record_oops(self, message=None):
