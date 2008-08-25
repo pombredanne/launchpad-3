@@ -481,13 +481,6 @@ these URLs in Apache.
   />
 
 
-<adapter
-  provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-  for="zope.interface.Interface"
-  factory="canonical.launchpad.browser.launchpad.DefaultStructuralObjectPresentation"
-  permission="zope.Public"
-  />
-
 <browser:page
   for="*"
   name="+applicationbuttons"

@@ -894,21 +894,6 @@ class StructuralObjectPresentation(StructuralHeaderPresentation):
         raise NotImplementedError()
 
 
-class DefaultStructuralObjectPresentation(StructuralObjectPresentation):
-
-    def getMainHeading(self):
-        if hasattr(self.context, 'title'):
-            return self.context.title
-        else:
-            return 'no title'
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
-
-
 class Button:
 
     def __init__(self, **kw):
