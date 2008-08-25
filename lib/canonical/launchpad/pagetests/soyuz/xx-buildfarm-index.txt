@@ -15,10 +15,10 @@ shown in a separate column and all in upper case letters.
     Launchpad build machines
     PPA build machines
     386  0 builds waiting in queue
-    The frog builder   AUTO    Disabled
+    frog   AUTO    Disabled
     Official distribution build machines
     386  1 builds waiting in queue
-    Bob The Builder    AUTO    Disabled
+    bob    AUTO    Disabled
     Generated at ...
 
 As we can see, this page also presents the number of builds waiting
