@@ -8,12 +8,8 @@ __all__ = [
     'LaunchpadStatisticSetFacets',
     ]
 
-from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchpadStatisticSet
-from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    LaunchpadView, LaunchpadFormView, Link,
-    StandardLaunchpadFacets)
+from canonical.launchpad.webapp import StandardLaunchpadFacets
 
 
 class LaunchpadStatisticSetFacets(StandardLaunchpadFacets):

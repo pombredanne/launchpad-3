@@ -14,30 +14,21 @@ __all__ = [
     'MentoringOfferRetractView',
     ]
 
-from zope.component import getUtility
-
-from canonical.launchpad.webapp.batching import BatchNavigator
-
 from canonical.launchpad import _
-
 from canonical.launchpad.interfaces import (
-    IBug,
     IBugTask,
     IDistribution,
     IMentoringOffer,
     IMentoringOfferSet,
-    ILaunchBag,
     IPerson,
     IProduct,
     IProject,
     ISpecification,
-    ITeam,
     )
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, GetitemNavigation,
-    StandardLaunchpadFacets, ApplicationMenu, enabled_with_permission,
+    canonical_url, Link,
+    StandardLaunchpadFacets, ApplicationMenu,
     LaunchpadView, LaunchpadFormView, action)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 
