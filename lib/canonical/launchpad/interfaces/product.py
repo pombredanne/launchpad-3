@@ -34,7 +34,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
     ILaunchpadUsage)
-from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.milestone import (
+    IHasMilestoneSearch, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
@@ -115,8 +116,8 @@ class License(DBEnumeratedType):
 
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IMakesAnnouncements, IHasOwner,
+               IHasMentoringOffers, IHasMilestoneSearch, IHasMilestones,
+               IHasMugshot, IMakesAnnouncements, IHasOwner,
                IHasSecurityContact,IHasSprints, IHasTranslationGroup,
                IKarmaContext, ILaunchpadUsage, ISpecificationTarget, IPillar):
     """A Product.

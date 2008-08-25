@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
+from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
 from canonical.launchpad.interfaces.validation import validate_url
@@ -183,7 +184,7 @@ def validate_release_glob(value):
 
 
 class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                     ISpecificationGoal):
+                     ISpecificationGoal, IHasMilestones):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry()
 
@@ -241,13 +242,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "product series.")
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
-
-    milestones = Attribute(_(
-        "The visible milestones associated with this productseries, "
-        "ordered by date expected."))
-    all_milestones = Attribute(_(
-        "All milestones associated with this productseries, ordered by "
-        "date expected."))
 
     drivers = Attribute(
         'A list of the people or teams who are drivers for this series. '

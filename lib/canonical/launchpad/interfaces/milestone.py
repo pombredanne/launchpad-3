@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'IHasMilestoneSearch',
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
@@ -15,8 +16,6 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description
@@ -35,6 +34,11 @@ class MilestoneNameField(ContentNameField):
         return IMilestone
 
     def _getByName(self, name):
+        # IProductSeries and IDistroSeries are imported here to
+        # avoid an import loop.
+        from canonical.launchpad.interfaces.productseries import (
+            IProductSeries)
+        from canonical.launchpad.interfaces.distroseries import IDistroSeries
         if IMilestone.providedBy(self.context):
             milestone = self.context.target.getMilestone(name)
         elif IProductSeries.providedBy(self.context):
@@ -105,8 +109,11 @@ class IMilestone(Interface):
             schema=Interface, # IHasMilestones
             title=_("The product or distribution of this milestone."),
             required=False))
-    series_target = Attribute(
-        "The productseries or distroseries of this milestone.")
+    series_target = exported(
+        Reference(
+            schema=Interface, # IHasMilestones
+            title=_("The productseries or distroseries of this milestone."),
+            required=False))
     displayname = Attribute("A displayname for this milestone, constructed "
         "from the milestone name.")
     title = exported(
@@ -160,9 +167,14 @@ class IHasMilestones(Interface):
                     "date expected."),
             value_type=Reference(schema=IMilestone)))
 
+
+class IHasMilestoneSearch(Interface):
+    """ An interface for classes providing getMilestone(name)."""
+
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
 
 
 # Fix cyclic references.
 IMilestone['target'].schema = IHasMilestones
+IMilestone['series_target'].schema = IHasMilestones
