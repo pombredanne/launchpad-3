@@ -252,13 +252,6 @@ Both PUT and PATCH requests work this way.
   HTTP/1.1 412 Precondition Failed
   ...
 
-If you specify '*' for If-Match, your writes will always succeed.
-
-  >>> print modify_person('salgado', salgado, 'PUT',
-  ...                     {'If-Match' : '*'})
-  HTTP/1.1 200 Ok
-  ...
-
 
 === What you can't do ===
 

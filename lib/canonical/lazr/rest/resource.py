@@ -160,7 +160,7 @@ class HTTPResource:
         existing_etag = self.getETag(media_type)
         if existing_etag is not None:
             self.request.response.setHeader('ETag', existing_etag)
-            if existing_etag in incoming_etags or '*' in incoming_etags:
+            if existing_etag in incoming_etags:
                 # The client already has this representation.
                 # No need to send it again.
                 self.request.response.setStatus(304) # Not Modified
@@ -185,18 +185,14 @@ class HTTPResource:
         if len(incoming_etags) == 0:
             # This is not a conditional write.
             return media_type
-        if '*' in incoming_etags:
-            # The client wants its write to succeed only if this
-            # resource already exists. We know it exists, so let the
-            # write happen.
-            return media_type
         existing_etag = self.getETag(media_type)
         if existing_etag in incoming_etags:
             # The conditional write can continue.
             return media_type
         # The resource has changed since the client requested it.
-        # Don't let the write go through.
-        self.request.response.setStatus(412) # Precondition Failed
+        # Don't let the write go through. Set response code 412
+        # ("Precondition Failed")
+        self.request.response.setStatus(412)
         return None
 
     def getETag(self, media_type):
@@ -208,7 +204,7 @@ class HTTPResource:
         when it comes to calculating ETags for other representations.
         """
         if media_type == self.WADL_TYPE:
-            return '"%s"' % str(versioninfo.revno)
+            return '"%s"' % versioninfo.revno
         return None
 
     def implementsPOST(self):
@@ -465,7 +461,8 @@ class ReadWriteResource(HTTPResource):
         elif self.request.method in ["PUT", "PATCH"]:
             media_type = self.handleConditionalWrite()
             if media_type is not None:
-                representation = self.request.bodyStream.getCacheStream().read()
+                stream = self.request.bodyStream
+                representation = stream.getCacheStream().read()
                 if self.request.method == "PUT":
                     return self.do_PUT(media_type, representation)
                 else:
@@ -989,7 +986,7 @@ class ServiceRootResource(HTTPResource):
         itself changes. Thus, we can use the revision number itself as
         an ETag.
         """
-        return '"%s"' % (str(versioninfo.revno) + '-' + media_type)
+        return '"%s-%s"' % (versioninfo.revno, media_type)
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""

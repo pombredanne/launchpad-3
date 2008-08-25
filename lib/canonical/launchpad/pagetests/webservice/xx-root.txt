@@ -83,12 +83,3 @@ representation only if *none* of them match:
   ...     headers={'If-None-Match' : '"a-very-old-etag", "another-etag"'})
   >>> conditional_response.getStatus()
   200
-
-If you specify '*' for If-None-Match, you'll never get a new
-representation.
-
-  >>> conditional_response = webservice.get(
-  ...     '/beta/', headers={'If-None-Match' : '*'})
-  >>> conditional_response.getStatus()
-  304
-
