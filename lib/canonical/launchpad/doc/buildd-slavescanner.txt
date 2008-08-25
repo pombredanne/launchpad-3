@@ -645,8 +645,12 @@ The buildlog was compressed and directly transferred to Librarian.
 
     >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> logfile = getUtility(ILibraryFileAliasSet)[logfile_alias]
-    >>> logfile.filename, logfile.mimetype
-    (u'buildlog_ubuntu-warty-i386.foobar_1.0_FULLYBUILT.txt.gz', u'text/plain')
+
+    >>> print logfile.filename
+    buildlog_ubuntu-warty-i386.foobar_1.0_FULLYBUILT.txt.gz
+
+    >>> print logfile.mimetype
+    text/plain
 
 Needed so that the Librarian can serve the new file.
 
@@ -681,6 +685,27 @@ filesystem before decompress.
 Both access methods work as expected, remove the temporary file used here.
 
     >>> os.remove(fname)
+
+The Librarian serves buildlog files with 'gzip' content-encoding and
+'text/plain' content-type. This combination instructs the browser to
+decompress the file and display it inline, which makes it easier for
+users to view it.
+
+    >>> from canonical.launchpad.webapp.url import urlparse
+    >>> parsed_url = urlparse(logfile.http_url)
+    >>> netloc, path = parsed_url[1:3]
+
+    >>> import httplib
+    >>> con = httplib.HTTPConnection(netloc)
+    >>> con.request("HEAD", path)
+    >>> resp = con.getresponse()
+    >>> headers = dict(resp.getheaders())
+
+    >>> print headers['content-encoding']
+    gzip
+
+    >>> print headers['content-type']
+    text/plain
 
 Check the log from the uploader run has made it into the upload directory:
 
