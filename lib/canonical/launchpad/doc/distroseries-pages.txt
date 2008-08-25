@@ -18,6 +18,8 @@ distroseries being tested.
     ...     view = getMultiAdapter((hoary, request), name="+admin")
     ...     view.initialize()
     ...     print '%d errors' % len(view.errors)
+    ...     if len(view.errors) > 0:
+    ...         print "\n".join(str(error) for error in view.errors)
     ...     print 'Name:', distroseries.name
     ...     print 'Version:', distroseries.version
     ...     print 'Changeslist:', distroseries.changeslist
@@ -45,6 +47,7 @@ The distroseries 'changeslist' field only accept valid email addresses.
     >>> form['field.changeslist'] = ''
     >>> administrate_distroseries(hoary, form)
     1 errors
+    ('changeslist', u'E-mail changes to', )
     Name: hoary
     Version: 5.04
     Changeslist: hoary-changes@ubuntu.com
@@ -53,6 +56,7 @@ The distroseries 'changeslist' field only accept valid email addresses.
     >>> form['field.changeslist'] = 'bRoKen_AdDreSs'
     >>> administrate_distroseries(hoary, form)
     1 errors
+    ('changeslist', u'E-mail changes to', Invalid email 'bRoKen_AdDreSs'.)
     Name: hoary
     Version: 5.04
     Changeslist: hoary-changes@ubuntu.com
@@ -96,6 +100,7 @@ A stable distroseries cannot be made unstable again.
     >>> form['field.status'] = 'EXPERIMENTAL'
     >>> administrate_distroseries(hoary, form)
     1 errors
+    ('Invalid value', token 'EXPERIMENTAL' not found in vocabulary)
     Name: hoary
     Version: 5.04
     Changeslist: foo@bar.com
