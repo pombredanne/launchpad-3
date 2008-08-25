@@ -620,7 +620,6 @@ publication.
     Source          Published   Status     Series           Section  Built
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
-    pmount - 0.1-1              Deleted    Hoary            Editors
 
 
 === Copying packages to other PPAs you participate ===
@@ -888,7 +887,6 @@ deleted files will be re-published in his archive.
     pmount - 0.1-1              Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
-    pmount - 0.1-1              Deleted    Hoary            Editors
 
 James is not yet satisfied and to create some fun we will publish
 different version of foo_1.0 in Mark's and Celso's PPAs and a foo_2.0
