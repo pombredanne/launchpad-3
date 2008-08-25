@@ -259,11 +259,6 @@
       template="../templates/product-translations.pt"
       />
     <browser:page
-      name="+portlet-translations"
-      facet="translations"
-      template="../templates/product-portlet-translations.pt"
-      />
-    <browser:page
       name="+portlet-translatables"
       facet="translations"
       template="../templates/product-portlet-translatables.pt"
@@ -624,14 +619,6 @@
     class="canonical.launchpad.browser.ProductAddView"
     permission="launchpad.AnyPerson"
     template="../templates/product-new-guided.pt"
-    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IProduct"
-    name="+shortlink"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.ProductShortLink"
-    attribute="__call__"
     />
 
 </configure>

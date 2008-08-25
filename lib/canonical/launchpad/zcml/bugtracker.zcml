@@ -74,15 +74,6 @@
             />
     </browser:pages>
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugTracker"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.BugTrackerEditView">
-        <browser:page name="+oldedit"
-            template="../templates/bugtracker-edit.pt"
-            />
-    </browser:pages>
-
     <browser:page
       name="+edit"
       for="canonical.launchpad.interfaces.IBugTracker"

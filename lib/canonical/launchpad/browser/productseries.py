@@ -15,7 +15,6 @@ __all__ = [
     'ProductSeriesOverviewMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
-    'ProductSeriesShortLink',
     'ProductSeriesSOP',
     'ProductSeriesSourceListView',
     'ProductSeriesSourceSetView',
@@ -36,8 +35,7 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import (
-    DefaultShortLink, StructuralObjectPresentation)
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
@@ -638,12 +636,6 @@ class ProductSeriesSourceListView(LaunchpadView):
         results = getUtility(ICodeImportSet).getActiveImports(text=self.text)
 
         self.batchnav = BatchNavigator(results, self.request)
-
-
-class ProductSeriesShortLink(DefaultShortLink):
-
-    def getLinkText(self):
-        return self.context.displayname
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):

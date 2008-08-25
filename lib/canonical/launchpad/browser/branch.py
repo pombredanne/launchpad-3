@@ -18,7 +18,6 @@ __all__ = [
     'BranchMirrorStatusView',
     'BranchNavigation',
     'BranchNavigationMenu',
-    'BranchInPersonView',
     'BranchInProductView',
     'BranchView',
     'BranchSubscriptionsView',
@@ -528,15 +527,6 @@ class DecoratedMergeProposal:
     def show_registrant(self):
         """Show the registrant if it was not the branch owner."""
         return self.context.registrant != self.source_branch.owner
-
-
-class BranchInPersonView(BranchView):
-
-    show_person_link = False
-
-    @property
-    def show_product_link(self):
-        return self.context.product is not None
 
 
 class BranchInProductView(BranchView):
