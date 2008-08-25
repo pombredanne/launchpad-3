@@ -2261,13 +2261,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 WHERE
                     sspph.sourcepackagerelease = sourcepackagerelease.id AND
                     sspph.archive = archive.id AND
-                    sspph.status = %(pub_status)s AND
                     %(more_query_clauses)s
                 ORDER BY upload_distroseries, sourcepackagename,
                     upload_archive, dateuploaded DESC
               )
-              """ % dict(pub_status=quote(PackagePublishingStatus.PUBLISHED),
-                         more_query_clauses=query_clauses)
+              """ % dict(more_query_clauses=query_clauses)
 
         rset = SourcePackageRelease.select(
             query,
