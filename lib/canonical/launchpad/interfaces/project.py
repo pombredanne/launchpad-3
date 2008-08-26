@@ -55,7 +55,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
                IHasTranslationGroup, IMakesAnnouncements,
                IKarmaContext, IPillar):
     """A Project."""
-    export_as_webservice_entry()
+    export_as_webservice_entry('project_group')
 
     id = Int(title=_('ID'), readonly=True)
 

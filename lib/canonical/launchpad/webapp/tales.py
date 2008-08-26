@@ -471,6 +471,9 @@ class ObjectImageDisplayAPI:
         self._context = context
 
     def default_icon_resource(self, context):
+        # XXX: mars 2008-08-22 bug=260468
+        # This should be refactored.  We shouldn't have to do type-checking
+        # using interfaces.
         if IProduct.providedBy(context):
             return '/@@/product'
         elif IProject.providedBy(context):
@@ -489,9 +492,12 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting'
         elif IBug.providedBy(context):
             return '/@@/bug'
-        return '/@@/nyet-icon'
+        return None
 
     def default_logo_resource(self, context):
+        # XXX: mars 2008-08-22 bug=260468
+        # This should be refactored.  We shouldn't have to do type-checking
+        # using interfaces.
         if IProject.providedBy(context):
             return '/@@/project-logo'
         elif IPerson.providedBy(context):
@@ -508,9 +514,12 @@ class ObjectImageDisplayAPI:
             return '/@@/distribution-logo'
         elif ISprint.providedBy(context):
             return '/@@/meeting-logo'
-        return '/@@/nyet-logo'
+        return None
 
     def default_mugshot_resource(self, context):
+        # XXX: mars 2008-08-22 bug=260468
+        # This should be refactored.  We shouldn't have to do type-checking
+        # using interfaces.
         if IProject.providedBy(context):
             return '/@@/project-mugshot'
         elif IPerson.providedBy(context):
@@ -527,14 +536,19 @@ class ObjectImageDisplayAPI:
             return '/@@/distribution-mugshot'
         elif ISprint.providedBy(context):
             return '/@@/meeting-mugshot'
-        return '/@@/nyet-mugshot'
+        return None
 
     def icon(self, rootsite=None):
-        """Return the appropriate <img> tag for this object's icon."""
+        """Return the appropriate <img> tag for this object's icon.
+
+        :return: A string, or None if the context object doesn't have
+            an icon.
+        """
         context = self._context
         if context is None:
             # we handle None specially and return an empty string
             return ''
+
         if IHasIcon.providedBy(context) and context.icon is not None:
             url = context.icon.getURL()
         else:
@@ -542,12 +556,24 @@ class ObjectImageDisplayAPI:
                 root_url = ''
             else:
                 root_url = allvhosts.configs[rootsite].rooturl[:-1]
-            url = root_url + self.default_icon_resource(context)
+
+            default_icon = self.default_icon_resource(context)
+            if default_icon is None:
+                # We want to indicate that this object doesn't have an
+                # icon.
+                return None
+
+            url = root_url + default_icon
+
         icon = '<img alt="" width="14" height="14" src="%s" />'
         return icon % url
 
     def logo(self):
-        """Return the appropriate <img> tag for this object's logo."""
+        """Return the appropriate <img> tag for this object's logo.
+
+        :return: A string, or None if the context object doesn't have
+            a logo.
+        """
         context = self._context
         if not IHasLogo.providedBy(context):
             context = nearest(context, IHasLogo)
@@ -559,17 +585,29 @@ class ObjectImageDisplayAPI:
             url = context.logo.getURL()
         else:
             url = self.default_logo_resource(context)
+            if url is None:
+                # We want to indicate that there is no logo for this
+                # object.
+                return None
         logo = '<img alt="" width="64" height="64" src="%s" />'
         return logo % url
 
     def mugshot(self):
-        """Return the appropriate <img> tag for this object's mugshot."""
+        """Return the appropriate <img> tag for this object's mugshot.
+
+        :return: A string, or None if the context object doesn't have
+            a mugshot.
+        """
         context = self._context
         assert IHasMugshot.providedBy(context), 'No Mugshot for this item'
         if context.mugshot is not None:
             url = context.mugshot.getURL()
         else:
             url = self.default_mugshot_resource(context)
+            if url is None:
+                # We want to indicate that there is no mugshot for this
+                # object.
+                return None
         mugshot = """<img alt="" class="mugshot"
             width="192" height="192" src="%s" />"""
         return mugshot % url
@@ -931,11 +969,7 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
 
         :return: The icon HTML or None if no icon is available.
         """
-        icon = queryAdapter(self._context, IPathAdapter, 'image').icon()
-        if 'src="/@@/nyet-icon"' in icon:
-            return None
-        else:
-            return icon
+        return queryAdapter(self._context, IPathAdapter, 'image').icon()
 
     def link(self, extra_path):
         """Return html including a link, description and icon.
