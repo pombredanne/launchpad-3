@@ -22,11 +22,20 @@
                   removeAnswerContact"
       />
   </content>
+
   <adapter
     provides="canonical.launchpad.interfaces.IFAQTarget"
     for="canonical.launchpad.interfaces.ISourcePackage"
     factory="canonical.launchpad.components.answertracker.sourcepackage_to_faqtarget"
     />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    factory="canonical.launchpad.browser.SourcePackageBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
     name="+index"

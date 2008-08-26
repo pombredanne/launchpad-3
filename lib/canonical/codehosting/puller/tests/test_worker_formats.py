@@ -27,7 +27,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         # make_bzrdir relies on this being a relative filesystem path.
         self._source_branch_path = 'source-branch'
         self.worker = self.makePullerWorker(
-            self.get_transport(self._source_branch_path).base)
+            self.get_url(self._source_branch_path),
+            self.get_url('dest-path'))
 
     def tearDown(self):
         TestCaseWithRepository.tearDown(self)
@@ -89,7 +90,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
             branch_format=BzrBranchFormat7())
         stacked_branch = self._makeStackedBranch(
             'stacked-branch', base_branch)
-        worker = self.makePullerWorker(stacked_branch.base)
+        worker = self.makePullerWorker(
+            stacked_branch.base, self.get_url('dest'))
         worker.mirror()
         mirrored_branch = Branch.open(worker.dest)
         self.assertMirrored(stacked_branch, mirrored_branch)
@@ -107,14 +109,16 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
             branch_format=BzrBranchFormat7())
         stacked_branch = self._makeStackedBranch(
             'stacked-branch', base_branch)
-        worker = self.makePullerWorker(stacked_branch.base)
+        worker = self.makePullerWorker(
+            stacked_branch.base, self.get_url('dest'))
         worker.mirror()
 
         # Change the stacked-on URL and re-mirror.
         new_base = base_branch.bzrdir.clone(
             self.get_url('new-base')).open_branch()
         stacked_branch.set_stacked_on_url(new_base.base)
-        worker = self.makePullerWorker(stacked_branch.base)
+        worker = self.makePullerWorker(
+            stacked_branch.base, self.get_url('dest'))
         worker.mirror()
 
         # Check that the mirrored branch's stacked_on_url has changed.
