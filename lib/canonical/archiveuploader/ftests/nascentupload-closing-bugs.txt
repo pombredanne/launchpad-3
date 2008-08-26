@@ -33,7 +33,7 @@ Check the current status of the bug we are supposed to fix:
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.interfaces import (
-    ...    BugTaskImportance, IBugTaskSet, IDistributionSet, IPersonSet)
+    ...    IBugTaskSet, IDistributionSet, IPersonSet)
     >>> login('no-priv@canonical.com')
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 

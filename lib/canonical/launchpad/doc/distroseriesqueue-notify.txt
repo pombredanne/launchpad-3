@@ -57,7 +57,6 @@ logger object that will extract tracebacks for the purposes of this doctest.
 
 Helper functions to examine emails that were sent:
 
-  >>> import email
   >>> from canonical.launchpad.mail import stub
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> def by_to_addrs(a, b):
@@ -180,8 +179,7 @@ notify() will also work without passing the changes_file_object parameter
 provided that everything is already committed to the database (which is not
 the case when nascent upload runs).  This example demonstrates this usage:
 
-  >>> from canonical.librarian.ftests.harness import (
-  ...     fillLibrarianFile, cleanupLibrarianFiles)
+  >>> from canonical.librarian.ftests.harness import fillLibrarianFile
   >>> changes_file = open(changes_file_path,"r")
   >>> fillLibrarianFile(1, content=changes_file.read())
   >>> changes_file.close()

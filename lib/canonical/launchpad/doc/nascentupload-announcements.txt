@@ -840,7 +840,6 @@ changes file is mentioned toward the end of the email.
 In order to facilitate scripts that parse announcement emails, the changes
 file is enclosed as an attachment.
 
-  >>> import base64
   >>> attachment = announcement_email.get_payload()[1]
 
 Here's the attachment metadata.
