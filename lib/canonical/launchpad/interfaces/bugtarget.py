@@ -13,9 +13,11 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Text
+from zope.schema import (
+    Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_factory_operation,
@@ -33,34 +35,63 @@ class IHasBugs(Interface):
     open_bugtasks = exported(CollectionField(
         title=_("A list of open bugTasks for this target."),
         readonly=True, required=False,
-        value_type=Reference(schema=Interface))) # IBugTask
+        value_type=Reference(schema=IBugTask)))
     closed_bugtasks = exported(CollectionField(
         title=_("A list of closed bugTasks for this target."),
         readonly=True, required=False,
-        value_type=Reference(schema=Interface))) # IBugTask
+        value_type=Reference(schema=IBugTask)))
     inprogress_bugtasks = exported(CollectionField(
         title=_("A list of in-progress bugTasks for this target."),
         readonly=True, required=False,
-        value_type=Reference(schema=Interface))) # IBugTask
+        value_type=Reference(schema=IBugTask)))
     critical_bugtasks = exported(CollectionField(
         title=_("A list of critical BugTasks for this target."),
         readonly=True, required=False,
-        value_type=Reference(schema=Interface))) # IBugTask
+        value_type=Reference(schema=IBugTask)))
     new_bugtasks = exported(CollectionField(
         title=_("A list of New BugTasks for this target."),
         readonly=True, required=False,
-        value_type=Reference(schema=Interface))) # IBugTask
+        value_type=Reference(schema=IBugTask)))
     unassigned_bugtasks = exported(CollectionField(
         title=_("A list of unassigned BugTasks for this target."),
         readonly=True, required=False,
-        value_type=Reference(schema=Interface))) # IBugTask
+        value_type=Reference(schema=IBugTask)))
     all_bugtasks = exported(CollectionField(
         title=_("A list of all BugTasks ever reported for this target."),
         readonly=True, required=False,
-        value_type=Reference(schema=Interface))) # IBugTask
+        value_type=Reference(schema=IBugTask)))
 
-#     @operation_parameters()
-#     @operation_returns_collection_of(Interface) # Actually, IBugTask
+#     @call_with(search_params=None, user=REQUEST_USER)
+#     @operation_parameters(
+#         order_by=CollectionField(
+#             title=_('List of fields by which the results are ordered.'),
+#             required=False,
+#             value_type=Text()),
+#         search_text=TextLine(title=_("Bug ID or text:"), required=False),
+#         status=[],
+#         importance=None,
+#         assignee=None,
+#         bug_reporter=None,
+#         bug_supervisor=None,
+#         bug_commenter=None,
+#         bug_subscriber=None,
+#         owner=None,
+#         has_patch=None,
+#         has_cve=None,
+#         tags=None,
+#         tags_combinator_all=True,
+#         omit_duplicates=True,
+#         omit_targeted=None,
+#         status_upstream=None,
+#         milestone_assignment=None,
+#         milestone=None,
+#         component=None,
+#         nominated_for=None,
+#         distribution=None,
+#         scope=None,
+#         sourcepackagename=None,
+#         has_no_package=None)
+#     @operation_returns_collection_of(IBugTask)
 #     @export_read_operation()
     def searchTasks(search_params, user=None,
                     order_by=('-importance',), search_text=None,
@@ -141,6 +172,8 @@ class IBugTarget(IHasBugs):
         bug_params is an instance of
         canonical.launchpad.interfaces.CreateBugParams.
         """
+
+IBugTask['target'].schema = IBugTarget
 
 
 class BugDistroSeriesTargetDetails:

@@ -55,9 +55,7 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.bugattachment import BugAttachmentType
-from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -445,7 +443,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     owner = exported(
         Reference(title=_("The owner"), schema=IPerson))
     target = Reference(
-        title=_('Target'), required=True, schema=IBugTarget,
+        title=_('Target'), required=True, schema=Interface, # IBugTarget
         description=_("The software in which this bug should be fixed."))
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
@@ -652,11 +650,6 @@ IBugTask['related_tasks'].value_type.schema = IBugTask
 
 # We are forced to define this now to avoid circular import problems.
 IBugWatch['bugtasks'].value_type.schema = IBugTask
-
-for attrname in ('open_bugtasks', 'closed_bugtasks',
-                 'inprogress_bugtasks', 'critical_bugtasks',
-                 'new_bugtasks', 'unassigned_bugtasks', 'all_bugtasks'):
-    IHasBugs[attrname].value_type.schema = IBugTask
 
 
 class INullBugTask(IBugTask):
@@ -993,6 +986,8 @@ class BugTaskSearchParams:
 
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
+        # Import this here to avoid circular dependencies
+        from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro series.
             self.distroseries = sourcepackage.distroseries
