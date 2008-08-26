@@ -30,11 +30,12 @@ from canonical.launchpad.interfaces import (
     ICodeImportJobWorkflow, ICodeImportMachineSet, ICodeImportEventSet,
     ICodeImportResultSet, ICodeImportSet, ICountrySet, IDistributionSet,
     IDistroSeriesSet, IEmailAddressSet, ILibraryFileAliasSet, IPersonSet,
-    IProductSet, IProjectSet, IRevisionSet, IShippingRequestSet,
-    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
-    License, PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
-    ShippingRequestStatus, SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy, UnknownBranchTypeError,
+    IPOTemplateSet, IProductSet, IProjectSet, IRevisionSet,
+    IShippingRequestSet, ISpecificationSet, IStandardShipItRequestSet,
+    ITranslationGroupSet, License, PersonCreationRationale,
+    RevisionControlSystems, ShipItFlavour, ShippingRequestStatus,
+    SpecificationDefinitionStatus, TeamSubscriptionPolicy,
+    UnknownBranchTypeError,
     )
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -790,3 +791,45 @@ class LaunchpadObjectFactory:
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
+
+    def makePOTemplate(self, productseries=None, distroseries=None,
+                       sourcepackagename=None, owner=None):
+        """Make a new translation template."""
+        if productseries is None and distroseries is None:
+            # No context for this template; set up a productseries.
+            productseries = self.makeProductSeries()
+            # Make it use Translations, otherwise there's little point
+            # to us creating a template for it.
+            productseries.product.official_rosetta = True
+        templateset = getUtility(IPOTemplateSet)
+        subset = templateset.getSubset(
+            distroseries, sourcepackagename, productseries)
+
+        name = self.getUniqueString()
+        translation_domain = self.getUniqueString()
+
+        if owner is None:
+            if productseries is None:
+                owner = distroseries.owner
+            else:
+                owner = productseries.owner
+
+        return subset.new(name, translation_domain, 'messages.pot', owner)
+
+    def makePOFile(self, language_code, potemplate=None, owner=None):
+        """Make a new translation file."""
+        if potemplate is None:
+            potemplate = self.makePOTemplate(owner=owner)
+        if owner is None:
+            owner = potemplate.owner
+        return potemplate.newPOFile(language_code, requester=owner)
+
+    def makePOTMsgSet(self, potemplate, singular=None, plural=None,
+                      sequence=None):
+        """Make a new `POTMsgSet` in the given template."""
+        if sequence is None:
+            sequence = self.getUniqueInteger()
+        if singular is None and plural is None:
+            singular = self.getUniqueString()
+        return potemplate.createMessageSetFromText(singular, plural)
+
