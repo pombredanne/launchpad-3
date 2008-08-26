@@ -843,6 +843,8 @@ portlets. We achieve this using a negative right margin: */
 #portlets {width: 200px; margin: 0;}
 /* Inside, the main column itself keeps 20px clear of the 200px column: */
 #nonportlets {margin-right: 220px;}
+/* Non-portlets can also be constrained to an easily readable width. */
+#nonportlets.readable {max-width: 40em;}
 /* One-column pages can construct portlets using <div class="aside">: */
 div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 
