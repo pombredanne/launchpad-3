@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
     ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import (
-    IHasMilestones, IMilestoneGetter)
+    ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
@@ -114,13 +114,12 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
-               IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IMakesAnnouncements, IHasOwner, IHasSecurityContact,
-               IHasSprints, IHasTranslationGroup, IKarmaContext,
-               ILaunchpadUsage, IMilestoneGetter, ISpecificationTarget,
-               IPillar):
+class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+               IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker,
+               IHasIcon, IHasLogo, IHasMentoringOffers, IHasMilestones,
+               IHasMugshot, IMakesAnnouncements, IHasOwner,
+               IHasSecurityContact, IHasSprints, IHasTranslationGroup,
+               IKarmaContext, ILaunchpadUsage, ISpecificationTarget, IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and

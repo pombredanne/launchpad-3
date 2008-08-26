@@ -6,9 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'ICanGetMilestonesDirectly',
     'IHasMilestones',
     'IMilestone',
-    'IMilestoneGetter',
     'IMilestoneSet',
     'IProjectMilestone',
     ]
@@ -158,7 +158,8 @@ class IHasMilestones(Interface):
         CollectionField(
             title=_("The visible and active milestones associated with this "
                     "object, ordered by date expected."),
-            value_type=Reference(schema=IMilestone)))
+            value_type=Reference(schema=IMilestone)),
+        exported_as='active_milestones')
 
     all_milestones = exported(
         CollectionField(
@@ -167,7 +168,7 @@ class IHasMilestones(Interface):
             value_type=Reference(schema=IMilestone)))
 
 
-class IMilestoneGetter(Interface):
+class ICanGetMilestonesDirectly(Interface):
     """ An interface for classes providing getMilestone(name)."""
 
     def getMilestone(name):
