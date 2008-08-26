@@ -1,5 +1,6 @@
 = Web Service Project Groups =
 
+
 == Project group entry ==
 
 Project groups are available at their canonical URL on the API virtual host.
@@ -158,6 +159,7 @@ the ws.op=search parameter.
     >>> project_collection['total_size']
     4
 
+
 == Project series entry ==
 
 The entry for a project series is available at its canonical URL on the
@@ -177,7 +179,6 @@ virtual host.
     project_link: u'http://.../beta/firefox'
     releases_collection_link: u'http://.../beta/firefox/1.0/releases'
     resource_type_link: u'...'
-    security_contact_link: None
     self_link: u'http://.../beta/firefox/1.0'
     status: u'Active Development'
     summary: u'The 1.0 branch of the Mozilla web browser...'
@@ -194,6 +195,7 @@ Project releases are available at their canonical URL on the API virtual host.
     resource_type_link: u'...'
     self_link: u'http://.../beta/firefox/1.0/1.0.0'
     version: u'1.0.0'
+
 
 == Milestone entry ==
 

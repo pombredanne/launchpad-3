@@ -32,7 +32,6 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
-
 from canonical.launchpad.interfaces.validation import validate_url
 
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -282,13 +281,13 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     milestones = exported(
         CollectionField(
             title=_("The visible milestones associated with this "
-                    "productseries, ordered by date expected."),
+                    "project series, ordered by date expected."),
             readonly=True,
             value_type=Reference(schema=Interface))) # Specified later.
 
     all_milestones = exported(
         CollectionField(
-            title=_("All milestones associated with this productseries, "
+            title=_("All milestones associated with this project series, "
                     "ordered by date expected."),
             readonly=True,
             value_type=Reference(schema=Interface))) # Specified later.
@@ -298,24 +297,23 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             title=_(
                 'A list of the people or teams who are drivers for this '
                 'series. This list is made up of any drivers or owners '
-                'from this ProductSeries, the Product and if it exists, '
-                'the relevant Project.'),
+                'from this project series, the project and if it exists, '
+                'the relevant project group.'),
             readonly=True,
             value_type=Reference(schema=IPerson)))
 
     bug_supervisors = exported(
         CollectionField(
-            title=_('Currently just a reference to the Product bug '
+            title=_('Currently just a reference to the project bug '
                     'supervisor.'),
             readonly=True,
             value_type=Reference(schema=IPerson)))
 
-    security_contact = exported(
-        PublicPersonChoice(
-            title=_('Security Contact'),
-            description=_('Currently just a reference to the Product '
-                          'security contact.'),
-            required=False, vocabulary='ValidPersonOrTeam'))
+    security_contact = PublicPersonChoice(
+        title=_('Security Contact'),
+        description=_('Currently just a reference to the project '
+                      'security contact.'),
+        required=False, vocabulary='ValidPersonOrTeam')
 
     # XXX: jamesh 2006-09-05:
     # While it would be more sensible to call this ProductSeries.branch,
@@ -342,7 +340,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def getPackage(distroseries):
-        """Return the SourcePackage for this productseries in the supplied
+        """Return the SourcePackage for this project series in the supplied
         distroseries. This will use a Packaging record if one exists, but
         it will also work through the ancestry of the distroseries to try
         to find a Packaging entry that may be relevant."""

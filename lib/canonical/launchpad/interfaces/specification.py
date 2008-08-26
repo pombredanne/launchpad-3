@@ -43,8 +43,6 @@ from canonical.launchpad.interfaces.specificationtarget import (
 
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item)
-from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry)
 
 
 class SpecificationImplementationStatus(DBEnumeratedType):
@@ -640,7 +638,6 @@ class INewSpecificationTarget(Interface):
 class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     ICanBeMentored):
     """A Specification."""
-    export_as_webservice_entry()
 
     # TomBerger 2007-06-20: 'id' is required for
     #      SQLObject to be able to assign a security-proxied

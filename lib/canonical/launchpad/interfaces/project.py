@@ -38,9 +38,7 @@ from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 from canonical.lazr.rest.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters)
+    export_as_webservice_entry, exported)
 
 
 class ProjectNameField(PillarNameField):
@@ -57,7 +55,6 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
                IHasTranslationGroup, IMakesAnnouncements,
                IKarmaContext, IPillar):
     """A Project."""
-
     export_as_webservice_entry('project_group')
 
     id = Int(title=_('ID'), readonly=True)
@@ -237,8 +234,6 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
 class IProjectSet(Interface):
     """The collection of projects."""
 
-    export_as_webservice_collection(IProject)
-
     title = Attribute('Title')
 
     def __iter__():
@@ -270,12 +265,10 @@ class IProjectSet(Interface):
     def count_all():
         """Return the total number of projects registered in Launchpad."""
 
-    @collection_default_content()
-    @operation_parameters(text=TextLine())
-    @export_read_operation()
     def search(text=None, soyuz=None,
-               rosetta=None, malone=None,
-               bazaar=None, search_products=True):
+                     rosetta=None, malone=None,
+                     bazaar=None,
+                     search_products=True):
         """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,

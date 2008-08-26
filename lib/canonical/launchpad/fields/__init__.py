@@ -407,9 +407,16 @@ class ContentNameField(UniqueField):
 
     attribute = 'name'
 
-    def _getByAttribute(self, name):
-        """Return the content object with the given name."""
-        return self._getByName(name)
+    def _getByAttribute(self, input):
+        """Return the content object with the given attribute."""
+        return self._getByName(input)
+
+    def _getByName(self, input):
+        """Return the content object with the given name.
+
+        Override this in subclasses.
+        """
+        raise NotImplementedError
 
     def _validate(self, name):
         """Check that the given name is valid (and by delegation, unique)."""

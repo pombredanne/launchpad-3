@@ -91,6 +91,12 @@ class ProductReleaseVersionField(ContentNameField):
         return IProductRelease
 
     def _getByName(self, version):
+        """Return the content object for the specified version.
+
+        The version is specified either by the context directly or by the
+        context's referenced productseries.  Overridden from
+        `ContentFieldName`.
+        """
         # Import locally to avoid circular imports.
         from canonical.launchpad.interfaces.productseries import (
             IProductSeries)
@@ -165,9 +171,9 @@ class IProductReleaseFile(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
     productrelease = Choice(title=_('Project release'),
-                        required=True,
-                        vocabulary='ProductRelease',
-                        description=_("The parent product release."))
+                            required=True,
+                            vocabulary='ProductRelease',
+                            description=_("The parent product release."))
     libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
                          description=_("The attached file."),
                          required=True)

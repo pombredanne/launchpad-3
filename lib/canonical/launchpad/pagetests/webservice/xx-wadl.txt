@@ -309,9 +309,10 @@ for every link in the JSON representation.
 
     >>> def name_attrib(tag):
     ...     return tag.attrib['name']
+
+    >>> params = sorted([param for param in service_root_repr], key=name_attrib)
     >>> (bug_set_param, me_param, person_set_param,
-    ...    project_group_set_param, project_set_param) = sorted(
-    ...    [param for param in service_root_repr], key=name_attrib)
+    ...     project_set_param) = params
 
     >>> person_set_param.tag
     '...param'
@@ -522,7 +523,7 @@ First let's look at the different collection resource types defined in the
 WADL file, and their representations.
 
     >>> sorted([type.attrib['id'] for type in collection_resource_types])
-    ['bugs', 'people', 'project_groups', 'projects']
+    ['bugs', 'people', 'projects']
 
 
 There's one <resource_type> tag for every top-level collection on the

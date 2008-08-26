@@ -7,7 +7,7 @@ links to the top-level web service objects.
   >>> top_level_links = webservice.get("/beta/").jsonBody()
   >>> sorted(top_level_links.keys())
   [u'bugs_collection_link', u'me_link', u'people_collection_link',
-  u'project_groups_collection_link', u'projects_collection_link']
+   u'projects_collection_link']
   >>> top_level_links['bugs_collection_link']
   u'http://api.launchpad.dev/beta/bugs'
   >>> top_level_links['me_link']
