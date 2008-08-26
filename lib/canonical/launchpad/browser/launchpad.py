@@ -32,6 +32,7 @@ import operator
 import os
 import time
 from datetime import timedelta, datetime
+from urlparse import urlunsplit
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
@@ -88,10 +89,12 @@ from canonical.launchpad.webapp import (
     LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
     canonical_url, custom_widget)
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, ILaunchpadRoot, INavigationMenu, POSTToNonCanonicalURL)
+    IBreadcrumbBuilder, ILaunchBag, ILaunchpadRoot, INavigationMenu,
+    POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.webapp.url import urlparse, urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
 
@@ -231,8 +234,47 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
-    def getElements(self):
-        return list(self.request.breadcrumbs)
+    def items(self):
+        """Return a list of `IBreadcrumb` objects visible in the hierarchy.
+
+        The list starts with the breadcrumb closest to the hierarchy root.
+        """
+        urlparts = urlparse(self.request.getURL(0, path_only=False))
+        baseurl = urlunsplit((urlparts[0], urlparts[1], '', '', ''))
+
+        # Construct a list of complete URLs for each URL path segment.
+        pathurls = []
+        working_url = baseurl
+        for segment in urlparts[2].split('/'):
+            working_url = urlappend(working_url, segment)
+            pathurls.append(working_url)
+
+        # We assume a 1:1 relationship between the traversed_objects list and
+        # the URL path segments.  Note that there may be more segments than
+        # there are objects.
+        object_urls = zip(self.request.traversed_objects, pathurls)
+
+        breadcrumbs = []
+        for obj, url in object_urls:
+            crumb = self.breadcrumb_for(obj, url)
+            if crumb is not None:
+                breadcrumbs.append(crumb)
+        return breadcrumbs
+
+    def breadcrumb_for(self, obj, url):
+        """Return the breadcrumb for the an object, using the supplied URL.
+
+        :return: An `IBreadcrumb` object, or None if a breadcrumb adaptation
+            for the object doesn't exist.
+        """
+        # If the object has an IBreadcrumbBuilder adaptation then the
+        # object is intended to be shown in the hierarchy.
+        builder = queryAdapter(obj, IBreadcrumbBuilder)
+        if builder is not None:
+            # The breadcrumb builder hasn't been given a URL yet.
+            builder.url = url
+            return builder.make_breadcrumb()
+        return None
 
     def render(self):
         """Render the hierarchy HTML.
@@ -240,7 +282,7 @@ class Hierarchy(LaunchpadView):
         The hierarchy elements are taken from the request.breadcrumbs list.
         For each element, element.text is cgi escaped.
         """
-        elements = self.getElements()
+        elements = self.items()
 
         if config.launchpad.site_message:
             site_message = (
@@ -277,20 +319,20 @@ class Hierarchy(LaunchpadView):
                 before_last_element = elements[-2]
             else:
                 before_last_element = None
+
             for element in elements:
-                cssclass = 'item'
+
                 if element is before_last_element:
-                    cssclass = ' '.join(['before-last', cssclass])
+                    css_class = 'before-last'
                 elif element is last_element:
-                    cssclass = ' '.join(['last', cssclass])
+                    css_class = 'last'
                 else:
                     # No extra CSS class.
-                    pass
-                steps.append('<span class="%s">'
-                         '<a href="%s">%s</a>'
-                         '</span>'
-                         % (cssclass, element.url,
-                            cgi.escape(element.text)))
+                    css_class = ''
+
+                steps.append(
+                    self.getHtmlForBreadcrumb(element, css_class))
+
             hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
         else:
             # We're on the home page.
@@ -303,6 +345,22 @@ class Hierarchy(LaunchpadView):
                         site_message)
 
         return hierarchy
+
+    def getHtmlForBreadcrumb(self, breadcrumb, extra_css_class=''):
+        """Return the HTML to display an `IBreadcrumb` object.
+
+        :param extra_css_class: A string of additional CSS classes
+            to apply to the breadcrumb.
+        """
+        bodytext = cgi.escape(breadcrumb.text)
+
+        if breadcrumb.icon is not None:
+            bodytext = '%s %s' % (breadcrumb.icon, bodytext)
+
+        css_class = 'item ' + extra_css_class
+        return (
+            '<span class="%s"><a href="%s">%s</a></span>'
+            % (css_class, breadcrumb.url, bodytext))
 
 
 class MaintenanceMessage:
