@@ -24,7 +24,6 @@ from canonical.launchpad.interfaces.geoip import (
 from canonical.launchpad.interfaces.language import ILanguageSet
 
 GEOIP_CITY_DB = '/usr/share/GeoIP/GeoIPCity.dat'
-GEOIP_CITY_LITE_DB = '/usr/share/GeoIP/GeoLiteCity.dat'
 
 
 class GeoIP:
@@ -32,15 +31,10 @@ class GeoIP:
     implements(IGeoIP)
 
     def __init__(self):
-        if os.path.exists(GEOIP_CITY_DB):
-            db = GEOIP_CITY_DB
-        elif os.path.exists(GEOIP_CITY_LITE_DB):
-            db = GEOIP_CITY_LITE_DB
-        else:
+        if not os.path.exists(GEOIP_CITY_DB):
             raise NoGeoIPDatabaseFound(
-                "No GeoIP DB found. Please use utilities/get-geoip-db to "
-                "install it.")
-        self._gi = libGeoIP.open(db, libGeoIP.GEOIP_MEMORY_CACHE)
+                "No GeoIP DB found. Please install launchpad-dependencies.")
+        self._gi = libGeoIP.open(GEOIP_CITY_DB, libGeoIP.GEOIP_MEMORY_CACHE)
 
     def getRecordByAddress(self, ip_address):
         """See `IGeoIP`."""
