@@ -9,7 +9,7 @@ fixed.
 
 First we have to go to the +requestmerge page.
 
-    >>> browser.addHeader('Authorization','Basic no-priv@canonical.com:test')
+    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/people/+requestmerge')
     >>> '<h1>Merge Launchpad accounts</h1>' in browser.contents
     True
