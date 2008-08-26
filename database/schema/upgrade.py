@@ -22,6 +22,7 @@ import time
 
 from canonical.launchpad.scripts import db_options, logger_options, logger
 from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
+from canonical.database.postgresql import fqn
 import replication.helpers
 
 
@@ -32,6 +33,8 @@ def main():
     con = connect(options.dbuser)
     if replication.helpers.slony_installed(con):
         con.close()
+        if options.commit is False:
+            parser.error("--dry-run does not make sense with replicated db")
         log.info("Applying patches to Slony-I environment.")
         apply_patches_replicated()
     else:
@@ -137,12 +140,12 @@ def apply_patches_replicated():
 
     # Close transaction block and abort on error.
     print >> outf, dedent("""\
+        }
+        on error {
+            echo 'Failed! Slonik script aborting. Patches rolled back.';
+            exit 1;
             }
-            on error {
-                echo 'Failed! Slonik script aborting. Patches rolled back.';
-                exit 1;
-                }
-            """)
+        """)
 
     # Execute the script with slonik.
     if not replication.helpers.execute_slonik(outf.getvalue()):
@@ -160,22 +163,106 @@ def apply_patches_replicated():
     # committed to completing the upgrade (!). If any of the later stages
     # fail, it will likely involve manual cleanup.
 
-    # We now scan for new tables and add them tables and them to their
-    # desired replication sets using a second script.
+    # We now scan for new tables and add them to the lpmain
+    # replication set using a second script. Note that upgrade.py only
+    # deals with the lpmain replication set.
 
-    # Detect new tables and sequences and their replication sets.
+    # Detect new tables and sequences.
+    # Everything else that isn't replicated should go in the lpmain
+    # replication set.
+    cur = con.cursor()
+    unrepl_tabs, unrepl_seqs = replication.helpers.discover_unreplicated(cur)
 
-    # Create a new replication set to hold new tables and sequences
+    # But warn if we are going to replicate something not in the calculated
+    # set, as *_SEED in replication.helpers needs to be updated. We don't want
+    # abort unless absolutely necessary to avoid manual cleanup.
+    lpmain_tabs, lpmain_seqs = replication.helpers.calculate_replication_set(
+            cur, replication.helpers.LPMAIN_SEED)
 
-    # Add the new tables and sequences to the holding set.
+    assumed_tabs = unrepl_tabs.difference(lpmain_tabs)
+    assumed_seqs = unrepl_seqs.difference(lpmain_seqs)
+    for obj in (assumed_tabs.union(assumed_seqs)):
+        log.warn(
+            "%s not in calculated lpmain replication set. "
+            "Update *_SEED in replication/helpers.py" % obj)
 
-    # Subscribe the holding set to the replica.
+    if unrepl_tabs or unrepl_seqs:
+        # TODO: Or if the holding set already exists - catch an aborted run.
+        log.info(
+            "New stuff needs replicating: %s"
+            % ', '.join(sorted(unrepl_tabs.union(unrepl_seqs))))
+        # Create a new replication set to hold new tables and sequences
+        # TODO: Only create set if it doesn't already exist.
+        outf = StringIO()
+        print >> outf, dedent("""\
+            try {
+                create set (
+                    id = 666, origin = @master_id,
+                    comment = 'Temporary set to merge'
+                    );
+            """)
 
-    # Sync.
+        # Add the new tables and sequences to the holding set.
+        cur.execute("""
+            SELECT max(tab_id) FROM %s
+            """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_table'))
+        next_id = cur.fetchone()[0] + 1
+        for tab in unrepl_tabs:
+            print >> outf, dedent("""\
+                echo 'Adding %s to holding set for lpmain merge.';
+                set add table (
+                    set id = 666, origin = @master_id, id=%d,
+                    fully qualified name = '%s',
+                    comment = '%s'
+                    );
+                """ % (tab, next_id, tab, tab))
+            next_id += 1
+        cur.execute("""
+            SELECT max(seq_id) FROM %s
+            """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_sequence'))
+        next_id = cur.fetchone()[0] + 1
+        for seq in  unrepl_seqs:
+            print >> outf, dedent("""\
+                echo 'Adding %s to holding set for lpmain merge.';
+                set add sequence (
+                    set id = 666, origin = @master_id, id=%d,
+                    fully qualified name = '%s',
+                    comment = '%s'
+                    );
+                """ % (seq, next_id, seq, seq))
+            next_id += 1
 
-    # Merge the holding set into the target set.
+        # Subscribe the holding set to the replica.
+        # TODO: Only subscribe the set if not already subscribed.
+        # Close the transaction and sync. Important, or MERGE SET will fail!
+        # Merge the sets.
+        # Sync.
+        # Drop the holding set.
+        print >> outf, dedent("""\
+            echo 'Subscribing holding set to slave.';
+            subscribe set (
+                id=666, provider=@master_id, receiver=@slave1_id,
+                forward=yes);
+            } on error {
+                echo 'Failed to create or subscribe holding set! Aborting.';
+                exit 1;
+                }
+            echo 'Waiting for sync';
+            sync (id=1);
+            wait for event (
+                origin=ALL, confirmed=ALL, wait on=@master_id
+                );
+            echo 'Merging holding set to lpmain';
+            merge set (
+                id=@lpmain_set_id, add id=666, origin=@master_id
+                );
+            """)
 
-    # Sync.
+        # Execute the script and sync.
+        if not replication.helpers.execute_slonik(outf.getvalue()):
+            log.fatal("Aborting.")
+        replication.helpers.sync(timeout=600)
+
 
     # We also scan for tables we want to drop and do so using
     # a final slonik script.
@@ -258,17 +345,14 @@ def apply_patch(con, major, minor, patch, patch_file):
 
 def apply_other(con, script):
     log.info("Applying %s" % script)
-    if options.slonik:
-        slonik_execute_script(options.slonik, script)
-    else:
-        cur = con.cursor()
-        path = os.path.join(os.path.dirname(__file__), script)
-        sql = open(path).read()
-        cur.execute(sql)
+    cur = con.cursor()
+    path = os.path.join(os.path.dirname(__file__), script)
+    sql = open(path).read()
+    cur.execute(sql)
 
-        if options.commit and options.partial:
-            log.debug("Committing changes")
-            con.commit()
+    if options.commit and options.partial:
+        log.debug("Committing changes")
+        con.commit()
 
 
 def apply_comments(con):
@@ -292,9 +376,6 @@ if __name__ == '__main__':
 
     if args:
         parser.error("Too many arguments")
-
-    if options.commit is False and options.slonik:
-        parser.error("--dry-run does not make sense with --slonik")
 
     log = logger(options)
     main()

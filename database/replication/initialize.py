@@ -160,6 +160,7 @@ def main():
                 fully qualified name='%(table)s');
             """ % vars())
         entry_id += 1
+    entry_id = 1
     for sequence in sorted(authdb_sequences):
         script.append("""
             echo 'Adding %(sequence)s to replication set @authdb_set_id';
@@ -171,7 +172,6 @@ def main():
             """ % vars())
         entry_id += 1
 
-    entry_id += 100
     script.append("""
         echo 'Creating LPMain replication set (@lpmain_set_id)';
         create set (
@@ -179,6 +179,7 @@ def main():
             comment='Launchpad tables and sequences');
         """)
 
+    entry_id = 200
     for table in sorted(lpmain_tables):
         script.append("""
             echo 'Adding %(table)s to replication set @lpmain_set_id';
@@ -189,6 +190,8 @@ def main():
                 fully qualified name='%(table)s');
             """ % vars())
         entry_id += 1
+
+    entry_id = 200
     for sequence in sorted(lpmain_sequences):
         script.append("""
             echo 'Adding %(sequence)s to replication set @lpmain_set_id';
@@ -212,19 +215,21 @@ def main():
     helpers.validate_replication(cur) # Explode now if we have messed up.
 
     # Generate and run a slonik script subscribing the slave databases
-    # to replication set #1.
+    # to replication set #1. Note that direct subscribers to the master
+    # always need forward=yes as per Slony-I docs.
     log.info('Subscribing slaves to replication sets.')
     helpers.execute_slonik("""
         subscribe set (
             id=@authdb_set_id,
             provider=@master_id, receiver=@slave1_id,
-            forward=no);
+            forward=yes);
         subscribe set (
             id=@lpmain_set_id,
             provider=@master_id, receiver=@slave1_id,
-            forward=no);
+            forward=yes);
         """)
     helpers.validate_replication(cur) # Explode now if we have messed up.
+    log.info('Sets subscribed. Master usable but slaves still being setup.')
 
     log.info('Waiting for synchronization.')
     helpers.execute_slonik("""
@@ -232,7 +237,7 @@ def main():
         wait for event (
             origin=ALL, confirmed=ALL, wait on=@master_id);
         """)
-    log.info('Synchronized.')
+    log.info('Synchronized. Slave now usable.')
 
     helpers.validate_replication(cur) # Explode now if we have messed up.
 

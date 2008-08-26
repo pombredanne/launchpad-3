@@ -160,7 +160,7 @@ def subscribe_report(cur, options):
 
 def tables_report(cur, options):
     report = options.mode()
-    table = Table(["Set", "Schema", "Table", "Table Id", "Key", "Comment"])
+    table = Table(["Set", "Schema", "Table", "Table Id"])
     cur.execute("""
         SELECT tab_set, nspname, relname, tab_id, tab_idxname, tab_comment
         FROM sl_table, pg_class, pg_namespace
@@ -169,14 +169,13 @@ def tables_report(cur, options):
         """)
     for set_, namespace, tablename, table_id, key, comment in cur.fetchall():
         table.rows.append([
-            "Set %d" % set_, namespace, tablename, str(table_id),
-            key, comment])
+            "Set %d" % set_, namespace, tablename, str(table_id)])
     return report.table(table)
 
 
 def sequences_report(cur, options):
     report = options.mode()
-    table = Table(["Set", "Schema", "Sequence", "Sequence Id", "Comment"])
+    table = Table(["Set", "Schema", "Sequence", "Sequence Id"])
     cur.execute("""
         SELECT seq_set, nspname, relname, seq_id, seq_comment
         FROM sl_sequence, pg_class, pg_namespace
@@ -185,7 +184,7 @@ def sequences_report(cur, options):
         """)
     for set_, namespace, tablename, table_id, comment in cur.fetchall():
         table.rows.append([
-            "Set %d" % set_, namespace, tablename, str(table_id), comment])
+            "Set %d" % set_, namespace, tablename, str(table_id)])
     return report.table(table)
 
 
