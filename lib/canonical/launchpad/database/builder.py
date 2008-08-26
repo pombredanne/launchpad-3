@@ -415,12 +415,15 @@ class Builder(SQLBase):
             ******************
             """ % (self.name, self.url, filemap, args, status, info)
             logger.info(message)
-        except (xmlrpclib.Fault, socket.error), info:
+        except xmlrpclib.Fault, info:
             # Mark builder as 'failed'.
-            logger.debug(
-                "Disabling builder: %s" % self.url, exc_info=1)
+            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
             self.failbuilder(
                 "Exception (%s) when setting up to new job" % info)
+            raise BuildSlaveFailure
+        except socket.error, info:
+            error_message = "Exception (%s) when setting up new job" % info
+            self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
     def startBuild(self, build_queue_item, logger):
@@ -454,8 +457,15 @@ class Builder(SQLBase):
         if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (build_queue_item.build.pocket.name.lower())
         args['suite'] = suite
-        archive_purpose = build_queue_item.build.archive.purpose.name
-        args['archive_purpose'] = archive_purpose
+        archive_purpose = build_queue_item.build.archive.purpose
+        if (archive_purpose == ArchivePurpose.PPA and
+            not build_queue_item.build.archive.require_virtualized):
+            # If we're building a non-virtual PPA, override the purpose
+            # to PRIMARY.  This ensures that the package mangling tools
+            # will run over the built packages.
+            args['archive_purpose'] = ArchivePurpose.PRIMARY.name
+        else:
+            args['archive_purpose'] = archive_purpose.name
 
         # Let the build slave know whether this is a build in a private
         # archive.
@@ -687,6 +697,33 @@ class Builder(SQLBase):
             self.startBuild(candidate, logger)
         except (BuildSlaveFailure, CannotBuild), err:
             logger.warn('Could not build: %s' % err)
+
+    def handleTimeout(self, logger, error_message):
+        """See IBuilder."""
+        builder_should_be_failed = True
+
+        if self.virtualized:
+            # Virtualized/PPA builder: attempt a reset.
+            logger.warn(
+                "Resetting builder: %s -- %s" % (self.url, error_message),
+                exc_info=True)
+            try:
+                self.resumeSlaveHost()
+            except CannotResumeHost, err:
+                # Failed to reset builder.
+                logger.warn(
+                    "Failed to reset builder: %s -- %s" %
+                    (self.url, str(err)), exc_info=True)
+            else:
+                # Builder was reset, do *not* mark it as failed.
+                builder_should_be_failed = False
+                
+        if builder_should_be_failed:
+            # Mark builder as 'failed'.
+            logger.warn(
+                "Disabling builder: %s -- %s" % (self.url, error_message),
+                exc_info=True)
+            self.failbuilder(error_message)
 
 
 class BuilderSet(object):

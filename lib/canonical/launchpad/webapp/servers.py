@@ -376,12 +376,11 @@ class NotFoundRequestPublicationFactory:
 
 
 class BasicLaunchpadRequest:
-    """Mixin request class to provide stepstogo and breadcrumbs."""
+    """Mixin request class to provide stepstogo."""
 
     implements(IBasicLaunchpadRequest)
 
     def __init__(self, body_instream, environ, response=None):
-        self.breadcrumbs = []
         self.traversed_objects = []
         self._wsgi_keys = set()
         self.needs_datepicker_iframe = False
@@ -624,7 +623,6 @@ class LaunchpadTestRequest(TestRequest):
         super(LaunchpadTestRequest, self).__init__(
             body_instream=body_instream, environ=environ, form=form,
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
-        self.breadcrumbs = []
         self.traversed_objects = []
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
@@ -897,12 +895,15 @@ class FeedsPublication(LaunchpadBrowserPublication):
         Feeds.lp.net should only serve classes that implement the IFeed
         interface or redirect to some other url.
         """
+        # LaunchpadImageFolder is imported here to avoid an import loop.
+        from canonical.launchpad.browser.launchpad import LaunchpadImageFolder
         result = super(FeedsPublication, self).traverseName(request, ob, name)
         if len(request.stepstogo) == 0:
             # The url has been fully traversed. Now we can check that
-            # the result is a feed or a redirection.
+            # the result is a feed, an image, or a redirection.
             naked_result = removeSecurityProxy(result)
             if (IFeed.providedBy(result) or
+                isinstance(naked_result, LaunchpadImageFolder) or
                 getattr(naked_result, 'status', None) == 301):
                 return result
             else:

@@ -481,10 +481,17 @@ class ProductBugTracker(Choice):
 
     It accepts all the values in the vocabulary, as well as a special
     marker object, which represents the Malone bug tracker.
-    This field uses two attributes to model its state, 'official_malone'
-    and 'bugtracker'
+    This field uses two attributes on the Product to model its state:
+    'official_malone' and 'bugtracker'
     """
+    implements(IReferenceChoice)
     malone_marker = object()
+
+    @property
+    def schema(self):
+        # The IBugTracker needs to be imported here to avoid an import loop.
+        from canonical.launchpad.interfaces.bugtracker import IBugTracker
+        return IBugTracker
 
     def get(self, ob):
         if ob.official_malone:
@@ -583,7 +590,14 @@ class BaseImageUpload(Bytes):
     dimensions = ()
     max_size = 0
 
-    def __init__(self, default_image_resource='/@@/nyet-icon', **kw):
+    def __init__(self, default_image_resource=None, **kw):
+        # 'default_image_resource' is a keyword argument so that the
+        # class constructor can be used in the same way as other
+        # Interface attribute specifiers.
+        if default_image_resource is None:
+            raise AssertionError(
+                "You must specify a default image resource.")
+
         self.default_image_resource = default_image_resource
         Bytes.__init__(self, **kw)
 
@@ -649,21 +663,18 @@ class IconImageUpload(BaseImageUpload):
 
     dimensions = (14, 14)
     max_size = 5*1024
-    default_image_resource = '/@@/nyet-icon'
 
 
 class LogoImageUpload(BaseImageUpload):
 
     dimensions = (64, 64)
     max_size = 50*1024
-    default_image_resource = '/@@/nyet-logo'
 
 
 class MugshotImageUpload(BaseImageUpload):
 
     dimensions = (192, 192)
     max_size = 100*1024
-    default_image_resource = '/@@/nyet-mugshot'
 
 
 class PillarNameField(BlacklistableContentNameField):

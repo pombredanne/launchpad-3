@@ -281,7 +281,8 @@ them:
     ...               'upstream_bugs_url', 'upstream_bugs_delta_url',
     ...               'watched_bugs_delta_url']:
     ...         t = getattr(data, f, "NO URL")
-    ...         print t.replace("http://launchpad.dev/ubuntu/+source/", "**")
+    ...         print t.replace(
+    ...             "http://bugs.launchpad.dev/ubuntu/+source/", "**")
     ...     print "--"
 
 Get an Ubuntu view:
@@ -297,33 +298,33 @@ Here are the helper URLs we construct:
     pmount
     http://launchpad.dev/pmount/+bugsupervisor
     http://launchpad.dev/pmount/+edit
-    **pmount?field.status_upstream=open_upstream&field.status%3Alist=TRIAGED
-    **pmount?field.status_upstream=hide_upstream&field.status%3Alist=TRIAGED
-    **pmount?field.status_upstream=pending_bugwatch&field.status%3Alist=TRIAGED
+    **pmount/+bugs?search=Search&field.status_upstream=open_upstream
+    **pmount/+bugs?search=Search&field.status_upstream=hide_upstream
+    **pmount/+bugs?search=Search&field.status_upstream=pending_bugwatch
     --
     linux-source-2.6.15 ubuntu hoary
     NO PRODUCT
     NO URL
     NO URL
-    **linux-source-2.6.15?field.status_upstream=open_upstream&field.status%3Alist=TRIAGED
-    **linux-source-2.6.15?field.status_upstream=hide_upstream&field.status%3Alist=TRIAGED
-    **linux-source-2.6.15?field.status_upstream=pending_bugwatch&field.status%3Alist=TRIAGED
+    **linux-source-2.6.15/+bugs?search=Search&field.status_upstream=open_upstream
+    **linux-source-2.6.15/+bugs?search=Search&field.status_upstream=hide_upstream
+    **linux-source-2.6.15/+bugs?search=Search&field.status_upstream=pending_bugwatch
     --
     mozilla-firefox ubuntu hoary
     firefox
     http://launchpad.dev/firefox/+bugsupervisor
     http://launchpad.dev/firefox/+edit
-    **mozilla-firefox?field.status_upstream=open_upstream&field.status%3Alist=TRIAGED
-    **mozilla-firefox?field.status_upstream=hide_upstream&field.status%3Alist=TRIAGED
-    **mozilla-firefox?field.status_upstream=pending_bugwatch&field.status%3Alist=TRIAGED
+    **mozilla-firefox/+bugs?search=Search&field.status_upstream=open_upstream
+    **mozilla-firefox/+bugs?search=Search&field.status_upstream=hide_upstream
+    **mozilla-firefox/+bugs?search=Search&field.status_upstream=pending_bugwatch
     --
     thunderbird ubuntu hoary
     NO PRODUCT
     NO URL
     NO URL
-    **thunderbird?field.status_upstream=open_upstream&field.status%3Alist=TRIAGED
-    **thunderbird?field.status_upstream=hide_upstream&field.status%3Alist=TRIAGED
-    **thunderbird?field.status_upstream=pending_bugwatch&field.status%3Alist=TRIAGED
+    **thunderbird/+bugs?search=Search&field.status_upstream=open_upstream
+    **thunderbird/+bugs?search=Search&field.status_upstream=hide_upstream
+    **thunderbird/+bugs?search=Search&field.status_upstream=pending_bugwatch
     --
 
 Let's print out the counts and percentages:

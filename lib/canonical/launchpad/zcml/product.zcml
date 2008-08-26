@@ -46,7 +46,7 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name autoupdate"
+      set_attributes="name autoupdate registrant"
       />
 
     <require
@@ -108,6 +108,20 @@
       provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
       factory="canonical.launchpad.components.launchpadcontainer.LaunchpadProductContainer"
       />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IProduct"
+    factory="canonical.launchpad.browser.ProductBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IProductSet"
+    factory="canonical.launchpad.browser.ProductSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
@@ -243,11 +257,6 @@
       name="+translations"
       facet="translations"
       template="../templates/product-translations.pt"
-      />
-    <browser:page
-      name="+portlet-translations"
-      facet="translations"
-      template="../templates/product-portlet-translations.pt"
       />
     <browser:page
       name="+portlet-translatables"
@@ -610,14 +619,6 @@
     class="canonical.launchpad.browser.ProductAddView"
     permission="launchpad.AnyPerson"
     template="../templates/product-new-guided.pt"
-    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IProduct"
-    name="+shortlink"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.ProductShortLink"
-    attribute="__call__"
     />
 
 </configure>

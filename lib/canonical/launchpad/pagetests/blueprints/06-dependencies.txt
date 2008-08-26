@@ -151,7 +151,7 @@ And ensure it works:
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
 
-== Project roadmaps and dependency charts ==
+== Project dependency charts ==
 
 We know that no blueprints depend on "canvas", but "canvas" depends on
 "e4x" and "e4x" depends on "svg-support". So the big picture is that
@@ -171,11 +171,6 @@ that.
   ...Support &lt;canvas&gt; Objects...
   ...Blueprints that can then be implemented...
   ...No blueprints depend on this one...
-
-Also, since we have these blueprints with their priorities and dependencies
-mapped out, we should be able to see a project plan for Mozilla Firefox.
-
-  >>> anon_browser.open('http://launchpad.dev/firefox/+roadmap')
 
 We have some nice tools to display the dependency tree as a client side
 image and map.
