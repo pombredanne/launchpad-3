@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -190,7 +190,7 @@ class POTMsgSet(SQLBase):
         # The numbers were gotten from our production data, by finding
         # the largest number of external "suggestions" we may get, with
         # the maximum turning out to be 1943.
-        return shortlist(result, longest_expected=1000, hardlimit=2000)
+        return shortlist(result, longest_expected=1000, hardlimit=3000)
 
     def getExternallyUsedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
