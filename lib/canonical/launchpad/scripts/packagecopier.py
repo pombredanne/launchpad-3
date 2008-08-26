@@ -434,7 +434,7 @@ class PackageCopier(SoyuzScript):
             self.logger.info(
                 "%s packages successfully copied." % len(copies))
         else:
-            self.logger.info("No package copied (bug ?!?).")
+            self.logger.info("No packages copied.")
 
         # Information returned mainly for the benefit of the test harness.
         return copies
