@@ -17,7 +17,11 @@ from zope.schema import (
     Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.bugtask import (
+    IBugTask, IBugTaskSearch)
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_factory_operation,
@@ -25,7 +29,7 @@ from canonical.lazr.rest.declarations import (
    operation_parameters, operation_returns_collection_of,
    operation_returns_entry, rename_parameters_as, REQUEST_USER,
    webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
+
 
 class IHasBugs(Interface):
     """An entity which has a collection of bug tasks."""
@@ -61,40 +65,40 @@ class IHasBugs(Interface):
         readonly=True, required=False,
         value_type=Reference(schema=IBugTask)))
 
-#     @call_with(search_params=None, user=REQUEST_USER)
-#     @operation_parameters(
-#         order_by=CollectionField(
-#             title=_('List of fields by which the results are ordered.'),
-#             required=False,
-#             value_type=Text()),
-#         search_text=TextLine(title=_("Bug ID or text:"), required=False),
-#         status=[],
-#         importance=None,
-#         assignee=None,
-#         bug_reporter=None,
-#         bug_supervisor=None,
-#         bug_commenter=None,
-#         bug_subscriber=None,
-#         owner=None,
-#         has_patch=None,
-#         has_cve=None,
-#         tags=None,
-#         tags_combinator_all=True,
-#         omit_duplicates=True,
-#         omit_targeted=None,
-#         status_upstream=None,
-#         milestone_assignment=None,
-#         milestone=None,
-#         component=None,
-#         nominated_for=None,
-#         distribution=None,
-#         scope=None,
-#         sourcepackagename=None,
-#         has_no_package=None)
-#     @operation_returns_collection_of(IBugTask)
-#     @export_read_operation()
+    @call_with(search_params=None, user=REQUEST_USER)
+    @operation_parameters(
+        order_by=List(
+            title=_('List of fields by which the results are ordered.'),
+            required=False),
+        search_text=copy_field(IBugTaskSearch['searchtext']),
+        status=copy_field(IBugTaskSearch['status']),
+        importance=copy_field(IBugTaskSearch['importance']),
+        assignee=Reference(schema=IPerson),
+        bug_reporter=Reference(schema=IPerson),
+        bug_supervisor=Reference(schema=IPerson),
+        bug_commenter=Reference(schema=IPerson),
+        bug_subscriber=Reference(schema=IPerson),
+        owner=Reference(schema=IPerson),
+        has_patch=copy_field(IBugTaskSearch['has_patch']),
+        has_cve=copy_field(IBugTaskSearch['has_cve']),
+        tags=copy_field(IBugTaskSearch['tag']),
+        tags_combinator_all=Bool(
+            title=_('All tags?'), required=False),
+        omit_duplicates=copy_field(IBugTaskSearch['omit_dupes']),
+        omit_targeted=copy_field(IBugTaskSearch['omit_targeted']),
+        status_upstream=copy_field(IBugTaskSearch['status_upstream']),
+        milestone_assignment=copy_field(
+            IBugTaskSearch['milestone_assignment']),
+        milestone=copy_field(IBugTaskSearch['milestone']),
+        component=copy_field(IBugTaskSearch['component']),
+        nominated_for=Reference(schema=Interface),
+        distribution=Reference(schema=Interface), # IDistribution
+        sourcepackagename=TextLine(title=_("Source Package"), required=False),
+        has_no_package=copy_field(IBugTaskSearch['has_no_package']))
+    @operation_returns_collection_of(IBugTask)
+    @export_read_operation()
     def searchTasks(search_params, user=None,
-                    order_by=('-importance',), search_text=None,
+                    order_by=['-importance'], search_text=None,
                     status=[],
                     importance=None,
                     assignee=None, bug_reporter=None, bug_supervisor=None,
@@ -104,7 +108,7 @@ class IHasBugs(Interface):
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
-                    distribution=None, scope=None, sourcepackagename=None,
+                    distribution=None, sourcepackagename=None,
                     has_no_package=None):
         """Search the IBugTasks reported on this entity.
 

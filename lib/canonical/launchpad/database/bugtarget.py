@@ -37,7 +37,7 @@ class HasBugsBase:
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
-                    distribution=None, scope=None, sourcepackagename=None,
+                    distribution=None, sourcepackagename=None,
                     has_no_package=None):
         """See `IHasBugs`."""
         if search_params is None:

@@ -21,7 +21,7 @@ from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
@@ -381,6 +381,8 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
 
 # We are forced to define this now to avoid circular import problems.
 IMessage['distribution'].schema = IDistribution
+IHasBugs['searchTasks'].queryTaggedValue(
+        'lazr.webservice.exported')['params']['distribution'].schema = IDistribution
 
 
 class IDistributionSet(Interface):

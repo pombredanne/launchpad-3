@@ -15,7 +15,7 @@ from zope.schema import Bool, Choice, Int, Object, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
@@ -607,6 +607,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         This method starts and commits transactions, so don't rely on `self`
         or any other database object remaining valid across this call!
         """
+IHasBugs['searchTasks'].queryTaggedValue(
+        'lazr.webservice.exported')['params']['nominated_for'].schema = IDistroSeries
+
 
 class IDistroSeriesSet(Interface):
     """The set of distro seriess."""
