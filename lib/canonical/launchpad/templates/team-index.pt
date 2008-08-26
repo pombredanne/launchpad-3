@@ -22,11 +22,6 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-emails" />
-  <div tal:replace="structure context/@@+portlet-latestquestions" />
-</metal:leftportlets>
-
 <div metal:fill-slot="main">
 
   <tal:icon replace="structure context/image:mugshot" />
