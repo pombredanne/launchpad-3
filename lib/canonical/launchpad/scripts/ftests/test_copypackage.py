@@ -295,7 +295,7 @@ class TestCopyPackage(unittest.TestCase):
         self.assertEqual(len(updates.getBuilds()), 1)
 
     def testWillNotCopyTwice(self):
-        """When invoked twice, copy package doesn't re-copy publications.
+        """When invoked twice, the script doesn't repeat the copy.
 
         As reported in bug #237353, duplicates are generally cruft and may
         cause problems when they include architecture-independent binaries.
@@ -570,9 +570,9 @@ class TestCopyPackage(unittest.TestCase):
             security_source.archive, sourcename)
 
         # Upload a hppa binary but keep it unpublished. When attempting
-        # to re-copy 'lazy-building' to -updates the copy succeeds but
-        # nothing gets copied. Everything built and published from this
-        # source is already copied.
+        # to repeat the copy of 'lazy-building' to -updates the copy
+        # succeeds but nothing gets copied. Everything built and published
+        # from this source is already copied.
         [build_hppa, build_i386] = security_source.getBuilds()
         lazy_bin_hppa = test_publisher.uploadBinaryForBuild(
             build_hppa, 'lazy-bin')
