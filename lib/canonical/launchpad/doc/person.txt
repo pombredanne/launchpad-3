@@ -745,26 +745,14 @@ Searching only for Teams based on their names or email addresses:
     >>> print_people(personset.findTeam('translators'))
     Ubuntu Translators (ubuntu-translators): []
 
-You can get the complete list of people and teams by using the
-getAllValidPersonsAndTeams() method.
+You can get the top overall contributors, that is, the people with the
+most karma.
 
-    >>> people_and_teams = personset.getAllValidPersonsAndTeams()
-    >>> personset.getByName('salgado') in people_and_teams
-    True
-
-    >>> personset.getByName('guadamen') in people_and_teams
-    True
-
-    >>> [person.name
-    ...  for person in people_and_teams if not person.is_valid_person_or_team]
-    []
-
-    >>> from canonical.launchpad.database.person import Person
-    >>> valid_people = Person.select("person.id = ValidPersonCache.id",
-    ...                              clauseTables=['ValidPersonCache'])
-    >>> teams = Person.select("teamowner IS NOT NULL")
-    >>> set(people_and_teams).difference(list(valid_people) + list(teams))
-    set([])
+    >>> for person in personset.getTopContributors(limit=3):
+    ...     print "%s: %s" % (person.name, person.karma)
+    name16: 241
+    name12: 138
+    sabdfl: 130
 
 
 == Packages related to a person ==
@@ -803,6 +791,7 @@ question to any PPA.
     ...     print (sprelease.name,
     ...            sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
+    (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
     (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
