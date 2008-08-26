@@ -106,6 +106,7 @@ class ILaunchpadCelebrities(Interface):
     bazaar_experts = Attribute("The Bazaar Experts team.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
+    commercial_admin = Attribute("The Launchpad Commercial team.")
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
     janitor = Attribute("The Launchpad Janitor.")

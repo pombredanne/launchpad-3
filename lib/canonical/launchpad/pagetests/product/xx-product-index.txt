@@ -18,6 +18,7 @@ It has no external links:
     >>> print find_tag_by_id(user_browser.contents, 'external-links-heading')
     None
 
+
 = Links and Programming languages =
 
 Define a function to help find bits we are interested in:
@@ -141,6 +142,22 @@ is missing licensing information.
     ...                      'portlet-missing-license')
     None
 
+A member of the Launchpad Commercial team will see the warning.
+
+    >>> comm_browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')
+    >>> comm_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(comm_browser.contents,
+    ...                      'portlet-missing-license')
+    <div...Missing license information...</div>
+
+A Launchpad administrator will see the warning.
+
+    >>> admin_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(admin_browser.contents,
+    ...                      'portlet-missing-license')
+    <div...Missing license information...</div>
+
 A project that includes a license of "Other/Open Source" that has not
 been reviewed by a Launchpad administrator will be displayed as
 'Unreviewed.'
@@ -242,6 +259,9 @@ on the index page, since most projects fall into this category.
     >>> print find_tag_by_id(owner_browser.contents, 'license-status')
     None
 
+
+= Configurable Display of Subscription Information =
+
 If the is_subscription_feature_active config variable is false,
 then the owner will not get a warning that the subscription is due.
 # XXX EdwinGrubbs 2008-05-22 bug=234070
@@ -262,3 +282,44 @@ then the owner will not get a warning that the subscription is due.
     ...                      'portlet-requires-subscription')
     None
     >>> test_config_data = config.pop('test_data')
+
+
+= Commercial Subscription Expiration =
+
+If the project has redeemed a voucher for a commercial subscription
+then the expiration date is shown to the project maintainers,
+Launchpad admins, and members of the Launchpad commercial team.
+
+Redeem a voucher to enable the subscription.
+
+    >>> owner_browser = setupBrowser(auth='Basic bac@canonical.com:test')
+    >>> owner_browser.open('http://launchpad.dev/people/+me/+vouchers')
+    >>> owner_browser.getControl(name='field.project').value = 'mega-money-maker'
+    >>> owner_browser.getControl('Redeem').click()
+    >>> for message in get_feedback_messages(owner_browser.contents):
+    ...     print message
+    Voucher redeemed successfully
+
+ The owner will now see the expiration information on the project
+ overview page.
+
+    >>> owner_browser.open('http://launchpad.dev/mega-money-maker')
+    >>> print find_tag_by_id(owner_browser.contents,
+    ...                      'commercial_subscription')
+    <p...Commercial subscription expires:...</p>
+
+Commercial team members will see the expiration information.
+
+    >>> comm_browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')
+    >>> comm_browser.open('http://launchpad.dev/mega-money-maker')
+    >>> print find_tag_by_id(comm_browser.contents,
+    ...                      'commercial_subscription')
+    <p...Commercial subscription expires:...</p>
+
+Launchpad administrators will see the expiration information.
+
+    >>> admin_browser.open('http://launchpad.dev/mega-money-maker')
+    >>> print find_tag_by_id(admin_browser.contents,
+    ...                      'commercial_subscription')
+    <p...Commercial subscription expires:...</p>
