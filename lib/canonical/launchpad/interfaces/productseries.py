@@ -302,12 +302,11 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             readonly=True,
             value_type=Reference(schema=IPerson)))
 
-    bug_supervisors = exported(
-        CollectionField(
-            title=_('Currently just a reference to the project bug '
-                    'supervisor.'),
-            readonly=True,
-            value_type=Reference(schema=IPerson)))
+    bug_supervisor = CollectionField(
+        title=_('Currently just a reference to the project bug '
+                'supervisor.'),
+        readonly=True,
+        value_type=Reference(schema=IPerson))
 
     security_contact = PublicPersonChoice(
         title=_('Security Contact'),

@@ -168,7 +168,6 @@ virtual host.
     >>> firefox_1_0 = webservice.get('/beta/firefox/1.0').jsonBody()
     >>> pprint_entry(firefox_1_0)
     all_milestones_collection_link: u'http://.../beta/firefox/1.0/all_milestones'
-    bug_supervisors_collection_link: u'http://.../beta/firefox/1.0/bug_supervisors'
     date_created: u'2005-06-06T08:59:51.898385+00:00'
     display_name: u'1.0'
     driver_link: None
