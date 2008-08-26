@@ -12,7 +12,9 @@ import bzrlib.branch
 from bzrlib.branch import BranchReferenceFormat
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NotBranchError
+from bzrlib.remote import RemoteBranch
 from bzrlib.revision import NULL_REVISION
+from bzrlib.smart import server
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.transport import get_transport
 
@@ -21,13 +23,41 @@ from canonical.codehosting.puller.worker import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
     ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
-    get_canonical_url_for_branch_name, install_worker_ui_factory)
+    get_vfs_format_classes, install_worker_ui_factory)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
-from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing import LaunchpadScriptLayer, reset_logging
+from canonical.testing import reset_logging
+
+
+class TestGetVfsFormatClasses(TestCaseWithTransport):
+    """Tests for `canonical.codehosting.puller.worker.get_vfs_format_classes`.
+    """
+
+    def tearDown(self):
+        # This makes sure the connections held by the branches opened in the
+        # test are dropped, so the daemon threads serving those branches can
+        # exit.
+        import gc
+        gc.collect()
+        super(TestGetVfsFormatClasses, self).tearDown()
+
+    def test_get_vfs_format_classes(self):
+        # get_vfs_format_classes for a returns the underlying format classes
+        # of the branch, repo and bzrdir, even if the branch is a
+        # RemoteBranch.
+        self.transport_server = server.SmartTCPServer_for_testing
+        vfs_branch = self.make_branch('.')
+        remote_branch = bzrlib.branch.Branch.open(self.get_url('.'))
+        # Check that our set up worked: remote_branch is Remote and
+        # source_branch is not.
+        self.assertIsInstance(remote_branch, RemoteBranch)
+        self.failIf(isinstance(vfs_branch, RemoteBranch))
+        # Now, get_real_format_classes on both branches returns the same
+        # format information.
+        self.assertEqual(
+            get_vfs_format_classes(vfs_branch),
+            get_vfs_format_classes(remote_branch))
 
 
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
@@ -188,6 +218,7 @@ class TestBranchOpenerCheckSource(unittest.TestCase):
         self.assertRaises(
             BranchReferenceLoopError, opener.checkSource, 'a')
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
+
 
 class TestReferenceMirroring(TestCaseWithTransport):
     """Feature tests for mirroring of branch references."""

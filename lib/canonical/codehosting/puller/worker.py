@@ -125,10 +125,10 @@ class PullerWorkerProtocol:
         self.sendEvent('progressMade')
 
 
-def get_real_format_classes(branch):
-    """Return the real classes of the branch, repo and bzrdir formats.
+def get_vfs_format_classes(branch):
+    """Return the vfs classes of the branch, repo and bzrdir formats.
 
-    'real' here means that it will return the underlying format classes of a
+    'vfs' here means that it will return the underlying format classes of a
     remote branch.
     """
     if isinstance(branch, RemoteBranch):
@@ -152,8 +152,8 @@ def get_real_format_classes(branch):
 def identical_formats(branch_one, branch_two):
     """Check if two branches have the same bzrdir, repo, and branch formats.
     """
-    return (get_real_format_classes(branch_one) ==
-            get_real_format_classes(branch_two))
+    return (get_vfs_format_classes(branch_one) ==
+            get_vfs_format_classes(branch_two))
 
 
 class BranchOpener(object):
