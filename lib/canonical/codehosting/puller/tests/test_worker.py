@@ -53,8 +53,8 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         # source_branch is not.
         self.assertIsInstance(remote_branch, RemoteBranch)
         self.failIf(isinstance(vfs_branch, RemoteBranch))
-        # Now, get_real_format_classes on both branches returns the same
-        # format information.
+        # Now, get_vfs_format_classes on both branches returns the same format
+        # information.
         self.assertEqual(
             get_vfs_format_classes(vfs_branch),
             get_vfs_format_classes(remote_branch))
