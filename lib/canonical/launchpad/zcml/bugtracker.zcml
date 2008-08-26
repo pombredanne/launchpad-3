@@ -33,6 +33,20 @@
                           name owner summary title" />
     </content>
 
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IBugTracker"
+      factory="canonical.launchpad.browser.BugTrackerBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IBugTrackerSet"
+      factory="canonical.launchpad.browser.BugTrackerSetBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTracker"
         name="+index" />
@@ -57,15 +71,6 @@
         <browser:page
             name="+portlet-projects"
             template="../templates/bugtracker-portlet-projects.pt"
-            />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugTracker"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.BugTrackerEditView">
-        <browser:page name="+oldedit"
-            template="../templates/bugtracker-edit.pt"
             />
     </browser:pages>
 

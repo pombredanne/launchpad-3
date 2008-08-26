@@ -89,7 +89,7 @@ is the bug owner. He sees the link to the question in the 'Related
 questions' portlet, and uses it to go to the question page.
 
     >>> print extract_text(content(['img'], src='/@@/bug-medium')[0].parent)
-    Bug 10:
+    Bug #10:
 
     >>> portlet = find_portlet(user_browser.contents, 'Related questions')
     >>> question_anchor = portlet.div.a

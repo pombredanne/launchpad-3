@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasOwner)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import (
-    IHasMilestoneSearch, IHasMilestones)
+    ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.specificationtarget import (
@@ -49,12 +49,11 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
-               IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestoneSearch, IHasMilestones,
-               IHasMugshot, IHasOwner, IHasSpecifications, IHasSprints,
-               IHasTranslationGroup, IMakesAnnouncements,
-               IKarmaContext, IPillar):
+class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+               IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
+               IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
+               IHasSpecifications, IHasSprints, IHasTranslationGroup,
+               IMakesAnnouncements, IKarmaContext, IPillar):
     """A Project."""
     export_as_webservice_entry('project_group')
 

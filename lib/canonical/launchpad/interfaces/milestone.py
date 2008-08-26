@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'IHasMilestoneSearch',
+    'ICanGetMilestonesDirectly',
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
@@ -24,8 +24,7 @@ from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters)
+    export_as_webservice_entry, exported)
 
 class MilestoneNameField(ContentNameField):
 
@@ -159,7 +158,8 @@ class IHasMilestones(Interface):
         CollectionField(
             title=_("The visible and active milestones associated with this "
                     "object, ordered by date expected."),
-            value_type=Reference(schema=IMilestone)))
+            value_type=Reference(schema=IMilestone)),
+        exported_as='active_milestones')
 
     all_milestones = exported(
         CollectionField(
@@ -168,14 +168,9 @@ class IHasMilestones(Interface):
             value_type=Reference(schema=IMilestone)))
 
 
-class IHasMilestoneSearch(Interface):
+class ICanGetMilestonesDirectly(Interface):
     """ An interface for classes providing getMilestone(name)."""
 
-    # operation_parameters(name=copy_field(IMilestone['name'])) cannot be used
-    # since that field's validator expects the name to be for a new milestone
-    # so it raises an exception if the name conflicts in the db.
-    @operation_parameters(name=TextLine())
-    @export_read_operation()
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
 

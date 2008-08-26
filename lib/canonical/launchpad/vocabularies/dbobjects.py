@@ -1106,15 +1106,17 @@ class UserTeamsParticipationPlusSelfVocabulary(
 
     def __iter__(self):
         logged_in_user = getUtility(ILaunchBag).user
-        yield logged_in_user
-        super(UserTeamsParticipationPlusSelfVocabulary, self).__iter__()
+        yield self.toTerm(logged_in_user)
+        super_class = super(UserTeamsParticipationPlusSelfVocabulary, self)
+        for person in super_class.__iter__():
+            yield person
 
     def getTermByToken(self, token):
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user.name == token:
             return self.getTerm(logged_in_user)
-        super(UserTeamsParticipationPlusSelfVocabulary, self).getTermByToken(
-            token)
+        super_class = super(UserTeamsParticipationPlusSelfVocabulary, self)
+        return super_class.getTermByToken(token)
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):

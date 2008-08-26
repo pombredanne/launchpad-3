@@ -83,3 +83,23 @@ The project maintainer and registrant are now updated.
   ...     tag.find(text='Registered by:').findParent('tr'))
   Registered by:
   David Allouche
+
+The registrant really should only be a person, not a team, but that
+constraint has to be relaxed to account for old data where we do have
+teams as registrants.
+
+  >>> admin_browser.open('http://launchpad.dev/new-name')
+  >>> admin_browser.getLink('Administer').click()
+  >>> admin_browser.getControl('Registrant').value = 'registry'
+  >>> admin_browser.getControl('Change').click()
+
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'summary'):
+  ...     print extract_text(
+  ...         tag.find(text='Maintainer:').findParent('tr'))
+  Maintainer:
+  Celso Providelo
+  >>> tag = find_tag_by_id(admin_browser.contents, 'portlet-lifecycle')
+  >>> print extract_text(
+  ...     tag.find(text='Registered by:').findParent('tr'))
+  Registered by:
+  Registry Administrators
