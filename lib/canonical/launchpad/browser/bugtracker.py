@@ -5,14 +5,16 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugTrackerSetNavigation',
-    'BugTrackerContextMenu',
-    'BugTrackerSetContextMenu',
-    'BugTrackerView',
-    'BugTrackerSetView',
     'BugTrackerAddView',
+    'BugTrackerBreadcrumbBuilder',
+    'BugTrackerContextMenu',
     'BugTrackerEditView',
     'BugTrackerNavigation',
+    'BugTrackerSetBreadcrumbBuilder',
+    'BugTrackerSetContextMenu',
+    'BugTrackerSetNavigation',
+    'BugTrackerSetView',
+    'BugTrackerView',
     'RemoteBug',
     ]
 
@@ -36,6 +38,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
     redirection, structured)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.widgets import DelimitedListWidget
 
 
@@ -56,8 +59,10 @@ class BugTrackerSetNavigation(GetitemNavigation):
 
     usedfor = IBugTrackerSet
 
-    def breadcrumb(self):
-        return 'Remote Bug Trackers'
+
+class BugTrackerSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IBugTrackerSet`."""
+    text = 'Remote Bug Trackers'
 
 
 class BugTrackerContextMenu(ContextMenu):
@@ -306,9 +311,6 @@ class BugTrackerNavigation(Navigation):
 
     usedfor = IBugTracker
 
-    def breadcrumb(self):
-        return self.context.title
-
     def traverse(self, remotebug):
         bugs = self.context.getBugsWatching(remotebug)
         if len(bugs) == 0:
@@ -320,6 +322,13 @@ class BugTrackerNavigation(Navigation):
         else:
             # else list the watching bugs
             return RemoteBug(self.context, remotebug, bugs)
+
+
+class BugTrackerBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IBugTracker`."""
+    @property
+    def text(self):
+        return self.context.title
 
 
 class RemoteBug:
