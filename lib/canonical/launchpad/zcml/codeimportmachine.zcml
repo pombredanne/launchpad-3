@@ -20,6 +20,13 @@
          appropriate. -->
   </content>
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ICodeImportMachineSet"
+    factory="canonical.launchpad.browser.CodeImportMachineSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <facet facet="branches">
 
     <browser:url

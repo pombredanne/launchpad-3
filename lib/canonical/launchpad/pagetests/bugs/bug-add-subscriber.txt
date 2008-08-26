@@ -37,6 +37,14 @@ currently subscribed to the bug:
     Mark Shuttleworth
     Ubuntu Team
 
+Unlike the main bug page, here the 'Subscribers' portlet does not have
+any 'Subscribe' links.
+
+    >>> user_browser.getLink('Subscribe')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
 He subscribes David Allouche to the bug using his Launchpad username.
 
     >>> user_browser.getControl("Person").value = 'ddaa'

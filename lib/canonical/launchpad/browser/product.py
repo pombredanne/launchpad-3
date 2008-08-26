@@ -17,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductBranchesView',
     'ProductBrandingView',
+    'ProductBreadcrumbBuilder',
     'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductCodeIndexView',
@@ -32,13 +33,13 @@ __all__ = [
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSOP',
+    'ProductSetBreadcrumbBuilder',
     'ProductSetContextMenu',
     'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
     'ProductSetSOP',
     'ProductSetView',
-    'ProductShortLink',
     'ProductSpecificationsMenu',
     'ProductTranslationsMenu',
     'ProductView',
@@ -89,8 +90,7 @@ from canonical.launchpad.browser.distribution import UsesLaunchpadMixin
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import (
     FeedsMixin, ProductBranchesFeedLink)
-from canonical.launchpad.browser.launchpad import (
-    StructuralObjectPresentation, DefaultShortLink)
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
@@ -102,6 +102,7 @@ from canonical.launchpad.webapp import (
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.date import DateWidget
@@ -118,9 +119,6 @@ class ProductNavigation(
     FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
 
     usedfor = IProduct
-
-    def breadcrumb(self):
-        return self.context.displayname
 
     @stepto('.bzr')
     def dotbzr(self):
@@ -152,9 +150,6 @@ class ProductNavigation(
 class ProductSetNavigation(Navigation):
 
     usedfor = IProductSet
-
-    def breadcrumb(self):
-        return 'Projects'
 
     def traverse(self, name):
         # Raise a 404 on an invalid product name
@@ -260,6 +255,13 @@ class ProductSOP(StructuralObjectPresentation):
 
     def listAltChildren(self, num):
         return None
+
+
+class ProductBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProduct`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -633,6 +635,11 @@ class ProductSetSOP(StructuralObjectPresentation):
 
     def listAltChildren(self, num):
         return None
+
+
+class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Return a breadcrumb for an `IProductSet`."""
+    text = "Projects"
 
 
 class ProductSetFacets(StandardLaunchpadFacets):
@@ -1631,12 +1638,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
-
-class ProductShortLink(DefaultShortLink):
-
-    def getLinkText(self):
-        return self.context.displayname
-
 
 class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     """View for the product code overview."""
