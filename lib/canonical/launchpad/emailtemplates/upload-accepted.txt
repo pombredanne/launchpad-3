@@ -1,5 +1,6 @@
 %(CHANGESFILE)s
 %(MAINTAINER)s %(CHANGEDBY)s %(SIGNER)s %(ORIGIN)s
+%(SPR_URL)s
 
 ==
 

@@ -414,6 +414,7 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG:
   DEBUG: -- Launchpad team <launchpad@lists.canonical.com> Tue, 25 Apr 2006 10:36:14 -0300
   DEBUG: Changed-By: Celso R. Providelo <cprov@ubuntu.com>
+  DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-4
   DEBUG:
   DEBUG: ==
   DEBUG:
@@ -472,6 +473,7 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG:
   DEBUG: -- Launchpad team <launchpad@lists.canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
   DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
   DEBUG:
   DEBUG: ==
   DEBUG:
@@ -495,6 +497,7 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG:
   DEBUG: -- Launchpad team <launchpad@lists.canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
   DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
 
   >>> import operator
   >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
@@ -606,6 +609,7 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
   DEBUG:
   DEBUG: -- Launchpad team <launchpad@lists.canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
   DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
   DEBUG:
   DEBUG: ==
   DEBUG:
@@ -745,6 +749,7 @@ the INFO level what it /would/ have sent.
   INFO:
   INFO: -- Launchpad team <launchpad@lists.canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
   INFO: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
+  INFO: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
   INFO:
   INFO: ==
   INFO:
@@ -818,6 +823,7 @@ changes file is mentioned toward the end of the email.
   <BLANKLINE>
   Signed-By: Foo Bar <foo.bar@canonical.com> =
   <BLANKLINE>
+  Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-10
   <BLANKLINE>
   =3D=3D
   <BLANKLINE>

@@ -55,6 +55,7 @@ from canonical.launchpad.scripts.processaccepted import (
     close_bugs_for_queue_item)
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
+from canonical.launchpad.webapp import canonical_url
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -613,6 +614,11 @@ class PackageUpload(SQLBase):
             # Add the debian 'Origin:' field if present.
             if changes.get('origin'):
                 message.ORIGIN = '\nOrigin: %s' % changes['origin']
+
+            if self.sources or self.builds:
+                message.SPR_URL = (
+                    'Source package release: %s' %
+                    canonical_url(self.sourcepackagerelease))
 
             body = message.template % message.__dict__
 
