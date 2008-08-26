@@ -517,6 +517,7 @@ But a Launchpad administrator can purge a registered list.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> test = getUtility(IPersonSet).getByName('name12')
     >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
     >>> test.join(experts)
