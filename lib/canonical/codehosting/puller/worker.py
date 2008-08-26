@@ -3,17 +3,13 @@
 __metaclass__ = type
 
 import httplib
-import os
-import shutil
 import socket
 import sys
 import urllib2
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import (
-    BzrError, NotBranchError, ParamikoNotPresent,
-    UnknownFormatError, UnsupportedFormatError)
+from bzrlib import errors
 from bzrlib.progress import DummyProgress
 from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import get_transport
@@ -21,7 +17,6 @@ import bzrlib.ui
 
 from canonical.config import config
 from canonical.codehosting import ProgressUIFactory
-from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.codehosting.transport import get_puller_server
 from canonical.launchpad.interfaces import BranchType
@@ -395,7 +390,7 @@ class PullerWorker:
         """
         try:
             branch = BzrDir.open(self.dest).open_branch()
-        except NotBranchError:
+        except errors.NotBranchError:
             # Make a new branch in the same format as the source branch.
             branch = self._createDestBranch(source_branch)
         else:
@@ -403,7 +398,7 @@ class PullerWorker:
             # source.
             if identical_formats(source_branch, branch):
                 # The destination exists, and is in the same format.  So all
-                # we need to do is pull the new revisions.
+                # we need to do is update it.
 
                 # If the branch is locked, try to break it.  Our special UI
                 # factory will allow the breaking of locks that look like they
@@ -412,6 +407,24 @@ class PullerWorker:
                 # the timeout expires (currently 5 minutes).
                 if branch.get_physical_lock_status():
                     branch.break_lock()
+
+                # Make sure the mirrored branch is stacked the same way as the
+                # source branch.  Note that we expect this to be fairly
+                # common, as, as of r6889, it is possible for a branch to be
+                # pulled before the stacking information is set at all.
+                try:
+                    stacked_on_url = source_branch.get_stacked_on_url()
+                except (errors.UnstackableRepositoryFormat,
+                        errors.UnstackableBranchFormat,
+                        errors.NotStacked):
+                    stacked_on_url = None
+                try:
+                    branch.set_stacked_on_url(stacked_on_url)
+                except (errors.UnstackableRepositoryFormat,
+                        errors.UnstackableBranchFormat):
+                    if stacked_on_url is not None:
+                        raise AssertionError(
+                            "Couldn't set stacked_on_url %r" % stacked_on_url)
                 branch.pull(source_branch, overwrite=True)
             else:
                 # The destination is in a different format to the source, so
@@ -421,11 +434,11 @@ class PullerWorker:
 
     def _createDestBranch(self, source_branch):
         """Create the branch to pull to, and copy the source's contents."""
-        if os.path.exists(self.dest):
-            shutil.rmtree(self.dest)
-        ensure_base(get_transport(self.dest))
+        dest_transport = get_transport(self.dest)
+        if dest_transport.has('.'):
+            dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
-        bzrdir.clone(self.dest, preserve_stacking=True)
+        bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
         return Branch.open(self.dest)
 
     def _record_oops(self, message=None):
@@ -487,15 +500,15 @@ class PullerWorker:
             msg = 'A socket error occurred: %s' % str(e)
             self._mirrorFailed(msg)
 
-        except UnsupportedFormatError, e:
+        except errors.UnsupportedFormatError, e:
             msg = ("Launchpad does not support branches from before "
                    "bzr 0.7. Please upgrade the branch using bzr upgrade.")
             self._mirrorFailed(msg)
 
-        except UnknownFormatError, e:
+        except errors.UnknownFormatError, e:
             self._mirrorFailed(e)
 
-        except (ParamikoNotPresent, BadUrlSsh), e:
+        except (errors.ParamikoNotPresent, BadUrlSsh), e:
             msg = ("Launchpad cannot mirror branches from SFTP and SSH URLs."
                    " Please register a HTTP location for this branch.")
             self._mirrorFailed(msg)
@@ -508,8 +521,9 @@ class PullerWorker:
             msg = "Launchpad does not mirror %s:// URLs." % e.scheme
             self._mirrorFailed(msg)
 
-        except NotBranchError, e:
-            hosted_branch_error = NotBranchError("lp:~%s" % self.unique_name)
+        except errors.NotBranchError, e:
+            hosted_branch_error = errors.NotBranchError(
+                "lp:~%s" % self.unique_name)
             message_by_type = {
                 BranchType.HOSTED: str(hosted_branch_error),
                 BranchType.IMPORTED: "Not a branch.",
@@ -526,7 +540,7 @@ class PullerWorker:
             msg = "Circular branch reference."
             self._mirrorFailed(msg)
 
-        except BzrError, e:
+        except errors.BzrError, e:
             self._mirrorFailed(e)
 
         except InvalidURIError, e:

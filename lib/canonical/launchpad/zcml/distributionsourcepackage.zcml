@@ -48,6 +48,12 @@
       provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
       factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"
       />
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    factory="canonical.launchpad.browser.DistributionSourcePackageBreadcrumbBuilder"
+    permission="zope.Public"
+    />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     name="+index" />

@@ -1577,8 +1577,9 @@ class IPersonSet(Interface):
 
     title = Attribute('Title')
 
-    def topPeople():
-        """Return the top 5 people by Karma score in the Launchpad."""
+    @collection_default_content()
+    def getTopContributors(limit=50):
+        """Return the top contributors in Launchpad, up to the given limit."""
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
@@ -1700,10 +1701,6 @@ class IPersonSet(Interface):
         The people that translated only IPOTemplate objects that are not
         current will not appear in the returned list.
         """
-
-    @collection_default_content()
-    def getAllValidPersonsAndTeams():
-        """Return all valid persons and teams."""
 
     def updateStatistics(ztm):
         """Update statistics caches and commit."""
