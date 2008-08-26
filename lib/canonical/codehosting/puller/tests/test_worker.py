@@ -21,13 +21,11 @@ from canonical.codehosting.puller.worker import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
     ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
-    get_canonical_url_for_branch_name, install_worker_ui_factory)
+    install_worker_ui_factory)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
-from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing import LaunchpadScriptLayer, reset_logging
+from canonical.testing import reset_logging
 
 
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
@@ -54,7 +52,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
         source_tree = self.make_branch_and_tree('source-branch')
-        to_mirror = self.makePullerWorker(source_tree.branch.base)
+        to_mirror = self.makePullerWorker(
+            source_tree.branch.base, self.get_url('dest'))
         source_tree.commit('commit message')
         to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
@@ -64,7 +63,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     def testMirrorEmptyBranch(self):
         # We can mirror an empty branch.
         source_branch = self.make_branch('source-branch')
-        to_mirror = self.makePullerWorker(source_branch.base)
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('dest'))
         to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
@@ -73,7 +73,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # We can mirror a branch even if the destination exists, and contains
         # data but is not a branch.
         source_tree = self.make_branch_and_tree('source-branch')
-        to_mirror = self.makePullerWorker(source_tree.branch.base)
+        to_mirror = self.makePullerWorker(
+            source_tree.branch.base, self.get_url('destdir'))
         source_tree.commit('commit message')
         # Make the directory.
         dest = get_transport(to_mirror.dest)
@@ -82,7 +83,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # 'dest' is not a branch.
         self.assertRaises(
             NotBranchError, bzrlib.branch.Branch.open, to_mirror.dest)
-        to_mirror.mirror()
+        to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(
             source_tree.last_revision(), mirrored_branch.last_revision())
@@ -92,8 +93,9 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # still available after mirroring.
         http = get_transport('http://example.com')
         source_branch = self.make_branch('source-branch')
-        to_mirror = self.makePullerWorker(source_branch.base)
-        to_mirror.mirror()
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'))
+        to_mirror.mirrorWithoutChecks()
         new_http = get_transport('http://example.com')
         self.assertEqual(get_transport('http://example.com').base, http.base)
         self.assertEqual(new_http.__class__, http.__class__)
