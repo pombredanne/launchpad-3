@@ -1,6 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
-"""Create a XXX comment report in HTML format."""
+"""Create a XXX comment reports in many formats."""
 
 
 __metaclass__ = type
@@ -154,24 +154,24 @@ class Report:
     # 'XXX: First Last Name 2007-07-01 bug=nnnn spec=cccc:'
     # Colans, commas, and spaces may follow each token.
     xxx_person_date_re = re.compile(r"""
-        .*XXX[:,]?[ ]                                  # The XXX indicator.
-        (?P<person>[a-zA-Z][^:]*[\w])[,: ]*            # The persons's nick.
-        (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[,: ]*     # The date in YYYY-MM-DD.
-        (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?     # The bug id.
-        (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?       # The spec name.
-        (?P<text>.*)                                   # The comment text.
+        .*XXX[:,]?[ ]                               # The XXX indicator.
+        (?P<person>[a-zA-Z][^:]*[\w])[,: ]*         # The persons's nick.
+        (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[,: ]*  # The date in YYYY-MM-DD.
+        (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?  # The bug id.
+        (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?    # The spec name.
+        (?P<text>.*)                                # The comment text.
         """, re.VERBOSE)
 
     # An uncommon XXX comment form of:
     # 'XXX: 2007-01-01 First Last Name bug=nnnn spec=cccc:'
     # Colons, commas, and spaces may follow each token.
     xxx_date_person_re = re.compile(r"""
-        .*XXX[:,]?[ ]                                  # The XXX indicator.
-        (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[,: ]*     # The date in YYYY-MM-DD.
-        (?P<person>[a-zA-Z][\w]+)[,: ]*                # The person's nick.
-        (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?     # The bug id.
-        (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?       # The spec name.
-        (?P<text>.*)                                   # The comment text.
+        .*XXX[:,]?[ ]                               # The XXX indicator.
+        (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[,: ]*  # The date in YYYY-MM-DD.
+        (?P<person>[a-zA-Z][\w]+)[,: ]*             # The person's nick.
+        (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?  # The bug id.
+        (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?    # The spec name.
+        (?P<text>.*)                                # The comment text.
         """, re.VERBOSE)
 
     def extract_metadata(self, comment_line):
