@@ -1053,27 +1053,27 @@ should be used instead. See below.
 IArchive.archive_url will return a URL for the archive that the builder can
 use to retrieve files from it.
 
-    >>> partner_archive.archive_url
-    u'http://launchpad.dev/ubuntutest-partner'
+    >>> print partner_archive.archive_url
+    http://launchpad.dev/ubuntutest-partner
 
-    >>> sandbox_archive.archive_url
-    u'http://ppa.launchpad.dev/name16/ubuntu'
+    >>> print sandbox_archive.archive_url
+    http://ppa.launchpad.dev/name16/ubuntu
 
-    >>> getUtility(IArchiveSet).getByDistroPurpose(
+    >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
-    u'http://launchpad.dev/ubuntutest'
+    http://launchpad.dev/ubuntutest
 
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.
 
-    >>> naked_cprov_archive.archive_url
-    u'http://ppa.launchpad.dev/cprov/ubuntu'
+    >>> print naked_cprov_archive.archive_url
+    http://ppa.launchpad.dev/cprov/ubuntu
 
     >>> naked_cprov_archive.private = True
     >>> naked_cprov_archive.syncUpdate()
 
-    >>> naked_cprov_archive.archive_url
-    u'http://private.ppa.launchpad.dev/cprov/ubuntu'
+    >>> print naked_cprov_archive.archive_url
+    http://private-ppa.launchpad.dev/cprov/ubuntu
 
 The publisher config for PARTNER contains only 'partner' in its
 components.  This prevents non-partner being published in the partner

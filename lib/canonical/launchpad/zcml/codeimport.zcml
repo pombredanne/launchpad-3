@@ -25,6 +25,13 @@
       appropriate. -->
   </content>
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ICodeImportSet"
+    factory="canonical.launchpad.browser.CodeImportSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:navigation
       module="canonical.launchpad.browser"
       classes="CodeImportSetNavigation"
