@@ -335,6 +335,13 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
             result.append(dict(style=style, comment=comment))
         return result
 
+    @property
+    def has_bug_or_spec(self):
+        """Return whether or not the merge proposal has a linked bug or spec.
+        """
+        branch = self.context.source_branch
+        return branch.bug_branches or branch.spec_links
+
 
 class DecoratedCodeReviewVoteReference:
     """Provide a code review vote that knows if it is important or not."""

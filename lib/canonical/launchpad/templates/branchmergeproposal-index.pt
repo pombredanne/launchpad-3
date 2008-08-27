@@ -125,6 +125,20 @@
        Add comment
   </div>
 
+  <div id="related-bugs-and-blueprints"
+    tal:define="branch context/source_branch"
+    tal:condition="view/has_bug_or_spec"
+    >
+    <h2>Linked bug reports and blueprints</h2>
+    <div class="actions">
+
+      <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
+    </div>
+    <div class="actions">
+      <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
+    </div>
+  </div>
+
   <div id="source-revisions"
        tal:condition="not: context/queue_status/enumvalue:MERGED">
   <h2>Unmerged revisions</h2>
