@@ -43,6 +43,8 @@ HEAD and OPTIONS.
   Allow: GET
   ...
 
+== Conditional GET ==
+
 The service root never changes except when Launchpad is upgraded. To
 avoid getting it more often than that, a client can store the value of
 the 'ETag' response header the first time it retrieves the service
@@ -84,3 +86,40 @@ representation only if *none* of them match:
   ...     headers={'If-None-Match' : '"a-very-old-etag", "another-etag"'})
   >>> conditional_response.getStatus()
   200
+
+
+== Compression ==
+
+You can get a compressed representation by setting the TE request
+header to "gzip" or "compress". The "Transfer-Encoding" response
+header will show the compression algorithm used.
+
+  >>> from cStringIO import StringIO
+  >>> from gzip import GzipFile
+  >>> gzipped_response = webservice.get(
+  ...     '/beta/', headers={'TE' : 'gzip'})
+  >>> gzipped_response.getHeader("Transfer-Encoding")
+  'gzip'
+  >>> GzipFile(fileobj=StringIO(gzipped_response.getBody())).read()
+  '{...}'
+
+  >>> import zlib
+  >>> compressed_response = webservice.get(
+  ...     '/beta/', headers={'TE' : 'compress'})
+  >>> compressed_response.getHeader("Transfer-Encoding")
+  'compress'
+  >>> zlib.decompress(compressed_response.getBody())
+  '{...}'
+
+The syntax for TE is the same as for the Accept header.
+
+  >>> response = webservice.get(
+  ...     '/beta/', headers={'TE' : 'compress, gzip'})
+  >>> response.getHeader("Transfer-Encoding")
+  'compress'
+
+  >>> response = webservice.get(
+  ...     '/beta/',
+  ...     headers={'TE' : 'compress;q=0.8, unsupported;q=1.0, gzip;q=0.9'})
+  >>> response.getHeader("Transfer-Encoding")
+  'gzip'
