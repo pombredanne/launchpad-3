@@ -118,14 +118,15 @@ class WebServiceCaller:
     def __call__(self, path_or_url, method='GET', data=None, headers=None,
                  api_version=DEFAULT_API_VERSION):
         path_or_url = str(path_or_url)
-        if not path_or_url.startswith('http:'):
-            path_or_url = self.getAbsoluteUrl(path_or_url,
-                                              api_version=api_version)
-        scheme, netloc, path, query, fragment = urlsplit(path_or_url)
+        if path_or_url.startswith('http:'):
+            full_url = path_or_url
+        else:
+            full_url = self.getAbsoluteUrl(path_or_url,
+                                           api_version=api_version)
+        scheme, netloc, path, query, fragment = urlsplit(full_url)
         # Make an HTTP request.
         full_headers = {'Host' : 'api.launchpad.dev'}
         if self.consumer is not None and self.access_token is not None:
-            full_url = self.getAbsoluteUrl(path)
             request = OAuthRequest.from_consumer_and_token(
                 self.consumer, self.access_token, http_url = full_url,
                 )
