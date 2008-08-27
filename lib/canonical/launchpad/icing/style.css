@@ -243,7 +243,8 @@ th.nowrap, td.nowrap {white-space: nowrap;}
 table.contributions {width: 100%;}
 tfoot th, table.contributions th {text-align: left;}
 table.contributions, table.contributions th, table.contributions td {
-  border: 0; padding: 1;}
+  border: 0;
+}
 table.contributions th {font-weight: normal;}
 table.contributions td {vertical-align: middle; width: 16px;}
 
