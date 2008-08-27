@@ -10,10 +10,7 @@
   i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="main" class="pillar"
-         tal:define="has_edit context/required:launchpad.Edit;
-                     has_commercial context/required:launchpad.Commercial"
-    >
+    <div metal:fill-slot="main" class="pillar">
       <div class="section">
         <div style="float:right">
           <span tal:define="link context/menu:overview/review_license"
@@ -29,7 +26,7 @@
         <tal:mugshot replace="structure context/image:mugshot" />
         <h1 tal:content="context/title">Name of project</h1>
         <p id="project-admin-whiteboard" class="whiteboard"
-           tal:condition="has_commercial">
+           tal:condition="context/required:launchpad.Commercial">
           <span tal:content="context/reviewer_whiteboard" />
           (<a href="+review-license">edit reviewer whiteboard</a>)
         </p>
@@ -147,7 +144,7 @@
       </div>
 
       <tal:subscription_info
-         condition="python: has_edit or has_commercial"
+         condition="view/show_commercial_subscription_info"
       >
         <p id="commercial_subscription"
            tal:condition="context/commercial_subscription">
@@ -209,7 +206,7 @@
         </tal:comment>
 
         <tal:warning-for-owner
-           condition="python: has_edit or has_commercial"
+           condition="view/show_commercial_subscription_info"
         >
           <div
              class="section"
