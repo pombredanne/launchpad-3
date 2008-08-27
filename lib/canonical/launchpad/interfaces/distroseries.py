@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
 
-from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.email import email_validator
 
 from canonical.launchpad import _
 
@@ -150,9 +150,10 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "distribution."),
         required=False, vocabulary='ValidPersonOrTeam')
     changeslist = TextLine(
-        title=_("Changeslist"), required=True,
-        description=_("The changes list address for the distroseries."),
-        constraint=valid_email)
+        title=_("E-mail changes to"), required=True,
+        description=_("The mailing list or other e-mail address that "
+                      "Launchpad should notify about new uploads."),
+        constraint=email_validator)
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
     defer_translation_imports = Bool(

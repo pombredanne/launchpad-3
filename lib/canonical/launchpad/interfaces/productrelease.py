@@ -19,7 +19,6 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.validators.productrelease import (
     productrelease_file_size_constraint,
@@ -92,6 +91,15 @@ class ProductReleaseVersionField(ContentNameField):
         return IProductRelease
 
     def _getByName(self, version):
+        """Return the content object for the specified version.
+
+        The version is specified either by the context directly or by the
+        context's referenced productseries.  Overridden from
+        `ContentFieldName`.
+        """
+        # Import locally to avoid circular imports.
+        from canonical.launchpad.interfaces.productseries import (
+            IProductSeries)
         if IProductSeries.providedBy(self.context):
             productseries = self.context
         else:
@@ -159,10 +167,13 @@ class IProductRelease(Interface):
 
 
 class IProductReleaseFile(Interface):
+    """A file associated with a ProductRelease."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    productrelease = Choice(title=_('Project release'), required=True,
-                            vocabulary='ProductRelease')
+    productrelease = Choice(title=_('Project release'),
+                            required=True,
+                            vocabulary='ProductRelease',
+                            description=_("The parent product release."))
     libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
                          description=_("The attached file."),
                          required=True)
@@ -177,6 +188,7 @@ class IProductReleaseFile(Interface):
     date_uploaded = Datetime(title=_('Upload date'),
         description=_('The date this file was uploaded'),
         required=True, readonly=True)
+
 
 class IProductReleaseFileAddForm(Interface):
     """Schema for adding ProductReleaseFiles to a project."""
