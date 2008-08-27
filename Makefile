@@ -98,6 +98,7 @@ check: build
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py $(VERBOSITY)
+	${PYTHON} -t ./utilities/xxxreport.py ./ xxxreport.csv
 
 lint:
 	@bash ./utilities/lint.sh
