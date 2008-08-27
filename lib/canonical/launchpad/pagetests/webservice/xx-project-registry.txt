@@ -6,7 +6,7 @@ Project groups are available at their canonical URL on the API virtual host.
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
 
-    >>> mozilla = webservice.get('mozilla').jsonBody()
+    >>> mozilla = webservice.get('/beta/mozilla').jsonBody()
     >>> pprint_entry(mozilla)
     active: True
     active_milestones_collection_link: u'http://.../mozilla/active_milestones'
@@ -33,7 +33,7 @@ and the all_milestones_collection_link.
 
 Projects are available at their canonical URL on the API virtual host.
 
-    >>> firefox = webservice.get('firefox').jsonBody()
+    >>> firefox = webservice.get('/beta/firefox').jsonBody()
     >>> pprint_entry(firefox)
     active: True
     active_milestones_collection_link: u'http://.../firefox/active_milestones'
@@ -127,17 +127,17 @@ Attributes can be edited via the webservice.patch() method.
 
     >>> from simplejson import dumps
     >>> patch = {
-    ...     u'driver_link': webservice.getAbsoluteUrl('~sabdfl'),
+    ...     u'driver_link': u'http://api.launchpad.dev/beta/~sabdfl',
     ...     u'homepage_url': u'http://sf.net/firefox',
     ...     u'licenses': [u'Python License', u'GNU GPL v2'],
     ...     u'bug_tracker_link':
-    ...         webservice.getAbsoluteUrl('bugs/bugtrackers/mozilla.org'),
+    ...         u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org',
     ...     }
     >>> print webservice.patch(
-    ...     'firefox', 'application/json', dumps(patch))
+    ...     '/beta/firefox', 'application/json', dumps(patch))
     HTTP/1.1 200 Ok
     ...
-    >>> firefox = webservice.get('firefox').jsonBody()
+    >>> firefox = webservice.get('/beta/firefox').jsonBody()
     >>> firefox['driver_link']
     u'http://.../~sabdfl'
     >>> firefox['homepage_url']
@@ -154,15 +154,15 @@ Read-only attributes, like registrant, cannot be modified via the
 webservice.patch() method.
 
     >>> patch = {
-    ...     u'registrant_link': webservice.getAbsoluteUrl('~sabdfl'),
+    ...     u'registrant_link': u'http://api.launchpad.dev/beta/~sabdfl',
     ...     }
     >>> print webservice.patch(
-    ...     'firefox', 'application/json', dumps(patch))
+    ...     '/beta/firefox', 'application/json', dumps(patch))
     HTTP/1.1 400 Bad Request
     ...
     registrant_link: You tried to modify a read-only attribute.
 
-    >>> firefox = webservice.get('firefox').jsonBody()
+    >>> firefox = webservice.get('/beta/firefox').jsonBody()
     >>> firefox['registrant_link']
     u'http://.../~name12'
 
@@ -171,7 +171,7 @@ webservice.patch() method.
 
 It is possible to get a batched list of all the projects.
 
-    >>> project_collection = webservice.get("projects").jsonBody()
+    >>> project_collection = webservice.get("/beta/projects").jsonBody()
     >>> project_collection['resource_type_link']
     u'http://.../#projects'
     >>> project_collection['total_size']
@@ -196,7 +196,7 @@ It is possible to search for projects by a text string by adding
 the ws.op=search parameter.
 
     >>> project_collection = webservice.get(
-    ...   "projects?ws.op=search&text=gnome").jsonBody()
+    ...   "/beta/projects?ws.op=search&text=gnome").jsonBody()
     >>> project_collection['total_size']
     4
 
@@ -205,7 +205,7 @@ the ws.op=search parameter.
 The entry for a project series is available at its canonical URL on the
 virtual host.
 
-    >>> firefox_1_0 = webservice.get('firefox/1.0').jsonBody()
+    >>> firefox_1_0 = webservice.get('/beta/firefox/1.0').jsonBody()
     >>> pprint_entry(firefox_1_0)
     active_milestones_collection_link: u'http://.../firefox/1.0/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/1.0/all_milestones'
@@ -219,7 +219,7 @@ virtual host.
 
 Project releases are available at their canonical URL on the API virtual host.
 
-    >>> firefox_1_0_0 = webservice.get('firefox/1.0/1.0.0').jsonBody()
+    >>> firefox_1_0_0 = webservice.get('/beta/firefox/1.0/1.0.0').jsonBody()
     >>> pprint_entry(firefox_1_0_0)
     project_series_link: u'http://.../firefox/1.0'
     resource_type_link: u'...'
@@ -233,7 +233,7 @@ The entry for a milestone is available at its canonical URL on the API virtual
 host.
 
     >>> firefox_milestone_1_0 = webservice.get(
-    ...     'firefox/+milestone/1.0').jsonBody()
+    ...     '/beta/firefox/+milestone/1.0').jsonBody()
     >>> pprint_entry(firefox_milestone_1_0)
     date_targeted: u'2056-10-16T18:31:44.293448'
     description: None
