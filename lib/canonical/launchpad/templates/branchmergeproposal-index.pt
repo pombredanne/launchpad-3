@@ -65,6 +65,15 @@
     <aside tal:content="structure context/@@+pagelet-subscribers" />
   </div>
 
+  <tal:merge-revno condition="context/merged_revno">
+    This proposal was merged at revision
+    <tal:revno replace="context/merged_revno" />
+    <a href="+merged">
+      <img src="/@@/edit" alt="Edit merge revision"
+        title="Edit merge revision" />
+    </a>
+  </tal:merge-revno>
+
   <tal:superseded-proposal condition="context/supersedes">
     <p id="superseded-proposal">
       This proposal supersedes a
@@ -81,7 +90,6 @@
         <tal:when replace="context/superseded_by/date_created/fmt:date" /></a>.
     </p>
   </tal:superseded-by>
-
   <div>
 
     <h2>Proposed commit message
@@ -123,6 +131,20 @@
        tal:condition="link/enabled"
        tal:content="structure link/render">
        Add comment
+  </div>
+
+  <div id="related-bugs-and-blueprints"
+    tal:define="branch context/source_branch"
+    tal:condition="view/has_bug_or_spec"
+    >
+    <h2>Linked bug reports and blueprints</h2>
+    <div class="actions">
+
+      <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
+    </div>
+    <div class="actions">
+      <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
+    </div>
   </div>
 
   <div id="source-revisions"
