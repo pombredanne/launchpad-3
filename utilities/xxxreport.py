@@ -132,7 +132,7 @@ spec_re = re.compile(r"""
     """, re.VERBOSE)
 # A reference to a bug in the commment: bug=12345
 bug_re = re.compile(r"""
-    [(]?bug[s]?[= ](?P<bug>[\w-]*)[)]?[,:]?[ ]? # The bug id.
+    [(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]* # The bug id.
     (?P<remainder>.*)                     # The remaining bug or comment text.
     """, re.VERBOSE)
 
