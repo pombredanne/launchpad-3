@@ -436,3 +436,19 @@ concluded, so we don't need to do anything else.
     ...Confirmation already concluded...
     ...
 
+XXX: salgado, 2008-08-27: Register a couple extra email addresses to the
+new account to aid in other tests of this story. It was added when I
+took 02-addemail.txt out of this story and should be removed once we
+move the remainder of this story into standalone tests.
+
+    >>> from canonical.launchpad.database.emailaddress import EmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
+    >>> email = EmailAddressSet().new(
+    ...     'bar.foo@canonical.com', person=foo,
+    ...     status=EmailAddressStatus.VALIDATED)
+    >>> email = EmailAddressSet().new(
+    ...     'baz.foo@canonical.com', person=foo,
+    ...     status=EmailAddressStatus.VALIDATED)
+    >>> import transaction
+    >>> transaction.commit()

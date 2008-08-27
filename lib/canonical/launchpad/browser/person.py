@@ -3991,7 +3991,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                     "added this email address before or because our system "
                     "detected it as being yours. If it was detected by our "
                     "system, it's probably shown on this page and is waiting "
-                    "to be confirmed as yours." % email.email)
+                    "to be confirmed as yours." % newemail)
             else:
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
@@ -4000,14 +4000,12 @@ class PersonEditEmailsView(LaunchpadFormView):
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
                 self.addError(
                     structured(
-                    "The email address '%s' is already registered to "
-                    '<a href="%s">%s</a>. If you think that is a '
-                    'duplicated account, you can <a href="%s">merge it</a> '
-                    "into your account. ",
-                    email.email,
-                    canonical_url(owner),
-                    owner.browsername,
-                    merge_url))
+                        "The email address '%s' is already registered to "
+                        '<a href="%s">%s</a>. If you think that is a '
+                        'duplicated account, you can <a href="%s">merge it'
+                        "</a> into your account.",
+                        newemail, canonical_url(owner), owner.browsername,
+                        merge_url))
         return self.errors
 
     @action(_("Add"), name="add_email", validator=validate_action_add_email)

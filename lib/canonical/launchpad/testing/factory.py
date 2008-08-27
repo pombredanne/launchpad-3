@@ -121,7 +121,8 @@ class LaunchpadObjectFactory:
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
 
     def makePerson(self, email=None, name=None, password=None,
-                   email_address_status=None, displayname=None):
+                   email_address_status=None, hide_email_addresses=False,
+                   displayname=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -133,6 +134,8 @@ class LaunchpadObjectFactory:
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
         :param displayname: The display name to use for the person.
+        :param hide_email_addresses: Whether or not to hide the person's email
+            address(es) from other users.
         """
         if email is None:
             email = self.getUniqueEmailAddress()
@@ -148,7 +151,8 @@ class LaunchpadObjectFactory:
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password=password, displayname=displayname)
+            password=password, displayname=displayname,
+            hide_email_addresses=hide_email_addresses)
 
         # To make the person someone valid in Launchpad, validate the
         # email.
