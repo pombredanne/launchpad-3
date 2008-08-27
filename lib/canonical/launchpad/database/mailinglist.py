@@ -18,6 +18,9 @@ from email.Header import decode_header, make_header
 from itertools import repeat
 from string import Template
 
+from storm.expr import SQL
+from storm.store import Store
+
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility, queryAdapter
 from zope.event import notify
@@ -434,34 +437,36 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         # Import here to avoid circular imports.
         from canonical.launchpad.database.emailaddress import EmailAddress
-        team_members = EmailAddress.select("""
-            TeamParticipation.team = %s AND
-            TeamParticipation.person = EmailAddress.person AND
-            EmailAddress.person = Person.id AND
-            Person.teamowner is NULL AND
-            MailingList.team = TeamParticipation.team AND
-            MailingList.status <> %s AND
-            EmailAddress.status IN %s
-            """ % sqlvalues(self.team, MailingListStatus.INACTIVE,
-                            (EmailAddressStatus.VALIDATED,
-                             EmailAddressStatus.PREFERRED)),
-            distinct=True, prejoins=['person'],
-            clauseTables=['MailingList', 'TeamParticipation', 'Person'])
-        # In addition, anyone who's had a held message approved for the list
-        # gets to post to the list.
-        approved_posters = EmailAddress.select("""
-            MessageApproval.mailing_list = %s AND
-            MessageApproval.status IN %s AND
-            MessageApproval.posted_by = EmailAddress.person AND
-            EmailAddress.status IN %s
-            """ % sqlvalues(self,
-                            (PostedMessageStatus.APPROVED,
-                             PostedMessageStatus.APPROVAL_PENDING),
-                            (EmailAddressStatus.VALIDATED,
-                             EmailAddressStatus.PREFERRED)),
-            distinct=True, prejoins=['person'],
-            clauseTables=['MessageApproval'])
-        return team_members.union(approved_posters)
+
+        store = Store.of(self)
+        email_address_statuses = (EmailAddressStatus.VALIDATED,
+                                  EmailAddressStatus.PREFERRED)
+        message_approval_statuses = (PostedMessageStatus.APPROVED,
+                                     PostedMessageStatus.APPROVAL_PENDING)
+        select = SQL("""
+            SELECT EmailAddress.id
+            FROM EmailAddress, TeamParticipation, MailingList, Person
+            WHERE TeamParticipation.team = %(team_id)s AND
+                  TeamParticipation.person = EmailAddress.person AND
+                  EmailAddress.person = Person.id AND
+                  Person.teamowner IS NULL AND
+                  MailingList.team = TeamParticipation.team AND
+                  MailingList.status != %(inactive)s AND
+                  EmailAddress.status IN %(email_statuses)s
+            UNION
+            SELECT EmailAddress.id
+            FROM EmailAddress, MessageApproval
+            WHERE MessageApproval.mailing_list = %(list_id)s AND
+                  MessageApproval.status IN %(approval_statuses)s AND
+                  MessageApproval.posted_by = EmailAddress.person AND
+                  EmailAddress.status IN %(email_statuses)s
+            """ % sqlvalues(team_id=self.team.id,
+                            list_id=self.id,
+                            inactive=MailingListStatus.INACTIVE,
+                            email_statuses=email_address_statuses,
+                            approval_statuses=message_approval_statuses,
+                            ))
+        return store.find(EmailAddress, EmailAddress.id.is_in(select))
 
     def holdMessage(self, message):
         """See `IMailingList`."""
