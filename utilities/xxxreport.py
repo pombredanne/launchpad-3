@@ -109,27 +109,29 @@ def extract_comments(file_path):
     return comments
 
 
-# The standard annotation form of 'XXX: First Last Name 2007-07-01:'
+# The standard annotation form of:
+# 'XXX: First Last Name 2007-07-01 bug=nnnn spec=cccc:'
 # Colans, commas, and spaces may follow each token.
 xxx_person_date_re = re.compile(r"""
     .*XXX[:,]?[ ]                                  # The XXX indicator.
-    (?P<person>[a-zA-Z][^:]*)[:,]?[ ]              # The persons's nick.
-    (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[:,]?[ ]?  # The date in YYYY-MM-DD.
-    (?P<remainder>.*)
+    (?P<person>[a-zA-Z][^:]*)[,: ]*                # The persons's nick.
+    (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[,: ]*     # The date in YYYY-MM-DD.
+    (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?     # The bug id.
+    (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?       # The spec name.
+    (?P<text>.*)                                   # The comment text.
     """, re.VERBOSE)
-# An uncommon annotation form of 'XXX: 2007-01-01 First Last Name:'
+# An uncommon annotation form of:
+# 'XXX: 2007-01-01 First Last Name bug=nnnn spec=cccc:'
 # Colons, commas, and spaces may follow each token.
 xxx_date_person_re = re.compile(r"""
     .*XXX[:,]?[ ]                                  # The XXX indicator.
-    (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[:,]?[ ]?  # The date in YYYY-MM-DD.
-    (?P<person>[a-zA-Z][\w]+)                      # The person's nick.
-    (?P<remainder>.*)
+    (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[,: ]*     # The date in YYYY-MM-DD.
+    (?P<person>[a-zA-Z][\w]+)[,: ]*                # The person's nick.
+    (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?     # The bug id.
+    (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?       # The spec name.
+    (?P<text>.*)                                   # The comment text.
     """, re.VERBOSE)
-bug_spec_re = re.compile(r"""
-    (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?  # The bug id.
-    (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?    # The spec name.
-    (?P<remainder>.*)                      # The remaining comment text.
-    """, re.VERBOSE)
+
 
 def extract_metadata(comment_line):
     """Return a dict of metadata extracted from the lines of a comment.
@@ -144,18 +146,16 @@ def extract_metadata(comment_line):
         # This comment follows a known style.
         comment['person'] = match.group('person').strip(':, ')
         comment['date'] = match.group('date').strip(':, ')
-        remainder = match.group('remainder').lstrip(':, ')
+        comment['bug'] = match.group('bug') or None
+        comment['spec'] = match.group('spec') or None
+        text = match.group('text').lstrip(':, ')
     else:
         # Unknown comment format.
-        remainder = comment_line
+        text = comment_line
 
-    match = bug_spec_re.match(remainder)
-    comment['bug'] = match.group('bug') or None
-    comment['spec'] = match.group('spec') or None
-    remainder = match.group('remainder')
-    remainder = remainder.strip()
-    if remainder != '':
-        comment['text'] = [remainder + '\n']
+    text = text.strip()
+    if text != '':
+        comment['text'] = [text + '\n']
     return comment
 
 
