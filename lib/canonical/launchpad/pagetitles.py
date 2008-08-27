@@ -223,8 +223,6 @@ def branch_visibility_edit(context, view):
     """Return the view's pagetitle."""
     return view.pagetitle
 
-branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
-
 bug_activity = ContextBugId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
@@ -267,10 +265,7 @@ bug_create_question = LaunchbagBugID(
 bug_remove_question = LaunchbagBugID(
     'Bug #%d - Convert this question back to a bug')
 
-bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
-
 bugbranch_edit = "Edit branch fix status"
-bugbranch_status = "Edit branch fix status"
 
 def bugcomment_index(context, view):
     """Return the page title for a bug comment."""
@@ -354,8 +349,6 @@ bugtask_requestfix = LaunchbagBugID(
 bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
-
-bugtask_non_contributor_assignee_confirm = 'Confirm bug assignment'
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
@@ -458,8 +451,6 @@ cve_linkbug = ContextDisplayName('Link %s to a bug report')
 
 cve_unlinkbugs = ContextDisplayName('Remove links between %s and bug reports')
 
-debug_root_changelog = 'Launchpad changelog'
-
 debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
@@ -540,6 +531,8 @@ distroarchseriesbinarypackage_index = ContextTitle('%s')
 distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
 distroseries_addport = ContextTitle('Add a port of %s')
+
+distroseries_admin = ContextTitle('Administer %s')
 
 distroseries_bugs = ContextTitle('Bugs in %s')
 
@@ -682,8 +675,6 @@ launchpad_legal = 'Launchpad legalese'
 
 launchpad_login = 'Log in or register with Launchpad'
 
-launchpad_log_out = 'Log out from Launchpad'
-
 launchpad_notfound = 'Error: Page not found'
 
 launchpad_onezerostatus = 'One-Zero Page Template Status'
@@ -717,10 +708,6 @@ def loginservice_authorize(context, view):
 
 loginservice_login = 'Launchpad Login Service'
 
-loginservice_newaccount = 'Create a new account'
-
-loginservice_resetpassword = 'Reset your password'
-
 logintoken_claimprofile = 'Claim Launchpad profile'
 
 logintoken_claimteam = 'Claim Launchpad team'
@@ -750,8 +737,6 @@ malone_about = 'About Launchpad Bugs'
 malone_distros_index = 'Report a bug about a distribution'
 
 malone_index = 'Launchpad Bugs'
-
-malone_filebug = "Report a bug"
 
 # malone_people_index is a redirect
 
@@ -838,10 +823,6 @@ object_reassignment = ContextTitle('Reassign %s')
 object_translations = ContextDisplayName('Translation templates for %s')
 
 oops = 'Oops!'
-
-def openid_decide(context, view):
-    """Return the page title to authenticate to the system."""
-    return 'Authenticate to %s' % view.openid_request.trust_root
 
 openid_index = 'Launchpad OpenID Server'
 
@@ -935,6 +916,8 @@ def person_index(context, view):
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
+person_maintained_packages = ContextDisplayName('Software maintained by %s')
+
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
 
 def person_mergeproposals(context, view):
@@ -951,6 +934,10 @@ person_packagebugs_search = person_packagebugs
 
 person_participation = ContextTitle("Team participation by %s")
 
+person_ppa_packages = ContextDisplayName('PPA packages related to %s')
+
+person_related_projects = ContextDisplayName('Projects related to %s')
+
 person_related_software = ContextDisplayName('Software related to %s')
 
 person_review = ContextDisplayName("Review %s")
@@ -964,6 +951,8 @@ person_translations = ContextDisplayName('Translations made by %s')
 person_translations_relicensing = "Translations licensing"
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
+
+person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
@@ -1083,9 +1072,6 @@ productseries_index = ContextTitle('Overview of %s')
 
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
-
-productseries_source = ContextDisplayName(
-    'Set upstream revision control system for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
@@ -1291,8 +1277,6 @@ def sourcepackages(context, view):
     """Return the page title for a source package in a distroseries."""
     return '%s source packages' % context.distroseries.title
 
-sourcepackages_comingsoon = 'Coming soon'
-
 sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
 
 sources_list = 'Available code imports'
@@ -1370,8 +1354,6 @@ specificationtarget_index = ContextTitle('Blueprint listing for %s')
 def specificationtarget_specs(context, view):
     """Return the page title for a specificationtarget."""
     return view.title
-
-specificationtarget_roadmap = ContextTitle('Project plan for %s')
 
 specificationtarget_assignments = ContextTitle('Blueprint assignments for %s')
 

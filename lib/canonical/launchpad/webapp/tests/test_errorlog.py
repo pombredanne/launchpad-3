@@ -13,6 +13,8 @@ from textwrap import dedent
 import tempfile
 import traceback
 
+from zope.app.publication.tests.test_zopepublication import (
+    UnauthenticatedPrincipal)
 from zope.publisher.browser import TestRequest
 from zope.security.interfaces import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
@@ -20,7 +22,8 @@ from zope.testing.loggingsupport import InstalledHandler
 from canonical.config import config
 from canonical.testing import reset_logging
 from canonical.launchpad import versioninfo
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
 
@@ -340,20 +343,6 @@ class TestErrorReportingUtility(unittest.TestCase):
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
-        class TestRequestWithPrincipal(TestRequest):
-            def setInWSGIEnvironment(self, key, value):
-                self._orig_env[key] = value
-
-            class principal:
-                id = 42
-                title = u'title'
-                # non ASCII description
-                description = u'description |\N{BLACK SQUARE}|'
-
-                @staticmethod
-                def getLogin():
-                    return u'Login'
-
         request = TestRequestWithPrincipal(
                 environ={
                     'SERVER_URL': 'http://localhost:9000/foo',
@@ -424,7 +413,6 @@ class TestErrorReportingUtility(unittest.TestCase):
 
     def test_raising_for_script(self):
         """Test ErrorReportingUtility.raising with a ScriptRequest."""
-        from canonical.launchpad.webapp.errorlog import ScriptRequest
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
@@ -472,7 +460,6 @@ class TestErrorReportingUtility(unittest.TestCase):
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
-
 
     def test_raising_with_unprintable_exception(self):
         # Test ErrorReportingUtility.raising() with an unprintable exception.
@@ -522,22 +509,55 @@ class TestErrorReportingUtility(unittest.TestCase):
             lines[16], 'UnprintableException: <unprintable instance object>\n'
             )
 
-    def test_raising_unauthorized(self):
-        """Test ErrorReportingUtility.raising() with an Unauthorized
-        exception.
-
-        An OOPS is not recorded when a Unauthorized exceptions is raised.
-        """
+    def test_raising_unauthorized_without_request(self):
+        """Unauthorized exceptions are logged when there's no request."""
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
-
         try:
             raise Unauthorized('xyz')
         except Unauthorized:
             utility.raising(sys.exc_info(), now=now)
-
         errorfile = os.path.join(utility.errordir(now), '01800.T1')
-        self.assertFalse(os.path.exists(errorfile))
+        self.failUnless(os.path.exists(errorfile))
+
+    def test_raising_unauthorized_without_principal(self):
+        """Unauthorized exceptions are logged when the request has no
+        principal."""
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = ScriptRequest([('name2', 'value2')])
+        try:
+            raise Unauthorized('xyz')
+        except Unauthorized:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.failUnless(os.path.exists(errorfile))
+
+    def test_raising_unauthorized_with_unauthenticated_principal(self):
+        """Unauthorized exceptions are not logged when the request has an
+        unauthenticated principal."""
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = TestRequestWithUnauthenticatedPrincipal()
+        try:
+            raise Unauthorized('xyz')
+        except Unauthorized:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.failIf(os.path.exists(errorfile))
+
+    def test_raising_unauthorized_with_authenticated_principal(self):
+        """Unauthorized exceptions are logged when the request has an
+        authenticated principal."""
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = TestRequestWithPrincipal()
+        try:
+            raise Unauthorized('xyz')
+        except Unauthorized:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.failUnless(os.path.exists(errorfile))
 
     def test_raising_translation_unavailable(self):
         """Test ErrorReportingUtility.raising() with a TranslationUnavailable
@@ -601,6 +621,24 @@ class TestErrorReportingUtility(unittest.TestCase):
         # traceback
         self.assertEqual(''.join(lines[13:17]), exc_tb)
 
+
+class TestRequestWithUnauthenticatedPrincipal(TestRequest):
+    principal = UnauthenticatedPrincipal(42)
+
+
+class TestRequestWithPrincipal(TestRequest):
+    def setInWSGIEnvironment(self, key, value):
+        self._orig_env[key] = value
+
+    class principal:
+        id = 42
+        title = u'title'
+        # non ASCII description
+        description = u'description |\N{BLACK SQUARE}|'
+
+        @staticmethod
+        def getLogin():
+            return u'Login'
 
 
 def test_suite():

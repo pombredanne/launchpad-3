@@ -35,6 +35,12 @@
         factory="canonical.launchpad.webapp.menu.MenuLink"
         />
 
+    <adapter
+        for="*"
+        provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+        factory="canonical.launchpad.webapp.publication.DefaultPrimaryContext"
+        />
+
     <content class="canonical.launchpad.webapp.menu.MenuLink">
         <require
             permission="zope.Public"
@@ -177,13 +183,6 @@
         for="canonical.launchpad.interfaces.ISpecification"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationImageDisplayAPI"
-        name="image"
-        />
-
-    <adapter
-        for="canonical.launchpad.browser.PillarSearchItem"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PillarSearchItemAPI"
         name="image"
         />
 
@@ -497,6 +496,12 @@
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        />
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.IFeedsApplication"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />

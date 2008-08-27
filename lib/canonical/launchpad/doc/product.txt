@@ -120,12 +120,51 @@ ILaunchpadStatisticSet is stored in the 'stats' attribute.
     >>> print FakeStatsProductSet().count_reviewed()
     3000
 
-It provides information on all the translatables available, too:
+
+== Translatable Products ==
+
+IProductSet will also tell us which products can be translated:
 
     >>> for product in productset.getTranslatables():
     ...    print product.name
     alsa-utils
     evolution
+
+A similar list of "featured translatables" picks a random set of these,
+so we can present a short list of arbitrary projects that a user can
+help translate.
+
+XXX JeroenVermeulen 2008-07-31 bug-253583: We're not using this method
+at the moment.  Remove it or start using it?
+
+    >>> for product in productset.featuredTranslatables():
+    ...     print product.name
+    alsa-utils
+    evolution
+
+In featuredTranslatables() we can also set how many products we want to
+show at maximum.  We can pick just one random translatable product, for
+example.
+
+    >>> features = [
+    ...     product.name for product in productset.featuredTranslatables(1)]
+    >>> len(features)
+    1
+    >>> features[0] in ('alsa-utils', 'evolution')
+    True
+
+Only active products are listed as translatables.
+
+    >>> evo.active = False
+    >>> for product in productset.getTranslatables():
+    ...    print product.name
+    alsa-utils
+
+    >>> for product in productset.featuredTranslatables():
+    ...    print product.name
+    alsa-utils
+
+    >>> evo.active = True
 
 
 == Package links ==
@@ -222,6 +261,9 @@ We can create new products with the createProduct() method:
     ...     summary='A test product',
     ...     description='A description of the test product',
     ...     licenses=(License.GNU_GPL_V2,))
+
+    >>> verifyObject(IProduct, product)
+    True
 
 When creating a product, a default product series is created for it:
 

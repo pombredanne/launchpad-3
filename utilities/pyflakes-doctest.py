@@ -22,6 +22,7 @@ GLOBAL_NAMES = set([
     'canonical_url',
     'commit',
     'create_view',
+    'create_initialized_view',
     'flush_database_updates',
     'getUtility',
     'login',
@@ -68,7 +69,9 @@ GLOBAL_NAMES = set([
     # For OpenID per-version tests
     'PROTOCOL_URI',
     # For buildd tests
-    'test_dbuser'
+    'test_dbuser',
+    # For Mailman tests
+    'xmlrpc_watcher',
     ])
 
 

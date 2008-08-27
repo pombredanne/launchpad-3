@@ -562,9 +562,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
     inactivegpgkeys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
-    ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
-    otherwikis = Attribute(
-        "All WikiNames of this Person that are not the Ubuntu one.")
     allwikis = exported(
         CollectionField(title=_("All WikiNames of this Person."),
                         readonly=True, required=False,
@@ -591,7 +588,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "Branches to which this person " "subscribes.")
     myactivememberships = exported(
         CollectionField(
-            title=_("All `ITeamMembership`s for Teams this Person is an "
+            title=_("All TeamMemberships for Teams this Person is an "
                     "active member of."),
             value_type=Reference(schema=ITeamMembership),
             readonly=True, required=False),
@@ -603,18 +600,31 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                           "(to join a team) sent to this person."),
             readonly=True, required=False,
             value_type=Reference(schema=ITeamMembership)))
-    teams_participated_in = exported(
-        CollectionField(
-            title=_('All teams in which this person is a participant.'),
-            readonly=True, required=False,
-            value_type=Reference(schema=Interface)),
-        exported_as='participations')
-    teams_indirectly_participated_in = exported(
-        CollectionField(
-            title=_('All teams in which this person is an indirect member.'),
-            readonly=True, required=False,
-            value_type=Reference(schema=Interface)),
-        exported_as='indirect_participations')
+    # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
+    # into account whether or not a team's memberships are private.
+    # teams_participated_in = exported(
+    #     CollectionField(
+    #         title=_('All teams in which this person is a participant.'),
+    #         readonly=True, required=False,
+    #         value_type=Reference(schema=Interface)),
+    #     exported_as='participations')
+    teams_participated_in = CollectionField(
+        title=_('All teams in which this person is a participant.'),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
+    # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
+    # into account whether or not a team's memberships are private.
+    # teams_indirectly_participated_in = exported(
+    #     CollectionField(
+    #         title=_(
+    #             'All teams in which this person is an indirect member.'),
+    #         readonly=True, required=False,
+    #         value_type=Reference(schema=Interface)),
+    #     exported_as='indirect_participations')
+    teams_indirectly_participated_in = CollectionField(
+        title=_('All teams in which this person is an indirect member.'),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
     teams_with_icons = Attribute(
         "Iterable of all Teams that this person is active in that have "
         "icons")
@@ -840,9 +850,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         The product_name may be None.
         """
 
-    @operation_parameters(team=copy_field(ITeamMembership['team']))
-    @operation_returns_collection_of(Interface) # Really IPerson
-    @export_read_operation()
+    # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
+    # into account whether or not a team's memberships are private.
+    # @operation_parameters(team=copy_field(ITeamMembership['team']))
+    # @operation_returns_collection_of(Interface) # Really IPerson
+    # @export_read_operation()
     def findPathToTeam(team):
         """Return the teams that cause this person to be a participant of the
         given team.
@@ -922,8 +934,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         Iterate no more than the given limit.
         """
 
-    @operation_parameters(team=copy_field(ITeamMembership['team']))
-    @export_read_operation()
+    # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
+    # into account whether or not a team's memberships are private.
+    # @operation_parameters(team=copy_field(ITeamMembership['team']))
+    # @export_read_operation()
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
 
@@ -1209,7 +1223,7 @@ class IPersonViewRestricted(Interface):
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
         CollectionField(
-            title=_("Active `ITeamMembership`s for this object's members."),
+            title=_("Active TeamMemberships for this object's members."),
             description=_(
                 "Active TeamMemberships are the ones with the ADMIN or "
                 "APPROVED status.  The results are ordered using "
@@ -1262,6 +1276,7 @@ class IPersonEditRestricted(Interface):
 
         Join the given team according to the policies and defaults of that
         team:
+
         - If the team subscriptionpolicy is OPEN, the user is added as
           an APPROVED member with a NULL TeamMembership.reviewer.
         - If the team subscriptionpolicy is MODERATED, the user is added as
@@ -1562,8 +1577,9 @@ class IPersonSet(Interface):
 
     title = Attribute('Title')
 
-    def topPeople():
-        """Return the top 5 people by Karma score in the Launchpad."""
+    @collection_default_content()
+    def getTopContributors(limit=50):
+        """Return the top contributors in Launchpad, up to the given limit."""
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
@@ -1673,19 +1689,8 @@ class IPersonSet(Interface):
         Return None if there is no person with the given name.
         """
 
-    def getByOpenIdIdentifier(openid_identity):
-        """Return the person with the given OpenID identifier, or None."""
-
-    @operation_returns_collection_of(IPerson)
-    @export_read_operation()
-    def getAllTeams(orderBy=None):
-        """Return all Teams, ignoring the merged ones.
-
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
-        """
+    def getByAccount(account):
+        """Return the `IPerson` with the given account, or None."""
 
     def getPOFileContributors(pofile):
         """Return people that have contributed to the specified POFile."""
@@ -1696,21 +1701,6 @@ class IPersonSet(Interface):
         The people that translated only IPOTemplate objects that are not
         current will not appear in the returned list.
         """
-
-    @operation_returns_collection_of(IPerson)
-    @export_read_operation()
-    def getAllPersons(orderBy=None):
-        """Return all Persons, ignoring the merged ones.
-
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
-        """
-
-    @collection_default_content()
-    def getAllValidPersonsAndTeams():
-        """Return all valid persons and teams."""
 
     def updateStatistics(ztm):
         """Update statistics caches and commit."""
@@ -1788,15 +1778,6 @@ class IPersonSet(Interface):
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
         address.
-        """
-
-    def getUbunteros(orderBy=None):
-        """Return a set of person with valid Ubuntero flag.
-
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
         """
 
     def latest_teams(limit=5):
@@ -2002,13 +1983,16 @@ for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
 IPersonPublic['super_teams'].value_type.schema = ITeam
-IPersonPublic['teams_participated_in'].value_type.schema = ITeam
-IPersonPublic['teams_indirectly_participated_in'].value_type.schema = ITeam
+# XXX: salgado, 2008-08-01: Uncomment these when teams_*participated_in are
+# exported again.
+# IPersonPublic['teams_participated_in'].value_type.schema = ITeam
+# IPersonPublic['teams_indirectly_participated_in'].value_type.schema = ITeam
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
-    (IPersonPublic['findPathToTeam'], 'team'),
-    (IPersonPublic['inTeam'], 'team'),
+    # XXX: salgado, 2008-08-01: Uncomment these when they are exported again.
+    # (IPersonPublic['findPathToTeam'], 'team'),
+    # (IPersonPublic['inTeam'], 'team'),
     (IPersonEditRestricted['join'], 'team'),
     (IPersonEditRestricted['leave'], 'team'),
     (IPersonEditRestricted['addMember'], 'person'),
@@ -2020,8 +2004,9 @@ for method, name in params_to_fix:
         'lazr.webservice.exported')['params'][name].schema = IPerson
 
 # Fix schema of operation return values.
-IPersonPublic['findPathToTeam'].queryTaggedValue(
-    'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
+# XXX: salgado, 2008-08-01: Uncomment when findPathToTeam is exported again.
+# IPersonPublic['findPathToTeam'].queryTaggedValue(
+#     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 

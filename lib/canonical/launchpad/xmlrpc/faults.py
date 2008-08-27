@@ -20,6 +20,7 @@ __all__ = [
     'InvalidProductIdentifier',
     'InvalidBranchUrl',
     'NoBranchForSeries',
+    'NoBranchWithID',
     'NoDefaultBranchForPillar',
     'NoSuchBranch',
     'NoSuchBug',
@@ -343,3 +344,13 @@ class InvalidBranchName(LaunchpadFault):
     def __init__(self, error):
         error_message = error.args[0].encode('utf-8', 'replace')
         LaunchpadFault.__init__(self, error=error_message)
+
+
+class NoBranchWithID(LaunchpadFault):
+    """There's no branch with the given ID."""
+
+    error_code = 270
+    msg_template = 'No branch with ID %(branch_id)s'
+
+    def __init__(self, branch_id):
+        LaunchpadFault.__init__(self, branch_id=branch_id)

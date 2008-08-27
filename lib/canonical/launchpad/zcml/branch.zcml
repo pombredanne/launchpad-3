@@ -23,11 +23,11 @@
                     bzr_identity canBeDeleted deletionRequirements
                     associatedProductSeries subscribe getSubscription
                     hasSubscription unsubscribe getSubscriptionsByLevel
-                    getBranchRevision getBranchRevisionByRevisionId
+                    getBranchRevision
                     createBranchRevision getTipRevision updateScannedDetails
                     getNotificationRecipients getScannerData getPullURL
                     requestMirror startMirroring mirrorComplete mirrorFailed
-                    branch_format repository_format control_format"
+                    branch_format repository_format control_format stacked_on"
                     />
     <require
         permission="launchpad.Edit"
@@ -38,7 +38,7 @@
                         mirror_failures pull_disabled next_mirror_time
                         last_scanned last_scanned_id revision_count branch_type
                         reviewer branch_format repository_format
-                        control_format"
+                        control_format stacked_on"
         />
     <require
         permission="launchpad.AnyPerson"
@@ -61,6 +61,21 @@
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.webapp.badge.IHasBadges"
       factory="canonical.launchpad.browser.BranchBadges"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+      factory="canonical.launchpad.browser.branch.BranchPrimaryContext"
+      />
+
+  <!-- hierarchy -->
+  <browser:page
+      for="canonical.launchpad.interfaces.IBranch"
+      name="+hierarchy"
+      class="canonical.launchpad.browser.branch.BranchHierarchy"
+      attribute="__call__"
+      permission="zope.Public"
       />
 
   <subscriber
@@ -100,9 +115,6 @@
             name="+portlet-details"
             template="../templates/branch-portlet-details.pt" />
         <browser:page
-            name="+series-reference"
-            template="../templates/branch-series-reference.pt" />
-        <browser:page
             name="+associations"
             template="../templates/branch-associations.pt" />
         <browser:page
@@ -119,9 +131,6 @@
     <browser:page
         name="+portlet-privacy"
         template="../templates/branch-portlet-privacy.pt" />
-    <browser:page
-        name="+portlet-specifications"
-        template="../templates/branch-portlet-specifications.pt" />
     <browser:page
         name="+heading"
         template="../templates/branch-heading.pt" />
@@ -150,16 +159,6 @@
       class="canonical.launchpad.browser.BranchInProductView" >
     <browser:page
         name="+product-summary-listing"
-        template="../templates/branch-summary-listing.pt" />
-  </browser:pages>
-
-  <browser:pages
-      for="canonical.launchpad.interfaces.IBranch"
-      facet="overview"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.BranchInPersonView" >
-    <browser:page
-        name="+person-summary-listing"
         template="../templates/branch-summary-listing.pt" />
   </browser:pages>
 

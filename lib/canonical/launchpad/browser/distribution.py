@@ -5,30 +5,31 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionNavigation',
-    'DistributionDynMenu',
-    'DistributionSOP',
-    'DistributionFacets',
-    'DistributionSpecificationsMenu',
-    'DistributionView',
-    'DistributionPPASearchView',
-    'DistributionAllPackagesView',
-    'DistributionEditView',
-    'DistributionSetView',
     'DistributionAddView',
+    'DistributionAllPackagesView',
+    'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
     'DistributionCountryArchiveMirrorsView',
+    'DistributionBreadcrumbBuilder',
+    'DistributionDisabledMirrorsView',
+    'DistributionEditView',
+    'DistributionFacets',
+    'DistributionLanguagePackAdminView',
+    'DistributionNavigation',
+    'DistributionPPASearchView',
+    'DistributionPendingReviewMirrorsView',
+    'DistributionSOP',
+    'DistributionSpecificationsMenu',
     'DistributionSeriesMirrorsView',
     'DistributionSeriesMirrorsRSSView',
-    'DistributionArchiveMirrorsRSSView',
-    'DistributionDisabledMirrorsView',
-    'DistributionPendingReviewMirrorsView',
-    'DistributionUnofficialMirrorsView',
-    'DistributionLanguagePackAdminView',
+    'DistributionSetBreadcrumbBuilder',
+    'DistributionSetContextMenu',
     'DistributionSetFacets',
     'DistributionSetNavigation',
-    'DistributionSetContextMenu',
     'DistributionSetSOP',
+    'DistributionSetView',
+    'DistributionUnofficialMirrorsView',
+    'DistributionView',
     'UsesLaunchpadMixin',
     ]
 
@@ -70,12 +71,9 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.helpers import english_list
-from canonical.launchpad.browser.seriesrelease import (
-    SeriesOrReleasesMixinDynMenu)
-from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp import NavigationMenu
-from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.widgets.image import ImageChangeWidget
 
 
@@ -97,7 +95,7 @@ class UsesLaunchpadMixin:
             url = canonical_url(self.context, rootsite='bugs')
             uses.append(href_template % (url, 'Bug Tracking'))
         if IProduct.providedBy(self.context):
-            if self.context.official_rosetta:
+            if self.context.official_codehosting:
                 url = canonical_url(self.context, rootsite='code')
                 uses.append(href_template % (url, 'Code'))
         if self.context.official_rosetta:
@@ -121,9 +119,6 @@ class DistributionNavigation(
     @redirection('+source', status=301)
     def redirect_source(self):
         return canonical_url(self.context)
-
-    def breadcrumb(self):
-        return self.context.displayname
 
     @stepto('+packages')
     def packages(self):
@@ -154,9 +149,6 @@ class DistributionSetNavigation(Navigation):
 
     usedfor = IDistributionSet
 
-    def breadcrumb(self):
-        return 'Distributions'
-
     def traverse(self, name):
         # Raise a 404 on an invalid distribution name
         distribution = self.context.getByName(name)
@@ -178,6 +170,13 @@ class DistributionSOP(StructuralObjectPresentation):
 
     def listAltChildren(self, num):
         return None
+
+
+class DistributionBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistribution`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -206,6 +205,11 @@ class DistributionSetSOP(StructuralObjectPresentation):
 
     def listAltChildren(self, num):
         return None
+
+
+class DistributionSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistributionSet`."""
+    text = 'Distributions'
 
 
 class DistributionSetFacets(StandardLaunchpadFacets):
@@ -512,15 +516,11 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
+    links = ['listall', 'doc', 'assignments', 'new']
 
     def listall(self):
         text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        return Link('+roadmap', text, icon='info')
 
     def assignments(self):
         text = 'Assignments'
@@ -1004,33 +1004,3 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
     def mirrors(self):
         return self.context.disabled_mirrors
 
-
-class DistributionDynMenu(
-    DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
-
-    menus = {
-        '': 'mainMenu',
-        'meetings': 'meetingsMenu',
-        'series': 'seriesMenu',
-        'milestones': 'milestoneMenu',
-        }
-
-    @neverempty
-    def milestoneMenu(self):
-        """Show milestones more recently than one month ago,
-        or with no due date.
-        """
-        fairly_recent = (
-            datetime.datetime.utcnow() - datetime.timedelta(days=30))
-        for milestone in self.context.milestones:
-            if (milestone.dateexpected is None or
-                milestone.dateexpected > fairly_recent):
-                yield self.makeLink(milestone.title, context=milestone)
-        yield self.makeLink('Show all milestones...', page='+milestones')
-
-    @neverempty
-    def mainMenu(self):
-        yield self.makeLink('Series', page='+series', submenu='serieses')
-        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
-        yield self.makeLink(
-            'Milestones', page='+milestones', submenu='milestones')

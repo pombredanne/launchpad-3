@@ -40,7 +40,7 @@
 
 <div
   class="actions"
-  tal:define="current_bugtask view/currentBugTask"
+  tal:define="current_bugtask view/current_bugtask"
 
         tal:condition="view/displayAlsoAffectsLinks">
     <tal:also-affects-links define="context_menu context/menu:context">

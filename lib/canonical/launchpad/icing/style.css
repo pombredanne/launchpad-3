@@ -219,7 +219,7 @@ margin for Internet Explorer, and up to a reasonable maximum: */
 textarea {width: 90%; max-width: 60em;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
-table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
+table.form {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
 table.form th {font-weight: normal;}
 table.form th, table.form td {padding-bottom: 1em;}
 table.form td td {padding-bottom: 0;}
@@ -466,12 +466,6 @@ hr {
   background-repeat: repeat-x;
   background-position: top center;
 }
-/* Home icon and link. */
-#globalheader a.home {
-  display: block;
-  margin: 0;
-  padding: 0;
-}
 #globalheader .sitemessage a {
   color: #FFF;
   text-decoration: underline;
@@ -482,214 +476,6 @@ hr {
   color: #FFF;
   font-size: 13px;
   padding-top: 2px;
-}
-
-ul#menuroot a#homebreadcrumb span {
-  background: url(home-low-high.gif) left top no-repeat;
-  padding-left: 16px; /* space between home icon and the word "Home" */
-}
-ul#menuroot li a#homebreadcrumb:hover span,
-ul#menuroot li.selected a#homebreadcrumb span {
-  background: url(home-low-high.gif) left -20px no-repeat;
-  padding-left: 16px;
-}
-/* The location bar contains menus. */
-ul#menuroot {
-  display: inline;
-  float: left;
-  margin: 0;
-  /* Right padding needed so the rightmost arrow is within the box. It must be
-     the opposite of the negative right margin on breadcrumb items. */
-  /* Other paddings and margins set to zero to undo the generic "ul" style. */
-  padding: 0 16px 0 0;
-  margin: 0;
-  /* To prevent a gap when "#logincontrol" wraps around and the font size is
-     increased, we need to prevent the box height from being greater than the
-     height of the #locationbar box, which sets the green background. We do not
-     inherit the height limit from #location bar because this element is
-     floated.
-
-     0px vertical padding + 26px height = 26px, height of "#locationbar". */
-  height: 26px;
-}
-/* XXX: needs explanation */
-ul#menuroot li {
-  display: inline;
-}
-/* Style for breadcrumb items.
- *
- * XXX: background stuff needs explanation.
- *
- * Negative right margin for breadcrumbs.
- * This is part of how we make them look like arrows.
- */
-ul#menuroot a.breadcrumb {
-  position: relative;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1000px 0px;
-  display: block;
-  float: left;
-  margin-right: -16px;
-}
-/* "Your location:" text.
- *
- * The 1px negative right margin is to bring the first breadcrumb a little
- * closer to the "Your location:" text.  It makes it look visually tighter
- * because of the chevron shape of the highlights.
- */
-#yourlocation {
-  float: left;
-  display: block;
-  background-image: url(locationbar_a_bg.gif);
-  background-repeat: no-repeat;
-  background-position: -1100px 0px;
-  padding: 6px 0 6px 10px;
-  margin-right: -1px;
-  /* To prevent a gap when "#logincontrol" wraps around and the font size is
-     increased, we need to prevent the box height from being greater than the
-     height of the #locationbar box, which sets the green background. We do not
-     inherit the height limit from #location bar because this element is
-     floated.
-
-     12px vertical padding + 14px height = 26px, height of "#locationbar". */
-  height: 14px;
-}
-/* IE6 specific rule to make the location bar look better. */
-* html #yourlocation {padding-bottom: 4px;}
-/* Display dyn menu items and breadcrumbs with black text and as blocks. */
-#locationbar li a,
-#locationbar li span {
-  display: block;
-  color: #000000;
-}
-/* Unlinked items.  Same colour as the overview actions menu. */
-#locationbar li .unlinked {
-  color: #83AD23;
-}
-/* XXX: needs explanation */
-ul#menuroot a.breadcrumb em { /* should be changed to not need em */
-  font-style: normal;
-  float: left;
-  display: block;
-  background-image: url(locationbar_nodrop_em_bg.gif);
-  background-repeat: no-repeat;
-  background-position: right top;
-  padding: 6px 26px 6px 20px;
-  cursor: pointer;
-}
-* html ul#menuroot a.breadcrumb em {padding-bottom: 4px;} /* for IE6 */
-/* When a breadcrumb has a submenu, show a down-arrow. */
-ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
-  background-image: url(locationbar_em_bg.gif);
-}
-/* General appearance of a dynamic menu item.
- * The area we actually see on the page is an <a> element.
- * The <li> element takes up no space.
- */
-#locationbar ul.menu li a,
-#locationbar ul.menu li .unlinked {
-  background-image: none;
-  background-color: #AFDB1F;
-  float: none;
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 3px;
-  padding-bottom: 3px;
-  height: auto;
-}
-/* General appearance of a dynamic menu item. */
-#locationbar ul.menu li {
-  margin-bottom: 0px;
-  padding-bottom: 0px;
-}
-/* Appearance of a dynamic menu or submenu.
- * Note the 3d-effect border.
- * Note the z-index so that they appear above all other content.
- */
-#locationbar ul.menu {
-  background-color: #AFDB1F;
-  position: absolute;
-  z-index: 2000;
-  margin-left: 0px;
-  border-right: 1px solid #90B51A;
-  border-bottom: 1px solid #90B51A;
-  border-top: 1px solid #DCF58B;
-  border-left: 1px solid #DCF58B;
-  padding-left: 0px;
-  padding-right: 0px;
-}
-
-/* Because the menus are misplaced on IE6, we'll hide them for now. */
-* html ul#menuroot a.container.breadcrumb em {
-  background-image: url(locationbar_nodrop_em_bg.gif);
-}
-* html #locationbar ul.menu {display: none;}
-
-/* Inhibit underlines on all dyn menu items. */
-#locationbar li a:hover {
-  text-decoration: none;
-}
-/* Set the appearance of dyn menu items other than the breadcrumbs
- * on mouse-over.
- * The colour #EEE is sometimes used for debugging.
- */
-#locationbar ul#rootmenu ul.menu li a:hover {
-  /* color: #EEE; */
-}
-/* Set the appearance of dyn menu items other than the breadcrumbs
- * when selected and potentially opened.
- * This works, but has the > that makes IE unhappy.
- * #locationbar ul.menu li.selected>a {
- *   background-color: #C8EF48;
- *   color: #000;
- * }
- * So instead, we have the following two rules.
-*/
-#locationbar ul.menu li a {
-  background-color: #AFDB1F;
-  color: #000;
-}
-#locationbar ul.menu li.selected>a {
-  background-color: #C8EF48;
-  color: #000;
-}
-/* Set the appearance of breadcrumb items on mouse-over.
- * This is the same as how they look when selected, so that
- * they look right during the deliberate delay between being
- * moused-over and actually activated.
- */
-ul#menuroot li a.breadcrumb:hover {
-  background-position: 0px 0px;
-  color: #000;
-}
-/* Set the appearance of breadcrumb items when selected for opening. */
-ul#menuroot li.selected a.breadcrumb {
-  background-position: 0px 0px;
-  color: #000;
-}
-/* Make dyn menu items that are the source of submenus have a right-arrow
- * on the far right, to show they can be opened.
- *
- * Does not include the breadcrumbs.
- */
-#locationbar ul.menu a.container {
-  background-image: url(/@@/arrowRight);
-  background-repeat: no-repeat;
-  background-position: center right;
-}
-/* Allow dyn menus to appear ouside of the locationbar, even though they
- * overflow its bounds.
- */
-#locationbar {overflow: visible;}
-/* Prevent the text in links in menu items from wrapping.
- * Apply appropriate formatting to links in menu items.
- */
-#locationbar li a,
-#locationbar li .unlinked {
-  left: auto;
-  margin: 0px 0px 0px 0px;
-  white-space: pre;
 }
 
 /* === Location bar === */
@@ -1065,7 +851,7 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
 
 /* The last element on every page is a standard footer. */
 #globalfooter {
-    clear: both; 
+    clear: both;
     border: solid #c1c9d6;
     border-width: 1px 0 0 0;
     margin: 0.5em 0;
@@ -1171,6 +957,8 @@ portlets. We achieve this using a negative right margin: */
 #portlets {width: 200px; margin: 0;}
 /* Inside, the main column itself keeps 20px clear of the 200px column: */
 #nonportlets {margin-right: 220px;}
+/* Non-portlets can also be constrained to an easily readable width. */
+#nonportlets.readable {max-width: 40em;}
 /* One-column pages can construct portlets using <div class="aside">: */
 div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 

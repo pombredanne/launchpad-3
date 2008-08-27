@@ -20,9 +20,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 # These import shims are actually necessary if we don't go over the
 # entire codebase and fix where the import should come from.
 from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
-    IOpenLaunchBag, NotFoundError, UnexpectedFormData,
-    UnsafeFormGetSubmissionError)
+    IBasicLaunchpadRequest, ILaunchBag, ILaunchpadRoot, IOpenLaunchBag,
+    NotFoundError, UnexpectedFormData, UnsafeFormGetSubmissionError)
 
 
 __all__ = [
@@ -32,7 +31,6 @@ __all__ = [
     'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
-    'IBreadcrumb',
     'ICrowd',
     'IFeedsApplication',
     'IHWDBApplication',
@@ -200,6 +198,10 @@ class IPrivateApplication(ILaunchpadApplication):
     authserver = Attribute("""Old Authserver API end point.""")
 
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
+
+    branch_puller = Attribute("""Branch puller end point.""")
+
+    branchfilesystem = Attribute("""The branch filesystem end point.""")
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 

@@ -26,7 +26,7 @@
       <div class="object identifier">
 
           <tal:icon replace="structure context/image:icon" />
-          Bug <tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
+          Bug #<tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
           condition="context/bug/name">
           (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>:
 

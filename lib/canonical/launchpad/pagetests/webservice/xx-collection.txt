@@ -11,60 +11,60 @@ examples.
 A collection responds to GET by serving one page of the objects in the
 collection.
 
-  >>> people_collection = webservice.get("/beta/people").jsonBody()
-  >>> people_collection['resource_type_link']
-  u'http://api.launchpad.dev/beta/#people'
-  >>> people_collection['total_size']
-  59
-  >>> people_collection['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
-  >>> people_collection.get('prev_collection_link') is None
+  >>> bugs_collection = webservice.get("/beta/bugs").jsonBody()
+  >>> bugs_collection['resource_type_link']
+  u'http://.../#bugs'
+  >>> bugs_collection['total_size']
+  15
+  >>> bugs_collection['next_collection_link']
+  u'http://.../bugs?ws.start=5&ws.size=5'
+  >>> bugs_collection.get('prev_collection_link') is None
   True
 
   >>> from operator import itemgetter
-  >>> people_entries = sorted(
-  ...     people_collection['entries'], key=itemgetter('name'))
-  >>> len(people_entries)
+  >>> bugs_entries = sorted(
+  ...     bugs_collection['entries'], key=itemgetter('title'))
+  >>> len(bugs_entries)
   5
-  >>> people_entries[0]['display_name']
-  u'Brad Crittenden'
-  >>> people_entries[0]['self_link']
-  u'http://api.launchpad.dev/beta/~bac'
-  >>> people_entries[-1]['display_name']
-  u'Carlos Perell\xf3 Mar\xedn'
+  >>> bugs_entries[0]['title']
+  u'Copy, Cut and Delete operations should work on selections'
+  >>> bugs_entries[0]['self_link']
+  u'http://.../bugs/12'
+  >>> bugs_entries[-1]['title']
+  u'jokosher exposes personal details in its actions portlet'
 
 You can get other pages of the collection by following links:
 
-  >>> result = webservice.get("/beta/people?ws.start=5&ws.size=5")
+  >>> result = webservice.get("/beta/bugs?ws.start=5&ws.size=5")
   >>> second_batch = result.jsonBody()
   >>> second_batch['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.start=10&ws.size=5'
+  u'http://.../bugs?ws.start=10&ws.size=5'
   >>> second_batch['prev_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.start=0&ws.size=5'
+  u'http://.../bugs?ws.start=0&ws.size=5'
 
-  >>> people_entries = sorted(
-  ...     second_batch['entries'], key=itemgetter('name'))
-  >>> people_entries[0]['name']
-  u'commercial-admins'
+  >>> bugs_entries = sorted(
+  ...     second_batch['entries'], key=itemgetter('title'))
+  >>> bugs_entries[0]['title']
+  u'A test bug'
 
 You can also get a larger batch than the default:
 
-  >>> big_batch = webservice.get("/beta/people?ws.size=50").jsonBody()
+  >>> big_batch = webservice.get("/beta/bugs?ws.size=10").jsonBody()
   >>> len(big_batch['entries'])
-  50
+  10
   >>> big_batch.get('next_collection_link')
-  u'http://api.launchpad.dev/beta/people?ws.start=50&ws.size=50'
+  u'http://.../bugs?ws.start=10&ws.size=10'
 
-  >>> bigger_batch = webservice.get("/beta/people?ws.size=75").jsonBody()
+  >>> bigger_batch = webservice.get("/beta/bugs?ws.size=20").jsonBody()
   >>> len(bigger_batch['entries'])
-  59
+  15
   >>> bigger_batch.get('next_collection_link') is None
   True
 
 But requesting a batch size higher than the maximum configured value
 results in a 400 error.
 
-    >>> print webservice.get("/beta/people?ws.start=0&ws.size=1000")
+    >>> print webservice.get("/beta/bugs?ws.start=0&ws.size=1000")
     HTTP/1.1 400 Bad Request
     ...
     Content-Type: text/plain...
@@ -135,8 +135,6 @@ The elements of a collection can be looked up by unique identifier:
   expired_members_collection_link: http://.../~admins/expired_members
   hide_email_addresses: False
   homepage_content: None
-  indirect_participations_collection_link:
-      http://.../~admins/indirect_participations
   invited_members_collection_link: http://.../~admins/invited_members
   irc_nicknames_collection_link: http://.../~admins/irc_nicknames
   is_team: True
@@ -155,11 +153,10 @@ The elements of a collection can be looked up by unique identifier:
   open_membership_invitations_collection_link:
       http://.../~admins/open_membership_invitations
   participants_collection_link: http://.../~admins/participants
-  participations_collection_link: http://.../~admins/participations
   preferred_email_address_link: None
   proposed_members_collection_link: http://.../~admins/proposed_members
   renewal_policy: invite them to apply for renewal
-  resource_type_link: http://api.launchpad.dev/beta/#team
+  resource_type_link: http://.../#team
   self_link: http://.../~admins
   sub_teams_collection_link: http://.../~admins/sub_teams
   subscription_policy: Moderated Team
@@ -174,7 +171,7 @@ A collection may be scoped to an element:
 
   >>> result = webservice.get("/beta/~admins/members").jsonBody()
   >>> result['resource_type_link']
-  u'http://api.launchpad.dev/beta/#person-page-resource'
+  u'http://.../#person-page-resource'
   >>> team_members = sorted(
   ...     result['entries'], key=itemgetter('name'))
   >>> len(team_members)
@@ -210,7 +207,7 @@ like a collection.
   >>> s_people['total_size']
   8
   >>> s_people['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws.op=find&text=s&ws.start=5&ws.size=5'
+  u'http://.../people?ws.op=find&text=s&ws.start=5&ws.size=5'
   >>> sorted(p['name'] for p in s_people['entries'])
   [u'keybuk', u'salgado', u'sigurd-ubuntu', u'sjoerd', u'stevea']
 
@@ -251,7 +248,7 @@ the collection of people.
   >>> print create_team("serviceteam", "Service Team")
   HTTP/1.1 201 Created
   ...
-  Location: http://api.launchpad.dev/beta/~serviceteam
+  Location: http://.../~serviceteam
   <BLANKLINE>
 
   >>> print webservice.get('/beta/~serviceteam')
@@ -261,7 +258,7 @@ the collection of people.
   >>> print create_team("serviceteam2", "Service Team")
   HTTP/1.1 201 Created
   ...
-  Location: http://api.launchpad.dev/beta/~serviceteam2
+  Location: http://.../~serviceteam2
   <BLANKLINE>
 
   >>> print webservice.get('/beta/~serviceteam2')

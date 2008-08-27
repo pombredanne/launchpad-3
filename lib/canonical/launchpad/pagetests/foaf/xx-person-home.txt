@@ -1,26 +1,9 @@
 = Personal Home Pages =
 
-    >>> from canonical.launchpad.database import Person
-
-Carlos can never see name12's email addresses: he has chosen not to disclose
-them.
-
-    >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
-    >>> browser.open('http://launchpad.dev/~name12')
-
-    >>> name12 = Person.get(12)
-    >>> name12.preferredemail.email
-    u'test@canonical.com'
-    >>> name12.hide_email_addresses
-    True
-
-    >>> str(name12.preferredemail.email) in browser.contents
-    False
-
-Launchpad creates profiles for people that have contributed to free software
-(e.g. in a bug import or a translation template upload). It's clearly
-stated that those people don't use Launchpad and why there's a profile for
-them.
+Launchpad creates profiles for people that have contributed to free
+software (e.g. in a bug import or a translation template upload). It's
+clearly stated that those people don't use Launchpad and why there's a
+profile for them.
 
     >>> browser.open('http://launchpad.dev/~limi')
     >>> browser.title
@@ -35,85 +18,46 @@ them.
 == Email address disclosure ==
 
 Mark has a registered email address, and he has chosen to disclose it to
-the world.
-
-    >>> mark = Person.get(1)
-    >>> mark.preferredemail.email
-    u'mark@hbd.com'
-    >>> mark.hide_email_addresses
-    False
-
-If you are not logged in, you will not be able to see it:
+the world. Anonymous users cannot see Mark's address
 
     >>> anon_browser.open('http://launchpad.dev/~sabdfl')
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'contact-details'))
     Email: Log in for email information.
     ...
 
-If you log in, however, you will:
+A logged in user such as Sample Person, can see Mark's addresses.
 
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~sabdfl')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    >>> sample_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> sample_browser.open('http://launchpad.dev/~sabdfl')
+    >>> print extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'contact-details'))
     Email: mark@hbd.com
     ...
 
 As for Sample Person, he has chosen not to disclose his email addresses.
-Anonymous users can't see them:
+unprivileged users like No Privileges Person cannot see his addresses:
 
-    >>> anon_browser.open('http://launchpad.dev/~name12')
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
-    Email: Log in for email information.
-    ...
-
-And neither can unprivileged users:
-
-    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~name12')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    >>> user_browser.open('http://launchpad.dev/~name12')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'contact-details'))
     Email: No public address provided.
     ...
 
-But good ole Foo Bar can:
+But Foo Bar can:
 
     >>> admin_browser.open('http://launchpad.dev/~name12')
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'contact-details'))
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'contact-details'))
     Email: test@canonical.com
            testing@canonical.com
     ...
 
-And so can the Commercial Admins team:
+Teams are similar, unless the team doesn't have an email address:
 
-    >>> commercial_browser = setupBrowser(
-    ...     auth='Basic commercial-member@canonical.com:test')
-    >>> commercial_browser.open('http://launchpad.dev/~name12')
-    >>> print extract_text(find_tag_by_id(commercial_browser.contents,
-    ...                    'contact-details'))
-    Email: test@canonical.com
-           testing@canonical.com
-    ...
-
-In the case of teams, it works similarly. No email address is disclosed
-if you're not logged in:
-
-    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
-    Contact details
-    Email: Log in for email information.
-    ...
-
-But if you are, you can:
-
-    >>> browser.open('http://launchpad.dev/~ubuntu-team')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
-    Contact details
-    Email: support@ubuntu.com
-    ...
-
-That is, of course, unless the team doesn't have one:
-
-    >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    >>> user_browser.open('http://launchpad.dev/~landscape-developers')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'contact-details'))
     Contact details
     Email: No contact address
       (Launchpad notifications are sent to all team members)
@@ -242,7 +186,6 @@ Teams don't have a time zone field.
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
     Email: No contact address ...
-    Wiki: .../Guadamen
 
 
 == Table of contributions ==
