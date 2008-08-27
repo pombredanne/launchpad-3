@@ -18,7 +18,7 @@ from email.Header import decode_header, make_header
 from itertools import repeat
 from string import Template
 
-from storm.expr import And, Or, Select, SQL, Union
+from storm.expr import SQL
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
@@ -33,7 +33,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
-from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
@@ -434,97 +433,16 @@ class MailingList(SQLBase):
             clauseTables=clause_tables, prejoins=['person'])
         return preferred.union(specific)
 
-    _tracer = None
-
     def getSenderAddresses(self):
         """See `IMailingList`."""
         # Import here to avoid circular imports.
         from canonical.launchpad.database.emailaddress import EmailAddress
-        from canonical.launchpad.database.person import Person
-
-        import sys
-        from storm import tracer
-
-        class Tracer:
-            def __init__(self):
-                self.count = 0
-            def connection_raw_execute(self, *args, **kws):
-                pass
-            def connection_raw_execute_success(self, *args, **kws):
-                self.count += 1
-            def connection_raw_execute_error(self, *args, **kws):
-                pass
-
-        if MailingList._tracer is None:
-            MailingList._tracer = Tracer()
-            tracer.remove_all_tracers()
-            tracer.install_tracer(MailingList._tracer)
-
-##         team_members = EmailAddress.select("""
-##             TeamParticipation.team = %s AND
-##             TeamParticipation.person = EmailAddress.person AND
-##             EmailAddress.person = Person.id AND
-##             Person.teamowner is NULL AND
-##             MailingList.team = TeamParticipation.team AND
-##             MailingList.status <> %s AND
-##             EmailAddress.status IN %s
-##             """ % sqlvalues(self.team, MailingListStatus.INACTIVE,
-##                             (EmailAddressStatus.VALIDATED,
-##                              EmailAddressStatus.PREFERRED)),
-##             distinct=True, prejoins=['person'],
-##             clauseTables=['MailingList', 'TeamParticipation', 'Person'])
-##         # In addition, anyone who's had a held message approved for the list
-##         # gets to post to the list.
-##         approved_posters = EmailAddress.select("""
-##             MessageApproval.mailing_list = %s AND
-##             MessageApproval.status IN %s AND
-##             MessageApproval.posted_by = EmailAddress.person AND
-##             EmailAddress.status IN %s
-##             """ % sqlvalues(self,
-##                             (PostedMessageStatus.APPROVED,
-##                              PostedMessageStatus.APPROVAL_PENDING),
-##                             (EmailAddressStatus.VALIDATED,
-##                              EmailAddressStatus.PREFERRED)),
-##             distinct=True, prejoins=['person'],
-##             clauseTables=['MessageApproval'])
-##         #results = team_members.union(approved_posters).prejoin(['person'])
-##         results = team_members.union(approved_posters)
 
         store = Store.of(self)
         email_address_statuses = (EmailAddressStatus.VALIDATED,
                                   EmailAddressStatus.PREFERRED)
         message_approval_statuses = (PostedMessageStatus.APPROVED,
                                      PostedMessageStatus.APPROVAL_PENDING)
-
-        # Turn out DBItems into integers, as required by Storm.  Two other
-        # options are possible: implement automatic converters for our
-        # DBItems, or change the associated content object definitions.  We do
-        # it this way because it's the most localized change.
-##         team_members_query = Select(
-##             EmailAddress.id,
-##             And(TeamParticipation.teamID == self.teamID,
-##                 TeamParticipation.personID == EmailAddress.personID,
-##                 EmailAddress.personID == Person.id,
-##                 Person.teamownerID == None,
-##                 MailingList.teamID == TeamParticipation.teamID,
-##                 MailingList.status != MailingListStatus.INACTIVE,
-##                 EmailAddress.status.is_in(email_address_statuses))
-##             )
-##         approved_posters_query = Select(
-##             EmailAddress.id,
-##             And(MessageApproval.mailing_listID == self.id,
-##                 MessageApproval.status.is_in(message_approval_statuses),
-##                 MessageApproval.posted_byID == EmailAddress.personID,
-##                 EmailAddress.status.is_in(email_address_statuses)
-##                 ))
-##         full_query = Union(team_members_query, approved_posters_query)
-##         import pdb; pdb.set_trace()
-##         results = store.find(
-##             (EmailAddress, Person, TeamParticipation, MailingList,
-##              MessageApproval),
-##             full_query).config(distinct=True)
-
-        #result_ids = store.execute("""
         select = SQL("""
             SELECT EmailAddress.id
             FROM EmailAddress, TeamParticipation, MailingList, Person
@@ -548,10 +466,7 @@ class MailingList(SQLBase):
                             email_statuses=email_address_statuses,
                             approval_statuses=message_approval_statuses,
                             ))
-        results = store.find(EmailAddress, EmailAddress.id.is_in(select))
-
-        print >> sys.__stderr__, '@@@@@ statements:', MailingList._tracer.count
-        return results
+        return store.find(EmailAddress, EmailAddress.id.is_in(select))
 
     def holdMessage(self, message):
         """See `IMailingList`."""
