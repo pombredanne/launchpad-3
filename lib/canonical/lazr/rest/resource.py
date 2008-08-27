@@ -213,12 +213,15 @@ class HTTPResource:
     def applyTransferEncoding(self, representation):
         """Apply a requested transfer-encoding to the representation.
 
-        'gzip' and 'compress' are the only supported transfer-encodings.
+        'gzip' and 'deflate' are the only supported transfer-encodings.
 
         This method has side effects. If an encoding was applied, it
         sets the "Transfer-Encoding" response header to the name of
         that encoding.
         """
+        if representation == "":
+            # Don't compress an empty representation--that makes it nonempty.
+            return ""
         requested_encodings = self._parseAcceptStyleHeader(
             self.request.get('HTTP_TE'))
         infinity = float("infinity")
@@ -228,19 +231,19 @@ class HTTPResource:
         except ValueError:
             gzip_pos = infinity
         try:
-            compress_pos = requested_encodings.index('compress')
+            deflate_pos = requested_encodings.index('deflate')
         except ValueError:
-            compress_pos = infinity
+            deflate_pos = infinity
 
-        if gzip_pos < compress_pos:
+        if gzip_pos < deflate_pos:
             self.request.response.setHeader("Transfer-Encoding", "gzip")
             gzipped = StringIO()
             file = GzipFile(mode="w", fileobj=gzipped)
             file.write(representation)
             file.close()
             return gzipped.getvalue()
-        elif compress_pos != infinity:
-            self.request.response.setHeader("Transfer-Encoding", "compress")
+        elif deflate_pos != infinity:
+            self.request.response.setHeader("Transfer-Encoding", "deflate")
             return zlib.compress(representation)
         return representation
 

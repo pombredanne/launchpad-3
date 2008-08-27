@@ -91,7 +91,7 @@ representation only if *none* of them match:
 == Compression ==
 
 You can get a compressed representation by setting the TE request
-header to "gzip" or "compress". The "Transfer-Encoding" response
+header to "gzip" or "deflate". The "Transfer-Encoding" response
 header will show the compression algorithm used.
 
   >>> from cStringIO import StringIO
@@ -104,22 +104,22 @@ header will show the compression algorithm used.
   '{...}'
 
   >>> import zlib
-  >>> compressed_response = webservice.get(
-  ...     '/beta/', headers={'TE' : 'compress'})
-  >>> compressed_response.getHeader("Transfer-Encoding")
-  'compress'
-  >>> zlib.decompress(compressed_response.getBody())
+  >>> deflated_response = webservice.get(
+  ...     '/beta/', headers={'TE' : 'deflate'})
+  >>> deflated_response.getHeader("Transfer-Encoding")
+  'deflate'
+  >>> zlib.decompress(deflated_response.getBody())
   '{...}'
 
 The syntax for TE is the same as for the Accept header.
 
   >>> response = webservice.get(
-  ...     '/beta/', headers={'TE' : 'compress, gzip'})
+  ...     '/beta/', headers={'TE' : 'deflate, gzip'})
   >>> response.getHeader("Transfer-Encoding")
   'compress'
 
   >>> response = webservice.get(
   ...     '/beta/',
-  ...     headers={'TE' : 'compress;q=0.8, unsupported;q=1.0, gzip;q=0.9'})
+  ...     headers={'TE' : 'deflate;q=0.8, unsupported;q=1.0, gzip;q=0.9'})
   >>> response.getHeader("Transfer-Encoding")
   'gzip'
