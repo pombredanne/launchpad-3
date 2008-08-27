@@ -303,8 +303,7 @@ Launchpad account, so Launchpad gives him a message to that effect.
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     The key 1024D/17B05A8F was successfully validated.
-    Some email addresses were found in your key but are not
-    registered with Launchpad:sign.only@canonical.com...
+    Some of your key's UIDs (sign.only@canonical.com) are not registered...
 
 Now that the key has been validated, the login token is consumed:
 

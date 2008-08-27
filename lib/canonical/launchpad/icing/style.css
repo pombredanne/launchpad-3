@@ -208,7 +208,7 @@ margin for Internet Explorer, and up to a reasonable maximum: */
 textarea {width: 90%; max-width: 60em;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
-table.form {margin: 1em 0;} /* http://launchpad.dev/firefox/+edit */
+table.form {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
 table.form th, table.form td {padding-bottom: 1em;}
 
 /* XXX: this is just to make tables look more consistent when used in a
@@ -843,6 +843,8 @@ portlets. We achieve this using a negative right margin: */
 #portlets {width: 200px; margin: 0;}
 /* Inside, the main column itself keeps 20px clear of the 200px column: */
 #nonportlets {margin-right: 220px;}
+/* Non-portlets can also be constrained to an easily readable width. */
+#nonportlets.readable {max-width: 40em;}
 /* One-column pages can construct portlets using <div class="aside">: */
 div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 
