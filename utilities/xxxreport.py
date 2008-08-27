@@ -125,17 +125,11 @@ xxx_date_person_re = re.compile(r"""
     (?P<person>[a-zA-Z][\w]+)                      # The person's nick.
     (?P<remainder>.*)
     """, re.VERBOSE)
-# A reference to a spec in the commment: spec=grand-unification-fix
-spec_re = re.compile(r"""
-    spec[= ](?P<spec>[\w-]*)[,:]?[ ]? # The spec name.
-    (?P<remainder>.*)                 # The remaining bug or comment text.
+bug_spec_re = re.compile(r"""
+    (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?  # The bug id.
+    (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?    # The spec name.
+    (?P<remainder>.*)                      # The remaining comment text.
     """, re.VERBOSE)
-# A reference to a bug in the commment: bug=12345
-bug_re = re.compile(r"""
-    [(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]* # The bug id.
-    (?P<remainder>.*)                     # The remaining bug or comment text.
-    """, re.VERBOSE)
-
 
 def extract_metadata(comment_line):
     """Return a dict of metadata extracted from the lines of a comment.
@@ -143,30 +137,25 @@ def extract_metadata(comment_line):
     Return person, date, bug, spec, and text as keys. The text is the
     same as remainder of the comment_line after the metadata is extracted.
     """
-    comment = dict(person=None, date=None, bug=None, spec=None, text=None)
+    comment = dict(person=None, date=None, bug=None, spec=None, text=[])
     match = (xxx_person_date_re.match(comment_line)
              or xxx_date_person_re.match(comment_line))
     if match is not None:
         # This comment follows a known style.
         comment['person'] = match.group('person').strip(':, ')
         comment['date'] = match.group('date').strip(':, ')
-        remainder = match.group('remainder').strip(':, ')
+        remainder = match.group('remainder').lstrip(':, ')
     else:
-        # Unknown annotation format
+        # Unknown comment format.
         remainder = comment_line
 
-    match = spec_re.match(remainder)
-    if match is not None:
-        comment['spec'] = match.group('spec')
-        remainder = match.group('remainder')
-    match = bug_re.match(remainder)
-    if match is not None:
-        comment['bug'] = match.group('bug')
-        remainder = match.group('remainder')
+    match = bug_spec_re.match(remainder)
+    comment['bug'] = match.group('bug') or None
+    comment['spec'] = match.group('spec') or None
+    remainder = match.group('remainder')
+    remainder = remainder.strip()
     if remainder != '':
-        comment['text'] = [remainder.lstrip(':, ') + ' \n']
-    else:
-        comment['text'] = []
+        comment['text'] = [remainder + '\n']
     return comment
 
 
