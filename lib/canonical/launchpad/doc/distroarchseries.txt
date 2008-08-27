@@ -50,8 +50,7 @@ not fti-matchable, such as "linux-2.6.12", and substrings:
    >>> len(results)
    1
 
-   # XXX cprov 2006-03-21: Broken implementation, missing lastversions
-   # attribute.
+   # XXX cprov 2006-03-21: Broken implementation, missing enhances attribute.
    verifyObject(IDistroArchSeriesBinaryPackageRelease, pmount)
    True
 

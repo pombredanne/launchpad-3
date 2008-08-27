@@ -5,9 +5,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'SourcePackageBreadcrumbBuilder',
+    'SourcePackageFacets',
     'SourcePackageNavigation',
     'SourcePackageSOP',
-    'SourcePackageFacets',
     'SourcePackageTranslationsExportView',
     'SourcePackageView',
     ]
@@ -35,6 +36,7 @@ from canonical.launchpad.webapp import (
     redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.menu import structured
 
@@ -44,9 +46,6 @@ from canonical.lazr.utils import smartquote
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = ISourcePackage
-
-    def breadcrumb(self):
-        return smartquote('"%s" package') % (self.context.name)
 
     @stepto('+pots')
     def pots(self):
@@ -94,6 +93,13 @@ class SourcePackageSOP(StructuralObjectPresentation):
 
     def countAltChildren(self):
         raise NotImplementedError
+
+
+class SourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ISourcePackage`."""
+    @property
+    def text(self):
+        return smartquote('"%s" package') % (self.context.name)
 
 
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
