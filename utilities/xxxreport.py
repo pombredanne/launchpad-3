@@ -65,57 +65,65 @@ def extract_comments(file_path):
     """Return a list of XXX comments in a file."""
     comments = []
     file = open(file_path, 'r')
-    comment = None
-    for line_num, line in enumerate(file):
-        xxx_mark = xxx_re.match(line)
-        if xxx_mark is None and comment is None:
-            continue
-        elif xxx_mark is not None and comment is None:
-            comment = extract_metadata(line)
-            comment['file_path'] = file_path
-            comment['line_no'] = line_num + 1
-            comment['context'] = []
-        elif xxx_mark is not None and comment is not None:
-            # Two XXX comments run together.
-            comment['context'] = ''
-            comment['text'] = ''.join(comment['text'])
-            comments.append(comment)
-            comment = extract_metadata(line)
-            comment['file_path'] = file_path
-            comment['line_no'] = line_num + 1
-            comment['context'] = []
-        elif '#' in line and '##' not in line:
-            text = ''.join(line.split('#')[1:]).lstrip()
-            comment['text'].append(text)
-        elif xxx_mark is None and len(comment['context']) < 2:
-            comment['context'].append(line)
-        elif xxx_mark is None and len(comment['context']) == 2:
-            comment['context'].append(line)
-            comment['context'] = ''.join(comment['context'])
-            comment['text'] = ''.join(comment['text'])
-            comments.append(comment)
-            comment = None
-        else:
-            raise ValueError, "comment or xxx_mark are in an unknown state."
-    file.close()
+    try:
+        comment = None
+        for line_num, line in enumerate(file):
+            xxx_mark = xxx_re.match(line)
+            if xxx_mark is None and comment is None:
+                # The loop is not in a comment or starting a comment.
+                continue
+            elif xxx_mark is not None and comment is None:
+                # Start a new comment.
+                comment = extract_metadata(line)
+                comment['file_path'] = file_path
+                comment['line_no'] = line_num + 1
+                comment['context'] = []
+            elif xxx_mark is not None and comment is not None:
+                # Two XXX comments run together.
+                comment['context'] = ''
+                comment['text'] = ''.join(comment['text'])
+                comments.append(comment)
+                comment = extract_metadata(line)
+                comment['file_path'] = file_path
+                comment['line_no'] = line_num + 1
+                comment['context'] = []
+            elif '#' in line and '##' not in line:
+                # Continue collecting the comment text.
+                text = ''.join(line.split('#')[1:]).lstrip()
+                comment['text'].append(text)
+            elif xxx_mark is None and len(comment['context']) < 2:
+                # Collect the code context of the comment.
+                comment['context'].append(line)
+            elif xxx_mark is None and len(comment['context']) == 2:
+                # Finalise the comment.
+                comment['context'].append(line)
+                comment['context'] = ''.join(comment['context'])
+                comment['text'] = ''.join(comment['text'])
+                comments.append(comment)
+                comment = None
+            else:
+                raise ValueError, (
+                    "comment or xxx_mark are in an unknown state.")
+    finally:
+        file.close()
     return comments
 
 
 # The standard annotation form of 'XXX: First Last Name 2007-07-01:'
 # Colans, commas, and spaces may follow each token.
 person_date_re = re.compile(r"""
-    .*XXX[:,]?[ ]                         # The XXX indicator.
-    ([a-zA-Z][^:]*)[:,]?[ ]               # The persons's nick.
-    (\d\d\d\d[/-]?\d\d[/-]?\d\d)[:,]?[ ]? # The date in YYYY-MM-DD.
-    (.*)
+    .*XXX[:,]?[ ]                                  # The XXX indicator.
+    (?P<person>[a-zA-Z][^:]*)[:,]?[ ]              # The persons's nick.
+    (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[:,]?[ ]?  # The date in YYYY-MM-DD.
+    (?P<remainder>.*)
     """, re.VERBOSE)
 # An uncommon annotation form of 'XXX: 2007-01-01 First Last Name:'
 # Colons, commas, and spaces may follow each token.
 date_person_re = re.compile(r"""
-    .*XXX[:,]?[ ]                         # The XXX indicator.
-    (\d\d\d\d[/-]?\d\d[/-]?\d\d)[:,]?[ ]? # The date in YYYY-MM-DD.
-    ([a-zA-Z][\w]+)                       # The person's nick.
-    (.*)
+    .*XXX[:,]?[ ]                                  # The XXX indicator.
+    (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[:,]?[ ]?  # The date in YYYY-MM-DD.
+    (?P<person>[a-zA-Z][\w]+)                      # The person's nick.
+    (?P<remainder>.*)
     """, re.VERBOSE)
 # A reference to a spec in the commment: spec grand-unification-fix
 spec_re = re.compile(r"spec[= ]([\w-]*)[,:]?[ ]?(.*)")
@@ -130,22 +138,16 @@ def extract_metadata(comment_line):
     same as remainder of the comment_line after the metadata is extracted.
     """
     comment = dict(person=None, date=None, bug=None, spec=None, text=None)
-    match = person_date_re.match(comment_line)
+    match = (person_date_re.match(comment_line)
+             or date_person_re.match(comment_line))
     if match is not None:
-        # This comment follows the standard annotation form.
-        comment['person'] = match.group(1).strip(':, ')
-        comment['date'] = match.group(2).strip(':, ')
-        remainder = match.group(3).strip(':, ')
+        # This comment follows a known style.
+        comment['person'] = match.group('person').strip(':, ')
+        comment['date'] = match.group('date').strip(':, ')
+        remainder = match.group('remainder').strip(':, ')
     else:
-        # The comment uses the uncommon annotation form.
-        match = date_person_re.match(comment_line)
-        if match is not None:
-            comment['date'] = match.group(1).strip(':, ')
-            comment['person'] = match.group(2).strip(':, ')
-            remainder = match.group(3).strip(':, ')
-        else:
-            # Unknown annotation format
-            remainder = comment_line
+        # Unknown annotation format
+        remainder = comment_line
 
     match = spec_re.match(remainder)
     if match is not None:
@@ -165,7 +167,7 @@ def extract_metadata(comment_line):
 # Match URLs.
 http_re = re.compile('(https?://[^ \n&]*)')
 # Match bugs.
-bug_link_re = re.compile(r'\bbugs?:? #?(\w+)', re.IGNORECASE)
+bug_link_re = re.compile(r'\b(bugs?:?) #?(\d+)', re.IGNORECASE)
 
 # HTML report parts
 report_top = """\
@@ -231,7 +233,7 @@ def markup_text(text, comment):
     """Return the line as HTML markup."""
     text = cgi.escape(text)
     text = http_re.sub(r'<a href="\1">\1</a>', text)
-    bug_sub = r'<a href="https://bugs.launchpad.net/bugs/\1">\1</a>'
+    bug_sub = r'<a href="https://bugs.launchpad.net/bugs/\2">\1 \2</a>'
     text = bug_link_re.sub(bug_sub, text)
     return text
 
