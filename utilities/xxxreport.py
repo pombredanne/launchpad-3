@@ -37,7 +37,10 @@ def get_branch_revno(root_dir):
 
 
 def find_comments(root_dir):
-    """Return a list of XXX comments in files below a directory."""
+    """Return a list of XXX comments in files below a directory.
+
+    :param root_dir: The root directory that contains files with comments.
+    """
     comments = []
     for file_path in find_files(root_dir, dir_re, file_re):
         comments.extend(extract_comments(file_path))
@@ -45,7 +48,12 @@ def find_comments(root_dir):
 
 
 def find_files(root_dir, skip_dir_pattern, skip_file_pattern):
-    """Generate a list of matching files below a directory."""
+    """Generate a list of matching files below a directory.
+
+    :param root_dir: The root directory that will be walked for files.
+    :param skip_dir_pattern: An re pattern of the directory names to skip.
+    :param skip_file_pattern: An re pattern of the file names to skip.
+    """
     for path, subdirs, files in os.walk(root_dir):
         subdirs[:] = [dir for dir in subdirs
                       if skip_dir_pattern.match(dir) is None]
@@ -62,7 +70,10 @@ xxx_re = re.compile('^\s*(<!--|//|#) XXX[:,]?')
 
 
 def extract_comments(file_path):
-    """Return a list of XXX comments in a file."""
+    """Return a list of XXX comments in a file.
+
+    :param file_path: The path of the file that contains XXX comments.
+    """
     comments = []
     file = open(file_path, 'r')
     try:
@@ -109,18 +120,19 @@ def extract_comments(file_path):
     return comments
 
 
-# The standard annotation form of:
+# The standard XXX comment form of:
 # 'XXX: First Last Name 2007-07-01 bug=nnnn spec=cccc:'
 # Colans, commas, and spaces may follow each token.
 xxx_person_date_re = re.compile(r"""
     .*XXX[:,]?[ ]                                  # The XXX indicator.
-    (?P<person>[a-zA-Z][^:]*)[,: ]*                # The persons's nick.
+    (?P<person>[a-zA-Z][^:]*[\w])[,: ]*            # The persons's nick.
     (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[,: ]*     # The date in YYYY-MM-DD.
     (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?     # The bug id.
     (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?       # The spec name.
     (?P<text>.*)                                   # The comment text.
     """, re.VERBOSE)
-# An uncommon annotation form of:
+
+# An uncommon XXX comment form of:
 # 'XXX: 2007-01-01 First Last Name bug=nnnn spec=cccc:'
 # Colons, commas, and spaces may follow each token.
 xxx_date_person_re = re.compile(r"""
@@ -134,9 +146,11 @@ xxx_date_person_re = re.compile(r"""
 
 
 def extract_metadata(comment_line):
-    """Return a dict of metadata extracted from the lines of a comment.
+    """Return a dict of metadata extracted from the comment line.
 
-    Return person, date, bug, spec, and text as keys. The text is the
+    :param comment_line: The first line of an XXX comment contains the
+        metadata.
+    :return: dict(person, date, bug, spec, and [text]). The text is the
     same as remainder of the comment_line after the metadata is extracted.
     """
     comment = dict(person=None, date=None, bug=None, spec=None, text=[])
@@ -144,8 +158,8 @@ def extract_metadata(comment_line):
              or xxx_date_person_re.match(comment_line))
     if match is not None:
         # This comment follows a known style.
-        comment['person'] = match.group('person').strip(':, ')
-        comment['date'] = match.group('date').strip(':, ')
+        comment['person'] = match.group('person')
+        comment['date'] = match.group('date')
         comment['bug'] = match.group('bug') or None
         comment['spec'] = match.group('spec') or None
         text = match.group('text').lstrip(':, ')
@@ -161,6 +175,7 @@ def extract_metadata(comment_line):
 
 # Match URLs.
 http_re = re.compile('(https?://[^ \n&]*)')
+
 # Match bugs.
 bug_link_re = re.compile(r'\b(bugs?:?) #?(\d+)', re.IGNORECASE)
 
@@ -202,7 +217,9 @@ report_top = """\
 
     <h3>Listing</h3>
 
-    <ol>"""
+    <ol>
+"""
+
 report_comment = """
       <li>
         <div>
@@ -217,15 +234,21 @@ report_comment = """
         </div>
         <pre style="margin-top: 0px;">%(text)s</pre>
         <pre class="context">%(context)s</pre>
-      </li>"""
+      </li>
+"""
+
 report_bottom = """
     </ol>
   </body>
-</html>"""
+</html>
+"""
 
 
-def markup_text(text, comment):
-    """Return the line as HTML markup."""
+def markup_text(text):
+    """Return the line as HTML markup.
+
+    :param text: The text to escape and link.
+    """
     text = cgi.escape(text)
     text = http_re.sub(r'<a href="\1">\1</a>', text)
     bug_sub = r'<a href="https://bugs.launchpad.net/bugs/\2">\1 \2</a>'
@@ -233,43 +256,58 @@ def markup_text(text, comment):
     return text
 
 
-def create_html_report(outputname, comments, revno=None):
-    """Create and write the HTML report to a file."""
+def create_html_report(output_name, comments, revno=None):
+    """Create and write the HTML report to a file.
+
+    :param output_name: The name of the html file to write to.
+    :param comments: A list of comment dicts to include in the report.
+    :param revno: The revision number of tree the comments came from.
+    """
     report_time = time.strftime("%a, %d %b %Y %H:%M:%S UTC", time.gmtime())
-    outputfile = open(outputname, "w")
-    outputfile.write(
-        report_top % {"commentcount": len(comments),
-                      "reporttime": report_time,
-                      "revno": revno})
+    outputfile = open(output_name, "w")
+    try:
+        outputfile.write(
+            report_top % {"commentcount": len(comments),
+                          "reporttime": report_time,
+                          "revno": revno})
 
-    for comment in comments:
-        comment['text'] = markup_text(comment['text'], comment)
-        comment['context'] = markup_text(comment['context'], comment)
-        if comment['bug'] is not None:
-            comment['bugurl'] = (
-                r'<a href="https://bugs.launchpad.net/bugs/%s">%s</a>' %
-                (comment['bug'], comment['bug']))
-        else:
-            comment['bugurl'] = comment['bug']
-        outputfile.write(report_comment % comment)
+        for comment in comments:
+            comment['text'] = markup_text(comment['text'])
+            comment['context'] = markup_text(comment['context'])
+            if comment['bug'] is not None:
+                comment['bugurl'] = (
+                    r'<a href="https://bugs.launchpad.net/bugs/%s">%s</a>' %
+                    (comment['bug'], comment['bug']))
+            else:
+                comment['bugurl'] = comment['bug']
+            outputfile.write(report_comment % comment)
 
-    outputfile.write(report_bottom)
-    outputfile.flush()
-    outputfile.close()
+        outputfile.write(report_bottom)
+        outputfile.flush()
+    finally:
+        outputfile.close()
 
 
-def create_csv_report(outputname, comments, revno=None):
-    """Create and write the comma-separated-value-report to a file."""
+def create_csv_report(output_name, comments, revno=None):
+    """Create and write the comma-separated-value-report to a file.
+
+    :param output_name: The name of the html file to write to.
+    :param comments: A list of comment dicts to include in the report.
+    :param revno: The revision number of tree the comments came from.
+    """
     report_comment = ('%(file_path)s, %(line_no)s, '
                       '%(person)s, %(date)s, %(bug)s, %(spec)s, "%(text)s"\n')
-    outputfile = open(outputname, "w")
-    outputfile.write('File_Path, Line_No, Person, Date, Bug, Spec, Text\n')
-    for comment in comments:
-        comment['text'] = comment['text'].replace(
-            '\n', ' ').replace('"', "'").strip()
-        outputfile.write(report_comment % comment)
-    outputfile.flush()
-    outputfile.close()
+    outputfile = open(output_name, "w")
+    try:
+        outputfile.write(
+            'File_Path, Line_No, Person, Date, Bug, Spec, Text\n')
+        for comment in comments:
+            comment['text'] = comment['text'].replace(
+                '\n', ' ').replace('"', "'").strip()
+            outputfile.write(report_comment % comment)
+        outputfile.flush()
+    finally:
+        outputfile.close()
 
 
 def main(argv=None):
@@ -284,14 +322,14 @@ def main(argv=None):
     if not os.path.isdir(root_dir):
         print "Log file is not implemented yet."
         sys.exit()
-    outputname = argv[2]
+    output_name = argv[2]
 
     revno = get_branch_revno(root_dir)
     comments = find_comments(root_dir)
-    if outputname.endswith('html'):
-        create_html_report(outputname, comments, revno)
+    if output_name.endswith('html'):
+        create_html_report(output_name, comments, revno)
     else:
-        create_csv_report(outputname, comments, revno)
+        create_csv_report(output_name, comments, revno)
 
 
 if __name__ == '__main__':
