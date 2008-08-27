@@ -5,7 +5,7 @@ builder state. In the sampledata, the builder 'bob' is building
 'mozilla-firefox'.
 
     >>> anon_browser.open("http://launchpad.dev/+builds")
-    >>> anon_browser.getLink("Bob The Builder").click()
+    >>> anon_browser.getLink("bob").click()
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Bob The Builder
@@ -53,7 +53,7 @@ the builder actions.
     ...     auth='Basic celso.providelo@canonical.com:cprov')
 
     >>> cprov_browser.open('http://launchpad.dev/+builds')
-    >>> cprov_browser.getLink('Bob The Builder').click()
+    >>> cprov_browser.getLink('bob').click()
 
 Celso sees the available actions in the 'Actions' portlet.
 
@@ -229,7 +229,7 @@ when they judge it convenient, for instance, when the builder present
 transient failures or is used for another purpose.
 
     >>> cprov_browser.open('http://launchpad.dev/+builds')
-    >>> cprov_browser.getLink('Bob The Builder').click()
+    >>> cprov_browser.getLink('bob').click()
     >>> print cprov_browser.title
     Build machine Bob The Builder
 
@@ -253,11 +253,11 @@ Farm list. Celso cannot see the link to it.
     Register a new build machine
     PPA build machines
     386    0 builds waiting in queue
-    The frog builder    AUTO   Disabled
+    frog   AUTO   Disabled
     Official distribution build machines
     Generated at ...
 
-    >>> cprov_browser.getLink('Bob The Builder').click()
+    >>> cprov_browser.getLink('bob').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError

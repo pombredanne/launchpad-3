@@ -12,7 +12,9 @@ import bzrlib.branch
 from bzrlib.branch import BranchReferenceFormat
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NotBranchError
+from bzrlib.remote import RemoteBranch
 from bzrlib.revision import NULL_REVISION
+from bzrlib.smart import server
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.transport import get_transport
 
@@ -21,7 +23,7 @@ from canonical.codehosting.puller.worker import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
     ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
-    install_worker_ui_factory)
+    get_vfs_format_classes, install_worker_ui_factory)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -42,6 +44,36 @@ def get_netstrings(line):
             'Expected %r == %r' % (',', line[colon_index+1+length]))
         line = line[colon_index+length+2:]
     return strings
+
+
+class TestGetVfsFormatClasses(TestCaseWithTransport):
+    """Tests for `canonical.codehosting.puller.worker.get_vfs_format_classes`.
+    """
+
+    def tearDown(self):
+        # This makes sure the connections held by the branches opened in the
+        # test are dropped, so the daemon threads serving those branches can
+        # exit.
+        import gc
+        gc.collect()
+        super(TestGetVfsFormatClasses, self).tearDown()
+
+    def test_get_vfs_format_classes(self):
+        # get_vfs_format_classes for a returns the underlying format classes
+        # of the branch, repo and bzrdir, even if the branch is a
+        # RemoteBranch.
+        self.transport_server = server.SmartTCPServer_for_testing
+        vfs_branch = self.make_branch('.')
+        remote_branch = bzrlib.branch.Branch.open(self.get_url('.'))
+        # Check that our set up worked: remote_branch is Remote and
+        # source_branch is not.
+        self.assertIsInstance(remote_branch, RemoteBranch)
+        self.failIf(isinstance(vfs_branch, RemoteBranch))
+        # Now, get_vfs_format_classes on both branches returns the same format
+        # information.
+        self.assertEqual(
+            get_vfs_format_classes(vfs_branch),
+            get_vfs_format_classes(remote_branch))
 
 
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
@@ -68,7 +100,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
         source_tree = self.make_branch_and_tree('source-branch')
-        to_mirror = self.makePullerWorker(source_tree.branch.base)
+        to_mirror = self.makePullerWorker(
+            source_tree.branch.base, self.get_url('dest'))
         source_tree.commit('commit message')
         to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
@@ -78,7 +111,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     def testMirrorEmptyBranch(self):
         # We can mirror an empty branch.
         source_branch = self.make_branch('source-branch')
-        to_mirror = self.makePullerWorker(source_branch.base)
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('dest'))
         to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
@@ -87,7 +121,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # We can mirror a branch even if the destination exists, and contains
         # data but is not a branch.
         source_tree = self.make_branch_and_tree('source-branch')
-        to_mirror = self.makePullerWorker(source_tree.branch.base)
+        to_mirror = self.makePullerWorker(
+            source_tree.branch.base, self.get_url('destdir'))
         source_tree.commit('commit message')
         # Make the directory.
         dest = get_transport(to_mirror.dest)
@@ -96,7 +131,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # 'dest' is not a branch.
         self.assertRaises(
             NotBranchError, bzrlib.branch.Branch.open, to_mirror.dest)
-        to_mirror.mirror()
+        to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(
             source_tree.last_revision(), mirrored_branch.last_revision())
@@ -106,8 +141,9 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # still available after mirroring.
         http = get_transport('http://example.com')
         source_branch = self.make_branch('source-branch')
-        to_mirror = self.makePullerWorker(source_branch.base)
-        to_mirror.mirror()
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'))
+        to_mirror.mirrorWithoutChecks()
         new_http = get_transport('http://example.com')
         self.assertEqual(get_transport('http://example.com').base, http.base)
         self.assertEqual(new_http.__class__, http.__class__)
