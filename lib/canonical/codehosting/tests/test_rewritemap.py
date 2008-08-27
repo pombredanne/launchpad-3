@@ -4,19 +4,26 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IBranchSet
+from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.codehosting import rewritemap
 from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestRewriteMapScript(TestCase):
+
     layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.factory = LaunchpadObjectFactory()
 
     def getRewriteFileLines(self):
         """Create the rewrite file and return the contents."""
@@ -49,6 +56,22 @@ class TestRewriteMapScript(TestCase):
         self.failIf('~name12/gnome-terminal/scanned\t00/00/00/1b' in lines,
                     'private branch %s should not be in %r' %
                     (branch_unique_name, lines))
+
+    def test_private_stacked_branch(self):
+        # Branches stacked on private branches don't have entries in the
+        # rewrite file.
+        stacked_on_branch = self.factory.makeBranch(private=True)
+        stacked_branch = self.factory.makeBranch()
+        branch_name = stacked_branch.unique_name
+        branch_id = stacked_branch.id
+        removeSecurityProxy(stacked_branch).stacked_on = stacked_on_branch
+        transaction.commit()
+        # Now create the rewrite map.
+        expected_line = '%s\t%s' % (branch_name, branch_id_to_path(branch_id))
+        lines = self.getRewriteFileLines()
+        self.failIf(
+            expected_line in lines,
+            'private branch %s should not be in %r' % (branch_name, lines))
 
     def test_remote_branch_not_written(self):
         """Remote branches do not have entries in the rewrite file."""
