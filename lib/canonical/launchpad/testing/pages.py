@@ -515,7 +515,14 @@ def print_ppa_packages(contents):
 
 
 def print_location(contents):
-    """Print the hierarchy, application tabs, and main heading of the page."""
+    """Print the hierarchy, application tabs, and main heading of the page.
+    
+    The hierarchy shows your position in the Launchpad structure:
+    for example, Launchpad > Ubuntu > 8.04.
+    The application tabs represent the major facets of an object:
+    for example, Overview, Bugs, and Translations.
+    The main heading is the first <h1> element in the page.
+    """
     doc = find_tag_by_id(contents, 'document')
     hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(
         recursive=False)
