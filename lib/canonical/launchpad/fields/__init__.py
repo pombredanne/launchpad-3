@@ -407,9 +407,16 @@ class ContentNameField(UniqueField):
 
     attribute = 'name'
 
-    def _getByAttribute(self, name):
-        """Return the content object with the given name."""
-        return self._getByName(name)
+    def _getByAttribute(self, input):
+        """Return the content object with the given attribute."""
+        return self._getByName(input)
+
+    def _getByName(self, input):
+        """Return the content object with the given name.
+
+        Override this in subclasses.
+        """
+        raise NotImplementedError
 
     def _validate(self, name):
         """Check that the given name is valid (and by delegation, unique)."""
@@ -590,7 +597,14 @@ class BaseImageUpload(Bytes):
     dimensions = ()
     max_size = 0
 
-    def __init__(self, default_image_resource='/@@/nyet-icon', **kw):
+    def __init__(self, default_image_resource=None, **kw):
+        # 'default_image_resource' is a keyword argument so that the
+        # class constructor can be used in the same way as other
+        # Interface attribute specifiers.
+        if default_image_resource is None:
+            raise AssertionError(
+                "You must specify a default image resource.")
+
         self.default_image_resource = default_image_resource
         Bytes.__init__(self, **kw)
 
@@ -656,21 +670,18 @@ class IconImageUpload(BaseImageUpload):
 
     dimensions = (14, 14)
     max_size = 5*1024
-    default_image_resource = '/@@/nyet-icon'
 
 
 class LogoImageUpload(BaseImageUpload):
 
     dimensions = (64, 64)
     max_size = 50*1024
-    default_image_resource = '/@@/nyet-logo'
 
 
 class MugshotImageUpload(BaseImageUpload):
 
     dimensions = (192, 192)
     max_size = 100*1024
-    default_image_resource = '/@@/nyet-mugshot'
 
 
 class PillarNameField(BlacklistableContentNameField):

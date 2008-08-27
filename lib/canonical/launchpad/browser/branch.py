@@ -78,7 +78,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import Breadcrumb
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
@@ -103,17 +102,20 @@ class BranchPrimaryContext:
 class BranchHierarchy(Hierarchy):
     """The hierarchy for a branch should be the product if there is one."""
 
-    def getElements(self):
+    def items(self):
         """See `Hierarchy`."""
         if self.context.product is not None:
-            breadcrumb = self.context.product
+            obj = self.context.product
         else:
-            breadcrumb = self.context.owner
+            obj = self.context.owner
 
-        url = canonical_url(breadcrumb)
-        text = breadcrumb.displayname
+        url = canonical_url(obj)
+        breadcrumb = self.breadcrumb_for(obj, url)
 
-        return [Breadcrumb(url, text)]
+        if breadcrumb is None:
+            return []
+        else:
+            return [breadcrumb]
 
 
 class BranchSOP(StructuralObjectPresentation):
