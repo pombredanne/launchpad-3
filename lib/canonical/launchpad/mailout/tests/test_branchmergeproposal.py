@@ -48,12 +48,16 @@ class TestMergeProposalMailing(TestCase):
     def test_generateCreationEmail(self):
         """Ensure that the contents of the mail are as expected"""
         bmp, subscriber = self.makeProposalWithSubscriber()
+        bmp.whiteboard = "I think this would be good."
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0]
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual("""\
 Baz Qux has proposed merging foo into bar.
+
+Whiteboard:
+I think this would be good.
 
 --\x20
 %s

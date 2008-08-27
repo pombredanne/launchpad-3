@@ -22,6 +22,16 @@ Salgado'.
   >>> salgado['display_name']
   u'Guilherme Salgado'
 
+The service root resource describes a link to one special entry: the
+user account of the authenticated user. To avoid confusion when one
+program runs as different users, this is implemented as a redirect to
+that person's canonical URL.
+
+  >>> print webservice.get('/beta/people/+me').getOutput()
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://api.launchpad.dev/beta/~salgado
+
 
 == Content negotiation ==
 
@@ -124,11 +134,14 @@ should use the PATCH HTTP method. Or it may completely describe the
 entry's state, in which case the client should use PUT.
 
   >>> import simplejson
-  >>> def modify_person(person, representation, method):
+  >>> def modify_person(person, representation, method, headers=None):
   ...     "A helper function to send a PUT or PATCH request to a person."
+  ...     new_headers = {'Content-type': 'application/json'}
+  ...     if headers is not None:
+  ...         new_headers.update(headers)
   ...     return webservice('/beta/~' + person, method,
   ...                       simplejson.dumps(representation),
-  ...                       {'Content-type': 'application/json'})
+  ...                       headers)
 
 Here we use the web service to change the user 'salgado' so that their
 display name is in uppercase.
@@ -191,6 +204,52 @@ with a PATCH request.
 
   >>> print modify_person('salgado', salgado, 'PATCH')
   HTTP/1.1 200 Ok
+  ...
+
+
+=== Conditional PUT and PATCH ===
+
+When you GET an entry you're given an ETag; an opaque string that
+changes whenever the entry changes.
+
+  >>> response = webservice.get('/beta/~salgado')
+  >>> etag = response._response.getHeader('ETag')
+  >>> salgado = response.jsonBody()
+
+When you make a PUT or PATCH request, you can provide the ETag as the
+If-Match header. This lets you detect changes that other people made
+to the entry, so your changes don't overwrite theirs.
+
+If the ETag you provide in If-Match matches the entry's current ETag,
+your request goes through.
+
+  >>> print modify_person('salgado', salgado, 'PATCH',
+  ...                     {'If-Match' : etag})
+  HTTP/1.1 200 Ok
+  ...
+
+If the ETags don't match, it's because somebody modified the entry
+after you got your copy of it. Your request will fail with status code
+412.
+
+  >>> print modify_person('salgado', salgado, 'PATCH',
+  ...                     {'If-Match' : '"an-old-etag"'})
+  HTTP/1.1 412 Precondition Failed
+  ...
+
+If you specify a number of ETags, and any of them match, your request
+will go through.
+
+  >>> print modify_person('salgado', salgado, 'PATCH',
+  ...                     {'If-Match' : '"an-old-etag", %s' % etag})
+  HTTP/1.1 200 Ok
+  ...
+
+Both PUT and PATCH requests work this way.
+
+  >>> print modify_person('salgado', salgado, 'PUT',
+  ...                     {'If-Match' : 'an-old-etag'})
+  HTTP/1.1 412 Precondition Failed
   ...
 
 

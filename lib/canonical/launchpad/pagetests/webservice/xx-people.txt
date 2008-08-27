@@ -1,14 +1,12 @@
 = The set of people and teams =
 
 The set of people and teams in Launchpad is represented by the
-collection found at /people.  By default it lists all non-merged
-people and teams
+collection found at /people.  By default it lists the (up to) 50
+people with the most karma, not including people with no karma.
 
     >>> people = webservice.get("/beta/people").jsonBody()
     >>> len(people['entries'])
-    5
-    >>> people['next_collection_link']
-    u'http://api.launchpad.dev/beta/people?ws.start=5...'
+    4
 
 
 == Custom operations ==
@@ -33,19 +31,6 @@ There are also operations to search only for people or only for teams.
     ...     "/beta/people?ws.op=findPerson&text=salgado").jsonBody()
     >>> sorted(person['name'] for person in search['entries'])
     [u'salgado']
-
-It's also possible to get a list with all the people (including the ones
-whose account is inactive) or all the teams.
-
-    >>> people = webservice.get(
-    ...     "/beta/people?ws.op=getAllPersons").jsonBody()
-    >>> len(people['entries'])
-    5
-
-    >>> teams = webservice.get(
-    ...     "/beta/people?ws.op=getAllTeams").jsonBody()
-    >>> len(people['entries'])
-    5
 
 It's possible to get a list of teams by virtue of which a person
 belongs to a particular team.

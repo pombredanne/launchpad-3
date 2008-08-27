@@ -766,7 +766,6 @@ class Bug(SQLBase):
         else:
             return None
 
-
     def convertToQuestion(self, person, comment=None):
         """See `IBug`."""
         question = self.getQuestionCreatedFromBug()
@@ -1100,6 +1099,15 @@ class Bug(SQLBase):
         Store.of(self).flush()
 
     tags = property(_getTags, _setTags)
+
+    @staticmethod
+    def getBugTasksByPackageName(bugtasks):
+        """See IBugTask."""
+        bugtasks_by_package = {}
+        for bugtask in bugtasks:
+            bugtasks_by_package.setdefault(bugtask.sourcepackagename, [])
+            bugtasks_by_package[bugtask.sourcepackagename].append(bugtask)
+        return bugtasks_by_package
 
 
 class BugSet:

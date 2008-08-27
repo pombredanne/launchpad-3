@@ -1452,21 +1452,23 @@ class BugListingPortletView(LaunchpadView):
 
 
 def get_buglisting_search_filter_url(
-        assignee=None, importance=None, status=None):
+        assignee=None, importance=None, status=None, status_upstream=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
-    if assignee:
+    if assignee is not None:
         search_params.append(('field.assignee', assignee))
-    if importance:
+    if importance is not None:
         search_params.append(('field.importance', importance))
-    if status:
+    if status is not None:
         search_params.append(('field.status', status))
+    if status_upstream is not None:
+        search_params.append(('field.status_upstream', status_upstream))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
     search_filter_url = "+bugs?search=Search"
-    if query_string:
+    if query_string != '':
         search_filter_url += "&" + query_string
 
     return search_filter_url
@@ -2591,7 +2593,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Build a cache we can pass on to getConjoinedMaster(), so that
         # it doesn't have to iterate over all the bug tasks in each loop
         # iteration.
-        bugtasks_by_package = bugtask.getBugTasksByPackageName(all_bugtasks)
+        bugtasks_by_package = bug.getBugTasksByPackageName(all_bugtasks)
 
         for bugtask in all_bugtasks:
             conjoined_master = bugtask.getConjoinedMaster(
@@ -2625,7 +2627,8 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         return bugtask_and_nomination_views
 
-    def currentBugTask(self):
+    @property
+    def current_bugtask(self):
         """Return the current `IBugTask`.
 
         'current' is determined by simply looking in the ILaunchBag utility.

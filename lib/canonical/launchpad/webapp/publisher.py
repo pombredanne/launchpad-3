@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'Breadcrumb',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
@@ -41,9 +40,9 @@ from canonical.launchpad.layers import (
     WebServiceLayer)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError,
-    ILaunchpadContainer)
+    ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
+    ILaunchpadRoot, IOpenLaunchBag, IStructuredString, NoCanonicalUrl,
+    NotFoundError)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -82,18 +81,6 @@ class DecoratorAdvisor:
 class stepthrough(DecoratorAdvisor):
 
     magic_class_attribute = '__stepthrough_traversals__'
-
-    def __init__(self, name, breadcrumb=None):
-        """Register a stepthrough traversal with the name stepped through.
-
-        You can optionally provide a breadcrumb function that is called
-        with the argument 'self'.  So, a method will do.
-        """
-        DecoratorAdvisor.__init__(self, name)
-        self.breadcrumb = breadcrumb
-
-    def getValueToStore(self):
-        return (self.fn, self.breadcrumb)
 
 
 class stepto(DecoratorAdvisor):
@@ -191,6 +178,8 @@ class LaunchpadView(UserAttributeCache):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self._error_message = None
+        self._info_message = None
 
     def initialize(self):
         """Override this in subclasses.
@@ -231,6 +220,54 @@ class LaunchpadView(UserAttributeCache):
             return u''
         else:
             return self.render()
+
+    def _getErrorMessage(self):
+        """Property getter for `error_message`."""
+        return self._error_message
+
+    def _setErrorMessage(self, error_message):
+        """Property setter for `error_message`.
+
+        Enforces `error_message` values that are either None or
+        implement IStructuredString.
+        """
+        if error_message != self._error_message:
+            if (error_message is None or
+                IStructuredString.providedBy(error_message)):
+                # The supplied value is of a compatible type,
+                # assign it to property backing variable.
+                self._error_message = error_message
+            else:
+                raise ValueError(
+                    '%s is not a valid value for error_message, only '
+                    'None and IStructuredString are allowed.' %
+                    type(error_message))
+
+    error_message = property(_getErrorMessage, _setErrorMessage)
+
+    def _getInfoMessage(self):
+        """Property getter for `info_message`."""
+        return self._info_message
+
+    def _setInfoMessage(self, info_message):
+        """Property setter for `info_message`.
+
+        Enforces `info_message` values that are either None or
+        implement IStructuredString.
+        """
+        if info_message != self._info_message:
+            if (info_message is None or
+                IStructuredString.providedBy(info_message)):
+                # The supplied value is of a compatible type,
+                # assign it to property backing variable.
+                self._info_message = info_message
+            else:
+                raise ValueError(
+                    '%s is not a valid value for info_message, only '
+                    'None and IStructuredString are allowed.' %
+                    type(info_message))
+
+    info_message = property(_getInfoMessage, _setInfoMessage)
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):
@@ -477,14 +514,6 @@ class LaunchpadContainer:
         return self.context == scope
 
 
-class Breadcrumb:
-    implements(IBreadcrumb)
-
-    def __init__(self, url, text):
-        self.url = url
-        self.text = text
-
-
 class Navigation:
     """Base class for writing browser navigation components.
 
@@ -500,12 +529,6 @@ class Navigation:
 
     # Set this if you want to set a new layer before doing any traversal.
     newlayer = None
-
-    def breadcrumb(self):
-        """Return the text of the context object's breadcrumb, or None for
-        no breadcrumb.
-        """
-        return None
 
     def traverse(self, name):
         """Override this method to handle traversal.
@@ -554,16 +577,6 @@ class Navigation:
             if value is not None:
                 combined_info.update(value)
         return combined_info
-
-    def _append_breadcrumb(self, text):
-        """Add a breadcrumb to the request, at the current URL with the given
-        text.
-
-        request.getURL(1) represents the path traversed so far, but without
-        the step we're currently working out how to traverse.
-        """
-        self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=False), text))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
@@ -621,12 +634,6 @@ class Navigation:
         # traversed_objects list:
         request.traversed_objects.append(self.context)
 
-        # Next, if there is a breadcrumb for the context, add it to the
-        # request's list of breadcrumbs.
-        breadcrumb_text = self.breadcrumb()
-        if breadcrumb_text is not None:
-            self._append_breadcrumb(breadcrumb_text)
-
         # Next, see if we're being asked to stepto somewhere.
         stepto_traversals = self.stepto_traversals
         if stepto_traversals is not None:
@@ -649,11 +656,7 @@ class Navigation:
                 stepstogo = request.stepstogo
                 if stepstogo:
                     nextstep = stepstogo.consume()
-                    handler, breadcrumb_fn = namespace_traversals[name]
-                    if breadcrumb_fn is not None:
-                        breadcrumb_text = breadcrumb_fn(self)
-                        if breadcrumb_text is not None:
-                            self._append_breadcrumb(breadcrumb_text)
+                    handler = namespace_traversals[name]
                     try:
                         nextobj = handler(self, nextstep)
                     except NotFoundError:
