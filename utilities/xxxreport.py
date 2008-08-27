@@ -380,9 +380,9 @@ def main(argv=None):
         argv = sys.argv
     parser = get_option_parser()
     (options, arguments) = parser.parse_args(args=argv[1:])
-    if len(argv) < 2:
+    if len(arguments) != 1:
         parser.error('No root directory was provided.')
-    root_dir = argv[1]
+    root_dir = arguments[0]
 
     if options.format.lower() == 'html':
         report = HTMLReport(root_dir, options.output_name)
@@ -391,7 +391,7 @@ def main(argv=None):
     elif options.format.lower() == 'csv':
         report = CSVReport(root_dir, options.output_name)
     else:
-        report = Report(root_dir)
+        report = Report(root_dir, options.output_name)
     report.write()
     sys.exit(0)
 

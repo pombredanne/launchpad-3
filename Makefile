@@ -98,13 +98,16 @@ check: build
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py $(VERBOSITY)
-	${PYTHON} -t ./utilities/xxxreport.py -f csv -o xxxreport.csv ./
+	${PYTHON} -t ./utilities/xxxreport.py -f count -o xxx-report.count ./
 
 lint:
 	@bash ./utilities/lint.sh
 
 lint-verbose:
 	@bash ./utilities/lint.sh -v
+
+xxxreport:
+	${PYTHON} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
 check-configs:
 	${PYTHON} utilities/check-configs.py

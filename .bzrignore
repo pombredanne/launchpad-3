@@ -27,6 +27,4 @@ opensource/launchpadlib/dist
 opensource/launchpadlib/*.egg*
 database/sampledata/newsampledata.sql
 database/sampledata/lintdata.sql
-xxxreport.html
-xxxreport.csv
-xxxreport.tsv
+xxx-report.*
