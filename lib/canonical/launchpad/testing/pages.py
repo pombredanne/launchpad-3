@@ -96,24 +96,16 @@ class WebServiceCaller:
         # Set up a delegate to make the actual HTTP calls.
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
 
-    def getAbsoluteUrl(self, *url_parts, **kw):
+    def getAbsoluteUrl(self, relative_url, api_version=DEFAULT_API_VERSION):
         """Convenience method for creating a url in tests.
 
-        :param url_parts: zero or more url sections to be joined.
-        :param kw: api_version is the only valid keyword argument, and
-                   it defaults to DEFAULT_API_VERSION.
+        :param relative_url: This is the url section to be joined to hostname
+                             and api version.
+        :param api_version: This is the first part of the absolute
+                            url after the hostname.
         """
-        if 'api_version' in kw:
-            api_version = kw['api_version']
-            del kw['api_version']
-        else:
-            api_version = self.DEFAULT_API_VERSION
-        if len(kw) > 0:
-            raise TypeError("Invalid named parameters: %s"
-                            % ', '.join('%s=%r' % item for item in kw))
-        all_parts = (api_version,) + url_parts
-        relative_url = os.path.join(*all_parts)
-        return urljoin(self.DEV_SERVER_URL, relative_url)
+        url_with_version = os.path.join(api_version, relative_url)
+        return urljoin(self.DEV_SERVER_URL, url_with_version)
 
     def __call__(self, path_or_url, method='GET', data=None, headers=None,
                  api_version=DEFAULT_API_VERSION):
@@ -125,7 +117,7 @@ class WebServiceCaller:
                                            api_version=api_version)
         scheme, netloc, path, query, fragment = urlsplit(full_url)
         # Make an HTTP request.
-        full_headers = {'Host' : 'api.launchpad.dev'}
+        full_headers = {'Host' : netloc}
         if self.consumer is not None and self.access_token is not None:
             request = OAuthRequest.from_consumer_and_token(
                 self.consumer, self.access_token, http_url = full_url,
