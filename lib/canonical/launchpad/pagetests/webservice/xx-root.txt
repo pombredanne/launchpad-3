@@ -111,7 +111,10 @@ header will show the compression algorithm used.
   >>> zlib.decompress(deflated_response.getBody())
   '{...}'
 
-The syntax for TE is the same as for the Accept header.
+The syntax for TE is the same as the syntax for the more popular
+Accept header. It allows you to specify multiple transfer encodings
+and rank them in order of preference. (See
+http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.1)
 
   >>> response = webservice.get(
   ...     '/beta/', headers={'TE' : 'deflate, gzip'})
