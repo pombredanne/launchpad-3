@@ -20,6 +20,10 @@ dir_re = re.compile('(sourcecode)')
 file_re = re.compile('.*(pyc$)')
 
 
+class Report:
+    """The base class for an XXX report."""
+
+
 def get_branch_revno(root_dir):
     """Return the bazaar revision number of the branch or None."""
     # pylint: disable-msg=W0612
@@ -173,14 +177,15 @@ def extract_metadata(comment_line):
     return comment
 
 
-# Match URLs.
-http_re = re.compile('(https?://[^ \n&]*)')
+class HTMLReport(Report):
+    """A HTML XXX report."""
+    # Match URLs.
+    http_re = re.compile('(https?://[^ \n&]*)')
 
-# Match bugs.
-bug_link_re = re.compile(r'\b(bugs?:?) #?(\d+)', re.IGNORECASE)
+    # Match bugs.
+    bug_link_re = re.compile(r'\b(bugs?:?) #?(\d+)', re.IGNORECASE)
 
-# HTML report parts
-report_top = """\
+    report_top = """\
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
@@ -217,10 +222,9 @@ report_top = """\
 
     <h3>Listing</h3>
 
-    <ol>
-"""
+    <ol>"""
 
-report_comment = """
+    report_comment = """
       <li>
         <div>
           <strong>File: %(file_path)s:%(line_no)s</strong>
@@ -234,58 +238,61 @@ report_comment = """
         </div>
         <pre style="margin-top: 0px;">%(text)s</pre>
         <pre class="context">%(context)s</pre>
-      </li>
-"""
+      </li>"""
 
-report_bottom = """
+    report_bottom = """
     </ol>
   </body>
 </html>
 """
 
+    def __init__(self, output_name, comments, revno=None):
+        """Create and write the HTML report to a file.
 
-def markup_text(text):
-    """Return the line as HTML markup.
+        :param output_name: The name of the html file to write to.
+        :param comments: A list of comment dicts to include in the report.
+        :param revno: The revision number of tree the comments came from.
+        """
+        self.output_name = output_name
+        self.comments = comments
+        self.revno = revno
 
-    :param text: The text to escape and link.
-    """
-    text = cgi.escape(text)
-    text = http_re.sub(r'<a href="\1">\1</a>', text)
-    bug_sub = r'<a href="https://bugs.launchpad.net/bugs/\2">\1 \2</a>'
-    text = bug_link_re.sub(bug_sub, text)
-    return text
+    def write(self):
+        report_time = time.strftime(
+            "%a, %d %b %Y %H:%M:%S UTC", time.gmtime())
+        output_file = open(self.output_name, "w")
+        try:
+            output_file.write(
+                self.report_top % {"commentcount": len(self.comments),
+                              "reporttime": report_time,
+                              "revno": self.revno})
 
+            for comment in self.comments:
+                comment['text'] = self.markup_text(comment['text'])
+                comment['context'] = self.markup_text(comment['context'])
+                if comment['bug'] is not None:
+                    comment['bugurl'] = (
+                        r'<a href="https://bugs.launchpad.net/bugs/%s">%s</a>'
+                        % (comment['bug'], comment['bug']))
+                else:
+                    comment['bugurl'] = comment['bug']
+                output_file.write(self.report_comment % comment)
 
-def create_html_report(output_name, comments, revno=None):
-    """Create and write the HTML report to a file.
+            output_file.write(self.report_bottom)
+            output_file.flush()
+        finally:
+            output_file.close()
 
-    :param output_name: The name of the html file to write to.
-    :param comments: A list of comment dicts to include in the report.
-    :param revno: The revision number of tree the comments came from.
-    """
-    report_time = time.strftime("%a, %d %b %Y %H:%M:%S UTC", time.gmtime())
-    outputfile = open(output_name, "w")
-    try:
-        outputfile.write(
-            report_top % {"commentcount": len(comments),
-                          "reporttime": report_time,
-                          "revno": revno})
+    def markup_text(self, text):
+        """Return the line as HTML markup.
 
-        for comment in comments:
-            comment['text'] = markup_text(comment['text'])
-            comment['context'] = markup_text(comment['context'])
-            if comment['bug'] is not None:
-                comment['bugurl'] = (
-                    r'<a href="https://bugs.launchpad.net/bugs/%s">%s</a>' %
-                    (comment['bug'], comment['bug']))
-            else:
-                comment['bugurl'] = comment['bug']
-            outputfile.write(report_comment % comment)
-
-        outputfile.write(report_bottom)
-        outputfile.flush()
-    finally:
-        outputfile.close()
+        :param text: The text to escape and link.
+        """
+        text = cgi.escape(text)
+        text = self.http_re.sub(r'<a href="\1">\1</a>', text)
+        bug_sub = r'<a href="https://bugs.launchpad.net/bugs/\2">\1 \2</a>'
+        text = self.bug_link_re.sub(bug_sub, text)
+        return text
 
 
 def create_csv_report(output_name, comments, revno=None):
@@ -327,7 +334,8 @@ def main(argv=None):
     revno = get_branch_revno(root_dir)
     comments = find_comments(root_dir)
     if output_name.endswith('html'):
-        create_html_report(output_name, comments, revno)
+        report = HTMLReport(output_name, comments, revno)
+        report.write()
     else:
         create_csv_report(output_name, comments, revno)
 
