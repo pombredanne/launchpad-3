@@ -7,9 +7,11 @@ __metaclass__ = type
 
 
 import cgi
+from optparse import OptionParser
 import os
 import re
 import sys
+from textwrap import dedent
 import time
 
 from bzrlib import bzrdir
@@ -22,159 +24,182 @@ file_re = re.compile('.*(pyc$)')
 
 class Report:
     """The base class for an XXX report."""
+    # Match XXX comments.
+    xxx_re = re.compile('^\s*(<!--|//|#) XXX[:,]?')
 
+    def __init__(self, root_dir, output_name=None):
+        """Create and write the HTML report to a file.
 
-def get_branch_revno(root_dir):
-    """Return the bazaar revision number of the branch or None."""
-    # pylint: disable-msg=W0612
-    a_bzrdir = bzrdir.BzrDir.open_containing(root_dir)[0]
-    try:
-        branch = a_bzrdir.open_branch()
-        branch.lock_read()
+        :param root_dir: The root directory that contains files with comments.
+        :param output_name: The name of the html file to write to.
+        """
+        assert os.path.isdir(root_dir), (
+            "Root directory does not exist: %s." % root_dir)
+        self.root_dir = root_dir
+        self.output_name = output_name
+        self.revno = self._get_branch_revno()
+        self.comments = self._find_comments()
+
+    def write(self):
+        """Write the total count of comments."""
+        output_file = self._open()
         try:
-            revno, head = branch.last_revision_info()
+            output_file.write('%s\n' % len(self.comments))
+            output_file.flush()
         finally:
-            branch.unlock()
-    except NotBranchError:
-        revno = None
-    return revno
+            self._close(output_file)
+
+    def _open(self):
+        """Open the output_name or use STDOUT."""
+        if self.output_name is not None:
+            return open(self.output_name, 'w')
+        return sys.stdout
+
+    def _close(self, output_file):
+        """Close the output_file if it was opened."""
+        if self.output_name is not None:
+            output_file.close()
+
+    def _get_branch_revno(self):
+        """Return the bazaar revision number of the branch or None."""
+        # pylint: disable-msg=W0612
+        a_bzrdir = bzrdir.BzrDir.open_containing(self.root_dir)[0]
+        try:
+            branch = a_bzrdir.open_branch()
+            branch.lock_read()
+            try:
+                revno, head = branch.last_revision_info()
+            finally:
+                branch.unlock()
+        except NotBranchError:
+            revno = None
+        return revno
+
+    def _find_comments(self):
+        """Set the list of XXX comments in files below a directory."""
+        comments = []
+        for file_path in self._find_files(dir_re, file_re):
+            comments.extend(self._extract_comments(file_path))
+        return comments
 
 
-def find_comments(root_dir):
-    """Return a list of XXX comments in files below a directory.
+    def _find_files(self, skip_dir_pattern, skip_file_pattern):
+        """Generate a list of matching files below a directory.
 
-    :param root_dir: The root directory that contains files with comments.
-    """
-    comments = []
-    for file_path in find_files(root_dir, dir_re, file_re):
-        comments.extend(extract_comments(file_path))
-    return comments
+        :param root_dir: The root directory that will be walked for files.
+        :param skip_dir_pattern: An re pattern of the directory names to skip.
+        :param skip_file_pattern: An re pattern of the file names to skip.
+        """
+        for path, subdirs, files in os.walk(self.root_dir):
+            subdirs[:] = [dir for dir in subdirs
+                          if skip_dir_pattern.match(dir) is None]
+            for file in files:
+                file_path = os.path.join(path, file)
+                if os.path.islink(file_path):
+                    continue
+                if skip_file_pattern.match(file) is None:
+                    yield os.path.join(path, file)
 
+    def _extract_comments(self, file_path):
+        """Return a list of XXX comments in a file.
 
-def find_files(root_dir, skip_dir_pattern, skip_file_pattern):
-    """Generate a list of matching files below a directory.
+        :param file_path: The path of the file that contains XXX comments.
+        """
+        comments = []
+        file = open(file_path, 'r')
+        try:
+            comment = None
+            for line_num, line in enumerate(file):
+                xxx_mark = self.xxx_re.match(line)
+                if xxx_mark is None and comment is None:
+                    # The loop is not in a comment or starting a comment.
+                    continue
+                elif xxx_mark is not None and comment is None:
+                    # Start a new comment.
+                    comment = self.extract_metadata(line)
+                    comment['file_path'] = file_path
+                    comment['line_no'] = line_num + 1
+                    comment['context'] = []
+                elif xxx_mark is not None and comment is not None:
+                    # Two XXX comments run together.
+                    comment['context'] = ''
+                    comment['text'] = ''.join(comment['text']).strip()
+                    comments.append(comment)
+                    comment = self.extract_metadata(line)
+                    comment['file_path'] = file_path
+                    comment['line_no'] = line_num + 1
+                    comment['context'] = []
+                elif '#' in line and '##' not in line:
+                    # Continue collecting the comment text.
+                    text = ''.join(line.split('#')[1:]).lstrip()
+                    comment['text'].append(text)
+                elif xxx_mark is None and len(comment['context']) < 2:
+                    # Collect the code context of the comment.
+                    comment['context'].append(line)
+                elif xxx_mark is None and len(comment['context']) == 2:
+                    # Finalise the comment.
+                    comment['context'].append(line)
+                    comment['context'] = ''.join(comment['context'])
+                    comment['text'] = ''.join(comment['text']).strip()
+                    comments.append(comment)
+                    comment = None
+                else:
+                    raise ValueError, (
+                        "comment or xxx_mark are in an unknown state.")
+        finally:
+            file.close()
+        return comments
 
-    :param root_dir: The root directory that will be walked for files.
-    :param skip_dir_pattern: An re pattern of the directory names to skip.
-    :param skip_file_pattern: An re pattern of the file names to skip.
-    """
-    for path, subdirs, files in os.walk(root_dir):
-        subdirs[:] = [dir for dir in subdirs
-                      if skip_dir_pattern.match(dir) is None]
-        for file in files:
-            file_path = os.path.join(path, file)
-            if os.path.islink(file_path):
-                continue
-            if skip_file_pattern.match(file) is None:
-                yield os.path.join(path, file)
+    # The standard XXX comment form of:
+    # 'XXX: First Last Name 2007-07-01 bug=nnnn spec=cccc:'
+    # Colans, commas, and spaces may follow each token.
+    xxx_person_date_re = re.compile(r"""
+        .*XXX[:,]?[ ]                                  # The XXX indicator.
+        (?P<person>[a-zA-Z][^:]*[\w])[,: ]*            # The persons's nick.
+        (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[,: ]*     # The date in YYYY-MM-DD.
+        (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?     # The bug id.
+        (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?       # The spec name.
+        (?P<text>.*)                                   # The comment text.
+        """, re.VERBOSE)
 
+    # An uncommon XXX comment form of:
+    # 'XXX: 2007-01-01 First Last Name bug=nnnn spec=cccc:'
+    # Colons, commas, and spaces may follow each token.
+    xxx_date_person_re = re.compile(r"""
+        .*XXX[:,]?[ ]                                  # The XXX indicator.
+        (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[,: ]*     # The date in YYYY-MM-DD.
+        (?P<person>[a-zA-Z][\w]+)[,: ]*                # The person's nick.
+        (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?     # The bug id.
+        (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?       # The spec name.
+        (?P<text>.*)                                   # The comment text.
+        """, re.VERBOSE)
 
-# Match XXX comments.
-xxx_re = re.compile('^\s*(<!--|//|#) XXX[:,]?')
+    def extract_metadata(self, comment_line):
+        """Return a dict of metadata extracted from the comment line.
 
+        :param comment_line: The first line of an XXX comment contains the
+            metadata.
+        :return: dict(person, date, bug, spec, and [text]). The text is the
+        same as remainder of the comment_line after the metadata is extracted.
+        """
+        comment = dict(person=None, date=None, bug=None, spec=None, text=[])
+        match = (self.xxx_person_date_re.match(comment_line)
+                 or self.xxx_date_person_re.match(comment_line))
+        if match is not None:
+            # This comment follows a known style.
+            comment['person'] = match.group('person')
+            comment['date'] = match.group('date')
+            comment['bug'] = match.group('bug') or None
+            comment['spec'] = match.group('spec') or None
+            text = match.group('text').lstrip(':, ')
+        else:
+            # Unknown comment format.
+            text = comment_line
 
-def extract_comments(file_path):
-    """Return a list of XXX comments in a file.
-
-    :param file_path: The path of the file that contains XXX comments.
-    """
-    comments = []
-    file = open(file_path, 'r')
-    try:
-        comment = None
-        for line_num, line in enumerate(file):
-            xxx_mark = xxx_re.match(line)
-            if xxx_mark is None and comment is None:
-                # The loop is not in a comment or starting a comment.
-                continue
-            elif xxx_mark is not None and comment is None:
-                # Start a new comment.
-                comment = extract_metadata(line)
-                comment['file_path'] = file_path
-                comment['line_no'] = line_num + 1
-                comment['context'] = []
-            elif xxx_mark is not None and comment is not None:
-                # Two XXX comments run together.
-                comment['context'] = ''
-                comment['text'] = ''.join(comment['text'])
-                comments.append(comment)
-                comment = extract_metadata(line)
-                comment['file_path'] = file_path
-                comment['line_no'] = line_num + 1
-                comment['context'] = []
-            elif '#' in line and '##' not in line:
-                # Continue collecting the comment text.
-                text = ''.join(line.split('#')[1:]).lstrip()
-                comment['text'].append(text)
-            elif xxx_mark is None and len(comment['context']) < 2:
-                # Collect the code context of the comment.
-                comment['context'].append(line)
-            elif xxx_mark is None and len(comment['context']) == 2:
-                # Finalise the comment.
-                comment['context'].append(line)
-                comment['context'] = ''.join(comment['context'])
-                comment['text'] = ''.join(comment['text'])
-                comments.append(comment)
-                comment = None
-            else:
-                raise ValueError, (
-                    "comment or xxx_mark are in an unknown state.")
-    finally:
-        file.close()
-    return comments
-
-
-# The standard XXX comment form of:
-# 'XXX: First Last Name 2007-07-01 bug=nnnn spec=cccc:'
-# Colans, commas, and spaces may follow each token.
-xxx_person_date_re = re.compile(r"""
-    .*XXX[:,]?[ ]                                  # The XXX indicator.
-    (?P<person>[a-zA-Z][^:]*[\w])[,: ]*            # The persons's nick.
-    (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[,: ]*     # The date in YYYY-MM-DD.
-    (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?     # The bug id.
-    (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?       # The spec name.
-    (?P<text>.*)                                   # The comment text.
-    """, re.VERBOSE)
-
-# An uncommon XXX comment form of:
-# 'XXX: 2007-01-01 First Last Name bug=nnnn spec=cccc:'
-# Colons, commas, and spaces may follow each token.
-xxx_date_person_re = re.compile(r"""
-    .*XXX[:,]?[ ]                                  # The XXX indicator.
-    (?P<date>\d\d\d\d[/-]?\d\d[/-]?\d\d)[,: ]*     # The date in YYYY-MM-DD.
-    (?P<person>[a-zA-Z][\w]+)[,: ]*                # The person's nick.
-    (?:[(]?bug[s]?[= ](?P<bug>[\w-]*)[),: ]*)?     # The bug id.
-    (?:[(]?spec[= ](?P<spec>[\w-]*)[),: ]*)?       # The spec name.
-    (?P<text>.*)                                   # The comment text.
-    """, re.VERBOSE)
-
-
-def extract_metadata(comment_line):
-    """Return a dict of metadata extracted from the comment line.
-
-    :param comment_line: The first line of an XXX comment contains the
-        metadata.
-    :return: dict(person, date, bug, spec, and [text]). The text is the
-    same as remainder of the comment_line after the metadata is extracted.
-    """
-    comment = dict(person=None, date=None, bug=None, spec=None, text=[])
-    match = (xxx_person_date_re.match(comment_line)
-             or xxx_date_person_re.match(comment_line))
-    if match is not None:
-        # This comment follows a known style.
-        comment['person'] = match.group('person')
-        comment['date'] = match.group('date')
-        comment['bug'] = match.group('bug') or None
-        comment['spec'] = match.group('spec') or None
-        text = match.group('text').lstrip(':, ')
-    else:
-        # Unknown comment format.
-        text = comment_line
-
-    text = text.strip()
-    if text != '':
-        comment['text'] = [text + '\n']
-    return comment
+        text = text.strip()
+        if text != '':
+            comment['text'] = [text + '\n']
+        return comment
 
 
 class HTMLReport(Report):
@@ -246,21 +271,11 @@ class HTMLReport(Report):
 </html>
 """
 
-    def __init__(self, output_name, comments, revno=None):
-        """Create and write the HTML report to a file.
-
-        :param output_name: The name of the html file to write to.
-        :param comments: A list of comment dicts to include in the report.
-        :param revno: The revision number of tree the comments came from.
-        """
-        self.output_name = output_name
-        self.comments = comments
-        self.revno = revno
-
     def write(self):
+        """Write the report in HTML format."""
         report_time = time.strftime(
             "%a, %d %b %Y %H:%M:%S UTC", time.gmtime())
-        output_file = open(self.output_name, "w")
+        output_file = self._open()
         try:
             output_file.write(
                 self.report_top % {"commentcount": len(self.comments),
@@ -281,7 +296,7 @@ class HTMLReport(Report):
             output_file.write(self.report_bottom)
             output_file.flush()
         finally:
-            output_file.close()
+            self._close(output_file)
 
     def markup_text(self, text):
         """Return the line as HTML markup.
@@ -295,49 +310,90 @@ class HTMLReport(Report):
         return text
 
 
-def create_csv_report(output_name, comments, revno=None):
-    """Create and write the comma-separated-value-report to a file.
+class CSVReport(Report):
+    """A CSV XXX report."""
+    report_header = (
+        'File_Path, Line_No, Person, Date, Bug, Spec, Text\n')
+    report_comment = (
+        '%(file_path)s, %(line_no)s, '
+        '%(person)s, %(date)s, %(bug)s, %(spec)s, %(text)s\n')
 
-    :param output_name: The name of the html file to write to.
-    :param comments: A list of comment dicts to include in the report.
-    :param revno: The revision number of tree the comments came from.
-    """
-    report_comment = ('%(file_path)s, %(line_no)s, '
-                      '%(person)s, %(date)s, %(bug)s, %(spec)s, "%(text)s"\n')
-    outputfile = open(output_name, "w")
-    try:
-        outputfile.write(
-            'File_Path, Line_No, Person, Date, Bug, Spec, Text\n')
-        for comment in comments:
-            comment['text'] = comment['text'].replace(
-                '\n', ' ').replace('"', "'").strip()
-            outputfile.write(report_comment % comment)
-        outputfile.flush()
-    finally:
-        outputfile.close()
+    def markup_text(self, text):
+        """Return the line as TSV markup.
+
+        :param text: The text to escape.
+        """
+        if text is not None:
+            return text.replace('\n', ' ').replace(',', ';')
+
+    def write(self):
+        """Write the report in CSV format."""
+        output_file = self._open()
+        try:
+            output_file.write(self.report_header)
+            for comment in self.comments:
+                comment['person'] = self.markup_text(comment['person'])
+                comment['text'] = self.markup_text(comment['text'])
+                output_file.write(self.report_comment % comment)
+            output_file.flush()
+        finally:
+            self._close(output_file)
+
+
+class TSVReport(CSVReport):
+    """A TSV XXX report."""
+    report_header = (
+        'File_Path\tLine_No\tPerson\tDate\tBug\tSpec\tText\n')
+    report_comment = (
+        '%(file_path)s\t%(line_no)s\t'
+        '%(person)s\t%(date)s\t%(bug)s\t%(spec)s\t%(text)s\n')
+
+    def markup_text(self, text):
+        """Return the line as TSV markup.
+
+        :param text: The text to escape.
+        """
+        if text is not None:
+            return text.replace('\n', ' ').replace('\t', ' ')
+
+
+def get_option_parser():
+    """Return the option parser for this program."""
+    usage = dedent("""    %prog [options] <root-dir>
+
+    Create a report of all the XXX comments in the files below a directory.
+    Set the -f option to 'count' to print the total number of XXX comments,
+    which is the default when -f is not set.""")
+    parser = OptionParser(usage=usage)
+    parser.add_option(
+        "-f", "--format", dest="format", default="count",
+        help="the format of the report: count, html, csv, tsv")
+    parser.add_option(
+        "-o", "--output", dest="output_name",
+        help="the name of the output file, otherwise STDOUT is used")
+    return parser
 
 
 def main(argv=None):
     """Run the command line operations."""
     if argv is None:
         argv = sys.argv
-    if len(argv) < 3 or not os.path.isdir(argv[1]):
-        print ("Usage: xxxreport.py "
-               "<root-dir|log-file> <output-filename>.<csv|html>")
-        sys.exit()
+    parser = get_option_parser()
+    (options, arguments) = parser.parse_args(args=argv[1:])
+    if len(argv) < 2:
+        parser.error('No root directory was provided.')
     root_dir = argv[1]
-    if not os.path.isdir(root_dir):
-        print "Log file is not implemented yet."
-        sys.exit()
-    output_name = argv[2]
 
-    revno = get_branch_revno(root_dir)
-    comments = find_comments(root_dir)
-    if output_name.endswith('html'):
-        report = HTMLReport(output_name, comments, revno)
-        report.write()
+    if options.format.lower() == 'html':
+        report = HTMLReport(root_dir, options.output_name)
+    elif options.format.lower() == 'tsv':
+        report = TSVReport(root_dir, options.output_name)
+    elif options.format.lower() == 'csv':
+        report = CSVReport(root_dir, options.output_name)
     else:
-        create_csv_report(output_name, comments, revno)
+        report = Report(root_dir)
+    report.write()
+    sys.exit(0)
 
 
 if __name__ == '__main__':
