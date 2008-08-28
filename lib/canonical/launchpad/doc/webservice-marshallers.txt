@@ -527,6 +527,8 @@ marshaller for its value_type.
     >>> from zope.schema import List, Tuple, Set
     >>> list_of_strings_field = List(value_type=Text())
     >>> tuple_of_ints_field = Tuple(value_type=Int())
+    >>> list_of_choices_field = List(
+    ...     value_type=Choice(vocabulary=BugTaskStatus))
     >>> set_of_choices_field = Set(
     ...  value_type=Choice(vocabulary='ValidPersonOrTeam')).bind(None)
 
@@ -538,6 +540,11 @@ marshaller for its value_type.
     >>> tuple_marshaller = getMultiAdapter(
     ...     (tuple_of_ints_field, request), IFieldMarshaller)
     >>> verifyObject(IFieldMarshaller, tuple_marshaller)
+    True
+
+    >>> choice_list_marshaller = getMultiAdapter(
+    ...     (list_of_choices_field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, choice_list_marshaller)
     True
 
     >>> set_marshaller = getMultiAdapter(
@@ -570,6 +577,12 @@ validate against the more specific marshaller.
       ...
     ValueError: got 'int', expected unicode: 1
 
+    >>> choice_list_marshaller.marshall_from_request(
+    ...     [u'Confirmed', u'NoSuchChoice'])
+    Traceback (most recent call last):
+    ...
+    ValueError: Invalid value "NoSuchChoice"...
+
 The return type is correctly typed to the concrete collection.
 
     >>> tuple_marshaller.marshall_from_json_data([1, 2, 3])
@@ -578,6 +591,14 @@ The return type is correctly typed to the concrete collection.
     ...     ['http://api.launchpad.dev/beta/~salgado',
     ...      'http://api.launchpad.dev/beta/~ubuntu-team'])
     Set([<Person...>, <Person...>])
+
+    >>> result = choice_list_marshaller.marshall_from_request(
+    ...     [u'Confirmed', u'New'])
+    >>> type(result)
+    <type 'list'>
+    >>> [item.title for item in result]
+    ['Confirmed', 'New']
+
 
 When coming from the request, either a list or a JSON-encoded
 representation is accepted. The normal request rules for the
