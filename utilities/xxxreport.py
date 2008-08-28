@@ -18,7 +18,7 @@ from bzrlib import bzrdir
 from bzrlib.errors import (NotBranchError)
 
 
-dir_re = re.compile('(sourcecode)')
+dir_re = re.compile('(not-used)')
 file_re = re.compile('.*(pyc$)')
 
 
@@ -39,21 +39,6 @@ class Report:
         self.output_name = output_name
         self.revno = self._get_branch_revno()
         self.comments = self._find_comments()
-
-    def write(self):
-        """Write the total count of comments."""
-        output_file = self._open()
-        try:
-            output_file.write('%s\n' % len(self.comments))
-            output_file.flush()
-        finally:
-            self._close(output_file)
-
-    def _open(self):
-        """Open the output_name or use STDOUT."""
-        if self.output_name is not None:
-            return open(self.output_name, 'w')
-        return sys.stdout
 
     def _close(self, output_file):
         """Close the output_file if it was opened."""
@@ -200,6 +185,21 @@ class Report:
         if text != '':
             comment['text'] = [text + '\n']
         return comment
+
+    def write(self):
+        """Write the total count of comments."""
+        output_file = self._open()
+        try:
+            output_file.write('%s\n' % len(self.comments))
+            output_file.flush()
+        finally:
+            self._close(output_file)
+
+    def _open(self):
+        """Open the output_name or use STDOUT."""
+        if self.output_name is not None:
+            return open(self.output_name, 'w')
+        return sys.stdout
 
 
 class HTMLReport(Report):
