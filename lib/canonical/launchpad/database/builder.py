@@ -339,7 +339,7 @@ class Builder(SQLBase):
         """Assert some pre-build checks.
 
         The build request is checked:
-         * Virtualised builds can't build on a non-virtual builder
+         * Virtualized builds can't build on a non-virtual builder
          * Ensure that we have a chroot
          * Ensure that the build pocket allows builds for the current
            distroseries state.

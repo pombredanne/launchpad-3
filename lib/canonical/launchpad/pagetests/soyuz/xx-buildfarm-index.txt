@@ -91,11 +91,8 @@ Registering a new builder involves setting its name, title,
 description and corresponding location.
 
     >>> admin_browser.getControl('Name').value = 'tubaina'
-
     >>> admin_browser.getControl('Title').value = 'Tubaina'
-
     >>> admin_browser.getControl('Description').value = 'Bogus'
-
     >>> admin_browser.getControl(
     ...     'URL').value = 'http://tubaina.buildd'
 
@@ -104,7 +101,6 @@ to the builder or simply proceed with the default (i386).
 
     >>> admin_browser.getControl(name='field.processor').displayOptions
     ['Intel 386', 'AMD 64bit', 'HPPA Processor']
-
     >>> admin_browser.getControl(name='field.processor').displayValue
     ['Intel 386']
 
@@ -113,20 +109,17 @@ administrator can change this value during creation time.
 
     >>> print admin_browser.getControl('Active').selected
     True
-
     >>> admin_browser.getControl('Active').selected = False
 
 Builder as created as 'non-virtual' by default, but the administrator
 can also modify that while creating a builder.
 
-    >>> print admin_browser.getControl('Virtualised').selected
+    >>> print admin_browser.getControl('Virtualized').selected
     False
-
     >>> admin_browser.getControl('Virtual Machine Host').value
     ''
 
-    >>> admin_browser.getControl('Virtualised').selected = True
-
+    >>> admin_browser.getControl('Virtualized').selected = True
     >>> admin_browser.getControl(
     ...     'Virtual Machine Host').value = 'tubaina-host.ppa'
 
@@ -134,6 +127,5 @@ Once the form is submitted the users will be redirected to the
 just-created builder page.
 
     >>> admin_browser.getControl("Register builder").click()
-
     >>> print admin_browser.title
     Build machine Tubaina

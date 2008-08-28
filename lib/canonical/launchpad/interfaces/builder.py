@@ -99,7 +99,7 @@ class IBuilder(IHasOwner):
                       'details.'))
 
     virtualized = Bool(
-        title=_('Virtualised'), required=True, default=False,
+        title=_('Virtualized'), required=True, default=False,
         description=_('Whether or not the builder is a virtual Xen '
                       'instance.'))
 
@@ -312,7 +312,7 @@ class IBuilderSet(Interface):
         'builderok' and 'manual' set to True.
 
         It means that, once created, they will be presented as 'functional'
-        in the UI but will not receive any job until a administration move
+        in the UI but will not receive any job until an administrator move
         it to the automatic mode.
         """
 
