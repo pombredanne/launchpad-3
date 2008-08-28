@@ -18,8 +18,8 @@ from bzrlib import bzrdir
 from bzrlib.errors import (NotBranchError)
 
 
-dir_re = re.compile('(not-used)')
-file_re = re.compile('.*(pyc$)')
+dir_re = re.compile(r'.*(not-used|lib/mailman)')
+file_re = re.compile(r'.*(pyc$)')
 
 
 class Report:
@@ -63,27 +63,26 @@ class Report:
     def _find_comments(self):
         """Set the list of XXX comments in files below a directory."""
         comments = []
-        for file_path in self._find_files(dir_re, file_re):
+        for file_path in self._find_files():
             comments.extend(self._extract_comments(file_path))
         return comments
 
 
-    def _find_files(self, skip_dir_pattern, skip_file_pattern):
-        """Generate a list of matching files below a directory.
-
-        :param root_dir: The root directory that will be walked for files.
-        :param skip_dir_pattern: An re pattern of the directory names to skip.
-        :param skip_file_pattern: An re pattern of the file names to skip.
-        """
+    def _find_files(self):
+        """Generate a list of matching files below a directory."""
         for path, subdirs, files in os.walk(self.root_dir):
-            subdirs[:] = [dir for dir in subdirs
-                          if skip_dir_pattern.match(dir) is None]
+            subdirs[:] = [dir_name for dir_name in subdirs
+                          if self._is_traversable(path, dir_name)]
             for file in files:
                 file_path = os.path.join(path, file)
                 if os.path.islink(file_path):
                     continue
-                if skip_file_pattern.match(file) is None:
+                if file_re.match(file) is None:
                     yield os.path.join(path, file)
+
+    def _is_traversable(self, path, dir_name):
+        """Return True if dir_name does not match skip_dir_pattern."""
+        return dir_re.match(os.path.join(path, dir_name)) is None
 
     def _extract_comments(self, file_path):
         """Return a list of XXX comments in a file.
