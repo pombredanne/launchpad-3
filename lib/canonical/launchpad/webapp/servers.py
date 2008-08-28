@@ -385,6 +385,8 @@ class BasicLaunchpadRequest:
         self._wsgi_keys = set()
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
+        self.needs_json = False
+        self.needs_gmap2 = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -611,6 +613,14 @@ class LaunchpadTestRequest(TestRequest):
     False
     >>> request.needs_datepicker_iframe
     False
+
+    And for JSON and GMap2:
+
+    >>> request.needs_json
+    False
+    >>> request.needs_gmap2
+    False
+
     """
     implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
                canonical.launchpad.layers.LaunchpadLayer)
@@ -626,6 +636,8 @@ class LaunchpadTestRequest(TestRequest):
         self.traversed_objects = []
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
+        self.needs_json = False
+        self.needs_gmap2 = False
 
     @property
     def uuid(self):
