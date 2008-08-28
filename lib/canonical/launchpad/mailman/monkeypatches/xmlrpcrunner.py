@@ -465,7 +465,7 @@ class XMLRPCRunner(Runner):
                 # To make reactivation easier, we temporarily cd to the
                 # $var/lists directory and make the tarball from there.
                 old_cwd = os.getcwd()
-                # XXX BarryWarsaw 02-Aug-2007 Should we watch out for
+                # XXX BarryWarsaw 2007-08-02: Should we watch out for
                 # collisions on the tar file name?  This can only happen if
                 # the team is resurrected but the old archived tarball backup
                 # wasn't removed.
@@ -607,7 +607,7 @@ class XMLRPCRunner(Runner):
 def extractall(tgz_file):
     """Extract all members of `tgz_file` to the current working directory."""
     path = '.'
-    # XXX BarryWarsaw 13-Nov-2007 TBD: This is nearly a straight ripoff of
+    # XXX BarryWarsaw 2007-11-13: This is nearly a straight ripoff of
     # Python 2.5's TarFile.extractall() method, though simplified for our
     # particular purpose.  When we upgrade Launchpad to Python 2.5, this
     # function can be removed.

@@ -787,7 +787,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # If the new value is an object, make sure it provides the correct
             # interface.
             if value is not None and IObject.providedBy(field):
-                # XXX leonardr 2008-15-04 blueprint=api-wadl-description:
+                # XXX leonardr 2008-04-12 spec=api-wadl-description:
                 # This should be moved into the
                 # ObjectLookupFieldMarshaller, once we make it
                 # possible for Vocabulary fields to specify a schema

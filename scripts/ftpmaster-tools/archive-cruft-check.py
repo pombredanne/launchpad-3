@@ -62,7 +62,7 @@ def main():
         log.error(info)
         return 1
 
-# XXX cprov 2007-06-26: Disabling by distro-team request, see bug #121784
+# XXX cprov 2007-06-26 bug=121784: Disabling by distro-team request.
 #    if checker.nbs_to_remove and options.action:
 #        checker.doRemovals()
 #        ztm.commit()

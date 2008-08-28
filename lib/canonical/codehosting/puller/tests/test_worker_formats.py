@@ -52,8 +52,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         self.assertEqual(
             source_branch.last_revision(), dest_branch.last_revision())
         # Assert that the mirrored branch is in source's format
-        # XXX AndrewBennetts 2006-05-18: comparing format objects is ugly.
-        # See bug 45277.
+        # XXX AndrewBennetts 2006-05-18 bug=45277: comparing format objects
+        # is ugly.
         self.assertEqual(
             source_branch.repository._format.get_format_description(),
             dest_branch.repository._format.get_format_description())

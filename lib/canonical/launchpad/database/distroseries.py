@@ -792,8 +792,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             # pockets for the primary archives, but they do allow them for
             # the PPA and PARTNER archives.
 
-            # XXX: this should come from a single location where this
-            # is specified, not sprinkled around the code.
+            # XXX: Julian 2007-09-14: this should come from a single
+            # location where this is specified, not sprinkled around the code.
             allow_release_builds = (
                 ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 

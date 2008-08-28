@@ -351,8 +351,8 @@ class Builder(SQLBase):
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY
         # correctly from EMBARGOED archive this assertion can be removed.
-        # XXX 2007-18-12 Julian. This is being addressed in the work on the
-        # blueprint:
+        # XXX Julian 2007-12-18 spec=security-in-soyuz: This is being
+        # addressed in the work on the blueprint:
         # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
         target_pocket = build_queue_item.build.pocket
         assert target_pocket != PackagePublishingPocket.SECURITY, (

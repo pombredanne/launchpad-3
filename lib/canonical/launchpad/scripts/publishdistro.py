@@ -19,8 +19,8 @@ from canonical.launchpad.scripts import (
     logger, logger_options)
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 
-# XXX 2008-02-07 Julian.
-# These functions should be in a LaunchpadScript. See bug 189866.
+# XXX Julian 2008-02-07 bug=189866:
+# These functions should be in a LaunchpadScript.
 
 def add_options(parser):
     logger_options(parser)

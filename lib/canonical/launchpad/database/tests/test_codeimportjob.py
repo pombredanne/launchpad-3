@@ -823,7 +823,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         unchecked_result_fields.difference_update(['log_file', 'status'])
 
         code_import = self.factory.makeCodeImport()
-        # XXX MichaelHudson 2008-02026, bug=193876: When the referenced bug is
+        # XXX MichaelHudson 2008-02-26, bug=193876: When the referenced bug is
         # fixed, we will be able to do this much more nicely than this.
         removeSecurityProxy(code_import).review_status = \
             CodeImportReviewStatus.REVIEWED

@@ -594,9 +594,8 @@ class BugTextView(LaunchpadView):
             text.append('duplicates: ')
 
         if bug.private:
-            # XXX this could include date_made_private and
+            # XXX kiko 2007-10-31: this could include date_made_private and
             # who_made_private but Bjorn doesn't let me.
-            #    -- kiko, 2007-10-31
             text.append('private: yes')
 
         if bug.security_related:
@@ -674,8 +673,8 @@ class BugTextView(LaunchpadView):
         from canonical.launchpad.browser.bugtask import (
             get_visible_comments, get_comments_for_bugtask)
 
-        # XXX: for some reason, get_comments_for_bugtask takes a task,
-        # not a bug. For now live with it. -- kiko, 2007-10-31
+        # XXX: kiko 2007-10-31: for some reason, get_comments_for_bugtask
+        # takes a task, not a bug. For now live with it.
         first_task = self.bugtasks[0]
         all_comments = get_comments_for_bugtask(first_task)
         comments = get_visible_comments(all_comments[1:])

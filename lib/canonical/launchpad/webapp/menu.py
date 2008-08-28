@@ -450,7 +450,7 @@ class enabled_with_permission:
 ## text.
 ##
 
-# XXX mars 2008-2-12:
+# XXX: mars 2008-02-12:
 # This entire block should be extracted into its own module, along
 # with the structured() class.
 

@@ -160,8 +160,8 @@ def new_team(team_name, with_list=False):
     we need to use in the doctest.
     """
     displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
-    # XXX BarryWarsaw Set the team's subscription policy to OPEN because of
-    # bug 125505.
+    # XXX BarryWarsaw 2007-09-27 bug 125505: Set the team's subscription
+    # policy to OPEN.
     policy = TeamSubscriptionPolicy.OPEN
     personset = getUtility(IPersonSet)
     team_creator = personset.getByName('no-priv')

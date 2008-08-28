@@ -251,7 +251,7 @@ def manageChrootSetup(test):
     LaunchpadZopelessLayer.switchDbUser("fiera")
 
 
-# XXX BarryWarsaw 15-Aug-2007: See bug 132784 as a placeholder for improving
+# XXX BarryWarsaw 2007-08-15 bug=132784: as a placeholder for improving
 # the harness for the mailinglist-xmlrpc.txt tests, or improving things so
 # that all this cruft isn't necessary.
 

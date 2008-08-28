@@ -78,8 +78,8 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
 
     person = getUtility(IPersonSet).getByName(person_name)
     if person.gpgkeys:
-        # XXX: oy, what a hack. I need to test with cprov and he doesn't
-        # have a signing key in the database. -- kiko, 2007-10-25
+        # XXX: kiko 2007-10-25: oy, what a hack. I need to test with cprov
+        # and he doesn't have a signing key in the database
         sourcepackagerelease.dscsigningkey = person.gpgkeys[0]
     main_component = getUtility(IComponentSet)['main']
     SecureSourcePackagePublishingHistory(

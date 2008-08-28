@@ -95,8 +95,9 @@ class TestCase(unittest.TestCase):
             associated to this object.
         :param date: `datetime.datetime` object or `UTC_NOW`.
         """
-        # XXX Probably does not belong here, but better location not clear.
-        # Used primarily for testing ORM objects, which ought to use factory.
+        # XXX: Aaron Bentley 2008-04-14: Probably does not belong here, but
+        # better location not clear. Used primarily for testing ORM objects,
+        # which ought to use factory.
         sql_object = removeSecurityProxy(sql_object)
         sql_object.syncUpdate()
         sql_class = type(sql_object)

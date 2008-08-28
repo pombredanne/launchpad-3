@@ -32,7 +32,7 @@ class SlaveScanner(LaunchpadCronScript):
 
         for builder in builder_set:
             self.logger.info("Processing: %s" % builder.name)
-            # XXX cprov 20071109: we don't support manual dispatching
+            # XXX cprov 2007-11-09: we don't support manual dispatching
             # yet. Once we support it this clause should be removed.
             if builder.manual:
                 self.logger.warn('builder is in manual state. Ignored.')

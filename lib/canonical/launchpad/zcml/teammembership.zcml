@@ -13,8 +13,8 @@
         <allow interface="canonical.launchpad.interfaces.ITeamMembershipSet" />
     </securedutility>
 
-    <!-- XXX: Need to refactor ITeamMembership into specific interfaces for
-    each persmission. Guilherme Salgado, 2008-02-15 -->
+    <!-- XXX: Guilherme Salgado 2008-02-15: Need to refactor ITeamMembership
+              into specific interfaces for each persmission. -->
     <content class="canonical.launchpad.database.TeamMembership">
         <require
             permission="zope.Public"

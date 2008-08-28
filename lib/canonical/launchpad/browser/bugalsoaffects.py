@@ -214,9 +214,9 @@ class ChooseProductStep(AlsoAffectsStep):
         upstream = self._getUpstream(bugtask.target)
         if upstream is not None:
             if not upstream.active:
-                # XXX: This is only possible because of bug 140526, which
-                # allows packages to be linked to inactive products.
-                # -- Guilherme Salgado, 2007-09-18
+                # XXX: Guilherme Salgado 2007-09-18 bug=140526: This is only
+                # possible because of bug 140526, which allows packages to
+                # be linked to inactive products.
                 series = bugtask.distribution.currentseries
                 assert series is not None, (
                     "This package is linked to a product series so this "
@@ -905,10 +905,11 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         This method also sets self.next_url to the URL of the newly added
         bugtask.
         """
-        # XXX: This relies on the fact that these actions work using only the
-        # form data and the context. (They don't require any side-effects done
-        # during initialize().)  They should probably be extracted outside of
-        # the view to make that explicit. -- Guilherme Salgado, 2007-11-20
+        # XXX: Guilherme Salgado, 2007-11-20: This relies on the fact that
+        # these actions work using only the form data and the context.
+        # (They don't require any side-effects done  during initialize().)
+        # They should probably be extracted outside of the view to
+        # make that explicit.
         view = UpstreamBugTrackerCreationStep(self.context, self.request)
         view.main_action(data)
 
