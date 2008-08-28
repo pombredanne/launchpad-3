@@ -263,8 +263,8 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
 
 
-class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests, TrialTestCase,
-                                  BzrTestCase):
+class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
+                                  TrialTestCase, BzrTestCase):
     """Tests for the LaunchpadInternalServer, used by the puller and scanner.
     """
 
