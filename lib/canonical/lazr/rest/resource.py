@@ -553,10 +553,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         for name, field in getFieldsInOrder(self.entry.schema):
             if self.isModifiableField(field, False):
                 ignored, value = self._unmarshallField(name, field)
-                values.append(str(value))
+                values.append(unicode(value))
 
         hash_object = sha.new()
-        hash_object.update("\0".join(values))
+        hash_object.update("\0".join(values).encode("utf-8"))
 
         # Append the revision number, because the algorithm for
         # generating the representation might itself change across
