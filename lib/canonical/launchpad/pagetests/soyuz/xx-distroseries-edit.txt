@@ -96,7 +96,7 @@ Foo Bar updates the distroseries' name, version and changelist.
 
     >>> admin_browser.getControl(name="field.name").value = 'boing'
     >>> admin_browser.getControl(name="field.version").value = '1.23'
-    >>> admin_browser.getControl("Changeslist").value = 'foo@bar.com'
+    >>> admin_browser.getControl("E-mail changes to").value = 'foo@bar.com'
 
     >>> admin_browser.getControl("Change").click()
 
