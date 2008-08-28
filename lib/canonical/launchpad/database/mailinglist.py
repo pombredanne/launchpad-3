@@ -18,7 +18,7 @@ from email.Header import decode_header, make_header
 from itertools import repeat
 from string import Template
 
-from storm.expr import And, LeftJoin, Union
+from storm.expr import And, LeftJoin
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
@@ -437,13 +437,18 @@ class MailingList(SQLBase):
     def getSenderAddresses(self):
         """See `IMailingList`."""
         store = Store.of(self)
+        # Here are two useful conveniences for the queries below.
         email_address_statuses = (
             EmailAddressStatus.VALIDATED,
             EmailAddressStatus.PREFERRED)
         message_approval_statuses = (
             PostedMessageStatus.APPROVED,
             PostedMessageStatus.APPROVAL_PENDING)
-
+        # First, we need to find all the members of the team this mailing list
+        # is associated with.  Of those team members with valid person
+        # accounts, find all of their validated and preferred email
+        # addresses.  Every one of those email addresses are allowed to post
+        # to the mailing list.
         tables = (
             Person,
             LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id),
@@ -453,7 +458,6 @@ class MailingList(SQLBase):
             LeftJoin(MailingList,
                      MailingList.teamID == TeamParticipation.teamID),
             )
-
         team_members = store.using(*tables).find(
             (EmailAddress, Person),
             And(TeamParticipation.teamID == self.team.id,
@@ -461,7 +465,11 @@ class MailingList(SQLBase):
                 Person.teamowner == None,
                 EmailAddress.status.is_in(email_address_statuses),
                 ))
-
+        # Second, find all of the email addresses for all of the people who
+        # have been explicitly approved for posting to this mailing list.
+        # This occurs as part of first post moderation, but since they've
+        # already been approved for this list, we don't need to wait for three
+        # global approvals.
         tables = (
             Person,
             LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id),
@@ -469,14 +477,20 @@ class MailingList(SQLBase):
             LeftJoin(MessageApproval,
                      MessageApproval.posted_byID == Person.id),
             )
-
         approved_posters = store.using(*tables).find(
             (EmailAddress, Person),
             And(MessageApproval.mailing_listID == self.id,
                 MessageApproval.status.is_in(message_approval_statuses),
                 EmailAddress.status.is_in(email_address_statuses),
                 ))
-
+        # Union the two queries together to give us the complete list of email
+        # addresses allowed to post.  Note that while we're retrieving both
+        # the EmailAddress and Person records, this method is defined as only
+        # returning EmailAddresses.  The reason why we include the Person in
+        # the query is because the consumer of this method will access
+        # email_address.person.displayname, so the prejoin to Person is
+        # critical to acceptable performance.  Indeed, without the prejoin, we
+        # were getting tons of timeout OOPSes.  See bug 259440.
         for email_address, person in team_members.union(approved_posters):
             yield email_address
 
