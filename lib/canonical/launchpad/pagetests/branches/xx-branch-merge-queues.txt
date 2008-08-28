@@ -1,5 +1,7 @@
 == Merge queues ==
 
+Branch merge queues are for queuing up approved branches for landing into
+another branch.
 
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
