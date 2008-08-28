@@ -75,7 +75,7 @@ def construct_redirect_params(data):
     publishing status filter variables (which are part of the original POST
     request data).
 
-    :param: data: POST request data passed to the original package
+    :param data: POST request data passed to the original package
         copy/delete request, contains the name and the publishing status
         filter values.
 
@@ -87,13 +87,13 @@ def construct_redirect_params(data):
 
     # Handle the name filter if set.
     name_filter = data.get('name_filter')
-    if name_filter:
+    if name_filter is not None:
         url_params['field.name_filter'] = name_filter
 
     # Handle the publishing status filter which must be one of: any,
     # published or superseded.
     status_filter = data.get('status_filter')
-    if status_filter:
+    if status_filter is not None:
         # Please note: the default value is 'any'.
         status_filter_value = 'any'
 
@@ -103,8 +103,8 @@ def construct_redirect_params(data):
             # we just want to figure out whether it contains either a
             # published or superseded status however.
             status_filter_string = str(status_filter.collection)
-            terms_saught = ('Published', 'Superseded')
-            for term in terms_saught:
+            terms_sought = ('Published', 'Superseded')
+            for term in terms_sought:
                 if term in status_filter_string:
                     status_filter_value = term.lower()
                     break
