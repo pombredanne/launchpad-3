@@ -99,17 +99,17 @@ class IBuilder(IHasOwner):
                       'details.'))
 
     virtualized = Bool(
-        title=_('Virtualised'), required=True,
+        title=_('Virtualized'), required=True, default=False,
         description=_('Whether or not the builder is a virtual Xen '
                       'instance.'))
 
     manual = Bool(
-        title=_('Manual Mode'), required=False,
+        title=_('Manual Mode'), required=False, default=False,
         description=_('The auto-build system does not dispatch '
                       'jobs automatically for slaves in manual mode.'))
 
     builderok = Bool(
-        title=_('Builder State OK'), required=False,
+        title=_('Builder State OK'), required=True, default=True,
         description=_('Whether or not the builder is ok'))
 
     failnotes = Text(
@@ -122,7 +122,7 @@ class IBuilder(IHasOwner):
                       'buildd-slave, e.g.: foobar-host.ppa'))
 
     active = Bool(
-        title=_('Active'), required=False,
+        title=_('Active'), required=True, default=True,
         description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
@@ -305,8 +305,16 @@ class IBuilderSet(Interface):
         """Retrieve a builder by name"""
 
     def new(processor, url, name, title, description, owner,
-            virtualized=True):
-        """Create a new Builder entry."""
+            active=True, virtualized=False, vm_host=None):
+        """Create a new Builder entry.
+
+        Additionally to the given arguments, builder are created with
+        'builderok' and 'manual' set to True.
+
+        It means that, once created, they will be presented as 'functional'
+        in the UI but will not receive any job until an administrator move
+        it to the automatic mode.
+        """
 
     def count():
         """Return the number of builders in the system."""
