@@ -231,14 +231,13 @@ class Mantis(ExternalBugTracker):
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`."""
+        # XXX: Gavin Panella 2007-09-06 bug=137780:
         # You may find this zero in "\r\n0" funny. Well I don't. This is
         # to work around the fact that Mantis' CSV export doesn't cope
         # with the fact that the bug summary can contain embedded "\r\n"
         # characters! I don't see a better way to handle this short of
         # not using the CSV module and forcing all lines to have the
         # same number as fields as the header.
-        # XXX: kiko 2007-07-05: Report Mantis bug.
-        # XXX: allenap 2007-09-06: Reported in LP as bug #137780.
         csv_data = self.csv_data.strip().split("\r\n0")
 
         if not csv_data:

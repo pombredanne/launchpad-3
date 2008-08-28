@@ -60,7 +60,6 @@ class BugLinkTargetMixin:
             if buglink.bug.id == bug.id:
                 notify(SQLObjectDeletedEvent(buglink))
                 self.buglinkClass.delete(buglink.id)
-                # XXX: We shouldn't return the object that we just
-                #      deleted from the db.
-                #      -- Bjorn Tillenius, 2005-11-21
+                # XXX: Bjorn Tillenius 2005-11-21: We shouldn't return the
+                #      object that we just deleted from the db.
                 return buglink
