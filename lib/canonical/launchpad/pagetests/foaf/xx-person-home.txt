@@ -107,9 +107,7 @@ Details portlet.
     ...     admin_browser.contents, 'contact-details'))
     Email: ...
     ...
-    OpenID login: http://openid.launchpad.dev/+id/name16_oid
-    (What&rsquo;s this?)
-    ...
+    OpenID login: http://openid.launchpad.dev/+id/name16_oid...
 
 Foo Bar can learn about OpenID from the 'What's this?' link.
 
@@ -166,26 +164,20 @@ Teams don't have member-since; they have created-date:
 
 === Time zones ===
 
-The user's time zone is displayed next to their contact details:
+The user's time zone is displayed next to their location details:
 
-    >>> browser.open('http://launchpad.dev/~sabdfl')
+    >>> browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'contact-details'))
-    Email: mark@hbd.com
-    Wiki: .../MarkShuttleworth
-    IRC: mark ...
-    Jabber: ...
-    SSH Keys: ...
-    OpenID login: ...
-    Time zone: None given
+    ...     find_tag_by_id(browser.contents, 'portlet-map'))
+    Location
+    Time zone: Australia/Perth
 
 Teams don't have a time zone field.
 
     >>> browser.open('http://launchpad.dev/~guadamen')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'contact-details'))
-    Contact details
-    Email: No contact address ...
+    >>> 'Time zone' in extract_text(
+    ...     find_tag_by_id(browser.contents, 'portlet-map'))
+    False
 
 
 == Table of contributions ==

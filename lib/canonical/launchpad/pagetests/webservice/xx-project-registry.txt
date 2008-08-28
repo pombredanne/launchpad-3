@@ -1,5 +1,6 @@
 = Web Service Project Groups =
 
+
 == Project group entry ==
 
 Project groups are available at their canonical URL on the API virtual host.
@@ -200,6 +201,7 @@ the ws.op=search parameter.
     >>> project_collection['total_size']
     4
 
+
 == Project series entry ==
 
 The entry for a project series is available at its canonical URL on the
@@ -209,10 +211,19 @@ virtual host.
     >>> pprint_entry(firefox_1_0)
     active_milestones_collection_link: u'http://.../firefox/1.0/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/1.0/all_milestones'
+    date_created: u'2005-06-06T08:59:51.898385+00:00'
+    display_name: u'1.0'
+    driver_link: None
+    drivers_collection_link: u'http://.../beta/firefox/1.0/drivers'
     name: u'1.0'
+    owner_link: u'http://.../beta/~name12'
     project_link: u'http://.../firefox'
+    releases_collection_link: u'http://.../beta/firefox/1.0/releases'
     resource_type_link: u'...'
     self_link: u'http://.../firefox/1.0'
+    status: u'Active Development'
+    summary: u'The 1.0 branch of the Mozilla web browser...'
+    title: u'Mozilla Firefox Series: 1.0'
 
 
 == Project release entry ==
@@ -244,3 +255,17 @@ host.
     series_target_link: u'http://.../firefox/trunk'
     target_link: u'http://.../firefox'
     title: u'Milestone 1.0 for Mozilla Firefox'
+
+
+== ProductRelease entries ==
+
+    >>> releases = webservice.get(
+    ...     '/beta/firefox/1.0/releases').jsonBody()
+    >>> pprint_entry(releases)
+    entries: [...]
+    resource_type_link: u'http://.../beta/#product_release-page-resource'
+    start: 0
+    total_size: 1
+    >>> entries = releases['entries']
+    >>> len(entries) == releases['total_size']
+    True
