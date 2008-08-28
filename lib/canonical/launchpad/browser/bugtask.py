@@ -862,8 +862,8 @@ class BugTaskEditView(LaunchpadEditFormView):
             editable_field_names = set(self.default_field_names)
             editable_field_names.discard('bugwatch')
 
-            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
-            # doesn't belong here! See https://launchpad.net/bugs/63000
+            # XXX: Brad Bollenbach 2006-09-29 bug=63000: Permission checking
+            # doesn't belong here!
             if ('milestone' in editable_field_names and
                 not self.userCanEditMilestone()):
                 editable_field_names.remove("milestone")
