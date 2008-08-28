@@ -23,7 +23,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    cursor, quote, quote_like, SQLBase, sqlvalues)
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -867,16 +868,19 @@ class BuildSet:
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        if name:
-            condition_clauses.append("Build.sourcepackagerelease="
-                                     "Sourcepackagerelease.id")
-            condition_clauses.append("Sourcepackagerelease.sourcepackagename="
-                                     "Sourcepackagename.id")
-            condition_clauses.append(
-                "Sourcepackagename.name LIKE '%%' || %s || '%%'"
-                % quote_like(name))
-            clauseTables.append('Sourcepackagerelease')
-            clauseTables.append('Sourcepackagename')
+        if name is not None:
+            condition_clauses.append('''
+                Build.sourcepackagerelease IN (
+                    SELECT DISTINCT SourcePackageRelease.id
+                    FROM    SourcePackageRelease
+                        JOIN
+                            SourcePackagename
+                        ON
+                            SourcePackageRelease.sourcepackagename = 
+                            SourcePackageName.id
+                        WHERE Sourcepackagename.name LIKE
+                        '%%' || %s || '%%')
+            ''' % quote(name))
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
