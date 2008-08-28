@@ -118,7 +118,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def release_files(self):
-        """See IProductSeries."""
+        """See `IProductSeries`."""
         files = set()
         for release in self.releases:
             files = files.union(release.files)

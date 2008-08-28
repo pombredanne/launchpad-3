@@ -888,6 +888,8 @@ person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 person_editlanguages = ContextDisplayName(
     smartquote("%s's preferred languages"))
 
+person_editlocation = ContextDisplayName(smartquote("%s's usual location"))
+
 person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
 person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
@@ -1410,6 +1412,8 @@ team_leave = ContextBrowsername('Leave %s')
 team_mailinglist = 'Configure mailing list'
 
 team_mailinglist_moderate = 'Moderate mailing list'
+
+team_map = ContextBrowsername('Map of %s Participants')
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
 
