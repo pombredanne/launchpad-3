@@ -130,7 +130,7 @@ class LaunchpadObjectFactory:
             with the email address to create a browser for this new
             person.
         :param email_address_status: If specified, the status of the email
-
+            address is set to the email_address_status.
         :param displayname: The display name to use for the person.
         """
         if email is None:
