@@ -62,10 +62,9 @@ class TestRewriteMapScript(TestCase):
         # Branches stacked on private branches don't have entries in the
         # rewrite file.
         stacked_on_branch = self.factory.makeBranch(private=True)
-        stacked_branch = self.factory.makeBranch()
+        stacked_branch = self.factory.makeBranch(stacked_on=stacked_on_branch)
         branch_name = stacked_branch.unique_name
         branch_id = stacked_branch.id
-        removeSecurityProxy(stacked_branch).stacked_on = stacked_on_branch
         self.assertNotInRewriteMap(stacked_branch)
 
     def testRemoteBranchNotWritten(self):

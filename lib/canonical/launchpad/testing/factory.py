@@ -265,7 +265,7 @@ class LaunchpadObjectFactory:
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=_DEFAULT_BRANCH_PRODUCT, url=None, registrant=None,
-                   private=False, **optional_branch_args):
+                   private=False, stacked_on=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -295,6 +295,8 @@ class LaunchpadObjectFactory:
             **optional_branch_args)
         if private:
             removeSecurityProxy(branch).private = True
+        if stacked_on is not None:
+            removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
