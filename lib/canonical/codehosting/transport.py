@@ -563,15 +563,9 @@ class _BaseLaunchpadServer(Server):
         transport = get_transport(memory_server.get_url())
         if stack_on_url == '':
             return transport
-
         format = BzrDirFormat.get_default_format()
-        format.initialize_on_transport(transport)
-        # XXX: JonathanLange 2008-05-20 bug=232242: We should use the
-        # higher-level bzrlib APIs to do this:
-        # bzrdir.get_config().set_default_stack_on(). But those APIs aren't in
-        # bzr mainline yet, so...
-        transport.put_bytes(
-            '.bzr/control.conf', 'default_stack_on=%s\n' % stack_on_url)
+        bzrdir = format.initialize_on_transport(transport)
+        bzrdir.get_config().set_default_stack_on(stack_on_url)
         return get_transport('readonly+' + transport.base)
 
     def _transportFactory(self, url):

@@ -110,7 +110,7 @@ class MixinBaseLaunchpadServerTests:
             '~testuser/evolution/.bzr/control.conf')
         def check_control_file((transport, path)):
             self.assertEqual(
-                'default_stack_on=/~vcs-imports/evolution/main\n',
+                'default_stack_on = /~vcs-imports/evolution/main\n',
                 transport.get_bytes(path))
         return deferred.addCallback(check_control_file)
 
@@ -121,7 +121,7 @@ class MixinBaseLaunchpadServerTests:
         branch = 'http://example.com/~user/product/branch'
         transport = self.server._buildControlDirectory(branch)
         self.assertEqual(
-            'default_stack_on=%s\n' % branch,
+            'default_stack_on = %s\n' % branch,
             transport.get_bytes('.bzr/control.conf'))
 
     def test_buildControlDirectory_no_branch(self):
