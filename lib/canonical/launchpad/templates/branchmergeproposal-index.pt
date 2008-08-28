@@ -65,14 +65,14 @@
     <aside tal:content="structure context/@@+pagelet-subscribers" />
   </div>
 
-  <tal:merge-revno condition="context/merged_revno">
+  <p condition="context/merged_revno">
     This proposal was merged at revision
     <tal:revno replace="context/merged_revno" />
     <a href="+merged">
       <img src="/@@/edit" alt="Edit merge revision"
         title="Edit merge revision" />
     </a>
-  </tal:merge-revno>
+  </p>
 
   <tal:superseded-proposal condition="context/supersedes">
     <p id="superseded-proposal">
