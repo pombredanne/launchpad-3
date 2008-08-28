@@ -471,7 +471,7 @@ class PullerWorker:
             source_branch = self.branch_opener.open(self.source)
             try:
                 stacked_on_location = source_branch.get_stacked_on_url()
-            except (NotStacked, UnstackableBranchFormat):
+            except (errors.NotStacked, errors.UnstackableBranchFormat):
                 pass
             else:
                 self.protocol.setStackedOn(stacked_on_location)
