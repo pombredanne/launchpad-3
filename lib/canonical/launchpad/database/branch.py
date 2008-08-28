@@ -20,6 +20,7 @@ from zope.interface import implements
 from storm.expr import And, Join, LeftJoin
 from storm.info import ClassAlias
 from storm.store import Store
+from storm.zope.interfaces import IZStorm
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
@@ -1022,6 +1023,19 @@ class BranchSet:
             return default
         else:
             return branch
+
+    def getRewriteMap(self):
+        """See `IBranchSet`."""
+        # Avoid circular imports.
+        from canonical.launchpad.database import Person, Product
+        store = getUtility(IZStorm).get('main')
+        prejoin = store.using(
+            LeftJoin(Branch, Product, Branch.product == Product.id), Person)
+        return (branch for (owner, product, branch) in prejoin.find(
+            (Person, Product, Branch),
+            Branch.branch_type != BranchType.REMOTE,
+            Branch.owner == Person.id,
+            Branch.private == False))
 
     def getBranchesToScan(self):
         """See `IBranchSet`"""

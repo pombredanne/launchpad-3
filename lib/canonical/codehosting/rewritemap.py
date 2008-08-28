@@ -7,7 +7,7 @@ __metaclass__ = type
 from zope.component import getAdapter, getUtility
 
 from canonical.codehosting import branch_id_to_path
-from canonical.launchpad.interfaces import BranchType, IBranchSet
+from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
 
@@ -19,12 +19,8 @@ def write_map(outfile):
     entries.  Remote branches are not mirrored, so are not stored in
     the codehosting facility, so not available through http.
     """
-    branches = getUtility(IBranchSet)
+    branches = getUtility(IBranchSet).getRewriteMap()
     for branch in branches:
-        if branch.branch_type == BranchType.REMOTE:
-            continue
-        if branch.private:
-            continue
         access = getAdapter(branch, IAuthorization, name='launchpad.View')
         if not access.checkUnauthenticated():
             continue

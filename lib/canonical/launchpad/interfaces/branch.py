@@ -887,6 +887,14 @@ class IBranchSet(Interface):
         Return the default value if no match was found.
         """
 
+    def getRewriteMap():
+        """Return the branches that can appear in the rewrite map.
+
+        This returns only public, non-remote branches. The results *will*
+        include branches that aren't explicitly private but are stacked-on
+        private branches. The rewrite map generator filters these out itself.
+        """
+
     def getByUrl(url, default=None):
         """Find a branch by URL.
 
