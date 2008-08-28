@@ -753,3 +753,18 @@ as well as a collection of all bug tasks raised on this target.
       u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/17',
       ...}]),
    ...]
+
+
+== Searching for bugs ==
+
+    >>> show(webservice.named_get('/beta/firefox', 'searchTasks').jsonBody())
+    [(u'entries',
+      [{...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/5',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/4',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/1',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/16',
+        ...]
