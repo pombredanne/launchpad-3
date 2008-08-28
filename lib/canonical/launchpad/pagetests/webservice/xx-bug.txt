@@ -768,3 +768,7 @@ as well as a collection of all bug tasks raised on this target.
         ...
         u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/16',
         ...]
+
+    >>> show(webservice.named_get(
+    ...     '/beta/firefox', 'searchTasks',
+    ...     importance=['Critical', 'Low']).jsonBody())
