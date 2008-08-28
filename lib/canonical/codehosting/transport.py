@@ -572,7 +572,7 @@ class _BaseLaunchpadServer(Server):
         # bzr mainline yet, so...
         transport.put_bytes(
             '.bzr/control.conf', 'default_stack_on=%s\n' % stack_on_url)
-        return transport
+        return get_transport('readonly+' + transport.base)
 
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.
