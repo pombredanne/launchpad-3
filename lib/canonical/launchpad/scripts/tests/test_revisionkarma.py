@@ -32,7 +32,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makeBranch(explicit_junk=True)
+        branch = self.factory.makeBranch(product=None)
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
@@ -87,7 +87,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         email = self.factory.getUniqueEmailAddress()
         rev = self.factory.makeRevision(author=email)
-        branch = self.factory.makeBranch(explicit_junk=True, owner=author)
+        branch = self.factory.makeBranch(product=None, owner=author)
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
         # Now we have a junk branch which has a revision with an email address

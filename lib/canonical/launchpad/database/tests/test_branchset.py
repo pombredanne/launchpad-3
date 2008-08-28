@@ -994,7 +994,7 @@ class TestBranchSetGetBranches(TestCase):
 
     def test_get_junk_branch(self):
         factory = LaunchpadObjectFactory()
-        branch = factory.makeBranch(explicit_junk=True)
+        branch = factory.makeBranch(product=None)
         self.assertTrue(branch.product is None)
         self.assertEqual(
             branch,
@@ -1031,7 +1031,7 @@ class TestBranchSetIsBranchNameAvailable(TestCase):
         name = "sample-branch"
         bob = factory.makePerson(name="bob")
         mary = factory.makePerson(name="mary")
-        b1 = factory.makeBranch(owner=bob, explicit_junk=True, name=name)
+        b1 = factory.makeBranch(owner=bob, product=None, name=name)
         self.assertTrue(b1.product is None)
         self.assertEqual(name, b1.name)
 
@@ -1043,7 +1043,7 @@ class TestBranchSetIsBranchNameAvailable(TestCase):
         factory = LaunchpadObjectFactory()
         owner = factory.makePerson()
         name = "sample-branch"
-        b1 = factory.makeBranch(owner=owner, explicit_junk=True, name=name)
+        b1 = factory.makeBranch(owner=owner, product=None, name=name)
         self.assertTrue(b1.product is None)
         self.assertEqual(name, b1.name)
 

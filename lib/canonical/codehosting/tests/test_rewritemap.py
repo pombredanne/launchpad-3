@@ -50,7 +50,7 @@ class TestRewriteMapScript(TestCase):
 
     def testFileGenerationJunkProduct(self):
         # Like test_file_generation, but demonstrating a +junk product.
-        branch = self.factory.makeBranch(explicit_junk=True)
+        branch = self.factory.makeBranch(product=None)
         self.assertInRewriteMap(branch)
 
     def testPrivateBranchNotWritten(self):

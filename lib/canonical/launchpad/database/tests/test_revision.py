@@ -99,7 +99,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makeBranch(explicit_junk=True)
+        branch = self.factory.makeBranch(product=None)
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
         # Nor is this revision identified as needing karma allocated.
@@ -111,7 +111,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makeBranch(explicit_junk=True)
+        branch = self.factory.makeBranch(product=None)
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
@@ -207,7 +207,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # not returned.
         b1 = self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(
-            1, owner=self.author, explicit_junk=True)
+            1, owner=self.author, product=None)
         self.assertEqual(
             b1, self.revision.getBranch(allow_private=True, allow_junk=False))
 
