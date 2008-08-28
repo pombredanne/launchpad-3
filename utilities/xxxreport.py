@@ -232,7 +232,7 @@ class HTMLReport(Report):
       A report of the XXX comments in the rocketfuel branch. All files
       except *.pyc files were examined.
       <br />This report may also be available as a tab-delimted file:
-      <a href="xxxreport.csv">xxxreport.csv</a>
+      <a href="xxx-report.csv">xxx-report.csv</a>
     </p>
 
     <h3>Summary</h3>
@@ -259,7 +259,7 @@ class HTMLReport(Report):
         <strong class="person">%(person)s</strong>
         <strong class="date">%(date)s</strong>
         bug %(bugurl)s
-        spec %(spec)s
+        spec %(specurl)s
         </div>
         <pre style="margin-top: 0px;">%(text)s</pre>
         <pre class="context">%(context)s</pre>
@@ -287,10 +287,17 @@ class HTMLReport(Report):
                 comment['context'] = self.markup_text(comment['context'])
                 if comment['bug'] is not None:
                     comment['bugurl'] = (
-                        r'<a href="https://bugs.launchpad.net/bugs/%s">%s</a>'
+                        '<a href="https://bugs.launchpad.net/bugs/%s">%s</a>'
                         % (comment['bug'], comment['bug']))
                 else:
                     comment['bugurl'] = comment['bug']
+                if comment['spec'] is not None:
+                    comment['specurl'] = (
+                        '<a href="https://blueprints.launchpad.net'
+                        '/launchpad-project/+specs?searchtext=%s">%s</a>'
+                        % (comment['spec'], comment['spec']))
+                else:
+                    comment['specurl'] = comment['spec']
                 output_file.write(self.report_comment % comment)
 
             output_file.write(self.report_bottom)
