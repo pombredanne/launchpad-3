@@ -1,5 +1,11 @@
 SET client_min_messages=ERROR;
 
+-- Create the todelete schema. We can no longer just DROP TABLE, because
+-- tables will first need to be removed from any replication sets. Instead,
+-- we just rename then. upgrade.py can then detect our intentions and
+-- do the labour.
+CREATE SCHEMA ToDrop;
+
 /*
 Drop foreign key constraints between EmailAddress and Person, and between
 Person and Account, and between MailingListSubscription and EmailAddress.

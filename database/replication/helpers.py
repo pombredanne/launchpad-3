@@ -45,7 +45,6 @@ LPMAIN_SEED = set([
     ('public', 'standardshipitrequest'),
     ('public', 'bugtag'),
     ('public', 'launchpadstatistic'),
-    ('public', 'packagebugsupervisor'), # Dud fk definition!
     ])
 
 

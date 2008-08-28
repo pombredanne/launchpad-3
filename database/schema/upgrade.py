@@ -261,15 +261,97 @@ def apply_patches_replicated():
         # Execute the script and sync.
         if not replication.helpers.execute_slonik(outf.getvalue()):
             log.fatal("Aborting.")
-        replication.helpers.sync(timeout=600)
+        replication.helpers.sync(timeout=0)
 
 
-    # We also scan for tables we want to drop and do so using
-    # a final slonik script.
+    # We also scan for tables and sequences we want to drop and do so using
+    # a final slonik script. Instead of dropping tables in the DB patch,
+    # we rename them into the ToDrop namespace.
+    cur.execute("""
+        SELECT nspname, relname, tab_id
+        FROM pg_class
+        JOIN pg_namespace ON relnamespace = pg_namespace.oid
+        LEFT OUTER JOIN %s ON pg_class.oid = tab_reloid
+        WHERE nspname='todrop' AND relkind='r'
+        """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_table'))
+    tabs_to_drop = set(
+        (fqn(nspname, relname), tab_id)
+        for nspname, relname, tab_id in cur.fetchall())
 
+    # Generate a slonik script to remove tables from the replication set, 
+    # and a DROP TABLE/DROP SEQUENCE sql script to run after.
+    if tabs_to_drop:
+        log.info("Dropping tables: %s" % ', '.join(
+            name for name, id in tabs_to_drop))
+        sk = StringIO()
+        sql = NamedTemporaryFile(prefix="drop", suffix=".sql")
+        print >> sk, "try {"
+        for tab_name, tab_id in tabs_to_drop:
+            if tab_id is not None:
+                print >> sk, dedent("""\
+                    echo 'Removing %s from replication';
+                    set drop table (origin=@master_id, id=%d);
+                    """ % (tab_name, tab_id))
+            print >> sql, "DROP TABLE %s;" % tab_name
+        sql.flush()
+        print >> sk, dedent("""\
+            execute script (
+                set id=@lpmain_set_id, event node=@master_id,
+                filename='%s'
+                );
+            }
+            on error {
+                echo 'Failed to drop tables. Aborting.';
+                exit 1;
+                }
+            """ % sql.name)
+        if not replication.helpers.execute_slonik(sk.getvalue()):
+            log.fatal("Aborting.")
+        sql.close()
 
-    # Detect tables we want to drop. Remove them from their replication
-    # sets and drop.
+    # Now drop sequences. We don't do this at the same time as the tables,
+    # as most sequences will be dropped implicitly with the table drop.
+    cur.execute("""
+        SELECT nspname, relname, seq_id
+        FROM pg_class
+        JOIN pg_namespace ON relnamespace = pg_namespace.oid
+        LEFT OUTER JOIN %s ON pg_class.oid = seq_reloid
+        WHERE nspname='todrop' AND relkind='S'
+        """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_sequence'))
+    seqs_to_drop = set(
+        (fqn(nspname, relname), tab_id)
+        for nspname, relname, tab_id in cur.fetchall())
+
+    if seqs_to_drop:
+        log.info("Dropping sequences: %s" % ', '.join(
+            name for name, id in seqs_to_drop))
+        # Generate a slonik script to remove sequences from the
+        # replication set, DROP SEQUENCE sql script to run after.
+        sk = StringIO()
+        sql = NamedTemporaryFile(prefix="drop", suffix=".sql")
+        print >> sk, "try {"
+        for seq_name, seq_id in seqs_to_drop:
+            if seq_id is not None:
+                print >> sk, dedent("""\
+                    echo 'Removing %s from replication';
+                    set drop sequence (origin=@master_id, id=%d);
+                    """ % (seq_name, seq_id))
+            print >> sql, "DROP SEQUENCE %s;" % seq_name
+        sql.flush()
+        print >> sk, dedent("""\
+            execute script (
+                set id=@lpmain_set_id, event node=@master_id,
+                filename='%s'
+                );
+            }
+            on error {
+                echo 'Failed to drop sequences. Aborting.';
+                exit 1;
+                }
+            """ % sql.name)
+        if not replication.helpers.execute_slonik(sk.getvalue()):
+            log.fatal("Aborting.")
+    replication.helpers.sync(timeout=0)
 
 
 def get_patchlist(con):
