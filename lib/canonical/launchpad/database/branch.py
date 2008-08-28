@@ -1029,6 +1029,7 @@ class BranchSet:
         # Avoid circular imports.
         from canonical.launchpad.database import Person, Product
         store = getUtility(IZStorm).get('main')
+        # Left-join Product so that we still publish +junk branches.
         prejoin = store.using(
             LeftJoin(Branch, Product, Branch.product == Product.id), Person)
         return (branch for (owner, product, branch) in prejoin.find(
