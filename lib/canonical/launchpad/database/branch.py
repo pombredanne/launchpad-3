@@ -235,7 +235,8 @@ class Branch(SQLBase):
     @property
     def code_is_browseable(self):
         """See `IBranch`."""
-        return self.last_mirrored != None and not self.private
+        return ((self.revision_count > 0  or self.last_mirrored != None)
+            and not self.private)
 
     def _getNameDict(self, person):
         """Return a simple dict with the person name or placeholder."""
