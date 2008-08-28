@@ -312,7 +312,7 @@ class BuilderSetAddView(LaunchpadFormView):
 
     label = "Register a new build machine"
 
-    field_names =[
+    field_names = [
         'name', 'title', 'description', 'processor', 'url',
         'active', 'virtualized', 'vm_host', 'owner'
         ]
