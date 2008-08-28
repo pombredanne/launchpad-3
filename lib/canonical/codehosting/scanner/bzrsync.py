@@ -409,7 +409,6 @@ class BzrSync:
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
-        self.db_branch.stacked_on = self._getStackedOnBranch(bzr_branch)
         self.updateBranchStatus(bzr_history)
         self.trans_manager.commit()
 
@@ -606,17 +605,6 @@ class BzrSync:
                 assert sequence is not None
                 self._branch_mailer.generateEmailForRevision(
                     bzr_branch, revision, sequence)
-
-    def _getStackedOnBranch(self, bzr_branch):
-        """Return the branch that the branch being scanned is stacked on."""
-        try:
-            branch_url = bzr_branch.get_stacked_on_url()
-        except (UnstackableBranchFormat, NotStacked):
-            return None
-        branch_set = getUtility(IBranchSet)
-        if branch_url.startswith('/'):
-            return branch_set.getByUniqueName(branch_url.strip('/'))
-        return branch_set.getByUrl(branch_url.rstrip('/'))
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
