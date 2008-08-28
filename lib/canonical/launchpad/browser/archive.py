@@ -69,11 +69,11 @@ def construct_redirect_params(data):
 
     After an archive package copy/delete request concludes we need to
     redirect to the same page while preserving any context that the
-    user may have had on these pages.
+    user may have established.
 
     The context that needs to be preserved is comprised of the name and the
-    publishing status filter variables (passed as part of the POST request
-    data to the original package copy/delete request).
+    publishing status filter variables (which are part of the original POST
+    request data).
 
     :param: data: POST request data passed to the original package
         copy/delete request, contains the name and the publishing status
