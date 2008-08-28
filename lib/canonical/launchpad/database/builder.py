@@ -98,12 +98,12 @@ class Builder(SQLBase):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
-    failnotes = StringCol(dbName='failnotes', default=None)
-    virtualized = BoolCol(dbName='virtualized', default=False, notNull=True)
-    speedindex = IntCol(dbName='speedindex', default=0)
-    manual = BoolCol(dbName='manual', default=True)
-    vm_host = StringCol(dbName='vm_host', default=None)
-    active = BoolCol(dbName='active', default=True)
+    failnotes = StringCol(dbName='failnotes')
+    virtualized = BoolCol(dbName='virtualized', default=True, notNull=True)
+    speedindex = IntCol(dbName='speedindex')
+    manual = BoolCol(dbName='manual', default=False)
+    vm_host = StringCol(dbName='vm_host')
+    active = BoolCol(dbName='active', notNull=True, default=True)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See `IBuilder`."""
@@ -717,7 +717,7 @@ class Builder(SQLBase):
             else:
                 # Builder was reset, do *not* mark it as failed.
                 builder_should_be_failed = False
-                
+
         if builder_should_be_failed:
             # Mark builder as 'failed'.
             logger.warn(
@@ -743,12 +743,12 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            builderok=True, failnotes=None, virtualized=True, vm_host=None):
+            active=True, virtualized=False, vm_host=None):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
-                       description=description, owner=owner,
-                       virtualized=virtualized, builderok=builderok,
-                       failnotes=failnotes, vm_host=None)
+                       description=description, owner=owner, active=active,
+                       virtualized=virtualized, vm_host=vm_host,
+                       builderok=True, manual=True)
 
     def get(self, builder_id):
         """See IBuilderSet."""
