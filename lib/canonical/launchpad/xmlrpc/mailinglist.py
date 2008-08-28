@@ -153,6 +153,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
                 # because the reason is only evident in the Mailman web u/i,
                 # which we're not using.
                 members[email] = (real_name, flags, BYUSER)
+
             # Now go through just the subscribed addresses, the main
             # difference now being that these addresses are enabled for
             # delivery.  If there are overlaps, the enabled flag wins.

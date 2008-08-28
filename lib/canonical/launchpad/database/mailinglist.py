@@ -18,12 +18,13 @@ from email.Header import decode_header, make_header
 from itertools import repeat
 from string import Template
 
-from storm.expr import SQL
+from storm.expr import And, LeftJoin, Union
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility, queryAdapter
 from zope.event import notify
+from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements, providedBy
 
 from canonical.cachedproperty import cachedproperty
@@ -33,6 +34,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
+from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.person import Person, ValidPersonCache
+from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
@@ -255,7 +259,6 @@ class MailingList(SQLBase):
                 # We also need to remove the email's security proxy because
                 # this method will be called via the internal XMLRPC rather
                 # than as a response to a user action.
-                from zope.security.proxy import removeSecurityProxy
                 removeSecurityProxy(email).status = (
                     EmailAddressStatus.VALIDATED)
             assert email.person == self.team, (
@@ -400,8 +403,6 @@ class MailingList(SQLBase):
 
     def getSubscribedAddresses(self):
         """See `IMailingList`."""
-        # Import here to avoid circular imports.
-        from canonical.launchpad.database.emailaddress import EmailAddress
         # In order to handle the case where the preferred email address is
         # used (i.e. where MailingListSubscription.email_address is NULL), we
         # need to UNION, those using a specific address and those using the
@@ -435,38 +436,49 @@ class MailingList(SQLBase):
 
     def getSenderAddresses(self):
         """See `IMailingList`."""
-        # Import here to avoid circular imports.
-        from canonical.launchpad.database.emailaddress import EmailAddress
-
         store = Store.of(self)
-        email_address_statuses = (EmailAddressStatus.VALIDATED,
-                                  EmailAddressStatus.PREFERRED)
-        message_approval_statuses = (PostedMessageStatus.APPROVED,
-                                     PostedMessageStatus.APPROVAL_PENDING)
-        select = SQL("""
-            SELECT EmailAddress.id
-            FROM EmailAddress, TeamParticipation, MailingList, Person
-            WHERE TeamParticipation.team = %(team_id)s AND
-                  TeamParticipation.person = EmailAddress.person AND
-                  EmailAddress.person = Person.id AND
-                  Person.teamowner IS NULL AND
-                  MailingList.team = TeamParticipation.team AND
-                  MailingList.status != %(inactive)s AND
-                  EmailAddress.status IN %(email_statuses)s
-            UNION
-            SELECT EmailAddress.id
-            FROM EmailAddress, MessageApproval
-            WHERE MessageApproval.mailing_list = %(list_id)s AND
-                  MessageApproval.status IN %(approval_statuses)s AND
-                  MessageApproval.posted_by = EmailAddress.person AND
-                  EmailAddress.status IN %(email_statuses)s
-            """ % sqlvalues(team_id=self.team.id,
-                            list_id=self.id,
-                            inactive=MailingListStatus.INACTIVE,
-                            email_statuses=email_address_statuses,
-                            approval_statuses=message_approval_statuses,
-                            ))
-        return store.find(EmailAddress, EmailAddress.id.is_in(select))
+        email_address_statuses = (
+            EmailAddressStatus.VALIDATED,
+            EmailAddressStatus.PREFERRED)
+        message_approval_statuses = (
+            PostedMessageStatus.APPROVED,
+            PostedMessageStatus.APPROVAL_PENDING)
+
+        tables = (
+            Person,
+            LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id),
+            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
+            LeftJoin(TeamParticipation,
+                     TeamParticipation.personID == Person.id),
+            LeftJoin(MailingList,
+                     MailingList.teamID == TeamParticipation.teamID),
+            )
+
+        team_members = store.using(*tables).find(
+            (EmailAddress, Person),
+            And(TeamParticipation.teamID == self.team.id,
+                MailingList.status != MailingListStatus.INACTIVE,
+                Person.teamowner == None,
+                EmailAddress.status.is_in(email_address_statuses),
+                ))
+
+        tables = (
+            Person,
+            LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id),
+            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
+            LeftJoin(MessageApproval,
+                     MessageApproval.posted_byID == Person.id),
+            )
+
+        approved_posters = store.using(*tables).find(
+            (EmailAddress, Person),
+            And(MessageApproval.mailing_listID == self.id,
+                MessageApproval.status.is_in(message_approval_statuses),
+                EmailAddress.status.is_in(email_address_statuses),
+                ))
+
+        for email_address, person in team_members.union(approved_posters):
+            yield email_address
 
     def holdMessage(self, message):
         """See `IMailingList`."""
