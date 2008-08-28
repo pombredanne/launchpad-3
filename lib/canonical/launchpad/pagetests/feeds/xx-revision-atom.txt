@@ -51,7 +51,6 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     ...     3, makeRevision(
     ...         mary, 'rev3', "Mary's revision"))
 
-    >>> from canonical.launchpad.ftests import login_person
     >>> login_person(mike)
     >>> team = factory.makeTeam(mike, 'The M Team', name='m-team')
     >>> team.addMember(mary, mike)

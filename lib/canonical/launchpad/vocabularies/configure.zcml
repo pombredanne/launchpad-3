@@ -232,7 +232,7 @@
 
   <vocabulary
     name="UserTeamsParticipationPlusSelf"
-    factory="canonical.launchpad.vocabularies.user_public_team_participations_and_self_vocabulary_factory"
+    factory="canonical.launchpad.vocabularies.UserTeamsParticipationPlusSelfVocabulary"
     />
 
   <vocabulary
