@@ -10,9 +10,11 @@ Project groups are available at their canonical URL on the API virtual host.
     >>> mozilla_project = webservice.get('/beta/mozilla').jsonBody()
     >>> pprint_entry(mozilla_project)
     active: True
+    all_milestones_collection_link: u'http://.../mozilla/all_milestones'
+    milestones_collection_link: u'http://.../mozilla/milestones'
     name: u'mozilla'
     resource_type_link: u'...'
-    self_link: u'http://.../beta/mozilla'
+    self_link: u'http://.../mozilla'
 
 
 == Project entry ==
@@ -22,6 +24,8 @@ Projects are available at their canonical URL on the API virtual host.
     >>> firefox = webservice.get('/beta/firefox').jsonBody()
     >>> pprint_entry(firefox)
     active: True
+    all_milestones_collection_link: u'http://.../firefox/all_milestones'
+    branches_collection_link: u'http://.../firefox/branches'
     bug_tracker_link: None
     date_created: u'2004-09-24T20:58:02.185708+00:00'
     description: u'The Mozilla Firefox web browser'
@@ -33,6 +37,7 @@ Projects are available at their canonical URL on the API virtual host.
     homepage_url: None
     license_info: None
     licenses: []
+    milestones_collection_link: u'http://.../firefox/milestones'
     name: u'firefox'
     owner_link: u'http://.../~name12'
     programming_language: None
@@ -47,6 +52,30 @@ Projects are available at their canonical URL on the API virtual host.
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
     wiki_url: None
+
+Branches can be accessed through the branches_collection_link.
+
+    >>> response = webservice.get(firefox['branches_collection_link'])
+    >>> milestones = response.jsonBody()
+    >>> print_self_link_of_entries(milestones)
+    http://.../~name12/firefox/main
+    http://.../~sabdfl/firefox/release--0.9.1
+    http://.../~sabdfl/firefox/release-0.8
+    http://.../~sabdfl/firefox/release-0.9
+    http://.../~sabdfl/firefox/release-0.9.2
+
+The milestones can be accessed through the milestones_collection_link
+and the all_milestones_collection_link.
+
+    >>> response = webservice.get(firefox['milestones_collection_link'])
+    >>> milestones = response.jsonBody()
+    >>> print_self_link_of_entries(milestones)
+    http://.../firefox/+milestone/1.0
+
+    >>> response = webservice.get(firefox['all_milestones_collection_link'])
+    >>> all_milestones = response.jsonBody()
+    >>> print_self_link_of_entries(all_milestones)
+    http://.../firefox/+milestone/1.0
 
 The project group can be accessed through the project_group_link.
 
@@ -175,10 +204,10 @@ virtual host.
     milestones_collection_link: u'http://.../beta/firefox/1.0/milestones'
     name: u'1.0'
     owner_link: u'http://.../beta/~name12'
-    project_link: u'http://.../beta/firefox'
+    project_link: u'http://.../firefox'
     releases_collection_link: u'http://.../beta/firefox/1.0/releases'
     resource_type_link: u'...'
-    self_link: u'http://.../beta/firefox/1.0'
+    self_link: u'http://.../firefox/1.0'
     status: u'Active Development'
     summary: u'The 1.0 branch of the Mozilla web browser...'
     title: u'Mozilla Firefox Series: 1.0'
@@ -190,9 +219,9 @@ Project releases are available at their canonical URL on the API virtual host.
 
     >>> firefox_1_0_0 = webservice.get('/beta/firefox/1.0/1.0.0').jsonBody()
     >>> pprint_entry(firefox_1_0_0)
-    project_series_link: u'http://.../beta/firefox/1.0'
+    project_series_link: u'http://.../firefox/1.0'
     resource_type_link: u'...'
-    self_link: u'http://.../beta/firefox/1.0/1.0.0'
+    self_link: u'http://.../firefox/1.0/1.0.0'
     version: u'1.0.0'
 
 
@@ -204,10 +233,14 @@ host.
     >>> firefox_milestone_1_0 = webservice.get(
     ...     '/beta/firefox/+milestone/1.0').jsonBody()
     >>> pprint_entry(firefox_milestone_1_0)
+    date_targeted: u'2056-10-16T18:31:44.293448'
+    description: None
+    is_visible: True
     name: u'1.0'
     resource_type_link: u'...'
-    self_link: u'http://.../beta/firefox/+milestone/1.0'
-    target_link: u'http://.../beta/firefox'
+    self_link: u'http://.../firefox/+milestone/1.0'
+    target_link: u'http://.../firefox'
+    title: u'Milestone 1.0 for Mozilla Firefox'
 
 
 == ProductRelease entries ==

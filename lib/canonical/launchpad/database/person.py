@@ -26,7 +26,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
@@ -404,21 +404,35 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IHasLocation`."""
         if self.location is None:
             return None
-        return self.location.time_zone
+        # Wrap the location with a security proxy to make sure the user has
+        # enough rights to see it.
+        return ProxyFactory(self.location).time_zone
 
     @property
     def latitude(self):
         """See `IHasLocation`."""
         if self.location is None:
             return None
-        return self.location.latitude
+        # Wrap the location with a security proxy to make sure the user has
+        # enough rights to see it.
+        return ProxyFactory(self.location).latitude
 
     @property
     def longitude(self):
         """See `IHasLocation`."""
         if self.location is None:
             return None
-        return self.location.longitude
+        # Wrap the location with a security proxy to make sure the user has
+        # enough rights to see it.
+        return ProxyFactory(self.location).longitude
+
+    def setLocationVisibility(self, visible):
+        """See `ISetLocation`."""
+        assert not self.is_team, 'Cannot edit team location.'
+        if self.location is None:
+            self._location = PersonLocation(person=self, visible=visible)
+        else:
+            self.location.visible = visible
 
     def setLocation(self, latitude, longitude, time_zone, user):
         """See `ISetLocation`."""
@@ -1641,6 +1655,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             -- We only need to check for a latitude here because there's a DB
             -- constraint which ensures they are both set or unset.
             PersonLocation.latitude IS NOT NULL AND
+            PersonLocation.visible IS TRUE AND
             Person.id = PersonLocation.person AND
             Person.teamowner IS NULL
             """ % sqlvalues(self.id),
