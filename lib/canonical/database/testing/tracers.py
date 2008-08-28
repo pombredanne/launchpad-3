@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BaseTracer',
     'CountAllTracer',
     'StderrDebugTracer',
     ]
@@ -35,6 +36,17 @@ class BaseTracer:
         """Uninstall all tracers of this instance's type."""
         storm.tracer.remove_tracer_type(type(self))
 
+    # The trace API
+    def connection_raw_execute(self, *args):
+        pass
+
+    def connection_raw_execute_error(self, *args):
+        pass
+
+    def set_statement_timeout(self, *args):
+        pass
+    
+
 
 class CountAllTracer(BaseTracer):
     """A counter of all SQL statements executed by Storm."""
@@ -46,12 +58,6 @@ class CountAllTracer(BaseTracer):
     def connection_raw_execute(self, *args):
         if self.trace:
             self.count += 1
-
-    def connection_raw_execute_error(self, *args):
-        pass
-
-    def set_statement_timeout(self, *args):
-        pass
 
 
 class StderrDebugTracer(BaseTracer):
@@ -71,9 +77,3 @@ class StderrDebugTracer(BaseTracer):
     def connection_raw_execute(self, connection, cursor, statement, params):
         if self.trace:
             print >> self.stream, statement
-
-    def connection_raw_execute_error(self, *args):
-        pass
-
-    def set_statement_timeout(self, *args):
-        pass
