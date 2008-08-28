@@ -81,7 +81,7 @@ class Report:
                     yield os.path.join(path, file)
 
     def _is_traversable(self, path, dir_name):
-        """Return True if dir_name does not match skip_dir_pattern."""
+        """Return True if path/dir_name does not match dir_re pattern."""
         return dir_re.match(os.path.join(path, dir_name)) is None
 
     def _extract_comments(self, file_path):
@@ -123,20 +123,26 @@ class Report:
                 elif xxx_mark is None and len(comment['context']) == 2:
                     # Finalise the comment.
                     comment['context'].append(line)
-                    comment['context'] = ''.join(comment['context'])
-                    comment['text'] = ''.join(comment['text']).strip()
-                    comments.append(comment)
+                    self._finalise_comment(comments, comment)
                     comment = None
                 else:
                     raise ValueError, (
                         "comment or xxx_mark are in an unknown state.")
+            if comment is not None:
+                self._finalise_comment(comments, comment)
         finally:
             file.close()
         return comments
 
+    def _finalise_comment(self, comments, comment):
+        """Change the lists to strs and append the comment to comments."""
+        comment['context'] = ''.join(comment['context'])
+        comment['text'] = ''.join(comment['text']).strip()
+        comments.append(comment)
+
     # The standard XXX comment form of:
     # 'XXX: First Last Name 2007-07-01 bug=nnnn spec=cccc:'
-    # Colans, commas, and spaces may follow each token.
+    # Colons, commas, and spaces may follow each token.
     xxx_person_date_re = re.compile(r"""
         .*XXX[:,]?[ ]                               # The XXX indicator.
         (?P<person>[a-zA-Z][^:]*[\w])[,: ]*         # The persons's nick.

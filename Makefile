@@ -98,7 +98,6 @@ check: build
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py $(VERBOSITY)
-	${PYTHON} -t ./utilities/xxxreport.py -f count -o xxx-report.count ./
 
 lint:
 	@bash ./utilities/lint.sh
