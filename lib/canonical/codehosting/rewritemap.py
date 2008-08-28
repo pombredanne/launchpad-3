@@ -1,13 +1,14 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Support code for cronscripts/supermirror_rewritemap.py."""
 
 __metaclass__ = type
 
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 
 from canonical.codehosting import branch_id_to_path
 from canonical.launchpad.interfaces import BranchType, IBranchSet
+from canonical.launchpad.webapp.interfaces import IAuthorization
 
 
 def write_map(outfile):
@@ -20,9 +21,15 @@ def write_map(outfile):
     """
     branches = getUtility(IBranchSet)
     for branch in branches:
-        if not branch.private and branch.branch_type != BranchType.REMOTE:
-            line = generate_mapping_for_branch(branch)
-            outfile.write(line)
+        if branch.branch_type == BranchType.REMOTE:
+            continue
+        if branch.private:
+            continue
+        access = getAdapter(branch, IAuthorization, name='launchpad.View')
+        if not access.checkUnauthenticated():
+            continue
+        line = generate_mapping_for_branch(branch)
+        outfile.write(line)
 
 
 def generate_mapping_for_branch(branch):

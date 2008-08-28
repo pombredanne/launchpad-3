@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
+
 """Librarian garbage collection tests"""
 
 __metaclass__ = type
