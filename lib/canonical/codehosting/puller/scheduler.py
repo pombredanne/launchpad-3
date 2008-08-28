@@ -1,15 +1,16 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0702
 
 __metaclass__ = type
-__all__ = ['BadMessage',
-           'BranchStatusClient',
-           'JobScheduler',
-           'LockError',
-           'PullerMaster',
-           'PullerMonitorProtocol',
-           'TimeoutError',
-           ]
+__all__ = [
+    'BadMessage',
+    'BranchStatusClient',
+    'JobScheduler',
+    'LockError',
+    'PullerMaster',
+    'PullerMonitorProtocol',
+    'TimeoutError',
+    ]
 
 
 import os
@@ -32,6 +33,7 @@ from canonical.codehosting.puller.worker import (
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.xmlrpc import faults
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
 
@@ -252,6 +254,9 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
     def errReceived(self, data):
         self._stderr.write(data)
 
+    def do_setStackedOn(self, stacked_on_location):
+        self.runNotification(self.listener.setStackedOn, stacked_on_location)
+
     def do_startMirroring(self):
         self.resetTimeout()
         self.runNotification(self.listener.startMirroring)
@@ -358,6 +363,16 @@ class PullerMaster:
         deferred.addErrback(self.unexpectedError)
         deferred.addBoth(self.releaseOopsPrefix)
         return deferred
+
+    def setStackedOn(self, stacked_on_location):
+        deferred = self.branch_status_client.setStackedOn(
+            self.branch_id, stacked_on_location)
+        def no_such_branch(failure):
+            # If there's no branch for stacked_on_location, then we just
+            # swallow the error. It's ok for branches to be stacked on
+            # branches that Launchpad doesn't know about.
+            failure.trap(faults.NoSuchBranch)
+        return deferred.addErrback(no_such_branch)
 
     def startMirroring(self):
         self.logger.info(
