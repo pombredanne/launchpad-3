@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Product release interfaces."""
@@ -23,10 +23,10 @@ from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.validators.productrelease import (
     productrelease_file_size_constraint,
     productrelease_signature_size_constraint)
-
 from canonical.launchpad.fields import ContentNameField
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
 
@@ -108,16 +108,45 @@ class ProductReleaseVersionField(ContentNameField):
         return releaseset.getBySeriesAndVersion(productseries, version)
 
 
+class IProductReleaseFile(Interface):
+    """A file associated with a ProductRelease."""
+    export_as_webservice_entry("project_release_file")
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+    productrelease = exported(
+        ReferenceChoice(title=_('Project release'),
+               required=True,
+               vocabulary='ProductRelease',
+               description=_("The parent product release.")),
+        exported_as='project_release')
+    libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
+                         description=_("The attached file."),
+                         required=True)
+    signature = Object(schema=ILibraryFileAlias, title=_("Signature"),
+                       description=_("The signature of the attached file."),
+                       required=False)
+    filetype = Choice(title=_("Upstream file type"), required=True,
+                      vocabulary=UpstreamFileType,
+                      default=UpstreamFileType.CODETARBALL)
+    description = Text(title=_("Description"), required=False,
+        description=_('A detailed description of the file contents'))
+    date_uploaded = Datetime(title=_('Upload date'),
+        description=_('The date this file was uploaded'),
+        required=True, readonly=True)
+
+
 class IProductRelease(Interface):
     """A specific release (i.e. has a version) of a product. For example,
     Mozilla 1.7.2 or Apache 2.0.48."""
-    export_as_webservice_entry()
+    export_as_webservice_entry('project_release')
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    datereleased = Datetime(title=_('Date Released'), required=True,
-        readonly=False, description=_('The date this release was '
-        'published. Before release, this should have an estimated '
-        'release date.'))
+    datereleased = Datetime(
+        title=_('Date Released'), required=True,
+        readonly=False,
+        description=_('The date this release was published. Before '
+                      'release, this should have an estimated '
+                      'release date.'))
     version = exported(
         ProductReleaseVersionField(
             title=_('Version'),
@@ -151,7 +180,12 @@ class IProductRelease(Interface):
     displayname = Attribute('Constructed displayname for a product release.')
     title = Attribute('Constructed title for a product release.')
     product = Attribute(_('The upstream project of this release.'))
-    files = Attribute(_('Iterable of product release files.'))
+    files = exported(
+        CollectionField(
+            title=_('Project release files'),
+            description=_('Iterable of product release files.'),
+            readonly=True,
+            value_type=Reference(schema=IProductReleaseFile)))
 
     def addFileAlias(alias, signature,
                      uploader,
@@ -163,31 +197,13 @@ class IProductRelease(Interface):
         """Delete the link between this product and a library file alias."""
 
     def getFileAliasByName(name):
-        """Return the LibraryFileAlias by file name or None if not found."""
+        """Return the `LibraryFileAlias` by file name or None if not found."""
 
+    def getProductReleaseFileByName(name):
+        """Return the `ProductReleaseFile` by file name or None.
 
-class IProductReleaseFile(Interface):
-    """A file associated with a ProductRelease."""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    productrelease = Choice(title=_('Project release'),
-                            required=True,
-                            vocabulary='ProductRelease',
-                            description=_("The parent product release."))
-    libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
-                         description=_("The attached file."),
-                         required=True)
-    signature = Object(schema=ILibraryFileAlias, title=_("Signature"),
-                       description=_("The signature of the attached file."),
-                       required=False)
-    filetype = Choice(title=_("Upstream file type"), required=True,
-                      vocabulary=UpstreamFileType,
-                      default=UpstreamFileType.CODETARBALL)
-    description = Text(title=_("Description"), required=False,
-        description=_('A detailed description of the file contents'))
-    date_uploaded = Datetime(title=_('Upload date'),
-        description=_('The date this file was uploaded'),
-        required=True, readonly=True)
+        This method supports traversal for the API.
+        """
 
 
 class IProductReleaseFileAddForm(Interface):

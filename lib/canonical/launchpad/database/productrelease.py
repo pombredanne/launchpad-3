@@ -88,6 +88,13 @@ class ProductRelease(SQLBase):
                 return file_.signature
         raise NotFoundError(name)
 
+    def getProductReleaseFileByName(self, name):
+        """See `IProductRelease`."""
+        for file_ in self.files:
+            if file_.libraryfile.filename == name:
+                return file_
+        raise NotFoundError(name)
+
 
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""

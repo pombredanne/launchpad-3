@@ -44,6 +44,11 @@ class ProductReleaseNavigation(Navigation):
         newlocation = self.context.getFileAliasByName(name)
         return newlocation
 
+    @stepthrough('+file')
+    def fileaccess(self, name):
+        newlocation = self.context.getProductReleaseFileByName(name)
+        return newlocation
+
 
 class ProductReleaseContextMenu(ContextMenu):
 

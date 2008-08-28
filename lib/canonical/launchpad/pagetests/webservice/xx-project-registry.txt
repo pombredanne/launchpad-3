@@ -219,10 +219,52 @@ Project releases are available at their canonical URL on the API virtual host.
 
     >>> firefox_1_0_0 = webservice.get('/beta/firefox/1.0/1.0.0').jsonBody()
     >>> pprint_entry(firefox_1_0_0)
+    files_collection_link: u'http://.../firefox/1.0/1.0.0/files'
     project_series_link: u'http://.../firefox/1.0'
     resource_type_link: u'...'
     self_link: u'http://.../firefox/1.0/1.0.0'
     version: u'1.0.0'
+
+
+== Project release entries ==
+
+    >>> releases = webservice.get(
+    ...     '/beta/firefox/1.0/releases').jsonBody()
+    >>> pprint_entry(releases)
+    entries: [...]
+    resource_type_link: u'http://.../beta/#project_release-page-resource'
+    start: 0
+    total_size: 1
+    >>> entries = releases['entries']
+    >>> len(entries) == releases['total_size']
+    True
+
+
+== Project release file entry ==
+
+Project release files are available at their canonical URL on the API
+virtual host.
+
+    >>> url = '/beta/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
+    >>> ff_tgz = webservice.get(url).jsonBody()
+    >>> pprint_entry(ff_tgz)
+    project_release_link: u'http://.../beta/firefox/trunk/0.9.2'
+    resource_type_link: u'http://.../beta/#project_release_file'
+    self_link: u'http://.../beta/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
+
+
+== Project release file entries ==
+
+    >>> pr_files = webservice.get(
+    ...     '/beta/firefox/trunk/0.9.2/files').jsonBody()
+    >>> pprint_entry(pr_files)
+    entries: [...]
+    resource_type_link: u'http://.../beta/#project_release_file-page-resource'
+    start: 0
+    total_size: 1
+    >>> entries = releases['entries']
+    >>> len(entries) == releases['total_size']
+    True
 
 
 == Milestone entry ==
@@ -241,17 +283,3 @@ host.
     self_link: u'http://.../firefox/+milestone/1.0'
     target_link: u'http://.../firefox'
     title: u'Milestone 1.0 for Mozilla Firefox'
-
-
-== ProductRelease entries ==
-
-    >>> releases = webservice.get(
-    ...     '/beta/firefox/1.0/releases').jsonBody()
-    >>> pprint_entry(releases)
-    entries: [...]
-    resource_type_link: u'http://.../beta/#product_release-page-resource'
-    start: 0
-    total_size: 1
-    >>> entries = releases['entries']
-    >>> len(entries) == releases['total_size']
-    True

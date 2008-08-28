@@ -45,6 +45,13 @@
         attribute_to_parent="productseries"
         />
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IProductReleaseFile"
+        path_expression="string:+file/${libraryfile/filename}"
+        rootsite="api"
+        attribute_to_parent="productrelease"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductRelease"
         name="+index" />
@@ -71,7 +78,7 @@
         name="+index"
         class="canonical.launchpad.browser.ProductReleaseView"
         template="../templates/productrelease-index.pt"
-	/>
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProductRelease"
