@@ -212,7 +212,7 @@ with a PATCH request.
 When you GET an entry you're given an ETag; an opaque string that
 changes whenever the entry changes.
 
-  >>> response = webservice.get('/beta/~salgado')
+  >>> response = webservice.get('~salgado')
   >>> etag = response._response.getHeader('ETag')
   >>> salgado = response.jsonBody()
 
