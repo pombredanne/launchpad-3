@@ -1,14 +1,12 @@
 = The set of people and teams =
 
 The set of people and teams in Launchpad is represented by the
-collection found at /people.  By default it lists all non-merged
-people and teams
+collection found at /people.  By default it lists the (up to) 50
+people with the most karma, not including people with no karma.
 
     >>> people = webservice.get("/beta/people").jsonBody()
     >>> len(people['entries'])
-    5
-    >>> people['next_collection_link']
-    u'http://api.launchpad.dev/beta/people?ws.start=5...'
+    4
 
 
 == Custom operations ==

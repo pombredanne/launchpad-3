@@ -66,10 +66,10 @@
   <include package="zope.app.http" />
 
   <!-- Translations -->
-  <!-- XXX it is not possible to include a 'package' attribute in the
-       registerTranslations directive.  This seems to be a shortcoming
-       in the 'path' field design, where it can't be made relative to
-       a package given in this directive.
+  <!-- XXX lifeless 2004-11-23: it is not possible to include a 'package'
+       attribute in the registerTranslations directive.  This seems to be a
+       shortcoming in the 'path' field design, where it can't be made
+       relative to a package given in this directive.
   <i18n:registerTranslations package="zope.app" directory="translation_files" />
   -->
   <!--

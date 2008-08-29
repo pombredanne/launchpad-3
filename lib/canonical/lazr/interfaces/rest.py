@@ -49,6 +49,9 @@ class IHTTPResource(Interface):
     def __call__():
         """Publish the object."""
 
+    def getETag(media_type):
+        "An ETag for this resource's current state."
+
 
 class IJSONPublishable(Interface):
     """An object that can be published as a JSON data structure."""

@@ -999,13 +999,18 @@ hex notation is not supported.
     >>> convert('0x100')
     '0x100'
 
-Multiline values are always strings:
+Multiline values are always strings, with white space (and line breaks)
+removed from the beginning/end.
 
     >>> convert("""multiline value 1
     ...     multiline value 2""")
     'multiline value 1\n    multiline value 2'
 
+    >>> convert("""
+    ...     multiline value 1
+    ...     multiline value 2
+    ...     """)
+    'multiline value 1\n    multiline value 2'
+
     >>> implicit_config['section_33'].key2
     'multiline value 1\nmultiline value 2'
-
-

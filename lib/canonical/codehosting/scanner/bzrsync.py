@@ -17,6 +17,7 @@ import pytz
 from zope.component import getUtility
 from bzrlib.branch import Branch, BzrBranchFormat4
 from bzrlib.diff import show_diff_trees
+from bzrlib.errors import NotStacked, UnstackableBranchFormat
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
@@ -25,8 +26,8 @@ from bzrlib.repofmt.weaverepo import (
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
-    ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
-    NotFoundError, RepositoryFormat)
+    ControlFormat, IBranchRevisionSet, IBranchSet, IBugBranchSet, IBugSet,
+    IRevisionSet, NotFoundError, RepositoryFormat)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
 

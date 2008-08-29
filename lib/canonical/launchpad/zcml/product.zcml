@@ -46,7 +46,7 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name autoupdate"
+      set_attributes="name autoupdate registrant"
       />
 
     <require
@@ -95,11 +95,33 @@
         attributes="setBugSupervisor" />
   </content>
 
+  <!-- ProductWithLicenses
+        This is a decorator for IProduct that eliminates an additional query
+        for the product licenses.
+  -->
+  <content class="canonical.launchpad.database.ProductWithLicenses">
+    <allow interface="canonical.launchpad.interfaces.IProduct" />
+  </content>
+
   <adapter
       for="canonical.launchpad.interfaces.IProduct"
       provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
       factory="canonical.launchpad.components.launchpadcontainer.LaunchpadProductContainer"
       />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IProduct"
+    factory="canonical.launchpad.browser.ProductBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IProductSet"
+    factory="canonical.launchpad.browser.ProductSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
@@ -237,11 +259,6 @@
       template="../templates/product-translations.pt"
       />
     <browser:page
-      name="+portlet-translations"
-      facet="translations"
-      template="../templates/product-portlet-translations.pt"
-      />
-    <browser:page
       name="+portlet-translatables"
       facet="translations"
       template="../templates/product-portlet-translatables.pt"
@@ -284,10 +301,6 @@
     <browser:page
       name="+listing-detailed"
       template="../templates/product-listing-detailed.pt"
-      />
-    <browser:page
-      name="+listing-simple"
-      template="../templates/pillar-listing-simple.pt"
       />
     <!-- Products Portlets -->
     <browser:page
@@ -606,14 +619,6 @@
     class="canonical.launchpad.browser.ProductAddView"
     permission="launchpad.AnyPerson"
     template="../templates/product-new-guided.pt"
-    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IProduct"
-    name="+shortlink"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.ProductShortLink"
-    attribute="__call__"
     />
 
 </configure>

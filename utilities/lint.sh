@@ -64,10 +64,14 @@ else
     files=`echo $* | tr " " "\n"`
 fi
 
+# Are there patches to the schema or changes to current.sql?
+database_changes=$(echo $files | sed '/patch-\|current/!d')
 
 echo "= Launchpad lint ="
 echo ""
-echo "Checking for conflicts. Running xmllint, pyflakes, and pylint."
+echo "Checking for conflicts. and issues in doctests and templates."
+echo "Running xmllint, pyflakes, and pylint."
+
 echo "$rules"
 
 if [ -z "$files" ]; then
@@ -100,10 +104,20 @@ group_lines_by_file() {
 
 sample_dir="database/sampledata"
 current_sql="${sample_dir}/current.sql"
-newsampledata_sql="${sample_dir}/newsampledata.sql"
-make newsampledata > /dev/null
-sql_diff=`diff -q ${sample_dir}/current.sql ${sample_dir}/newsampledata.sql`
+lintdata_sql="${sample_dir}/lintdata.sql"
+
+if [ -n "${database_changes}" ]; then
+    make -C database/schema lintdata > /dev/null
+    sql_diff=$(diff -q "${current_sql}" "${lintdata_sql}")
+    if [ -z "$sql_diff" ]; then
+        rm $lintdata_sql
+    fi
+else
+    sql_diff=""
+fi
+
 karma_bombs=`sed '/INTO karma /!d; /2000-/d; /2001-/d' $current_sql`
+
 if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
     echo ""
     echo ""
@@ -112,9 +126,14 @@ if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
     echo "$current_sql"
 fi
 if [ -n "$sql_diff" ]; then
-    echo "    Current sampledata is out of date; run 'make newsampledata'."
-else
-    rm $newsampledata_sql
+    echo "    $lintdata_sql differs from current.sql."
+    echo "    Patches to the schema, or manual edits to current.sql do not"
+    echo "    match the dump of the launchpad_ftest_template database."
+    echo "    If $lintdata_sql is correct, copy it to current.sql."
+    echo "    Otherwise update current.sql and run:"
+    echo "        make schema; make newsampledata"
+    echo "        cd ${sample_dir}; cp newsamplesdata.sql current.sql"
+    echo "    Run make schema again to update the test database."
 fi
 if [ -n "$karma_bombs" ]; then
     echo "    Karma time bombs were added to sampledata."
@@ -157,6 +176,22 @@ if [ ! -z "$xmllint_notices" ]; then
     echo ""
     echo "== XmlLint notices =="
     group_lines_by_file "$xmllint_notices"
+fi
+
+
+templatefiles=`echo "$files" | grep -E '(pt)$'`
+template_notices=""
+if [ ! -z "$templatefiles" ]; then
+    obsolete='"(portlets_one|portlets_two|pageheading|help)"'
+    template_notices=`grep -E "fill-slot=$obsolete" $templatefiles`
+fi
+if [ ! -z "$template_notices" ]; then
+    echo ""
+    echo ""
+    echo "== Template notices =="
+    echo ""
+    echo "There are obsolete slots in these templates."
+    group_lines_by_file "$template_notices"
 fi
 
 

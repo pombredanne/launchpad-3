@@ -47,7 +47,7 @@ import re
 import canonical.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6)
+    BzrBranchFormat6, BzrBranchFormat7)
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
 from bzrlib.plugins.loom.branch import (
@@ -57,7 +57,9 @@ from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
-    RepositoryFormatPackDevelopment0Subtree)
+    RepositoryFormatPackDevelopment0Subtree, RepositoryFormatPackDevelopment1,
+    RepositoryFormatPackDevelopment1Subtree, RepositoryFormatKnitPack5,
+    RepositoryFormatKnitPack5RichRoot)
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
@@ -77,7 +79,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation)
+    export_as_webservice_entry, export_write_operation, exported)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -171,11 +173,13 @@ class BranchType(DBEnumeratedType):
         """)
 
 
-def _format_enum(num, format, format_string=None):
+def _format_enum(num, format, format_string=None, description=None):
     instance = format()
     if format_string is None:
         format_string = instance.get_format_string()
-    return DBItem(num, format_string, instance.get_format_description())
+    if description is None:
+        description = instance.get_format_description()
+    return DBItem(num, format_string, description)
 
 
 class BranchFormat(DBEnumeratedType):
@@ -197,6 +201,8 @@ class BranchFormat(DBEnumeratedType):
     BZR_BRANCH_5 = _format_enum(5, BzrBranchFormat5)
 
     BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
+
+    BZR_BRANCH_7 = _format_enum(7, BzrBranchFormat7)
 
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
@@ -237,11 +243,25 @@ class RepositoryFormat(DBEnumeratedType):
 
     BZR_KNITPACK_4 = _format_enum(204, RepositoryFormatKnitPack4)
 
+    BZR_KNITPACK_5 = _format_enum(
+        205, RepositoryFormatKnitPack5,
+        description='Packs 5 (needs bzr 1.6, supports stacking)\n')
+
+    BZR_KNITPACK_5_RR = _format_enum(
+        206, RepositoryFormatKnitPack5RichRoot,
+        description='Packs 5-Rich Root (needs bzr 1.6, supports stacking)')
+
     BZR_PACK_DEV_0 = _format_enum(
         300, RepositoryFormatPackDevelopment0)
 
     BZR_PACK_DEV_0_SUBTREE = _format_enum(
         301, RepositoryFormatPackDevelopment0Subtree)
+
+    BZR_DEV_1 = _format_enum(
+        302, RepositoryFormatPackDevelopment1)
+
+    BZR_DEV_1_SUBTREE = _format_enum(
+        303, RepositoryFormatPackDevelopment1Subtree)
 
 
 class ControlFormat(DBEnumeratedType):
@@ -450,45 +470,65 @@ class IBranch(IHasOwner):
         title=_("Branch Type"), required=True,
         vocabulary=UICreatableBranchType)
 
-    name = TextLine(
-        title=_('Name'), required=True, description=_("Keep very "
-        "short, unique, and descriptive, because it will be used in URLs. "
-        "Examples: main, devel, release-1.0, gnome-vfs."),
-        constraint=branch_name_validator)
-    title = Title(
-        title=_('Title'), required=False, description=_("Describe the "
-        "branch as clearly as possible in up to 70 characters. This "
-        "title is displayed in every branch list or report."))
-    summary = Summary(
-        title=_('Summary'), required=False, description=_("A "
-        "single-paragraph description of the branch. This will be "
-        "displayed on the branch page."))
-    url = BranchURIField(
-        title=_('Branch URL'), required=False,
-        allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
-        allow_userinfo=False,
-        allow_query=False,
-        allow_fragment=False,
-        trailing_slash=False,
-        description=_("This is the external location where the Bazaar "
-                      "branch is hosted."))
+    name = exported(
+        TextLine(
+            title=_('Name'),
+            required=True,
+            description=_("Keep very short, unique, and descriptive, because "
+                          "it will be used in URLs. "
+                          "Examples: main, devel, release-1.0, gnome-vfs."),
+            constraint=branch_name_validator))
+    title = exported(
+        Title(
+            title=_('Title'), required=False, description=_("Describe the "
+            "branch as clearly as possible in up to 70 characters. This "
+            "title is displayed in every branch list or report.")))
+    summary = exported(
+        Summary(
+            title=_('Summary'), required=False, description=_("A "
+            "single-paragraph description of the branch. This will be "
+            "displayed on the branch page.")))
+    url = exported(
+        BranchURIField(
+            title=_('Branch URL'), required=False,
+            allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
+            allow_userinfo=False,
+            allow_query=False,
+            allow_fragment=False,
+            trailing_slash=False,
+            description=_("This is the external location where the Bazaar "
+                        "branch is hosted.")))
 
-    branch_format = Choice(
-        title=_("Branch Format"), required=False, vocabulary=BranchFormat)
+    branch_format = exported(
+        Choice(
+            title=_("Branch Format"),
+            required=False,
+            vocabulary=BranchFormat))
 
-    repository_format = Choice(
-        title=_("Repository Format"), required=False,
-        vocabulary=RepositoryFormat)
+    repository_format = exported(
+        Choice(
+            title=_("Repository Format"),
+            required=False,
+            vocabulary=RepositoryFormat))
 
-    control_format = Choice(
-        title=_("Control Directory"), required=False,
-        vocabulary=ControlFormat)
+    control_format = exported(
+        Choice(
+            title=_("Control Directory"),
+            required=False,
+            vocabulary=ControlFormat))
 
-    whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
-        description=_('Notes on the current status of the branch.'))
-    mirror_status_message = Text(
-        title=_('The last message we got when mirroring this branch '
-                'into supermirror.'), required=False, readonly=False)
+    whiteboard = exported(
+        Whiteboard(
+            title=_('Whiteboard'),
+            required=False,
+            description=_('Notes on the current status of the branch.')))
+
+    mirror_status_message = exported(
+        Text(
+            title=_('The last message we got when mirroring this branch '
+                    'into supermirror.'),
+            required=False,
+            readonly=False))
 
     private = Bool(
         title=_("Keep branch confidential"), required=False,
@@ -496,20 +536,33 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
-    registrant = Attribute("The user that registered the branch.")
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True,
-        vocabulary='UserTeamsParticipationPlusSelf',
-        description=_("Either yourself or a team you are a member of. "
-                      "This controls who can modify the branch."))
-    author = PublicPersonChoice(
-        title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
-        description=_("The author of the branch. Leave blank if the author "
-                      "does not have a Launchpad account."))
-    reviewer = PublicPersonChoice(
-        title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
-        description=_("The reviewer of a branch is the person or team that "
-                      "is responsible for authorising code to be merged."))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("The user that registered the branch."),
+            required=True,
+            vocabulary='ValidPersonOrTeam'))
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'),
+            required=True,
+            vocabulary='UserTeamsParticipationPlusSelf',
+            description=_("Either yourself or a team you are a member of. "
+                        "This controls who can modify the branch.")))
+    author = exported(
+        PublicPersonChoice(
+            title=_('Author'),
+            required=False,
+            vocabulary='ValidPersonOrTeam',
+            description=_("The author of the branch. Leave blank if the "
+                        "author does not have a Launchpad account.")))
+    reviewer = exported(
+        PublicPersonChoice(
+            title=_('Reviewer'),
+            required=False,
+            vocabulary='ValidPersonOrTeam',
+            description=_("The reviewer of a branch is the person or team "
+                          "that is responsible for authorising code to be "
+                          "merged.")))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
@@ -569,6 +622,8 @@ class IBranch(IHasOwner):
         description=_("The revision number of the tip of the branch.")
         )
 
+    stacked_on = Attribute('Stacked-on branch')
+
     warehouse_url = Attribute(
         "URL for accessing the branch by ID. "
         "This is for in-datacentre services only and allows such services to "
@@ -604,10 +659,17 @@ class IBranch(IHasOwner):
         "BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
-    date_created = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    date_last_modified = Datetime(
-        title=_('Date Last Modified'), required=True, readonly=False)
+    date_created = exported(
+        Datetime(
+            title=_('Date Created'),
+            required=True,
+            readonly=True))
+
+    date_last_modified = exported(
+        Datetime(
+            title=_('Date Last Modified'),
+            required=True,
+            readonly=False))
 
     def destroySelf(break_references=False):
         """Delete the specified branch.
@@ -863,6 +925,14 @@ class IBranchSet(Interface):
         """Find a branch by its ~owner/product/name unique name.
 
         Return the default value if no match was found.
+        """
+
+    def getRewriteMap():
+        """Return the branches that can appear in the rewrite map.
+
+        This returns only public, non-remote branches. The results *will*
+        include branches that aren't explicitly private but are stacked-on
+        private branches. The rewrite map generator filters these out itself.
         """
 
     def getByUrl(url, default=None):

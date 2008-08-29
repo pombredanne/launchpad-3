@@ -151,7 +151,7 @@ email addresses state is NONE_AVAILABLE.
 The page at ~user/+packages contains three sections,
 "Maintained Packages", "Uploaded Packages" and "PPA Packages".
 
-Each section is limited to displaying at most 50 packages so that
+Each section is limited to displaying at most 30 packages so that
 the page does not time out before Zope can render it.
 
 Before continuing, create lots of packages that will appear in each
@@ -175,7 +175,7 @@ that we're willing to display.
     ...     (name16, LaunchpadTestRequest()), name='+related-software')
     >>> view.initialize()
 
-    >>> for count in range(0, view.PACKAGE_LIMIT + 3):
+    >>> for count in range(0, view.SUMMARY_PAGE_PACKAGE_LIMIT + 3):
     ...     source_name = "foo" + str(count)
     ...     # Add the PPA packages.
     ...     discard = test_pub.getPubSource(
@@ -199,22 +199,35 @@ that we're willing to display.
 
 There are many more new packages to be displayed on the page now:
 
-    >>> name16.getLatestUploadedPPAPackages().count() > 50
+    >>> name16.getLatestUploadedPPAPackages().count() > 30
     True
 
-    >>> name16.getLatestMaintainedPackages().count() > 50
+    >>> name16.getLatestMaintainedPackages().count() > 30
     True
 
-    >>> name16.getLatestUploadedButNotMaintainedPackages().count() > 50
+    >>> name16.getLatestUploadedButNotMaintainedPackages().count() > 30
     True
 
 The view enforces the limit.
 
     >>> len(view.get_latest_uploaded_ppa_packages_with_stats)
-    50
+    30
 
     >>> len(view.get_latest_maintained_packages_with_stats)
-    50
+    30
 
     >>> len(view.get_latest_uploaded_but_not_maintained_packages_with_stats)
-    50
+    30
+
+The view has a helper method that returns a message that can be used
+at the head of each table.
+
+    >>> view._tableHeaderMessage(100)
+    'Displaying first 30 packages out of 100 total'
+
+    >>> view._tableHeaderMessage(30)
+    '30 packages'
+
+    >>> view._tableHeaderMessage(1)
+    '1 package'
+

@@ -77,9 +77,13 @@ private build:
 
 and also the main area:
 
-    >>> for message in get_feedback_messages(anon_browser.contents):
-    ...     print message
-    The frog builder is deactivated.
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    The frog builder
+    Current status
+    The frog builder
+    is deactivated.
+    Last updated ...
+
 
 Launchpad Administrators are allowed to see the build in the portlet:
 
@@ -183,7 +187,7 @@ what it shows a non-privileged user:
     ...
     i386 build of foobar 1.0 in ubuntu warty RELEASE
     ...
-    i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE
+    i386 build of at 0.00 in ubuntu warty RELEASE
     ...
     5 of 14 results
     ...
@@ -282,10 +286,10 @@ An admin user can see builds even if they are private:
     Register a new build machine
     PPA build machines
     386      0 builds waiting in queue
-    The frog builder   Building i386 build of iceweasel ...[cprov]
+    frog   AUTO    Building i386 build of iceweasel ...[cprov]
     Official distribution build machines
     386      1 builds waiting in queue
-    Bob The Builder    Disabled
+    bob    AUTO    Disabled
     Generated at ...
 
 Launchpad Buildd admins can also see private builds.
@@ -296,10 +300,10 @@ Launchpad Buildd admins can also see private builds.
     Register a new build machine
     PPA build machines
     386      0 builds waiting in queue
-    The frog builder   Building i386 build of iceweasel ...[cprov]
+    frog   AUTO    Building i386 build of iceweasel ...[cprov]
     Official distribution build machines
     386      1 builds waiting in queue
-    Bob The Builder    Disabled
+    bob    AUTO    Disabled
     Generated at ...
 
 cprov can see his own private build:
@@ -310,10 +314,10 @@ cprov can see his own private build:
     Register a new build machine
     PPA build machines
     386      0 builds waiting in queue
-    The frog builder   Building i386 build of iceweasel ...[cprov]
+    frog   AUTO    Building i386 build of iceweasel ...[cprov]
     Official distribution build machines
     386      1 builds waiting in queue
-    Bob The Builder    Disabled
+    bob    AUTO    Disabled
     Generated at ...
 
 Anonymous users cannot see the private build:
@@ -323,10 +327,10 @@ Anonymous users cannot see the private build:
     Launchpad build machines
     PPA build machines
     386      0 builds waiting in queue
-    The frog builder   Building private build
+    frog   AUTO    Building private build
     Official distribution build machines
     386      1 builds waiting in queue
-    Bob The Builder    Disabled
+    bob    AUTO    Disabled
     Generated at ...
 
 
@@ -380,11 +384,11 @@ Now the anonymous user can see the build:
     Launchpad build machines
     PPA build machines
     386      0 builds waiting in queue
-    The frog builder  Building i386 build of iceweasel 1.0 in ubuntu
+    frog  AUTO    Building i386 build of iceweasel 1.0 in ubuntu
                       warty RELEASE [cprov]
     Official distribution build machines
     386      1 builds waiting in queue
-    Bob The Builder Disabled
+    bob   AUTO    Disabled
     Generated at ...
 
 Any other logged-in user will also see the build:
@@ -394,11 +398,11 @@ Any other logged-in user will also see the build:
     Launchpad build machines
     PPA build machines
     386     0 builds waiting in queue
-    The frog builder
+    frog    AUTO
     Building i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov]
     Official distribution build machines
     386     1 builds waiting in queue
-    Bob The Builder Disabled
+    bob AUTO    Disabled
     Generated at ...
 
 Accessing the build page will now also work:

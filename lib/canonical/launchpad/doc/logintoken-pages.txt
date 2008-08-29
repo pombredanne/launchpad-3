@@ -248,3 +248,45 @@ The existing Account, Person and EmailAddress are updated.
     >>> justdave.is_valid_person
     True
 
+
+== Validating GPG keys ==
+
+In order to add a GPG key to Launchpad we require that the person
+registering it decrypt an email and follow the instructions in it.
+The last step in that workflow is the +validategpg page, which can
+be accessed by non-logged-in users. That page will attempt to access
+all email addresses of the requester but that may fail when the user
+is not logged in and the requester has chosen to hide his email
+addresses, so here we'll make sure that even non-logged-in users can
+perform the last step of the workflow for adding a GPG key.
+
+    >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> sample_person.hide_email_addresses
+    True
+
+    >>> login_token = login_token_set.new(
+    ...     sample_person, 'test@canonical.com', 'test@canonical.com',
+    ...     LoginTokenType.VALIDATEGPG,
+    ...     fingerprint='A419AE861E88BC9E04B9C26FBA2B9389DFD20543')
+
+    # Start our stub GPG keyserver so that the key can be fetched by the page.
+    >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+    >>> z = ZecaTestSetup()
+    >>> z.setUp()
+
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='/token/%s/+validategpg' % login_token.token,
+    ...     method='POST', form={'field.actions.continue': 'Continue'})
+    >>> validategpg_view = getMultiAdapter(
+    ...     (login_token, request), name="+validategpg")
+    >>> print validategpg_view.user
+    None
+    >>> validategpg_view.initialize()
+    >>> print "\n".join(
+    ...     notification.message
+    ...     for notification in validategpg_view.request.notifications)
+    The key 1024D/DFD20543 was successfully validated...
+
+    # Tear down the stub keyserver.
+    >>> z.tearDown()
