@@ -16,7 +16,7 @@ lot of state and many relationships to other objects.
 At the top level we provide a collection of bugs.
 
   >>> from operator import itemgetter
-  >>> bugs = webservice.get("bugs").jsonBody()
+  >>> bugs = webservice.get("/bugs").jsonBody()
   >>> bugs['total_size']
   15
   >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
@@ -52,14 +52,14 @@ At the top level we provide a collection of bugs.
 
 Bugs are indexed by number beneath the top-level collection.
 
-  >>> bug_one = webservice.get("bugs/1").jsonBody()
+  >>> bug_one = webservice.get("/bugs/1").jsonBody()
   >>> bug_one['id']
   1
 
 Bugs have relationships to other bugs, like "duplicate_of".
 
   >>> duplicates_of_five = webservice.get(
-  ...     "bugs/5/duplicates").jsonBody()['entries']
+  ...     "/bugs/5/duplicates").jsonBody()['entries']
   >>> len(duplicates_of_five)
   1
   >>> duplicates_of_five[0]['id']
@@ -75,10 +75,10 @@ takes a target parameter which must be a either a Product, a
 Distribution or a DistributionSourcePackage.
 
     >>> project_collection = webservice.get(
-    ...   "projects?ws.op=search&text=firefox").jsonBody()
+    ...   "/projects?ws.op=search&text=firefox").jsonBody()
     >>> firefox = project_collection['entries'][0]
     >>> print webservice.named_post(
-    ...     'bugs', 'createBug',
+    ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
     ...     target=firefox['self_link'])
     HTTP/1.1 201 Created
@@ -87,18 +87,18 @@ Distribution or a DistributionSourcePackage.
     <BLANKLINE>
 
     >>> print webservice.named_post(
-    ...     'bugs', 'createBug',
+    ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
-    ...     target=webservice.getAbsoluteUrl('ubuntu'))
+    ...     target=webservice.getAbsoluteUrl('/ubuntu'))
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
     <BLANKLINE>
 
     >>> print webservice.named_post(
-    ...     'bugs', 'createBug',
+    ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
-    ...     target=webservice.getAbsoluteUrl('ubuntu/+source/evolution'))
+    ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/evolution'))
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
@@ -107,9 +107,9 @@ Distribution or a DistributionSourcePackage.
 A ProductSeries can't be the target of a new bug.
 
     >>> print webservice.named_post(
-    ...     'bugs', 'createBug',
+    ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
-    ...     target=webservice.getAbsoluteUrl('firefox/1.0'))
+    ...     target=webservice.getAbsoluteUrl('/firefox/1.0'))
     HTTP/1.1 400 Bad Request
     ...
     A bug target must be a Project, a Distribution or a
@@ -119,7 +119,7 @@ That operation will fail if the client doesn't specify the product or
 distribution in which the bug exists.
 
     >>> print webservice.named_post(
-    ...     'bugs', 'createBug',
+    ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug')
     HTTP/1.1 400 Bad Request
     ...
@@ -130,7 +130,7 @@ distribution in which the bug exists.
 
 Each bug has a collection of messages.
 
-  >>> messages = webservice.get("bugs/5/messages").jsonBody()['entries']
+  >>> messages = webservice.get("/bugs/5/messages").jsonBody()['entries']
   >>> show(messages[0])
   [(u'bug_attachments_collection_link',
     u'http://.../firefox/+bug/5/comments/0/bug_attachments'),
@@ -160,7 +160,7 @@ different from /firefox/+bug/1/comments/0.
 There is no top-level collection of messages; they only exist in
 relation to some bug.
 
-  >>> webservice.get("messages").getStatus()
+  >>> webservice.get("/messages").getStatus()
   404
 
 
@@ -210,14 +210,14 @@ data in a bug task is derived from the bug.
 
 The collection of bug tasks is not exposed as a resource:
 
-  >>> webservice.get("bug_tasks").getStatus()
+  >>> webservice.get("/bug_tasks").getStatus()
   404
 
 It's possible to change the task's assignee.
 
   >>> print webservice.named_post(
   ...     bugtask_path, 'transitionToAssignee',
-  ...     assignee=webservice.getAbsoluteUrl('~cprov'))
+  ...     assignee=webservice.getAbsoluteUrl('/~cprov'))
   HTTP/1.1 200 Ok
   ...
   Content-Type: application/json
@@ -295,7 +295,7 @@ We can also create new subscriptions.
 
     >>> new_subscription = webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     person=webservice.getAbsoluteUrl('~cprov')).jsonBody()
+    ...     person=webservice.getAbsoluteUrl('/~cprov')).jsonBody()
     >>> pprint(new_subscription)
     {...u'self_link':
         u'http://.../bugs/1/+subscription/cprov'...}
@@ -349,7 +349,7 @@ report described by the bugwatch.
 
 The collection of bug watches is not exposed as a resource:
 
-  >>> webservice.get("bug_watches").getStatus()
+  >>> webservice.get("/bug_watches").getStatus()
   404
 
 We can modify the remote bug.
@@ -384,7 +384,7 @@ associated with a bug.
   >>> response = webservice.named_post(
   ...     bug_one['self_link'], 'addWatch',
   ...     bug_tracker=webservice.getAbsoluteUrl(
-  ...                      'bugs/bugtrackers/mozilla.org'),
+  ...                      '/bugs/bugtrackers/mozilla.org'),
   ...     remote_bug='9876')
   >>> print response.getOutput()
   HTTP/1.1 201 Created

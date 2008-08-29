@@ -12,7 +12,7 @@ Let's get a WADL representation of a resource (in this case, a
 person), and see what's inside.
 
     >>> wadl = webservice.get(
-    ...     '/beta/~salgado', 'application/vd.sun.wadl+xml').getBody()
+    ...     '/~salgado', 'application/vd.sun.wadl+xml').getBody()
 
 It's an XML document.
 
@@ -99,7 +99,7 @@ The WADL description of a collection looks a lot like the WADL
 description of an entry. It's an <application> tag that contains a
 <resources> tag that contains a <resource> tag.
 
-    >>> wadl = webservice.get('/beta/people',
+    >>> wadl = webservice.get('/people',
     ...                       'application/vd.sun.wadl+xml').getBody()
     >>> wadl_schema.validate(wadl)
     True
@@ -133,7 +133,7 @@ by referencing another WADL document.
 The WADL representation of a scoped collection is pretty similar to
 the representation of a top-level collection.
 
-    >>> wadl = webservice.get('/beta/~admins/members',
+    >>> wadl = webservice.get('/~admins/members',
     ...                       'application/vd.sun.wadl+xml').getBody()
     >>> wadl_schema.validate(wadl)
     True
@@ -174,16 +174,16 @@ negotiation to get a WADL description of any hosted file resource.
 The 'salgado' user starts out with no hosted mugshot, and an ordinary
 GET to the place where the mugshot would be results in a 404 error.
 
-    >>> print webservice.get('/beta/~salgado/mugshot')
+    >>> print webservice.get('/~salgado/mugshot')
     HTTP/1.1 404 Not Found
     ...
 
 But if the client is interested in learning how to create a mugshot at
-/beta/~salgado/mugshot, it can use content negotiation to get a WADL
+/~salgado/mugshot, it can use content negotiation to get a WADL
 description of the resource-to-be.
 
     >>> wadl = webservice.get(
-    ...     '/beta/~salgado/mugshot',
+    ...     '/~salgado/mugshot',
     ...     'application/vd.sun.wadl+xml').getBody()
     >>> wadl_schema.validate(wadl)
     True
@@ -229,7 +229,7 @@ resources serve, and any custom methods invokable on those
 resources. It's a big document.
 
     >>> wadl = webservice.get(
-    ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
+    ...     '/', 'application/vd.sun.wadl+xml').getBody()
 
     # We need to replace the nbsp entity, because the validator
     # doesn't support embedded definition.

@@ -11,7 +11,7 @@ examples.
 A collection responds to GET by serving one page of the objects in the
 collection.
 
-  >>> bugs_collection = webservice.get("bugs").jsonBody()
+  >>> bugs_collection = webservice.get("/bugs").jsonBody()
   >>> bugs_collection['resource_type_link']
   u'http://.../#bugs'
   >>> bugs_collection['total_size']
@@ -35,7 +35,7 @@ collection.
 
 You can get other pages of the collection by following links:
 
-  >>> result = webservice.get("bugs?ws.start=5&ws.size=5")
+  >>> result = webservice.get("/bugs?ws.start=5&ws.size=5")
   >>> second_batch = result.jsonBody()
   >>> second_batch['next_collection_link']
   u'http://.../bugs?ws.start=10&ws.size=5'
@@ -49,13 +49,13 @@ You can get other pages of the collection by following links:
 
 You can also get a larger batch than the default:
 
-  >>> big_batch = webservice.get("bugs?ws.size=10").jsonBody()
+  >>> big_batch = webservice.get("/bugs?ws.size=10").jsonBody()
   >>> len(big_batch['entries'])
   10
   >>> big_batch.get('next_collection_link')
   u'http://.../bugs?ws.start=10&ws.size=10'
 
-  >>> bigger_batch = webservice.get("bugs?ws.size=20").jsonBody()
+  >>> bigger_batch = webservice.get("/bugs?ws.size=20").jsonBody()
   >>> len(bigger_batch['entries'])
   15
   >>> bigger_batch.get('next_collection_link') is None
@@ -64,7 +64,7 @@ You can also get a larger batch than the default:
 But requesting a batch size higher than the maximum configured value
 results in a 400 error.
 
-    >>> print webservice.get("bugs?ws.start=0&ws.size=1000")
+    >>> print webservice.get("/bugs?ws.start=0&ws.size=1000")
     HTTP/1.1 400 Bad Request
     ...
     Content-Type: text/plain...
@@ -78,7 +78,7 @@ A user without permission to see items in a collection will, of
 course, not see those items. The 'salgado' user can see all bugs on the
 site.
 
-  >>> salgado_output = webservice.get("bugs?ws.size=50").jsonBody()
+  >>> salgado_output = webservice.get("/bugs?ws.size=50").jsonBody()
   >>> salgado_output['total_size']
   15
   >>> len(salgado_output['entries'])
@@ -87,7 +87,7 @@ site.
 But the 'no-priv' user can't see bug number 14, which is private.
 
   >>> nopriv_output = user_webservice.get(
-  ...     "bugs?ws.size=100").jsonBody()
+  ...     "/bugs?ws.size=100").jsonBody()
   >>> nopriv_output['total_size']
   14
   >>> len(nopriv_output['entries'])
@@ -98,7 +98,7 @@ private data, but is using an OAuth key that restricts the client to
 operating on public data.
 
   >>> public_output = public_webservice.get(
-  ...     "bugs?ws.size=50").jsonBody()
+  ...     "/bugs?ws.size=50").jsonBody()
   >>> public_output['total_size']
   15
   >>> len(public_output['entries'])
@@ -121,7 +121,7 @@ clients from seeing private data.
 
 The elements of a collection can be looked up by unique identifier:
 
-  >>> admins_team = webservice.get("~admins").jsonBody()
+  >>> admins_team = webservice.get("/~admins").jsonBody()
   >>> for key, value in sorted(admins_team.items()):
   ...     print "%s: %s" % (key, value)
   admins_collection_link: http://.../~admins/admins
@@ -169,7 +169,7 @@ The elements of a collection can be looked up by unique identifier:
 
 A collection may be scoped to an element:
 
-  >>> result = webservice.get("~admins/members").jsonBody()
+  >>> result = webservice.get("/~admins/members").jsonBody()
   >>> result['resource_type_link']
   u'http://.../#person-page-resource'
   >>> team_members = sorted(
@@ -181,7 +181,7 @@ A collection may be scoped to an element:
   >>> team_members[-1]['name']
   u'spiv'
 
-  >>> result = webservice.get("~spiv/members")
+  >>> result = webservice.get("/~spiv/members")
   >>> list(result.jsonBody()['entries'])
   []
 
@@ -197,7 +197,7 @@ people, called 'people'.
 
   >>> def search_people(text, start=0):
   ...     return webservice.get(
-  ...         "people?ws.op=find&text=%s&ws.start=%s" %
+  ...         "/people?ws.op=find&text=%s&ws.start=%s" %
   ...             (text, start)).jsonBody()
 
 A custom operation that returns a list of objects is paginated, just
@@ -226,7 +226,7 @@ empty list of results:
 
 Custom operations may have custom error handling.
 
-  >>> print webservice.get("~ubuntu-team?ws.op=getMembersByStatus")
+  >>> print webservice.get("/~ubuntu-team?ws.op=getMembersByStatus")
   HTTP/1.1 400 Bad Request
   ...
   status: Required input is missing.
@@ -238,10 +238,10 @@ the collection of people.
 
   >>> def create_team(name, display_name):
   ...     return webservice.named_post(
-  ...         "people", "newTeam", {},
+  ...         "/people", "newTeam", {},
   ...         name=name, display_name=display_name)
 
-  >>> print webservice.get('~serviceteam')
+  >>> print webservice.get('/~serviceteam')
   HTTP/1.1 404 Not Found
   ...
 
@@ -251,7 +251,7 @@ the collection of people.
   Location: http://.../~serviceteam
   <BLANKLINE>
 
-  >>> print webservice.get('~serviceteam')
+  >>> print webservice.get('/~serviceteam')
   HTTP/1.1 200 Ok
   ...
 
@@ -261,7 +261,7 @@ the collection of people.
   Location: http://.../~serviceteam2
   <BLANKLINE>
 
-  >>> print webservice.get('~serviceteam2')
+  >>> print webservice.get('/~serviceteam2')
   HTTP/1.1 200 Ok
   ...
 
@@ -276,14 +276,14 @@ team with a name that's taken.
 A POST request has no meaning right now unless it specifies a custom
 operation.
 
-  >>> print webservice.post("people", 'text/plain', '')
+  >>> print webservice.post("/people", 'text/plain', '')
   HTTP/1.1 400 Bad Request
   ...
   No operation name given.
 
 You can't invoke a nonexistent operation:
 
-  >>> print webservice.named_post("people", "nosuchop", {})
+  >>> print webservice.named_post("/people", "nosuchop", {})
   HTTP/1.1 400 Bad Request
   ...
   No such operation: nosuchop

@@ -96,15 +96,27 @@ class WebServiceCaller:
         # Set up a delegate to make the actual HTTP calls.
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
 
-    def getAbsoluteUrl(self, relative_url, api_version=DEFAULT_API_VERSION):
+    def getAbsoluteUrl(self, resource_path, api_version=DEFAULT_API_VERSION):
         """Convenience method for creating a url in tests.
 
-        :param relative_url: This is the url section to be joined to hostname
-                             and api version.
+        :param resource_path: This is the url section to be joined to hostname
+                              and api version.
         :param api_version: This is the first part of the absolute
                             url after the hostname.
         """
-        url_with_version = os.path.join(api_version, relative_url)
+        if resource_path.startswith('/'):
+            # Prevent os.path.join from interpreting resource_path as an
+            # absolute url.
+            resource_path = resource_path[1:]
+        else:
+            # For consistency with urls from other *.launchpad.dev virtual
+            # hosts, the resource_path must start with a slash.
+            # For example:
+            #   /firefox = http://launchpad.dev/firefox
+            #   /firefox = http://api.launchpad.dev/beta/firefox
+            raise AssertionError("resource_path must start with a slash: %s"
+                                 % resource_path)
+        url_with_version = os.path.join(api_version, resource_path)
         return urljoin(self.DEV_SERVER_URL, url_with_version)
 
     def __call__(self, path_or_url, method='GET', data=None, headers=None,
@@ -141,50 +153,60 @@ class WebServiceCaller:
             request_string, handle_errors=self.handle_errors)
         return WebServiceResponseWrapper(response)
 
-    def get(self, path, media_type='application/json', headers=None):
+    def get(self, path, media_type='application/json', headers=None,
+            api_version=DEFAULT_API_VERSION):
         """Make a GET request."""
         full_headers = {'Accept': media_type}
         if headers is not None:
             full_headers.update(headers)
-        return self(path, 'GET', headers=full_headers)
+        return self(path, 'GET', headers=full_headers,
+                    api_version=api_version)
 
-    def head(self, path, headers=None):
+    def head(self, path, headers=None,
+             api_version=DEFAULT_API_VERSION):
         """Make a HEAD request."""
-        return self(path, 'HEAD', headers=headers)
+        return self(path, 'HEAD', headers=headers, api_version=api_version)
 
-    def delete(self, path, headers=None):
+    def delete(self, path, headers=None,
+               api_version=DEFAULT_API_VERSION):
         """Make a DELETE request."""
-        return self(path, 'DELETE', headers=headers)
+        return self(path, 'DELETE', headers=headers, api_version=api_version)
 
-    def put(self, path, media_type, data, headers=None):
+    def put(self, path, media_type, data, headers=None,
+            api_version=DEFAULT_API_VERSION):
         """Make a PUT request."""
         return self._make_request_with_entity_body(
-            path, 'PUT', media_type, data, headers)
+            path, 'PUT', media_type, data, headers, api_version=api_version)
 
-    def post(self, path, media_type, data, headers=None):
+    def post(self, path, media_type, data, headers=None,
+             api_version=DEFAULT_API_VERSION):
         """Make a POST request."""
         return self._make_request_with_entity_body(
-            path, 'POST', media_type, data, headers)
+            path, 'POST', media_type, data, headers, api_version=api_version)
 
-    def named_get(self, path_or_url, operation_name, headers=None, **kwargs):
+    def named_get(self, path_or_url, operation_name, headers=None,
+                  api_version=DEFAULT_API_VERSION, **kwargs):
         kwargs['ws.op'] = operation_name
         data = '&'.join(['%s=%s' % (key, urllib.quote(value))
                          for key, value in kwargs.items()])
-        return self.get("%s?%s" % (path_or_url, data), data, headers)
+        return self.get("%s?%s" % (path_or_url, data), data, headers,
+                        api_version=api_version)
 
-    def named_post(self, path, operation_name, headers=None, **kwargs):
+    def named_post(self, path, operation_name, headers=None,
+                   api_version=DEFAULT_API_VERSION, **kwargs):
         kwargs['ws.op'] = operation_name
         data = urlencode(kwargs)
         return self.post(path, 'application/x-www-form-urlencoded', data,
-                         headers)
+                         headers, api_version=api_version)
 
-    def patch(self, path, media_type, data, headers=None):
+    def patch(self, path, media_type, data, headers=None,
+              api_version=DEFAULT_API_VERSION):
         """Make a PATCH request."""
         return self._make_request_with_entity_body(
-            path, 'PATCH', media_type, data, headers)
+            path, 'PATCH', media_type, data, headers, api_version=api_version)
 
     def _make_request_with_entity_body(self, path, method, media_type, data,
-                                       headers):
+                                       headers, api_version):
         """A helper method for requests that include an entity-body.
 
         This means PUT, PATCH, and POST requests.
@@ -192,7 +214,7 @@ class WebServiceCaller:
         real_headers = {'Content-type' : media_type }
         if headers is not None:
             real_headers.update(headers)
-        return self(path, method, data, real_headers)
+        return self(path, method, data, real_headers, api_version=api_version)
 
 
 class WebServiceResponseWrapper(ProxyBase):

@@ -4,7 +4,7 @@ The service root (/[version]/) is a resource that responds to GET by
 describing the web service. The description is a JSON map full of
 links to the top-level web service objects.
 
-  >>> top_level_response = webservice.get("")
+  >>> top_level_response = webservice.get("/")
   >>> top_level_links = top_level_response.jsonBody()
   >>> sorted(top_level_links.keys())
   [u'bugs_collection_link', u'me_link', u'people_collection_link',
@@ -26,7 +26,7 @@ particular resource supports only GET. Eventually it will also support
 HEAD and OPTIONS.
 
   >>> for method in ['HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']:
-  ...     print webservice("", method)
+  ...     print webservice("/", method)
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...
@@ -57,14 +57,14 @@ The value of 'ETag' can be used in a subsequent request as the
 current ETag, the representation won't be served again.
 
   >>> conditional_response = webservice.get(
-  ...     '/beta/', headers={'If-None-Match' : etag})
+  ...     '/', headers={'If-None-Match' : etag})
   >>> conditional_response.getStatus()
   304
   >>> conditional_response.getBody()
   ''
 
   >>> conditional_response = webservice.get(
-  ...     '/beta/', headers={'If-None-Match' : '"a-very-old-etag"'})
+  ...     '/', headers={'If-None-Match' : '"a-very-old-etag"'})
   >>> conditional_response.getStatus()
   200
   >>> conditional_response.jsonBody()
@@ -74,13 +74,13 @@ You can specify a number of etags in If-None-Match. You'll get a new
 representation only if *none* of them match:
 
   >>> conditional_response = webservice.get(
-  ...     '/beta/',
+  ...     '/',
   ...     headers={'If-None-Match' : '"a-very-old-etag", %s' %  etag})
   >>> conditional_response.getStatus()
   304
 
   >>> conditional_response = webservice.get(
-  ...     '/beta/',
+  ...     '/',
   ...     headers={'If-None-Match' : '"a-very-old-etag", "another-etag"'})
   >>> conditional_response.getStatus()
   200
