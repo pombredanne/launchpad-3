@@ -191,6 +191,17 @@ created but we allow admins to change it to correct data.
     Registered Celso Providelo on...
     ...
 
+The registrant really should only be a person, not a team, but that
+constraint has to be relaxed to account for old data where we do have
+teams as registrants.
+
+    >>> admin_browser.open('http://launchpad.dev/newproductname3/+admin')
+    >>> admin_browser.getControl('Registrant').value = 'registry'
+    >>> admin_browser.getControl('Change').click()
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Details...
+    Registered Registry Administrators on...
+
 
 == Registry Experts ==
 

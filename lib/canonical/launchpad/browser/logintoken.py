@@ -317,7 +317,11 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
 
         # Make sure this person has a preferred email address.
         if naked_person.preferredemail != emailaddress:
-            naked_person.validateAndEnsurePreferredEmail(emailaddress)
+            # Must remove the security proxy of the email address because the
+            # user is not logged in at this point and we may need to change
+            # its status.
+            naked_person.validateAndEnsurePreferredEmail(
+                removeSecurityProxy(emailaddress))
 
         self.context.consume()
 
