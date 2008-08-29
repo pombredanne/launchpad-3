@@ -3,10 +3,11 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionSourcePackageNavigation',
+    'DistributionSourcePackageBreadcrumbBuilder',
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
+    'DistributionSourcePackageSOP',
     'DistributionSourcePackageView'
     ]
 
@@ -28,9 +29,18 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadFormView, Link,
     StandardLaunchpadFacets, action, canonical_url, redirection)
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 from canonical.lazr import decorates
 from canonical.lazr.utils import smartquote
+
+
+class DistributionSourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistributionSourcePackage`."""
+    @property
+    def text(self):
+        return smartquote('"%s" package') % (
+            self.context.sourcepackagename.name)
 
 
 class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
@@ -67,10 +77,6 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
     usedfor = IDistributionSourcePackage
 
     redirection("+editbugcontact", "+subscribe")
-
-    def breadcrumb(self):
-        return smartquote('"%s" package') % (
-            self.context.sourcepackagename.name)
 
 
 class DecoratedDistributionSourcePackageRelease:

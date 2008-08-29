@@ -5,27 +5,29 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionNavigation',
-    'DistributionFacets',
-    'DistributionSpecificationsMenu',
-    'DistributionView',
-    'DistributionPPASearchView',
-    'DistributionAllPackagesView',
-    'DistributionEditView',
-    'DistributionSetView',
     'DistributionAddView',
-    'DistributionArchiveMirrorsView',
-    'DistributionCountryArchiveMirrorsView',
-    'DistributionSeriesMirrorsView',
-    'DistributionSeriesMirrorsRSSView',
+    'DistributionAllPackagesView',
     'DistributionArchiveMirrorsRSSView',
+    'DistributionArchiveMirrorsView',
+    'DistributionBreadcrumbBuilder',
+    'DistributionCountryArchiveMirrorsView',
     'DistributionDisabledMirrorsView',
-    'DistributionPendingReviewMirrorsView',
-    'DistributionUnofficialMirrorsView',
+    'DistributionEditView',
+    'DistributionFacets',
     'DistributionLanguagePackAdminView',
+    'DistributionNavigation',
+    'DistributionPendingReviewMirrorsView',
+    'DistributionPPASearchView',
+    'DistributionSeriesMirrorsRSSView',
+    'DistributionSeriesMirrorsView',
+    'DistributionSetBreadcrumbBuilder',
+    'DistributionSetContextMenu',
     'DistributionSetFacets',
     'DistributionSetNavigation',
-    'DistributionSetContextMenu',
+    'DistributionSetView',
+    'DistributionSpecificationsMenu',
+    'DistributionUnofficialMirrorsView',
+    'DistributionView',
     'UsesLaunchpadMixin',
     ]
 
@@ -68,6 +70,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import NavigationMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.widgets.image import ImageChangeWidget
 
 
@@ -114,9 +117,6 @@ class DistributionNavigation(
     def redirect_source(self):
         return canonical_url(self.context)
 
-    def breadcrumb(self):
-        return self.context.displayname
-
     @stepto('+packages')
     def packages(self):
         return getUtility(IPublishedPackageSet)
@@ -146,15 +146,19 @@ class DistributionSetNavigation(Navigation):
 
     usedfor = IDistributionSet
 
-    def breadcrumb(self):
-        return 'Distributions'
-
     def traverse(self, name):
         # Raise a 404 on an invalid distribution name
         distribution = self.context.getByName(name)
         if distribution is None:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(distribution))
+
+
+class DistributionBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistribution`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -168,6 +172,11 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link('', text, summary)
+
+
+class DistributionSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistributionSet`."""
+    text = 'Distributions'
 
 
 class DistributionSetFacets(StandardLaunchpadFacets):

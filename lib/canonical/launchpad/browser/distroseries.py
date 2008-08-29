@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesAddView',
     'DistroSeriesAdminView',
+    'DistroSeriesBreadcrumbBuilder',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesFullLanguagePackRequestView',
@@ -43,6 +44,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
 from canonical.launchpad.webapp.menu import (
@@ -55,9 +57,6 @@ from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistroSeries
-
-    def breadcrumb(self):
-        return self.context.version
 
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
@@ -120,6 +119,13 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
             return None
         else:
             return self.context.last_delta_language_pack_exported.file
+
+
+class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistroSeries`."""
+    @property
+    def text(self):
+        return self.context.version
 
 
 class DistroSeriesFacets(StandardLaunchpadFacets):

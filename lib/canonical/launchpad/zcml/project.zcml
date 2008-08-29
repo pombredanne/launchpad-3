@@ -32,6 +32,20 @@
         factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
         />
 
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IProject"
+      factory="canonical.launchpad.browser.ProjectBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IProjectSet"
+      factory="canonical.launchpad.browser.ProjectSetBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="ProjectNavigation"

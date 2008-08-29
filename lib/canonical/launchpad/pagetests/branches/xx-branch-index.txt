@@ -343,7 +343,7 @@ The data that we specified is shown on the web page.
     Repository format: Packs containing knits without subtree support
 
 
-=== Tabs ===
+=== Navigation Context ===
 
 The tabs shown for a branch depend on whether or not the branch is a junk
 branch or not.  If the branch is associated with a product, then the product
@@ -353,22 +353,25 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
-    >>> def link_texts(browser):
-    ...     apps = find_tag_by_id(browser.contents, 'lp-apps')
-    ...     for link in apps.findAll('a'):
-    ...         print str("%s %s" % (extract_text(link), link['href']))
-    >>> link_texts(browser)
-    Overview      http://launchpad.dev/gnome-terminal
-    Code          http://code.launchpad.dev/gnome-terminal
-    Bugs          http://bugs.launchpad.dev/gnome-terminal
-    Blueprints    http://blueprints.launchpad.dev/gnome-terminal
-    Translations  http://translations.launchpad.dev/gnome-terminal
-    Answers       http://answers.launchpad.dev/gnome-terminal
+    >>> print_location(browser.contents)
+    Location: GNOME Terminal
+    Tabs:
+    * Overview (http://launchpad.dev/gnome-terminal)
+    * Code (http://code.launchpad.dev/gnome-terminal)
+    * Bugs (http://bugs.launchpad.dev/gnome-terminal)
+    * Blueprints (http://blueprints.launchpad.dev/gnome-terminal)
+    * Translations (http://translations.launchpad.dev/gnome-terminal)
+    * Answers (http://answers.launchpad.dev/gnome-terminal)
+    Main heading: ~name12/gnome-terminal/scanned
+
     >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
-    >>> link_texts(browser)
-    Overview      http://launchpad.dev/~name12
-    Code          http://code.launchpad.dev/~name12
-    Bugs          http://bugs.launchpad.dev/~name12
-    Blueprints    http://blueprints.launchpad.dev/~name12
-    Translations  http://translations.launchpad.dev/~name12
-    Answers       http://answers.launchpad.dev/~name12
+    >>> print_location(browser.contents)
+    Location: Sample Person
+    Tabs:
+    * Overview (http://launchpad.dev/~name12)
+    * Code (http://code.launchpad.dev/~name12)
+    * Bugs (http://bugs.launchpad.dev/~name12)
+    * Blueprints (http://blueprints.launchpad.dev/~name12)
+    * Translations (http://translations.launchpad.dev/~name12)
+    * Answers (http://answers.launchpad.dev/~name12)
+    Main heading: Ubuntu Junk Code
