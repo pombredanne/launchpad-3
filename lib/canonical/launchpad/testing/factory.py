@@ -121,8 +121,9 @@ class LaunchpadObjectFactory:
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
 
     def makePerson(self, email=None, name=None, password=None,
-                   email_address_status=None, displayname=None,
-                   time_zone=None, latitude=None, longitude=None):
+                   email_address_status=None, hide_email_addresses=False,
+                   displayname=None, time_zone=None, latitude=None,
+                   longitude=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -134,6 +135,8 @@ class LaunchpadObjectFactory:
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
         :param displayname: The display name to use for the person.
+        :param hide_email_addresses: Whether or not to hide the person's email
+            address(es) from other users.
         :param time_zone: This person's time zone, as a string.
         :param latitude: This person's latitude, as a float.
         :param longitude: This person's longitude, as a float.
@@ -152,7 +155,8 @@ class LaunchpadObjectFactory:
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password=password, displayname=displayname)
+            password=password, displayname=displayname,
+            hide_email_addresses=hide_email_addresses)
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
