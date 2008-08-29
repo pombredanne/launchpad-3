@@ -58,9 +58,6 @@
     </div>
 
     <div class="actions">
-      <input type="submit"
-             name="cancel"
-             value="Cancel" />
       <input tal:condition="not: view/userIsSubscribed"
              type="submit"
              name="subscribe"
@@ -69,6 +66,7 @@
              type="submit"
              name="unsubscribe"
              value="Continue" />
+      or <a tal:attributes="href context/fmt:url">Cancel</a>
     </div>
   </form>
 
