@@ -23,7 +23,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -755,7 +755,7 @@ class BuildSet:
                             SourcePackageName.id
                         WHERE Sourcepackagename.name LIKE
                         '%%' || %s || '%%')
-            ''' % quote(name))
+            ''' % quote_like(name))
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
                             user=None):
