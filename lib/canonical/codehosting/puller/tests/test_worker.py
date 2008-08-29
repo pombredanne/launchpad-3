@@ -26,7 +26,7 @@ from canonical.codehosting.puller.worker import (
     get_vfs_format_classes, install_worker_ui_factory)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.launchpad.interfaces.branch import BranchType
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.testing import reset_logging
 
 
@@ -189,7 +189,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             get_netstrings(protocol_output.getvalue()))
 
 
-class TestBranchOpenerCheckSource(unittest.TestCase):
+class TestBranchOpenerCheckSource(TestCase):
     """Unit tests for `BranchOpener.checkSource`."""
 
     class StubbedBranchOpener(BranchOpener):
@@ -337,7 +337,7 @@ class TestReferenceMirroring(TestCaseWithTransport):
         self.assertIs(None, opener.followReference(branch_url))
 
 
-class TestMirroredBranchOpener(unittest.TestCase):
+class TestMirroredBranchOpener(TestCase):
     """Tests specific to `MirroredBranchOpener`."""
 
     def setUp(self):
