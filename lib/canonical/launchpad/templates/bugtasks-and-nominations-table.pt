@@ -38,10 +38,10 @@
 
 </table>
 
-<div style="width: 100%; margin-bottom: 1em; margin-top: 0.33em;"
-     class="clearfix"
-     tal:define="current_bugtask view/current_bugtask">
-  <div style="text-align: left; float: left;"
+<div
+  class="actions"
+  tal:define="current_bugtask view/current_bugtask"
+
         tal:condition="view/displayAlsoAffectsLinks">
     <tal:also-affects-links define="context_menu context/menu:context">
       <tal:addupstream
@@ -57,6 +57,6 @@
           condition="link/enabled"
           replace="structure link/render" />
     </tal:also-affects-links>
-  </div>
+
 </div>
 </tal:root>

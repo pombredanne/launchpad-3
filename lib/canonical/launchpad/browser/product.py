@@ -1058,6 +1058,18 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             driver = None
         return driver
 
+    @cachedproperty
+    def show_commercial_subscription_info(self):
+        """Should subscription information be shown?
+
+        Subscription information is only shown to the project maintainers,
+        Launchpad admins, and members of the Launchpad commercial team.  The
+        first two are allowed via the Launchpad.Edit permission.  The latter
+        is allowed via Launchpad.Commercial.
+        """
+        return (check_permission('launchpad.Edit', self.context) or
+                check_permission('launchpad.Commercial', self.context))
+
 
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,

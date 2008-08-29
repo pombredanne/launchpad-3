@@ -28,6 +28,7 @@ from canonical.codehosting.puller.worker import (
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.xmlrpc import faults
 from canonical.testing import (
     reset_logging, TwistedLayer, TwistedAppServerLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
@@ -42,6 +43,15 @@ class FakeBranchStatusClient:
 
     def getBranchPullQueue(self, branch_type):
         return defer.succeed(self.branch_queues[branch_type])
+
+    def setStackedOn(self, branch_id, stacked_on_location):
+        if stacked_on_location == 'raise-branch-not-found':
+            try:
+                raise faults.NoSuchBranch(stacked_on_location)
+            except faults.NoSuchBranch:
+                return defer.fail()
+        self.calls.append(('setStackedOn', branch_id, stacked_on_location))
+        return defer.succeed(None)
 
     def startMirroring(self, branch_id):
         self.calls.append(('startMirroring', branch_id))
@@ -228,6 +238,9 @@ class TestPullerMonitorProtocol(
         def __init__(self):
             self.calls = []
 
+        def setStackedOn(self, stacked_on_location):
+            self.calls.append(('setStackedOn', stacked_on_location))
+
         def startMirroring(self):
             self.calls.append('startMirroring')
 
@@ -254,6 +267,13 @@ class TestPullerMonitorProtocol(
         """Receiving a startMirroring message notifies the listener."""
         self.protocol.do_startMirroring()
         self.assertEqual(['startMirroring'], self.listener.calls)
+        self.assertProtocolSuccess()
+
+    def test_setStackedOn(self):
+        # Receiving a setStackedOn message notifies the listener.
+        self.protocol.do_setStackedOn('/~foo/bar/baz')
+        self.assertEqual(
+            [('setStackedOn', '/~foo/bar/baz')], self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorSucceeded(self):
@@ -437,6 +457,27 @@ class TestPullerMaster(TrialTestCase):
                 self.status_client.calls)
 
         return deferred.addCallback(checkMirrorStarted)
+
+    def test_setStackedOn(self):
+        stacked_on_location = '/~foo/bar/baz'
+        deferred = self.eventHandler.setStackedOn(stacked_on_location)
+
+        def checkSetStackedOn(ignored):
+            self.assertEqual(
+                [('setStackedOn', self.arbitrary_branch_id,
+                  stacked_on_location)],
+                self.status_client.calls)
+
+        return deferred.addCallback(checkSetStackedOn)
+
+    def test_setStackedOnBranchNotFound(self):
+        stacked_on_location = 'raise-branch-not-found'
+        deferred = self.eventHandler.setStackedOn(stacked_on_location)
+
+        def checkSetStackedOn(ignored):
+            self.assertEqual([], self.status_client.calls)
+
+        return deferred.addCallback(checkSetStackedOn)
 
     def test_mirrorComplete(self):
         arbitrary_revision_id = 'rev1'

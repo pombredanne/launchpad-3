@@ -62,3 +62,33 @@ request for a mirror:
 
     >>> print start_time < branch.next_mirror_time < end_time
     True
+
+
+== Contents of a branch ==
+
+Branches have the following attributes.
+
+    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> project = webservice.get('/beta/firefox').jsonBody()
+    >>> result = webservice.get(project['branches_collection_link'])
+    >>> branches = result.jsonBody()
+    >>> pprint_entry(branches['entries'][0])
+    author_link: u'http://.../~name12'
+    branch_format: None
+    control_format: None
+    date_created: u'...'
+    date_last_modified: u'...'
+    is_private: False
+    mirror_status_message: None
+    name: u'main'
+    owner_link: u'http://.../~name12'
+    registrant_link: u'http://.../~name12'
+    repository_format: None
+    resource_type_link: u'http://.../#branch'
+    reviewer_link: None
+    self_link: u'http://.../~name12/firefox/main'
+    summary: u'text'
+    title: u'Mozilla Firefox Mainline'
+    url: u'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0'
+    whiteboard: None
+

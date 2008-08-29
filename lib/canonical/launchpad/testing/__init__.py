@@ -122,6 +122,16 @@ class TestCase(unittest.TestCase):
         self.assertTrue(expected is observed,
                         "%r is not %r" % (expected, observed))
 
+    def assertIn(self, needle, haystack):
+        """Assert that 'needle' is in 'haystack'."""
+        self.assertTrue(
+            needle in haystack, '%r not in %r' % (needle, haystack))
+
+    def assertNotIn(self, needle, haystack):
+        """Assert that 'needle' is not in 'haystack'."""
+        self.assertFalse(
+            needle in haystack, '%r in %r' % (needle, haystack))
+
     def run(self, result=None):
         if result is None:
             result = self.defaultTestResult()
