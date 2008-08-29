@@ -38,7 +38,7 @@ belongs to a particular team.
     # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
     # it should be re-enabled after the operation is exported again.
     # >>> response = webservice.named_get(
-    # ...     '~salgado', 'findPathToTeam',
+    # ...     '/~salgado', 'findPathToTeam',
     # ...     team=webservice.getAbsoluteUrl('/~mailing-list-experts'))
 
     # >>> path = response.jsonBody()

@@ -483,12 +483,12 @@ To check whether or not a given person is a participant in a team, use the
     # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
     # it should be re-enabled after the operation is exported again.
     # >>> print webservice.named_get(
-    # ...     '~salgado', 'inTeam', team=ubuntu_team['self_link']
+    # ...     '/~salgado', 'inTeam', team=ubuntu_team['self_link']
     # ...     ).jsonBody()
     # False
 
     # >>> print webservice.named_get(
-    # ...     '~cprov', 'inTeam', team=ubuntu_team['self_link']
+    # ...     '/~cprov', 'inTeam', team=ubuntu_team['self_link']
     # ...     ).jsonBody()
     # True
 
@@ -499,7 +499,7 @@ participant, use the 'findPathToTeam' custom operation.
     # it should be re-enabled after the operation is exported again.
     # >>> ml_experts = webservice.get("/~mailing-list-experts").jsonBody()
     # >>> json = webservice.named_get(
-    # ...     '~salgado', 'findPathToTeam', team=ml_experts['self_link']
+    # ...     '/~salgado', 'findPathToTeam', team=ml_experts['self_link']
     # ...     ).jsonBody()
     # >>> for entry in json['entries']:
     # ...     print entry['self_link']
