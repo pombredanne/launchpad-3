@@ -535,6 +535,7 @@ Using the same Ubuntu source publishing example as above:
 
     >>> for file in source.getSourceAndBinaryLibraryFiles():
     ...     print file.filename
+    foo-bin_all.deb
     foo.dsc
 
 We can also publish a package in a PPA and query on its files:
@@ -548,6 +549,7 @@ We can also publish a package in a PPA and query on its files:
 
     >>> for file in ppa_source.getSourceAndBinaryLibraryFiles():
     ...     print file.filename
+    foo-bin_all.deb
     foo.dsc
 
 Notice that some files appear twice if they are published in more than one

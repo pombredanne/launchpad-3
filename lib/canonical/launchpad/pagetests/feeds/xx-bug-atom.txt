@@ -347,17 +347,17 @@ First, make a team responsible for some bugs.
 Subscribe simple-team to a number of bugs.
 
     >>> one_mem_browser.open('http://launchpad.dev/bugs/1')
-    >>> one_mem_browser.getLink('Someone else').click()
+    >>> one_mem_browser.getLink('Subscribe someone else').click()
     >>> one_mem_browser.getControl('Person').value = 'simple-team'
     >>> one_mem_browser.getControl('Add').click()
 
     >>> one_mem_browser.open('http://launchpad.dev/bugs/2')
-    >>> one_mem_browser.getLink('Someone else').click()
+    >>> one_mem_browser.getLink('Subscribe someone else').click()
     >>> one_mem_browser.getControl('Person').value = 'simple-team'
     >>> one_mem_browser.getControl('Add').click()
 
     >>> one_mem_browser.open('http://launchpad.dev/bugs/3')
-    >>> one_mem_browser.getLink('Someone else').click()
+    >>> one_mem_browser.getLink('Subscribe someone else').click()
     >>> one_mem_browser.getControl('Person').value = 'simple-team'
     >>> one_mem_browser.getControl('Add').click()
 

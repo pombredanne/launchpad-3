@@ -12,15 +12,6 @@
             set_schema="canonical.launchpad.interfaces.IMessage" />
     </content>
 
-    <!-- Page to render a HTML snippet for a single MessageChunk -->
-    <browser:page
-        name="+snippet"
-        for="canonical.launchpad.interfaces.IMessageChunk"
-        facet="overview"
-        template="../templates/messagechunk-snippet.pt"
-        permission="launchpad.AnyPerson"
-        />
-
     <!-- MessageChunk -->
     <content class="canonical.launchpad.database.MessageChunk">
         <allow interface="canonical.launchpad.interfaces.IMessageChunk" />

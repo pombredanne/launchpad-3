@@ -10,6 +10,13 @@
       interface="canonical.launchpad.interfaces.IDistroSeriesBinaryPackage" />
   </content>
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistroSeriesBinaryPackage"
+    factory="canonical.launchpad.browser.DistroSeriesBinaryPackageBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroSeriesBinaryPackage"
     name="+index" />

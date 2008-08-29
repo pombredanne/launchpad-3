@@ -18,6 +18,7 @@ ubuntuteam_default = [
     ]
 
 ubuntuteam_email = [
+    u'admin@canonical.com',
     u'celso.providelo@canonical.com',
     u'colin.watson@ubuntulinux.com',
     u'cprov@ubuntu.com',

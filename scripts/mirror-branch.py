@@ -84,4 +84,4 @@ if __name__ == '__main__':
     install_worker_ui_factory(protocol)
     PullerWorker(
         source_url, destination_url, int(branch_id), unique_name, branch_type,
-        protocol, oops_prefix).mirror()
+        protocol, oops_prefix=oops_prefix).mirror()

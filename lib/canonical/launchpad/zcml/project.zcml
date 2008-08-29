@@ -21,6 +21,9 @@
             permission="launchpad.AnyPerson"
             attributes="addSubscription addBugSubscription
                         removeBugSubscription" />
+        <require
+            permission="launchpad.Admin"
+            set_attributes="registrant" />
     </content>
 
     <adapter
@@ -28,6 +31,20 @@
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
         />
+
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IProject"
+      factory="canonical.launchpad.browser.ProjectBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IProjectSet"
+      factory="canonical.launchpad.browser.ProjectSetBreadcrumbBuilder"
+      permission="zope.Public"
+      />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -193,7 +210,7 @@
         for="canonical.launchpad.interfaces.IProject"
         permission="launchpad.Edit"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+        class="canonical.launchpad.browser.ProjectMaintainerReassignmentView">
           <browser:page
               name="+reassign"
               template="../templates/object-reassignment.pt"

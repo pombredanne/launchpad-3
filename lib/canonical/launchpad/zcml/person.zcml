@@ -34,6 +34,27 @@
     permission="zope.Public"
     />
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IPerson"
+    factory="canonical.launchpad.browser.PersonBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ITeam"
+    factory="canonical.launchpad.browser.TeamBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IPersonSet"
+    factory="canonical.launchpad.browser.PersonSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <content class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.person.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.person.ITeamPublic"/>
@@ -80,7 +101,7 @@
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
         PersonSetFacets PersonSetContextMenu PersonTranslationsMenu
         PersonOverviewNavigationMenu PersonEditNavigationMenu
-        TeamOverviewNavigationMenu"
+        PersonRelatedSoftwareNavigationMenu TeamOverviewNavigationMenu"
     />
 
   <browser:url
@@ -94,8 +115,8 @@
     name="+index" />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"
-    name="+specs"
     layer="canonical.launchpad.layers.BlueprintLayer"
+    name="+specs"
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"
@@ -175,6 +196,14 @@
     />
 
   <browser:page
+    name="+editlocation"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonEditLocationView"
+    permission="launchpad.EditLocation"
+    template="../templates/person-editlocation.pt"
+    />
+
+  <browser:page
     name="+branding"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonBrandingView"
@@ -248,11 +277,50 @@
   </browser:pages>
 
   <browser:page
+    for="*"
+    name="+person-macros"
+    permission="zope.Public"
+    template="../templates/person-macros.pt"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     permission="zope.Public"
     class="canonical.launchpad.browser.person.PersonRelatedSoftwareView"
     name="+related-software"
     template="../templates/person-related-software.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.person.PersonMaintainedPackagesView"
+    name="+maintained-packages"
+    template="../templates/person-maintained-packages.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.person.PersonUploadedPackagesView"
+    name="+uploaded-packages"
+    template="../templates/person-uploaded-packages.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.person.PersonPPAPackagesView"
+    name="+ppa-packages"
+    template="../templates/person-ppa-packages.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.person.PersonRelatedProjectsView"
+    name="+related-projects"
+    template="../templates/person-related-projects.pt"
     />
 
   <browser:renamed-page
@@ -290,6 +358,10 @@
     <browser:page
       name="+xrds"
       attribute="xrds"
+      />
+    <browser:page
+      name="+portlet-map"
+      template="../templates/person-portlet-map.pt"
       />
   </browser:pages>
 
@@ -649,6 +721,29 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
+    class="canonical.launchpad.browser.TeamMapView"
+    name="+map"
+    template="../templates/team-map.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.TeamMapData"
+    template="../templates/team-map-data.pt"
+    name="+mapdata"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.TeamEditLocationView"
+    name="+editlocation"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
     name="+listing-simple"
     template="../templates/team-listing-simple.pt"
     />
@@ -659,6 +754,14 @@
     name="+mugshots"
     template="../templates/team-mugshots.pt"
     class="canonical.launchpad.browser.TeamMugshotView"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    class="canonical.launchpad.browser.TeamMapView"
+    permission="zope.Public"
+    name="+portlet-map"
+    template="../templates/team-portlet-map.pt"
     />
 
   <browser:page

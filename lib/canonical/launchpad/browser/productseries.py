@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
+    'ProductSeriesBreadcrumbBuilder',
     'ProductSeriesBugsMenu',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
@@ -14,7 +15,6 @@ __all__ = [
     'ProductSeriesOverviewMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
-    'ProductSeriesShortLink',
     'ProductSeriesSOP',
     'ProductSeriesSourceListView',
     'ProductSeriesSourceSetView',
@@ -35,8 +35,7 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import (
-    DefaultShortLink, StructuralObjectPresentation)
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
@@ -50,6 +49,7 @@ from canonical.launchpad.webapp import (
     Link, Navigation, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -61,9 +61,6 @@ def quote(text):
 class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     usedfor = IProductSeries
-
-    def breadcrumb(self):
-        return 'Series ' + self.context.name
 
     @stepto('.bzr')
     def dotbzr(self):
@@ -101,6 +98,13 @@ class ProductSeriesSOP(StructuralObjectPresentation):
 
     def countAltChildren(self):
         raise NotImplementedError
+
+
+class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProductSeries`."""
+    @property
+    def text(self):
+        return 'Series ' + self.context.name
 
 
 class ProductSeriesFacets(StandardLaunchpadFacets):
@@ -206,7 +210,7 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined', 'new']
+    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -234,11 +238,6 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         summary = 'Show the assignee, drafter and approver of these specs'
         return Link('+assignments', text, summary, icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Show the sequence in which specs should be implemented'
-        return Link('+roadmap', text, summary, icon='info')
 
     def new(self):
         text = 'Register a blueprint'
@@ -637,12 +636,6 @@ class ProductSeriesSourceListView(LaunchpadView):
         results = getUtility(ICodeImportSet).getActiveImports(text=self.text)
 
         self.batchnav = BatchNavigator(results, self.request)
-
-
-class ProductSeriesShortLink(DefaultShortLink):
-
-    def getLinkText(self):
-        return self.context.displayname
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):

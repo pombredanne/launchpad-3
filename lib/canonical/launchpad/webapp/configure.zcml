@@ -186,13 +186,6 @@
         name="image"
         />
 
-    <adapter
-        for="canonical.launchpad.browser.PillarSearchItem"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PillarSearchItemAPI"
-        name="image"
-        />
-
     <!-- TALES badges: namespace -->
 
     <adapter
@@ -503,6 +496,12 @@
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        />
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.IFeedsApplication"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />

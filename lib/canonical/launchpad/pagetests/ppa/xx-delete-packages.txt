@@ -81,8 +81,16 @@ matching the given text.
     Source           Published   Status     Series          Section  Built
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-Foo Bar can select one or more sources to be deleted and the
-'deletion_comment' field is mandatory.
+The user may delete packages from a PPA without providing a reason
+(deletion comment). Let's try it on sabdfl's archive.
+
+    >>> admin_browser.open('http://launchpad.dev/~sabdfl/+archive')
+    >>> admin_browser.getLink('Delete packages').click()
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status    Series     Section  Built
+    iceweasel - 1.0 (chan...)  2007-07-09  Published  Breezy-autotest Editors
+
+Please note that the 'deletion_comment' field (which is optional) is empty.
 
     >>> admin_browser.getControl('Deletion comment').value
     ''
@@ -90,22 +98,23 @@ Foo Bar can select one or more sources to be deleted and the
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = ''
     >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['27']
+    ...    name='field.selected_sources').value = ['31']
     >>> admin_browser.getControl("Request Deletion").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    There is 1 error.
-    Package deletion can take some time before the packages are actually
-        removed.
-    See the full PPA help page.
-    Deletion comment is required.
+    Source and binaries deleted by Foo Bar request:
+    iceweasel 1.0 in breezy-autotest
+    Deletion comment: None
+
+The single package in sabdfl's archive was deleted successfully.
 
     >>> print_ppa_packages(admin_browser.contents)
-    Source            Published     Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Published     Breezy-autotest Editors  i386
-    iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
-    pmount - 0.1-1   2007-07-09  Published     Warty           Editors
+
+Now back to cprov's archive for the remaining tests.
+
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> admin_browser.getLink('Delete packages').click()
 
 Deletion requires, at least, one selected a source, otherwise an error
 is issued.

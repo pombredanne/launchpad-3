@@ -63,3 +63,36 @@ not be called.
     >>> result
     u''
 
+A view can have `error_message` or `info_message` set for display in
+the template (each template is responsible for including the messages,
+using a `structure` directive). The supplied value must be None or
+an IStructuredString implementation.
+
+    >>> view = MyView(context, request)
+    >>> print view.error_message
+    None
+    >>> print view.info_message
+    None
+
+    >>> view.error_message = 'A simple string.'
+    Traceback (most recent call last):
+    ...
+    ValueError: <type 'str'> is not a valid value for error_message, only None and IStructuredString are allowed.
+    >>> print view.error_message
+    None
+
+    >>> view.info_message = 'A simple string.'
+    Traceback (most recent call last):
+    ...
+    ValueError: <type 'str'> is not a valid value for info_message, only None and IStructuredString are allowed.
+    >>> print view.info_message
+    None
+
+    >>> from canonical.launchpad.webapp.menu import structured
+    >>> view.error_message = structured(
+    ...    'A structure is just "%s".', 'smoke & mirrors')
+    >>> view.error_message.escapedtext
+    u'A structure is just "smoke &amp; mirrors".'
+    >>> view.error_message = structured('Information overload.')
+    >>> view.error_message.escapedtext
+    u'Information overload.'

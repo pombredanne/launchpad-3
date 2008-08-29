@@ -20,6 +20,7 @@ from zope.interface import implements
 from storm.expr import And, Join, LeftJoin
 from storm.info import ClassAlias
 from storm.store import Store
+from storm.zope.interfaces import IZStorm
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
@@ -111,6 +112,8 @@ class Branch(SQLBase):
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
     revision_count = IntCol(default=DEFAULT, notNull=True)
+    stacked_on = ForeignKey(
+        dbName='stacked_on', foreignKey='Branch', default=None)
 
     def __repr__(self):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
@@ -540,8 +543,12 @@ class Branch(SQLBase):
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
-        return BranchRevision(
+        branch_revision = BranchRevision(
             branch=self, sequence=sequence, revision=revision)
+        # Allocate karma if no karma has been allocated for this revision.
+        if not revision.karma_allocated:
+            revision.allocateKarma(self)
+        return branch_revision
 
     def getTipRevision(self):
         """See `IBranch`."""
@@ -1016,6 +1023,20 @@ class BranchSet:
             return default
         else:
             return branch
+
+    def getRewriteMap(self):
+        """See `IBranchSet`."""
+        # Avoid circular imports.
+        from canonical.launchpad.database import Person, Product
+        store = getUtility(IZStorm).get('main')
+        # Left-join Product so that we still publish +junk branches.
+        prejoin = store.using(
+            LeftJoin(Branch, Product, Branch.product == Product.id), Person)
+        return (branch for (owner, product, branch) in prejoin.find(
+            (Person, Product, Branch),
+            Branch.branch_type != BranchType.REMOTE,
+            Branch.owner == Person.id,
+            Branch.private == False))
 
     def getBranchesToScan(self):
         """See `IBranchSet`"""

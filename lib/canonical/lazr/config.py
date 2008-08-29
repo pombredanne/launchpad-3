@@ -176,8 +176,8 @@ class ImplicitTypeSection(Section):
         elif match.group('int'):
             return int(value)
         else:
-            # match.group('str'); just return the value.
-            return value
+            # match.group('str'); just return the sripped value.
+            return value.strip()
 
     def __getitem__(self, key):
         """See `ISection`."""

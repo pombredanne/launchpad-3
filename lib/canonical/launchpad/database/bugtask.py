@@ -575,7 +575,8 @@ class BugTask(SQLBase, BugTaskMixin):
         conjoined_master = None
         if IDistroBugTask.providedBy(self):
             if bugtasks_by_package is None:
-                bugtasks_by_package = self.getBugTasksByPackageName(bugtasks)
+                bugtasks_by_package = (
+                    self.bug.getBugTasksByPackageName(bugtasks))
             bugtasks = bugtasks_by_package[self.sourcepackagename]
             possible_masters = [
                 bugtask for bugtask in bugtasks
@@ -603,14 +604,6 @@ class BugTask(SQLBase, BugTaskMixin):
             conjoined_master.status in self._NON_CONJOINED_STATUSES):
             conjoined_master = None
         return conjoined_master
-
-    def getBugTasksByPackageName(self, bugtasks):
-        """See IBugTask."""
-        bugtasks_by_package = {}
-        for bugtask in bugtasks:
-            bugtasks_by_package.setdefault(bugtask.sourcepackagename, [])
-            bugtasks_by_package[bugtask.sourcepackagename].append(bugtask)
-        return bugtasks_by_package
 
     @property
     def conjoined_master(self):

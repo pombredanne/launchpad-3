@@ -44,10 +44,10 @@ about Firefox's publishing history.
   >>> browser.getLink("Show publishing history").click()
   >>> print extract_text(find_tag_by_id(browser.contents, 'publishing-summary'))
   Date                    Status    Target  Pocket  Component Section Version
-  2006-02-13 12:19:00 UTC Published WartyII release main      web     0.9
+  2006-02-13 12:19:00 UTC Published Warty   release main      web     0.9
   Published on 2006-02-13
   ...
-  2004-09-27 11:57:13 UTC Pending   WartyII release main      editors 0.9
+  2004-09-27 11:57:13 UTC Pending   Warty   release main      editors 0.9
   ...
 
 Jump back to the DistributionSourcePackage page to continue the tests:
@@ -448,10 +448,10 @@ distroseries and archive are shown.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'publishing-summary'))
     Date           Status     Target    Pocket  Component Section Version
-    2006-02-15 ... Pending    WartyII   release main      editors 1.0.9a-4ubuntu1
+    2006-02-15 ... Pending    Warty     release main      editors 1.0.9a-4ubuntu1
       Copied from ubuntu hoary in Primary Archive for The Test Distribution
     ...
-    2005-09-16 ... Published  WartyII   release main      base    1.0.9a-4
+    2005-09-16 ... Published  Warty     release main      base    1.0.9a-4
       Published on 2005-09-16
       Copied from debian sid in Primary Archive for The Test Distribution
     ...
@@ -465,6 +465,6 @@ distroseries and archive are shown.
     2005-09-15 ... Published  Hoary     release main      base    1.0.9a-4ubuntu1
       Published on 2005-09-15
     ...
-    2005-09-15 ... Published  WartyII   release main      base    1.0.8-1ubuntu1
+    2005-09-15 ... Published  Warty     release main      base    1.0.8-1ubuntu1
       Published on 2005-09-15
     ...

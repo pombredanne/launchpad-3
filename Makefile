@@ -99,6 +99,9 @@ check: build
 	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py $(VERBOSITY)
 
+check_geoip_db:
+	@bash ./utilities/check-geoip-db
+
 lint:
 	@bash ./utilities/lint.sh
 
@@ -113,7 +116,7 @@ pagetests: build
 
 inplace: build
 
-build: bzr_version_info
+build: bzr_version_info check_geoip_db
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
@@ -206,10 +209,10 @@ scheduleoutage:
 	echo Sleeping ${MINS_TO_SHUTDOWN} mins
 	sleep ${MINS_TO_SHUTDOWN}m
 
-harness:
+harness: check_geoip_db
 	$(APPSERVER_ENV) $(PYTHON) -i lib/canonical/database/harness.py
 
-iharness:
+iharness: check_geoip_db
 	$(APPSERVER_ENV) $(IPYTHON) -i lib/canonical/database/harness.py
 
 rebuildfti:
@@ -227,7 +230,7 @@ clean:
 	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
-	rm -rf lib/mailman
+	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
 
 realclean: clean
