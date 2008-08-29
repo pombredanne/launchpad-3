@@ -183,7 +183,7 @@ templatefiles=`echo "$files" | grep -E '(pt)$'`
 template_notices=""
 if [ ! -z "$templatefiles" ]; then
     obsolete='"(portlets_one|portlets_two|pageheading|help)"'
-    template_notices=`grep -E "fill-slot=$obsolete" $templatefiles`
+    template_notices=`grep -HE "fill-slot=$obsolete" $templatefiles`
 fi
 if [ ! -z "$template_notices" ]; then
     echo ""
