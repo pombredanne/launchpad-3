@@ -530,13 +530,10 @@ class IBranch(IHasOwner):
             required=False,
             readonly=False))
 
-    private = exported(
-        Bool(
-            title=_("Keep branch confidential"), required=False,
-            description=_(
-                "Make this branch visible only to its subscribers."),
-            default=False),
-        exported_as='is_private')
+    private = Bool(
+        title=_("Keep branch confidential"), required=False,
+        description=_("Make this branch visible only to its subscribers."),
+        default=False)
 
     # People attributes
     registrant = exported(
