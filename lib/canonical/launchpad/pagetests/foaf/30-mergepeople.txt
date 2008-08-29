@@ -29,6 +29,19 @@ The same will happen if we try to merge a team.
     >>> 'There are <strong>1</strong> input errors' in browser.contents
     True
 
+In preparation for the actual merge (below), we add an extra email
+address to the 'foo' account, to show how things work when the dupe
+account has more than one email address.
+
+    >>> from canonical.launchpad.database.emailaddress import EmailAddressSet
+    >>> from canonical.launchpad.database.person import PersonSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
+    >>> foo = PersonSet().getByName('foo')
+    >>> email = EmailAddressSet().new(
+    ...     'bar.foo@canonical.com', person=foo,
+    ...     status=EmailAddressStatus.VALIDATED)
+
 Then we find the duplicate account and request the merge.
 This redirects to the page which displays all email addresses owned by the
 duplicate account. Here the user choses the ones which he want to claim.
