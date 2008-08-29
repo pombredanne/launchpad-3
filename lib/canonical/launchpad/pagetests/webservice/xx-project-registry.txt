@@ -260,7 +260,7 @@ host.
 == ProductRelease entries ==
 
     >>> releases = webservice.get(
-    ...     '/beta/firefox/1.0/releases').jsonBody()
+    ...     'firefox/1.0/releases').jsonBody()
     >>> pprint_entry(releases)
     entries: [...]
     resource_type_link: u'http://.../beta/#product_release-page-resource'
