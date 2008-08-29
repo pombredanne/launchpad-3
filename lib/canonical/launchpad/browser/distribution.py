@@ -827,8 +827,8 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
             country_name = country.name
         request.response.setHeader('X-Generated-For-Country', country_name)
         request.response.setHeader('X-Generated-For-IP', ip_address)
-        # XXX: These are here only for debugging
-        # https://launchpad.net/bugs/173729. -- Guilherme Salgado, 2008-01-09
+        # XXX: Guilherme Salgado 2008-01-09 bug=173729: These are here only
+        # for debugging.
         request.response.setHeader(
             'X-REQUEST-HTTP_X_FORWARDED_FOR',
             request.get('HTTP_X_FORWARDED_FOR'))

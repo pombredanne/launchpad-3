@@ -552,9 +552,9 @@ class SourcePackageRelease(SQLBase):
         tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
         # Get the list of files to attach.
-        # XXX CarlosPerelloMarin bug=213881: This should use generic
-        # translation file format infrastructure, so we don't need to keep
-        # this list of file extensions up to date here.
+        # XXX CarlosPerelloMarin 2008-04-08 bug=213881: This should use
+        # generic translation file format infrastructure, so we don't need to
+        # keep this list of file extensions up to date here.
         filenames = [
             name for name in tarball.getnames()
             if name.startswith('source/') or name.startswith('./source/')
