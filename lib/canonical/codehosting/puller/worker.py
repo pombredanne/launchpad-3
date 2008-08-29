@@ -37,6 +37,7 @@ __all__ = [
     'MirroredURLChecker',
     'PullerWorker',
     'PullerWorkerProtocol',
+    'StackingLoopError',
     'URLChecker',
     ]
 
@@ -72,6 +73,10 @@ class BranchReferenceLoopError(Exception):
     A branch reference may point to another branch reference, and so on. A
     branch reference cycle is an infinite loop of references.
     """
+
+
+class StackingLoopError(Exception):
+    """Encountered a branch stacking cycle."""
 
 
 def get_canonical_url_for_branch_name(unique_name):
@@ -199,7 +204,7 @@ class BranchOpener(object):
             when it finds a URL it deems to be unsafe.
         """
         self.checkOneURL(url)
-        traversed_references = set()
+        traversed_urls = set()
         while True:
             while True:
                 reference_value = self.followReference(url)
@@ -207,8 +212,8 @@ class BranchOpener(object):
                     break
                 if not self.shouldFollowReferences():
                     raise BranchReferenceForbidden(reference_value)
-                traversed_references.add(url)
-                if reference_value in traversed_references:
+                traversed_urls.add(url)
+                if reference_value in traversed_urls:
                     raise BranchReferenceLoopError()
                 self.checkOneURL(reference_value)
                 url = reference_value

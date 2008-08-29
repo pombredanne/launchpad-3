@@ -23,7 +23,7 @@ from canonical.codehosting.puller.worker import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
     ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
-    get_vfs_format_classes, install_worker_ui_factory)
+    StackingLoopError, get_vfs_format_classes, install_worker_ui_factory)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
@@ -318,6 +318,21 @@ class TestBranchOpenerStacking(TestCaseWithTransport):
         c.set_stacked_on_url(b.base)
         opener = self.makeBranchOpener([c.base, b.base])
         self.assertRaises(BadUrl, opener.checkSource, c.base)
+
+    def testSelfStackedBranch(self):
+        a = self.make_branch('a', format='development')
+        a.set_stacked_on_url(a.base)
+        opener = self.makeBranchOpener([a.base])
+        self.assertRaises(StackingLoopError, opener.checkSource, a.base)
+
+    def testLoopStackedBranch(self):
+        a = self.make_branch('a', format='development')
+        b = self.make_branch('b', format='development')
+        a.set_stacked_on_url(b.base)
+        b.set_stacked_on_url(a.base)
+        opener = self.makeBranchOpener([a.base, b.base])
+        self.assertRaises(StackingLoopError, opener.checkSource, a.base)
+        self.assertRaises(StackingLoopError, opener.checkSource, b.base)
 
 
 class TestReferenceMirroring(TestCaseWithTransport):
