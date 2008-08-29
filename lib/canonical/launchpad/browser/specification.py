@@ -662,8 +662,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
             # if the current state is SUPERSEDED and we are now removing the
             # superseded-by then we should move this spec back into the
             # drafting pipeline by resetting its status to NEW
-            if (self.context.definition_status ==
-                    SpecificationDefinitionStatus.SUPERSEDED):
+            if self.context.definition_status == SUPERSEDED:
                 self.context.definition_status = NEW
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:

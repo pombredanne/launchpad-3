@@ -26,9 +26,8 @@ from canonical.launchpad.interfaces import (
     ISpecification,
     )
 from canonical.launchpad.webapp import (
-    canonical_url, Link,
-    StandardLaunchpadFacets, ApplicationMenu,
-    LaunchpadView, LaunchpadFormView, action)
+    ApplicationMenu, LaunchpadFormView, LaunchpadView, Link,
+    StandardLaunchpadFacets, action, canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 
