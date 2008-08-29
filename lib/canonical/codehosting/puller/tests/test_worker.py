@@ -12,7 +12,9 @@ import bzrlib.branch
 from bzrlib.branch import BranchReferenceFormat
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NotBranchError
+from bzrlib.remote import RemoteBranch
 from bzrlib.revision import NULL_REVISION
+from bzrlib.smart import server
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.transport import get_transport
 
@@ -21,11 +23,57 @@ from canonical.codehosting.puller.worker import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
     ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
-    install_worker_ui_factory)
+    get_vfs_format_classes, install_worker_ui_factory)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import reset_logging
+
+
+def get_netstrings(line):
+    """Parse `line` as a sequence of netstrings.
+
+    :return: A list of strings.
+    """
+    strings = []
+    while len(line) > 0:
+        colon_index = line.find(':')
+        length = int(line[:colon_index])
+        strings.append(line[colon_index+1:colon_index+1+length])
+        assert ',' == line[colon_index+1+length], (
+            'Expected %r == %r' % (',', line[colon_index+1+length]))
+        line = line[colon_index+length+2:]
+    return strings
+
+
+class TestGetVfsFormatClasses(TestCaseWithTransport):
+    """Tests for `canonical.codehosting.puller.worker.get_vfs_format_classes`.
+    """
+
+    def tearDown(self):
+        # This makes sure the connections held by the branches opened in the
+        # test are dropped, so the daemon threads serving those branches can
+        # exit.
+        import gc
+        gc.collect()
+        super(TestGetVfsFormatClasses, self).tearDown()
+
+    def test_get_vfs_format_classes(self):
+        # get_vfs_format_classes for a returns the underlying format classes
+        # of the branch, repo and bzrdir, even if the branch is a
+        # RemoteBranch.
+        self.transport_server = server.SmartTCPServer_for_testing
+        vfs_branch = self.make_branch('.')
+        remote_branch = bzrlib.branch.Branch.open(self.get_url('.'))
+        # Check that our set up worked: remote_branch is Remote and
+        # source_branch is not.
+        self.assertIsInstance(remote_branch, RemoteBranch)
+        self.failIf(isinstance(vfs_branch, RemoteBranch))
+        # Now, get_vfs_format_classes on both branches returns the same format
+        # information.
+        self.assertEqual(
+            get_vfs_format_classes(vfs_branch),
+            get_vfs_format_classes(remote_branch))
 
 
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
@@ -100,6 +148,45 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         self.assertEqual(get_transport('http://example.com').base, http.base)
         self.assertEqual(new_http.__class__, http.__class__)
 
+    def testDoesntSendStackedInfoUnstackableFormat(self):
+        # Mirroring an unstackable branch doesn't send the stacked-on location
+        # to the master.
+        source_branch = self.make_branch('source-branch')
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual([], get_netstrings(protocol_output.getvalue()))
+
+    def testDoesntSendStackedInfoNotStacked(self):
+        # Mirroring a non-stacked branch doesn't send the stacked-on location
+        # to the master.
+        source_branch = self.make_branch(
+            'source-branch', format='development')
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual([], get_netstrings(protocol_output.getvalue()))
+
+    def testSendsStackedInfo(self):
+        # Mirroring a non-stacked branch doesn't send the stacked-on location
+        # to the master.
+        base_branch = self.make_branch('base_branch', format='development')
+        stacked_branch = self.make_branch(
+            'stacked-branch', format='development')
+        stacked_branch.set_stacked_on_url(base_branch.base)
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            stacked_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual(
+            ['setStackedOn', str(to_mirror.branch_id),
+             stacked_branch.get_stacked_on_url()],
+            get_netstrings(protocol_output.getvalue()))
 
 
 class TestBranchOpenerCheckSource(unittest.TestCase):
@@ -190,6 +277,7 @@ class TestBranchOpenerCheckSource(unittest.TestCase):
         self.assertRaises(
             BranchReferenceLoopError, opener.checkSource, 'a')
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
+
 
 class TestReferenceMirroring(TestCaseWithTransport):
     """Feature tests for mirroring of branch references."""
@@ -311,22 +399,8 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
 
     def assertSentNetstrings(self, expected_netstrings):
         """Assert that the protocol sent the given netstrings (in order)."""
-        observed_netstrings = self.getNetstrings(self.output.getvalue())
+        observed_netstrings = get_netstrings(self.output.getvalue())
         self.assertEqual(expected_netstrings, observed_netstrings)
-
-    def getNetstrings(self, line):
-        """Parse `line` as a sequence of netstrings.
-
-        :return: A list of strings.
-        """
-        strings = []
-        while len(line) > 0:
-            colon_index = line.find(':')
-            length = int(line[:colon_index])
-            strings.append(line[colon_index+1:colon_index+1+length])
-            self.assertEqual(',', line[colon_index+1+length])
-            line = line[colon_index+length+2:]
-        return strings
 
     def resetBuffers(self):
         # Empty the test output and error buffers.
@@ -363,6 +437,12 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         # progress.
         self.protocol.progressMade()
         self.assertSentNetstrings(['progressMade', '0'])
+
+    def test_setStackedOn(self):
+        # Calling 'setStackedOn' sends the location of the stacked-on branch,
+        # if any.
+        self.protocol.setStackedOn('/~foo/bar/baz')
+        self.assertSentNetstrings(['setStackedOn', '1', '/~foo/bar/baz'])
 
 
 class TestWorkerProgressReporting(TestCaseWithTransport):

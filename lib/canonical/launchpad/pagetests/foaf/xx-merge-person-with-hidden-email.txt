@@ -7,8 +7,6 @@ email addresses.
 
     # First we'll create profiles for FooBar and FooBarDupe, the latter with
     # hidden email addresses.
-    >>> from canonical.launchpad.ftests import (
-    ...     login, login_person, logout, ANONYMOUS)
     >>> login(ANONYMOUS)
     >>> foobar = factory.makePerson(
     ...     email='foobar@baz.com', name='foobar', password='test')
