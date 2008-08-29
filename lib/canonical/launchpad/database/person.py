@@ -26,14 +26,12 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.expr import And, LeftJoin, Not, Or
 from storm.store import Store
-from storm.zope.interfaces import IZStorm
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -406,21 +404,35 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IHasLocation`."""
         if self.location is None:
             return None
-        return self.location.time_zone
+        # Wrap the location with a security proxy to make sure the user has
+        # enough rights to see it.
+        return ProxyFactory(self.location).time_zone
 
     @property
     def latitude(self):
         """See `IHasLocation`."""
         if self.location is None:
             return None
-        return self.location.latitude
+        # Wrap the location with a security proxy to make sure the user has
+        # enough rights to see it.
+        return ProxyFactory(self.location).latitude
 
     @property
     def longitude(self):
         """See `IHasLocation`."""
         if self.location is None:
             return None
-        return self.location.longitude
+        # Wrap the location with a security proxy to make sure the user has
+        # enough rights to see it.
+        return ProxyFactory(self.location).longitude
+
+    def setLocationVisibility(self, visible):
+        """See `ISetLocation`."""
+        assert not self.is_team, 'Cannot edit team location.'
+        if self.location is None:
+            self._location = PersonLocation(person=self, visible=visible)
+        else:
+            self.location.visible = visible
 
     def setLocation(self, latitude, longitude, time_zone, user):
         """See `ISetLocation`."""
@@ -1643,6 +1655,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             -- We only need to check for a latitude here because there's a DB
             -- constraint which ensures they are both set or unset.
             PersonLocation.latitude IS NOT NULL AND
+            PersonLocation.visible IS TRUE AND
             Person.id = PersonLocation.person AND
             Person.teamowner IS NULL
             """ % sqlvalues(self.id),
@@ -2259,13 +2272,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 WHERE
                     sspph.sourcepackagerelease = sourcepackagerelease.id AND
                     sspph.archive = archive.id AND
-                    sspph.status = %(pub_status)s AND
                     %(more_query_clauses)s
                 ORDER BY upload_distroseries, sourcepackagename,
                     upload_archive, dateuploaded DESC
               )
-              """ % dict(pub_status=quote(PackagePublishingStatus.PUBLISHED),
-                         more_query_clauses=query_clauses)
+              """ % dict(more_query_clauses=query_clauses)
 
         rset = SourcePackageRelease.select(
             query,
@@ -2368,20 +2379,22 @@ class PersonSet:
     def __init__(self):
         self.title = 'People registered with Launchpad'
 
-    def topPeople(self):
+    def getTopContributors(self, limit=50):
         """See `IPersonSet`."""
         # The odd ordering here is to ensure we hit the PostgreSQL
         # indexes. It will not make any real difference outside of tests.
         query = """
-            id in (
+            id IN (
                 SELECT person FROM KarmaTotalCache
                 ORDER BY karma_total DESC, person DESC
-                LIMIT 5
+                LIMIT %s
                 )
-            """
+            """ % limit
         top_people = shortlist(Person.select(query))
-        top_people.sort(key=lambda obj: (obj.karma, obj.id), reverse=True)
-        return top_people
+        return sorted(
+            top_people,
+            key=lambda obj: (obj.karma, obj.displayname, obj.id),
+            reverse=True)
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -2514,26 +2527,6 @@ class PersonSet:
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
-
-    def getAllValidPersonsAndTeams(self):
-        """See `IPersonSet`."""
-        store = getUtility(IZStorm).get('main')
-        tables = [
-            Person,
-            LeftJoin(EmailAddress, EmailAddress.person == Person.id),
-            LeftJoin(Account, EmailAddress.account == Account.id),
-            ]
-        result = store.using(*tables).find(
-            Person,
-            And(
-                Person.merged == None,
-                Or(# A valid person-or-team is either a team...
-                   Not(Person.teamowner == None), # 'Not' due to Bug 244768
-
-                   # or has an active account and a preferred email address.
-                   And(Account.status == AccountStatus.ACTIVE,
-                       EmailAddress.status == EmailAddressStatus.PREFERRED))))
-        return result.order_by(Person.sortingColumns)
 
     def find(self, text, orderBy=None):
         """See `IPersonSet`."""

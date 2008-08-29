@@ -51,7 +51,7 @@
   </p>
 
 
-    <table class="summary">
+    <table class="summary" style="float: right; margin-left: 1em;">
       <tbody>
         <tr>
           <th>Priority:</th>

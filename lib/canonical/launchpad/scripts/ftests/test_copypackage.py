@@ -9,6 +9,8 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.archiveuploader.tests.test_uploadprocessor import (
+    MockLogger as TestLogger)
 from canonical.config import config
 from canonical.launchpad.components.packagelocation import (
     PackageLocationError)
@@ -292,8 +294,8 @@ class TestCopyPackage(unittest.TestCase):
         self.assertEqual(updates.pocket, PackagePublishingPocket.UPDATES)
         self.assertEqual(len(updates.getBuilds()), 1)
 
-    def testCannotCopyTwice(self):
-        """When invoked twice, copy package doesn't re-copy publications.
+    def testWillNotCopyTwice(self):
+        """When invoked twice, the script doesn't repeat the copy.
 
         As reported in bug #237353, duplicates are generally cruft and may
         cause problems when they include architecture-independent binaries.
@@ -309,8 +311,17 @@ class TestCopyPackage(unittest.TestCase):
 
         copy_helper = self.getCopier(
             from_suite='warty', to_suite='warty-updates')
+
+        # Use a TestLogger object to store log messages issued during
+        # the copy.
+        copy_helper.logger = TestLogger()
+
         copied = copy_helper.mainTask()
         self.assertEqual(len(copied), 0)
+
+        # The script output informs the user that no packages were copied.
+        self.assertEqual(
+            copy_helper.logger.lines[-1], 'No packages copied.')
 
     def testCopyAcrossPartner(self):
         """Check the copy operation across PARTNER archive.
@@ -559,9 +570,9 @@ class TestCopyPackage(unittest.TestCase):
             security_source.archive, sourcename)
 
         # Upload a hppa binary but keep it unpublished. When attempting
-        # to re-copy 'lazy-building' to -updates the copy succeeds but
-        # nothing gets copied. Everything built and published from this
-        # source is already copied.
+        # to repeat the copy of 'lazy-building' to -updates the copy
+        # succeeds but nothing gets copied. Everything built and published
+        # from this source is already copied.
         [build_hppa, build_i386] = security_source.getBuilds()
         lazy_bin_hppa = test_publisher.uploadBinaryForBuild(
             build_hppa, 'lazy-bin')

@@ -68,7 +68,7 @@
         </td>
          <td style="text-align: left; width: 12em">
            <a tal:attributes="href builder/fmt:url"
-              tal:content="builder/title/fmt:shorten/30">Bob</a>
+              tal:content="builder/name/fmt:shorten/30">Bob</a>
          </td>
          <td style="text-align: left; width: 5em">
            <tal:mode condition="builder/manual">MANUAL</tal:mode>

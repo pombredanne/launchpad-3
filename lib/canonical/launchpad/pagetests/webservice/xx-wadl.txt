@@ -306,10 +306,13 @@ The JSON representation contains a link for each collection resource
 exposed at the top level. The WADL representation has a <param> tag
 for every link in the JSON representation.
 
+
     >>> def name_attrib(tag):
     ...     return tag.attrib['name']
-    >>> bug_set_param, me_param, person_set_param, project_set_param = sorted(
-    ...    [param for param in service_root_repr], key=name_attrib)
+
+    >>> params = sorted([param for param in service_root_repr], key=name_attrib)
+    >>> (bug_set_param, me_param, person_set_param,
+    ...     project_set_param) = params
 
     >>> person_set_param.tag
     '...param'

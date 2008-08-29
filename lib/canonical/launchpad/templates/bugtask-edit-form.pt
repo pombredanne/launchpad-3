@@ -36,7 +36,7 @@
         tal:content="context/bugwatch/getLastErrorMessage"
     />
   </tal:has_watch>
-  <table class="summary">
+  <table class="summary" style="float: right; margin-left: 1em;">
     <tr>
       <th>Affecting:</th>
       <td><a tal:attributes="href context/target/fmt:url"
