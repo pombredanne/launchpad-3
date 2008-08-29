@@ -56,22 +56,14 @@
             />
     </browser:pages>
 
-    <browser:addform
+    <browser:page
         name="+new"
         for="canonical.launchpad.interfaces.IBuilderSet"
-        schema="canonical.launchpad.interfaces.IBuilder"
-        label="Register a new build machine"
-        fields="name title description processor url owner vm_host"
-        content_factory="canonical.launchpad.database.Builder"
         class="canonical.launchpad.browser.BuilderSetAddView"
         permission="launchpad.Admin"
         template="../templates/builder-new.pt"
         facet="overview"
-        >
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-    </browser:addform>
+    />
 
     <!-- Builder -->
     <content class="canonical.launchpad.database.Builder">
