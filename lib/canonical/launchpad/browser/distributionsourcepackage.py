@@ -7,7 +7,6 @@ __all__ = [
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
-    'DistributionSourcePackageSOP',
     'DistributionSourcePackageView'
     ]
 

@@ -20,7 +20,6 @@ __all__ = [
     'ProjectRdfView',
     'ProjectReviewView',
     'ProjectOverviewMenu',
-    'ProjectSOP',
     'ProjectSeriesSpecificationsMenu',
     'ProjectSetBreadcrumbBuilder',
     'ProjectSetContextMenu',
