@@ -201,21 +201,23 @@ class BranchOpener(object):
         self.checkOneURL(url)
         traversed_references = set()
         while True:
-            reference_value = self.followReference(url)
-            if reference_value is None:
+            while True:
+                reference_value = self.followReference(url)
+                if reference_value is None:
+                    break
+                if not self.shouldFollowReferences():
+                    raise BranchReferenceForbidden(reference_value)
+                traversed_references.add(url)
+                if reference_value in traversed_references:
+                    raise BranchReferenceLoopError()
+                self.checkOneURL(reference_value)
+                url = reference_value
+            branch = Branch.open(url)
+            try:
+                url = branch.get_stacked_on_url()
+            except (errors.NotStacked, errors.UnstackableBranchFormat):
                 break
-            if not self.shouldFollowReferences():
-                raise BranchReferenceForbidden(reference_value)
-            traversed_references.add(url)
-            if reference_value in traversed_references:
-                raise BranchReferenceLoopError()
-            self.checkOneURL(reference_value)
-            url = reference_value
-        branch = Branch.open(url)
-        try:
-            self.checkOneURL(branch.get_stacked_on_url())
-        except (errors.NotStacked, errors.UnstackableBranchFormat):
-            pass
+            self.checkOneURL(url)
 
     def shouldFollowReferences(self):
         """Whether we traverse references when mirroring.

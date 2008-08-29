@@ -310,6 +310,15 @@ class TestBranchOpenerStacking(TestCaseWithTransport):
         opener = self.makeBranchOpener([stacked_branch.base])
         self.assertRaises(BadUrl, opener.checkSource, stacked_branch.base)
 
+    def testForbiddenURLNested(self):
+        a = self.make_branch('a', format='development')
+        b = self.make_branch('b', format='development')
+        b.set_stacked_on_url(a.base)
+        c = self.make_branch('c', format='development')
+        c.set_stacked_on_url(b.base)
+        opener = self.makeBranchOpener([c.base, b.base])
+        self.assertRaises(BadUrl, opener.checkSource, c.base)
+
 
 class TestReferenceMirroring(TestCaseWithTransport):
     """Feature tests for mirroring of branch references."""
