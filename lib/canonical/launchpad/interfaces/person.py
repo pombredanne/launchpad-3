@@ -64,7 +64,7 @@ from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.location import (
-    IHasLocation, IObjectWithLocation, ISetLocation)
+    IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
@@ -521,13 +521,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
     sshkeys = Attribute(_('List of SSH keys'))
-
-    # XXX: salgado, 2008-06-19: This should probably be removed from here as
-    # it's already defined in IHasLocation (from which IPerson extends).
-    time_zone = exported(
-        Choice(title=_('Time zone'), required=True, readonly=False,
-               description=_('The time zone of where you live.'),
-               vocabulary='TimezoneName'))
 
     openid_identifier = TextLine(
         title=_("Key used to generate opaque OpenID identities."),
@@ -1309,6 +1302,12 @@ class IPersonEditRestricted(Interface):
         subscription deactivated (using the setMembershipData() method) by
         a team administrator.
         """
+
+    @operation_parameters(
+        visible=copy_field(ILocationRecord['visible'], required=True))
+    @export_write_operation()
+    def setLocationVisibility(visible):
+        """Specify the visibility of a person's location and time zone."""
 
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):
