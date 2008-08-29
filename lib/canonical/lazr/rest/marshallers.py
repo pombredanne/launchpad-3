@@ -351,11 +351,9 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
         """
         if not isinstance(value, list):
             value = [value]
-        value = [self.value_marshaller.marshall_from_request(item)
-                 for item in value]
-        return super(
-           AbstractCollectionFieldMarshaller,
-           self)._marshall_from_request(value)
+        return self.field._type(
+            self.value_marshaller.marshall_from_request(item)
+            for item in value)
 
     def unmarshall(self, entry, value):
         """See `SimpleFieldMarshaller`.

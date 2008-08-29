@@ -21,10 +21,13 @@ __all__ = [
     ]
 
 import copy
+from cStringIO import StringIO
 from datetime import datetime
+from gzip import GzipFile
 import os
 import sha
 import simplejson
+import zlib
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
@@ -206,6 +209,44 @@ class HTTPResource:
         if media_type == self.WADL_TYPE:
             return '"%s"' % versioninfo.revno
         return None
+
+    def applyTransferEncoding(self, representation):
+        """Apply a requested transfer-encoding to the representation.
+
+        'gzip' and 'deflate' are the only supported transfer-encodings.
+
+        This method has side effects. If an encoding was applied, it
+        sets the "Transfer-Encoding" response header to the name of
+        that encoding.
+        """
+        if representation == "":
+            # Don't compress an empty representation--that makes it nonempty.
+            return ""
+        requested_encodings = self._parseAcceptStyleHeader(
+            self.request.get('HTTP_TE'))
+        infinity = float("infinity")
+
+        try:
+            gzip_pos = requested_encodings.index('gzip')
+        except ValueError:
+            gzip_pos = infinity
+        try:
+            deflate_pos = requested_encodings.index('deflate')
+        except ValueError:
+            deflate_pos = infinity
+
+        if gzip_pos < deflate_pos:
+            self.request.response.setHeader("Transfer-Encoding", "gzip")
+            gzipped = StringIO()
+            file = GzipFile(mode="w", fileobj=gzipped)
+            file.write(representation)
+            file.close()
+            return gzipped.getvalue()
+        elif deflate_pos != infinity:
+            self.request.response.setHeader("Transfer-Encoding", "deflate")
+            return zlib.compress(representation)
+        return representation
+
 
     def implementsPOST(self):
         """Returns True if this resource will respond to POST.
@@ -438,10 +479,11 @@ class ReadOnlyResource(HTTPResource):
 
     def __call__(self):
         """Handle a GET or (if implemented) POST request."""
+        result = ""
         if self.request.method == "GET":
-            return self.do_GET()
+            result = self.do_GET()
         elif self.request.method == "POST" and self.implementsPOST():
-            return self.do_POST()
+            result = self.do_POST()
         else:
             if self.implementsPOST():
                 allow_string = "GET POST"
@@ -449,26 +491,27 @@ class ReadOnlyResource(HTTPResource):
                 allow_string = "GET"
             self.request.response.setStatus(405)
             self.request.response.setHeader("Allow", allow_string)
-
+        return self.applyTransferEncoding(result)
 
 class ReadWriteResource(HTTPResource):
     """A resource that responds to GET, PUT, and PATCH."""
 
     def __call__(self):
         """Handle a GET, PUT, or PATCH request."""
+        result = ""
         if self.request.method == "GET":
-            return self.do_GET()
+            result = self.do_GET()
         elif self.request.method in ["PUT", "PATCH"]:
             media_type = self.handleConditionalWrite()
             if media_type is not None:
                 stream = self.request.bodyStream
                 representation = stream.getCacheStream().read()
                 if self.request.method == "PUT":
-                    return self.do_PUT(media_type, representation)
+                    result = self.do_PUT(media_type, representation)
                 else:
-                    return self.do_PATCH(media_type, representation)
+                    result = self.do_PATCH(media_type, representation)
         elif self.request.method == "POST" and self.implementsPOST():
-            return self.do_POST()
+            result = self.do_POST()
         else:
             if self.implementsPOST():
                 allow_string = "GET POST PUT PATCH"
@@ -476,6 +519,7 @@ class ReadWriteResource(HTTPResource):
                 allow_string = "GET PUT PATCH"
             self.request.response.setStatus(405)
             self.request.response.setHeader("Allow", allow_string)
+        return self.applyTransferEncoding(result)
 
 
 class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
@@ -509,10 +553,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         for name, field in getFieldsInOrder(self.entry.schema):
             if self.isModifiableField(field, False):
                 ignored, value = self._unmarshallField(name, field)
-                values.append(str(value))
+                values.append(unicode(value))
 
         hash_object = sha.new()
-        hash_object.update("\0".join(values))
+        hash_object.update("\0".join(values).encode("utf-8"))
 
         # Append the revision number, because the algorithm for
         # generating the representation might itself change across
@@ -991,7 +1035,7 @@ class ServiceRootResource(HTTPResource):
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
         if REQUEST.method == "GET":
-            return self.do_GET()
+            return self.applyTransferEncoding(self.do_GET())
         else:
             REQUEST.response.setStatus(405)
             REQUEST.response.setHeader("Allow", "GET")

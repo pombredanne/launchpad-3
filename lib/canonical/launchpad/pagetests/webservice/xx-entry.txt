@@ -32,6 +32,12 @@ that person's canonical URL.
   ...
   Location: http://api.launchpad.dev/beta/~salgado
 
+Data is served encoded in UTF-8; a good client will automatically
+convert it into Unicode.
+
+    >>> webservice.get("/beta/~mpo").jsonBody()['display_name']
+    u'Matti P\xf6ll\xe4'
+
 
 == Content negotiation ==
 
