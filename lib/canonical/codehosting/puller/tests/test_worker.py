@@ -233,8 +233,9 @@ class TestBranchOpenerCheckSource(TestCase):
         # When branch references are forbidden, checkSource does not raise on
         # non-references.
         opener = self.StubbedBranchOpener(False, ['a', None])
-        # This must not raise.
-        opener.checkSource('a')
+        # This raises a NotBranchError since it passes the checks and tries to
+        # open 'a'.
+        self.assertRaises(NotBranchError, opener.checkSource, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceForbidden(self):
@@ -249,8 +250,9 @@ class TestBranchOpenerCheckSource(TestCase):
         # checkSource does not raise if following references is allowed and
         # the source URL points to a branch reference to a permitted location.
         opener = self.StubbedBranchOpener(True, ['a', 'b', None])
-        # This must not raise.
-        opener.checkSource('a')
+        # This raises a NotBranchError since it passes the checks and tries to
+        # open 'a'.
+        self.assertRaises(NotBranchError, opener.checkSource, 'a')
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
     def testCheckReferencedURLs(self):
@@ -277,6 +279,36 @@ class TestBranchOpenerCheckSource(TestCase):
         self.assertRaises(
             BranchReferenceLoopError, opener.checkSource, 'a')
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
+
+
+class TestBranchOpenerStacking(TestCaseWithTransport):
+
+    def makeBranchOpener(self, allowed_urls):
+        opener = BranchOpener()
+        def checkOneURL(url):
+            if url not in allowed_urls:
+                raise BadUrl(url)
+        opener.checkOneURL = checkOneURL
+        return opener
+
+    def testAllowedURL(self):
+        stacked_on_branch = self.make_branch(
+            'base_branch', format='development')
+        stacked_branch = self.make_branch(
+            'stacked-branch', format='development')
+        stacked_branch.set_stacked_on_url(stacked_on_branch.base)
+        opener = self.makeBranchOpener(
+            [stacked_branch.base, stacked_on_branch.base])
+        opener.checkSource(stacked_branch.base)
+
+    def testForbiddenURL(self):
+        stacked_on_branch = self.make_branch(
+            'base_branch', format='development')
+        stacked_branch = self.make_branch(
+            'stacked-branch', format='development')
+        stacked_branch.set_stacked_on_url(stacked_on_branch.base)
+        opener = self.makeBranchOpener([stacked_branch.base])
+        self.assertRaises(BadUrl, opener.checkSource, stacked_branch.base)
 
 
 class TestReferenceMirroring(TestCaseWithTransport):

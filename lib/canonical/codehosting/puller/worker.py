@@ -211,6 +211,11 @@ class BranchOpener(object):
                 raise BranchReferenceLoopError()
             self.checkOneURL(reference_value)
             url = reference_value
+        branch = Branch.open(url)
+        try:
+            self.checkOneURL(branch.get_stacked_on_url())
+        except (errors.NotStacked, errors.UnstackableBranchFormat):
+            pass
 
     def shouldFollowReferences(self):
         """Whether we traverse references when mirroring.
