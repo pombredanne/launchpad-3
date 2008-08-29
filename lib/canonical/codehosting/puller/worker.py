@@ -11,6 +11,7 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.progress import DummyProgress
+from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import get_transport
 import bzrlib.ui
 
@@ -106,6 +107,9 @@ class PullerWorkerProtocol:
         for argument in args:
             self.sendNetstring(str(argument))
 
+    def setStackedOn(self, stacked_on_location):
+        self.sendEvent('setStackedOn', stacked_on_location)
+
     def startMirroring(self):
         self.sendEvent('startMirroring')
 
@@ -119,17 +123,35 @@ class PullerWorkerProtocol:
         self.sendEvent('progressMade')
 
 
+def get_vfs_format_classes(branch):
+    """Return the vfs classes of the branch, repo and bzrdir formats.
+
+    'vfs' here means that it will return the underlying format classes of a
+    remote branch.
+    """
+    if isinstance(branch, RemoteBranch):
+        branch._ensure_real()
+        branch = branch._real_branch
+    repository = branch.repository
+    if isinstance(repository, RemoteRepository):
+        repository._ensure_real()
+        repository = repository._real_repository
+    bzrdir = branch.bzrdir
+    if isinstance(bzrdir, RemoteBzrDir):
+        bzrdir._ensure_real()
+        bzrdir = bzrdir._real_bzrdir
+    return (
+        branch._format.__class__,
+        repository._format.__class__,
+        bzrdir._format.__class__,
+        )
+
+
 def identical_formats(branch_one, branch_two):
     """Check if two branches have the same bzrdir, repo, and branch formats.
     """
-    # XXX AndrewBennetts 2006-05-18 bug=45277:
-    # comparing format objects is ugly.
-    b1, b2 = branch_one, branch_two
-    return (
-        b1.bzrdir._format.__class__ == b2.bzrdir._format.__class__ and
-        b1.repository._format.__class__ == b2.repository._format.__class__ and
-        b1._format.__class__ == b2._format.__class__
-    )
+    return (get_vfs_format_classes(branch_one) ==
+            get_vfs_format_classes(branch_two))
 
 
 class BranchOpener(object):
@@ -338,8 +360,8 @@ class PullerWorker:
         :param branch_type: A member of the BranchType enum.  It is expected
             that tests that do not depend on its value will pass None.
         :param protocol: An instance of `PullerWorkerProtocol`.
-        :param branch_opener: An instance of `BranchOpener`.  If not passed, one will
-            be chosen based on the value of `branch_type`.
+        :param branch_opener: An instance of `BranchOpener`.  If not passed,
+            one will be chosen based on the value of `branch_type`.
         :param oops_prefix: An oops prefix to pass to `setOopsToken` on the
             global ErrorUtility.
         """
@@ -356,13 +378,6 @@ class PullerWorker:
             self.protocol.branch_id = branch_id
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
-
-    def _openSourceBranch(self, source):
-        """Open the branch to pull from.
-
-        This only exists as a separate method to be overriden in tests.
-        """
-        return Branch.open(source)
 
     def _mirrorToDestBranch(self, source_branch):
         """Open the branch to pull to, creating a new one if necessary.
@@ -454,6 +469,12 @@ class PullerWorker:
         server.setUp()
         try:
             source_branch = self.branch_opener.open(self.source)
+            try:
+                stacked_on_location = source_branch.get_stacked_on_url()
+            except (errors.NotStacked, errors.UnstackableBranchFormat):
+                pass
+            else:
+                self.protocol.setStackedOn(stacked_on_location)
             return self._mirrorToDestBranch(source_branch)
         finally:
             server.tearDown()
