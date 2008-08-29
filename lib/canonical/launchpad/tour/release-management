@@ -64,7 +64,8 @@ Launchpad&rsquo;s extensive search to discover your work.
                             <img src="images/rm/1.png" alt="Lines of development" />                        </p>
                         <p>
                             
-Launchpad calls these series and helps you to organise your work &mdash; code, translations, bug reports and so on &mdash; around them. Through series, your community can work in parallel on different major releases of your software.</p>
+Launchpad calls these <em>series</em> and helps you to organise your work &mdash; code, translations, bug reports and so on &mdash; around them. Through series, your community can work in parallel on different major releases of your software.</p>
+ 
                         <p>
                             By targeting <a href="bugs" accesskey="e" tabindex="3">bug reports</a> and <a href="feature-tracking" accesskey="f" tabindex="4">chunks of work</a> to future releases, trusted members of your community can help you to create a light-weight roadmap for the future of your project.
                         </p>
@@ -75,7 +76,7 @@ Launchpad calls these series and helps you to organise your work &mdash; code, t
                         <p class="screen-holder">
                             <img src="images/rm/2.png" alt="Publishing your software"  />                        </p>
                         <p>
-                            Launchpad helps you to get your software to the users of Linux-based operating systems, such as Ubuntu, using <a href="ppa" accesskey="g" tabindex="5">Debian-style packages</a> and as direct binary downloads from your project&rsquo;s Launchpad home page.
+                            Launchpad helps you to get your software to Ubuntu users, through <a href="ppa" accesskey="g" tabindex="5">Debian-style packages</a>, and as direct binary downloads from your project&rsquo;s Launchpad home page.
                         </p>
                     </div>
                     
@@ -109,8 +110,8 @@ Launchpad calls these series and helps you to organise your work &mdash; code, t
             <li class="button-next">
                 <a href="index" accesskey="e" tabindex="3">Start</a>
             </li>
-            <li class="copyright">
-                &copy; 2004-2008 Canonical Ltd. <a href="#" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="#" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="#" accesskey="h" tabindex="6">FAQ</a>
+             <li class="copyright">
+                &copy; 2004-2008 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="https://help.launchpad.net/FAQ" accesskey="h" tabindex="6">FAQ</a>
             </li>
         </ul>
     </div>

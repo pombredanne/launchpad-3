@@ -1,14 +1,12 @@
 = The set of people and teams =
 
 The set of people and teams in Launchpad is represented by the
-collection found at /people.  By default it lists all non-merged
-people and teams
+collection found at /people.  By default it lists the (up to) 50
+people with the most karma, not including people with no karma.
 
     >>> people = webservice.get("/beta/people").jsonBody()
     >>> len(people['entries'])
-    5
-    >>> people['next_collection_link']
-    u'http://api.launchpad.dev/beta/people?ws.start=5...'
+    4
 
 
 == Custom operations ==
@@ -34,31 +32,20 @@ There are also operations to search only for people or only for teams.
     >>> sorted(person['name'] for person in search['entries'])
     [u'salgado']
 
-It's also possible to get a list with all the people (including the ones
-whose account is inactive) or all the teams.
-
-    >>> people = webservice.get(
-    ...     "/beta/people?ws.op=getAllPersons").jsonBody()
-    >>> len(people['entries'])
-    5
-
-    >>> teams = webservice.get(
-    ...     "/beta/people?ws.op=getAllTeams").jsonBody()
-    >>> len(people['entries'])
-    5
-
 It's possible to get a list of teams by virtue of which a person
 belongs to a particular team.
 
-    >>> response = webservice.named_get(
-    ...     '/beta/~salgado', 'findPathToTeam',
-    ...     team='http://api.launchpad.dev/beta/~mailing-list-experts')
+    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
+    # it should be re-enabled after the operation is exported again.
+    # >>> response = webservice.named_get(
+    # ...     '/beta/~salgado', 'findPathToTeam',
+    # ...     team='http://api.launchpad.dev/beta/~mailing-list-experts')
 
-    >>> path = response.jsonBody()
-    >>> path['total_size']
-    2
-    >>> [person['name'] for person in path['entries']]
-    [u'admins', u'mailing-list-experts']
+    # >>> path = response.jsonBody()
+    # >>> path['total_size']
+    # 2
+    # >>> [person['name'] for person in path['entries']]
+    # [u'admins', u'mailing-list-experts']
 
 If you know the email address of a person/team, it's possible to
 retrieve it using that email.

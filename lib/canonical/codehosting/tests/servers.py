@@ -5,9 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'Authserver', 'AuthserverWithKeys', 'CodeHostingServer',
-    'SSHCodeHostingServer', 'make_bzr_ssh_server', 'make_launchpad_server',
-    'make_sftp_server']
+    'CodeHostingServer',
+    'SSHCodeHostingServer',
+    'make_bzr_ssh_server',
+    'make_launchpad_server',
+    'make_sftp_server',
+    ]
 
 
 import gc
@@ -28,10 +31,7 @@ from twisted.python.util import sibpath
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.launchpad.daemons.sftp import (
-    getPrivateKeyObject, getPublicKeyString, SSHService)
-from canonical.launchpad.daemons.authserver import AuthserverService
+from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
 
@@ -47,17 +47,15 @@ def make_launchpad_server():
 
 
 def make_sftp_server():
-    authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
-    return SFTPCodeHostingServer(authserver, branches_root, mirror_root)
+    return SFTPCodeHostingServer(branches_root, mirror_root)
 
 
 def make_bzr_ssh_server():
-    authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
-    return BazaarSSHCodeHostingServer(authserver, branches_root, mirror_root)
+    return BazaarSSHCodeHostingServer(branches_root, mirror_root)
 
 
 class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
@@ -96,141 +94,40 @@ class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
             connection.close()
 
 
-class Authserver(Server):
-
-    def __init__(self):
-        Server.__init__(self)
-        self.authserver = None
-
-    def setUp(self):
-        self.authserver = AuthserverService()
-        self.authserver.startService()
-
-    def tearDown(self):
-        return self.authserver.stopService()
-
-    def get_url(self):
-        return config.codehosting.authserver
+def set_up_host_keys_for_testing():
+    """Put ssh host keys into a directory where the server will find them."""
+    key_pair_path = config.codehosting.host_key_pair_path
+    if os.path.isdir(key_pair_path):
+        shutil.rmtree(key_pair_path)
+    parent = os.path.dirname(key_pair_path)
+    if not os.path.isdir(parent):
+        os.makedirs(parent)
+    shutil.copytree(
+        sibpath(__file__, 'keys'), os.path.join(key_pair_path))
 
 
-class AuthserverTac(TacTestSetup):
-    """Handler for running the Authserver .tac file.
+def set_up_test_user(test_user, test_team):
+    """Configure a user called 'test_user' with SSH keys.
 
-    Used to run the authserver out-of-process.
+    Also make sure that 'test_user' belongs to 'test_team'.
     """
-    def setUpRoot(self):
-        pass
-
-    @property
-    def root(self):
-        return ''
-
-    @property
-    def tacfile(self):
-        import canonical
-        return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/authserver.tac'
-            ))
-
-    @property
-    def pidfile(self):
-        return '/tmp/authserver.pid'
-
-    @property
-    def logfile(self):
-        return '/tmp/authserver.log'
-
-
-class AuthserverOutOfProcess(Server):
-    """Server to run the authserver out-of-process."""
-
-    def __init__(self):
-        Server.__init__(self)
-        self.tachandler = AuthserverTac()
-
-    def setUp(self):
-        self.tachandler.setUp()
-
-    def tearDown(self):
-        self.tachandler.tearDown()
-        return defer.succeed(None)
-
-    def get_url(self):
-        return config.codehosting.authserver
-
-
-class AuthserverWithKeysMixin:
-    """Server to run the authserver, setting up SSH key configuration."""
-
-    def __init__(self, testUser, testTeam):
-        self.testUser = testUser
-        self.testTeam = testTeam
-
-    def setUpKeys(self):
-        key_pair_path = config.codehosting.host_key_pair_path
-        if os.path.isdir(key_pair_path):
-            shutil.rmtree(key_pair_path)
-        parent = os.path.dirname(key_pair_path)
-        if not os.path.isdir(parent):
-            os.makedirs(parent)
-        shutil.copytree(
-            sibpath(__file__, 'keys'), os.path.join(key_pair_path))
-
-    def setUpTestUser(self):
-        """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a
-        known SSH key.
-        """
-        person_set = getUtility(IPersonSet)
-        testUser = person_set.getByName('no-priv')
-        testUser.name = self.testUser
-        testTeam = person_set.newTeam(
-            testUser, self.testTeam, self.testTeam,
-            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
-        testUser.join(testTeam)
-        ssh_key_set = getUtility(ISSHKeySet)
-        ssh_key_set.new(
-            testUser, SSHKeyType.DSA,
-            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1k'
-            'tFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3Dz'
-            'eVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTd'
-            'ViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap'
-            '4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3R'
-            'gw==', 'testuser')
-        commit()
-        self.setUpKeys()
-
-    def getPrivateKey(self):
-        """Return the private key object used by 'testuser' for auth."""
-        return getPrivateKeyObject(
-            data=open(sibpath(__file__, 'id_dsa'), 'rb').read())
-
-    def getPublicKey(self):
-        """Return the public key string used by 'testuser' for auth."""
-        return getPublicKeyString(
-            data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
-
-
-class AuthserverWithKeys(AuthserverOutOfProcess, AuthserverWithKeysMixin):
-
-    def __init__(self, testUser, testTeam):
-        AuthserverOutOfProcess.__init__(self)
-        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
-
-    def setUp(self):
-        self.setUpTestUser()
-        AuthserverOutOfProcess.setUp(self)
-
-
-class AuthserverWithKeysInProcess(Authserver, AuthserverWithKeysMixin):
-
-    def __init__(self, testUser, testTeam):
-        Authserver.__init__(self)
-        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
-
-    def setUp(self):
-        self.setUpTestUser()
-        Authserver.setUp(self)
+    person_set = getUtility(IPersonSet)
+    testUser = person_set.getByName('no-priv')
+    testUser.name = test_user
+    testTeam = person_set.newTeam(
+        testUser, test_team, test_team,
+        subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    testUser.join(testTeam)
+    ssh_key_set = getUtility(ISSHKeySet)
+    ssh_key_set.new(
+        testUser, SSHKeyType.DSA,
+        'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1k'
+        'tFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3Dz'
+        'eVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTd'
+        'ViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap'
+        '4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3R'
+        'gw==', 'testuser')
+    commit()
 
 
 class FakeLaunchpadServer(LaunchpadServer):
@@ -265,9 +162,8 @@ class FakeLaunchpadServer(LaunchpadServer):
 
 class CodeHostingServer(Server):
 
-    def __init__(self, authserver, branches_root, mirror_root):
+    def __init__(self, branches_root, mirror_root):
         Server.__init__(self)
-        self.authserver = authserver
         self._branches_root = branches_root
         self._mirror_root = mirror_root
 
@@ -278,11 +174,12 @@ class CodeHostingServer(Server):
         if os.path.isdir(self._mirror_root):
             shutil.rmtree(self._mirror_root)
         os.makedirs(self._mirror_root, 0700)
-        self.authserver.setUp()
+        set_up_host_keys_for_testing()
+        set_up_test_user('testuser', 'testteam')
 
     def tearDown(self):
         shutil.rmtree(self._branches_root)
-        return self.authserver.tearDown()
+        return defer.succeed(None)
 
     def getTransport(self, relpath=None):
         """Return a new transport for 'relpath', adding necessary cleanup."""
@@ -291,10 +188,10 @@ class CodeHostingServer(Server):
 
 class SSHCodeHostingServer(CodeHostingServer):
 
-    def __init__(self, schema, authserver, branches_root, mirror_root):
+    def __init__(self, schema, branches_root, mirror_root):
         self._schema = schema
         CodeHostingServer.__init__(
-            self, authserver, branches_root, mirror_root)
+            self, branches_root, mirror_root)
 
     def setUpFakeHome(self):
         user_home = os.path.abspath(tempfile.mkdtemp())
@@ -342,15 +239,15 @@ class SSHCodeHostingServer(CodeHostingServer):
 
     def get_url(self, user=None):
         if user is None:
-            user = self.authserver.testUser
+            user = 'testuser'
         return '%s://%s@localhost:22222/' % (self._schema, user)
 
 
 class SFTPCodeHostingServer(SSHCodeHostingServer):
 
-    def __init__(self, authserver, branches_root, mirror_root):
+    def __init__(self, branches_root, mirror_root):
         SSHCodeHostingServer.__init__(
-            self, 'sftp', authserver, branches_root, mirror_root)
+            self, 'sftp', branches_root, mirror_root)
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all SFTP connections, and wait for
@@ -373,9 +270,9 @@ class SFTPCodeHostingServer(SSHCodeHostingServer):
 
 class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
 
-    def __init__(self, authserver, branches_root, mirror_root):
+    def __init__(self, branches_root, mirror_root):
         SSHCodeHostingServer.__init__(
-            self, 'bzr+ssh', authserver, branches_root, mirror_root)
+            self, 'bzr+ssh', branches_root, mirror_root)
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all connections, and wait for the

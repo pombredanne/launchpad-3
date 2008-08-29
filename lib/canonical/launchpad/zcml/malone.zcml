@@ -59,9 +59,6 @@
         <browser:page
             name="+portlet-stats"
             template="../templates/malone-portlet-stats.pt" />
-        <browser:page
-            name="+portlet-bugtrackers"
-            template="../templates/malone-portlet-bugtrackers.pt" />
     </browser:pages>
 
     <browser:page

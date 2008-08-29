@@ -1503,6 +1503,53 @@ ValidTeamOwner's context must provide IPerson or IPersonSet.
     >>> [person.name for person in vocab.search('foo.bar')]
     [u'name16']
 
+=== ValidPerson ===
+
+All 'valid' persons who are not a team.
+
+    >>> vocab = vocabulary_registry.get(None, "ValidPerson")
+    >>> vocab.displayname
+    'Select a Person'
+    >>> people = vocab.search(None)
+    >>> people.count() > 0
+    True
+    >>> invalid_people = [person for person in people if not person.is_valid_person]
+    >>> print len(invalid_people)
+    0
+
+There are two 'Carlos' in the sample data but only one is a valid person.
+
+    >>> carlos_people = vocab.search('Carlos')
+    >>> print len(list(carlos_people))
+    1
+    >>> invalid_carlos = [person for person in carlos_people if not person.is_valid_person]
+    >>> print len(invalid_carlos)
+    0
+
+ValidPerson does not include teams.
+
+    >>> # Create a new team.
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> factory = LaunchpadObjectFactory()
+    >>> carlos_team = factory.makeTeam(
+    ...     owner=carlos, name='carlos-team')
+    >>> person_or_team_vocab = vocabulary_registry.get(
+    ...     None, "ValidPersonOrTeam")
+    >>> carlos_people_or_team = person_or_team_vocab.search('carlos')
+    >>> # The people or team search yields our one Carlos person and
+    >>> # the new team.
+    >>> print len(list(carlos_people_or_team))
+    2
+    >>> carlos_team in carlos_people_or_team
+    True
+
+    >>> # But the ValidPersonVocabulary only has the original Carlos
+    >>> # person, not the new team.
+    >>> carlos_people = vocab.search('carlos')
+    >>> print len(list(carlos_people))
+    1
+    >>> carlos_team in carlos_people
+    False
 
 === Processor ===
 

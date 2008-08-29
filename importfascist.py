@@ -151,6 +151,8 @@ class NotFoundPolicyViolation(JackbootError):
 
 
 def import_fascist(name, globals={}, locals={}, fromlist=[]):
+    global naughty_imports
+
     try:
         module = original_import(name, globals, locals, fromlist)
     except:
@@ -163,7 +165,9 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
     if name == 'sre' or name == 'textwrap':
         return module
 
-    global naughty_imports
+    # Mailman 2.1 code base is originally circa 1998, so yeah, no __all__'s.
+    if name.startswith('Mailman'):
+        return module
 
     # Some uses of __import__ pass None for globals, so handle that.
     import_into = None
@@ -190,7 +194,7 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
             raise error
 
     if fromlist is not None and import_into.startswith('canonical'):
-        # We only want to warn about "from foo import bar" violations in our 
+        # We only want to warn about "from foo import bar" violations in our
         # own code.
         if list(fromlist) == ['*'] and not hasattr(module, '__all__'):
             # "from foo import *" is naughty if foo has no __all__

@@ -41,6 +41,9 @@ cd /srv/launchpad.net/production/launchpad/cronscripts
 echo == Expiring memberships `date` ==
 python2.4 flag-expired-memberships.py -q
 
+echo == Allocating revision karma `date` ==
+python2.4 allocate-revision-karma.py -q
+
 echo == Recalculating karma `date` ==
 python2.4 foaf-update-karma-cache.py -q
 

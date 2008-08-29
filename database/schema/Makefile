@@ -10,6 +10,9 @@ SAMPLEDATA=../sampledata/current.sql
 # The database dump to create
 NEWSAMPLEDATA=../sampledata/newsampledata.sql
 
+# The database dump to create for lint reports
+LINTDATA=../sampledata/lintdata.sql
+
 # The development database
 DBNAME=launchpad_dev
 
@@ -62,7 +65,7 @@ test: create
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
-	@if [ "$$((`psql -l | grep ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
+	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
 	    then ${CREATEDB} template1 ${SESSION_DBNAME} ; \
 	    createlang plpgsql ${SESSION_DBNAME}; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
@@ -72,7 +75,7 @@ test: create
 
 dev: test
 	@ echo "* Creating ${DBNAME}"
-	@if [ "$$((`psql -l | grep ${DBNAME} | wc -l`))" = '1' ]; \
+	@if [ "$$((`psql -l | grep -w ${DBNAME} | wc -l`))" = '1' ]; \
 	    then ${DROPDB} ${DBNAME} | grep : | cat ; \
 	fi
 	@ sleep 2
@@ -82,14 +85,14 @@ create: check
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
-	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '1' ]; \
+	@if [ "$$((`psql -l | grep -w ${TEST_DBNAME} | wc -l`))" = '1' ]; \
 	    then ${DROPDB} ${TEST_DBNAME} | grep : | cat ; \
 	fi
-	@if [ "$$((`psql -l | grep ${EMPTY_DBNAME} | wc -l`))" = '1' ]; \
+	@if [ "$$((`psql -l | grep -w ${EMPTY_DBNAME} | wc -l`))" = '1' ]; \
 	    then ${DROPDB} ${EMPTY_DBNAME} | grep : | cat ; \
 	fi
 	@ echo "* Creating database \"$(TEST_DBNAME)\" with sample data."
-	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '0' ]; \
+	@if [ "$$((`psql -l | grep -w ${TEST_DBNAME} | wc -l`))" = '0' ]; \
 	    then ${CREATEDB} template1 ${TEST_DBNAME} ; \
 	    else echo ${TEST_DBNAME} already exists; \
 	fi
@@ -136,12 +139,20 @@ diagram:
 	${PYTHON} diagram.py
 
 newsampledata:
-	$(PYTHON) fti.py --null -d launchpad_dev -q
+	$(PYTHON) fti.py --null -d ${DBNAME} -q
 	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
 	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
 	| $(PYTHON) sort_sql.py \
 	> $(NEWSAMPLEDATA)
-	$(PYTHON) fti.py --force -d launchpad_dev -q
+	$(PYTHON) fti.py --force -d ${DBNAME} -q
+
+lintdata:
+	$(PYTHON) fti.py --null -d ${TEST_DBNAME} -q
+	pg_dump --schema=public --disable-triggers -a -D -O -d ${TEST_DBNAME} \
+	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
+	| $(PYTHON) sort_sql.py \
+	> $(LINTDATA)
+	$(PYTHON) fti.py --force -d ${TEST_DBNAME} -q
 
 .PHONY: default base all
 

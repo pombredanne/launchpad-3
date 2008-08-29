@@ -58,7 +58,7 @@
                             <img src="images/blueprints/1.png" alt="People, status and priority" />
                         </p>
                         <p>
-                            Each blueprint has three roles&#58; drafter, assignee and approver who form an ad-hoc team to ensure the blueprint is well drafted and then implemented. The outside world can see their progress through the blueprint&rsquo;s &ldquo;drafting&rdquo; and &ldquo;implementation&rdquo; statuses. They can also set the blueprint&rsquo;s priority to reflect its importance to the wider project.
+                            Each blueprint has three roles&#58; drafter, assignee and approver. They form an ad-hoc team to ensure the blueprint is well drafted and implemented. They can also set the blueprint&rsquo;s priority to reflect its importance to the wider project. The outside world can watch the blueprint&rsquo;s progress through its &ldquo;drafting&rdquo; and &ldquo;implementation&rdquo; statuses. 
                         </p>
                     </div>
                     <div class="block odd">
@@ -98,7 +98,7 @@
                 <a href="release-management" accesskey="e" tabindex="3">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2008 Canonical Ltd. <a href="#" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="#" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="#" accesskey="h" tabindex="6">FAQ</a>
+                &copy; 2004-2008 Canonical Ltd. <a href="https://help.launchpad.net/Legal" tabindex="4" accesskey="f">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" tabindex="5" accesskey="g">Feedback</a> &#58; <a href="https://help.launchpad.net/FAQ" tabindex="6" accesskey="h">FAQ</a>
             </li>
         </ul>
     </div>

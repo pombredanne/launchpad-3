@@ -18,41 +18,64 @@
 
 <div metal:fill-slot="main">
 
-  <div tal:replace="structure context/@@+table-specworkload" />
-
   <p class="discreet">
     This page lists the specifications which are related to this person -
     either they were created by them, or they are in some way expected to
-    work on the specs. The cross marks [x] identify specific roles.
+    work on the specs.
   </p>
 
-  <tal:is_team condition="context/isTeam">
+  <tal:team_definition define="is_team context/isTeam" >
 
-    <h2>Team member workload</h2>
+    <tal:is_not_team condition="not: is_team">
+      <div tal:replace="structure context/@@+table-specworkload" />
+    </tal:is_not_team>
 
-    <p class="discreet">
-      The following people are all members of the
-      <span tal:replace="context/browsername">Admins</span> team in
-      Launchpad. We list each of their specification workloads so that you
-      can get a sense of the overall workload balance.
-    </p>
+    <tal:is_team condition="is_team"
+                 define="members_batch nocall:view/members/currentBatch">
 
-    <tal:participants repeat="member context/allmembers">
+      <tal:first condition="not: view/members/firstBatchURL">
+        <div tal:replace="structure context/@@+table-specworkload" />
+      </tal:first>
 
-      <tal:has_work condition="member/specifications">
+      <h2>Team member workload</h2>
 
-        <a tal:replace="structure member/fmt:link">Foo Bar</a>'s
-        specifications:<br />
+      <p class="discreet">
+        The following people are all members of the
+        <span tal:replace="context/browsername">Admins</span> team in
+        Launchpad. We list each of their specification workloads so that you
+        can get a sense of the overall workload balance.
+      </p>
 
-        <div tal:replace="structure member/@@+table-specworkload" />
+      <div class="lesser" id="top-navigation">
+        <tal:navigation content="structure view/members/@@+navigation-links-upper" />
+      </div>
 
-      </tal:has_work>
+      <tal:participants repeat="member members_batch">
 
-    </tal:participants>
+        <tal:specs define="specifications member/specifications">
 
-  </tal:is_team>
+          <tal:has_work condition="specifications">
+            <a tal:replace="structure member/fmt:link">Foo Bar</a>'s
+            specifications:<br />
+            <div tal:replace="structure member/@@+table-specworkload" />
+          </tal:has_work>
 
+          <tal:has_no_work condition="not: specifications">
+            <a tal:replace="structure member/fmt:link">Foo Bar</a>
+            has no outstanding specifications.<br />
+          </tal:has_no_work>
 
+        </tal:specs>
+
+        <p />
+      </tal:participants>
+
+      <div class="lesser">
+        <tal:navigation content="structure view/members/@@+navigation-links-lower" />
+      </div>
+
+    </tal:is_team>
+  </tal:team_definition>
 </div>
 </body>
 </html>

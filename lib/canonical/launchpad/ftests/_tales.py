@@ -1,17 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
+"""Compatibility shim."""
 
-"""Helper functions for testing TALES expressions."""
-
-__metaclass__ = type
-
-from zope.app.pagetemplate.engine import Engine
-
-class Context:
-    def __init__(self, **kw):
-        self.vars = kw
-        self.contexts = kw
-
-def test_tales(expression, **kw):
-    compiled_tales = Engine.compile(expression)
-    return compiled_tales(Context(**kw))
-
+# pylint: disable-msg=W0611
+from canonical.lazr.testing.tales import Context, test_tales

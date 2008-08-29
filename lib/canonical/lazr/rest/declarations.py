@@ -570,7 +570,9 @@ def generate_entry_adapter(content_interface, webservice_interface):
     if not isinstance(webservice_interface, InterfaceClass):
         raise TypeError('webservice_interface is not an interface.')
 
-    class_dict = dict(schema=webservice_interface)
+    class_dict = dict(
+        schema=webservice_interface,
+        __doc__=webservice_interface.__doc__)
     for name, field in getFields(content_interface).items():
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
@@ -638,6 +640,7 @@ def generate_collection_adapter(interface):
         'entry_schema' : CollectionEntrySchema(entry_schema),
         'method_name': tag['collection_default_content'],
         'params': tag['collection_default_content_params'],
+        '__doc__': interface.__doc__,
         }
     classname = "%sCollectionAdapter" % interface.__name__[1:]
     factory = type(classname, bases=(BaseCollectionAdapter,), dict=class_dict)
@@ -728,7 +731,8 @@ def generate_operation_adapter(method):
     class_dict = {'params' : tuple(tag['params'].values()),
              'return_type' : return_type,
              '_export_info': tag,
-             '_method_name': method.__name__}
+             '_method_name': method.__name__,
+             '__doc__': method.__doc__}
 
     if tag['type'] == 'write_operation':
         class_dict['send_modification_event'] = True

@@ -1163,9 +1163,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             COUNT(DISTINCT Bugtask.bug) AS total_bugs,
             COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
                   Bugtask.bug END) AS bugs_triaged,
-            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
+            COUNT(DISTINCT CASE WHEN Bugtask.status IN %(unresolved)s THEN
                   RelatedBugTask.bug END) AS bugs_affecting_upstream,
-            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s AND
+            COUNT(DISTINCT CASE WHEN Bugtask.status in %(unresolved)s AND
                   (RelatedBugTask.bugwatch IS NOT NULL OR
                   RelatedProduct.official_malone IS TRUE) THEN
                   RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch

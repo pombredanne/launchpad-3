@@ -7,10 +7,14 @@ __metaclass__ = type
 
 __all__ = [
     'HWBus',
+    'HWMainClass',
+    'HWSubClass',
     'HWSubmissionFormat',
     'HWSubmissionKeyNotUnique',
     'HWSubmissionProcessingStatus',
     'IHWDevice',
+    'IHWDeviceClass',
+    'IHWDeviceClassSet',
     'IHWDeviceDriverLink',
     'IHWDeviceDriverLinkSet',
     'IHWDeviceNameVariant',
@@ -19,6 +23,8 @@ __all__ = [
     'IHWDriver',
     'IHWDriverSet',
     'IHWSubmission',
+    'IHWSubmissionBug',
+    'IHWSubmissionBugSet',
     'IHWSubmissionForm',
     'IHWSubmissionSet',
     'IHWSubmissionDevice',
@@ -227,7 +233,7 @@ class IHWSystemFingerprintSet(Interface):
         """Create an entry in the fingerprint list.
 
         Return the new entry."""
-        
+
 # Identification of a hardware device.
 #
 # In theory, a tuple (bus, vendor ID, product ID) should identify
@@ -279,6 +285,66 @@ class HWBus(DBEnumeratedType):
     PCMCIA = DBItem(14, 'PCMCIA (16 bit)')
 
 
+class HWMainClass(HWBus):
+    """The device classes.
+
+    This enumeration describes the capabilities of a device.
+    """
+
+    NETWORK = DBItem(10000, 'Network')
+
+    STORAGE = DBItem(11000, 'Storage')
+
+    DISPLAY = DBItem(12000, 'Display')
+
+    VIDEO = DBItem(13000, 'Video')
+
+    AUDIO = DBItem(14000, 'Audio')
+
+    MODEM = DBItem(15000, 'Modem')
+
+    INPUT = DBItem(16000, 'Input') # keyboard, mouse tetc.
+
+    PRINTER = DBItem(17000, 'Printer')
+
+    SCANNER = DBItem(18000, 'Scanner')
+
+
+class HWSubClass(DBEnumeratedType):
+    """The device subclasses.
+
+    This enumeration gives more details for the "coarse" device class
+    specified by HWDeviceClass.
+    """
+    NETWORK_ETHERNET = DBItem(10001, 'Ethernet')
+
+    STORAGE_HARDDISK = DBItem(11001, 'Hard Disk')
+
+    STORAGE_FLASH = DBItem(11002, 'Flash Memory')
+
+    STORAGE_FLOPPY = DBItem(11003, 'Floppy')
+
+    STORAGE_CDROM = DBItem(11004, 'CDROM Drive')
+
+    STORAGE_CDWRITER = DBItem(11005, 'CD Writer')
+
+    STORAGE_DVD = DBItem(11006, 'DVD Drive')
+
+    STORAGE_DVDWRITER = DBItem(11007, 'DVD Writer')
+
+    PRINTER_INKJET = DBItem(17001, 'Inkjet Printer')
+
+    PRINTER_LASER = DBItem(17002, 'Laser Printer')
+
+    PRINTER_MATRIX = DBItem(17003, 'Matrix Printer')
+
+    SCANNER_FLATBED = DBItem(18001, 'Flatbed Scanner')
+
+    SCANNER_ADF = DBItem(18002, 'Scanner with Automatic Document Feeder')
+
+    SCANNER_TRANSPARENCY = DBItem(18003, 'Scanner for Transparent Documents')
+
+
 class IHWVendorName(Interface):
     """A list of vendor names."""
     name = TextLine(title=u'Vendor Name', required=True)
@@ -297,9 +363,9 @@ class IHWVendorNameSet(Interface):
     def getByName(name):
         """Return the IHWVendorName record for the given name.
 
+        :param name: The vendor name.
         :return: An IHWVendorName instance where IHWVendorName.name==name
             or None, if no such instance exists.
-        :param name: The vendor name.
         """
 
 
@@ -320,21 +386,21 @@ class IHWVendorIDSet(Interface):
     def create(bus, vendor_id, name):
         """Create a vendor ID.
 
-        :return: A new IHWVendorID instance.
         :param bus: the HWBus instance for this bus.
         :param vendor_id: a string containing the bus ID. Numeric IDs
             are represented as a hexadecimal string, prepended by '0x'.
         :param name: The IHWVendorName instance with the vendor name.
+        :return: A new IHWVendorID instance.
         """
 
     def getByBusAndVendorID(bus, vendor_id):
         """Return an IHWVendorID instance for the given bus and vendor_id.
 
-        :return: The found IHWVendorID instance or None, if no instance
-            for the given bus and vendor ID exists.
         :param bus: An HWBus instance.
         :param vendor_id: A string containing the vendor ID. Numeric IDs
             must be represented as a hexadecimal string, prepended by '0x'.
+        :return: The found IHWVendorID instance or None, if no instance
+            for the given bus and vendor ID exists.
         """
 
 
@@ -362,42 +428,65 @@ class IHWDeviceSet(Interface):
     def create(bus, vendor_id, product_id, product_name, variant=None):
         """Create a new device entry.
 
-        :return: A new IHWDevice instance.
         :param bus: A bus name as enumerated in HWBus.
         :param vendor_id: The vendor ID for the bus.
         :param product_id: The product ID.
         :param product_name: The human readable product name.
         :param variant: A string that allows to distinguish different devices
                         with identical product/vendor IDs.
+        :return: A new IHWDevice instance.
         """
 
     def getByDeviceID(bus, vendor_id, product_id, variant=None):
         """Return an IHWDevice record.
 
-        :return: An IHWDevice instance.
         :param bus: The bus name of the device as enumerated in HWBus.
         :param vendor_id: The vendor ID of the device.
         :param product_id: The product ID of the device.
         :param variant: A string that allows to distinguish different devices
                         with identical product/vendor IDs.
+        :return: An IHWDevice instance.
         """
 
     def getOrCreate(bus, vendor_id, product_id, product_name, variant=None):
         """Return an IHWDevice record or create one.
 
-        :return: An IHWDevice instance.
         :param bus: The bus name of the device as enumerated in HWBus.
         :param vendor_id: The vendor ID of the device.
         :param product_id: The product ID of the device.
         :param product_name: The human readable product name.
         :param variant: A string that allows to distinguish different devices
                         with identical product/vendor IDs.
+        :return: An IHWDevice instance.
 
-        Return an existing IHWDevice record matching te given
-        parameters or create a new one, if no exitsing record
+        Return an existing IHWDevice record matching the given
+        parameters or create a new one, if no existing record
         matches.
         """
 
+
+class IHWDeviceClass(Interface):
+    """The capabilities of a device."""
+    device = Attribute(u'The Device')
+    main_class = Choice(
+        title=u'The main class of this device', required=True,
+        readonly=True, vocabulary=HWMainClass)
+    sub_class = Choice(
+        title=u'The sub class of this device', required=False,
+        readonly=True, vocabulary=HWSubClass)
+
+
+class IHWDeviceClassSet(Interface):
+    """The set of device capabilities."""
+
+    def create(device, main_class, sub_class=None):
+        """Create a new IHWDevice record.
+
+        :param device: The device described by the new record.
+        :param main_class: A HWMainClass instance.
+        :param sub_class: A HWSubClass instance.
+        :return: An IHWDeviceClass instance.
+        """
 
 class IHWDeviceNameVariant(Interface):
     """Variants of a device name.
@@ -425,10 +514,10 @@ class IHWDeviceNameVariantSet(Interface):
     def create(device, vendor_name, product_name):
         """Create a new IHWDeviceNameVariant instance.
 
-        :return: The new IHWDeviceNameVariant.
         :param device: An IHWDevice instance.
         :param vendor_name: The alternative vendor name for the device.
         :param product_name: The alternative product name for the device.
+        :return: The new IHWDeviceNameVariant.
         """
 
 
@@ -453,29 +542,29 @@ class IHWDriverSet(Interface):
     def create(package_name, name, license):
         """Create a new IHWDriver instance.
 
-        :return: The new IHWDriver instance.
         :param package_name: The name of the packages containing the driver.
         :param name: The name of the driver.
         :param license: The license of the driver.
+        :return: The new IHWDriver instance.
         """
 
     def getByPackageAndName(package_name, name):
         """Return an IHWDriver instance for the given parameters.
 
-        :return: An IHWDriver instance or None, if no record exists for
-            the given parameters.
         :param package_name: The name of the packages containing the driver.
         :param name: The name of the driver.
+        :return: An IHWDriver instance or None, if no record exists for
+            the given parameters.
         """
 
     def getOrCreate(package_name, name, license=None):
         """Return an IHWDriver instance or create one.
 
-        :return: An IHWDriver instance or None, if no record exists for
-            the given parameters.
         :param package_name: The name of the packages containing the driver.
         :param name: The name of the driver.
         :param license: The license of the driver.
+        :return: An IHWDriver instance or None, if no record exists for
+            the given parameters.
         """
 
 
@@ -493,25 +582,25 @@ class IHWDeviceDriverLinkSet(Interface):
     def create(device, driver):
         """Create a new IHWDeviceDriver instance.
 
-        :return: The new IHWDeviceDriver instance.
         :param device: The IHWDevice instance to be linked.
         :param driver: The IHWDriver instance to be linked.
+        :return: The new IHWDeviceDriver instance.
         """
 
     def getByDeviceAndDriver(device, driver):
         """Return an IHWDeviceDriver instance.
 
-        :return: The IHWDeviceDriver instance matching the given
-            parameters or None, if no existing instance matches.
         :param device: An IHWDevice instance.
         :param driver: An IHWDriver instance.
+        :return: The IHWDeviceDriver instance matching the given
+            parameters or None, if no existing instance matches.
         """
     def getOrCreate(device, driver):
         """Return an IHWDeviceDriverLink record or create one.
 
-        :return: An IHWDeviceDriverLink instance.
         :param device: The IHWDevice instance to be linked.
         :param driver: The IHWDriver instance to be linked.
+        :return: An IHWDeviceDriverLink instance.
 
         Return an existing IHWDeviceDriverLink record matching te given
         parameters or create a new one, if no exitsing record
@@ -530,16 +619,42 @@ class IHWSubmissionDevice(Interface):
     parent = Attribute(u'The parent IHWSubmissionDevice entry of this '
                         ' device.')
 
+    hal_device_id = Int(
+        title=u'The ID of the HAL node of this device in the submitted data',
+        required=True)
+
+
 class IHWSubmissionDeviceSet(Interface):
     """The set of IHWSubmissionDevices."""
 
     def create(device_driver_link, submission, parent):
         """Create a new IHWSubmissionDevice instance.
 
-        :return: The new IHWSubmissionDevice instance.
         :param device_driver_link: An IHWDeviceDriverLink instance.
         :param submission: The submission the device/driver combination
             is mentioned in.
         :param parent: The parent of this device in the device tree in
             the submission.
+        :return: The new IHWSubmissionDevice instance.
+        """
+
+
+class IHWSubmissionBug(Interface):
+    """Link a HWDB submission to a bug."""
+
+    submission = Attribute(u'The HWDB submission referenced in a bug '
+                              'report.')
+
+    bug = Attribute(u'The bug the HWDB submission is referenced in.')
+
+
+class IHWSubmissionBugSet(Interface):
+    """The set of IHWSubmissionBugs."""
+
+    def create(hwsubmission, bug):
+        """Create a new IHWSubmissionBug instance.
+
+        :return: The new IHWSubmissionBug instance.
+        :param hwsubmission: An IHWSubmission instance.
+        :param bug: An IBug instance.
         """

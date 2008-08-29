@@ -11,7 +11,6 @@ from unittest import TestCase, TestLoader
 
 from sqlobject import SQLObjectNotFound
 
-from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
@@ -59,6 +58,62 @@ class TestCodeImport(TestCase):
         self.assertEqual(code_import, branch.code_import)
         CodeImportSet().delete(code_import)
         self.assertEqual(None, branch.code_import)
+
+
+class TestBranchGetRevision(TestCaseWithFactory):
+    """Make sure that `Branch.getBranchRevision` works as expected."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.branch = self.factory.makeBranch()
+
+    def _makeRevision(self, revno):
+        # Make a revision and add it to the branch.
+        rev = self.factory.makeRevision()
+        br = self.branch.createBranchRevision(revno, rev)
+        return rev
+
+    def testGetBySequenceNumber(self):
+        rev1 = self._makeRevision(1)
+        branch_revision = self.branch.getBranchRevision(sequence=1)
+        self.assertEqual(rev1, branch_revision.revision)
+        self.assertEqual(1, branch_revision.sequence)
+
+    def testGetByRevision(self):
+        rev1 = self._makeRevision(1)
+        branch_revision = self.branch.getBranchRevision(revision=rev1)
+        self.assertEqual(rev1, branch_revision.revision)
+        self.assertEqual(1, branch_revision.sequence)
+
+    def testGetByRevisionId(self):
+        rev1 = self._makeRevision(1)
+        branch_revision = self.branch.getBranchRevision(
+            revision_id=rev1.revision_id)
+        self.assertEqual(rev1, branch_revision.revision)
+        self.assertEqual(1, branch_revision.sequence)
+
+    def testNonExistant(self):
+        rev1 = self._makeRevision(1)
+        self.assertTrue(self.branch.getBranchRevision(sequence=2) is None)
+        rev2 = self.factory.makeRevision()
+        self.assertTrue(self.branch.getBranchRevision(revision=rev2) is None)
+        self.assertTrue(
+            self.branch.getBranchRevision(revision_id='not found') is None)
+
+    def testInvalidParams(self):
+        self.assertRaises(AssertionError, self.branch.getBranchRevision)
+        rev1 = self._makeRevision(1)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          sequence=1, revision=rev1,
+                          revision_id=rev1.revision_id)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          sequence=1, revision=rev1)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          revision=rev1, revision_id=rev1.revision_id)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          sequence=1, revision_id=rev1.revision_id)
 
 
 class TestBranch(TestCaseWithFactory):
@@ -643,27 +698,24 @@ class BranchAddLandingTarget(TestCase):
         self.assertEqual(proposal.whiteboard, whiteboard)
 
 
-class BranchDateLastModified(BranchTestCase):
+class BranchDateLastModified(TestCaseWithFactory):
     """Exercies the situations where date_last_modifed is udpated."""
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        BranchTestCase.setUp(self)
+        super(BranchDateLastModified, self).setUp()
         login('test@canonical.com')
-
-    def tearDown(self):
-        logout()
-        BranchTestCase.tearDown(self)
+        self.addCleanup(logout)
 
     def test_initialValue(self):
         """Initially the date_last_modifed is the date_created."""
-        branch = self.makeBranch()
+        branch = self.factory.makeBranch()
         self.assertEqual(branch.date_last_modified, branch.date_created)
 
     def test_bugBranchLinkUpdates(self):
         """Linking a branch to a bug updates the last modified time."""
         date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
-        branch = self.makeBranch(date_created=date_created)
+        branch = self.factory.makeBranch(date_created=date_created)
         self.assertEqual(branch.date_last_modified, date_created)
 
         params = CreateBugParams(
@@ -678,7 +730,7 @@ class BranchDateLastModified(BranchTestCase):
     def test_specBranchLinkUpdates(self):
         """Linking a branch to a spec updates the last modified time."""
         date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
-        branch = self.makeBranch(date_created=date_created)
+        branch = self.factory.makeBranch(date_created=date_created)
         self.assertEqual(branch.date_last_modified, date_created)
 
         spec = getUtility(ISpecificationSet).new(
@@ -692,7 +744,7 @@ class BranchDateLastModified(BranchTestCase):
     def test_updateScannedDetailsUpdateModifedTime(self):
         """A branch that has been scanned is considered modified."""
         date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
-        branch = self.makeBranch(date_created=date_created)
+        branch = self.factory.makeBranch(date_created=date_created)
         self.assertEqual(branch.date_last_modified, date_created)
 
         branch.updateScannedDetails("hello world", 42)

@@ -368,7 +368,7 @@ logged.
     >>> handleMail(transaction)
     ERROR:...:Upload to Librarian failed...
     ...
-    UploadFailed: (111, 'Connection refused')
+    UploadFailed: [...]: (111, 'Connection refused')
 
     >>> len(stub.test_emails)
     2

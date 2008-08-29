@@ -25,7 +25,7 @@ from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
@@ -515,7 +515,14 @@ def print_ppa_packages(contents):
 
 
 def print_location(contents):
-    """Print the hierarchy, application tabs, and main heading of the page."""
+    """Print the hierarchy, application tabs, and main heading of the page.
+    
+    The hierarchy shows your position in the Launchpad structure:
+    for example, Launchpad > Ubuntu > 8.04.
+    The application tabs represent the major facets of an object:
+    for example, Overview, Bugs, and Translations.
+    The main heading is the first <h1> element in the page.
+    """
     doc = find_tag_by_id(contents, 'document')
     hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(
         recursive=False)
@@ -610,6 +617,7 @@ def setUpGlobs(test):
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['login'] = login
+    test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_action_links'] = print_action_links

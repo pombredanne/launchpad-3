@@ -1,5 +1,5 @@
 # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0222
+# pylint: disable-msg=W0222,W0231
 
 __metaclass__ = type
 
@@ -13,22 +13,24 @@ import pytz
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.urlutils import local_path_to_url
 
 from twisted.internet import defer, error
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
+from zope.component import getUtility
+
 from canonical.codehosting.puller import get_lock_id_for_branch_id, scheduler
+from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
-from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.xmlrpc import faults
 from canonical.testing import (
-    reset_logging, TwistedLayer, TwistedLaunchpadZopelessLayer)
+    reset_logging, TwistedLayer, TwistedAppServerLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, suppress_stderr, ProcessTestsMixin)
 
@@ -41,6 +43,15 @@ class FakeBranchStatusClient:
 
     def getBranchPullQueue(self, branch_type):
         return defer.succeed(self.branch_queues[branch_type])
+
+    def setStackedOn(self, branch_id, stacked_on_location):
+        if stacked_on_location == 'raise-branch-not-found':
+            try:
+                raise faults.NoSuchBranch(stacked_on_location)
+            except faults.NoSuchBranch:
+                return defer.fail()
+        self.calls.append(('setStackedOn', branch_id, stacked_on_location))
+        return defer.succeed(None)
 
     def startMirroring(self, branch_id):
         self.calls.append(('startMirroring', branch_id))
@@ -227,6 +238,9 @@ class TestPullerMonitorProtocol(
         def __init__(self):
             self.calls = []
 
+        def setStackedOn(self, stacked_on_location):
+            self.calls.append(('setStackedOn', stacked_on_location))
+
         def startMirroring(self):
             self.calls.append('startMirroring')
 
@@ -253,6 +267,13 @@ class TestPullerMonitorProtocol(
         """Receiving a startMirroring message notifies the listener."""
         self.protocol.do_startMirroring()
         self.assertEqual(['startMirroring'], self.listener.calls)
+        self.assertProtocolSuccess()
+
+    def test_setStackedOn(self):
+        # Receiving a setStackedOn message notifies the listener.
+        self.protocol.do_setStackedOn('/~foo/bar/baz')
+        self.assertEqual(
+            [('setStackedOn', '/~foo/bar/baz')], self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorSucceeded(self):
@@ -437,6 +458,27 @@ class TestPullerMaster(TrialTestCase):
 
         return deferred.addCallback(checkMirrorStarted)
 
+    def test_setStackedOn(self):
+        stacked_on_location = '/~foo/bar/baz'
+        deferred = self.eventHandler.setStackedOn(stacked_on_location)
+
+        def checkSetStackedOn(ignored):
+            self.assertEqual(
+                [('setStackedOn', self.arbitrary_branch_id,
+                  stacked_on_location)],
+                self.status_client.calls)
+
+        return deferred.addCallback(checkSetStackedOn)
+
+    def test_setStackedOnBranchNotFound(self):
+        stacked_on_location = 'raise-branch-not-found'
+        deferred = self.eventHandler.setStackedOn(stacked_on_location)
+
+        def checkSetStackedOn(ignored):
+            self.assertEqual([], self.status_client.calls)
+
+        return deferred.addCallback(checkSetStackedOn)
+
     def test_mirrorComplete(self):
         arbitrary_revision_id = 'rev1'
         deferred = self.eventHandler.startMirroring()
@@ -558,15 +600,22 @@ protocol = PullerWorkerProtocol(sys.stdout)
 """
 
 
-class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
+class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
     """Tests for the puller master that launch sub-processes."""
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedAppServerLayer
 
     def setUp(self):
-        BranchTestCase.setUp(self)
-        self.db_branch = self.makeBranch(BranchType.HOSTED)
-        self.bzr_tree = self.createTemporaryBazaarBranchAndTree('src-branch')
+        TrialTestCase.setUp(self)
+        PullerBranchTestCase.setUp(self)
+        self.makeCleanDirectory(config.codehosting.branches_root)
+        self.makeCleanDirectory(config.supermirror.branchesdest)
+        branch_id = self.factory.makeBranch(BranchType.HOSTED).id
+        self.layer.txn.commit()
+        self.db_branch = getUtility(IBranchSet).get(branch_id)
+        self.bzr_tree = self.make_branch_and_tree('src-branch')
+        self.bzr_tree.commit('rev1')
+        self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakeBranchStatusClient()
 
     def run(self, result):
@@ -594,9 +643,10 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
             worker command line arguments, the destination branch and an
             instance of PullerWorkerProtocol.
         """
+        hosted_url = str('lp-hosted:///' + self.db_branch.unique_name)
         puller_master = cls(
-            self.db_branch.id, local_path_to_url('src-branch'),
-            self.db_branch.unique_name, self.db_branch.branch_type,
+            self.db_branch.id, hosted_url,
+            self.db_branch.unique_name[1:], self.db_branch.branch_type,
             logging.getLogger(), self.client,
             set([config.error_reports.oops_prefix]))
         puller_master.destination_url = os.path.abspath('dest-branch')
@@ -699,7 +749,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
         check_lock_id_script = """
         branch.lock_write()
-        protocol.mirrorSucceeded('a', 'b')
+        protocol.mirrorSucceeded('b')
         protocol.sendEvent(
             'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()

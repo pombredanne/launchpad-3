@@ -5,12 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'CveSetNavigation',
     'CveContextMenu',
-    'CveSetContextMenu',
     'CveLinkView',
-    'CveUnlinkView',
+    'CveSetContextMenu',
+    'CveSetNavigation',
     'CveSetView',
+    'CveUnlinkView',
     ]
 
 from zope.component import getUtility
