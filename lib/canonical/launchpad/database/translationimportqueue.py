@@ -706,21 +706,20 @@ class TranslationImportQueue:
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None):
         """See ITranslationImportQueue."""
-        # XXX: This whole set of ifs is a workaround for bug 44773
-        # (Python's gzip support sometimes fails to work when using
-        # plain tarfile.open()). The issue is that we can't rely on
-        # tarfile's smart detection of filetypes and instead need to
+        # XXX: kiko 2008-02-08 bug=4473: This whole set of ifs is a
+        # workaround for bug 44773 (Python's gzip support sometimes fails to
+        # work when using plain tarfile.open()). The issue is that we can't
+        # rely on tarfile's smart detection of filetypes and instead need to
         # hardcode the type explicitly in the mode. We simulate magic
         # here to avoid depending on the python-magic package. We can
         # get rid of this when http://bugs.python.org/issue1488634 is
         # fixed.
         #
-        # XXX: Incidentally, this also works around bug #1982 (Python's
-        # bz2 support is not able to handle external file objects). That
-        # bug is worked around by using tarfile.open() which wraps the
-        # fileobj in a tarfile._Stream instance. We can get rid of this
-        # when we upgrade to python2.5 everywhere.
-        #       -- kiko, 2008-02-08
+        # XXX: 2008-02-08 kiko bug=1982: Incidentally, this also works around
+        # bug #1982 (Python's bz2 support is not able to handle external file
+        # objects). That bug is worked around by using tarfile.open() which
+        # wraps the fileobj in a tarfile._Stream instance. We can get rid of
+        # this when we upgrade to python2.5 everywhere.
         num_files = 0
 
         if content.startswith('BZh'):
