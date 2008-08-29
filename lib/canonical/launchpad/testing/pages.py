@@ -105,17 +105,13 @@ class WebServiceCaller:
                             url after the hostname.
         """
         if resource_path.startswith('/'):
-            # Prevent os.path.join from interpreting resource_path as an
-            # absolute url.
-            resource_path = resource_path[1:]
-        else:
-            # For consistency with urls from other *.launchpad.dev virtual
-            # hosts, the resource_path must start with a slash.
+            # Prevent os.path.join() from interpreting resource_path as an
+            # absolute url. This allows paths that appear consistent with urls
+            # from other *.launchpad.dev virtual hosts.
             # For example:
             #   /firefox = http://launchpad.dev/firefox
             #   /firefox = http://api.launchpad.dev/beta/firefox
-            raise AssertionError("resource_path must start with a slash: %s"
-                                 % resource_path)
+            resource_path = resource_path[1:]
         url_with_version = os.path.join(api_version, resource_path)
         return urljoin(self.DEV_SERVER_URL, url_with_version)
 
