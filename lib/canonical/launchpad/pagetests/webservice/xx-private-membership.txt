@@ -9,7 +9,7 @@ team.
 
     # XXX: 2008-08-01, salgado: Notice how the total_size is incorrect here.
     # That ought to be fixed at some point.
-    >>> member = user_webservice.get("~member").jsonBody()
+    >>> member = user_webservice.get("/~member").jsonBody()
     >>> response = user_webservice.get(
     ...     member['memberships_details_collection_link'])
     >>> print sorted(response.jsonBody().items())

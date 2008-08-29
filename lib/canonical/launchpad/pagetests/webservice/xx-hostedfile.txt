@@ -7,11 +7,11 @@ The example used here is a person's mugshot.
 
 Salgado starts out with a link to a mugshot, but no actual mugshot.
 
-    >>> salgado = webservice.get('~salgado').jsonBody()
+    >>> salgado = webservice.get('/~salgado').jsonBody()
     >>> salgado['mugshot_link']
     u'http://.../~salgado/mugshot'
 
-    >>> salgado_mugshot = '~salgado/mugshot'
+    >>> salgado_mugshot = '/~salgado/mugshot'
     >>> print webservice.get(salgado_mugshot)
     HTTP/1.1 404 Not Found
     ...
@@ -83,11 +83,11 @@ You also can't upload an image that's the wrong size.
 
 Nor can you change a person's mugshot by PUTting to that person's URI.
 
-    >>> salgado = webservice.get('~salgado').jsonBody()
+    >>> salgado = webservice.get('/~salgado').jsonBody()
     >>> salgado['mugshot_link'] = 'http://google.com/logo.png'
 
     >>> import simplejson
-    >>> print webservice('~salgado', 'PUT', simplejson.dumps(salgado),
+    >>> print webservice('/~salgado', 'PUT', simplejson.dumps(salgado),
     ...                  {'Content-type': 'application/json'})
     HTTP/1.1 400 Bad Request
     ...
