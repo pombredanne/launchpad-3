@@ -421,7 +421,7 @@ there are no binaries to be copied.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (source not completely built while copying binaries)
+    (source has no binaries to be copied)
 
 We will mark the pmount build completed, to emulate the situation
 described in bug #236407 when binaries were built but have to
@@ -476,8 +476,7 @@ has unpublished binaries.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (source has unpublished binaries, please wait for them
-     to be published before copying)
+    (source has no binaries to be copied)
 
 We will build and publish the architecture independent binary for
 pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.

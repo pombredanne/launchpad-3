@@ -40,7 +40,7 @@
                         canBeNominatedFor getNominationFor getNominations
                         date_last_message number_of_duplicates
                         message_count getQuestionCreatedFromBug
-                        canBeAQuestion"
+                        canBeAQuestion getBugTasksByPackageName"
             />
         <require
             permission="launchpad.Edit"
@@ -148,6 +148,9 @@
       <browser:page
           name="+portlet-subscribers"
           template="../templates/bug-portlet-subscribers.pt" />
+      <browser:page
+          name="+portlet-notified"
+          template="../templates/bug-portlet-notified.pt" />
     </browser:pages>
 
 

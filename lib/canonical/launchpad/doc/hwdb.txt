@@ -336,7 +336,7 @@ the field `owner` is updated.
 A submission does not necessarily have an email address (anonymous
 submission). In this case the owner is always None.
 
-    >>> submission = hw_submission_set.createSubmission(
+    >>> submission_no_owner = hw_submission_set.createSubmission(
     ...     date_created=date_created,
     ...     format=HWSubmissionFormat.VERSION_1,
     ...     private=False,
@@ -348,7 +348,35 @@ submission). In this case the owner is always None.
     ...     filename=u'hwinfo.txt',
     ...     filesize=len(submission_data),
     ...     system_fingerprint=u'Dell Inspiron 1234')
-    >>> print submission.raw_emailaddress
+    >>> print submission_no_owner.raw_emailaddress
     None
-    >>> print submission.owner
+    >>> print submission_no_owner.owner
     None
+
+== Links to Bugs ==
+
+HWDB submissions can be linked to bugs. These links are created by
+IHWSubmissionBugSet.create().
+
+    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> submission_bug_set = getUtility(IHWSubmissionBugSet)
+    >>> submission_bug = submission_bug_set.create(
+    ...     submission_no_owner, bug_one)
+    >>> transaction.commit()
+    >>> print submission_bug.submission.submission_key
+    unique-id-5
+    >>> submission_bug.bug.id
+    1
+
+Links between a bug and a submission must be unique.
+
+    >>> submission_bug_set.create(submission_no_owner, bug_one)
+    <HWSubmissionBug at ...>
+    >>> transaction.commit()
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ... violates unique constraint
+    "hwsubmissionbug__submission__bug__key"
+

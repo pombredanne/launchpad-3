@@ -41,6 +41,7 @@ from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
+from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
@@ -461,7 +462,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def getBuiltBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
-        clauses = ["""
+        clauses = """
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
             BinaryPackagePublishingHistory.distroarchseries=
@@ -472,14 +473,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.pocket=%s
         """ % sqlvalues(self.sourcepackagerelease, self.distroseries,
-                        self.archive, self.pocket)]
+                        self.archive, self.pocket)
 
         clauseTables = ['Build', 'BinaryPackageRelease', 'DistroArchSeries']
         orderBy = ['-BinaryPackagePublishingHistory.id']
         preJoins = ['binarypackagerelease']
 
         results = BinaryPackagePublishingHistory.select(
-            " AND ".join(clauses), orderBy=orderBy, clauseTables=clauseTables,
+            clauses, orderBy=orderBy, clauseTables=clauseTables,
             prejoins=preJoins)
         binary_publications = list(results)
 
@@ -1043,6 +1044,27 @@ class PublishingSet:
             BinaryPackageName.name,
             DistroArchSeries.architecturetag,
             Desc(BinaryPackagePublishingHistory.id))
+
+        return result_set
+
+    def getPackageDiffsForSources(self, one_or_more_source_publications):
+        """See `PublishingSet`."""
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IZStorm).get('main')
+        result_set = store.find(
+            (SourcePackagePublishingHistory, PackageDiff,
+             LibraryFileAlias, LibraryFileContent),
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                PackageDiff.to_sourceID,
+            PackageDiff.diff_contentID == LibraryFileAlias.id,
+            LibraryFileAlias.contentID == LibraryFileContent.id,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        result_set.order_by(
+            SourcePackagePublishingHistory.id,
+            Desc(PackageDiff.date_requested))
 
         return result_set
 

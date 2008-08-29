@@ -1,5 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0702
+# pylint: disable-msg=W0702,W0231
 
 """The Launchpad code hosting file system.
 
@@ -563,16 +563,10 @@ class _BaseLaunchpadServer(Server):
         transport = get_transport(memory_server.get_url())
         if stack_on_url == '':
             return transport
-
         format = BzrDirFormat.get_default_format()
-        format.initialize_on_transport(transport)
-        # XXX: JonathanLange 2008-05-20 bug=232242: We should use the
-        # higher-level bzrlib APIs to do this:
-        # bzrdir.get_config().set_default_stack_on(). But those APIs aren't in
-        # bzr mainline yet, so...
-        transport.put_bytes(
-            '.bzr/control.conf', 'default_stack_on=%s\n' % stack_on_url)
-        return transport
+        bzrdir = format.initialize_on_transport(transport)
+        bzrdir.get_config().set_default_stack_on(stack_on_url)
+        return get_transport('readonly+' + transport.base)
 
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.
@@ -791,7 +785,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
 def get_scanner_server():
     """Get a Launchpad internal server for scanning branches."""
-    proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
+    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     authserver = BlockingProxy(proxy)
     branch_transport = get_transport(
         'readonly+' + config.supermirror.warehouse_root_url)
@@ -821,7 +815,7 @@ def get_puller_server():
     the hosted branch area and is read-only, the other points to the mirrored
     area and is read/write.
     """
-    proxy = xmlrpclib.ServerProxy(config.codehosting.authserver)
+    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     authserver = BlockingProxy(proxy)
     hosted_transport = get_readonly_transport(
         get_chrooted_transport(config.codehosting.branches_root))
@@ -875,8 +869,13 @@ class AsyncVirtualTransport(Transport):
             method = getattr(transport, method_name)
             return method(path, *args, **kwargs)
 
+        def convert_not_enough_information(failure):
+            failure.trap(NotEnoughInformation)
+            raise NoSuchFile(failure.value.virtual_url_fragment)
+
         deferred = self._getUnderylingTransportAndPath(relpath)
         deferred.addCallback(call_method)
+        deferred.addErrback(convert_not_enough_information)
         return deferred
 
     # Transport methods

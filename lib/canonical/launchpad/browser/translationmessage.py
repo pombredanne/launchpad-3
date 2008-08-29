@@ -1421,13 +1421,15 @@ class TranslationMessageSuggestions:
 
     def __init__(self, title, translation, submissions,
                  user_is_official_translator, form_is_writeable,
-                 plural_form, seen_translations=set()):
+                 plural_form, seen_translations=None):
         self.title = title
         self.potmsgset = translation.potmsgset
         self.pofile = translation.pofile
         self.user_is_official_translator = user_is_official_translator
         self.form_is_writeable = form_is_writeable
         self.submissions = []
+        if seen_translations is None:
+            seen_translations = set()
 
         for submission in submissions:
             # XXX: JeroenVermeulen 2007-11-29 bug=165167: The second part of

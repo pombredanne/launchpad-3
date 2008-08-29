@@ -29,8 +29,8 @@ from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIdStoreFactory, IOpenIdAuthorization,
-    IOpenIdAuthorizationSet, IOpenIDRPConfig, IOpenIDRPConfigSet,
-    IOpenIDRPSummary, IOpenIDRPSummarySet)
+    IOpenIdAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
+    IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -246,7 +246,7 @@ class OpenIDRPSummarySet:
         if account.status != AccountStatus.ACTIVE:
             raise AssertionError(
                 'Account %d is not ACTIVE account.' % account.id)
-        identifier = account.openid_identity_url
+        identifier = IOpenIDPersistentIdentity(account).openid_identity_url
         self._assert_identifier_is_not_reused(account, identifier)
         if date_used is None:
             date_used = datetime.now(pytz.UTC)

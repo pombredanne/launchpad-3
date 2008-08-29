@@ -163,8 +163,9 @@ class GoogleWebService(Service):
         return config.google_test_service.launch
 
     def launch(self):
-        process = googletestservice.start_as_process()
-        stop_at_exit(process)
+        if self.should_launch:
+            process = googletestservice.start_as_process()
+            stop_at_exit(process)
 
 
 def stop_at_exit(process):

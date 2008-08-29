@@ -255,8 +255,8 @@ class BranchMergeProposalRevisionIdMixin:
         if source_branch.branch_type == BranchType.REMOTE:
             return revision_id
         else:
-            branch_revision = source_branch.getBranchRevisionByRevisionId(
-                revision_id)
+            branch_revision = source_branch.getBranchRevision(
+                revision_id=revision_id)
             if branch_revision is None:
                 return "no longer in the source branch."
             elif branch_revision.sequence is None:
@@ -542,7 +542,7 @@ class MergeProposalEditView(LaunchpadEditFormView,
             return str(data.pop('revision_number'))
         else:
             branch_revision = source_branch.getBranchRevision(
-                data.pop('revision_number'))
+                sequence=data.pop('revision_number'))
             return branch_revision.revision.revision_id
 
     def _validateRevisionNumber(self, data, revision_name):

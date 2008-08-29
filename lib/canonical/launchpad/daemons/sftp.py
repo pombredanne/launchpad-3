@@ -10,12 +10,12 @@ __all__ = ['SSHService']
 
 import os
 
-from twisted.cred.portal import Portal
-from twisted.conch.ssh import keys
 from twisted.application import service, strports
+from twisted.conch.ssh.keys import Key
+from twisted.cred.portal import Portal
+from twisted.web.xmlrpc import Proxy
 
 from canonical.config import config
-from canonical.authserver.client.twistedclient import TwistedAuthServer
 
 from canonical.codehosting import sshserver
 from canonical.codehosting.transport import set_up_logging
@@ -23,17 +23,11 @@ from canonical.codehosting.transport import set_up_logging
 
 def getPublicKeyString(data):
     """Compatibility wrapper to get a public key string."""
-    Key = getattr(keys, 'Key', None)
-    if Key is None:
-        return keys.getPublicKeyString(data=data)
     return Key.fromString(data)
 
 
 def getPrivateKeyObject(data):
     """Compatibility wrapper to get a private key object."""
-    Key = getattr(keys, 'Key', None)
-    if Key is None:
-        return keys.getPrivateKeyObject(data=data)
     return Key.fromString(data)
 
 
@@ -43,19 +37,17 @@ class SSHService(service.Service):
     def __init__(self):
         self.service = self.makeService()
 
-    def makeRealm(self):
-        """Create and return an authentication realm for the authserver."""
-        authserver = TwistedAuthServer(config.codehosting.authserver)
-        return sshserver.Realm(authserver)
-
     def makeFactory(self, hostPublicKey, hostPrivateKey):
         """Create and return an SFTP server that uses the given public and
         private keys.
         """
-        authserver = TwistedAuthServer(config.codehosting.authserver)
-        portal = Portal(self.makeRealm())
+        authentication_proxy = Proxy(
+            config.codehosting.authentication_endpoint)
+        branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
+        portal = Portal(
+            sshserver.Realm(authentication_proxy, branchfs_proxy))
         portal.registerChecker(
-            sshserver.PublicKeyFromLaunchpadChecker(authserver))
+            sshserver.PublicKeyFromLaunchpadChecker(authentication_proxy))
         sftpfactory = sshserver.Factory(hostPublicKey, hostPrivateKey)
         sftpfactory.portal = portal
         return sftpfactory

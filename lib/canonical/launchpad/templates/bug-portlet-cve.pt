@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-cve" tal:condition="context/cves"
-  tal:define="current_task view/currentBugTask;
+  tal:define="current_task view/current_bugtask;
               url current_task/fmt:url"
 >
   <h2>

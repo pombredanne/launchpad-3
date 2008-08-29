@@ -66,11 +66,17 @@ class URLDereferencingMixin:
         request_host = self.request.get('HTTP_HOST')
         if config.vhosts.use_https:
             site_protocol = 'https'
+            default_port = '443'
         else:
             site_protocol = 'http'
+            default_port = '80'
 
-        if (host != request_host or protocol != site_protocol or
-            query != '' or fragment != ''):
+        url_host_and_http_host_are_identical = (
+            host == request_host
+            or host + ':' + default_port == request_host
+            or host == request_host + ':' + default_port)
+        if (not url_host_and_http_host_are_identical
+            or protocol != site_protocol or query != '' or fragment != ''):
             raise NotFound(self, url, self.request)
 
         path_parts = [urllib.unquote(part) for part in path.split('/')]
@@ -345,11 +351,9 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
         """
         if not isinstance(value, list):
             value = [value]
-        value = [self.value_marshaller.marshall_from_request(item)
-                 for item in value]
-        return super(
-           AbstractCollectionFieldMarshaller,
-           self)._marshall_from_request(value)
+        return self.field._type(
+            self.value_marshaller.marshall_from_request(item)
+            for item in value)
 
     def unmarshall(self, entry, value):
         """See `SimpleFieldMarshaller`.

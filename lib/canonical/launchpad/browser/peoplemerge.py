@@ -62,8 +62,12 @@ class RequestPeopleMergeView(AddView):
         email = emails[0]
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(user, login, email.email,
-                                  LoginTokenType.ACCOUNTMERGE)
+        # Need to remove the security proxy because the dupe account may have
+        # hidden email addresses.
+        from zope.security.proxy import removeSecurityProxy
+        token = logintokenset.new(
+            user, login, removeSecurityProxy(email).email,
+            LoginTokenType.ACCOUNTMERGE)
 
         # XXX: SteveAlexander 2006-03-07: An experiment to see if this
         #      improves problems with merge people tests.
@@ -246,7 +250,10 @@ class FinishedPeopleMergeRequestView(LaunchpadView):
             self.request.response.redirect(canonical_url(user))
             return
         assert result_count == 1
-        self.dupe_email = results[0].email
+        # Need to remove the security proxy because the dupe account may have
+        # hidden email addresses.
+        from zope.security.proxy import removeSecurityProxy
+        self.dupe_email = removeSecurityProxy(results[0]).email
 
     def render(self):
         if self.dupe_email:

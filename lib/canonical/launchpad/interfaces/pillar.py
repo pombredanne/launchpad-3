@@ -12,14 +12,16 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Int
 
 from canonical.launchpad import _
+from canonical.lazr.rest.declarations import exported
 
 
 __all__ = ['IPillar', 'IPillarName', 'IPillarNameSet']
 
 
 class IPillar(Interface):
-    active = Bool(title=_('Active'), description=_("""Whether or not
-        this item is active."""))
+    active = exported(
+        Bool(title=_('Active'),
+             description=_("Whether or not this item is active.")))
 
 
 class IPillarName(Interface):

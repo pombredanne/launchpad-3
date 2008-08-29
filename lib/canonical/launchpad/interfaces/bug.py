@@ -14,6 +14,7 @@ __all__ = [
     'IBugDelta',
     'IBugAddForm',
     'IFrontPageBugAddForm',
+    'InvalidBugTargetType',
     'IProjectBugAddForm',
     ]
 
@@ -41,7 +42,7 @@ from canonical.launchpad.validators.bugattachment import (
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_write_operation, exported,
-    operation_parameters, rename_parameters_as)
+    operation_parameters, rename_parameters_as, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
 
@@ -539,6 +540,20 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no such bugtask is found.
         """
 
+    def getBugTasksByPackageName(bugtasks):
+        """Return a mapping from `ISourcePackageName` to its bug tasks.
+
+        This mapping is suitable to pass as the bugtasks_by_package
+        cache to getConjoinedMaster().
+
+        The mapping is from a `ISourcePackageName` to all the bug tasks
+        that are targeted to such a package name, no matter which
+        distribution or distro series it is.
+
+        All the tasks that don't have a package will be available under
+        None.
+        """
+
 # We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug
@@ -693,3 +708,6 @@ class IBugSet(Interface):
             description
         """
 
+class InvalidBugTargetType(Exception):
+    """Bug target's type is not valid."""
+    webservice_error(400)

@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CodeImportMachineSetBreadcrumbBuilder',
     'CodeImportMachineSetNavigation',
     'CodeImportMachineSetView',
     'CodeImportMachineView',
@@ -23,6 +24,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     action, canonical_url, Navigation, LaunchpadFormView,
     LaunchpadView)
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.lazr import decorates
 
 
@@ -34,9 +36,10 @@ class CodeImportMachineSetNavigation(Navigation):
         """See `Navigation`."""
         return self.context.getByHostname(hostname)
 
-    def breadcrumb(self):
-        """See `Navigation`."""
-        return u'Machines'
+
+class CodeImportMachineSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ICodeImportMachineSet`."""
+    text = u'Machines'
 
 
 class CodeImportMachineSetView(LaunchpadView):

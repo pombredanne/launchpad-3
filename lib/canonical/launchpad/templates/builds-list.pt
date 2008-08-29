@@ -55,7 +55,7 @@
                    build/calculated_buildstart/fmt:displaydate" />
               </tal:soyuz_record>
               <tal:gina_record condition="not: build/buildduration">
-                  <i>not available</i>
+                  <i>at an unknown time</i>
               </tal:gina_record>
               <tal:show_builder_info condition="view/show_builder_info">
                 on

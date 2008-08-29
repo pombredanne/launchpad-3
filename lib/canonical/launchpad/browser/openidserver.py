@@ -30,6 +30,8 @@ from openid import oidutil
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
+from canonical.launchpad.components.openidserver import (
+    OpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.logintoken import (
@@ -87,12 +89,10 @@ class OpenIdMixin:
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
         self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
         self.openid_server = Server(store_factory(), self.server_url)
-        self.identity_url_prefix = (
-            allvhosts.configs['openid'].rooturl + '+id/')
 
     @property
     def user_identity_url(self):
-        return self.user.account.openid_identity_url
+        return OpenIDPersistentIdentity(self.user.account).openid_identity_url
 
     def isIdentityOwner(self):
         """Return True if the user can authenticate as the given ID."""
@@ -424,7 +424,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
         """Returns True if the identity URL is supported by the server."""
         identity = self.openid_request.identity
         return (self.openid_request.idSelect() or
-                identity.startswith(self.identity_url_prefix))
+                OpenIDPersistentIdentity.supportsURL(identity))
 
     def isAuthorized(self):
         """Check if the identity is authorized for the trust_root"""

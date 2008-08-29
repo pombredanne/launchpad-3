@@ -32,7 +32,7 @@
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
-            <h1>Cross-project bug tracking.</h1>
+            <h1>Cross-project bug tracking</h1>
             <p>
                 <img src="images/bugs/main-image.jpg" alt="Collaborate with free software communities." /></p>
                 <p class="intro-text">
@@ -91,7 +91,7 @@ There&rsquo;s even a &ldquo;Bugs fixed elsewhere&rdquo; report that shows which 
                         <p class="screen-holder">
                             <img src="images/bugs/3.png" alt="Bug tracker email interface" width="428" height="311" />                        </p>
                         <p>
-                            If you prefer, you can manage bug reports entirely through your mail client, updating bugs by replying to email notifications.
+                            If you prefer, you can manage bug reports entirely through your mail client.
 </p><p>
 Stay informed of the bugs that interest you with email and Atom feed subscriptions. Launchpad sends email updates to everyone who&rsquo;s interested in a bug, such as the initial reporter or the person assigned to work on a fix. You can also subscribe to individual bugs or all the bugs associated with a particular project or distribution package. Bug mail goes both ways: file new bugs, make comments, update statuses, add attachments and more by email.
                         </p>
@@ -103,7 +103,7 @@ Stay informed of the bugs that interest you with email and Atom feed subscriptio
                             <img src="images/bugs/5.png" alt="Found a fix? Upload a branch" />
                         </p>
                         <p>
-                            Other community members can download your branches and test them without the hassle of applying patches. Thanks to Bazaar, it&rsquo;s easy to merge the branch containing your bug fix into your project&rsquo;s trunk. Bazaar branches are like "living patches" - a single URL points to the latest version of the fix and a single command merges it into your trunk branch.
+                            Other community members can download your branches and test them without the hassle of applying patches. Thanks to Bazaar, it&rsquo;s easy to merge the branch containing your bug fix into your project&rsquo;s trunk. Bazaar branches are like "living patches" &mdash; a single URL points to the latest version of the fix and a single command merges it into your trunk branch.
                         </p>
                     </div>
                     <div class="clear"></div>
