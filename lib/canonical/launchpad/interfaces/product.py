@@ -25,6 +25,7 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ProductBugTracker, ProductNameField, PublicPersonChoice,
     Summary, Title, URIField)
+from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -379,8 +380,12 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
 
-    branches = Attribute(_("""An iterator over the Bazaar branches that are
-    related to this product."""))
+    branches = exported(
+        CollectionField(
+            title=_("An iterator over the Bazaar branches that are "
+                    "related to this product."),
+            readonly=True,
+            value_type=Reference(schema=IBranch)))
 
     bounties = Attribute(_("The bounties that are related to this product."))
 
