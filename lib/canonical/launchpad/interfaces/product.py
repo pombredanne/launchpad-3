@@ -25,6 +25,7 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ProductBugTracker, ProductNameField, PublicPersonChoice,
     Summary, Title, URIField)
+from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -33,7 +34,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
     ILaunchpadUsage)
-from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.milestone import (
+    ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
@@ -112,11 +114,11 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
-               IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IMakesAnnouncements, IHasOwner,
-               IHasSecurityContact,IHasSprints, IHasTranslationGroup,
+class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+               IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker,
+               IHasIcon, IHasLogo, IHasMentoringOffers, IHasMilestones,
+               IHasMugshot, IMakesAnnouncements, IHasOwner,
+               IHasSecurityContact, IHasSprints, IHasTranslationGroup,
                IKarmaContext, ILaunchpadUsage, ISpecificationTarget, IPillar):
     """A Product.
 
@@ -379,8 +381,12 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
 
-    branches = Attribute(_("""An iterator over the Bazaar branches that are
-    related to this product."""))
+    branches = exported(
+        CollectionField(
+            title=_("An iterator over the Bazaar branches that are "
+                    "related to this product."),
+            readonly=True,
+            value_type=Reference(schema=IBranch)))
 
     bounties = Attribute(_("The bounties that are related to this product."))
 

@@ -862,8 +862,8 @@ class BugTaskEditView(LaunchpadEditFormView):
             editable_field_names = set(self.default_field_names)
             editable_field_names.discard('bugwatch')
 
-            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
-            # doesn't belong here! See https://launchpad.net/bugs/63000
+            # XXX: Brad Bollenbach 2006-09-29 bug=63000: Permission checking
+            # doesn't belong here!
             if ('milestone' in editable_field_names and
                 not self.userCanEditMilestone()):
                 editable_field_names.remove("milestone")
@@ -2593,7 +2593,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Build a cache we can pass on to getConjoinedMaster(), so that
         # it doesn't have to iterate over all the bug tasks in each loop
         # iteration.
-        bugtasks_by_package = bugtask.getBugTasksByPackageName(all_bugtasks)
+        bugtasks_by_package = bug.getBugTasksByPackageName(all_bugtasks)
 
         for bugtask in all_bugtasks:
             conjoined_master = bugtask.getConjoinedMaster(
@@ -2627,7 +2627,8 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         return bugtask_and_nomination_views
 
-    def currentBugTask(self):
+    @property
+    def current_bugtask(self):
         """Return the current `IBugTask`.
 
         'current' is determined by simply looking in the ILaunchBag utility.

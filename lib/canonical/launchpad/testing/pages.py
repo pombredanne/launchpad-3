@@ -25,7 +25,7 @@ from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
@@ -603,6 +603,7 @@ def setUpGlobs(test):
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['login'] = login
+    test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_action_links'] = print_action_links
@@ -667,8 +668,8 @@ class PageStoryTestCase(unittest.TestCase):
             result = self.defaultTestResult()
         PageTestLayer.startStory()
         try:
-            # XXX RBC 20060117 we can hook in pre and post story actions
-            # here much more tidily (and in self.debug too)
+            # XXX Robert Collins 2006-01-17: we can hook in pre and post
+            # story actions here much more tidily (and in self.debug too)
             # - probably via self.setUp and self.tearDown
             self._suite.run(result)
         finally:

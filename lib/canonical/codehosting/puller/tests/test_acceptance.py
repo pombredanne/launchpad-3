@@ -181,11 +181,11 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-        # XXX: The first argument used to be db_branch.url, but this triggered
-        # Bug #193253 where for some reason Branch.open via HTTP makes
-        # an incomplete request to the HttpServer leaving a dangling thread.
-        # Our test suite now fails tests leaving dangling threads.
-        # -- StuartBishop 20080312
+        # XXX: StuartBishop 2008-03-12 Bug=193253: The first argument used to
+        # be db_branch.url, but this triggered Bug #193253 where for some
+        # reason Branch.open via HTTP makes an incomplete request to the
+        # HttpServer leaving a dangling thread. Our test suite now fails
+        # tests leaving dangling threads.
         self.assertMirrored(tree.basedir, db_branch)
 
     def _getImportMirrorPort(self):
@@ -218,9 +218,10 @@ class TestBranchPuller(PullerBranchTestCase):
         command, retcode, output, error = self.runPuller("import")
         self.assertRanSuccessfully(command, retcode, output, error)
 
-        # XXX: Because of Bug #193253, check the branch is mirrored by going
-        # straight to the filesystem, rather than over HTTP. This is to
-        # avoid Bazaar opening an HTTP connection that never closes.
+        # XXX: StuartBishop 2008-03-12 bug=193253: check that the branch is
+        # mirrored by going straight to the filesystem, rather than over HTTP.
+        # This is to avoid Bazaar opening an HTTP connection that never
+        # closes.
         self.assertMirrored(branch_path, db_branch)
 
     def test_mirrorEmpty(self):
