@@ -17,12 +17,16 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.transport import (
-    get_transport, _get_protocol_handlers, register_transport, Server,
-    unregister_transport)
+    chroot, get_transport, _get_protocol_handlers, register_transport, Server,
+    Transport, unregister_transport)
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import (
     TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport)
+from bzrlib.tests.test_transport_implementations import TransportTests
 from bzrlib.urlutils import escape, local_path_to_url
+
+from canonical.codehosting.transport import LaunchpadBranch
+
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -990,6 +994,58 @@ class TestLoggingSetup(BzrTestCase):
 
         self.assertEqual(root_handlers, logging.getLogger('').handlers)
         self.assertEqual(bzr_handlers, logging.getLogger('bzr').handlers)
+
+
+class TestingServer(LaunchpadInternalServer):
+    def __init__(self):
+        LaunchpadInternalServer.__init__(
+            self, 'lp-testing:///', BlockingProxy(FakeLaunchpad()), MemoryTransport())
+        self._chroot_servers = []
+
+    def _transportFactory(self, url):
+        """Construct a transport for the given URL. Used by the registry."""
+        assert url == self._scheme
+        r = LaunchpadInternalServer._transportFactory(self, url)
+        lp_branch = LaunchpadBranch.from_virtual_path(
+            self._authserver, '~testuser/firefox/qux')[0]
+        lp_branch.ensureUnderlyingPath(self._branch_transport)
+        t = r.clone('~testuser/firefox/qux/.bzr')
+        t.ensure_base()
+        chroot_server = chroot.ChrootServer(t)
+        chroot_server.setUp()
+        self._chroot_servers.append(chroot_server)
+        return get_transport(chroot_server.get_url())
+
+    def tearDown(self):
+        for s in self._chroot_servers:
+            s.tearDown()
+        LaunchpadInternalServer.tearDown(self)
+
+
+class ResultWrapper(object):
+
+    def __init__(self, result):
+        self.__result = result
+
+    def __getattr__(self, attr):
+        return getattr(self.__result, attr)
+
+    def addError(self, t, (et, v, tb)):
+        from bzrlib.tests import TestSkipped
+        if not isinstance(v, TestSkipped):
+            self.__result.addError(t, (et, v, tb))
+
+
+class TestLaunchpadTransportImplementation(TransportTests):
+    transport_class = Transport
+
+    def setUp(self):
+        self.transport_server = TestingServer
+        super(TestLaunchpadTransportImplementation, self).setUp()
+
+    def run(self, result):
+        super(TestLaunchpadTransportImplementation, self).run(
+            ResultWrapper(result))
 
 
 def test_suite():
