@@ -667,8 +667,8 @@ class PageStoryTestCase(unittest.TestCase):
             result = self.defaultTestResult()
         PageTestLayer.startStory()
         try:
-            # XXX RBC 20060117 we can hook in pre and post story actions
-            # here much more tidily (and in self.debug too)
+            # XXX Robert Collins 2006-01-17: we can hook in pre and post
+            # story actions here much more tidily (and in self.debug too)
             # - probably via self.setUp and self.tearDown
             self._suite.run(result)
         finally:

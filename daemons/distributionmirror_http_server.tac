@@ -22,6 +22,6 @@ tachandler.ReadyService().setServiceParent(httpserverService)
 root = DistributionMirrorTestHTTPServer()
 site = server.Site(root)
 site.displayTracebacks = False
-# XXX: The port 11375 is what we use in the URLs of our mirrors in sampledata,
-# so we need to use the same here. -- Guilherme Salgado, 2007-01-30
+# XXX: Guilherme Salgado 2007-01-30: The port 11375 is what we use in the
+# URLs of our mirrors in sampledata, so we need to use the same here.
 strports.service("11375", site).setServiceParent(httpserverService)
