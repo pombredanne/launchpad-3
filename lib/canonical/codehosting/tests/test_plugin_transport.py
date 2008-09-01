@@ -17,8 +17,7 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.tests import (
-    TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport,
-    TestSkipped)
+    TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport)
 from bzrlib.tests.test_transport_implementations import TransportTests
 from bzrlib.transport import (
     chroot, get_transport, _get_protocol_handlers, register_transport, Server,
@@ -35,7 +34,8 @@ from canonical.authserver.interfaces import (
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.sftp import FatLocalTransport
-from canonical.codehosting.tests.helpers import FakeLaunchpad
+from canonical.codehosting.tests.helpers import (
+    FakeLaunchpad, TestResultWrapper)
 from canonical.codehosting.transport import (
     AsyncLaunchpadTransport, AsyncVirtualTransport, BlockingProxy,
     InvalidControlDirectory, LaunchpadInternalServer, LaunchpadServer,
@@ -998,19 +998,20 @@ class TestLoggingSetup(BzrTestCase):
 class TestingServer(LaunchpadInternalServer):
     """A Server that provides instances of LaunchpadTransport for testing.
 
-    See the comment in `_transportFactory` about what we actually test.
+    See the comment in `_transportFactory` about what we actually test and
+    `TestLaunchpadTransportImplementation` for the actual TestCase class.
     """
 
     def __init__(self):
         """Initialize the server.
 
-        We register ourselves with the otherwise unused lp-testing:/// scheme,
+        We register ourselves with the scheme lp-testing=${id(self)}:///
         using the `FakeLaunchpad` authserver client and backed onto a
         MemoryTransport.
         """
         LaunchpadInternalServer.__init__(
-            self, 'lp-testing:///', BlockingProxy(FakeLaunchpad()),
-            MemoryTransport())
+            self, 'lp-testing-%s:///' % id(self),
+            BlockingProxy(FakeLaunchpad()), MemoryTransport())
         self._chroot_servers = []
 
     def _transportFactory(self, url):
@@ -1025,6 +1026,9 @@ class TestingServer(LaunchpadInternalServer):
             raise AssertionError(
                 "Don't know how to create non-root transport for testing.")
         root_transport = LaunchpadInternalServer._transportFactory(self, url)
+        # We clone to this particular URL because FakeLaunchpad's constructor
+        # creates a branch with this URL.  This is an instance of the Mystery
+        # Guest test anti-pattern.
         bzrdir_transport = root_transport.clone('~testuser/firefox/qux/.bzr')
         bzrdir_transport.ensure_base()
         chroot_server = chroot.ChrootServer(bzrdir_transport)
@@ -1033,32 +1037,14 @@ class TestingServer(LaunchpadInternalServer):
         return get_transport(chroot_server.get_url())
 
     def tearDown(self):
-        for s in self._chroot_servers:
-            s.tearDown()
+        """See `LaunchpadInternalServer.tearDown`.
+
+        In addition to calling the overridden method, we tear down any
+        ChrootServer instances we've set up.
+        """
+        for chroot_server in self._chroot_servers:
+            chroot_server.tearDown()
         LaunchpadInternalServer.tearDown(self)
-
-
-class TestResultWrapper:
-    """A wrapper for `TestResult` that knows about bzrlib's `TestSkipped`."""
-
-    def __init__(self, result):
-        self.__result = result
-
-    def addError(self, test_case, exc_info):
-        if not isinstance(exc_info[1], TestSkipped):
-            self.__result.addError(test_case, exc_info)
-
-    def addFailure(self, test_case, exc_info):
-        self.__result.addFailure(test_case, exc_info)
-
-    def addSuccess(self, test_case):
-        self.__result.addSuccess(test_case)
-
-    def startTest(self, test_case):
-        self.__result.startTest(test_case)
-
-    def stopTest(self, test_case):
-        self.__result.stopTest(test_case)
 
 
 class TestLaunchpadTransportImplementation(TransportTests):
