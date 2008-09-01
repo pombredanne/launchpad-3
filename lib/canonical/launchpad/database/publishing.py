@@ -1053,7 +1053,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             (SourcePackagePublishingHistory, PackageDiff,
              LibraryFileAlias, LibraryFileContent),
