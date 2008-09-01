@@ -530,13 +530,10 @@ class IBranch(IHasOwner):
             required=False,
             readonly=False))
 
-    private = exported(
-        Bool(
-            title=_("Keep branch confidential"), required=False,
-            description=_(
-                "Make this branch visible only to its subscribers."),
-            default=False),
-        exported_as='is_private')
+    private = Bool(
+        title=_("Keep branch confidential"), required=False,
+        description=_("Make this branch visible only to its subscribers."),
+        default=False)
 
     # People attributes
     registrant = exported(
@@ -928,6 +925,14 @@ class IBranchSet(Interface):
         """Find a branch by its ~owner/product/name unique name.
 
         Return the default value if no match was found.
+        """
+
+    def getRewriteMap():
+        """Return the branches that can appear in the rewrite map.
+
+        This returns only public, non-remote branches. The results *will*
+        include branches that aren't explicitly private but are stacked-on
+        private branches. The rewrite map generator filters these out itself.
         """
 
     def getByUrl(url, default=None):

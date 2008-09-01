@@ -78,7 +78,6 @@ Branches have the following attributes.
     control_format: None
     date_created: u'...'
     date_last_modified: u'...'
-    is_private: False
     mirror_status_message: None
     name: u'main'
     owner_link: u'http://.../~name12'

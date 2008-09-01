@@ -35,7 +35,7 @@ Karma is added for registering a branch.
 However, no karma is added for junk branches.
 
     >>> junk_branch = factory.makeBranch(
-    ...     owner=eric, product=None, explicit_junk=True)
+    ...     owner=eric, product=None)
 
 
 == Linking bugs and branches ==

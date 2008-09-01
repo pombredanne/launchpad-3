@@ -152,7 +152,8 @@ def create_bug_from_strings(
     distroset = getUtility(IDistributionSet)
     distribution = distroset.getByName(distribution)
 
-    # XXX: would be really great if spnset consistently offered getByName.
+    # XXX: kiko 2008-02-01: would be really great if spnset consistently
+    # offered getByName.
     spnset = getUtility(ISourcePackageNameSet)
     sourcepackagename = spnset.queryByName(sourcepackagename)
 
