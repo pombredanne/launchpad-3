@@ -101,12 +101,10 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
         if person is None:
             return {}
 
-        wikiname = getattr(person.ubuntuwiki, 'wikiname', '')
         return {
             'id': person.id,
             'displayname': person.displayname,
             'emailaddresses': self._getEmailAddresses(person),
-            'wikiname': wikiname,
             'name': person.name,
             'teams': self._getTeams(person),
         }

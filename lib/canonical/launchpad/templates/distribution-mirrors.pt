@@ -13,6 +13,8 @@
 
 <div metal:fill-slot="main">
 
+  <h1>Mirrors of <tal:context replace="context/title" /></h1>
+
   <tal:block define="mirrors_by_country view/getMirrorsGroupedByCountry">
 
   <div tal:condition="not: mirrors_by_country">

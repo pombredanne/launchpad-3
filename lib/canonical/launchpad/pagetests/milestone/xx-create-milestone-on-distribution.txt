@@ -24,7 +24,7 @@ of the distribution should be able to add milestones for it, of course!
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'name12'
-    >>> admin_browser.getControl('Change Registrant').click()
+    >>> admin_browser.getControl('Change owner').click()
 
 Now let's go back and try the add milestone page again. It works:
 

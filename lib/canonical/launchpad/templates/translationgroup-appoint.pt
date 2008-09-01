@@ -17,24 +17,25 @@
             Foo bar translation group
         </a>
       </div>
-      <h1>Appoint a translator</h1>
+      <h1>Appoint a translation team or supervisor</h1>
 
       <div metal:use-macro="context/@@launchpad_form/form" />
     </div>
 
     <div metal:fill-slot="help">
       <p>
-        Here you can appoint a translator to be responsible for a particular
-        language within this translation group.  One translator can take care
-        of any number of languages, but the group can have only one translator
-        for any single language.  To avoid mistakes, this form will not allow
-        you to appoint a new translator for a language that already has a
-        translator in this group.
+        Here you can appoint a translation team (or an individual supervisor)
+        to be responsible for a particular language within this translation
+        group.  One translation team can take care of any number of languages,
+        but the group can only appoint one team for any single language.  To
+        avoid mistakes, this form will not allow you to appoint a new team for
+        a language that already has one assigned in this group.
       </p>
       <p>
-        A translator does not have to be a single person.  If you want to have
+        A supervisor does not have to be a single person.  If you want to have
         several people taking care of a single language in this translation
-        group, make them a team and appoint that whole team as a translator.
+        group, make them a team and appoint that whole team as the translation
+        team.
       </p>
       <ul class="info">
         <li>

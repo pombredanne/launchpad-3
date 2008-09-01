@@ -17,9 +17,10 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import Join, LeftJoin
+from storm.expr import And, Join, LeftJoin
 from storm.info import ClassAlias
 from storm.store import Store
+from storm.zope.interfaces import IZStorm
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
@@ -47,6 +48,7 @@ from canonical.launchpad.interfaces import (
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
     IProduct, IProject, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
     NotFoundError, RepositoryFormat)
+from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -61,7 +63,7 @@ from canonical.launchpad.webapp import urlappend
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranch)
+    implements(IBranch, IBranchNavigationMenu)
     _table = 'Branch'
     _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
 
@@ -110,6 +112,8 @@ class Branch(SQLBase):
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
     revision_count = IntCol(default=DEFAULT, notNull=True)
+    stacked_on = ForeignKey(
+        dbName='stacked_on', foreignKey='Branch', default=None)
 
     def __repr__(self):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
@@ -159,7 +163,7 @@ class Branch(SQLBase):
 
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
-                         date_created=None):
+                         date_created=None, needs_review=False):
         """See `IBranch`."""
         if self.product is None:
             raise InvalidBranchMergeProposal(
@@ -208,10 +212,16 @@ class Branch(SQLBase):
         self.date_last_modified = date_created
         target_branch.date_last_modified = date_created
 
+        if needs_review:
+            queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
+        else:
+            queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
-            whiteboard=whiteboard, date_created=date_created)
+            whiteboard=whiteboard, date_created=date_created,
+            queue_status=queue_status)
         notify(SQLObjectCreatedEvent(bmp))
         return bmp
 
@@ -226,7 +236,8 @@ class Branch(SQLBase):
     @property
     def code_is_browseable(self):
         """See `IBranch`."""
-        return self.revision_count > 0 and not self.private
+        return ((self.revision_count > 0  or self.last_mirrored != None)
+            and not self.private)
 
     def _getNameDict(self, person):
         """Return a simple dict with the person name or placeholder."""
@@ -297,7 +308,7 @@ class Branch(SQLBase):
     @property
     def warehouse_url(self):
         """See `IBranch`."""
-        return 'lp-internal:///%s' % self.unique_name
+        return 'lp-mirrored:///%s' % self.unique_name
 
     @property
     def product_name(self):
@@ -508,21 +519,37 @@ class Branch(SQLBase):
         BranchSubscription.delete(subscription.id)
         store.flush()
 
-    def getBranchRevision(self, sequence):
+    def getBranchRevision(self, sequence=None, revision=None,
+                          revision_id=None):
         """See `IBranch`."""
-        assert sequence is not None, \
-               "Only use this to fetch revisions from mainline history."
-        return BranchRevision.selectOneBy(branch=self, sequence=sequence)
+        params = (sequence, revision, revision_id)
+        if len([p for p in params if p is not None]) != 1:
+            raise AssertionError(
+                "One and only one of sequence, revision, or revision_id "
+                "should have a value.")
+        if sequence is not None:
+            query = BranchRevision.sequence == sequence
+        elif revision is not None:
+            query = BranchRevision.revision == revision
+        else:
+            query = And(BranchRevision.revision == Revision.id,
+                        Revision.revision_id == revision_id)
 
-    def getBranchRevisionByRevisionId(self, revision_id):
-        """See `IBranch`."""
-        revision = Revision.selectOneBy(revision_id=revision_id)
-        return BranchRevision.selectOneBy(branch=self, revision=revision)
+        store = Store.of(self)
+
+        return store.find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            query).one()
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
-        return BranchRevision(
+        branch_revision = BranchRevision(
             branch=self, sequence=sequence, revision=revision)
+        # Allocate karma if no karma has been allocated for this revision.
+        if not revision.karma_allocated:
+            revision.allocateKarma(self)
+        return branch_revision
 
     def getTipRevision(self):
         """See `IBranch`."""
@@ -583,7 +610,7 @@ class Branch(SQLBase):
         elif self.branch_type == BranchType.HOSTED:
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
-            return 'lp-internal:///%s' % (self.unique_name,)
+            return 'lp-hosted:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 
@@ -612,7 +639,7 @@ class Branch(SQLBase):
         self.mirror_failures = 0
         self.mirror_status_message = None
         if (self.next_mirror_time != None
-            and self.last_mirror_attempt > self.next_mirror_time):
+            and self.last_mirror_attempt >= self.next_mirror_time):
             # No mirror was requested since we started mirroring.
             if self.branch_type == BranchType.MIRRORED:
                 self.next_mirror_time = (
@@ -997,6 +1024,20 @@ class BranchSet:
             return default
         else:
             return branch
+
+    def getRewriteMap(self):
+        """See `IBranchSet`."""
+        # Avoid circular imports.
+        from canonical.launchpad.database import Person, Product
+        store = getUtility(IZStorm).get('main')
+        # Left-join Product so that we still publish +junk branches.
+        prejoin = store.using(
+            LeftJoin(Branch, Product, Branch.product == Product.id), Person)
+        return (branch for (owner, product, branch) in prejoin.find(
+            (Person, Product, Branch),
+            Branch.branch_type != BranchType.REMOTE,
+            Branch.owner == Person.id,
+            Branch.private == False))
 
     def getBranchesToScan(self):
         """See `IBranchSet`"""

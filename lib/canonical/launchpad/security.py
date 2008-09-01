@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = []
 
 from zope.interface import implements, Interface
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.announcement import IAnnouncement
@@ -49,6 +49,7 @@ from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IBazaarApplication, IHasBug, IHasDrivers, IHasOwner, IShipItApplication,
     ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.location import IPersonLocation
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.milestone import IMilestone
 from canonical.launchpad.interfaces.oauth import IOAuthAccessToken
@@ -555,6 +556,32 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         return can_edit_team(self.obj.team, user)
 
 
+# XXX: 2008-08-01, salgado: At some point we should protect ITeamMembership
+# with launchpad.View so that this adapter is used.  For now, though, it's
+# going to be used only on the webservice (which explicitly checks for
+# launchpad.View) so that we don't leak memberships of private teams.
+class ViewTeamMembership(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = ITeamMembership
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can only view public memberships."""
+        return self.obj.team.visibility == PersonVisibility.PUBLIC
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can view the team's membership.
+
+        Anyone can see a public team's membership. Only a team member or
+        a Launchpad admin can view a private membership.
+        """
+        if self.obj.team.visibility == PersonVisibility.PUBLIC:
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admins) or user.inTeam(self.obj.team):
+            return True
+        return False
+
+
 class EditPersonBySelfOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IPerson
@@ -579,17 +606,40 @@ class EditPersonLocation(AuthorizationBase):
         changed by the person himself or admins.
         """
         location = self.obj.location
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user == self.obj or user.inTeam(admins):
-            # The person himself and LP admins can always change that person's
-            # location.
+        if location is None:
+            # No PersonLocation entry exists for this person, so anybody can
+            # change this person's location.
             return True
-        elif location is None or location.last_modified_by != self.obj:
-            # No location has been specified yet or it has been specified by a
-            # non-authoritative source (not the person himself).
+
+        # There is a PersonLocation entry for this person, so we'll check its
+        # details to find out whether or not the user can edit them.
+        if (location.visible
+            and (location.latitude is None
+                 or location.last_modified_by != self.obj)):
+            # No location has been specified yet or it has been specified
+            # by a non-authoritative source (not the person himself), so
+            # anybody can change it.
             return True
         else:
-            return False
+            admins = getUtility(ILaunchpadCelebrities).admin
+            # The person himself and LP admins can always change that person's
+            # location.
+            return user == self.obj or user.inTeam(admins)
+
+
+class ViewPersonLocation(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IPersonLocation
+
+    def checkUnauthenticated(self):
+        return self.obj.visible
+
+    def checkAuthenticated(self, user):
+        if self.obj.visible:
+            return True
+        else:
+            admins = getUtility(ILaunchpadCelebrities).admin
+            return user == self.obj.person or user.inTeam(admins)
 
 
 class EditPersonBySelf(AuthorizationBase):
@@ -1397,19 +1447,42 @@ class AccessBranch(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBranch
 
-    def checkAuthenticated(self, user):
-        if not self.obj.private:
+    def _checkBranchAuthenticated(self, branch, user):
+        if not branch.private:
             return True
-        if user.inTeam(self.obj.owner):
+        if user.inTeam(branch.owner):
             return True
-        for subscriber in self.obj.subscribers:
+        for subscriber in branch.subscribers:
             if user.inTeam(subscriber):
                 return True
         celebs = getUtility(ILaunchpadCelebrities)
         return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
 
-    def checkUnauthenticated(self):
-        return not self.obj.private
+    def checkAuthenticated(self, user, checked_branches=None):
+        if checked_branches is None:
+            checked_branches = []
+        if self.obj in checked_branches:
+            return True
+        can_access = self._checkBranchAuthenticated(self.obj, user)
+        if can_access and self.obj.stacked_on is not None:
+            checked_branches.append(self.obj)
+            access = getAdapter(
+                self.obj.stacked_on, IAuthorization, name='launchpad.View')
+            can_access = access.checkAuthenticated(user, checked_branches)
+        return can_access
+
+    def checkUnauthenticated(self, checked_branches=None):
+        if checked_branches is None:
+            checked_branches = []
+        if self.obj in checked_branches:
+            return True
+        can_access = not self.obj.private
+        if can_access and self.obj.stacked_on is not None:
+            checked_branches.append(self.obj)
+            access = getAdapter(
+                self.obj.stacked_on, IAuthorization, name='launchpad.View')
+            can_access = access.checkUnauthenticated(checked_branches)
+        return can_access
 
 
 class EditBranch(AuthorizationBase):

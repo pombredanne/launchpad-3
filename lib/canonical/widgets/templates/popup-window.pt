@@ -18,7 +18,7 @@
       -->
     </style>
     <script language="Javascript" type="text/javascript"
-            tal:content="string:field = '${request/form/field}';" />
+            tal:content="string:field = ${view/field};" />
     <script language="Javascript" type="text/javascript">
 function update(value) {
     e = window.parent.document.getElementById(field);

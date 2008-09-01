@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 RSYNC_FILE=/srv/launchpad.net/etc/supermirror_rewritemap.conf
 PYTHON_VERSION=2.4
 PYTHON=/usr/bin/python${PYTHON_VERSION}
@@ -20,7 +22,7 @@ cd  /srv/launchpad.net/production/launchpad/cronscripts
 LOCK=/var/lock/smrewrite.lock
 MAP=/srv/launchpad.net/var/new-sm-map
 
-lockfile -l 600 ${LOCK}
+lockfile -30 -r 3 ${LOCK}
 
 $PYTHON supermirror_rewritemap.py -q ${MAP} && rsync ${MAP} \
         launchpad@bazaar.launchpad.net::config/launchpad-lookup.txt

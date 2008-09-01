@@ -12,14 +12,16 @@
   <div class="portletBody">
 
     <table>
-      <tr tal:repeat="team context/teams_participated_in">
-        <td tal:content="structure team/image:icon" />
-        <td>
-          <a tal:attributes="
-               href string:${team/fmt:url}/+assignedbugs"
-             tal:content="team/title">Team name</a>
-        </td>
-      </tr>
+      <tal:teams repeat="team context/teams_participated_in">
+        <tr tal:condition="team/@@+restricted-membership/userCanViewMembership">
+          <td tal:content="structure team/image:icon" />
+          <td>
+            <a tal:attributes="
+                href string:${team/fmt:url}/+assignedbugs"
+              tal:content="team/title">Team name</a>
+          </td>
+        </tr>
+      </tal:teams>
     </table>
   </div>
 

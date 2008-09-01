@@ -10,7 +10,6 @@ __all__ = [
     'IScriptActivitySet',
     ]
 
-from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import Datetime, TextLine
 
@@ -36,8 +35,15 @@ class IScriptActivity(Interface):
 
 class IScriptActivitySet(Interface):
 
-    def recordSuccess(name, date_started, date_completed):
-        """Record a successful script run."""
+    def recordSuccess(name, date_started, date_completed, hostname=None):
+        """Record a successful script run.
+
+        :param name: The name of the script that ran successfully.
+        :param date_started: The `datetime` when the script started.
+        :param date_completed: The `datetime` when the script finished.
+        :param hostname: The name of the host the script ran on. If None, then
+            use the hostname from `socket.gethostname`.
+        """
 
     def getLastActivity(name):
         """Get the last activity record for the given script name."""

@@ -1,10 +1,10 @@
-<aside
+<div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="privacy"
   tal:attributes="
-    class python: path('context/private') and 'portlet private' or 'portlet public'
+    class python: path('context/private') and 'aside private' or 'aside public'
   "
   tal:define="link context/menu:context/visibility"
 >
@@ -38,4 +38,4 @@
       background:url(/@@/security) center left no-repeat;
     "
   >Security vulnerability</div>
-</aside>
+</div>

@@ -143,7 +143,8 @@ class IBugWatch(IHasBug):
                 'tasks, and if it is linked and we notice a status change '
                 'in the watched bug then we will try to update the '
                 'Launchpad bug task accordingly.'),
-            value_type=Reference(schema=Interface))) # Redefined in bugtask.py
+            value_type=Reference(schema=Interface,)), # Redefined in bugtask.py
+            exported_as='bug_tasks')
 
     # Properties.
     needscheck = Attribute("A True or False indicator of whether or not "

@@ -5,7 +5,7 @@
   class="portlet" id="portlet-release-critical-bugs"
   tal:define="series_buglistings view/series_buglistings">
 
-  <h2>Release-critical bugs</h2>
+  <h2>Series-targeted bugs</h2>
 
   <div class="portletBody">
     <table width="100%">

@@ -2,6 +2,6 @@ Hello,
 
 %(body)s
 
---
+-- 
 %(branch)s
 %(rationale)s%(unsubscribe)s

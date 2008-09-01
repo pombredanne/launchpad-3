@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces for groups of translators."""
@@ -116,9 +116,12 @@ class ITranslationGroup(IHasOwner):
             )
     title = Title(
             title=_('Title'), required=True,
-            description=_("""The title of the Translation Group.
-            This title is displayed at the top of the Translation Group page
-            and in lists or reports of translation groups."""),
+            description=_("""Title of this Translation Group.
+            This title is displayed at the top of the Translation Group
+            page and in lists or reports of translation groups.  Do not
+            add "translation group" to this title, or it will be shown
+            double.
+            """),
             )
     summary = Summary(
             title=_('Summary'), required=True,

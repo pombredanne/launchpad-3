@@ -31,7 +31,8 @@
 
       <ul class="rollover buttons">
         <li>
-          <a href="/+tour">
+          <a href="/+tour/bugs"
+             tal:attributes="href string:${rooturl}+tour/bugs">
             <img
               alt="Take a tour"
               src="/+icing/but-lrg-takeatour.gif"
@@ -119,7 +120,6 @@
       <p id="application-summary">
         Launchpad&rsquo;s bug tracker allows collaboration
         between software teams on bug reports and fixes.
-        <a href="/+about">Learn more&#8230;</a>
       </p>
       <div class="columns">
         <div class="two column left">

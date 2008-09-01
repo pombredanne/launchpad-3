@@ -7,6 +7,8 @@ to confirm that the environment hasn't been corrupted by tests
 __metaclass__ = type
 
 from cStringIO import StringIO
+import os
+import signal
 from urllib import urlopen
 import unittest
 
@@ -15,12 +17,15 @@ import psycopg2
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
+from canonical.pidfile import pidfile_path
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing import (
-    BaseLayer, DatabaseLayer, FunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer,
-    LibrarianLayer, ZopelessLayer)
+from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from canonical.testing.layers import (
+    AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
+    LaunchpadFunctionalLayer, LaunchpadLayer, LaunchpadScriptLayer,
+    LaunchpadZopelessLayer, LayerInvariantError, LayerIsolationError,
+    LibrarianLayer, ZopelessLayer, _BaseAppServerLayer)
 
 
 class BaseTestCase(unittest.TestCase):
@@ -318,6 +323,65 @@ class LaunchpadScriptTestCase(BaseTestCase):
         cur.execute('SELECT current_user;')
         user = cur.fetchone()[0]
         self.assertEqual(user, 'librarian')
+
+
+class AppServerTestCase(BaseTestCase):
+    layer = AppServerLayer
+
+    want_component_architecture = True
+    want_launchpad_database = True
+    want_librarian_running = True
+    want_functional_flag = True
+    want_zopeless_flag = False
+
+    def testAppServerIsAvailable(self):
+        # Test that the app server is up and running.
+        root_url = AppServerLayer.appserver_config.vhost.mainsite.rooturl
+        home_page = urlopen(root_url).read()
+        self.failUnless(
+            'What is Launchpad?' in home_page,
+            "Home page couldn't be retrieved:\n%s" % home_page)
+
+    def testSetUpTwiceRaisesInvariantError(self):
+        # Calling setUp another time should raise an isolation error.
+        self.assertRaises(LayerInvariantError, _BaseAppServerLayer.setUp)
+
+
+class BaseAppServerSetupTestCase(unittest.TestCase):
+    """Tests for the setUp and tearDown components of AppServerLayer."""
+    # We need the database to be set up, no more.
+    layer = DatabaseLayer
+
+    def tearDown(self):
+        # If the app server was started, kill it.
+        if _BaseAppServerLayer.appserver is not None:
+            _BaseAppServerLayer.tearDown()
+
+    def test_tearDown(self):
+        # Test that tearDown kills the app server and remove the PID file.
+        _BaseAppServerLayer.setUp()
+        pid = AppServerLayer.appserver.pid
+        pid_file = pidfile_path('launchpad', _BaseAppServerLayer.appserver_config)
+        _BaseAppServerLayer.tearDown()
+        self.assertRaises(OSError, os.kill, pid, 0)
+        self.failIf(os.path.exists(pid_file), "PID file wasn't removed")
+        self.failUnless(AppServerLayer.appserver is None,
+            "appserver class attribute wasn't reset")
+
+    def test_testTearDownRaisesIsolationError(self):
+        # A LayerIsolationError should be raised if the app server dies.
+        _BaseAppServerLayer.setUp()
+        _BaseAppServerLayer.testSetUp()
+        os.kill(AppServerLayer.appserver.pid, signal.SIGTERM)
+        _BaseAppServerLayer.appserver.wait()
+        self.assertRaises(LayerIsolationError, _BaseAppServerLayer.testTearDown)
+
+    def test_testTearDownResetsDB(self):
+        # The database should be reset after each test since 
+        _BaseAppServerLayer.setUp()
+        _BaseAppServerLayer.testSetUp()
+        _BaseAppServerLayer.testTearDown()
+        self.assertEquals(True, LaunchpadTestSetup()._reset_db)
 
 
 class TestNameTestCase(unittest.TestCase):

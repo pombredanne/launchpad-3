@@ -41,11 +41,11 @@ class CodeReviewCommentMailer(BMPMailer):
             CodeReviewNotificationLevel.FULL)
         return klass(code_review_comment, recipients)
 
-    def _getSubject(self, recipient):
+    def _getSubject(self, email):
         """Don't do any string template insertions on subjects."""
         return self.code_review_comment.message.subject
 
-    def _getBody(self, recipient):
+    def _getBody(self, email):
         """Return the complete body to use for this email.
 
         If there was a vote, we prefix "Vote: " to the message.
@@ -70,17 +70,16 @@ class CodeReviewCommentMailer(BMPMailer):
 
         # Include both the canonical_url for the proposal and the reason
         # in the footer to the email.
-        reason, rationale = self._recipients.getReason(
-            recipient.preferredemail.email)
+        reason, rationale = self._recipients.getReason(email)
         footer = "%(proposal_url)s\n%(reason)s" % {
             'proposal_url': canonical_url(self.merge_proposal),
             'reason': reason.getReason()}
         return ''.join((
             prefix, main, footer_separator, footer))
 
-    def _getHeaders(self, recipient):
+    def _getHeaders(self, email):
         """Return the mail headers to use."""
-        headers = BMPMailer._getHeaders(self, recipient)
+        headers = BMPMailer._getHeaders(self, email)
         headers['Message-Id'] = self.message.rfc822msgid
         if self.message.parent is not None:
             headers['In-Reply-To'] = self.message.parent.rfc822msgid

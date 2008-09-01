@@ -445,8 +445,6 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
     12
     >>> print EmailAddress.select().count() - orig_email_count
     12
-    >>> print WikiName.select().count() - orig_wiki_count
-    12
 
 The ensure_person function, defined in gina/handlers.py is used by gina to
 create Person entries when necessary. It also sets the creation_rationale
@@ -542,8 +540,6 @@ changed, etc.
     >>> print TeamParticipation.select().count() - orig_tp_count
     12
     >>> print EmailAddress.select().count() - orig_email_count
-    12
-    >>> print WikiName.select().count() - orig_wiki_count
     12
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     40

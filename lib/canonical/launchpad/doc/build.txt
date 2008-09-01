@@ -566,7 +566,6 @@ the superseded one does.
     >>> hoary_pmount.getBuildRecords().count()
     5
 
-
 For a given distribution as well:
 
     >>> ubuntu.getBuildRecords().count()
@@ -575,12 +574,12 @@ For a given distribution as well:
     >>> L = ubuntu.getBuildRecords(build_state=BuildStatus.FULLYBUILT)
     >>> for l in L:
     ...     print l.datebuilt, l.id, l.buildstate.value
-    2007-08-10 00:00:13+00:00 30 1
+    2007-08-10 00:00:14+00:00 30 1
     2007-08-09 23:59:59+00:00 29 1
-    2005-03-25 00:00:01+00:00 7 1
-    2005-03-25 00:00:01+00:00 16 1
+    2005-03-25 00:00:03+00:00 7 1
+    2005-03-25 00:00:02+00:00 16 1
     2005-03-25 00:00:01+00:00 19 1
-    2004-09-27 11:57:13+00:00 2 1
+    2004-09-27 11:57:14+00:00 2 1
     2004-09-27 11:57:13+00:00 18 1
 
 Retrieve the current PENDING builds
@@ -604,14 +603,25 @@ Note that they are ordered by DESC lastscore, as expected:
     (11, 0, 10)
     (9, 0, 0)
 
+Define a helper function to print out build details.
+
+    >>> def print_build_details(builds):
+    ...     for build in builds:
+    ...         if build.archive.owner:
+    ...             print "%s: %s" % (build.archive.owner.name, build.title)
+    ...         else:
+    ...             print "main: %s" % (build.title)
+
 Using the optional name argument to filter build results:
 
     >>> builds = ubuntu.getBuildRecords(name='pm')
     >>> builds.count()
     4
-    >>> [(b.sourcepackagerelease.name, b.distroseries.name) for b in builds]
-    [(u'pmount', u'warty'), (u'pmount', u'hoary'), (u'pmount', u'hoary'),
-    (u'pmount', u'breezy-autotest')]
+    >>> print_build_details(builds)
+    ubuntu-team: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    ubuntu-team: i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
+    ubuntu-team: hppa build of pmount 0.1-1 in ubuntu hoary RELEASE
+    ubuntu-team: i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
 
 or using optional pocket argument:
 
@@ -644,15 +654,6 @@ Let's make cprov's archive private (and hence its builds become private):
     >>> cprov.archive.private = True
     >>> flush_database_updates()
 
-Now define a helper function to print out build details:
-
-    >>> def print_build_details(builds):
-    ...     for build in builds:
-    ...         if build.archive.owner:
-    ...             print "%s: %s" % (build.archive.owner.name, build.title)
-    ...         else:
-    ...             print "main: %s" % (build.title)
-
 The default set of builds with no user specified excludes private builds:
 
     >>> from canonical.launchpad.interfaces import IBuilderSet
@@ -675,8 +676,8 @@ three additional private builds for cprov:
     >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
@@ -691,8 +692,8 @@ Cprov can also see his own builds of course:
 
     >>> bob_builds = bob.getBuildRecords(user=cprov)
     >>> print_build_details(bob_builds)
-    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
@@ -1064,8 +1065,8 @@ Accessing the cprov builds when logged in as admin will see the records:
 
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -1075,8 +1076,8 @@ Likewise when logged in as cprov:
     >>> login('celso.providelo@canonical.com')
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -1093,8 +1094,8 @@ when accessing the builds:
     ...     print "Generated Unauthorized exception as expected"
     ... else:
     ...     print "FAIL: should raise Unauthorized exception"
-    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
 
 == Estimated Build Duration ==

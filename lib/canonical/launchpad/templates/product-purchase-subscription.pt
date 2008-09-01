@@ -20,7 +20,7 @@
     This project does not require a commercial subscription to be purchased.
   </div>
   <div class="error message" id="permission-error"
-       tal:condition="not: context/required:launchpad.Admin">
+       tal:condition="not: context/required:launchpad.Edit">
     You do not have permission to purchase a subscription for this project.
   </div>
   <div tal:condition="view/can_purchase_subscription">

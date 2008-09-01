@@ -8,6 +8,7 @@ __all__ = [
     'CodeImportEditView',
     'CodeImportMachineView',
     'CodeImportNewView',
+    'CodeImportSetBreadcrumbBuilder',
     'CodeImportSetNavigation',
     'CodeImportSetView',
     'CodeImportView',
@@ -36,6 +37,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
     Navigation, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interface import copy_field, use_template
@@ -52,8 +54,10 @@ class CodeImportSetNavigation(Navigation):
     def bugs(self):
         return getUtility(ICodeImportMachineSet)
 
-    def breadcrumb(self):
-        return u'Code Import System'
+
+class CodeImportSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ICodeImportSet`."""
+    text = u'Code Import System'
 
 
 class ReviewStatusDropdownWidget(LaunchpadDropdownWidget):

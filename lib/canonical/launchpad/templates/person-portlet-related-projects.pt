@@ -5,10 +5,10 @@
   omit-tag="">
 
 <div class="portlet" id="portlet-related-projects"
-     tal:condition="view/firstFiveRelatedProjects">
+     tal:condition="view/first_five_related_projects">
 
   <h2>Related projects</h2>
-  <table tal:define="pillarnames view/firstFiveRelatedProjects">
+  <table tal:define="pillarnames view/first_five_related_projects">
     <tbody>
       <tr tal:repeat="pillarname pillarnames">
         <td class="icon left">

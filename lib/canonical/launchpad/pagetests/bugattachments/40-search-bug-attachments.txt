@@ -8,7 +8,8 @@ Let's add a normal text file...
     >>> user_browser.getControl("Attachment").add_file(
     ...     StringIO("Traceback..."), "text/plain", "foo.txt")
     >>> user_browser.getControl("Description").value = "Some information."
-    >>> user_browser.getControl("Comment").value = "Added some information."
+    >>> user_browser.getControl(
+    ...     name="field.comment").value = "Added some information."
     >>> user_browser.getControl("Save Changes").click()
 
 And a patch...
@@ -21,7 +22,8 @@ And a patch...
     ...     StringIO("Patch..."), "text/plain", "foo.patch")
     >>> user_browser.getControl("patch").selected = True
     >>> user_browser.getControl("Description").value = "A patch."
-    >>> user_browser.getControl("Comment").value = "This patch fixes the bug."
+    >>> user_browser.getControl(
+    ...     name="field.comment").value = "This patch fixes the bug."
     >>> user_browser.getControl("Save Changes").click()
 
 And another patch...
@@ -33,7 +35,8 @@ And another patch...
     ...     StringIO("Patch..."), "text/plain", "foo.patch")
     >>> user_browser.getControl("patch").selected = True
     >>> user_browser.getControl("Description").value = "A patch."
-    >>> user_browser.getControl("Comment").value = "This patch fixes the bug."
+    >>> user_browser.getControl(
+    ...     name="field.comment").value = "This patch fixes the bug."
     >>> user_browser.getControl("Save Changes").click()
 
 And now we'll search for patches for firefox bugs.

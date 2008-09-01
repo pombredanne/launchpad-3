@@ -12,8 +12,8 @@
         <th>Registered by:</th>
         <td>
           <a
-            tal:content="context/owner/browsername"
-            tal:attributes="href context/owner/fmt:url"
+            tal:content="context/registrant/browsername"
+            tal:attributes="href context/registrant/fmt:url"
           >Foo Bar</a>
         </td>
       </tr>

@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView, safe_action)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.z3batching.batch import _Batch
@@ -34,6 +35,10 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     """An view for the default view of the LaunchpadRoot."""
+
+    # The homepage has two columns to hold featured projects. This
+    # determines the number of projects we display in each column.
+    FEATURED_PROJECT_ROWS = 10
 
     def isRedirectInhibited(self):
         """Returns True if redirection has been inhibited."""
@@ -49,6 +54,16 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     def featured_projects(self):
         """Return a list of featured projects."""
         return getUtility(IPillarNameSet).featured_projects
+
+    @property
+    def featured_projects_col_a(self):
+        """Return a list of featured projects."""
+        return self.featured_projects[:self.FEATURED_PROJECT_ROWS]
+
+    @property
+    def featured_projects_col_b(self):
+        """Return a list of featured projects."""
+        return self.featured_projects[self.FEATURED_PROJECT_ROWS:]
 
 
 class LaunchpadSearchFormView(LaunchpadView):
@@ -289,9 +304,12 @@ class LaunchpadSearchView(LaunchpadFormView):
             numeric_token = self._getNumericToken(self.text)
             if numeric_token is not None:
                 try:
-                    self._bug = getUtility(IBugSet).get(numeric_token)
+                    bug = getUtility(IBugSet).get(numeric_token)
+                    if check_permission("launchpad.View", bug):
+                        self._bug = bug
                 except NotFoundError:
-                    self._bug = None
+                    # Let self._bug remain None.
+                    pass
                 self._question = getUtility(IQuestionSet).get(numeric_token)
 
             name_token = self._getNameToken(self.text)

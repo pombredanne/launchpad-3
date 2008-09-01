@@ -721,23 +721,35 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEmail(contents)
 
     def testPGPSignatureNotPreserved(self):
-        """Email notifications should remove the PGP signature from the
-           changes file."""
+        """PGP signatures should be removed from PPA changesfiles.
+
+        Email notifications and the librarian file for the changesfile should
+        both have the PGP signature removed.
+        """
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
+        # Check the email.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         msg = message_from_string(raw_msg)
         body = msg.get_payload(decode=True)
+        self._checkPGPSignature(body)
 
+        # Check the packageupload's changesfile.
+        packageupload = self.uploadprocessor.last_processed_upload.queue_root
+        changesfile = packageupload.changesfile
+        self._checkPGPSignature(changesfile.read())
+
+    def _checkPGPSignature(self, text):
+        """Helper to see if a PGP signature is in the supplied text."""
         self.assertTrue(
-            "-----BEGIN PGP SIGNED MESSAGE-----" not in body,
+            "-----BEGIN PGP SIGNED MESSAGE-----" not in text,
             "Unexpected PGP header found")
         self.assertTrue(
-            "-----BEGIN PGP SIGNATURE-----" not in body,
+            "-----BEGIN PGP SIGNATURE-----" not in text,
             "Unexpected start of PGP signature found")
         self.assertTrue(
-            "-----END PGP SIGNATURE-----" not in body,
+            "-----END PGP SIGNATURE-----" not in text,
             "Unexpected end of PGP signature found")
 
     def doCustomUploadToPPA(self):

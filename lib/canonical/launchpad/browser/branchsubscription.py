@@ -108,19 +108,9 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
             # This is the case of URL hacking or stale page.
             return {}
         else:
-            return {'notification_level' : subscription.notification_level,
-                    'max_diff_lines' : subscription.max_diff_lines}
-
-    @action("Unsubscribe")
-    def unsubscribe(self, action, data):
-        # Be proactive in the checking to catch the stale post problem.
-        if self.context.hasSubscription(self.user):
-            self.context.unsubscribe(self.user)
-            self.request.response.addNotification(
-                "You have unsubscribed from this branch.")
-        else:
-            self.request.response.addNotification(
-                'You are not subscribed to this branch.')
+            return {'notification_level': subscription.notification_level,
+                    'max_diff_lines': subscription.max_diff_lines,
+                    'review_level': subscription.review_level}
 
     @action("Change")
     def change_details(self, action, data):
@@ -131,12 +121,24 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
             subscription.max_diff_lines = self.optional_max_diff_lines(
                 subscription.notification_level,
                 data['max_diff_lines'])
+            subscription.review_level = data['review_level']
 
             self.add_notification_message(
                 'Subscription updated to: ',
                 subscription.notification_level,
                 subscription.max_diff_lines,
                 subscription.review_level)
+        else:
+            self.request.response.addNotification(
+                'You are not subscribed to this branch.')
+
+    @action("Unsubscribe")
+    def unsubscribe(self, action, data):
+        # Be proactive in the checking to catch the stale post problem.
+        if self.context.hasSubscription(self.user):
+            self.context.unsubscribe(self.user)
+            self.request.response.addNotification(
+                "You have unsubscribed from this branch.")
         else:
             self.request.response.addNotification(
                 'You are not subscribed to this branch.')
@@ -187,11 +189,12 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         """Make sure that the if a team is subscribed, that the user is a member."""
         celebs = getUtility(ILaunchpadCelebrities)
         # An admin or bzr expert can subscribe anyone.
-        if self.user.inTeam(celebs.admin) or self.user.inTeam(celebs.bazaar_experts):
+        if self.user.inTeam(celebs.admin) or (
+            self.user.inTeam(celebs.bazaar_experts)):
             return
-            
+
         person = data.get('person')
-        if (person is not None and 
+        if (person is not None and
             person.isTeam() and
             not self.user.inTeam(person)):
             # A person can only subscribe a team if they are members
@@ -216,6 +219,11 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
         self.person = self.context.person
         LaunchpadEditFormView.initialize(self)
 
+    @action("Change", name="change")
+    def change_action(self, action, data):
+        """Update the branch subscription."""
+        self.updateContextFromData(data)
+
     @action("Unsubscribe", name="unsubscribe")
     def unsubscribe_action(self, action, data):
         """Unsubscribe the team from the branch."""
@@ -223,11 +231,6 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
         self.request.response.addNotification(
             "%s has been unsubscribed from this branch."
             % self.person.displayname)
-
-    @action("Change", name="change")
-    def change_action(self, action, data):
-        """Update the branch subscription."""
-        self.updateContextFromData(data)
 
     @property
     def next_url(self):

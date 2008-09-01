@@ -7,12 +7,8 @@ First make sure it uses Launchpad for translations.
     ...     auth='Basic test@canonical.com:test')
     >>> netapplet_owner_browser.open('http://launchpad.dev/netapplet')
     >>> print extract_text(
-    ...     find_tag_by_id(netapplet_owner_browser.contents,
-    ...                    'table-details'))
-    Status: Active
-    ...
-    Doesn&rsquo;t use Translations
-    ...
+    ...     find_tag_by_id(netapplet_owner_browser.contents, 'uses'))
+    Does not use Launchpad for development.
 
     >>> netapplet_owner_browser.getLink('Change details').click()
     >>> print netapplet_owner_browser.title
@@ -26,12 +22,8 @@ First make sure it uses Launchpad for translations.
     Network Applet in Launchpad
 
     >>> print extract_text(
-    ...     find_tag_by_id(netapplet_owner_browser.contents,
-    ...                    'table-details'))
-    Status: Active
-    ...
-    Uses Translations
-    ...
+    ...     find_tag_by_id(netapplet_owner_browser.contents, 'uses'))
+    Uses Launchpad for: Translations.
 
 Netapplet doesn't have TranslationGroup and uses open permissions. We
 can see that from the translations page.
@@ -89,5 +81,3 @@ group/permissions without using Translations.)
     >>> netapplet_owner_browser.title
     '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d
     Launchpad translation group'
-
-

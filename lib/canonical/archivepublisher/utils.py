@@ -63,10 +63,11 @@ class PublishingTunableLoop(object):
         self.logger = logger
         self.total_updated = 0
         self.offset = 0
+        self.done = False
 
     def isDone(self):
         """See `ITunableLoop`."""
-        return self.offset == self.input.count()
+        return self.done
 
     def __call__(self, chunk_size):
         """Run the initialized 'task' with a limited batch of 'input'.
@@ -75,17 +76,25 @@ class PublishingTunableLoop(object):
         """
         chunk_size = int(chunk_size)
         start = self.offset
-        end = self.offset + chunk_size
+        end = start + chunk_size
 
-        mem_size = resident() / (2 ** 20)
-        self.logger.debug("Batch [%d..%d) [%d MiB]" % (start, end, mem_size))
+        # The reason why we listify the sliced ResultSet is because we
+        # cannot very it's size using 'count' (see bug #217644). However,
+        # It's not exactly a problem considering non-empty set will be
+        # iterated anyway.
+        batch = list(self.input[start:end])
+        if len(batch) == 0:
+            self.done = True
+            return
 
-        batch = self.input[start:end]
         for pub in batch:
-            start += 1
-            self.offset = start
+            self.offset += 1
             self.task(pub)
             self.total_updated += 1
+
+        mem_size = resident() / (2 ** 20)
+        self.logger.debug(
+            "Batch [%d..%d) [%d MiB]" % (start, self.offset, mem_size))
 
         # Invalidate the whole cache for the main store, this we we will also
         # get rid of all the foreign keys referred by the publishing records.

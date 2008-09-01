@@ -53,7 +53,7 @@ class Message(SQLBase):
         notNull=False, default=None)
     distribution = ForeignKey(foreignKey='Distribution',
         dbName='distribution', notNull=False, default=None)
-    rfc822msgid = StringCol(unique=True, notNull=True)
+    rfc822msgid = StringCol(notNull=True)
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
     chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')

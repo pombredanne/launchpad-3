@@ -720,24 +720,50 @@ class BuildSet:
                 IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
+    def _handleOptionalParams(
+        self, queries, status=None, name=None, pocket=None):
+        """Construct query clauses needed/shared by all getBuild..() methods.
+
+        :param queries: container to which to add any resulting query clauses.
+        :param status: optional build state for which to add a query clause if
+            present.
+        :param name: optional source package release name for which to add a
+            query clause if present.
+        :param pocket: optional pocket for which to add a query clause if
+            present.
+        """
+        # Add query clause that filters on build state if the latter is
+        # provided.
+        if status is not None:
+            queries.append('buildstate=%s' % sqlvalues(status))
+
+        # Add query clause that filters on pocket if the latter is provided.
+        if pocket:
+            queries.append('pocket=%s' % sqlvalues(pocket))
+
+        # Add query clause that filters on source package release name if the
+        # latter is provided.
+        if name is not None:
+            queries.append('''
+                Build.sourcepackagerelease IN (
+                    SELECT DISTINCT SourcePackageRelease.id
+                    FROM    SourcePackageRelease
+                        JOIN
+                            SourcePackagename
+                        ON
+                            SourcePackageRelease.sourcepackagename = 
+                            SourcePackageName.id
+                        WHERE Sourcepackagename.name LIKE
+                        '%%' || %s || '%%')
+            ''' % quote_like(name))
+
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
                             user=None):
         """See `IBuildSet`."""
         queries = []
         clauseTables = []
 
-        if status:
-            queries.append('buildstate=%s' % sqlvalues(status))
-
-        if name:
-            queries.append("Build.sourcepackagerelease="
-                           "Sourcepackagerelease.id")
-            queries.append("Sourcepackagerelease.sourcepackagename="
-                           "Sourcepackagename.id")
-            queries.append("Sourcepackagename.name LIKE '%%' || %s || '%%'"
-                           % quote_like(name))
-            clauseTables.append('Sourcepackagerelease')
-            clauseTables.append('Sourcepackagename')
+        self._handleOptionalParams(queries, status, name)
 
         queries.append("Archive.id = Build.archive")
         clauseTables.append('Archive')
@@ -780,21 +806,7 @@ class BuildSet:
         queries = []
         clauseTables = []
 
-        if status:
-            queries.append('buildstate=%s' % sqlvalues(status))
-
-        if pocket:
-            queries.append('pocket=%s' % sqlvalues(pocket))
-
-        if name:
-            queries.append("Build.sourcepackagerelease="
-                           "Sourcepackagerelease.id")
-            queries.append("Sourcepackagerelease.sourcepackagename="
-                           "Sourcepackagename.id")
-            queries.append("Sourcepackagename.name LIKE '%%' || %s || '%%'"
-                           % quote_like(name))
-            clauseTables.append('Sourcepackagerelease')
-            clauseTables.append('Sourcepackagename')
+        self._handleOptionalParams(queries, status, name, pocket)
 
         # Ordering according status
         # * SUPERSEDED & All by -datecreated
@@ -843,21 +855,13 @@ class BuildSet:
             "NOT (Build.buildstate = %s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
 
-        # attempt to given status
-        if status is not None:
-            condition_clauses.append('buildstate=%s' % sqlvalues(status))
-
-        # restrict to provided pocket
-        if pocket:
-            condition_clauses.append('pocket=%s' % sqlvalues(pocket))
-
         # Ordering according status
         # * NEEDSBUILD & BUILDING by -lastscore
         # * SUPERSEDED & All by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
-            orderBy = ["-BuildQueue.lastscore"]
+            orderBy = ["-BuildQueue.lastscore", "Build.id"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
         elif status == BuildStatus.SUPERSEDED or status is None:
@@ -865,21 +869,9 @@ class BuildSet:
         else:
             orderBy = ["-Build.datebuilt"]
 
-        # Fallback to ordering by id as a tie-breaker.
-        orderBy.append("id")
-
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        if name:
-            condition_clauses.append("Build.sourcepackagerelease="
-                                     "Sourcepackagerelease.id")
-            condition_clauses.append("Sourcepackagerelease.sourcepackagename="
-                                     "Sourcepackagename.id")
-            condition_clauses.append(
-                "Sourcepackagename.name LIKE '%%' || %s || '%%'"
-                % quote_like(name))
-            clauseTables.append('Sourcepackagerelease')
-            clauseTables.append('Sourcepackagename')
+        self._handleOptionalParams(condition_clauses, status, name, pocket)
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds

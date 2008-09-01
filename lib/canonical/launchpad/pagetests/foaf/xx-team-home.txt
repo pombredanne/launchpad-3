@@ -40,7 +40,6 @@ details about the team.
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
     Email: Log in for email information.
-    Wiki: https://wiki.ubuntu.com/UbuntuTeam
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subteam-of'))
@@ -64,7 +63,6 @@ He can also see the contact email address.
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
     Email: support@ubuntu.com
-    Wiki: https://wiki.ubuntu.com/UbuntuTeam
 
 As teams do not have OpenID Logins, there is not link in the Contact
 details section for help.

@@ -38,11 +38,12 @@
         These teams are members of
         &#8220;<span tal:replace="context/browsername"/>&#8221;:
       </p>
-      <ul>
-        <li tal:repeat="team subteams">
-          <a tal:attributes="href string:../${team/name}"
-             tal:content="team/browsername">name</a>
-        </li>
+      <ul id="subteams">
+        <tal:subteams repeat="team subteams">
+          <li tal:condition="team/@@+restricted-membership/userCanViewMembership">
+            <tal:link replace="structure team/fmt:link" />
+          </li>
+        </tal:subteams>
       </ul>
     </tal:block>
     <p tal:condition="python: subteams and not superteams">
@@ -54,11 +55,12 @@
         &#8220;<span tal:replace="context/browsername"/>&#8221;
         is a member of these teams:
       </p>
-      <ul>
-        <li tal:repeat="team superteams">
-          <a tal:attributes="href string:../${team/name}"
-             tal:content="team/browsername">name</a>
-        </li>
+      <ul id="superteams">
+        <tal:superteams repeat="team superteams">
+          <li tal:condition="team/@@+restricted-membership/userCanViewMembership">
+            <tal:link replace="structure team/fmt:link" />
+          </li>
+        </tal:superteams>
       </ul>
     </tal:block>
   </tal:block>

@@ -20,7 +20,7 @@ from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
 
 class VPOExportSet:
-    """Retrieve collections of VPOExport objects."""
+    """Retrieve collections of `VPOExport` objects."""
 
     implements(IVPOExportSet)
 
@@ -87,7 +87,7 @@ class VPOExportSet:
                 break
 
     def get_pofile_rows(self, pofile):
-        """See IVPOExportSet."""
+        """See `IVPOExportSet`."""
         # Only fetch rows that belong to this POFile and are "interesting":
         # they must either be in the current template (sequence != 0, so not
         # "obsolete") or be in the current imported version of the translation
@@ -107,7 +107,7 @@ class VPOExportSet:
         return self._select(where=where)
 
     def _get_distroseries_pofiles(self, series, date=None, component=None,
-        languagepack=None):
+                                  languagepack=None):
         """Return a SQL query of PO files which would be contained in an
         export of a distribution series.
 
@@ -116,9 +116,9 @@ class VPOExportSet:
         """
         join = '''
             FROM POFile
-                JOIN POTemplate ON POTemplate.id = POFile.potemplate
-                JOIN DistroSeries ON
-                    DistroSeries.id = POTemplate.distroseries'''
+            JOIN POTemplate ON POTemplate.id = POFile.potemplate
+            JOIN DistroSeries ON DistroSeries.id = POTemplate.distroseries
+            '''
 
         where = '''
             WHERE
@@ -163,19 +163,22 @@ class VPOExportSet:
 
     def get_distroseries_pofiles(self, series, date=None, component=None,
         languagepack=None):
-        """See IVPOExport."""
-        query = self._get_distroseries_pofiles(
-            series, date, component, languagepack)
+        """See `IVPOExport`."""
+        query_parts = [
+            'SELECT DISTINCT POFile.id',
+            self._get_distroseries_pofiles(
+                series, date, component, languagepack),
+            "ORDER BY POFile.id",
+            ]
 
-        final_query = 'SELECT DISTINCT POFile.id\n' + query
         cur = cursor()
-        cur.execute(final_query)
+        cur.execute('\n'.join(query_parts))
         for (id,) in cur.fetchall():
             yield POFile.get(id)
 
     def get_distroseries_pofiles_count(self, series, date=None,
                                         component=None, languagepack=None):
-        """See IVPOExport."""
+        """See `IVPOExport`."""
         query = self._get_distroseries_pofiles(
             series, date, component, languagepack)
 
