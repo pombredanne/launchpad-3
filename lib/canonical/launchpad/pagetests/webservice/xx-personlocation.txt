@@ -6,7 +6,7 @@ be set that way, too.
 We start with the case where there is no information about the user's
 location, at all.
 
-    >>> jdub = webservice.get("/beta/~jdub").jsonBody()
+    >>> jdub = webservice.get("/~jdub").jsonBody()
     >>> print jdub['time_zone']
     None
     >>> print jdub['latitude']
@@ -17,18 +17,18 @@ location, at all.
 We show that we handle the case where there is no latitude or
 longitude information.
 
-    >>> marilize = webservice.get("/beta/~marilize").jsonBody()
+    >>> marilize = webservice.get("/~marilize").jsonBody()
     >>> print marilize['time_zone']
     Africa/Maseru
     >>> print marilize['latitude']
     None
     >>> print marilize['longitude']
     None
-   
+
 And here is an example, where we have location and time zone information for
 a user:
 
-    >>> kamion = webservice.get("/beta/~kamion").jsonBody()
+    >>> kamion = webservice.get("/~kamion").jsonBody()
     >>> print kamion['time_zone']
     Europe/London
     >>> print kamion['latitude']
@@ -39,12 +39,12 @@ a user:
 It is also possible to set the location, if it is not yet locked by being
 provided by the user themselves.
 
-    >>> print webservice.get("/beta/~jdub").jsonBody()['time_zone']
+    >>> print webservice.get("/~jdub").jsonBody()['time_zone']
     None
     >>> print webservice.named_post(
-    ...     '/beta/~jdub', 'setLocation', {},
+    ...     '/~jdub', 'setLocation', {},
     ...     latitude='-34.6', longitude='157.0', time_zone='Australia/Sydney')
     HTTP/1.1 200 Ok
     ...
-    >>> webservice.get("/beta/~jdub").jsonBody()['time_zone']
+    >>> webservice.get("/~jdub").jsonBody()['time_zone']
     u'Australia/Sydney'
