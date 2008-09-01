@@ -1024,7 +1024,8 @@ class TestingServer(LaunchpadInternalServer):
         """
         if url != self._scheme:
             raise AssertionError(
-                "Don't know how to create non-root transport for testing.")
+                "Don't know how to create non-root transport. Not needed for "
+                "testing.")
         root_transport = LaunchpadInternalServer._transportFactory(self, url)
         # We clone to this particular URL because FakeLaunchpad's constructor
         # creates a branch with this URL.  This is an instance of the Mystery
