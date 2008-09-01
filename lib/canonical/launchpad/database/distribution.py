@@ -299,9 +299,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return (2, self.name)
         return (3, self.name)
 
-    # XXX: This is used in a number of places and given it's already
-    # listified, why not spare the trouble of regenerating this as a
-    # cachedproperty? Answer: because it breaks tests. -- kiko, 2008-01-29
+    # XXX: 2008-01-29 kiko: This is used in a number of places and given it's
+    # already listified, why not spare the trouble of regenerating this as a
+    # cachedproperty? Answer: because it breaks tests.
     @property
     def serieses(self):
         """See `IDistribution`."""
