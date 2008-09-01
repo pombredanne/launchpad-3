@@ -45,7 +45,6 @@ class IHasBugs(Interface):
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
-                    distribution=None, scope=None, sourcepackagename=None,
                     has_no_package=None):
         """Search the IBugTasks reported on this entity.
 
