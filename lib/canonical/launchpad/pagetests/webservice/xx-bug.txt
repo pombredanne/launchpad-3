@@ -760,6 +760,9 @@ as well as a collection of all bug tasks raised on this target.
 Bug targets expose the searchTasks method, which provides a search interface
 for bug tasks, similar to the advanced search form on the web interface.
 
+Calling searchTasks with no arguments just returns a collection of all the
+bug tasks for the target.
+
     >>> show(webservice.named_get('/beta/firefox', 'searchTasks').jsonBody())
     [(u'entries',
       [{...
@@ -770,7 +773,12 @@ for bug tasks, similar to the advanced search form on the web interface.
         u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/1',
         ...
         u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/16',
-        ...]
+        ...
+     (u'total_size', 4)]
+
+Some parameters accept lists of values, just like when searching from
+the web interface. The importance and status parameters, for example,
+accept many values and return only tasks with these values.
 
     >>> show(webservice.named_get(
     ...     '/beta/firefox', 'searchTasks',
