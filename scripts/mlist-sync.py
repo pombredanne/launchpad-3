@@ -3,7 +3,7 @@
 
 """Sync Mailman data from one Launchpad to another."""
 
-# XXX BarryWarsaw 12-Feb-2008
+# XXX BarryWarsaw 2008-02-12:
 # Things this script does NOT do correctly.
 #
 # - Fix up the deactivated lists.  This isn't done because that data lives in

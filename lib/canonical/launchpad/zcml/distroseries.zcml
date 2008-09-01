@@ -71,6 +71,13 @@
     permission="zope.Public"
     />
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    factory="canonical.launchpad.browser.DistroSeriesBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistroSeriesNavigation"

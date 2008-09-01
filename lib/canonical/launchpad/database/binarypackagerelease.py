@@ -21,8 +21,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.database.files import BinaryPackageFile
-from canonical.launchpad.helpers import shortlist
-
 
 
 class BinaryPackageRelease(SQLBase):
@@ -92,48 +90,6 @@ class BinaryPackageRelease(SQLBase):
         distroarchseries_binary_package = distroarchseries.getBinaryPackage(
             self.binarypackagename)
         return distroarchseries_binary_package.currentrelease is None
-
-    def lastversions(self):
-        """Return the SUPERSEDED BinaryPackageReleases in a DistroSeries.
-
-        The distroseries information comes from the SourcepackageRelease
-        and the publishing system.
-        """
-        # XXX malcc 2006-10-03: This is crack, each DistroSeries does
-        # *not* compile all of its Packages. The callsite for this method
-        # (binarypackagerelease-portlet-latestversions) needs reviewing,
-        # to determine what it actually wants to fetch. For now, I'm just
-        # modifying this to be archive-aware, which will keep the current
-        # crackful behaviour.
-
-        # Daniel Debonzi: To get the lastest versions of a BinaryPackage
-        # Im suposing that one BinaryPackage is build for only one
-        # DistroSeries (Each DistroSeries compile all its Packages).
-        # (BinaryPackage.build.distroarchseries = \
-        # PackagePublishing.distroarchseries
-        # where PackagePublishing.binarypackage = BinaryPackage.id)
-        # When it is not true anymore, probably it should
-        # be retrieved in a view class where I can use informations from
-        # the launchbag.
-
-        clauseTables = ['BinaryPackagePublishingHistory', 'BinaryPackageName']
-        query = """
-        BinaryPackagePublishingHistory.binarypackagerelease =
-            BinaryPackageRelease.id AND
-        BinaryPackageRelease.binarypackagename =
-            BinaryPackageName.id AND
-        BinaryPackageName.id = %s AND
-        BinaryPackagePublishingHistory.distroarchseries = %s AND
-        BinaryPackagePublishingHistory.archive IN %s AND
-        BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(
-            self.binarypackagename,
-            self.build.distroarchseries,
-            self.build.distribution.all_distro_archive_ids,
-            PackagePublishingStatus.SUPERSEDED)
-
-        return shortlist(BinaryPackageRelease.select(
-            query, clauseTables=clauseTables, distinct=True))
 
     def addFile(self, file):
         """See `IBinaryPackageRelease`."""

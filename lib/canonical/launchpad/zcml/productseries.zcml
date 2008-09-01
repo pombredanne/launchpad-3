@@ -81,6 +81,13 @@
         permission="zope.Public"
         />
 
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IProductSeries"
+      factory="canonical.launchpad.browser.ProductSeriesBreadcrumbBuilder"
+      permission="zope.Public"
+      />
+
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
         path_expression="name"
@@ -391,13 +398,5 @@
       template="../templates/sources-index.pt"
       />
   </browser:pages>
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IProductSeries"
-    name="+shortlink"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.ProductSeriesShortLink"
-    attribute="__call__"
-    />
 
 </configure>

@@ -34,10 +34,6 @@
       template="../templates/binarypackagerelease-index.pt"
       />
     <browser:page
-      name="+portlet-latestversions"
-      template="../templates/binarypackagerelease-portlet-latestversions.pt"
-      />
-    <browser:page
       name="+portlet-details"
       template="../templates/binarypackagerelease-portlet-details.pt"
       />

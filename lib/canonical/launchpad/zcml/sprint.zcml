@@ -12,6 +12,20 @@
       set_schema="canonical.launchpad.interfaces.ISprint" />
   </content>
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ISprint"
+    factory="canonical.launchpad.browser.SprintBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ISprintSet"
+    factory="canonical.launchpad.browser.SprintSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:menus
       module="canonical.launchpad.browser.sprint"
       classes="SprintFacets SprintOverviewMenu
@@ -71,9 +85,6 @@
     <browser:page
       name="+specs"
       template="../templates/hasspecifications-specs.pt" />
-    <browser:page
-      name="+categorized"
-      template="../templates/specificationtarget-categorized.pt" />
     <browser:page
       name="+assignments"
       template="../templates/specificationtarget-assignments.pt" />

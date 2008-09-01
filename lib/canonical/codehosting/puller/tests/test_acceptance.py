@@ -14,8 +14,11 @@ from urlparse import urlparse
 
 import transaction
 
-from bzrlib.branch import Branch
+from bzrlib.branch import Branch, BzrBranchFormat7
+from bzrlib.bzrdir import format_registry
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
 from bzrlib.tests import HttpServer
+from bzrlib.upgrade import upgrade
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -119,6 +122,33 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
+    def test_reMirrorAHostedBranch(self):
+        # When the format of a branch changes, we completely remirror it.
+        # First we push up and mirror the branch in one format.
+        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        pack_tree = self.make_branch_and_tree('pack', format='pack-0.92')
+        self.pushToBranch(db_branch, pack_tree)
+        db_branch.requestMirror()
+        transaction.commit()
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
+        # Then we upgrade the to a different format and ask for it to be
+        # mirrored again.
+        upgrade(self.getHostedPath(db_branch), format_registry.get('1.6')())
+        transaction.begin()
+        db_branch.requestMirror()
+        transaction.commit()
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
+        # In addition, we check that the format of the branch in the mirrored
+        # area is what we expect.
+        mirrored_branch = Branch.open(self.getMirroredPath(db_branch))
+        self.assertIsInstance(mirrored_branch._format, BzrBranchFormat7)
+        self.assertIsInstance(
+            mirrored_branch.repository._format, RepositoryFormatKnitPack5)
+
     def test_mirrorAHostedLoomBranch(self):
         """Run the puller over a branch with looms enabled."""
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
@@ -151,11 +181,11 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-        # XXX: The first argument used to be db_branch.url, but this triggered
-        # Bug #193253 where for some reason Branch.open via HTTP makes
-        # an incomplete request to the HttpServer leaving a dangling thread.
-        # Our test suite now fails tests leaving dangling threads.
-        # -- StuartBishop 20080312
+        # XXX: StuartBishop 2008-03-12 Bug=193253: The first argument used to
+        # be db_branch.url, but this triggered Bug #193253 where for some
+        # reason Branch.open via HTTP makes an incomplete request to the
+        # HttpServer leaving a dangling thread. Our test suite now fails
+        # tests leaving dangling threads.
         self.assertMirrored(tree.basedir, db_branch)
 
     def _getImportMirrorPort(self):
@@ -188,9 +218,10 @@ class TestBranchPuller(PullerBranchTestCase):
         command, retcode, output, error = self.runPuller("import")
         self.assertRanSuccessfully(command, retcode, output, error)
 
-        # XXX: Because of Bug #193253, check the branch is mirrored by going
-        # straight to the filesystem, rather than over HTTP. This is to
-        # avoid Bazaar opening an HTTP connection that never closes.
+        # XXX: StuartBishop 2008-03-12 bug=193253: check that the branch is
+        # mirrored by going straight to the filesystem, rather than over HTTP.
+        # This is to avoid Bazaar opening an HTTP connection that never
+        # closes.
         self.assertMirrored(branch_path, db_branch)
 
     def test_mirrorEmpty(self):
