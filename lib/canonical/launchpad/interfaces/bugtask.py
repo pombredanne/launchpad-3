@@ -1052,7 +1052,6 @@ class BugTaskSearchParams:
                 search_params.has_no_upstream_bugtask = True
         search_params.milestone = cls._anyfy(milestone)
         search_params.component = cls._anyfy(component)
-        search_params.scope = scope
         if has_no_package:
             search_params.sourcepackagename = NULL
         search_params.nominated_for = nominated_for
