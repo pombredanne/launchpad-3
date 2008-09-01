@@ -7,8 +7,8 @@ the stores these caches may end up being carried from one request to
 another.
 
 However, we have many tests that want to use an object after we've
-committed a transaction, so we decided not to reset stores when running
-the test suite.
+committed a transaction, so we decided not to reset MASTER stores when
+running the test suite.
 
 Since the web app is not run in the main thread (unlike the test suite)
 we rely on that to find out whether or not to reset stores.
@@ -24,8 +24,12 @@ we rely on that to find out whether or not to reset stores.
     ...     global alive_items
     ...     global thread_name
     ...     thread_name = threading.currentThread().getName()
-    ...     http = UnstickyCookieHTTPCaller(port=9000)
-    ...     http("GET /~salgado HTTP/1.1")
+    ...     from canonical.launchpad.testing.pages import setupBrowser
+    ...     http = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    ...     http.open("http://launchpad.dev/~salgado/+edit")
+    ...     http.getControl("Display Name").value = "Changed"
+    ...     # Need a POST or the DB policy will be using the slave.
+    ...     http.getControl("Save Changes").click()
     ...     alive_items = len(getUtility(IStoreSelector).get(
     ...         MAIN_STORE, DEFAULT_FLAVOR)._alive)
 
