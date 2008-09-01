@@ -118,6 +118,7 @@ COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initial
 COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attached to this Bug. Maintained by a trigger on the BugMessage table.';
 COMMENT ON COLUMN Bug.number_of_duplicates IS 'The number of bugs marked as duplicates of this bug, populated by a trigger after setting the duplicateof of bugs.';
 COMMENT ON COLUMN Bug.message_count IS 'The number of messages (currently just comments) on this bugbug, maintained by the set_bug_message_count_t trigger.';
+COMMENT ON COLUMN Bug.users_affected_count IS 'The number of users affected by this bug, maintained by the set_bug_users_affected_count_t trigger.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -256,6 +257,12 @@ COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone
 
 COMMENT ON COLUMN BugWatch.last_error_type IS 'The type of error which last prevented this entry from being updated. Legal values are defined by the BugWatchErrorType enumeration.';
 COMMENT ON COLUMN BugWatch.remote_importance IS 'The importance of the bug as returned by the remote server. This will be converted into a Launchpad BugTaskImportance value.';
+
+-- BugAffectsPerson
+
+COMMENT ON TABLE BugAffectsPerson IS 'This table maintains a mapping between bugs and users indicating that they are affected by that bug. The value is calculated and cached in the Bug.users_affected_count column.';
+COMMENT ON COLUMN BugAffectsPerson.bug IS 'The bug affecting this person.';
+COMMENT ON COLUMN BugAffectsPerson.person IS 'The person affected by this bug.';
 
 
 -- CodeImport
