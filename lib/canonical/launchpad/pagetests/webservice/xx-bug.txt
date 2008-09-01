@@ -794,3 +794,34 @@ accept many values and return only tasks with these values.
         u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/1',
         ...
      (u'total_size', 2)]
+
+The tags parameter also accepts a list of values. By default, it
+searches for bugs with all of the given tags.
+
+    >>> show(webservice.named_get(
+    ...     '/beta/ubuntu', 'searchTasks',
+    ...     tags=['crash', 'dataloss']).jsonBody())
+    [(u'entries', []), (u'start', None), (u'total_size', 0)]
+
+It can be used for searching for bugs with any of the given tags by
+setting the tags_combinator_all parameter to false.
+
+    >>> show(webservice.named_get(
+    ...     '/beta/ubuntu', 'searchTasks',
+    ...     tags=['crash', 'dataloss'],
+    ...     tags_combinator_all=False).jsonBody())
+    [(u'entries',
+      [{...
+        u'bug_link': u'http://api.launchpad.dev/beta/bugs/9',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/thunderbird/+bug/9',
+        ...
+        u'bug_link': u'http://api.launchpad.dev/beta/bugs/10',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10',
+        ...
+        u'bug_link': u'http://api.launchpad.dev/beta/bugs/2',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/2',
+        ...
+     (u'total_size', 3)]
