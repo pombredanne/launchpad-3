@@ -90,8 +90,7 @@ ZConfig.
 Tests can update the config with test data. For example, the domain
 can be changed for a feature.
 
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
+    >>> test_data = ("""
     ...     [answertracker]
     ...     email_domain: answers.launchpad.dev""")
     >>> config.push('test_data', test_data)

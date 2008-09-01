@@ -14,7 +14,7 @@ from zope.component import getUtility
 from canonical.database.sqlbase import (
     flush_database_caches, flush_database_updates, cursor)
 from canonical.launchpad.database import TeamMembership
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import login, login_person
 from canonical.launchpad.interfaces.person import (
     IPersonSet, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.teammembership import (
@@ -138,6 +138,42 @@ class TestTeamMembershipSet(unittest.TestCase):
 
 class TestTeamMembership(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
+
+    def test_teams_not_kicked_from_themselves_bug_248498(self):
+        """The self-participation of a team must not be removed.
+
+        Performing the following steps would cause a team's self-participation
+        to be removed, but it shouldn't.
+
+            1. propose team A as a member of team B
+            2. propose team B as a member of team A
+            3. approve team A as a member of team B
+            4. decline team B as a member of team A
+
+        This test will make sure that doesn't happen in the future.
+        """
+        login('test@canonical.com')
+        factory = LaunchpadObjectFactory()
+        person = factory.makePerson()
+        login_person(person) # Now login with the future owner of the teams.
+        teamA = factory.makeTeam(
+            person, subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        teamB = factory.makeTeam(
+            person, subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        self.failUnless(
+            teamA.inTeam(teamA), "teamA is not a participant of itself")
+        self.failUnless(
+            teamB.inTeam(teamB), "teamB is not a participant of itself")
+
+        teamA.join(teamB, requester=person)
+        teamB.join(teamA, requester=person)
+        teamB.setMembershipData(teamA, TeamMembershipStatus.APPROVED, person)
+        teamA.setMembershipData(teamB, TeamMembershipStatus.DECLINED, person)
+
+        self.failUnless(teamA.hasParticipationEntryFor(teamA),
+                        "teamA is not a participant of itself")
+        self.failUnless(teamB.hasParticipationEntryFor(teamB),
+                        "teamB is not a participant of itself")
 
     def test_indirect_members_are_kicked_when_kicking_team(self):
         """Indirect members are kicked when the team in which they are a
@@ -393,7 +429,8 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
             self.team1, self.team2)
         self.assertEqual(team1_on_team2.status, TeamMembershipStatus.APPROVED)
-        team1_on_team2.setStatus(TeamMembershipStatus.DEACTIVATED, self.foobar)
+        team1_on_team2.setStatus(
+            TeamMembershipStatus.DEACTIVATED, self.foobar)
         self.assertEqual(
             team1_on_team2.status, TeamMembershipStatus.DEACTIVATED)
         team1_on_team2.setStatus(TeamMembershipStatus.ADMIN, self.foobar)

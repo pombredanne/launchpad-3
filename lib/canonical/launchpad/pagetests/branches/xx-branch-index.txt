@@ -17,6 +17,7 @@ On the Code site, registered branches are reached by
 /<owner>/<product>/<branch-name>.
 
     >>> user_browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
+    >>> assert find_tag_by_id(user_browser.contents, 'merge-summary') is None
     >>> revisions = find_tag_by_id(user_browser.contents, 'recent-revisions')
 
 
@@ -118,6 +119,9 @@ helpful message.
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been mirrored yet.
+    >>> print_navigation_links(browser.contents)
+    Details
+    Merging: http://code.launchpad.dev/~name12/firefox/main/+merges
 
 We don't want to use the word 'mirrored' for hosted or imported branches,
 because those branches are only mirrored internally.
@@ -126,11 +130,17 @@ because those branches are only mirrored internally.
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been pushed to yet.
+    >>> print_navigation_links(browser.contents)
+    Details
+    Merging: http://code.launchpad.dev/~name12/gnome-terminal/pushed/+merges
 
     >>> browser.open('http://code.launchpad.dev/~vcs-imports/evolution/main')
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been imported yet.
+    >>> print_navigation_links(browser.contents)
+    Details
+    Merging: http://code.launchpad.dev/~vcs-imports/evolution/main/+merges
 
 If a branch has been mirrored, but not scanned, we display a different message.
 This is helpful particularly for hosted and imported branches, which are
@@ -140,6 +150,10 @@ available for download as soon as they are published.
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been scanned yet.
+    >>> print_navigation_links(browser.contents)
+    Details
+    Merging: http://code.launchpad.dev/~name12/gnome-terminal/mirrored/+merges
+    Source Code: http://bazaar.launchpad.dev/~name12/gnome-terminal/mirrored/files
 
 If a branch has been mirrored and scanned, and has no revisions, then it is
 empty.
@@ -148,7 +162,10 @@ empty.
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch is empty.
-
+    >>> print_navigation_links(browser.contents)
+    Details
+    Merging: http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges
+    Source Code: http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned/files
 
 == Branch Details ==
 
@@ -165,11 +182,10 @@ for the branch's canonical location.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(get_branch_details_table())
-    Project: GNOME Terminal (Unreviewed)
+    Project: GNOME Terminal (Unspecified)
+    Status: New
     Upload URL: Only Sample Person can upload to this branch.
       If you are Sample Person please log in for upload directions.
-    Branch format: Not recorded
-    Repository format: Not recorded
 
 For mirrored branches, the table has a link to the branch's project, the
 location of the original branch, the mirror on Launchpad, information about
@@ -193,23 +209,21 @@ been mirrored:
     >>> browser.open(
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirrored')
     >>> print extract_text(get_branch_details_table())
+    Status: New
     Location: http://example.com/mirrored
     Last mirrored: 2007-10-01
     Next mirror: Disabled
-    Branch format: Not recorded
-    Repository format: Not recorded
 
 Branches that have never been mirrored don't have a 'Last mirrored' field.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> print extract_text(get_branch_details_table())
-    Project: GNOME Terminal (Unreviewed)
+    Project: GNOME Terminal (Unspecified)
+    Status: Development
     Location: http://example.com/gnome-terminal/main
     Last mirrored: Not mirrored yet
-    Next mirror: As soon as possible
-    Branch format: Not recorded
-    Repository format: Not recorded
+    Next mirror: Disabled
 
 If next_mirror_time is NULL, then mirroring of the branch is disabled.
 
@@ -229,11 +243,10 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirror-disabled')
     >>> print extract_text(get_branch_details_table())
+    Status: New
     Location: http://example.com/disabled
     Last mirrored: Not mirrored yet
     Next mirror: Disabled
-    Branch format: Not recorded
-    Repository format: Not recorded
 
 
 == Codebrowse link ==
@@ -259,13 +272,13 @@ link is shown.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, "recent-revisions").dl)
     6. By foo... fix bug in bar...
-    >>> print browser.getLink('Browse code').url
+    >>> print browser.getLink('Source Code').url
     http://bazaar.launchpad.dev/~name12/+junk/junk.dev/files
 
-In addition, there is a "Browse revisions" link that links to the
+In addition, there is a "All revisions" link that links to the
 changelog view in codebrowse.
 
-    >>> print browser.getLink('Browse revisions').url
+    >>> print browser.getLink('All revisions').url
     http://bazaar.launchpad.dev/~name12/+junk/junk.dev/changes
 
 If the branch is private, the browse code link is not shown.
@@ -306,7 +319,8 @@ So we need to fake that here.
     ...     'http://code.launchpad.dev/~landscape-developers/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
-    Project: The Landscape Project (Unreviewed)
+    Project: The Landscape Project (Unspecified)
+    Status: New
     Get this branch:
       bzr branch lp://dev/~landscape-developers/landscape/trunk
     ...
@@ -317,7 +331,8 @@ Public branches use the lp spec bzr lookup name.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
-    Project: GNOME Terminal (Unreviewed)
+    Project: GNOME Terminal (Unspecified)
+    Status: New
     Get this branch: bzr branch lp://dev/~name12/gnome-terminal/scanned
     ...
 
@@ -343,12 +358,36 @@ The data that we specified is shown on the web page.
     ...     browser.contents, 'repository-format'))
     Repository format: Packs containing knits without subtree support
 
-For branches that haven't been scanned, suitable messages are printed.
 
-    >>> browser.open(unscanned_url)
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'branch-format'))
-    Branch format: Not recorded
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'repository-format'))
-    Repository format: Not recorded
+=== Navigation Context ===
+
+The tabs shown for a branch depend on whether or not the branch is a junk
+branch or not.  If the branch is associated with a product, then the product
+is the primary context, and used for the tabs and the breadcrumbs.  If the
+branch is not associated with a product then the owner of the branch is used
+as the primary context for the branch and used for the breadcrumbs and tabs.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> print_location(browser.contents)
+    Location: GNOME Terminal
+    Tabs:
+    * Overview (http://launchpad.dev/gnome-terminal)
+    * Code (http://code.launchpad.dev/gnome-terminal)
+    * Bugs (http://bugs.launchpad.dev/gnome-terminal)
+    * Blueprints (http://blueprints.launchpad.dev/gnome-terminal)
+    * Translations (http://translations.launchpad.dev/gnome-terminal)
+    * Answers (http://answers.launchpad.dev/gnome-terminal)
+    Main heading: ~name12/gnome-terminal/scanned
+
+    >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
+    >>> print_location(browser.contents)
+    Location: Sample Person
+    Tabs:
+    * Overview (http://launchpad.dev/~name12)
+    * Code (http://code.launchpad.dev/~name12)
+    * Bugs (http://bugs.launchpad.dev/~name12)
+    * Blueprints (http://blueprints.launchpad.dev/~name12)
+    * Translations (http://translations.launchpad.dev/~name12)
+    * Answers (http://answers.launchpad.dev/~name12)
+    Main heading: Ubuntu Junk Code

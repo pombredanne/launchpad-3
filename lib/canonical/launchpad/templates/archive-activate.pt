@@ -6,15 +6,10 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
   >
 <body>
-
-<metal:portlets fill-slot="portlets">
-  <tal:portlet
-    replace="structure view/distribution/@@+portlet-ppa-architectures" />
-</metal:portlets>
 
 <div metal:fill-slot="main">
 

@@ -60,6 +60,7 @@
     />
 
     <div tal:replace="structure context/@@+portlet-contact-details"/>
+    <div tal:replace="structure context/@@+portlet-map" />
     <div tal:replace="structure context/@@+portlet-contributions"/>
     <div tal:replace="structure context/@@+portlet-currentfocus"/>
     <div tal:replace="structure context/@@+portlet-memberships"/>

@@ -15,13 +15,14 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     CodeReviewNotificationLevel, IBranchSubscription)
+from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.validators.person import validate_public_person
 
 
 class BranchSubscription(SQLBase):
     """A relationship between a person and a branch."""
 
-    implements(IBranchSubscription)
+    implements(IBranchSubscription, IBranchNavigationMenu)
 
     _table = 'BranchSubscription'
 

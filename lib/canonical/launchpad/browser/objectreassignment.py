@@ -40,6 +40,7 @@ class ObjectReassignmentView:
     """
 
     ownerOrMaintainerAttr = 'owner'
+    ownerOrMaintainerName = 'owner'
     schema = IObjectReassignment
     callback = None
 
@@ -99,7 +100,7 @@ class ObjectReassignmentView:
         if not owner_name:
             self.errormessage = (
                 "You have to specify the name of the person/team that's "
-                "going to be the new %s." % self.ownerOrMaintainerAttr)
+                "going to be the new %s." % self.ownerOrMaintainerName)
             return None
 
         if request.form.get('existing') == 'existing':
@@ -138,5 +139,3 @@ class ObjectReassignmentView:
                 self.user, owner_name, owner_name.capitalize())
 
         return owner
-
-

@@ -48,20 +48,38 @@
     </ul>
   </div>
 
-  <h2>File download</h2>
+  <h2>Downloadable files</h2>
 
   <div id="files">
-    <ul class="download" tal:condition="context/files">
-      <li tal:repeat="file context/files">
-        <a tal:content="file/libraryfile/filename"
-           tal:attributes="href file/libraryfile/http_url"></a>
-        (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
-      </li>
-    </ul>
-    <p tal:condition="not: context/files">
-      There are no downloadable files for this binary package.
-    </p>
+    <div id="build" tal:condition="context/build">
+        <a tal:define="pbuild context/build"
+           tal:content="pbuild/title"
+           tal:attributes="href pbuild/fmt:url">BUILD</a> produced
+        <span tal:condition="context/files">
+          these files:
+        </span>
+        <span tal:condition="not: context/files">
+          no files for this binary package.
+        </span>
+    </div>
+    
+    <div id="downloadable-files">
+        <ul class="download" tal:condition="context/files">
+          <li tal:repeat="file context/files">
+            <a tal:content="file/libraryfile/filename"
+               tal:attributes="href file/libraryfile/http_url"></a>
+            (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
+          </li>
+        </ul>
+    </div>
   </div>
+  <!-- No build and no downloadable files -->
+  <div tal:condition="not: context/build">
+    <span tal:condition="not: context/files">
+      There are no downloadable files for this binary package.
+    </span>
+  </div>
+
 
   <h2>Package relationships</h2>
 

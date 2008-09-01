@@ -56,7 +56,9 @@ __all__ = [
     'TranslationGroupVocabulary',
     'TranslationMessageVocabulary',
     'UserTeamsParticipationVocabulary',
+    'UserTeamsParticipationPlusSelfVocabulary',
     'ValidPersonOrTeamVocabulary',
+    'ValidPersonVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
     'ValidTeamVocabulary',
@@ -64,7 +66,6 @@ __all__ = [
     'person_team_participations_vocabulary_factory',
     'project_products_using_malone_vocabulary_factory',
     'project_products_vocabulary_factory',
-    'user_public_team_participations_and_self_vocabulary_factory',
     ]
 
 import cgi
@@ -96,8 +97,9 @@ from canonical.launchpad.interfaces import (
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
     IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
     IPerson, IPersonSet, IPillarName, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification, ITeam,
-    IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
+    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification,
+    SpecificationFilter, ITeam, IUpstreamBugTask, LanguagePackType,
+    MailingListStatus, PersonVisibility)
 from canonical.launchpad.interfaces.account import AccountStatus
 
 from canonical.launchpad.webapp.vocabulary import (
@@ -717,7 +719,7 @@ class PersonAccountToMergeVocabulary(
 
 class ValidPersonOrTeamVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
-    """The set of valid Persons/Teams in Launchpad.
+    """The set of valid, public Persons/Teams in Launchpad.
 
     A Person is considered valid if he has a preferred email address,
     and Person.merged is None. Teams have no restrictions
@@ -735,6 +737,13 @@ class ValidPersonOrTeamVocabulary(
     # results.
     extra_clause = ""
 
+    # Subclasses should override this property to allow null searches to
+    # return all results.  If false, an empty result set is returned.
+    allow_null_search = False
+
+    # Cache table to use for checking validity.
+    cache_table_name = 'ValidPersonOrTeamCache'
+
     def __contains__(self, obj):
         return obj in self._doSearch()
 
@@ -745,13 +754,14 @@ class ValidPersonOrTeamVocabulary(
         # teams have been requested.
         if not text:
             query = """
-                Person.id = ValidPersonOrTeamCache.id
+                Person.id = %s.id
                 AND Person.visibility = %s
-                """ % quote(PersonVisibility.PUBLIC)
+                """ % (self.cache_table_name,
+                       quote(PersonVisibility.PUBLIC))
             if self.extra_clause:
                 query += " AND %s" % self.extra_clause
             return Person.select(
-                query, clauseTables=['ValidPersonOrTeamCache'])
+                query, clauseTables=[self.cache_table_name])
 
         store = getUtility(IZStorm).get('main')
 
@@ -811,56 +821,57 @@ class ValidPersonOrTeamVocabulary(
                 )
             )
         result.config(distinct=True)
+        # XXX: salgado, 2008-07-23: Sorting by Person.sortingColumns would
+        # make this run a lot faster, but I couldn't find how to do that
+        # because this query uses distinct=True.
         return result.order_by(Person.displayname, Person.name)
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
         if not text:
-            return self.emptySelectResults()
+            if self.allow_null_search:
+                text = ''
+            else:
+                return self.emptySelectResults()
 
         text = text.lower()
         return self._doSearch(text=text)
 
-
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
-    """The set of all valid teams in Launchpad."""
+    """The set of all valid, public teams in Launchpad."""
 
     displayname = 'Select a Team'
+
+    # XXX: BradCrittenden 2008-08-11 bug=255798: This method does not return
+    # only the valid teams as the name implies because it does not account for
+    # merged teams.
 
     # Because the base class does almost everything we need, we just need to
     # restrict the search results to those Persons who have a non-NULL
     # teamowner, i.e. a valid team.
     extra_clause = 'Person.teamowner IS NOT NULL'
-
-    def search(self, text):
-        """Return all teams that match :text:.
-
-        Unlike ValidPersonOrTeamVocabulary, providing an empty string for text
-        does not return the empty result set.  Instead, it returns all teams.
-        """
-        if not text:
-            text = ''
-        return self._doSearch(text=text)
+    # Search with empty string returns all teams.
+    allow_null_search = True
 
     def _doSearch(self, text=""):
         """Return the teams whose fti or email address match :text:"""
+        base_query = """
+                Person.visibility = %s
+                """ % quote(PersonVisibility.PUBLIC)
+
         if self.extra_clause:
             extra_clause = " AND %s" % self.extra_clause
         else:
             extra_clause = ""
 
         if not text:
-            query = """
-                teamowner IS NOT NULL AND Person.visibility = %s
-                """ % quote(PersonVisibility.PUBLIC)
-            query += extra_clause
+            query = base_query + extra_clause
             return Person.select(query)
 
         name_match_query = """
             Person.fti @@ ftq(%s)
-            AND Person.visibility = %s
-            AND teamowner IS NOT NULL
-            """ % (quote(text), quote(PersonVisibility.PUBLIC))
+            AND %s
+            """ % (quote(text), base_query)
         name_match_query += extra_clause
         name_matches = Person.select(name_match_query)
 
@@ -870,9 +881,9 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         email_match_query = """
             EmailAddress.person = Person.id
             AND lower(email) LIKE %s || '%%'
-            AND Person.visibility = %s
-            AND teamowner IS NOT NULL
-            """ % (quote_like(text), quote(PersonVisibility.PUBLIC))
+            AND %s
+            """ % (quote_like(text), base_query)
+
         email_match_query += extra_clause
         email_matches = Person.select(
             email_match_query, clauseTables=['EmailAddress'])
@@ -882,6 +893,17 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         return name_matches.union(
             email_matches, orderBy=['displayname', 'name'])
 
+
+class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
+    """The set of all valid, public persons who are not teams in Launchpad."""
+    displayname = 'Select a Person'
+    # The extra_clause for a valid person is that it not be a team, so
+    # teamowner IS NULL.
+    extra_clause = 'Person.teamowner IS NULL'
+    # Search with empty string returns all valid people.
+    allow_null_search = True
+    # Cache table to use for checking validity.
+    cache_table_name = 'ValidPersonCache'
 
 
 class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
@@ -1076,18 +1098,25 @@ def person_team_participations_vocabulary_factory(context):
         person_term(team) for team in person.teams_participated_in])
 
 
-def user_public_team_participations_and_self_vocabulary_factory(context):
-    """Return a SimpleVocabulary containing the public teams that the logged
+class UserTeamsParticipationPlusSelfVocabulary(
+    UserTeamsParticipationVocabulary):
+    """A vocabulary containing the public teams that the logged
     in user participates in, along with the logged in user themselves.
     """
-    logged_in_user = getUtility(ILaunchBag).user
-    assert logged_in_user is not None
-    terms = [person_term(logged_in_user)]
-    terms.extend([
-            person_term(team)
-            for team in logged_in_user.teams_participated_in
-            if team.visibility == PersonVisibility.PUBLIC])
-    return SimpleVocabulary(terms)
+
+    def __iter__(self):
+        logged_in_user = getUtility(ILaunchBag).user
+        yield self.toTerm(logged_in_user)
+        super_class = super(UserTeamsParticipationPlusSelfVocabulary, self)
+        for person in super_class.__iter__():
+            yield person
+
+    def getTermByToken(self, token):
+        logged_in_user = getUtility(ILaunchBag).user
+        if logged_in_user.name == token:
+            return self.getTerm(logged_in_user)
+        super_class = super(UserTeamsParticipationPlusSelfVocabulary, self)
+        return super_class.getTermByToken(token)
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
@@ -1558,7 +1587,9 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
                                  candidate_specs)
 
     def _all_specs(self):
-        return self._filter_specs(self.context.target.specifications())
+        all_specs = self.context.target.specifications(
+            filter=[SpecificationFilter.ALL])
+        return self._filter_specs(all_specs)
 
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())

@@ -6,23 +6,6 @@ blueprints, and also other pages where users can browse through complete
 lists of blueprints for a given product or distribution.
 
 
-== Viewing the latest blueprints ==
-
-Launchpad lists the latest blueprints for a product within a dedicated
-portlet on that product's home page:
-
-    >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> main = find_main_content(user_browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
-    Mozilla Firefox...
-    Latest blueprints
-        Merge Open Browser Windows with "Consolidate Windows"
-        Support E4X in EcmaScript
-        Support Native SVG Objects
-        Support &lt;canvas&gt; Objects
-        Extension Manager Upgrades...
-
-
 == Viewing lists of blueprints ==
 
 Launchpad provides a dedicated page where users can browse through all the

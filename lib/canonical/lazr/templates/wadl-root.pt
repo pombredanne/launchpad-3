@@ -1,4 +1,7 @@
 <?xml version="1.0"?>
+<!DOCTYPE application [
+  <!ENTITY nbsp "\&#160;">
+]>
 <application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd"
   xmlns="http://research.sun.com/wadl/2006/10"
@@ -45,9 +48,7 @@
   <tal:collection_classes tal:repeat="context collections">
     <resource_type tal:attributes="id context/wadl_collection:collection_type"
       tal:define="entry_schema nocall:context/wadl_collection:entry_schema">
-      <wadl:doc tal:content="context/wadl_collection:doc"
-           tal:condition="context/wadl_collection:doc"
-           xmlns="http://www.w3.org/1999/xhtml/">
+      <wadl:doc tal:replace="structure context/wadl_collection:doc">
         Human-readable description of the resource type, in XHTML format.
       </wadl:doc>
       <method name="GET"
@@ -66,9 +67,7 @@
         tal:attributes="id
                         string:${context/wadl_collection:collection_type}-${operation/name};
                         name operation/op/wadl_operation:http_method">
-        <wadl:doc tal:replace="operation/op/wadl_operation:doc"
-             tal:condition="operation/op/wadl_operation:doc"
-             xmlns="http://www.w3.org/1999/xhtml/">
+        <wadl:doc tal:replace="structure operation/op/wadl_operation:doc">
           Human-readable documentation for the method.
         </wadl:doc>
         <request>
@@ -81,10 +80,8 @@
             <param style="query" tal:repeat="field operation/op/params"
                    tal:attributes="name field/__name__;
                                    required field/wadl:required">
-              <wadl:doc tal:content="field/wadl:doc"
-                        tal:condition="field/wadl:doc"
-                        xmlns="http://www.w3.org/1999/xhtml/">
-                Field title: field description
+             <wadl:doc tal:replace="structure field/wadl:doc">
+                Field description
               </wadl:doc>
               <link tal:condition="field/wadl:is_represented_as_link"
                     tal:attributes="resource_type field/wadl:type_link" />
@@ -118,9 +115,7 @@
       resources and the collections that contain them. -->
   <tal:entry_classes tal:repeat="context entries">
     <resource_type tal:attributes="id context/wadl_entry:singular_type">
-      <wadl:doc tal:content="context/wadl_entry:doc"
-           tal:condition="context/wadl_entry:doc"
-           xmlns="http://www.w3.org/1999/xhtml/">
+      <wadl:doc tal:replace="structure context/wadl_entry:doc">
         Human-readable description of the resource type, in XHTML format.
       </wadl:doc>
       <method name="GET"
@@ -153,9 +148,8 @@
               tal:attributes="
                 id string:${context/wadl_entry:singular_type}-${operation/name};
                 name operation/op/wadl_operation:http_method">
-        <wadl:doc tal:content="operation/op/wadl_operation:doc"
-             tal:condition="operation/op/wadl_operation:doc"
-             xmlns="http://www.w3.org/1999/xhtml/">
+        <wadl:doc tal:replace="structure operation/op/wadl_operation:doc">
+          The method docstring.
         </wadl:doc>
         <request>
           <representation mediaType="application/x-www-form-urlencoded"
@@ -165,9 +159,7 @@
             <param style="query" tal:repeat="field operation/op/params"
                    tal:attributes="name field/__name__;
                                    required field/wadl:required">
-              <wadl:doc tal:content="field/wadl:doc"
-                        tal:condition="field/wadl:doc"
-                        xmlns="http://www.w3.org/1999/xhtml/">
+              <wadl:doc tal:replace="structure field/wadl:doc">
                 Field title: field description
               </wadl:doc>
               <link tal:condition="field/wadl:is_represented_as_link"
@@ -213,9 +205,7 @@
              tal:repeat="field context/wadl_entry:all_fields" required="true"
              tal:attributes="name field/wadl:name;
                              path field/wadl:path">
-        <wadl:doc tal:content="field/wadl:doc"
-             tal:condition="field/wadl:doc"
-             xmlns="http://www.w3.org/1999/xhtml/">
+        <wadl:doc tal:replace="structure field/wadl:doc">
           Field title: field description
         </wadl:doc>
         <link tal:condition="field/wadl:is_represented_as_link"
@@ -231,9 +221,7 @@
              style="plain" required="false"
              tal:attributes="name field/wadl:name;
                              path field/wadl:path">
-        <wadl:doc tal:content="field/wadl:doc"
-             tal:condition="field/wadl:doc"
-             xmlns="http://www.w3.org/1999/xhtml/">
+        <wadl:doc tal:replace="structure field/wadl:doc">
           Field title: field description
         </wadl:doc>
         <link tal:condition="field/wadl:is_represented_as_link"

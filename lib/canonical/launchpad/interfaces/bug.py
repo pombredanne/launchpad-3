@@ -14,6 +14,7 @@ __all__ = [
     'IBugDelta',
     'IBugAddForm',
     'IFrontPageBugAddForm',
+    'InvalidBugTargetType',
     'IProjectBugAddForm',
     ]
 
@@ -41,7 +42,7 @@ from canonical.launchpad.validators.bugattachment import (
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_write_operation, exported,
-    operation_parameters, rename_parameters_as)
+    operation_parameters, rename_parameters_as, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
 
@@ -230,25 +231,25 @@ class IBug(IMessageTarget, ICanBeMentored):
     tags = exported(
         List(title=_("Tags"), description=_("Separated by whitespace."),
              value_type=Tag(), required=False))
-    is_complete = exported(
-        Bool(description=_(
-                "True or False depending on whether this bug is considered "
-                "completely addressed. A bug is Launchpad is completely "
-                "addressed when there are no tasks that are still open for "
-                "the bug."),
-             readonly=True))
-    permits_expiration = exported(
-        Bool(title=_("Does the bug's state permit expiration?"),
-             description=_(
-                "Expiration is permitted when the bug is not valid anywhere, "
-                "a message was sent to the bug reporter, and the bug is "
-                "associated with pillars that have enabled bug expiration."),
-             readonly=True))
-    can_expire = exported(
-        Bool(title=_("Can the Incomplete bug expire if it becomes inactive? "
-                     "Expiration may happen when the bug permits expiration, "
-                     "and a bugtask cannot be confirmed."),
-             readonly=True))
+    is_complete = Bool(
+        description=_(
+            "True or False depending on whether this bug is considered "
+            "completely addressed. A bug is Launchpad is completely "
+            "addressed when there are no tasks that are still open for "
+            "the bug."),
+        readonly=True)
+    permits_expiration = Bool(
+        title=_("Does the bug's state permit expiration?"),
+        description=_(
+            "Expiration is permitted when the bug is not valid anywhere, "
+            "a message was sent to the bug reporter, and the bug is "
+            "associated with pillars that have enabled bug expiration."),
+        readonly=True)
+    can_expire = Bool(
+        title=_("Can the Incomplete bug expire if it becomes inactive? "
+                "Expiration may happen when the bug permits expiration, "
+                "and a bugtask cannot be confirmed."),
+        readonly=True)
     date_last_message = exported(
         Datetime(title=_('Date of last bug message'),
                  required=False, readonly=True))
@@ -539,6 +540,20 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no such bugtask is found.
         """
 
+    def getBugTasksByPackageName(bugtasks):
+        """Return a mapping from `ISourcePackageName` to its bug tasks.
+
+        This mapping is suitable to pass as the bugtasks_by_package
+        cache to getConjoinedMaster().
+
+        The mapping is from a `ISourcePackageName` to all the bug tasks
+        that are targeted to such a package name, no matter which
+        distribution or distro series it is.
+
+        All the tasks that don't have a package will be available under
+        None.
+        """
+
 # We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug
@@ -693,3 +708,6 @@ class IBugSet(Interface):
             description
         """
 
+class InvalidBugTargetType(Exception):
+    """Bug target's type is not valid."""
+    webservice_error(400)

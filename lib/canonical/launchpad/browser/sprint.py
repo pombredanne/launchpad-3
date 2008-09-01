@@ -7,17 +7,18 @@ __all__ = [
     'SprintAddView',
     'SprintAttendeesCsvExportView',
     'SprintBrandingView',
+    'SprintBreadcrumbBuilder',
     'SprintEditView',
     'SprintFacets',
     'SprintMeetingExportView',
     'SprintNavigation',
     'SprintOverviewMenu',
+    'SprintSetBreadcrumbBuilder',
     'SprintSetContextMenu',
     'SprintSetFacets',
     'SprintSetNavigation',
     'SprintSetSOP',
     'SprintSetView',
-    'SprintsMixinDynMenu',
     'SprintSpecificationsMenu',
     'SprintTopicSetView',
     'SprintView',
@@ -44,7 +45,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.dynmenu import neverempty
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
@@ -67,22 +68,12 @@ class SprintNavigation(Navigation):
 
     usedfor = ISprint
 
-    def breadcrumb(self):
+
+class SprintBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ISprint`."""
+    @property
+    def text(self):
         return self.context.title
-
-
-class SprintsMixinDynMenu:
-
-    @neverempty
-    def meetingsMenu(self):
-        coming_sprints = shortlist(self.context.coming_sprints, 20)
-        if coming_sprints:
-            for sprint in coming_sprints:
-                yield self.makeLink(sprint.title, context=sprint)
-        else:
-            yield self.makeLink('No meetings planned', target=None)
-        if self.context.past_sprints:
-            yield self.makeLink('Show all meetings...', page='+sprints')
 
 
 class SprintOverviewMenu(ApplicationMenu):
@@ -125,7 +116,7 @@ class SprintSpecificationsMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'declined', 'settopics', 'roadmap', 'addspec']
+    links = ['assignments', 'declined', 'settopics', 'addspec']
 
     def assignments(self):
         text = 'Assignments'
@@ -143,11 +134,6 @@ class SprintSpecificationsMenu(ApplicationMenu):
         summary = 'Approve or defer topics for discussion'
         return Link('+settopics', text, summary, icon='edit')
 
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = 'Suggest a sequence of implementation for these features'
-        return Link('+roadmap', text, summary, icon='info')
-
     def addspec(self):
         text = 'Register a blueprint'
         summary = 'Register a new blueprint for this meeting'
@@ -158,8 +144,10 @@ class SprintSetNavigation(GetitemNavigation):
 
     usedfor = ISprintSet
 
-    def breadcrumb(self):
-        return 'Meetings'
+
+class SprintSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ISprintSet`."""
+    text = 'Meetings'
 
 
 class SprintSetFacets(StandardLaunchpadFacets):

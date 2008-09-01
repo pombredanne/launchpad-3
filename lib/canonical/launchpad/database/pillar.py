@@ -8,22 +8,24 @@ Pillars are currently Product, Project and Distribution.
 
 __metaclass__ = type
 
+import warnings
+
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.expr import LeftJoin, NamedFunc, Select
+from storm.locals import SQL
 from storm.zope.interfaces import IZStorm
 from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-        NotFoundError, IPillarNameSet, IPillarName,
-        IProduct, IDistribution,
-        IDistributionSet, IProductSet, IProjectSet,
-        )
+    IDistribution, IDistributionSet, IPillarName, IPillarNameSet, IProduct,
+    IProductSet, IProjectSet, License, NotFoundError)
 
 from canonical.launchpad.database.featuredproject import FeaturedProject
+from canonical.launchpad.database.productlicense import ProductLicense
 
 __all__ = [
     'pillar_sort_key',
@@ -119,90 +121,111 @@ class PillarNameSet:
         else:
             return getUtility(IDistributionSet).get(distribution)
 
-    def build_search_query(self, text):
-        return """
-            SELECT 'distribution' AS otype, id, name, title, description,
-                   icon,
-                   rank(fti, ftq(%(text)s)) AS rank
-            FROM distribution
-            WHERE fti @@ ftq(%(text)s)
-                AND name != lower(%(text)s)
-                AND lower(title) != lower(%(text)s)
+    def build_search_query(self, text, extra_columns=()):
+        """Query parameters shared by search() and count_search_matches().
 
-            UNION ALL
+        :returns: Storm ResultSet object
+        """
+        # These classes are imported in this method to prevent an import loop.
+        from canonical.launchpad.database.product import Product
+        from canonical.launchpad.database.project import Project
+        from canonical.launchpad.database.distribution import Distribution
+        origin = [
+            PillarName,
+            LeftJoin(Product, PillarName.product == Product.id),
+            LeftJoin(Project, PillarName.project == Project.id),
+            LeftJoin(Distribution,
+                     PillarName.distribution == Distribution.id),
+            ]
+        conditions = SQL('''
+            PillarName.active = TRUE
+            AND (
+                 Product.fti @@ ftq(%(text)s) OR
+                 Product.name = lower(%(text)s) OR
+                 lower(Product.title) = lower(%(text)s) OR
 
-            SELECT 'project' AS otype, id, name, title, description, icon,
-                rank(fti, ftq(%(text)s)) AS rank
-            FROM product
-            WHERE fti @@ ftq(%(text)s)
-                AND name != lower(%(text)s)
-                AND lower(title) != lower(%(text)s)
-                AND active IS TRUE
+                 Project.fti @@ ftq(%(text)s) OR
+                 Project.name = lower(%(text)s) OR
+                 lower(Project.title) = lower(%(text)s) OR
 
-            UNION ALL
-
-            SELECT 'project group' AS otype, id, name, title, description,
-                icon,
-                rank(fti, ftq(%(text)s)) AS rank
-            FROM project
-            WHERE fti @@ ftq(%(text)s)
-                AND name != lower(%(text)s)
-                AND lower(title) != lower(%(text)s)
-                AND active IS TRUE
-
-            UNION ALL
-
-            SELECT 'distribution' AS otype, id, name, title, description,
-                icon,
-                9999999 AS rank
-            FROM distribution
-            WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
-
-            UNION ALL
-
-            SELECT 'project group' AS otype, id, name, title, description,
-                icon,
-                9999999 AS rank
-            FROM project
-            WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
-                AND active IS TRUE
-
-            UNION ALL
-
-            SELECT 'project' AS otype, id, name, title, description,
-                icon,
-                9999999 AS rank
-            FROM product
-            WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
-                AND active IS TRUE
-
-            """ % sqlvalues(text=text)
+                 Distribution.fti @@ ftq(%(text)s) OR
+                 Distribution.name = lower(%(text)s) OR
+                 lower(Distribution.title) = lower(%(text)s)
+                )
+            ''' % sqlvalues(text=text))
+        store = getUtility(IZStorm).get('main')
+        columns = [PillarName, Product, Project, Distribution]
+        for column in extra_columns:
+            columns.append(column)
+        return store.using(*origin).find(tuple(columns), conditions)
 
     def count_search_matches(self, text):
-        base_query = self.build_search_query(text)
-        count_query = "SELECT COUNT(*) FROM (%s) AS TMP_COUNT" % base_query
-        store = getUtility(IZStorm).get('main')
-        return store.execute(count_query).get_one()[0]
+        result = self.build_search_query(text)
+        return result.count()
 
     def search(self, text, limit):
         """See `IPillarSet`."""
+        # These classes are imported in this method to prevent an import loop.
+        from canonical.launchpad.database.product import (
+            Product, ProductWithLicenses)
         if limit is None:
             limit = config.launchpad.default_batch_size
-        query = self.build_search_query(text) + """
-            /* we order by rank AND name to break ties between pillars with
-               the same rank in a consistent fashion, and we add the hard
-               LIMIT */
-            ORDER BY rank DESC, name
-            LIMIT %d
-            """ % limit
-        store = getUtility(IZStorm).get('main')
-        result = store.execute(query)
-        keys = ['type', 'id', 'name', 'title', 'description', 'icon', 'rank']
+
+        class Array(NamedFunc):
+            """Storm representation of the array() PostgreSQL function."""
+            name = 'array'
+
+        # Pull out the licenses as a subselect which is converted
+        # into a PostgreSQL array so that multiple licenses per product
+        # can be retrieved in a single row for each product.
+        extra_column = Array(
+            Select(columns=[ProductLicense.license],
+                   where=(ProductLicense.product == Product.id),
+                   tables=[ProductLicense]))
+        result = self.build_search_query(text, [extra_column])
+
+        # If the search text matches the name or title of the
+        # Product, Project, or Distribution exactly, then this
+        # row should get the highest search rank (9999999).
+        # Each row in the PillarName table will join with only one
+        # of either the Product, Project, or Distribution tables,
+        # so the coalesce() is necessary to find the rank() which
+        # is not null.
+        result.order_by(SQL('''
+            (CASE WHEN Product.name = lower(%(text)s)
+                      OR lower(Product.title) = lower(%(text)s)
+                      OR Project.name = lower(%(text)s)
+                      OR lower(Project.title) = lower(%(text)s)
+                      OR Distribution.name = lower(%(text)s)
+                      OR lower(Distribution.title) = lower(%(text)s)
+                THEN 9999999
+                ELSE coalesce(rank(Product.fti, ftq(%(text)s)),
+                              rank(Project.fti, ftq(%(text)s)),
+                              rank(Distribution.fti, ftq(%(text)s)))
+            END) DESC, PillarName.name
+            ''' % sqlvalues(text=text)))
         # People shouldn't be calling this method with too big limits
         longest_expected = 2 * config.launchpad.default_batch_size
-        return shortlist(
-            [dict(zip(keys, values)) for values in result.get_all()],
-            longest_expected=longest_expected)
+        if limit > longest_expected:
+            warnings.warn(
+                "The search limit (%s) was greater "
+                "than the longest expected size (%s)"
+                % (limit, longest_expected),
+                stacklevel=2)
+        pillars = []
+        # Prefill pillar.product.licenses.
+        for pillar_name, product, project, distro, license_ids in (
+            result[:limit]):
+            if pillar_name.product is None:
+                pillars.append(pillar_name.pillar)
+            else:
+                licenses = [
+                    License.items[license_id]
+                    for license_id in license_ids]
+                product_with_licenses = ProductWithLicenses(
+                    pillar_name.product, tuple(sorted(licenses)))
+                pillars.append(product_with_licenses)
+        return pillars
 
     def add_featured_project(self, project):
         """See `IPillarSet`."""

@@ -244,6 +244,21 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         else:
             return False
 
+    @property
+    def linkify_source_archive(self):
+        """Return True if the source's upload_archive should be linkified.
+        
+        The source archive is the upload_archive for any source that was
+        copied.  It should be linkified only if it's a PPA and the user
+        has permission to view that PPA.
+        """
+        archive = self.context.sourcepackagerelease.upload_archive
+
+        if not archive.is_ppa:
+            return False
+
+        return check_permission('launchpad.View', archive)
+
 
 class SourcePublishingRecordSelectableView(SourcePublishingRecordView):
     """View class for a selectable `ISourcePackagePublishingHistory`."""

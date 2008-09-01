@@ -32,6 +32,7 @@ from canonical.launchpad.database.codereviewvote import (
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus,BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -78,7 +79,7 @@ VALID_TRANSITION_GRAPH = {
 class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
 
-    implements(IBranchMergeProposal)
+    implements(IBranchMergeProposal, IBranchNavigationMenu)
 
     _table = 'BranchMergeProposal'
     _defaultOrder = ['-date_created', 'id']
@@ -367,7 +368,8 @@ class BranchMergeProposal(SQLBase):
             registrant=registrant,
             target_branch=self.target_branch,
             dependent_branch=self.dependent_branch,
-            whiteboard=self.whiteboard)
+            whiteboard=self.whiteboard,
+            needs_review=True)
         self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive
         # properties of supersedes and superseded_by are visible to

@@ -62,11 +62,11 @@ A team member will be able to see these parts of the team page.
 
 == Team Participation ==
 
-The person page shows which teams that person participates in. Although, it
-would be time consuming to gather the entire team membership by viewing
-all the members' person pages, we don't want to leak this information, 
-so MyTeam won't show up on the person page, because it has a private
-membership.
+The person overview page and the +assignedbugs page show which teams that
+person participates in. Although, it would be time consuming to gather the
+entire team membership by viewing all the members' person pages, we don't
+want to leak this information, so MyTeam won't show up on the person
+overview page or the +assignedbugs page because it has a private membership.
 
     >>> nopriv_browser.open('http://launchpad.dev/~owner')
     >>> div = find_tag_by_id(nopriv_browser.contents, 'participation')
@@ -75,8 +75,23 @@ membership.
     ...     print a_tag.contents
     [u'Other Team']
 
+    >>> nopriv_browser.open('http://launchpad.dev/~owner/+assignedbugs')
+    >>> div = find_tag_by_id(nopriv_browser.contents,
+    ...                      'portlet-team-assigned-bugs')
+    >>> a_tags = div.findAll('a')
+    >>> for a_tag in a_tags:
+    ...     print a_tag.contents
+    [u'Other Team']
+
+    >>> nopriv_browser.open('http://launchpad.dev/~owner/+teamhierarchy')
+    >>> div = find_tag_by_id(nopriv_browser.contents, 'superteams')
+    >>> a_tags = div.findAll('a')
+    >>> for a_tag in a_tags:
+    ...     print extract_text(a_tag)
+    Other Team
+
 A member of a team with private membership (MyTeam) can see that team
-on other members' person pages.
+on other members' overview or +assignedbugs pages.
 
     >>> browser.open('http://launchpad.dev/~owner')
     >>> div = find_tag_by_id(browser.contents, 'participation')
@@ -85,6 +100,23 @@ on other members' person pages.
     ...     print a_tag.contents
     [u'Other Team']
     [u'My Team']
+
+    >>> browser.open('http://launchpad.dev/~owner/+assignedbugs')
+    >>> div = find_tag_by_id(browser.contents,
+    ...                      'portlet-team-assigned-bugs')
+    >>> a_tags = div.findAll('a')
+    >>> for a_tag in a_tags:
+    ...     print a_tag.contents
+    [u'My Team']
+    [u'Other Team']
+
+    >>> browser.open('http://launchpad.dev/~owner/+teamhierarchy')
+    >>> div = find_tag_by_id(browser.contents, 'superteams')
+    >>> a_tags = div.findAll('a')
+    >>> for a_tag in a_tags:
+    ...     print extract_text(a_tag)
+    My Team
+    Other Team
 
 
 == Teams with Icons ==
@@ -126,7 +158,7 @@ Another team member will see both the icons (otherteam and myteam).
 
 == Restrict Answer Contact ==
 
-To prevent leaking information about a team's private membership, 
+To prevent leaking information about a team's private membership,
 no user can add that team as an answer contact for a project.
 
 Even the owner of the team with private membership should not see
@@ -135,7 +167,7 @@ MyTeam as an option in the +answer-contact form.
     >>> owner_browser = setupBrowser(auth='Basic owner@canonical.com:test')
     >>> owner_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+answer-contact')
-    >>> team_div = find_tag_by_id(owner_browser.contents, 
+    >>> team_div = find_tag_by_id(owner_browser.contents,
     ...                            'answer-contact-teams')
     >>> for label in team_div.findAll('label'):
     ...     print label.contents[1]
@@ -144,7 +176,7 @@ MyTeam as an option in the +answer-contact form.
 
 == Restrict Mentorship ==
 
-To prevent leaking information about a team's private membership, 
+To prevent leaking information about a team's private membership,
 no user can select that team when offering mentorship for a bug
 or a blueprint.
 
@@ -218,11 +250,11 @@ no user can specify that team as a translator.
 == Restrict Project Owner ==
 
 To prevent leaking information about a team's private membership,
-no user can set that team as the owner of a project.
+no user can set that team as the owner/maintainer of a project.
 
     >>> admin_browser.open('http://launchpad.dev/mozilla/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
-    >>> admin_browser.getControl('Change Registrant').click()
+    >>> admin_browser.getControl('Change maintainer').click()
     >>> admin_browser.url
     'http://launchpad.dev/mozilla/+reassign'
     >>> get_feedback_messages(admin_browser.contents)
@@ -233,13 +265,14 @@ no user can set that team as the owner of a project.
 To prevent leaking information about a team's private membership,
 no user can set that team as the maintainer of a product.
 
-    >>> admin_browser.open('http://launchpad.dev/jokosher/+reassign')
+    >>> admin_browser.open('http://launchpad.dev/jokosher/+edit-people')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
-    >>> admin_browser.getControl('Change Registrant').click()
+    >>> admin_browser.getControl('Save changes').click()
     >>> admin_browser.url
-    'http://launchpad.dev/jokosher/+reassign'
+    'http://launchpad.dev/jokosher/+edit-people'
     >>> get_feedback_messages(admin_browser.contents)
-    [...The person/team named 'myteam' is not a valid owner for...
+    [u'There is 1 error.', u'Constraint not satisfied']
+
 
 == Restrict Product Bug Supervisor ==
 
@@ -261,7 +294,7 @@ no user can set that team as the registrant of a distribution.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
-    >>> admin_browser.getControl('Change Registrant').click()
+    >>> admin_browser.getControl('Change owner').click()
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu/+reassign'
     >>> get_feedback_messages(admin_browser.contents)

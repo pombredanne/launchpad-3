@@ -10,13 +10,16 @@ __all__ = [
 from zope.component import getUtility
 from zope.formlib.form import Action, Actions
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.oauth import (
     IOAuthConsumerSet, IOAuthRequestToken, IOAuthRequestTokenSet,
     OAUTH_CHALLENGE)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
-from canonical.launchpad.webapp.interfaces import OAuthPermission
+from canonical.launchpad.webapp.interfaces import (
+    OAuthPermission, UnexpectedFormData)
 
 
 class OAuthRequestTokenView(LaunchpadView):
@@ -77,13 +80,41 @@ class OAuthAuthorizeTokenView(LaunchpadFormView):
     token = None
 
     def initialize(self):
-        key = self.request.form.get('oauth_token')
+        self.storeTokenContext()
+        form = get_oauth_authorization(self.request)
+        key = form.get('oauth_token')
         if key:
             self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
         super(OAuthAuthorizeTokenView, self).initialize()
 
+    def storeTokenContext(self):
+        """Store the context given by the consumer in this view."""
+        self.token_context = None
+        # We have no guarantees that lp.context will be together with the
+        # OAuth parameters, so we need to check in the Authorization header
+        # and on the request's form if it's not in the former.
+        oauth_data = get_oauth_authorization(self.request)
+        context = oauth_data.get('lp.context')
+        if not context:
+            context = self.request.form.get('lp.context')
+            if not context:
+                return
+        if '/' in context:
+            distro, package = context.split('/')
+            distro = getUtility(IDistributionSet).getByName(distro)
+            if distro is None:
+                raise UnexpectedFormData("Unknown context.")
+            context = distro.getSourcePackage(package)
+            if context is None:
+                raise UnexpectedFormData("Unknown context.")
+        else:
+            context = getUtility(IPillarNameSet).getByName(context)
+            if context is None:
+                raise UnexpectedFormData("Unknown context.")
+        self.token_context = context
+
     def reviewToken(self, permission):
-        self.token.review(self.user, permission)
+        self.token.review(self.user, permission, self.token_context)
         callback = self.request.form.get('oauth_callback')
         if callback:
             self.next_url = callback
@@ -112,7 +143,7 @@ class OAuthAccessTokenView(LaunchpadView):
     """Where consumers may exchange a request token for an access token."""
 
     def __call__(self):
-        """Create an access token and include its key/secret in the response.
+        """Create an access token and respond with its key/secret/context.
 
         If the consumer is not registered, the given token key doesn't exist
         (or is not associated with the consumer), the signature does not match
@@ -140,6 +171,9 @@ class OAuthAccessTokenView(LaunchpadView):
             return u''
 
         access_token = token.createAccessToken()
-        body = u'oauth_token=%s&oauth_token_secret=%s' % (
-            access_token.key, access_token.secret)
+        context_name = None
+        if access_token.context is not None:
+            context_name = access_token.context.name
+        body = u'oauth_token=%s&oauth_token_secret=%s&lp.context=%s' % (
+            access_token.key, access_token.secret, context_name)
         return body

@@ -71,7 +71,6 @@ from canonical.launchpad.browser.launchpadstatistic import *
 from canonical.launchpad.browser.librarian import *
 from canonical.launchpad.browser.logintoken import *
 from canonical.launchpad.browser.mailinglists import *
-from canonical.launchpad.browser.marketing import *
 from canonical.launchpad.browser.mentoringoffer import *
 from canonical.launchpad.browser.message import *
 from canonical.launchpad.browser.milestone import *

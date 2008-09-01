@@ -79,7 +79,7 @@
 
   <tal:comment replace="nothing">
     Presents package counters for a defined IArchive.
-    :archive: targetted IArchive.
+    :archive: targeted IArchive.
   </tal:comment>
 
   <div>

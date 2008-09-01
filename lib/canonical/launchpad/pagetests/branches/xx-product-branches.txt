@@ -170,11 +170,11 @@ be shown.
 There are two buttons that show on the right hand side of the screen
 for project branch listings.  'Register a branch' and 'Import your project'.
 
-    >>> def print_buttons(browser):
-    ...     buttons = find_tag_by_id(browser.contents, 'floating-buttons')
-    ...     for button_image in buttons.fetch('img'):
-    ...         print button_image['alt']
-    >>> print_buttons(browser)
+    >>> def print_links(browser):
+    ...     links = find_tag_by_id(browser.contents, 'floating-links')
+    ...     for link in links.findAll('a'):
+    ...         print extract_text(link)
+    >>> print_links(browser)
     Register a branch
     Import your project
 
@@ -189,7 +189,7 @@ the 'Import your project' button is not shown.
     >>> sample_browser.getControl('Change').click()
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
-    >>> print_buttons(browser)
+    >>> print_links(browser)
     Register a branch
 
 

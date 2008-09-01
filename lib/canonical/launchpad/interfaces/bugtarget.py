@@ -13,6 +13,8 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Text
 
+from canonical.lazr.rest.declarations import export_as_webservice_entry
+
 
 class IBugTarget(Interface):
     """An entity on which a bug can be reported.
@@ -20,6 +22,8 @@ class IBugTarget(Interface):
     Examples include an IDistribution, an IDistroSeries and an
     IProduct.
     """
+    export_as_webservice_entry()
+
     # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
     bugtargetdisplayname = Attribute("A display name for this bug target")
     bugtargetname = Attribute("The target as shown in mail notifications.")

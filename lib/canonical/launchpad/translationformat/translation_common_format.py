@@ -12,7 +12,8 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationFileData, ITranslationMessageData)
+    ITranslationFileData, ITranslationMessageData,
+    TranslationFormatSyntaxError)
 
 
 class TranslationFileData:
@@ -60,9 +61,14 @@ class TranslationMessageData:
         # We raise an error if plural_form < len(self.translations) and
         # self.translations[plural_form] is not None.
         assert plural_form is not None, 'plural_form cannot be None!'
-        assert (plural_form >= len(self._translations) or
-                self._translations[plural_form] is None), (
-            'This message already has a translation for plural form %d' %
+
+        is_duplicate = (
+            plural_form < len(self._translations) and
+            self._translations[plural_form] is not None and
+            self._translations[plural_form] != translation)
+        if is_duplicate:
+            raise TranslationFormatSyntaxError(
+                'Message has more than one translation for plural form %d.' %
                 plural_form)
 
         if plural_form >= len(self.translations):

@@ -2,7 +2,7 @@ We export DOAP RDF metadata for products from a link in the
 /productname/+index document:
 
   >>> anon_browser.open("http://launchpad.dev/firefox")
-  >>> anon_browser.getLink("Download RDF metadata").click()
+  >>> anon_browser.getLink("RDF metadata").click()
   >>> print anon_browser.contents
   <?xml version="1.0" encoding="utf-8"?>
   <rdf:RDF xmlns:doaml="http://ns.balbinus.net/doaml#"

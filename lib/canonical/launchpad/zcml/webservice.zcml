@@ -56,4 +56,13 @@
 
    <webservice:register module="canonical.launchpad.interfaces" />
 
+   <!-- The API documentation -->
+    <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+apidoc"
+      class="canonical.launchpad.browser.launchpad.LaunchpadAPIDocFolder"
+      attribute="__call__"
+      permission="zope.Public"
+      />
+
 </configure>

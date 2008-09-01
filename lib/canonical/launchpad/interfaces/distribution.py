@@ -25,10 +25,11 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
-    ILaunchpadContainer, ILaunchpadUsage)
+    ILaunchpadUsage)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.milestone import (
+    ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
@@ -51,10 +52,11 @@ class DistributionNameField(PillarNameField):
         """Return the interface of this pillar object."""
         return IDistribution
 
-class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
-    IHasMentoringOffers, IHasMilestones, IMakesAnnouncements, IHasOwner,
-    IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, ISpecificationTarget, IPillar, ILaunchpadContainer):
+class IDistribution(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+                    IHasDrivers, IHasMentoringOffers, IHasMilestones,
+                    IMakesAnnouncements, IHasOwner, IHasSecurityContact,
+                    IHasSprints, IHasTranslationGroup, IKarmaContext,
+                    ILaunchpadUsage, ISpecificationTarget, IPillar):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -363,8 +365,8 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         tuples containing IProducts and three different bug counts:
             - open bugs
             - triaged bugs
-            - triaged bugs with an upstream task
-            - triaged bugs with upstream tasks that are either linked to
+            - open bugs with an upstream task
+            - open bugs with upstream tasks that are either linked to
               bug watches or to products that use_malone.
         """
 

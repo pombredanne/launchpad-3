@@ -218,7 +218,7 @@ class TestBranchMergeProposalQueueing(TestCase):
             for x in range(4)]
 
     def test_empty_target_queue(self):
-        """If there are no proposals targetted to the branch, the queue has
+        """If there are no proposals targeted to the branch, the queue has
         nothing in it."""
         queued_proposals = list(self.target_branch.getMergeQueue())
         self.assertEqual(0, len(queued_proposals),

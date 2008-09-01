@@ -9,16 +9,18 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
+from sqlobject.sqlbuilder import AND
 
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.account import (
         AccountCreationRationale, AccountStatus,
         IAccount, IAccountSet)
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
-from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class Account(SQLBase):
@@ -72,12 +74,6 @@ class Account(SQLBase):
 
     password = property(_get_password, _set_password)
 
-    @property
-    def openid_identity_url(self):
-        """see `IAccount`."""
-        identity_url_prefix = (allvhosts.configs['openid'].rooturl + '+id/')
-        return identity_url_prefix + self.openid_identifier.encode('ascii')
-
 
 class AccountSet:
     implements(IAccountSet)
@@ -104,6 +100,16 @@ class AccountSet:
             AND lower(EmailAddress.email) = lower(trim(%s))
             ''' % sqlvalues(email),
             clauseTables=['EmailAddress'])
+
+    def getByOpenIdIdentifier(self, openid_identifier):
+        """See `IAccountSet`."""
+        return Account.selectOne(
+            AND(
+                Account.q.openid_identifier == openid_identifier,
+                Account.q.status == AccountStatus.ACTIVE,
+                EmailAddress.q.accountID == Account.q.id,
+                EmailAddress.q.status == EmailAddressStatus.PREFERRED,
+               ),)
 
 
 class AccountPassword(SQLBase):

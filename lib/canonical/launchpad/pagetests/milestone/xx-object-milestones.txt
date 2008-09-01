@@ -218,7 +218,7 @@ Next, we'll target each bug to the 1.0 milestone:
 Observe that both bugs are listed in the 1.0 milestone listing:
 
     >>> browser.open('http://launchpad.dev/firefox')
-    >>> browser.getLink('See all milestones').click()
+    >>> browser.getLink('Milestone history').click()
     >>> browser.getLink(milestone).click()
     >>> print browser.title
     Milestone 1.0 for Mozilla Firefox...
