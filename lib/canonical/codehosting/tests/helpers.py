@@ -404,6 +404,7 @@ def create_branch_with_one_revision(branch_dir):
     tree.commit('message')
     return tree
 
+
 class TestResultWrapper:
     """A wrapper for `TestResult` that knows about bzrlib's `TestSkipped`."""
 
