@@ -367,8 +367,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     yield UploadError(
                         "File %s already exists in %s, but uploaded version "
                         "has different contents. See more information about "
-                        "this error in https://help.launchpad.net/PPA"
-                        "#Possible%%20upload%%20errors." %
+                        "this error in "
+                        "https://help.launchpad.net/Packaging/UploadErrors." %
                         (sub_dsc_file.filename, file_archive.title))
                     files_missing = True
                     continue
