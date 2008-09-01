@@ -6,7 +6,7 @@ CREATE TABLE PackageBugReportingGuideline (
   distribution integer REFERENCES Distribution,
   sourcepackagename integer REFERENCES SourcePackageName,
 
-  bug_reporting_guidelines TEXT,
+  bug_reporting_guidelines TEXT NOT NULL,
 
   UNIQUE (sourcepackagename, distribution)
 );
