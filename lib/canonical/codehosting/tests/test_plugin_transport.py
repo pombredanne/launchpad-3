@@ -26,8 +26,6 @@ from bzrlib.transport import (
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.urlutils import escape, local_path_to_url
 
-from canonical.codehosting.transport import LaunchpadBranch
-
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -1083,9 +1081,11 @@ class TestLaunchpadTransportImplementation(TransportTests):
         self.transport_server = TestingServer
         super(TestLaunchpadTransportImplementation, self).setUp()
 
-    def run(self, result):
+    def run(self, result=None):
         """Run the test, with the result wrapped so that it knows about skips.
         """
+        if result is None:
+            result = self.defaultTestResult()
         super(TestLaunchpadTransportImplementation, self).run(
             TestResultWrapper(result))
 
