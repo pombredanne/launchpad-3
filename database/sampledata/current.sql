@@ -680,6 +680,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'sabdfl_oid', NULL, NULL);
@@ -4235,6 +4238,13 @@ INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_cr
 ALTER TABLE openidrpsummary ENABLE TRIGGER ALL;
 
 
+ALTER TABLE packagebugreportingguideline DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE packagebugreportingguideline ENABLE TRIGGER ALL;
+
+
 ALTER TABLE packagebugsupervisor DISABLE TRIGGER ALL;
 
 
@@ -7762,17 +7772,17 @@ ALTER TABLE requestedcds ENABLE TRIGGER ALL;
 
 ALTER TABLE revision DISABLE TRIGGER ALL;
 
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (1, '2005-03-09 15:45:00', 'Import of Mozilla Firefox 0.9.2', 1, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', '2005-03-09 15:40:00');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (2, '2005-03-09 15:50:00', 'Import of Mozilla Firefox 0.9.1', 1, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', '2005-03-09 15:45:00');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (3, '2005-03-09 15:55:00', 'Import of Mozilla Firefox 0.9', 1, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', '2005-03-09 15:50:00');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (4, '2005-10-31 17:21:47.38177', 'initial import (empty)', 11, NULL, 'test@canonical.com-20051031165248-6f1bb97973c2b4f4', '2005-10-31 11:52:48.37692');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (5, '2005-10-31 17:21:47.66327', 'add foo', 11, NULL, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0', '2005-10-31 11:53:38.324658');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (6, '2005-10-31 17:21:47.701102', 'fix bug 1', 11, NULL, 'test@canonical.com-20051031165532-3113df343e494daa', '2005-10-31 11:55:32.559368');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (7, '2005-10-31 17:21:47.745231', 'merge new feature', 13, NULL, 'test@canonical.com-20051031165901-43b9644ec2eacc4e', '2005-10-31 11:59:01.742211');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (8, '2005-10-31 17:21:47.786347', 'resolve criss-cross', 12, NULL, 'foo@localhost-20051031170239-5fce7d6bd3f01efc', '2005-10-31 12:02:39.750015');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (9, '2005-10-31 17:21:47.82293', 'fix bug in bar', 12, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', '2005-10-31 12:03:57.157495');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (10, '2005-10-31 17:21:47.917914', 'add a new feature', 12, NULL, 'foo@localhost-20051031165758-48acedf2b6a2e898', '2005-10-31 11:57:58.936419');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (11, '2005-10-31 17:21:47.954856', 'merge foo bugfix', 12, NULL, 'foo@localhost-20051031170008-098959758bf79803', '2005-10-31 12:00:08.648379');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date, karma_allocated) VALUES (1, '2005-03-09 15:45:00', 'Import of Mozilla Firefox 0.9.2', 1, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', '2005-03-09 15:40:00', false);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date, karma_allocated) VALUES (2, '2005-03-09 15:50:00', 'Import of Mozilla Firefox 0.9.1', 1, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', '2005-03-09 15:45:00', false);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date, karma_allocated) VALUES (3, '2005-03-09 15:55:00', 'Import of Mozilla Firefox 0.9', 1, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', '2005-03-09 15:50:00', false);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date, karma_allocated) VALUES (4, '2005-10-31 17:21:47.38177', 'initial import (empty)', 11, NULL, 'test@canonical.com-20051031165248-6f1bb97973c2b4f4', '2005-10-31 11:52:48.37692', false);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date, karma_allocated) VALUES (5, '2005-10-31 17:21:47.66327', 'add foo', 11, NULL, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0', '2005-10-31 11:53:38.324658', false);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date, karma_allocated) VALUES (6, '2005-10-31 17:21:47.701102', 'fix bug 1', 11, NULL, 'test@canonical.com-20051031165532-3113df343e494daa', '2005-10-31 11:55:32.559368', false);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date, karma_allocated) VALUES (7, '2005-10-31 17:21:47.745231', 'merge new feature', 13, NULL, 'test@canonical.com-20051031165901-43b9644ec2eacc4e', '2005-10-31 11:59:01.742211', false);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date, karma_allocated) VALUES (8, '2005-10-31 17:21:47.786347', 'resolve criss-cross', 12, NULL, 'foo@localhost-20051031170239-5fce7d6bd3f01efc', '2005-10-31 12:02:39.750015', false);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date, karma_allocated) VALUES (9, '2005-10-31 17:21:47.82293', 'fix bug in bar', 12, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', '2005-10-31 12:03:57.157495', false);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date, karma_allocated) VALUES (10, '2005-10-31 17:21:47.917914', 'add a new feature', 12, NULL, 'foo@localhost-20051031165758-48acedf2b6a2e898', '2005-10-31 11:57:58.936419', false);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date, karma_allocated) VALUES (11, '2005-10-31 17:21:47.954856', 'merge foo bugfix', 12, NULL, 'foo@localhost-20051031170008-098959758bf79803', '2005-10-31 12:00:08.648379', false);
 
 
 ALTER TABLE revision ENABLE TRIGGER ALL;
