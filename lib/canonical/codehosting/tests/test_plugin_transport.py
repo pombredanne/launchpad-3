@@ -16,13 +16,14 @@ import unittest
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
+from bzrlib.tests import (
+    TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport,
+    TestSkipped)
+from bzrlib.tests.test_transport_implementations import TransportTests
 from bzrlib.transport import (
     chroot, get_transport, _get_protocol_handlers, register_transport, Server,
     Transport, unregister_transport)
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.tests import (
-    TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport)
-from bzrlib.tests.test_transport_implementations import TransportTests
 from bzrlib.urlutils import escape, local_path_to_url
 
 from canonical.codehosting.transport import LaunchpadBranch
@@ -997,21 +998,38 @@ class TestLoggingSetup(BzrTestCase):
 
 
 class TestingServer(LaunchpadInternalServer):
+    """A Server that provides instances of LaunchpadTransport for testing.
+
+    See the comment in `_transportFactory` about what we actually test.
+    """
+
     def __init__(self):
+        """Initialize the server.
+
+        We register ourselves with the otherwise unused lp-testing:/// scheme,
+        using the `FakeLaunchpad` authserver client and backed onto a
+        MemoryTransport.
+        """
         LaunchpadInternalServer.__init__(
-            self, 'lp-testing:///', BlockingProxy(FakeLaunchpad()), MemoryTransport())
+            self, 'lp-testing:///', BlockingProxy(FakeLaunchpad()),
+            MemoryTransport())
         self._chroot_servers = []
 
     def _transportFactory(self, url):
-        """Construct a transport for the given URL. Used by the registry."""
-        assert url == self._scheme
-        r = LaunchpadInternalServer._transportFactory(self, url)
-        lp_branch = LaunchpadBranch.from_virtual_path(
-            self._authserver, '~testuser/firefox/qux')[0]
-        lp_branch.ensureUnderlyingPath(self._branch_transport)
-        t = r.clone('~testuser/firefox/qux/.bzr')
-        t.ensure_base()
-        chroot_server = chroot.ChrootServer(t)
+        """See `LaunchpadInternalServer._transportFactory`.
+
+        As `LaunchpadTransport` 'acts all kinds of crazy' above the .bzr
+        directory of a branch (forbidding file or directory creation at some
+        levels, enforcing naming restrictions at others), we test a
+        LaunchpadTransport chrooted into the .bzr directory of a branch.
+        """
+        if url != self._scheme:
+            raise AssertionError(
+                "Don't know how to create non-root transport for testing.")
+        root_transport = LaunchpadInternalServer._transportFactory(self, url)
+        bzrdir_transport = root_transport.clone('~testuser/firefox/qux/.bzr')
+        bzrdir_transport.ensure_base()
+        chroot_server = chroot.ChrootServer(bzrdir_transport)
         chroot_server.setUp()
         self._chroot_servers.append(chroot_server)
         return get_transport(chroot_server.get_url())
@@ -1022,30 +1040,54 @@ class TestingServer(LaunchpadInternalServer):
         LaunchpadInternalServer.tearDown(self)
 
 
-class ResultWrapper(object):
+class TestResultWrapper:
+    """A wrapper for `TestResult` that knows about bzrlib's `TestSkipped`."""
 
     def __init__(self, result):
         self.__result = result
 
-    def __getattr__(self, attr):
-        return getattr(self.__result, attr)
+    def addError(self, test_case, exc_info):
+        if not isinstance(exc_info[1], TestSkipped):
+            self.__result.addError(test_case, exc_info)
 
-    def addError(self, t, (et, v, tb)):
-        from bzrlib.tests import TestSkipped
-        if not isinstance(v, TestSkipped):
-            self.__result.addError(t, (et, v, tb))
+    def addFailure(self, test_case, exc_info):
+        self.__result.addFailure(test_case, exc_info)
+
+    def addSuccess(self, test_case):
+        self.__result.addSuccess(test_case)
+
+    def startTest(self, test_case):
+        self.__result.startTest(test_case)
+
+    def stopTest(self, test_case):
+        self.__result.stopTest(test_case)
 
 
 class TestLaunchpadTransportImplementation(TransportTests):
+    """Implementation tests for `LaunchpadTransport`.
+
+    We test the transport chrooted to the .bzr directory of a branch -- see
+    `TestingServer._transportFactory` for more.
+    """
+    # TransportTests tests that get_transport() returns an instance of
+    # `transport_class`, but the instances we're actually testing are
+    # instances of ChrootTransport wrapping instances of SynchronousAdapter
+    # which wraps the LaunchpadTransport we're actually interested in.  This
+    # doesn't seem interesting to check, so we just set transport_class to
+    # the base Transport class.
     transport_class = Transport
 
     def setUp(self):
+        """Arrange for `get_transport` to return wrapped LaunchpadTransports.
+        """
         self.transport_server = TestingServer
         super(TestLaunchpadTransportImplementation, self).setUp()
 
     def run(self, result):
+        """Run the test, with the result wrapped so that it knows about skips.
+        """
         super(TestLaunchpadTransportImplementation, self).run(
-            ResultWrapper(result))
+            TestResultWrapper(result))
 
 
 def test_suite():
