@@ -92,8 +92,6 @@ class IHasBugs(Interface):
         milestone=copy_field(IBugTaskSearch['milestone']),
         component=copy_field(IBugTaskSearch['component']),
         nominated_for=Reference(schema=Interface),
-        distribution=Reference(schema=Interface), # IDistribution
-        sourcepackagename=TextLine(title=_("Source Package"), required=False),
         has_no_package=copy_field(IBugTaskSearch['has_no_package']))
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
@@ -108,7 +106,6 @@ class IHasBugs(Interface):
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
-                    distribution=None, sourcepackagename=None,
                     has_no_package=None):
         """Search the IBugTasks reported on this entity.
 

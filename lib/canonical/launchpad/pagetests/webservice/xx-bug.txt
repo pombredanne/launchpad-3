@@ -757,6 +757,9 @@ as well as a collection of all bug tasks raised on this target.
 
 == Searching for bugs ==
 
+Bug targets expose the searchTasks method, which provides a search interface
+for bug tasks, similar to the advanced search form on the web interface.
+
     >>> show(webservice.named_get('/beta/firefox', 'searchTasks').jsonBody())
     [(u'entries',
       [{...
@@ -772,3 +775,14 @@ as well as a collection of all bug tasks raised on this target.
     >>> show(webservice.named_get(
     ...     '/beta/firefox', 'searchTasks',
     ...     importance=['Critical', 'Low']).jsonBody())
+    [(u'entries',
+      [{...
+        u'importance': u'Critical',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/5',
+        ...
+        u'importance': u'Low',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/1',
+        ...
+     (u'total_size', 2)]
