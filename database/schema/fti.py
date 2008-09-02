@@ -246,10 +246,10 @@ def nullify(con):
     for table, ignored in ALL_FTI:
         table = quote_identifier(table)
         log.info("Removing full text index data from %s", table)
-        sexecute("ALTER TABLE %s DISABLE TRIGGER tsvectorupdate" % table)
-        sexecute("UPDATE %s SET fti=NULL" % table)
-        sexecute("ALTER TABLE %s ENABLE TRIGGER tsvectorupdate" % table)
-    sexecute("DELETE FROM FtiCache")
+        sexecute(con, "ALTER TABLE %s DISABLE TRIGGER tsvectorupdate" % table)
+        sexecute(con, "UPDATE %s SET fti=NULL" % table)
+        sexecute(con, "ALTER TABLE %s ENABLE TRIGGER tsvectorupdate" % table)
+    sexecute(con, "DELETE FROM FtiCache")
 
 
 def liverebuild(con):
