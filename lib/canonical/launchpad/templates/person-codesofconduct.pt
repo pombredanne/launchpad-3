@@ -58,10 +58,10 @@
                       tal:content="sig/displayname"
                     >blah</label>
                   </div>
-                  <div
+                  <pre
                     class="discreet"
                     tal:content="sig/signedcode"
-                  >SIGNATURE</div>
+                  >SIGNATURE</pre>
                 </td>
               </tr>
             </tbody>
