@@ -573,7 +573,8 @@ class Bug(SQLBase):
     def addChangeNotification(self, text, person, recipients=None, when=None):
         """See `IBug`."""
         if recipients is None:
-            recipients = self.getBugNotificationRecipients()
+            recipients = self.getBugNotificationRecipients(
+                level=BugNotificationLevel.METADATA)
         if when is None:
             when = UTC_NOW
         message = MessageSet().fromText(

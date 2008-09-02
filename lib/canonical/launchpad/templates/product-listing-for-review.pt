@@ -39,6 +39,9 @@
     <td tal:content="structure context/license_info/fmt:shorten/80/fmt:text-to-html">
         License info goes here
     </td>
+    <td tal:condition="context/commercial_subscription"
+        tal:content="context/commercial_subscription/date_expires/fmt:date" />
+    <td tal:condition="not: context/commercial_subscription" />
     <td tal:content="context/reviewer_whiteboard/fmt:shorten/80" />
   </tr>
 </tal:root>
