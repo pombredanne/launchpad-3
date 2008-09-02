@@ -46,9 +46,6 @@ ALL_FTI = [
             ('description', A),
             ('package_description_cache', B),
             ]),
-    #('shipitsurveyquestion', [
-    #        ('question', A),
-    #        ]),
     ('bug', [
             ('name', A),
             ('title', B),
@@ -290,7 +287,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
     # tsearch2 is out-of-the-box in 8.3+
     v83 = get_pgversion(con).startswith('8.3')
 
-    assert v83, 'This script now only supports PostgreSQL 8.3'
+    assert v83, 'This script only supports PostgreSQL 8.3'
 
     schema_exists = bool(execute(
         con, "SELECT COUNT(*) FROM pg_namespace WHERE nspname='ts2'",
