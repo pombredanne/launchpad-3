@@ -1,5 +1,27 @@
 = Web Service Project Groups =
 
+== Project group collection ==
+
+It is possible to get a batched list of all the project groups.
+
+    >>> group_collection = webservice.get("/projectgroups").jsonBody()
+    >>> group_collection['resource_type_link']
+    u'http://.../#project_groups'
+    >>> group_collection['total_size']
+    7
+
+    >>> from operator import itemgetter
+    >>> project_group_entries = sorted(
+    ...     group_collection['entries'], key=itemgetter('name'))
+    >>> project_group_entries[0]['self_link']
+    u'http://.../apache'
+    >>> for project_group in project_group_entries:
+    ...   print project_group['display_name']
+    Apache
+    GNOME
+    ...
+    the Mozilla Project
+
 
 == Project group entry ==
 
@@ -197,7 +219,6 @@ It is possible to get a batched list of all the projects.
     >>> project_collection['total_size']
     22
 
-    >>> from operator import itemgetter
     >>> project_entries = sorted(
     ...     project_collection['entries'], key=itemgetter('name'))
     >>> len(project_entries)

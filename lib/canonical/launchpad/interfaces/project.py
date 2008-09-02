@@ -40,6 +40,7 @@ from canonical.launchpad.fields import (
 
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
+    collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, exported)
 
 
@@ -259,6 +260,8 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
 class IProjectSet(Interface):
     """The collection of projects."""
 
+    export_as_webservice_collection(IProject)
+
     title = Attribute('Title')
 
     def __iter__():
@@ -290,6 +293,7 @@ class IProjectSet(Interface):
     def count_all():
         """Return the total number of projects registered in Launchpad."""
 
+    @collection_default_content()
     def search(text=None, soyuz=None,
                      rosetta=None, malone=None,
                      bazaar=None,
