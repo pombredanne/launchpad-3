@@ -66,7 +66,7 @@
   <include package="zope.app.http" />
 
   <!-- Translations -->
-  <!-- XXX Robert Collines 2004-11-23: it is not possible to include a
+  <!-- XXX Robert Collins 2004-11-23: it is not possible to include a
        'package' attribute in the registerTranslations directive.  This seems
        to be a shortcoming in the 'path' field design, where it can't be made
        relative to a package given in this directive.

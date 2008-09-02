@@ -134,7 +134,7 @@
       class="clearfix"
     >
       <tal:XXX replace="nothing">
-        # XXX mpt 20080702: The HTML comment works around bug 229931.
+        # XXX mpt 2008-07-02 bug=229931: The HTML comment works.
       </tal:XXX>
       <!-- :-) --><tal:facet repeat="link facetmenu">
         <span
@@ -172,7 +172,7 @@
         <div id="container">
           <!--[if IE 7]>&nbsp;<![endif]-->
           <tal:XXX condition="nothing">
-            # XXX mpt 20080716 bug=249032: This conditional comment should
+            # XXX mpt 2008-07-16 bug=249032: This conditional comment should
             # not be necessary.
           </tal:XXX>
 
