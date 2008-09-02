@@ -39,9 +39,10 @@ from canonical.launchpad.browser.sourceslist import (
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
-    IArchivePackageCopyingForm, IArchivePackageDeletionForm,
-    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
+    ArchivePurpose, ArchiveCopyOptions, IArchive,
+    IArchiveEditDependenciesForm, IArchivePackageCopyingForm,
+    IArchivePackageDeletionForm, IArchiveSet, IArchiveSourceSelectionForm,
+    IPPAActivateForm)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
@@ -60,7 +61,8 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
-from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from canonical.widgets.itemswidgets import (
+    LaunchpadDropdownWidget, LaunchpadRadioWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -541,7 +543,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         self.next_url = '%s%s' % (self.request.URL, url_params_string)
 
 
-class DestinationArchiveRadioWidget(LaunchpadDropdownWidget):
+class DestinationArchiveDropdownWidget(LaunchpadDropdownWidget):
     """Redefining default display value as 'This PPA'."""
     _messageNoValue = _("vocabulary-copy-to-context-ppa", "This PPA")
 
@@ -559,8 +561,9 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     """
     schema = IArchivePackageCopyingForm
 
-    custom_widget('destination_archive', DestinationArchiveRadioWidget)
+    custom_widget('destination_archive', DestinationArchiveDropdownWidget)
     custom_widget('destination_series', DestinationSeriesDropdownWidget)
+    custom_widget('copy_how', LaunchpadRadioWidget)
 
     # Maximum number of 'sources' presented.
     max_sources_presented = 20
@@ -668,10 +671,12 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         form.getWidgetsData(self.widgets, 'field', data)
 
         selected_sources = data.get('selected_sources', [])
-        include_binaries = data.get('include_binaries')
         destination_archive = data.get('destination_archive')
         destination_series = data.get('destination_series')
         destination_pocket = self.default_pocket
+
+        copy_how = data.get('copy_how')
+        include_binaries = copy_how is ArchiveCopyOptions.COPY_BINARIES
 
         if len(selected_sources) == 0:
             self.setFieldError('selected_sources', 'No sources selected.')
@@ -712,8 +717,10 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         selected_sources = data.get('selected_sources')
         destination_archive = data.get('destination_archive')
         destination_series = data.get('destination_series')
-        include_binaries = data.get('include_binaries')
         destination_pocket = self.default_pocket
+
+        copy_how = data.get('copy_how')
+        include_binaries = copy_how is ArchiveCopyOptions.COPY_BINARIES
 
         copies = do_copy(
             selected_sources, destination_archive, destination_series,
@@ -721,13 +728,19 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
         # Present a page notification describing the action.
         messages = []
-        messages.append(
-            '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
-                canonical_url(destination_archive),
-                destination_archive.title))
-
-        for copy in copies:
-            messages.append('<br/>%s' % copy.displayname)
+        if len(copies) == 0:
+            messages.append(
+                '<p>All packages already copied to '
+                '<a href="%s">%s</a>.</p>' % (
+                    canonical_url(destination_archive),
+                    destination_archive.title))
+        else:
+            messages.append(
+                '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
+                    canonical_url(destination_archive),
+                    destination_archive.title))
+            for copy in copies:
+                messages.append('<br/>%s' % copy.displayname)
 
         notification = "\n".join(messages)
         self.request.response.addNotification(structured(notification))
