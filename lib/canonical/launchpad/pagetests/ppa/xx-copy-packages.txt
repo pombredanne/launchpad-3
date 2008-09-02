@@ -218,8 +218,8 @@ sources or copying binaries. James wants to rebuild it, the field
 default value.
 
     >>> print_radio_button_field(jblack_browser.contents, 'copy_how')
-    (*) Rebuild the copied sources in the destination archive
-    ( ) Copy existing binary packages to the destination archive
+    (*) Rebuild the copied sources
+    ( ) Copy existing binaries
 
 James 'pushes the button', copy is done and a summary of the operation
 is presented.
@@ -387,8 +387,8 @@ and 'grumpy' as Destination Series.
 Let 'Copy options' alone, i.e. rebuild the copied sources.
 
     >>> print_radio_button_field(jblack_browser.contents, 'copy_how')
-    (*) Rebuild the copied sources in the destination archive
-    ( ) Copy existing binary packages to the destination archive
+    (*) Rebuild the copied sources
+    ( ) Copy existing binaries
 
 All done and reviewed, James pushes the button.
 

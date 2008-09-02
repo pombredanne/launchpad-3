@@ -343,11 +343,9 @@ class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
 class ArchiveCopyOptions(EnumeratedType):
     """Archive copy options."""
 
-    REBUILD_SOURCE = Item(
-        "Rebuild the copied sources in the destination archive")
+    REBUILD_SOURCE = Item("Rebuild the copied sources")
 
-    COPY_BINARIES = Item(
-        "Copy existing binary packages to the destination archive")
+    COPY_BINARIES = Item("Copy existing binaries")
 
 
 class IArchivePackageCopyingForm(IArchiveSourceSelectionForm):
