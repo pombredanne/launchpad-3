@@ -18,7 +18,7 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.tests import (
     TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport)
-from bzrlib.tests.test_transport_implementations import TransportTests
+from bzrlib.tests import test_transport_implementations
 from bzrlib.transport import (
     chroot, get_transport, _get_protocol_handlers, register_transport, Server,
     Transport, unregister_transport)
@@ -1048,7 +1048,8 @@ class TestingServer(LaunchpadInternalServer):
         LaunchpadInternalServer.tearDown(self)
 
 
-class TestLaunchpadTransportImplementation(TransportTests):
+class TestLaunchpadTransportImplementation(
+        test_transport_implementations.TransportTests):
     """Implementation tests for `LaunchpadTransport`.
 
     We test the transport chrooted to the .bzr directory of a branch -- see
