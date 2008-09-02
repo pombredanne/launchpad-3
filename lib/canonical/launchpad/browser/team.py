@@ -157,11 +157,13 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
         When a team has a mailing list, renames are prohibited.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        if mailing_list is not None:
+        writable = (mailing_list is None or
+                    mailing_list.status == MailingListStatus.PURGED)
+        if not writable:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(TeamEditView, self).setUpWidgets()
-        if mailing_list is not None:
+        if not writable:
             # We can't change the widget's .hint directly because that's a
             # read-only property.  But that property just delegates to the
             # context's underlying description, so change that instead.

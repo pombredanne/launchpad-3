@@ -22,6 +22,7 @@ from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility, queryAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -254,7 +255,6 @@ class MailingList(SQLBase):
                 # We also need to remove the email's security proxy because
                 # this method will be called via the internal XMLRPC rather
                 # than as a response to a user action.
-                from zope.security.proxy import removeSecurityProxy
                 removeSecurityProxy(email).status = (
                     EmailAddressStatus.VALIDATED)
             assert email.person == self.team, (
@@ -288,7 +288,7 @@ class MailingList(SQLBase):
         email = getUtility(IEmailAddressSet).getByEmail(self.address)
         if email == self.team.preferredemail:
             self.team.setContactAddress(None)
-        email.status = EmailAddressStatus.NEW
+        removeSecurityProxy(email).status = EmailAddressStatus.NEW
 
     def reactivate(self):
         """See `IMailingList`."""

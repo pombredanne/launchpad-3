@@ -195,18 +195,23 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def _validate_name(self, attr, value):
         """Check that rename is allowed."""
-        # Renaming a team is prohibited for any team that has a mailing list.
-        # This is because renaming a mailing list is not trivial in Mailman
-        # 2.1 (see Mailman FAQ item 4.70).  We prohibit such renames in the
-        # team edit details view, but just to be safe, we also assert that
-        # such an attempt is not being made here.  To do this, we must
-        # override the SQLObject method for setting the 'name' database
-        # column.  Watch out for when SQLObject is creating this row, because
-        # in that case self.name isn't yet available.
-        assert (self._SO_creating or
-                not self.is_team or
-                getUtility(IMailingListSet).get(self.name) is None), (
-            'Cannot rename teams with mailing lists')
+        # Renaming a team is prohibited for any team that has a non-purged
+        # mailing list.  This is because renaming a mailing list is not
+        # trivial in Mailman 2.1 (see Mailman FAQ item 4.70).  We prohibit
+        # such renames in the team edit details view, but just to be safe, we
+        # also assert that such an attempt is not being made here.  To do
+        # this, we must override the SQLObject method for setting the 'name'
+        # database column.  Watch out for when SQLObject is creating this row,
+        # because in that case self.name isn't yet available.
+        if self.name is None:
+            mailing_list = None
+        else:
+            mailing_list = getUtility(IMailingListSet).get(self.name)
+        can_rename = (self._SO_creating or
+                      not self.is_team or
+                      mailing_list is None or
+                      mailing_list.status == MailingListStatus.PURGED)
+        assert can_rename, 'Cannot rename teams with mailing lists'
         # Everything's okay, so let SQLObject do the normal thing.
         return value
 

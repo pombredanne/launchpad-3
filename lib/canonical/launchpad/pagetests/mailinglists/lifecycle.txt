@@ -472,7 +472,7 @@ database.
     <EmailAddress at...
 
 
-== Purging mailing lists ==
+== Purge permissions ==
 
 A mailing list may be 'purged' when it is in one of several safe states.  By
 'safe' we mean that there are no artifacts of the mailing list on the Mailman
@@ -641,6 +641,78 @@ purged.
     <SubmitControl name='field.actions.reactivate_list' type='submit'>
     >>> print purge_text(admin_browser)
     You can purge this mailing list...
+
+
+== Purging a mailing list ==
+
+A mailing list expert purges the inactive list.
+
+    >>> expert_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
+    >>> expert_browser.getControl('Purge this Mailing List').click()
+
+Once purged, it's as if the mailing list never existed.
+
+    >>> print browser.getLink('Mailing list archive')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+So now the team owner can re-register the mailing list.
+
+    >>> browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
+    >>> browser.getControl('Apply for Mailing List').click()
+    >>> print browser.title
+    Aardvarks in Launchpad
+
+Once the Launchpad administrator approves the new mailing list, a new instance
+of it appears.
+
+    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
+    >>> admin_browser.getControl(name='field.aardvarks').value = ['approve']
+    >>> admin_browser.getControl('Submit').click()
+    >>> act()
+    >>> browser.reload()
+    >>> browser.getLink('Mailing list archive')
+    <Link text='Mailing list archive'
+          url='http://lists.launchpad.dev/aardvarks'>
+
+A team with an active mailing list cannot be renamed.
+
+    >>> user_browser.open('http://launchpad.dev/~aardvarks/+edit')
+    >>> user_browser.getControl(name='field.name').value = 'antelopes'
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.name'
+
+But once the mailing list has been purged, the team can be renamed.
+
+    >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
+    >>> user_browser.getControl('Deactivate this Mailing List').click()
+    >>> act()
+    >>> admin_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
+    >>> admin_browser.getControl('Purge this Mailing List').click()
+
+    >>> user_browser.open('http://launchpad.dev/~aardvarks/+edit')
+    >>> user_browser.getControl(name='field.name').value = 'antelopes'
+    >>> user_browser.getControl(name='field.displayname').value = 'Antelopes'
+    >>> user_browser.getControl('Save').click()
+    >>> print user_browser.title
+    Antelopes in Launchpad
+
+And of course, a mailing list for the newly renamed team can be created.
+
+    >>> user_browser.open('http://launchpad.dev/~antelopes/+mailinglist')
+    >>> user_browser.getControl('Apply for Mailing List').click()
+    >>> print user_browser.title
+    Antelopes in Launchpad
+    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
+    >>> admin_browser.getControl(name='field.antelopes').value = ['approve']
+    >>> admin_browser.getControl('Submit').click()
+    >>> act()
+    >>> user_browser.reload()
+    >>> user_browser.getLink('Mailing list archive')
+    <Link text='Mailing list archive'
+          url='http://lists.launchpad.dev/antelopes'>
 
 
 XXX TODO
