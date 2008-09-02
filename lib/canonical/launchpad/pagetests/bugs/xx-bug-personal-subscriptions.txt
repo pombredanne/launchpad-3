@@ -168,8 +168,8 @@ dupe of bug #3, so he'll no longer get mail from bug #3.
     >>> stevea_browser.getLink('Unsubscribe').click()
     >>> stevea_browser.getControl("Continue").click()
 
-XXX, Brad Bollenbach, 2006-09-27: Printing the tag here, instead of
-tag.string, due to https://launchpad.net/bugs/62634
+# XXX: Brad Bollenbach 2006-09-27 bug=62634: Printing the tag here,
+# instead of tag.string.
 
   >>> for tag in find_tags_by_class(
   ...     stevea_browser.contents, 'informational message'):
