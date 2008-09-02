@@ -587,7 +587,7 @@ class PackageUpload(SQLBase):
             if maintainer:
                 maintainer = sanitize_string(maintainer)
                 message.MAINTAINER = (
-                    '-- %s %s' % (maintainer, changes['date']))
+                    ' -- %s  %s' % (maintainer, changes['date']))
 
             # Add the debian 'Changed-By:' field if the changes author
             # differs from the maintainer.
