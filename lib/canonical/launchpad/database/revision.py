@@ -294,7 +294,7 @@ class RevisionSet:
         from canonical.launchpad.database.branchrevision import BranchRevision
         from canonical.launchpad.database.person import ValidPersonCache
 
-        store = getUtility(IStoreSelector).get(MAIN_BRANCH, DEFAULT_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # XXX: Tim Penhey 2008-08-12, bug 244768
         # Using Not(column == None) rather than column != None.
