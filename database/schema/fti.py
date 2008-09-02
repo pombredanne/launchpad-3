@@ -10,18 +10,24 @@ __metaclass__ = type
 
 import _pythonpath
 
-import sys, os.path, popen2
+from cStringIO import StringIO
+import sys
+import os.path
 from optparse import OptionParser
-import tempfile
+import popen2
+from tempfile import NamedTemporaryFile
 from textwrap import dedent
 import time
+
 import psycopg2.extensions
 
-import upgrade
 from canonical import lp
 from canonical.database.sqlbase import (
-    connect, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED)
+    connect, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
+    quote, quote_identifier)
 from canonical.launchpad.scripts import logger, logger_options, db_options
+
+import replication.helpers
 
 # Defines parser and locale to use.
 DEFAULT_CONFIG = 'default'
@@ -40,6 +46,9 @@ ALL_FTI = [
             ('description', A),
             ('package_description_cache', B),
             ]),
+    #('shipitsurveyquestion', [
+    #        ('question', A),
+    #        ]),
     ('bug', [
             ('name', A),
             ('title', B),
@@ -141,23 +150,6 @@ ALL_FTI = [
     ]
 
 
-def quote(s):
-    """SQL quoted string"""
-    if s is not None:
-        return psycopg2.extensions.QuotedString(s)
-    else:
-        return 'NULL'
-
-
-def quote_identifier(identifier):
-    """Quote an identifier like a table name or column name"""
-    quote_dict = {'\"': '""', "\\": "\\\\"}
-    for dkey in quote_dict.keys():
-        if identifier.find(dkey) >= 0:
-            identifier = quote_dict[dkey].join(identifier.split(dkey))
-    return '"%s"' % identifier
-
-
 def execute(con, sql, results=False, args=None):
     sql = sql.strip()
     log.debug('* %s' % sql)
@@ -171,16 +163,13 @@ def execute(con, sql, results=False, args=None):
     else:
         return None
 
-_slonik_sql = None # Initialized during option parsing. Open file handle.
-_slonik_sql_path = None # Initialized during option parsing. Path to file.
 
 def sexecute(con, sql):
     """If we are generating a slonik script, write out the SQL to our
     SQL script. Otherwise execute on the DB.
     """
-    if options.slonik:
-        print >> _slonik_sql, dedent(sql + ';')
-
+    if slonik_sql is not None:
+        print >> slonik_sql, dedent(sql + ';')
     else:
         execute(con, sql)
 
@@ -301,6 +290,8 @@ def setup(con, configuration=DEFAULT_CONFIG):
     # tsearch2 is out-of-the-box in 8.3+
     v83 = get_pgversion(con).startswith('8.3')
 
+    assert v83, 'This script now only supports PostgreSQL 8.3'
+
     schema_exists = bool(execute(
         con, "SELECT COUNT(*) FROM pg_namespace WHERE nspname='ts2'",
         results=True)[0][0])
@@ -317,9 +308,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
             AND pg_namespace.nspname  = 'ts2'
         """, results=True)[0][0])
     if not ts2_installed:
-        assert not options.slonik, """
-            tsearch2 needs to be setup with fti.py --setup-only before
-            you can run with --slonik
+        assert slonik_sql is None, """
+            tsearch2 needs to be setup on each node first with
+            fti.py --setup-only
             """
 
         log.debug('Installing tsearch2')
@@ -561,23 +552,13 @@ def setup(con, configuration=DEFAULT_CONFIG):
     else:
         assert len(r) == 1, 'Invalid database locale %s' % repr(locale)
 
-    if v83:
-        r = execute(con,
-                "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname='default'",
-                results=True)
-        if r[0][0] == 0:
-            sexecute(con, """
-                CREATE TEXT SEARCH CONFIGURATION ts2.default (
-                    COPY = pg_catalog.english)""")
-    else:
-        # Remove block when running 8.3 everywhere.
-        sexecute(con, r"""
-                UPDATE ts2.pg_ts_cfg SET locale=(
-                    SELECT setting FROM pg_settings
-                    WHERE context='internal' AND name='lc_ctype'
-                    )
-                WHERE ts_name='default'
-                """)
+    r = execute(con,
+            "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname='default'",
+            results=True)
+    if r[0][0] == 0:
+        sexecute(con, """
+            CREATE TEXT SEARCH CONFIGURATION ts2.default (
+                COPY = pg_catalog.english)""")
 
     # Don't bother with this - the setting is not exported with dumps
     # or propogated  when duplicating the database. Only reliable
@@ -640,33 +621,17 @@ def get_tsearch2_sql_path(con):
     return path
 
 
+# Script options and arguments parsed from the command line by main()
+options = None
+args = None
+
+# Logger, setup by main()
+log = None
+
+# Files for output generated for slonik(1). None if not a Slony-I install.
+slonik_sql = None
+
 def main():
-    con = connect(lp.dbuser)
-    if options.liverebuild:
-        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        liverebuild(con)
-    else:
-        con.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
-        setup(con)
-        if options.null:
-            nullify(con)
-        elif not options.setup:
-            for table, columns in ALL_FTI:
-                if needs_refresh(con, table, columns):
-                    log.info("Rebuilding full text index on %s", table)
-                    fti(con, table, columns)
-                else:
-                    log.info(
-                        "No need to rebuild full text index on %s", table)
-
-    if options.slonik:
-        upgrade.slonik_preamble(options.slonik)
-        upgrade.slonik_execute_script(options.slonik, _slonik_sql_path)
-    else:
-        con.commit()
-
-
-if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option(
             "-s", "--setup-only", dest="setup",
@@ -688,33 +653,68 @@ if __name__ == '__main__':
             action="store_true", default=False,
             help="Rebuild all the indexes against a live database.",
             )
-    parser.add_option(
-            "-k", "--slonik", dest="slonik", default=None,
-            metavar="FILE", help="Output a slonik script to FILE")
     db_options(parser)
     logger_options(parser)
 
+    global options, args
     (options, args) = parser.parse_args()
 
     if options.setup + options.force + options.null + options.liverebuild > 1:
         parser.error("Incompatible options")
 
-    if options.liverebuild and options.slonik:
-        parser.error("--liverebuild does not work with --slonik")
-
-    if options.slonik:
-        # Open the file for out slonik script. Use '-' for stdout.
-        fd, _slonik_sql_path = tempfile.mkstemp('.sql', 'fti_sk_')
-        _slonik_sql = os.fdopen(fd, 'w')
-        print >> _slonik_sql, "-- Generated by %s %s" % (
-                sys.argv[0], time.ctime())
-        if options.slonik == '-':
-            options.slonik = sys.stdout
-        else:
-            print >> _slonik_sql, "-- Included from %s" % options.slonik
-            options.slonik = open(options.slonik, 'w')
-
+    global log
     log = logger(options)
 
-    main()
+    con = connect(lp.dbuser)
+
+    is_replicated_db = replication.helpers.slony_installed(con)
+
+    if options.liverebuild and is_replicated_db:
+        parser.error("--liverebuild does not work with Slony-I install.")
+
+    if is_replicated_db:
+        global slonik_sql
+        slonik_sql = NamedTemporaryFile(prefix="fti_sl", suffix=".sql")
+        print >> slonik_sql, "-- Generated by %s %s" % (
+                sys.argv[0], time.ctime())
+
+    if options.liverebuild:
+        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        liverebuild(con)
+    else:
+        con.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
+        setup(con)
+        if options.null:
+            nullify(con)
+        elif not options.setup:
+            for table, columns in ALL_FTI:
+                if needs_refresh(con, table, columns):
+                    log.info("Rebuilding full text index on %s", table)
+                    fti(con, table, columns)
+                else:
+                    log.info(
+                        "No need to rebuild full text index on %s", table)
+
+    if is_replicated_db:
+        slonik_sql.flush()
+        con.close()
+        log.info("Executing generated SQL using slonik")
+        if replication.helpers.execute_slonik("""
+            execute script (
+                set id=@lpmain_set_id,
+                event node=@master_id,
+                filename='%s');
+            """ % slonik_sql.name, sync=0):
+            return 0
+        else:
+            log.fatal("Failed to execute SQL in Slony-I environment.")
+            return 1
+    else:
+        con.commit()
+        return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+
 
