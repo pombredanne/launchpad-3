@@ -115,11 +115,12 @@ class License(DBEnumeratedType):
 
 
 class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
-               IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker,
-               IHasIcon, IHasLogo, IHasMentoringOffers, IHasMilestones,
-               IHasMugshot, IMakesAnnouncements, IHasOwner,
-               IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget, IPillar):
+               IHasBranchVisibilityPolicy, IHasDrivers,
+               IHasExternalBugTracker, IHasIcon, IHasLogo,
+               IHasMentoringOffers, IHasMilestones, IHasMugshot,
+               IMakesAnnouncements, IHasOwner, IHasSecurityContact,
+               IHasSprints, IHasTranslationGroup, IKarmaContext,
+               ILaunchpadUsage, ISpecificationTarget, IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
