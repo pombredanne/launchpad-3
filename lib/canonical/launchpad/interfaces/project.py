@@ -38,6 +38,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
 
@@ -59,20 +60,20 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
 
     id = Int(title=_('ID'), readonly=True)
 
-    owner = PublicPersonChoice(
+    owner = exported(PublicPersonChoice(
         title=_('Maintainer'),
         required=True,
         vocabulary='ValidOwner',
         description=_("""Project group owner, it can either a valid
-            Person or Team inside Launchpad context."""))
+            Person or Team inside Launchpad context.""")))
 
-    registrant = PublicPersonChoice(
+    registrant = exported(PublicPersonChoice(
         title=_('Registrant'),
         required=True,
         readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("""Project group registrant, a valid
-            Person inside Launchpad context."""))
+            Person inside Launchpad context.""")))
 
     name = exported(
         ProjectNameField(
@@ -84,36 +85,41 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
                 Examples: apache, mozilla, gimp."""),
             constraint=name_validator))
 
-    displayname = TextLine(
-        title=_('Display Name'),
-        description=_("""Appropriately capitalised,
-            and typically ending in "Project".
-            Examples: the Apache Project, the Mozilla Project,
-            the Gimp Project."""))
+    displayname = exported(
+        TextLine(
+            title=_('Display Name'),
+            description=_(
+                """Appropriately capitalised,
+                and typically ending in "Project".
+                Examples: the Apache Project, the Mozilla Project,
+                the Gimp Project.""")),
+        exported_as="display_name")
 
-    title = Title(
+    title = exported(Title(
         title=_('Title'),
         description=_("""The full name of the project group,
-            which can contain spaces, special characters etc."""))
+            which can contain spaces, special characters etc.""")))
 
-    summary = Summary(
+    summary = exported(Summary(
         title=_('Project Group Summary'),
         description=_(
-            """A brief (one-paragraph) summary of the project group."""))
+            """A brief (one-paragraph) summary of the project group.""")))
 
-    description = Text(
+    description = exported(Text(
         title=_('Description'),
         description=_("""A detailed description of the project group,
             including details like when it was founded,
             how many contributors there are,
-            and how it is organised and coordinated."""))
+            and how it is organised and coordinated.""")))
 
-    datecreated = TextLine(
-        title=_('Date Created'),
-        description=_(
-            """The date this project group was created in Launchpad."""))
+    datecreated = exported(
+        TextLine(
+            title=_('Date Created'),
+            description=_(
+                """The date this project group was created in Launchpad.""")),
+        exported_as="date_created")
 
-    driver = PublicPersonChoice(
+    driver = exported(PublicPersonChoice(
         title=_("Driver"),
         description=_(
             "This is a project group-wide appointment, think carefully here! "
@@ -123,21 +129,27 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
             "at the level of a specific project or series. So you may "
             "just want to leave this space blank, and instead let the "
             "individual projects and series have drivers."),
-        required=False, vocabulary='ValidPersonOrTeam')
+        required=False, vocabulary='ValidPersonOrTeam'))
 
-    homepageurl = URIField(
-        title=_('Homepage URL'),
-        required=False,
-        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_(
-            """The project group home page. Please include the http://"""))
+    homepageurl = exported(
+        URIField(
+            title=_('Homepage URL'),
+            required=False,
+            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+            description=_(
+                """The project group home page.
+                Please include the http://""")),
+        exported_as="homepage_url")
 
-    wikiurl = URIField(
-        title=_('Wiki URL'),
-        required=False,
-        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The URL of this project group's wiki, if it has one.
-            Please include the http://"""))
+    wikiurl = exported(
+        URIField(
+            title=_('Wiki URL'),
+            required=False,
+            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+            description=_("""The URL of this project group's wiki,
+                          if it has one. Please include the http://""")),
+        exported_as="wiki_url"
+        )
 
     lastdoap = TextLine(
         title=_('Last-parsed RDF fragment'),
@@ -146,26 +158,30 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
            generated."""),
         required=False)
 
-    sourceforgeproject = TextLine(
-        title=_("SourceForge Project Name"),
-        description=_("""The SourceForge project name for this project group,
-            if it is in sourceforge."""),
-        required=False)
+    sourceforgeproject = exported(
+        TextLine(
+            title=_("SourceForge Project Name"),
+            description=_("""The SourceForge project name for this
+                          project group, if it is in sourceforge."""),
+            required=False),
+        exported_as="sourceforge_project")
 
-    freshmeatproject = TextLine(
-        title=_("Freshmeat Project Name"),
-        description=_("""The Freshmeat project name for this project group,
+    freshmeatproject = exported(
+        TextLine(
+            title=_("Freshmeat Project Name"),
+            description=_("""The Freshmeat project name for this project group,
             if it is in freshmeat."""),
-        required=False)
+            required=False),
+        exported_as="freshmeat_project")
 
-    homepage_content = Text(
-        title=_("Homepage Content"), required=False,
-        description=_(
-            "The content of this project group's home page. Edit this and it "
-            "will be displayed for all the world to see. It is NOT a wiki "
-            "so you cannot undo changes."))
+    homepage_content = exported(Text(
+            title=_("Homepage Content"), required=False,
+            description=_(
+                "The content of this project group's home page. Edit this and it "
+                "will be displayed for all the world to see. It is NOT a wiki "
+                "so you cannot undo changes.")))
 
-    icon = IconImageUpload(
+    icon = exported(IconImageUpload(
         title=_("Icon"), required=False,
         default_image_resource='/@@/project',
         description=_(
@@ -173,26 +189,29 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
             "that can be used to identify this project group. The icon will "
             "be displayed in Launchpad everywhere that we link to this "
             "project group. For example in listings or tables of active "
-            "project groups."))
+            "project groups.")))
 
-    logo = LogoImageUpload(
+    logo = exported(LogoImageUpload(
         title=_("Logo"), required=False,
         default_image_resource='/@@/project-logo',
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
             "the heading of all pages related to this project group. It "
-            "should be no bigger than 50kb in size."))
+            "should be no bigger than 50kb in size.")))
 
-    mugshot = MugshotImageUpload(
+    mugshot = exported(MugshotImageUpload(
         title=_("Brand"), required=False,
         default_image_resource='/@@/project-mugshot',
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on this project group's home page in Launchpad. It should be no "
-            "bigger than 100kb in size. "))
+            "bigger than 100kb in size. ")))
 
-    reviewed = Bool(title=_('Reviewed'), required=False,
-        description=_("Whether or not this project group has been reviewed."))
+    reviewed = exported(
+        Bool(
+            title=_('Reviewed'), required=False,
+            description=_("Whether or not this project group has been "
+                          "reviewed.")))
 
     bounties = Attribute(
         _("The bounties that are related to this project group."))
@@ -202,8 +221,12 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
         description=_(
             "The bug tracker the products in this project group use."))
 
-    products = Attribute(
-        _("An iterator over the active Products for this project group."))
+    # products.value_type will be set to IProduct once IProduct is defined.
+    products = exported(
+        CollectionField(
+            title=_('List of active projects for this project group.'),
+            value_type=Reference(Interface)),
+        exported_as="projects")
 
     def getProduct(name):
         """Get a product with name `name`."""
