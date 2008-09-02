@@ -165,9 +165,9 @@ class ICodeImport(Interface):
 
         Creates and returns a MODIFY `CodeImportEvent` if changes were made.
 
-        If the data changes the review status from REVIEWED to some other
-        status, any pending CodeImportJob associated with this import will be
-        deleted.
+        This method preserves the invariant that a `CodeImportJob` exists for
+        a given import if and only if its review_status is REVIEWED, creating
+        and deleting jobs as necessary.
 
         :param data: dictionary whose keys are attribute names and values are
             attribute values.
