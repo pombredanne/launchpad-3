@@ -637,6 +637,12 @@ class HWSubmissionDeviceSet:
                                   submission=submission, parent=parent,
                                   hal_device_id=hal_device_id)
 
+    def getDevices(self, submission):
+        """See `IHWSubmissionDeviceSet`."""
+        return HWSubmissionDevice.selectBy(
+            submission=submission,
+            orderBy=['parent', 'device_driver_link', 'hal_device_id'])
+
 
 class HWSubmissionBug(SQLBase):
     """See `IHWSubmissionBug`."""
