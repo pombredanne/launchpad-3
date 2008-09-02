@@ -169,17 +169,17 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     freshmeatproject = exported(
         TextLine(
             title=_("Freshmeat Project Name"),
-            description=_("""The Freshmeat project name for this project group,
-            if it is in freshmeat."""),
+            description=_("""The Freshmeat project name for this
+            project group, if it is in Freshmeat."""),
             required=False),
         exported_as="freshmeat_project")
 
     homepage_content = exported(Text(
             title=_("Homepage Content"), required=False,
             description=_(
-                "The content of this project group's home page. Edit this and it "
-                "will be displayed for all the world to see. It is NOT a wiki "
-                "so you cannot undo changes.")))
+                "The content of this project group's home page. Edit this "
+                "and it will be displayed for all the world to see. It is "
+                "NOT a wiki so you cannot undo changes.")))
 
     icon = exported(IconImageUpload(
         title=_("Icon"), required=False,
