@@ -160,72 +160,14 @@ class ICodeImport(Interface):
         "The ProductSeries from which this CodeImport was constructed if "
         "any.")
 
-    def approve(data, user):
-        """Approve the import.
-
-        Additional attributes can also be updated.
-        A code import job will be created for the import.
-
-        An email will be sent to the branch subscribers and ~vcs-imports team
-        about the change.
-
-        :param data: dictionary whose keys are attribute names and values are
-            attribute values.
-        :param user: user who made the change, to record in the
-            `CodeImportEvent`.
-        :return: A boolean indicating if changes were made.
-        """
-
-    def suspend(data, user):
-        """Suspend the import.
-
-        Additional attributes can also be updated.
-        If there was a pending job, it will be removed.
-
-        An email will be sent to the branch subscribers and ~vcs-imports team
-        about the change.
-
-        :param data: dictionary whose keys are attribute names and values are
-            attribute values.
-        :param user: user who made the change, to record in the
-            `CodeImportEvent`.
-        :return: A boolean indicating if changes were made.
-        """
-
-    def invalidate(data, user):
-        """Invalidate the import.
-
-        Additional attributes can also be updated.
-        If there was a pending job, it will be removed.
-
-        An email will be sent to the branch subscribers and ~vcs-imports team
-        about the change.
-
-        :param data: dictionary whose keys are attribute names and values are
-            attribute values.
-        :param user: user who made the change, to record in the
-            `CodeImportEvent`.
-        :return: A boolean indicating if changes were made.
-        """
-
-    def changeDetails(data, user):
-        """Change the details of the import.
-
-        The difference between this method and `updateFromData` is that this
-        method cannot be used to change the review_status and an email will be
-        sent to the branch subscribers and ~vcs-imports team about the change.
-
-        :param data: dictionary whose keys are attribute names and values are
-            attribute values.
-        :param user: user who made the change, to record in the
-            `CodeImportEvent`.
-        :return: A boolean indicating if changes were made.
-        """
-
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
 
         Creates and returns a MODIFY `CodeImportEvent` if changes were made.
+
+        If the data changes the review status from REVIEWED to some other
+        status, any pending CodeImportJob associated with this import will be
+        deleted.
 
         :param data: dictionary whose keys are attribute names and values are
             attribute values.

@@ -23,13 +23,14 @@ from canonical.launchpad.database.codeimportjob import (
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
-    BranchCreationException, BranchType, CodeImportJobState,
-    CodeImportReviewStatus, IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
-    IPersonSet, ImportStatus, RevisionControlSystems)
+    BranchCreationException, BranchType, CodeImportReviewStatus, IBranchSet,
+    ICodeImportSet, ILaunchpadCelebrities, IPersonSet, ImportStatus,
+    RevisionControlSystems)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 class TestCodeImportCreation(unittest.TestCase):
@@ -160,141 +161,132 @@ class TestCodeImportDeletion(unittest.TestCase):
             SQLObjectNotFound, CodeImportResult.get, code_import_result_id)
 
 
-class TestCodeImportStatusUpdate(unittest.TestCase):
+class TestCodeImportStatusUpdate(TestCaseWithFactory):
     """Test the status updates of CodeImports."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        unittest.TestCase.setUp(self)
         # Log in a VCS Imports member.
-        login('david.allouche@canonical.com')
-        self.factory = LaunchpadObjectFactory()
-        self.code_import = self.factory.makeCodeImport()
+        TestCaseWithFactory.setUp(self, 'david.allouche@canonical.com')
         self.import_operator = getUtility(IPersonSet).getByEmail(
             'david.allouche@canonical.com')
         # Remove existing jobs.
         for job in CodeImportJob.select():
             job.destroySelf()
 
-    def tearDown(self):
-        logout()
+    def makeApprovedImportWithPendingJob(self):
+        code_import = self.factory.makeCodeImport()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            self.import_operator)
+        return code_import
+
+    def makeApprovedImportWithRunningJob(self):
+        code_import = self.makeApprovedImportWithPendingJob()
+        job = CodeImportJobSet().getJobForMachine('machine')
+        self.assertEqual(code_import.import_job, job)
+        return code_import
 
     def test_approve(self):
-        """Approving a code import will create a job for it."""
-        self.code_import.approve({}, self.import_operator)
-        self.assertTrue(self.code_import.import_job is not None)
+        # Approving a code import will create a job for it.
+        code_import = self.factory.makeCodeImport()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            self.import_operator)
+        self.assertIsNot(None, code_import.import_job)
         self.assertEqual(
-            CodeImportReviewStatus.REVIEWED,
-            self.code_import.review_status)
+            CodeImportReviewStatus.REVIEWED, code_import.review_status)
 
     def test_suspend_no_job(self):
-        """Suspending a new import has no impact on jobs."""
-        self.code_import.suspend({}, self.import_operator)
-        self.assertTrue(self.code_import.import_job is None)
+        # Suspending a new import has no impact on jobs.
+        code_import = self.factory.makeCodeImport()
+        code_import.updateFromData(
+            {'review_status':CodeImportReviewStatus.SUSPENDED},
+            self.import_operator)
+        self.assertIs(None, code_import.import_job)
         self.assertEqual(
-            CodeImportReviewStatus.SUSPENDED,
-            self.code_import.review_status)
+            CodeImportReviewStatus.SUSPENDED, code_import.review_status)
 
     def test_suspend_pending_job(self):
-        """Suspending an approved import with a pending job, removes job."""
-        self.code_import.approve({}, self.import_operator)
+        # Suspending an approved import with a pending job, removes job.
+        code_import = self.makeApprovedImportWithPendingJob()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.SUSPENDED},
+            self.import_operator)
+        self.assertIs(None, code_import.import_job)
         self.assertEqual(
-            CodeImportJobState.PENDING,
-            self.code_import.import_job.state)
-        self.code_import.suspend({}, self.import_operator)
-        self.assertTrue(self.code_import.import_job is None)
-        self.assertEqual(
-            CodeImportReviewStatus.SUSPENDED,
-            self.code_import.review_status)
+            CodeImportReviewStatus.SUSPENDED, code_import.review_status)
 
     def test_suspend_running_job(self):
-        """Suspending an approved import with a running job leaves job."""
-        self.code_import.approve({}, self.import_operator)
+        # Suspending an approved import with a running job leaves job.
+        code_import = self.makeApprovedImportWithRunningJob()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.SUSPENDED},
+            self.import_operator)
+        self.assertIsNot(None, code_import.import_job)
         self.assertEqual(
-            CodeImportJobState.PENDING,
-            self.code_import.import_job.state)
-        # Have a machine claim the job.
-        job = CodeImportJobSet().getJobForMachine('machine')
-        # Make sure we have the correct job.
-        self.assertEqual(self.code_import.import_job, job)
-        self.code_import.suspend({}, self.import_operator)
-        self.assertTrue(self.code_import.import_job is not None)
-        self.assertEqual(
-            CodeImportReviewStatus.SUSPENDED,
-            self.code_import.review_status)
+            CodeImportReviewStatus.SUSPENDED, code_import.review_status)
 
     def test_invalidate_no_job(self):
-        """Invalidating a new import has no impact on jobs."""
-        self.code_import.invalidate({}, self.import_operator)
-        self.assertTrue(self.code_import.import_job is None)
+        # Invalidating a new import has no impact on jobs.
+        code_import = self.factory.makeCodeImport()
+        code_import.updateFromData(
+            {'review_status':CodeImportReviewStatus.INVALID},
+            self.import_operator)
+        self.assertIs(None, code_import.import_job)
         self.assertEqual(
-            CodeImportReviewStatus.INVALID,
-            self.code_import.review_status)
+            CodeImportReviewStatus.INVALID, code_import.review_status)
 
     def test_invalidate_pending_job(self):
-        """Invalidating an approved import with a pending job, removes job."""
-        self.code_import.approve({}, self.import_operator)
+        # Invalidating an approved import with a pending job, removes job.
+        code_import = self.makeApprovedImportWithPendingJob()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.INVALID},
+            self.import_operator)
+        self.assertIs(None, code_import.import_job)
         self.assertEqual(
-            CodeImportJobState.PENDING,
-            self.code_import.import_job.state)
-        self.code_import.invalidate({}, self.import_operator)
-        self.assertTrue(self.code_import.import_job is None)
-        self.assertEqual(
-            CodeImportReviewStatus.INVALID,
-            self.code_import.review_status)
+            CodeImportReviewStatus.INVALID, code_import.review_status)
 
     def test_invalidate_running_job(self):
-        """Invalidating an approved import with a running job leaves job."""
-        self.code_import.approve({}, self.import_operator)
+        # Invalidating an approved import with a running job leaves job.
+        code_import = self.makeApprovedImportWithRunningJob()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.INVALID},
+            self.import_operator)
+        self.assertIsNot(None, code_import.import_job)
         self.assertEqual(
-            CodeImportJobState.PENDING,
-            self.code_import.import_job.state)
-        # Have a machine claim the job.
-        job = CodeImportJobSet().getJobForMachine('machine')
-        # Make sure we have the correct job.
-        self.assertEqual(self.code_import.import_job, job)
-        self.code_import.invalidate({}, self.import_operator)
-        self.assertTrue(self.code_import.import_job is not None)
-        self.assertEqual(
-            CodeImportReviewStatus.INVALID,
-            self.code_import.review_status)
+            CodeImportReviewStatus.INVALID, code_import.review_status)
 
     def test_markFailing_no_job(self):
-        """Marking a new import as failing has no impact on jobs."""
-        self.code_import.markFailing({}, self.import_operator)
-        self.assertTrue(self.code_import.import_job is None)
+        # Marking a new import as failing has no impact on jobs.
+        code_import = self.factory.makeCodeImport()
+        code_import.updateFromData(
+            {'review_status':CodeImportReviewStatus.FAILING},
+            self.import_operator)
+        self.assertIs(None, code_import.import_job)
         self.assertEqual(
-            CodeImportReviewStatus.FAILING,
-            self.code_import.review_status)
+            CodeImportReviewStatus.FAILING, code_import.review_status)
 
     def test_markFailing_pending_job(self):
-        """Marking an import with a pending job as failing, removes job."""
-        self.code_import.approve({}, self.import_operator)
+        # Marking an import with a pending job as failing, removes job.
+        code_import = self.makeApprovedImportWithPendingJob()
+        code_import.updateFromData(
+            {'review_status':CodeImportReviewStatus.FAILING},
+            self.import_operator)
+        self.assertIs(None, code_import.import_job)
         self.assertEqual(
-            CodeImportJobState.PENDING,
-            self.code_import.import_job.state)
-        self.code_import.markFailing({}, self.import_operator)
-        self.assertTrue(self.code_import.import_job is None)
-        self.assertEqual(
-            CodeImportReviewStatus.FAILING,
-            self.code_import.review_status)
+            CodeImportReviewStatus.FAILING, code_import.review_status)
 
     def test_markFailing_running_job(self):
-        """Marking an import with a running job as failing leaves job."""
-        self.code_import.approve({}, self.import_operator)
+        # Marking an import with a running job as failing leaves job.
+        code_import = self.makeApprovedImportWithRunningJob()
+        code_import.updateFromData(
+            {'review_status':CodeImportReviewStatus.FAILING},
+            self.import_operator)
+        self.assertIsNot(None, code_import.import_job)
         self.assertEqual(
-            CodeImportJobState.PENDING,
-            self.code_import.import_job.state)
-        # Have a machine claim the job.
-        job = CodeImportJobSet().getJobForMachine('machine')
-        # Make sure we have the correct job.
-        self.assertEqual(self.code_import.import_job, job)
-        self.code_import.markFailing({}, self.import_operator)
-        self.assertTrue(self.code_import.import_job is not None)
-        self.assertEqual(
-            CodeImportReviewStatus.FAILING,
-            self.code_import.review_status)
+            CodeImportReviewStatus.FAILING, code_import.review_status)
 
 
 class TestCodeImportResultsAttribute(unittest.TestCase):

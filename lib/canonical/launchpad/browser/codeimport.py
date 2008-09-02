@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportMachineSet,  ICodeImportSet, ILaunchpadCelebrities,
     RevisionControlSystems)
 from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.mailout.codeimport import code_import_updated
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
     Navigation, stepto)
@@ -325,6 +326,39 @@ class EditCodeImportForm(Interface):
     whiteboard = copy_field(IBranch['whiteboard'])
 
 
+def _makeEditAction(label, status, text):
+    """Make an Action to call a particular code import method.
+
+    :param label: The label for the action, which will end up as the
+         button title.
+    :param method_name: The name of the method of the code import to call.
+    :param status: If the code import has this as its review_status, don't
+        show the button (always show the button if it is None).
+    :param text: The text to go after 'The code import has been' in a
+        notifcation, if a change was made.
+    """
+    if status is not None:
+        def condition(self, ignored):
+            return self._showButtonForStatus(status)
+    else:
+        condition = None
+    def success(self, action, data):
+        """Make the requested status change."""
+        whiteboard = self._updateWhiteboardAndCheckIfChangedFromData(data)
+        if status is not None:
+            data['review_status'] = status
+        event = self.code_import.updateFromData(data, self.user)
+        if event is not None:
+            code_import_updated(event, whiteboard)
+            self.request.response.addNotification(
+                'The code import has been ' + text + '.')
+        else:
+            self.request.response.addNotification('No changes made.')
+    name = label.lower().replace(' ', '_')
+    return form.Action(
+        label, name=name, success=success, condition=condition)
+
+
 class CodeImportEditView(CodeImportBaseView):
     """View for editing code imports.
 
@@ -384,48 +418,19 @@ class CodeImportEditView(CodeImportBaseView):
         else:
             return None
 
-    def _makeEditAction(label, method_name, status, text):
-        """Make an Action to call a particular code import method.
-
-        :param label: The label for the action, which will end up as the
-             button title.
-        :param method_name: The name of the method of the code import to call.
-        :param status: If the code import has this as its review_status, don't
-            show the button (always show the button if it is None).
-        :param text: The text to go after 'The code import has been' in a
-            notifcation, if a change was made.
-        """
-        if status is not None:
-            def condition(self, ignored):
-                return self._showButtonForStatus(status)
-        else:
-            condition = None
-        def success(self, action, data):
-            """Make the requested status change."""
-            whiteboard = self._updateWhiteboardAndCheckIfChangedFromData(data)
-            updated = getattr(self.code_import, method_name)(
-                data, self.user)
-            if updated:
-                self.request.response.addNotification(
-                    'The code import has been ' + text + '.')
-            else:
-                self.request.response.addNotification('No changes made.')
-        return form.Action(
-            label, name=method_name, success=success, condition=condition)
-
     actions = form.Actions(
-        _makeEditAction(_('Update'), 'changeDetails', None, 'updated'),
+        _makeEditAction(_('Update'), None, 'updated'),
         _makeEditAction(
-            _('Approve'), 'approve', CodeImportReviewStatus.REVIEWED,
+            _('Approve'), CodeImportReviewStatus.REVIEWED,
             'approved'),
         _makeEditAction(
-            _('Mark Invalid'), 'invalidate', CodeImportReviewStatus.INVALID,
+            _('Mark Invalid'), CodeImportReviewStatus.INVALID,
             'set as invalid'),
         _makeEditAction(
-            _('Suspend'), 'suspend', CodeImportReviewStatus.SUSPENDED,
+            _('Suspend'), CodeImportReviewStatus.SUSPENDED,
             'suspended'),
         _makeEditAction(
-            _('Mark Failing'), 'markFailing', CodeImportReviewStatus.FAILING,
+            _('Mark Failing'), CodeImportReviewStatus.FAILING,
             'marked as failing'),
         )
 
