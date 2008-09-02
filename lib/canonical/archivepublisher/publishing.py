@@ -366,9 +366,11 @@ class Publisher(object):
 
         fd_gz, temp_index_gz = tempfile.mkstemp(
             dir=self._config.temproot, prefix='source-index-gz_')
+        os.close(fd_gz)
         source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
         fd, temp_index = tempfile.mkstemp(
             dir=self._config.temproot, prefix='source-index_')
+        os.close(fd)
         source_index = open(temp_index, 'wb')
 
         for spp in distroseries.getSourcePackagePublishing(
@@ -410,8 +412,10 @@ class Publisher(object):
 
             fd_gz, temp_index_gz = tempfile.mkstemp(
                 dir=self._config.temproot, prefix='%s-index-gz_' % arch_path)
+            os.close(fd_gz)
             fd, temp_index = tempfile.mkstemp(
                 dir=self._config.temproot, prefix='%s-index_' % arch_path)
+            os.close(fd)
             package_index_gz = gzip.GzipFile(
                 fileobj=open(temp_index_gz, "wb"))
             package_index = open(temp_index, "wb")
