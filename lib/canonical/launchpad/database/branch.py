@@ -1030,7 +1030,7 @@ class BranchSet:
         """See `IBranchSet`."""
         # Avoid circular imports.
         from canonical.launchpad.database import Person, Product
-        store = getUtility(IStoreSelector).get(MAIN_BRANCH, DEFAULT_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         # Left-join Product so that we still publish +junk branches.
         prejoin = store.using(
             LeftJoin(Branch, Product, Branch.product == Product.id), Person)
