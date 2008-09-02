@@ -182,7 +182,10 @@ class CodeImport(SQLBase):
                 CodeImportJobWorkflow().newJob(self)
             else:
                 self._removeJob()
-        return event_set.newModify(self, user, token)
+        event = event_set.newModify(self, user, token)
+        if event is not None:
+            code_import_updated(event)
+        return event
 
     def __repr__(self):
         return "<CodeImport for %s>" % self.branch.unique_name

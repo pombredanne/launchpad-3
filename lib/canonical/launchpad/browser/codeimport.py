@@ -33,7 +33,6 @@ from canonical.launchpad.interfaces import (
     ICodeImportMachineSet,  ICodeImportSet, ILaunchpadCelebrities,
     RevisionControlSystems)
 from canonical.launchpad.interfaces.branch import IBranch
-from canonical.launchpad.mailout.codeimport import code_import_updated
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
     Navigation, stepto)
@@ -349,7 +348,6 @@ def _makeEditAction(label, status, text):
             data['review_status'] = status
         event = self.code_import.updateFromData(data, self.user)
         if event is not None:
-            code_import_updated(event, whiteboard)
             self.request.response.addNotification(
                 'The code import has been ' + text + '.')
         else:

@@ -1,15 +1,15 @@
 = Code Imports =
 
-CodeImport objects model the process surrounding the code import service
-of Launchpad. A CodeImport object is created by a user requesting an
-import, the import source is then reviewed by privileged users. Then
-importd, the code import daemon, performs the initial import that
+CodeImport objects model the process surrounding the code import
+service of Launchpad. A CodeImport object is created by a user
+requesting an import, the import source is then reviewed by privileged
+users. Then the code import servoce performs the initial import that
 populates the import branch, and updates it regularly.
 
 We can import code from CVS or Subversion.
 
-CodeImports are hidden from regular users currently.  David Allouche is
-a member of the vcs-imports team and can access the objects freely.
+To allow this test to modify CodeImports freely, we log in as a member
+of the vcs-imports team.
 
     >>> login('david.allouche@canonical.com')
 
@@ -190,11 +190,9 @@ This CodeImport is associated to the evolution/main ProductSeries
 
 Members of the VCS Imports team (import operators), or Launchpad
 administrators can update the details of the code import, including
-the review status.  This is done using the code import methods:
-approve; suspend; invalidate and markFailing update the review status
-and the other details, and changeDetails just updates the other
-details.  All of these methods return a boolean indicating if they
-made a change.
+the review status.  This is done using the code import method
+'updateFromData'.  updateFromData returns a MODIFY CodeImportEvent if
+any changes were made, or None if not.
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
@@ -203,9 +201,9 @@ made a change.
     >>> print code_import.review_status.title
     Pending Review
 
-When an import operator updates the status of the code import, emails
-are sent out to the branch subscribers, and to the members of VCS
-Imports.
+When an import operator updates the code import emails are sent out to
+the branch subscribers and members of VCS Imports that describe the
+change.
 
 The logged in user is normally subscribed to the new import as it is
 created if done through the web UI, so we'll add nopriv here.
@@ -223,14 +221,22 @@ created if done through the web UI, so we'll add nopriv here.
     >>> from canonical.launchpad.tests.mail_helpers import (
     ...     pop_notifications, print_emails)
     >>> ignore_old_emails = pop_notifications()
-    >>> code_import.approve({}, nopriv)
-    True
+    >>> modify_event = code_import.updateFromData(
+    ...     {'review_status': CodeImportReviewStatus.REVIEWED,
+    ...      'svn_branch_url': 'http://svn.example.com/project/trunk'},
+    ...     nopriv)
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
     Subject: Code import product.../name... status: Reviewed
     <BLANKLINE>
     The import has been approved and an import will start shortly.
+    <BLANKLINE>
+    ... is now being imported from:
+        http://svn.example.com/project/trunk
+    instead of:
+        http://svn.example.com/project
+    <BLANKLINE>
     -- =
     http://code.launchpad.dev/~vcs-imports/product.../name...
     You are receiving this email as you are subscribed to the branch.
@@ -238,66 +244,10 @@ created if done through the web UI, so we'll add nopriv here.
     s/product.../name.../+edit-subscription.
     ----------------------------------------
 
-Similarly, an email is sent out when the import is suspended or
-invalidated.
-
-    >>> code_import.suspend({}, nopriv)
-    True
-    >>> print_emails(group_similar=True)
-    From: No Privileges Person <no-priv@canonical.com>
-    To: no-priv@canonical.com
-    Subject: Code import product.../name... status: Suspended
-    <BLANKLINE>
-    The import has been suspended.
-    ...
-    ----------------------------------------
-
-    >>> code_import.invalidate({}, nopriv)
-    True
-    >>> print_emails(group_similar=True)
-    From: No Privileges Person <no-priv@canonical.com>
-    To: no-priv@canonical.com
-    Subject: Code import product.../name... status: Invalid
-    <BLANKLINE>
-    The import has been marked as invalid.
-    ...
-    ----------------------------------------
-
-    >>> code_import.markFailing({}, nopriv)
-    True
-    >>> print_emails(group_similar=True)
-    From: No Privileges Person <no-priv@canonical.com>
-    To: no-priv@canonical.com
-    Subject: Code import product.../name... status: Failing
-    <BLANKLINE>
-    The import has been marked as failing.
-    ...
-    ----------------------------------------
-
-Finally, the changeDetails method also sends out an email with a
-summary of the changes made.
-
-    >>> data = {'svn_branch_url': 'http://svn.example.com/project/trunk'}
-    >>> code_import.changeDetails(data, nopriv)
-    True
-    >>> print_emails(group_similar=True)
-    From: No Privileges Person <no-priv@canonical.com>
-    To: no-priv@canonical.com
-    Subject: Code import product.../name... status: Failing
-    <BLANKLINE>
-    ... is now being imported from:
-        http://svn.example.com/project/trunk
-    instead of:
-        http://svn.example.com/project
-    <BLANKLINE>
-    ...
-    ----------------------------------------
-
-changeDetails is smart enough to not send an email if no changes were
+updateFromData is smart enough to not send an email if no changes were
 actually made.
 
-    >>> code_import.changeDetails({}, nopriv)
-    False
+    >>> code_import.updateFromData({}, nopriv)
     >>> print_emails(group_similar=True)
 
 
