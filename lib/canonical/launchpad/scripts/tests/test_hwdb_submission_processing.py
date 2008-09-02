@@ -4,14 +4,18 @@
 import logging
 from unittest import TestCase, TestLoader
 
+from zope.component import getUtility
 from zope.testing.loghandler import Handler
 
-from canonical.launchpad.interfaces.hwdb import HWBus
+from canonical.launchpad.interfaces.hwdb import (
+    HWBus, IHWDeviceDriverLinkSet, IHWDeviceSet, IHWDriverSet,
+    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
+    IHWVendorNameSet)
 from canonical.launchpad.scripts.hwdbsubmissions import (
     HALDevice, PCI_CLASS_BRIDGE, PCI_CLASS_SERIALBUS_CONTROLLER,
     PCI_CLASS_STORAGE, PCI_SUBCLASS_BRIDGE_CARDBUS, PCI_SUBCLASS_BRIDGE_PCI,
     PCI_SUBCLASS_SERIALBUS_USB, PCI_SUBCLASS_STORAGE_SATA, SubmissionParser)
-from canonical.testing import BaseLayer
+from canonical.testing import BaseLayer, LaunchpadZopelessLayer
 
 
 class TestCaseHWDB(TestCase):
@@ -48,12 +52,18 @@ class TestCaseHWDB(TestCase):
     UDI_SCSI_DISK = '/org/freedesktop/Hal/devices/scsi_disk'
 
     PCI_VENDOR_ID_INTEL = 0x8086
+    PCI_PROD_ID_PCI_PCCARD_BRIDGE = 0x7134
+    PCI_PROD_ID_PCCARD_DEVICE = 0x6075
+    PCI_PROD_ID_USB_CONTROLLER = 0x27cc
 
     USB_VENDOR_ID_NEC = 0x0409
     USB_PROD_ID_NEC_HUB = 0x005a
 
     USB_VENDOR_ID_USBEST = 0x1307
     USB_PROD_ID_USBBEST_MEMSTICK = 0x0163
+
+    KERNEL_VERSION = '2.6.24-19-generic'
+    KERNEL_PACKAGE = 'linux-image-' + KERNEL_VERSION
 
     def setUp(self):
         """Setup the test environment."""
@@ -147,7 +157,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'id': 1,
                 'udi': self.UDI_COMPUTER,
                 'properties': {
-                    'system.kernel.version': ('2.6.24-19-generic', 'str'),
+                    'system.kernel.version': (self.KERNEL_VERSION, 'str'),
                     },
                 },
             ]
@@ -159,13 +169,13 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 },
             'software': {
                 'packages': {
-                    'linux-image-2.6.24-19-generic': {},
+                    self.KERNEL_PACKAGE: {},
                     },
                 },
             }
         parser.buildDeviceList(parser.parsed_data)
         kernel_package = parser.getKernelPackageName()
-        self.assertEqual(kernel_package, 'linux-image-2.6.24-19-generic',
+        self.assertEqual(kernel_package, self.KERNEL_PACKAGE,
             'Unexpected result of SubmissionParser.getKernelPackageName. '
             'Expected linux-image-2.6.24-19-generic, got %r' % kernel_package)
 
@@ -184,7 +194,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'id': 1,
                 'udi': self.UDI_COMPUTER,
                 'properties': {
-                    'system.kernel.version': ('2.6.24-19-generic', 'str'),
+                    'system.kernel.version': (self.KERNEL_VERSION, 'str'),
                     },
                 },
             ]
@@ -1933,6 +1943,513 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
         self.failUnless(device.is_real_device,
                         'Device with existing info.bus property not treated '
                         'as a real device.')
+
+
+class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
+    """Tests of the HWDB popoluation with submitted data."""
+
+    layer = LaunchpadZopelessLayer
+
+    HAL_COMPUTER = {
+        'id': 1,
+        'udi': TestCaseHWDB.UDI_COMPUTER,
+        'properties': {
+            'system.hardware.vendor': ('Lenovo', 'str'),
+            'system.hardware.product': ('T41', 'str'),
+            'system.kernel.version': (TestCaseHWDB.KERNEL_VERSION, 'str'),
+            },
+        }
+
+    HAL_PCI_PCCARD_BRIDGE = {
+        'id': 2,
+        'udi': TestCaseHWDB.UDI_PCI_PCCARD_BRIDGE,
+        'properties': {
+            'info.bus': ('pci', 'str'),
+            'info.linux.driver': ('yenta_cardbus', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_COMPUTER, 'str'),
+            'info.product': ('OZ711MP1/MS1 MemoryCardBus Controller', 'str'),
+            'pci.device_class': (PCI_CLASS_BRIDGE, 'int'),
+            'pci.device_subclass': (PCI_SUBCLASS_BRIDGE_CARDBUS, 'int'),
+            'pci.vendor_id': (TestCaseHWDB.PCI_VENDOR_ID_INTEL, 'int'),
+            'pci.product_id': (TestCaseHWDB.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
+                               'int'),
+            },
+        }
+
+    HAL_PCCARD_DEVICE = {
+        'id': 3,
+        'udi': TestCaseHWDB.UDI_PCCARD_DEVICE,
+        'properties': {
+            'info.bus': ('pci', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_PCI_PCCARD_BRIDGE, 'str'),
+            'info.product': ('ISL3890/ISL3886', 'str'),
+            'pci.device_class': (PCI_CLASS_SERIALBUS_CONTROLLER, 'int'),
+            'pci.device_subclass': (PCI_SUBCLASS_SERIALBUS_USB, 'int'),
+            'pci.vendor_id': (TestCaseHWDB.PCI_VENDOR_ID_INTEL, 'int'),
+            'pci.product_id': (TestCaseHWDB.PCI_PROD_ID_PCCARD_DEVICE, 'int'),
+            },
+        }
+
+    HAL_USB_CONTROLLER_PCI_SIDE = {
+        'id': 4,
+        'udi': TestCaseHWDB.UDI_USB_CONTROLLER_PCI_SIDE,
+        'properties': {
+            'info.bus': ('pci', 'str'),
+            'info.linux.driver': ('ehci_hcd', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_COMPUTER, 'str'),
+            'info.product': ('82801G (ICH7 Family) USB2 EHCI Controller',
+                             'str'),
+            'pci.device_class': (PCI_CLASS_SERIALBUS_CONTROLLER, 'int'),
+            'pci.device_subclass': (PCI_SUBCLASS_SERIALBUS_USB, 'int'),
+            'pci.vendor_id': (TestCaseHWDB.PCI_VENDOR_ID_INTEL, 'int'),
+            'pci.product_id': (TestCaseHWDB.PCI_PROD_ID_USB_CONTROLLER,
+                               'int'),
+            },
+        }
+
+    HAL_USB_CONTROLLER_USB_SIDE = {
+        'id': 5,
+        'udi': TestCaseHWDB.UDI_USB_CONTROLLER_USB_SIDE,
+        'properties': {
+            'info.bus': ('usb_device', 'str'),
+            'info.linux.driver': ('usb', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_USB_CONTROLLER_PCI_SIDE, 'str'),
+            'info.product': ('EHCI Host Controller', 'str'),
+            'usb_device.vendor_id': (0, 'int'),
+            'usb_device.product_id': (0, 'int'),
+            },
+        }
+
+    HAL_USB_STORAGE_DEVICE = {
+        'id': 6,
+        'udi': TestCaseHWDB.UDI_USB_STORAGE,
+        'properties': {
+            'info.bus': ('usb_device', 'str'),
+            'info.linux.driver': ('usb', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_USB_CONTROLLER_USB_SIDE, 'str'),
+            'info.product': ('USB Mass Storage Device', 'str'),
+            'usb_device.vendor_id': (TestCaseHWDB.USB_VENDOR_ID_USBEST,
+                                     'int'),
+            'usb_device.product_id': (
+                TestCaseHWDB.USB_PROD_ID_USBBEST_MEMSTICK, 'int'),
+            },
+        }
+
+    parsed_data = {
+        'hardware': {
+            'hal': {},
+            },
+        'software': {
+            'packages': {
+                TestCaseHWDB.KERNEL_PACKAGE: {},
+                },
+            },
+        }
+
+    def setUp(self):
+        """Setup the test environment."""
+        self.log = logging.getLogger('test_hwdb_submission_parser')
+        self.log.setLevel(logging.INFO)
+        self.handler = Handler(self)
+        self.handler.add(self.log.name)
+        self.layer.switchDbUser('hwdb-submission-processor')
+
+    def setHALDevices(self, devices):
+        self.parsed_data['hardware']['hal']['devices'] = devices
+
+    def testGetDriverNoDriverInfo(self):
+        """Test of HALDevice.getDriver()."""
+        devices = [
+            self.HAL_COMPUTER,
+            ]
+        self.setHALDevices(devices)
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_COMPUTER]
+        self.assertEqual(device.getDriver(), None,
+            'HALDevice.getDriver found a driver where none is expected.')
+
+    def testGetDriverWithDriverInfo(self):
+        """Test of HALDevice.getDriver()."""
+        devices = [
+            self.HAL_COMPUTER,
+            self.HAL_PCI_PCCARD_BRIDGE,
+            ]
+        self.setHALDevices(devices)
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = self.parsed_data
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_PCI_PCCARD_BRIDGE]
+        driver = device.getDriver()
+        self.assertNotEqual(driver, None,
+            'HALDevice.getDriver did not find a driver where one '
+            'is expected.')
+        self.assertEqual(driver.name, 'yenta_cardbus',
+            'Unexpected result for driver.name. Got %r, expected '
+            'yenta_cardbus.' % driver.name)
+        self.assertEqual(driver.package_name, self.KERNEL_PACKAGE,
+            'Unexpected result for driver.package_name. Got %r, expected '
+            'linux-image-2.6.24-19-generic' % driver.name)
+
+    def testEnsureVendorIDVendorNameExistRegularCase(self):
+        """Test of ensureVendorIDVendorNameExist(self), regular case."""
+        devices = [
+            self.HAL_COMPUTER,
+            ]
+        self.setHALDevices(devices)
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = self.parsed_data
+        parser.buildDeviceList(self.parsed_data)
+
+        # The database does not know yet about the vendor name
+        # 'Lenovo'...
+        vendor_name_set = getUtility(IHWVendorNameSet)
+        vendor_name = vendor_name_set.getByName('Lenovo')
+        self.assertEqual(vendor_name, None,
+                         'Expected None looking up vendor name "Lenovo" in '
+                         'HWVendorName, got %r.' % vendor_name)
+
+        # ...as well as the vendor ID (which is identical to the vendor
+        # name for systems).
+        vendor_id_set = getUtility(IHWVendorIDSet)
+        vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SYSTEM, 'Lenovo')
+        self.assertEqual(vendor_id, None,
+                         'Expected None looking up vendor ID "Lenovo" in '
+                         'HWVendorID, got %r.' % vendor_id)
+
+        # HALDevice.ensureVendorIDVendorNameExist() creates these
+        # records.
+        hal_system = parser.hal_devices[self.UDI_COMPUTER]
+        hal_system.ensureVendorIDVendorNameExist()
+
+        vendor_name = vendor_name_set.getByName('Lenovo')
+        self.assertEqual(vendor_name.name, 'Lenovo',
+                            'Expected to find vendor name "Lenovo" in '
+                            'HWVendorName, got %r.' % vendor_name.name)
+
+        vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SYSTEM, 'Lenovo')
+        self.assertEqual(vendor_id.vendor_id_for_bus, 'Lenovo',
+                         'Expected "Lenovo" as vendor_id_for_bus, '
+                         'got %r.' % vendor_id.vendor_id_for_bus)
+        self.assertEqual(vendor_id.bus, HWBus.SYSTEM,
+                         'Expected HWBUS.SYSTEM as bus, got %s.'
+                         % vendor_id.bus.title)
+
+    def runTestEnsureVendorIDVendorNameExistVendorNameUnknown(
+        self, devices, test_bus, test_vendor_id, test_udi):
+        """Test of ensureVendorIDVendorNameExist(self), special case.
+
+        A HWVendorID record is not created by
+        HALDevice.ensureVendorIDVendorNameExist for certain buses.
+        """
+        self.setHALDevices(devices)
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = self.parsed_data
+        parser.buildDeviceList(self.parsed_data)
+
+        hal_device = parser.hal_devices[test_udi]
+        hal_device.ensureVendorIDVendorNameExist()
+
+        vendor_id_set = getUtility(IHWVendorIDSet)
+        vendor_id = vendor_id_set.getByBusAndVendorID(
+            test_bus, test_vendor_id)
+        self.assertEqual(vendor_id, None,
+            'Expected None looking up vendor ID %s for bus %s in HWVendorID, '
+            'got %r.' % (test_vendor_id, test_bus.title, vendor_id))
+
+    def testEnsureVendorIDVendorNameExistVendorPCI(self):
+        """Test of ensureVendorIDVendorNameExist(self), PCI bus."""
+        devices = [
+            self.HAL_COMPUTER,
+            self.HAL_PCI_PCCARD_BRIDGE
+            ]
+        self.runTestEnsureVendorIDVendorNameExistVendorNameUnknown(
+            devices, HWBus.PCI, '0x8086', self.UDI_PCI_PCCARD_BRIDGE)
+
+    def testEnsureVendorIDVendorNameExistVendorPCCARD(self):
+        """Test of ensureVendorIDVendorNameExist(self), PCCARD bus."""
+        devices = [
+            self.HAL_COMPUTER,
+            self.HAL_PCI_PCCARD_BRIDGE,
+            self.HAL_PCCARD_DEVICE,
+            ]
+        self.runTestEnsureVendorIDVendorNameExistVendorNameUnknown(
+            devices, HWBus.PCCARD, '0x8086', self.UDI_PCCARD_DEVICE)
+
+    def testEnsureVendorIDVendorNameExistVendorUSB(self):
+        """Test of ensureVendorIDVendorNameExist(self), USB bus."""
+        devices = [
+            self.HAL_COMPUTER,
+            self.HAL_USB_CONTROLLER_PCI_SIDE,
+            self.HAL_USB_CONTROLLER_USB_SIDE,
+            self.HAL_USB_STORAGE_DEVICE,
+            ]
+        self.runTestEnsureVendorIDVendorNameExistVendorNameUnknown(
+            devices, HWBus.USB, '0x1307', self.UDI_USB_STORAGE)
+
+    def testCreateDBDataForSimpleDevice(self):
+        """Test of HALDevice.createDBData.
+
+        Test for a HAL device without driver data.
+        """
+        devices = [
+            self.HAL_COMPUTER,
+            ]
+        self.setHALDevices(devices)
+
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(self.parsed_data)
+
+        submission_set = getUtility(IHWSubmissionSet)
+        submission = submission_set.getBySubmissionKey('test_submission_id_1')
+
+        hal_device = parser.hal_devices[self.UDI_COMPUTER]
+        hal_device.createDBData(submission, None)
+
+        # HALDevice.createDBData created a HWDevice record.
+        vendor_id_set = getUtility(IHWVendorIDSet)
+        vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SYSTEM, 'Lenovo')
+        hw_device_set = getUtility(IHWDeviceSet)
+        hw_device = hw_device_set.getByDeviceID(
+            hal_device.getBus(), hal_device.vendor_id, hal_device.product_id)
+        self.assertEqual(hw_device.bus_vendor, vendor_id,
+            'Expected vendor ID (HWBus.SYSTEM, Lenovo) as the vendor ID, '
+            'got %s %r' % (hw_device.bus_vendor.bus,
+                           hw_device.bus_vendor.vendor_name.name))
+        self.assertEqual(hw_device.bus_product_id, 'T41',
+            'Expected product ID T41, got %r.' % hw_device.bus_product_id)
+        self.assertEqual(hw_device.name, 'T41',
+            'Expected device name T41, got %r.' % hw_device.name)
+
+        # One HWDeviceDriverLink record is created...
+        device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
+        device_driver_link = device_driver_link_set.getByDeviceAndDriver(
+            hw_device, None)
+        self.assertEqual(device_driver_link.device, hw_device,
+            'Expected HWDevice record for Lenovo T41 in HWDeviceDriverLink, '
+            'got %s %r'
+            % (device_driver_link.device.bus_vendor.bus,
+               device_driver_link.device.bus_vendor.vendor_name.name))
+        self.assertEqual(device_driver_link.driver, None,
+            'Expected None as driver in HWDeviceDriverLink')
+
+        # ...and one HWSubmissionDevice record linking the HWDeviceSriverLink
+        # to the submission.
+        submission_device_set = getUtility(IHWSubmissionDeviceSet)
+        submission_devices = submission_device_set.getDevices(submission)
+        self.assertEqual(len(list(submission_devices)), 1,
+            'Unexpected number of submission devices: %i, expected 1.'
+            % len(list(submission_devices)))
+        submission_device = submission_devices[0]
+        self.assertEqual(
+            submission_device.device_driver_link, device_driver_link,
+            'Invalid device_driver_link field in HWSubmissionDevice.')
+        self.assertEqual(
+            submission_device.parent, None,
+            'Invalid parent field in HWSubmissionDevice.')
+        self.assertEqual(
+            submission_device.hal_device_id, 1,
+            'Invalid haL-device_id field in HWSubmissionDevice.')
+
+    def testCreateDBDataForDeviceWithOneDriver(self):
+        """Test of HALDevice.createDBData.
+
+        Test of a HAL device with one driver.
+        """
+        devices = [
+            self.HAL_COMPUTER,
+            self.HAL_PCI_PCCARD_BRIDGE,
+            ]
+        self.setHALDevices(devices)
+
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(self.parsed_data)
+        parser.parsed_data = self.parsed_data
+
+        submission_set = getUtility(IHWSubmissionSet)
+        submission = submission_set.getBySubmissionKey('test_submission_id_1')
+
+        hal_root_device = parser.hal_devices[self.UDI_COMPUTER]
+        hal_root_device.createDBData(submission, None)
+
+        # We now have a HWDevice record for the PCCard bridge...
+        device_set = getUtility(IHWDeviceSet)
+        pccard_bridge = device_set.getByDeviceID(
+            HWBus.PCI, '0x%04x' % self.PCI_VENDOR_ID_INTEL,
+            '0x%04x' % self.PCI_PROD_ID_PCI_PCCARD_BRIDGE)
+
+        # ...and a HWDriver record for the yenta_cardbus driver.
+        driver_set = getUtility(IHWDriverSet)
+        yenta_driver = driver_set.getByPackageAndName(
+            self.KERNEL_PACKAGE, 'yenta_cardbus')
+        self.assertEqual(
+            yenta_driver.name, 'yenta_cardbus',
+            'Unexpected driver name: %r' % yenta_driver.name)
+        self.assertEqual(
+            yenta_driver.package_name, self.KERNEL_PACKAGE,
+            'Unexpected package name: %r' % yenta_driver.package_name)
+
+        # The PCCard bridge has one HWDeviceDriverLink record without
+        # an associated driver...
+        device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
+        pccard_link_no_driver = device_driver_link_set.getByDeviceAndDriver(
+            pccard_bridge, None)
+        self.assertEqual(
+            pccard_link_no_driver.device, pccard_bridge,
+            'Unexpected value of pccard_link_no_driver.device')
+        self.assertEqual(
+            pccard_link_no_driver.driver, None,
+            'Unexpected value of pccard_link_no_driver.driver')
+
+        # ...and another one with the yenta driver.
+        pccard_link_yenta = device_driver_link_set.getByDeviceAndDriver(
+            pccard_bridge, yenta_driver)
+        self.assertEqual(
+            pccard_link_yenta.device, pccard_bridge,
+            'Unexpected value of pccard_dd_link_yenta.device')
+        self.assertEqual(
+            pccard_link_yenta.driver, yenta_driver,
+            'Unexpected value of pccard_dd_link_yenta.driver')
+
+        # Finally, we have three HWSubmissionDevice records for this
+        # submission: one for the computer itself, and two referring
+        # to the HWDeviceDriverLink records for the PCCard bridge.
+
+        submission_device_set = getUtility(IHWSubmissionDeviceSet)
+        submission_devices = submission_device_set.getDevices(submission)
+        (submitted_pccard_bridge_no_driver,
+         submitted_pccard_bridge_yenta,
+         submitted_system) = submission_devices
+
+        self.assertEqual(
+            submitted_pccard_bridge_no_driver.device_driver_link,
+            pccard_link_no_driver,
+            'Unexpected value of HWSubmissionDevice.device_driver_link for '
+            'first submitted device')
+        self.assertEqual(
+            submitted_pccard_bridge_yenta.device_driver_link,
+            pccard_link_yenta,
+            'Unexpected value of HWSubmissionDevice.device_driver_link for '
+            'second submitted device')
+
+        # The parent field of the HWSubmisionDevice record represents
+        # the device hiearchy.
+        self.assertEqual(
+            submitted_system.parent, None,
+            'Unexpected value of HWSubmissionDevice.parent for the root '
+            'node.')
+        self.assertEqual(
+            submitted_pccard_bridge_no_driver.parent, submitted_system,
+            'Unexpected value of HWSubmissionDevice.parent for the '
+            'PCCard bridge node without a driver.')
+        self.assertEqual(
+            submitted_pccard_bridge_yenta.parent,
+            submitted_pccard_bridge_no_driver,
+            'Unexpected value of HWSubmissionDevice.parent for the '
+            'PCCard bridge node with the yenta driver.')
+
+        # HWSubmissionDevice.hal_device_id stores the ID of the device
+        # as defined in the submitted data.
+        self.assertEqual(submitted_pccard_bridge_no_driver.hal_device_id, 2,
+            'Unexpected value of HWSubmissionDevice.hal_device_id for the '
+            'PCCard bridge node without a driver.')
+        self.assertEqual(submitted_pccard_bridge_yenta.hal_device_id, 2,
+            'Unexpected value of HWSubmissionDevice.hal_device_id for the '
+            'PCCard bridge node with the yenta driver.')
+
+    def testCreateDBDataForDeviceWithTwoDrivers(self):
+        """Test of HALDevice.createDBData.
+
+        Test for a HAL device with two drivers.
+        """
+        devices = [
+            self.HAL_COMPUTER,
+            self.HAL_USB_CONTROLLER_PCI_SIDE,
+            self.HAL_USB_CONTROLLER_USB_SIDE
+            ]
+        self.setHALDevices(devices)
+
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(self.parsed_data)
+        parser.parsed_data = self.parsed_data
+
+        submission_set = getUtility(IHWSubmissionSet)
+        submission = submission_set.getBySubmissionKey('test_submission_id_1')
+
+        hal_root_device = parser.hal_devices[self.UDI_COMPUTER]
+        hal_root_device.createDBData(submission, None)
+
+        # The USB controller has a HWDevice record.
+        device_set = getUtility(IHWDeviceSet)
+        usb_controller = device_set.getByDeviceID(
+            HWBus.PCI, '0x%04x' % self.PCI_VENDOR_ID_INTEL,
+            '0x%04x' % self.PCI_PROD_ID_USB_CONTROLLER)
+
+        # HWDriver records for the ehci_hcd and the usb driver were
+        # created...
+        driver_set = getUtility(IHWDriverSet)
+        ehci_hcd_driver = driver_set.getByPackageAndName(
+            self.KERNEL_PACKAGE, 'ehci_hcd')
+        usb_driver = driver_set.getByPackageAndName(
+            self.KERNEL_PACKAGE, 'usb')
+
+        # ...as well as HWDeviceDriverLink records.
+        device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
+        usb_ctrl_link_no_driver = device_driver_link_set.getByDeviceAndDriver(
+            usb_controller, None)
+        usb_ctrl_link_ehci_hcd = device_driver_link_set.getByDeviceAndDriver(
+            usb_controller, ehci_hcd_driver)
+        usb_ctrl_link_usb = device_driver_link_set.getByDeviceAndDriver(
+            usb_controller, usb_driver)
+
+        # Three HWDeviceDriverLink records exist for the USB controller.
+        submission_device_set = getUtility(IHWSubmissionDeviceSet)
+        submission_devices = submission_device_set.getDevices(submission)
+        (submitted_usb_controller_no_driver,
+         submitted_usb_controller_ehci_hcd,
+         submitted_usb_controller_usb,
+         submitted_system) = submission_devices
+
+        # The first record is for the controller without a driver...
+        self.assertEqual(
+            submitted_usb_controller_no_driver.device_driver_link,
+            usb_ctrl_link_no_driver,
+            'Unexpected value for '
+            'submitted_usb_controller_no_driver.device_driver_link')
+
+        # ...the second record for the controller and the ehci_hcd
+        # driver...
+        self.assertEqual(
+            submitted_usb_controller_ehci_hcd.device_driver_link,
+            usb_ctrl_link_ehci_hcd,
+            'Unexpected value for '
+            'submitted_usb_controller_ehci_hcd.device_driver_link')
+
+        # ...and the third record is for the controller and the usb
+        # driver.
+        self.assertEqual(
+            submitted_usb_controller_usb.device_driver_link,
+            usb_ctrl_link_usb,
+            'Unexpected value for '
+            'submitted_usb_controller_usb.device_driver_link')
+
+        # The first and second HWSubmissionDevice record are related to
+        # the submitted HAL device node with the ID 4...
+        self.assertEqual(
+            submitted_usb_controller_no_driver.hal_device_id, 4,
+            'Unexpected value for '
+            'submitted_usb_controller_no_driver.hal_device_id')
+        self.assertEqual(
+            submitted_usb_controller_ehci_hcd.hal_device_id, 4,
+            'Unexpected value for '
+            'submitted_usb_controller_ehci_hcd.hal_device_id')
+
+        # ...and the third HWSubmissionDevice record is related to
+        # the submitted HAL device node with the ID 5.
+        self.assertEqual(
+            submitted_usb_controller_usb.hal_device_id, 5,
+            'Unexpected value for '
+            'submitted_usb_controller_usb.hal_device_id')
 
 
 def test_suite():
