@@ -716,7 +716,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "Upload rejected because it contains binary packages. "
             "Ensure you are using `debuild -S`, or an equivalent command, "
             "to generate only the source package before re-uploading. "
-            "See https://help.launchpad.net/PPAQuickStart/ for more "
+            "See https://help.launchpad.net/Packaging/PPA for more "
             "information."]
         self.assertEmail(contents)
 
