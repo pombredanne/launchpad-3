@@ -175,6 +175,82 @@ class TestTeamMembership(unittest.TestCase):
         self.failUnless(teamB.hasParticipationEntryFor(teamB),
                         "teamB is not a participant of itself")
 
+    def test_bug_261915(self):
+        """
+        # Relevant memberships
+        https://pastebin.canonical.com/8611/
+
+        # Data that will need to be fixed
+        https://pastebin.canonical.com/8606/plain/
+        # SQL to fix the data.
+        https://pastebin.canonical.com/8613/plain/
+
+        Events in chronological order:
+            1. Mythbuntu added as member of -bugs, -docs and -hotfixes
+            2. u-d-w-b created (2008-08-26)
+            3. ubuntu-dev proposed/invited as member of u-d-w-b
+                (2008-08-26 17:26:44)
+            4. u-d accepted as a member of u-d-w-b
+                (2008-08-26 17:31:48)
+            5. u-d-w-b proposed/invited as member of mythbuntu
+                (2008-08-26 17:35:14)
+            6. u-d-w-b accepted as a member of mythbuntu
+                (2008-08-26 17:38:49)
+
+        - The superteams of mythbuntu
+            mythbuntu-bugs
+                mythbuntu
+            mythbuntu-documentation
+                mythbuntu
+            mythbuntu-hotfixes
+                mythbuntu
+
+        - The subteams of mythbuntu
+            mythbuntu
+                ubuntu-dev-without-bugmail (created yesterday)
+                    ubuntu-dev
+                        ubuntu-core-dev
+                            # Here's where the members are.
+        """
+        login('mark@hbd.com')
+        person_set = getUtility(IPersonSet)
+        name12 = person_set.getByName('name12')
+        no_priv = person_set.getByName('no-priv')
+        mythbuntu_bugs = person_set.newTeam(name12, 'myth-bugs', 'team1')
+        mythbuntu = person_set.newTeam(name12, 'myth', 'team2')
+        ubuntu_dev_w_b = person_set.newTeam(name12, 'u-d-w-b', 'team3')
+        ubuntu_dev = person_set.newTeam(name12, 'u-d', 'team4')
+        ubuntu_core_dev = person_set.newTeam(name12, 'u-c-d', 'team5')
+
+        # Add no_priv to ubuntu-core-dev.
+        ubuntu_core_dev.addMember(no_priv, name12)
+        self.failUnless(no_priv in ubuntu_core_dev.activemembers)
+        # Add ubuntu-core-dev to ubuntu-dev
+        ubuntu_dev.addMember(ubuntu_core_dev, name12, force_team_add=True)
+        self.failUnless(ubuntu_core_dev in ubuntu_dev.activemembers)
+
+        # 1. Add mythbuntu to mythbuntu-bugs
+        mythbuntu_bugs.addMember(mythbuntu, name12, force_team_add=True)
+        self.failUnless(mythbuntu in mythbuntu_bugs.activemembers)
+
+        # 4 and 5. Add ubuntu-dev to ubuntu-dev-w-b
+        ubuntu_dev_w_b.addMember(ubuntu_dev, name12, force_team_add=True)
+        self.failUnless(ubuntu_dev in ubuntu_dev_w_b.activemembers)
+
+        # 6 and 7. Add ubuntu_dev_w_b to mythbuntu
+        mythbuntu.addMember(ubuntu_dev_w_b, name12, force_team_add=True)
+        self.failUnless(ubuntu_dev_w_b in mythbuntu.activemembers)
+
+        # Kick ubuntu_dev_w_b from mythbuntu
+        mythbuntu.setMembershipData(
+            ubuntu_dev_w_b, TeamMembershipStatus.DEACTIVATED, name12)
+        flush_database_updates()
+
+        self.failIf(no_priv in mythbuntu.allmembers)
+        # This is the one which fails, showing that no_priv hasn't been kicked
+        # from mythbuntu_bugs as it should.
+        self.failIf(no_priv in mythbuntu_bugs.allmembers)
+
     def test_indirect_members_are_kicked_when_kicking_team(self):
         """Indirect members are kicked when the team in which they are a
         direct member is kicked.
