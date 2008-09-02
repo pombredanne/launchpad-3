@@ -98,12 +98,12 @@ class Builder(SQLBase):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
-    failnotes = StringCol(dbName='failnotes', default=None)
-    virtualized = BoolCol(dbName='virtualized', default=False, notNull=True)
-    speedindex = IntCol(dbName='speedindex', default=0)
-    manual = BoolCol(dbName='manual', default=True)
-    vm_host = StringCol(dbName='vm_host', default=None)
-    active = BoolCol(dbName='active', default=True)
+    failnotes = StringCol(dbName='failnotes')
+    virtualized = BoolCol(dbName='virtualized', default=True, notNull=True)
+    speedindex = IntCol(dbName='speedindex')
+    manual = BoolCol(dbName='manual', default=False)
+    vm_host = StringCol(dbName='vm_host')
+    active = BoolCol(dbName='active', notNull=True, default=True)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See `IBuilder`."""
@@ -339,7 +339,7 @@ class Builder(SQLBase):
         """Assert some pre-build checks.
 
         The build request is checked:
-         * Virtualised builds can't build on a non-virtual builder
+         * Virtualized builds can't build on a non-virtual builder
          * Ensure that we have a chroot
          * Ensure that the build pocket allows builds for the current
            distroseries state.
@@ -351,8 +351,8 @@ class Builder(SQLBase):
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY
         # correctly from EMBARGOED archive this assertion can be removed.
-        # XXX 2007-18-12 Julian. This is being addressed in the work on the
-        # blueprint:
+        # XXX Julian 2007-12-18 spec=security-in-soyuz: This is being
+        # addressed in the work on the blueprint:
         # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
         target_pocket = build_queue_item.build.pocket
         assert target_pocket != PackagePublishingPocket.SECURITY, (
@@ -415,12 +415,15 @@ class Builder(SQLBase):
             ******************
             """ % (self.name, self.url, filemap, args, status, info)
             logger.info(message)
-        except (xmlrpclib.Fault, socket.error), info:
+        except xmlrpclib.Fault, info:
             # Mark builder as 'failed'.
-            logger.debug(
-                "Disabling builder: %s" % self.url, exc_info=1)
+            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
             self.failbuilder(
                 "Exception (%s) when setting up to new job" % info)
+            raise BuildSlaveFailure
+        except socket.error, info:
+            error_message = "Exception (%s) when setting up new job" % info
+            self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
     def startBuild(self, build_queue_item, logger):
@@ -454,8 +457,15 @@ class Builder(SQLBase):
         if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (build_queue_item.build.pocket.name.lower())
         args['suite'] = suite
-        archive_purpose = build_queue_item.build.archive.purpose.name
-        args['archive_purpose'] = archive_purpose
+        archive_purpose = build_queue_item.build.archive.purpose
+        if (archive_purpose == ArchivePurpose.PPA and
+            not build_queue_item.build.archive.require_virtualized):
+            # If we're building a non-virtual PPA, override the purpose
+            # to PRIMARY.  This ensures that the package mangling tools
+            # will run over the built packages.
+            args['archive_purpose'] = ArchivePurpose.PRIMARY.name
+        else:
+            args['archive_purpose'] = archive_purpose.name
 
         # Let the build slave know whether this is a build in a private
         # archive.
@@ -688,6 +698,33 @@ class Builder(SQLBase):
         except (BuildSlaveFailure, CannotBuild), err:
             logger.warn('Could not build: %s' % err)
 
+    def handleTimeout(self, logger, error_message):
+        """See IBuilder."""
+        builder_should_be_failed = True
+
+        if self.virtualized:
+            # Virtualized/PPA builder: attempt a reset.
+            logger.warn(
+                "Resetting builder: %s -- %s" % (self.url, error_message),
+                exc_info=True)
+            try:
+                self.resumeSlaveHost()
+            except CannotResumeHost, err:
+                # Failed to reset builder.
+                logger.warn(
+                    "Failed to reset builder: %s -- %s" %
+                    (self.url, str(err)), exc_info=True)
+            else:
+                # Builder was reset, do *not* mark it as failed.
+                builder_should_be_failed = False
+
+        if builder_should_be_failed:
+            # Mark builder as 'failed'.
+            logger.warn(
+                "Disabling builder: %s -- %s" % (self.url, error_message),
+                exc_info=True)
+            self.failbuilder(error_message)
+
 
 class BuilderSet(object):
     """See IBuilderSet"""
@@ -706,12 +743,12 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            builderok=True, failnotes=None, virtualized=True, vm_host=None):
+            active=True, virtualized=False, vm_host=None):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
-                       description=description, owner=owner,
-                       virtualized=virtualized, builderok=builderok,
-                       failnotes=failnotes, vm_host=None)
+                       description=description, owner=owner, active=active,
+                       virtualized=virtualized, vm_host=vm_host,
+                       builderok=True, manual=True)
 
     def get(self, builder_id):
         """See IBuilderSet."""

@@ -286,10 +286,8 @@ Here are some helper functions.
     >>> hold_set = getUtility(IMessageApprovalSet)
     >>> from operator import attrgetter
     >>> def print_hold(message_hold):
-    ...     messages = message_set.get(message_hold.message_id)
-    ...     assert len(messages) <= 1, 'Duplicate message-ids'
     ...     message_id = message_hold.message_id
-    ...     subject = messages[0].subject
+    ...     subject = message_hold.message.subject
     ...     list_name = message_hold.mailing_list.team.name
     ...     print message_id, list_name, subject
 
@@ -502,3 +500,63 @@ approved for, because he has not had three approved moderations.
     ...     'test-four', True)
     >>> sorted(email.email for email in list_four.getSenderAddresses())
     [u'no-priv@canonical.com']
+
+
+== Duplicates ==
+
+When a person responds to a bug email, the message can end up in the database
+twice, once as posted from Malone, and once as held by Mailman.
+
+    >>> message_text = """\
+    ... From: foo.bar@canonical.com
+    ... To: 1@bugs.launchpad.dev
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Firefox 1
+    ... Message-ID: <xinu>
+    ...
+    ... Here is more information on your bug.
+    ... """
+
+    # Fake PGP signature.  See bugs-emailinterface.txt for details.
+    >>> from email.Message import Message
+    >>> class SignedMessage(Message):
+    ...     @property
+    ...     def signedMessage(self):
+    ...         return self
+    ...     signature = object()
+
+    >>> from email import message_from_string
+    >>> from canonical.launchpad.mail.handlers import MaloneHandler
+    >>> malone_msg = message_from_string(message_text, _class=SignedMessage)
+
+    # Tweak the Subject so we can tell the two message apart.
+    >>> del malone_msg['subject']
+    >>> malone_msg['Subject'] = 'Firefox 2'
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> MaloneHandler().process(malone_msg, malone_msg['to'])
+    True
+    >>> transaction.commit()
+
+    # This one will still have Subject: Firefox 1
+    >>> list_message = message_set.fromEmail(message_text)
+    >>> held_message = list_four.holdMessage(list_message)
+
+The message with the Message-ID <xinu> appears twice in the database.
+
+    >>> for message in sorted(message_set.get('<xinu>'),
+    ...                       key=attrgetter('subject')):
+    ...     print message.subject, message.rfc822msgid
+    Firefox 1 <xinu>
+    Firefox 2 <xinu>
+
+But the held message details used in the web u/i's moderation interface gets
+only the one held by Mailman.
+
+    >>> details = getAdapter(held_message, IHeldMessageDetails)
+    >>> print details.message_id
+    <xinu>
+    >>> print details.subject
+    Firefox 1
+
+    >>> logout()

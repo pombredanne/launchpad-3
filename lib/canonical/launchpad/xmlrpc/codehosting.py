@@ -32,6 +32,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.xmlrpc import faults
 
 
 UTC = pytz.timezone('UTC')
@@ -72,7 +73,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         """See `IBranchPuller`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
-            return False
+            return faults.NoBranchWithID(branch_id)
         # See comment in startMirroring.
         removeSecurityProxy(branch).mirrorComplete(last_revision_id)
         return True
@@ -81,7 +82,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         """See `IBranchPuller`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
-            return False
+            return faults.NoBranchWithID(branch_id)
         # See comment in startMirroring.
         removeSecurityProxy(branch).mirrorFailed(reason)
         return True
@@ -99,10 +100,31 @@ class BranchPuller(LaunchpadXMLRPCView):
         """See `IBranchPuller`."""
         branch = getUtility(IBranchSet).get(branch_id)
         if branch is None:
-            return False
+            return faults.NoBranchWithID(branch_id)
         # The puller runs as no user and may pull private branches. We need to
         # bypass Zope's security proxy to set the mirroring information.
         removeSecurityProxy(branch).startMirroring()
+        return True
+
+    def setStackedOn(self, branch_id, stacked_on_location):
+        """See `IBranchPuller`."""
+        # We don't want the security proxy on the branch set because this
+        # method should be able to see all branches and set stacking
+        # information on any of them.
+        branch_set = removeSecurityProxy(getUtility(IBranchSet))
+        stacked_on_branch = None
+        if stacked_on_location.startswith('/'):
+            stacked_on_branch = branch_set.getByUniqueName(
+                stacked_on_location.strip('/'))
+        else:
+            stacked_on_branch = branch_set.getByUrl(
+                stacked_on_location.rstrip('/'))
+        if stacked_on_branch is None:
+            return faults.NoSuchBranch(stacked_on_location)
+        stacked_branch = branch_set.get(branch_id)
+        if stacked_branch is None:
+            return faults.NoBranchWithID(branch_id)
+        stacked_branch.stacked_on = stacked_on_branch
         return True
 
 

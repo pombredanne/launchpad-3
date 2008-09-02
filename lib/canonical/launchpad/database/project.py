@@ -53,8 +53,9 @@ from canonical.launchpad.helpers import shortlist
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              MakesAnnouncements, HasSprintsMixin, KarmaContextMixin,
-              BranchVisibilityPolicyMixin, StructuralSubscriptionTargetMixin):
+              MakesAnnouncements, HasSprintsMixin,
+              KarmaContextMixin, BranchVisibilityPolicyMixin,
+              StructuralSubscriptionTargetMixin):
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,

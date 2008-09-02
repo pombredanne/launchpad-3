@@ -34,7 +34,7 @@
     <table width="100%">
       <tr>
         <th style="white-space: nowrap" align="right">
-          Current owner:
+          Current maintainer:
         </th>
         <td tal:content="structure context/owner/fmt:link" />
       </tr>

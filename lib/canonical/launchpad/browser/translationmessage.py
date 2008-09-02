@@ -10,7 +10,6 @@ __all__ = [
     'CurrentTranslationMessageFacets',
     'CurrentTranslationMessageIndexView',
     'CurrentTranslationMessagePageView',
-    'CurrentTranslationMessageSOP',
     'CurrentTranslationMessageView',
     'CurrentTranslationMessageZoomedView',
     'TranslationMessageSuggestions',
@@ -38,8 +37,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.potemplate import (
-    POTemplateFacets, POTemplateSOP)
+from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     ILaunchBag, IPOFileAlternativeLanguage, ITranslationMessage,
     ITranslationMessageSet, ITranslationMessageSuggestions,
@@ -298,12 +296,6 @@ class CurrentTranslationMessageFacets(POTemplateFacets):
 
     def __init__(self, context):
         POTemplateFacets.__init__(self, context.pofile.potemplate)
-
-
-class CurrentTranslationMessageSOP(POTemplateSOP):
-
-    def __init__(self, context):
-        POTemplateSOP.__init__(self, context.pofile.potemplate)
 
 
 class CurrentTranslationMessageAppMenus(ApplicationMenu):
@@ -1421,13 +1413,15 @@ class TranslationMessageSuggestions:
 
     def __init__(self, title, translation, submissions,
                  user_is_official_translator, form_is_writeable,
-                 plural_form, seen_translations=set()):
+                 plural_form, seen_translations=None):
         self.title = title
         self.potmsgset = translation.potmsgset
         self.pofile = translation.pofile
         self.user_is_official_translator = user_is_official_translator
         self.form_is_writeable = form_is_writeable
         self.submissions = []
+        if seen_translations is None:
+            seen_translations = set()
 
         for submission in submissions:
             # XXX: JeroenVermeulen 2007-11-29 bug=165167: The second part of

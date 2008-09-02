@@ -9,12 +9,6 @@
     <allow interface="canonical.launchpad.interfaces.IDistributionSourcePackageRelease" />
   </content>
 
-  <adapter
-      for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
-      provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
-      factory="canonical.launchpad.browser.distributionsourcepackagerelease_to_structuralheading"
-      />
-
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
     name="+index" />
@@ -53,13 +47,5 @@
       template="../templates/distributionsourcepackagerelease-changes.pt"
       />
   </browser:pages>
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
-    name="+shortlink"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.DistributionSourcePackageReleaseShortLink"
-    attribute="__call__"
-    />
 
 </configure>

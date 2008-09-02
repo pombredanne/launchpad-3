@@ -63,7 +63,7 @@ An informational message also directs the user to the PPA help page
 via a link:
 
     >>> admin_browser.getLink('PPA help page').url
-    'https://help.launchpad.net/PPA'
+    'https://help.launchpad.net/Packaging/PPA'
 
 The user can update the form to only list published sources with name
 matching the given text.

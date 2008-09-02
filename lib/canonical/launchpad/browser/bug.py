@@ -350,12 +350,13 @@ class BugView(LaunchpadView):
     adapted to IBug in order to make the security declarations work
     properly. This has the effect that the context in the pagetemplate
     changes as well, so the bugtask (which is often used in the pages)
-    is available as currentBugTask(). This may not be all that pretty,
+    is available as `current_bugtask`. This may not be all that pretty,
     but it was the best solution we came up with when deciding to hang
     all the pages off IBugTask instead of IBug.
     """
 
-    def currentBugTask(self):
+    @property
+    def current_bugtask(self):
         """Return the current `IBugTask`.
 
         'current' is determined by simply looking in the ILaunchBag utility.
@@ -378,7 +379,7 @@ class BugView(LaunchpadView):
         title like 'Private Bug'.
         """
         duplicate_bugs = list(self.context.duplicates)
-        current_task = self.currentBugTask()
+        current_task = self.current_bugtask
         dupes_in_current_context = dict(
             (bugtask.bug, bugtask)
             for bugtask in current_task.target.searchTasks(
@@ -593,9 +594,8 @@ class BugTextView(LaunchpadView):
             text.append('duplicates: ')
 
         if bug.private:
-            # XXX this could include date_made_private and
+            # XXX kiko 2007-10-31: this could include date_made_private and
             # who_made_private but Bjorn doesn't let me.
-            #    -- kiko, 2007-10-31
             text.append('private: yes')
 
         if bug.security_related:
@@ -673,8 +673,8 @@ class BugTextView(LaunchpadView):
         from canonical.launchpad.browser.bugtask import (
             get_visible_comments, get_comments_for_bugtask)
 
-        # XXX: for some reason, get_comments_for_bugtask takes a task,
-        # not a bug. For now live with it. -- kiko, 2007-10-31
+        # XXX: kiko 2007-10-31: for some reason, get_comments_for_bugtask
+        # takes a task, not a bug. For now live with it.
         first_task = self.bugtasks[0]
         all_comments = get_comments_for_bugtask(first_task)
         comments = get_visible_comments(all_comments[1:])

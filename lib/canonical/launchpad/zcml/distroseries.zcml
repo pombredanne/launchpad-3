@@ -53,12 +53,6 @@
   </securedutility>
 
   <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IDistroSeries"
-    factory="canonical.launchpad.browser.DistroSeriesSOP"
-    permission="zope.Public"
-    />
-  <adapter
     for="canonical.launchpad.interfaces.IDistroSeries"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
     factory="canonical.launchpad.components.answertracker.series_to_questiontarget"
@@ -68,6 +62,13 @@
     provides="canonical.launchpad.interfaces.ILaunchpadUsage"
     for="canonical.launchpad.interfaces.IDistroSeries"
     factory="canonical.launchpad.components.distroseries.distroseries_to_launchpadusage"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    factory="canonical.launchpad.browser.DistroSeriesBreadcrumbBuilder"
     permission="zope.Public"
     />
 

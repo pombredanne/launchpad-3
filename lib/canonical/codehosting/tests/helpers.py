@@ -15,31 +15,25 @@ __all__ = [
     'LoomTestMixin',
     'make_bazaar_branch_and_tree',
     'ServerTestCase',
+    'TestResultWrapper',
     ]
 
 import os
 import threading
 import unittest
 
-import transaction
-
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
 from bzrlib.plugins.loom import branch as loom_branch
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import TestCaseWithTransport, TestSkipped
 from bzrlib.errors import SmartProtocolError
-
-from zope.security.management import getSecurityPolicy, setSecurityPolicy
 
 from canonical.authserver.interfaces import (
     LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
-from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import LaunchpadFunctionalLayer, TwistedLayer
+from canonical.testing import TwistedLayer
 
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
@@ -130,78 +124,7 @@ class LoomTestMixin:
         return loom_tree
 
 
-class BranchTestCase(TestCaseWithTransport, LoomTestMixin):
-    """Base class for tests that do a lot of things with branches."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        self._factory = LaunchpadObjectFactory()
-
-    def createTemporaryBazaarBranchAndTree(self, base_directory='.'):
-        """Create a local branch with one revision, return the working tree.
-        """
-        tree = self.make_branch_and_tree(base_directory)
-        self.local_branch = tree.branch
-        self.build_tree([os.path.join(base_directory, 'foo')])
-        tree.add('foo')
-        tree.commit('Added foo', rev_id='rev1')
-        return tree
-
-    def getUniqueInteger(self):
-        """Return an integer unique to this run of the test case."""
-        # Delegate to the factory.
-        return self._factory.getUniqueInteger()
-
-    def getUniqueString(self, prefix=None):
-        """Return a string to this run of the test case.
-
-        The string returned will always be a valid name that can be used in
-        Launchpad URLs.
-
-        :param prefix: Used as a prefix for the unique string. If unspecified,
-            defaults to the name of the test.
-        """
-        if prefix is None:
-            prefix = self.id().split('.')[-1]
-        # Delegate to the factory.
-        return self._factory.getUniqueString(prefix)
-
-    def getUniqueURL(self):
-        """Return a URL unique to this run of the test case."""
-        # Delegate to the factory.
-        return self._factory.getUniqueURL()
-
-    def makePerson(self, email=None, name=None):
-        """Create and return a new, arbitrary Person."""
-        # Delegate to the factory.
-        return self._factory.makePerson(email, name)
-
-    def makeProduct(self):
-        """Create and return a new, arbitrary Product."""
-        # Delegate to the factory.
-        return self._factory.makeProduct()
-
-    def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, **optional_branch_args):
-        """Create and return a new, arbitrary Branch of the given type.
-
-        Any parameters for IBranchSet.new can be specified to override the
-        default ones.
-        """
-        # Delegate to the factory.
-        return self._factory.makeBranch(
-            branch_type, owner, name, product, url, **optional_branch_args)
-
-    def restrictSecurityPolicy(self):
-        """Switch to using 'LaunchpadSecurityPolicy'."""
-        old_policy = getSecurityPolicy()
-        setSecurityPolicy(LaunchpadSecurityPolicy)
-        self.addCleanup(lambda: setSecurityPolicy(old_policy))
-
-
-class ServerTestCase(TrialTestCase, BranchTestCase):
+class ServerTestCase(TrialTestCase, TestCaseWithTransport, LoomTestMixin):
 
     server = None
 
@@ -480,3 +403,26 @@ def create_branch_with_one_revision(branch_dir):
     f.close()
     tree.commit('message')
     return tree
+
+
+class TestResultWrapper:
+    """A wrapper for `TestResult` that knows about bzrlib's `TestSkipped`."""
+
+    def __init__(self, result):
+        self.result = result
+
+    def addError(self, test_case, exc_info):
+        if not isinstance(exc_info[1], TestSkipped):
+            self.result.addError(test_case, exc_info)
+
+    def addFailure(self, test_case, exc_info):
+        self.result.addFailure(test_case, exc_info)
+
+    def addSuccess(self, test_case):
+        self.result.addSuccess(test_case)
+
+    def startTest(self, test_case):
+        self.result.startTest(test_case)
+
+    def stopTest(self, test_case):
+        self.result.stopTest(test_case)

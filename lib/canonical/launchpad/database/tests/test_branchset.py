@@ -11,7 +11,6 @@ import pytz
 
 import transaction
 
-from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.ftests import (
@@ -23,10 +22,12 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, BranchVisibilityRule, IBranchSet,
     IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
     PersonCreationRationale, TeamSubscriptionPolicy)
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import (
+    LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.validators import LaunchpadValidationError
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -154,21 +155,17 @@ class TestBranchSetNewNameValidation(TestCase):
                     self.makeNewBranchWithName, 'a' + c)
 
 
-class TestMirroringForHostedBranches(BranchTestCase):
+class TestMirroringForHostedBranches(TestCaseWithFactory):
     """Tests for mirroring methods of a branch."""
 
+    layer = DatabaseFunctionalLayer
     branch_type = BranchType.HOSTED
 
     def setUp(self):
-        BranchTestCase.setUp(self)
+        TestCaseWithFactory.setUp(self)
         self.branch_set = getUtility(IBranchSet)
-        login(ANONYMOUS)
         # The absolute minimum value for any time field set to 'now'.
         self._now_minimum = self.getNow()
-
-    def tearDown(self):
-        logout()
-        BranchTestCase.tearDown(self)
 
     def assertBetween(self, lower_bound, variable, upper_bound):
         """Assert that 'variable' is strictly between two boundaries."""
@@ -192,7 +189,7 @@ class TestMirroringForHostedBranches(BranchTestCase):
         return datetime.now(pytz.timezone('UTC'))
 
     def makeBranch(self):
-        return BranchTestCase.makeBranch(self, self.branch_type)
+        return self.factory.makeBranch(self.branch_type)
 
     def test_requestMirror(self):
         """requestMirror sets the mirror request time to 'now'."""
@@ -997,7 +994,7 @@ class TestBranchSetGetBranches(TestCase):
 
     def test_get_junk_branch(self):
         factory = LaunchpadObjectFactory()
-        branch = factory.makeBranch(explicit_junk=True)
+        branch = factory.makeBranch(product=None)
         self.assertTrue(branch.product is None)
         self.assertEqual(
             branch,
@@ -1034,7 +1031,7 @@ class TestBranchSetIsBranchNameAvailable(TestCase):
         name = "sample-branch"
         bob = factory.makePerson(name="bob")
         mary = factory.makePerson(name="mary")
-        b1 = factory.makeBranch(owner=bob, explicit_junk=True, name=name)
+        b1 = factory.makeBranch(owner=bob, product=None, name=name)
         self.assertTrue(b1.product is None)
         self.assertEqual(name, b1.name)
 
@@ -1046,7 +1043,7 @@ class TestBranchSetIsBranchNameAvailable(TestCase):
         factory = LaunchpadObjectFactory()
         owner = factory.makePerson()
         name = "sample-branch"
-        b1 = factory.makeBranch(owner=owner, explicit_junk=True, name=name)
+        b1 = factory.makeBranch(owner=owner, product=None, name=name)
         self.assertTrue(b1.product is None)
         self.assertEqual(name, b1.name)
 
