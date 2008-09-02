@@ -10,7 +10,6 @@ __metaclass__ = type
 
 import _pythonpath
 
-from cStringIO import StringIO
 import sys
 import os.path
 from optparse import OptionParser
