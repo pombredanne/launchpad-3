@@ -213,6 +213,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     name = StringCol(dbName='name', alternateID=True, notNull=True,
                      storm_validator=_validate_name)
 
+    def __repr__(self):
+        return '<Person at 0x%x %s (%s)>' % (
+            id(self), self.name, self.displayname)
+
     def _sync_displayname(self, attr, value):
         """Update any related Account.displayname.
 

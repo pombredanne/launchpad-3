@@ -7,8 +7,10 @@
 __metaclass__ = type
 
 import os
+import pdb
 import re
 import simplejson
+import sys
 import unittest
 import urllib
 
@@ -572,6 +574,16 @@ def safe_canonical_url(*args, **kwargs):
     return str(canonical_url(*args, **kwargs))
 
 
+def stop():
+    # Temporarily restore the real stdout.
+    old_stdout = sys.stdout
+    sys.stdout = sys.__stdout__
+    try:
+        pdb.set_trace()
+    finally:
+        sys.stdout = old_stdout
+
+
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
@@ -618,6 +630,7 @@ def setUpGlobs(test):
     test.globs['print_ppa_packages'] = print_ppa_packages
     test.globs['print_self_link_of_entries'] = print_self_link_of_entries
     test.globs['print_tag_with_id'] = print_tag_with_id
+    test.globs['stop'] = stop
 
 
 class PageStoryTestCase(unittest.TestCase):

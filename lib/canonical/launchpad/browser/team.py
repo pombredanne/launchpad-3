@@ -448,11 +448,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             validator=request_list_creation_validator)
     def request_list_creation(self, action, data):
         """Creates a new mailing list."""
-        list_set = getUtility(IMailingListSet)
-        mailing_list = list_set.get(self.context.name)
-        assert mailing_list is None, (
-            'Tried to create a mailing list for a team that already has one.')
-        list_set.new(self.context)
+        getUtility(IMailingListSet).new(self.context)
         self.request.response.addInfoNotification(
             "Mailing list requested and queued for approval.")
         self.next_url = canonical_url(self.context)
@@ -528,7 +524,9 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         failures and inconsistencies.
         """
 
-        if not self.mailing_list:
+        if (self.mailing_list is None or
+            self.mailing_list.status == MailingListStatus.PURGED):
+            # Purged lists act as if they don't exist.
             return None
         elif self.mailing_list.status == MailingListStatus.REGISTERED:
             return None

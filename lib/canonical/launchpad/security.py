@@ -1823,6 +1823,20 @@ class MailingListApprovalByExperts(AuthorizationBase):
         return user.inTeam(experts)
 
 
+class ConfigureTeamMailingList(AuthorizationBase):
+    permission = 'launchpad.MailingListManager'
+    usedfor = ITeam
+
+    def checkAuthenticated(self, user):
+        # The team owner, the Launchpad mailing list experts and the Launchpad
+        # administrators can all view a team's +mailinglist page.
+        celebrities = getUtility(ILaunchpadCelebrities)
+        team = ITeam(self.obj)
+        return ((team is not None and user.inTeam(team.teamowner)) or
+                user.inTeam(celebrities.admin) or
+                user.inTeam(celebrities.mailing_list_experts))
+
+
 class ViewEmailAddress(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IEmailAddress
