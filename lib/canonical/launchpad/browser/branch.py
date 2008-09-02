@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchSOP',
     'PersonBranchAddView',
     'ProductBranchAddView',
     'BranchBadges',
@@ -46,8 +45,7 @@ from canonical.lazr.interface import use_template
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
-from canonical.launchpad.browser.launchpad import (
-    Hierarchy, StructuralObjectPresentation)
+from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
@@ -116,14 +114,6 @@ class BranchHierarchy(Hierarchy):
             return []
         else:
             return [breadcrumb]
-
-
-class BranchSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IBranch`."""
-
-    def getMainHeading(self):
-        """See `IStructuralHeaderPresentation`."""
-        return self.context.owner.browsername
 
 
 class BranchBadges(HasBadgeBase):
