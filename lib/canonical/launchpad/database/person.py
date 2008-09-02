@@ -1737,9 +1737,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             if bug_task.conjoined_master is not None:
                 continue
 
-            # XXX flacoste 2007/11/26 The comparison using id in the assert
-            # below works around a nasty intermittent failure.
-            # See bug #164635.
+            # XXX flacoste 2007-11-26 bug=164635 The comparison using id in
+            # the assert below works around a nasty intermittent failure.
             assert bug_task.assignee.id == self.id, (
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
                     bug_task.id, bug_task.assignee.name, self.name))
@@ -1751,8 +1750,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             team.teamowner = registry_experts
         for pillar_name in self.getOwnedOrDrivenPillars():
             pillar = pillar_name.pillar
-            # XXX flacoste 2007/11/26 The comparison using id below
-            # works around a nasty intermittent failure. See bug #164635.
+            # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
+            # works around a nasty intermittent failure.
             if pillar.owner.id == self.id:
                 pillar.owner = registry_experts
             elif pillar.driver.id == self.id:

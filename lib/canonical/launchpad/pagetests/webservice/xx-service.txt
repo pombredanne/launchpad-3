@@ -6,7 +6,7 @@ the individual resources.
 
 == Authorization ==
 
-  # XXX leonardr 2008-05-22 blueprint=api-bugs-remote
+  # XXX leonardr 2008-05-22 spec=api-bugs-remote:
   # Once we launch the web service this test will be removed
   # because all users will have access to the web service.
 
