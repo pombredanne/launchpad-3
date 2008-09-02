@@ -716,7 +716,4 @@ And of course, a mailing list for the newly renamed team can be created.
 
 
 XXX TODO
-  - show the purge happening
-  - show that a purged list can be re-registered
-  - show that a team with a purged list can be renamed
   - show that a team with a purged list can be merged
