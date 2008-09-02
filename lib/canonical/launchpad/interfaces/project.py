@@ -216,10 +216,12 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     bounties = Attribute(
         _("The bounties that are related to this project group."))
 
-    bugtracker = Choice(title=_('Bug Tracker'), required=False,
-        vocabulary='BugTracker',
-        description=_(
-            "The bug tracker the products in this project group use."))
+    bugtracker = exported(
+        Choice(title=_('Bug Tracker'), required=False,
+               vocabulary='BugTracker',
+               description=_(
+                "The bug tracker the projects in this project group use.")),
+        exported_as="bug_tracker")
 
     # products.value_type will be set to IProduct once IProduct is defined.
     products = exported(

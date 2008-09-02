@@ -12,6 +12,7 @@ Project groups are available at their canonical URL on the API virtual host.
     active: True
     active_milestones_collection_link: u'http://.../mozilla/active_milestones'
     all_milestones_collection_link: u'http://.../mozilla/all_milestones'
+    bug_tracker_link: None
     date_created: u'...'
     description: u'The Mozilla Project...'
     display_name: u'the Mozilla Project'
