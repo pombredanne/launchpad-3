@@ -687,10 +687,14 @@ class CodeHandler:
 
     def processMergeProposal(self, message):
         submitter = getUtility(ILaunchBag).user
-        comment, md = self.findMergeDirectiveAndComment(message)
+        comment_text, md = self.findMergeDirectiveAndComment(message)
         source, target = self._acquireBranchesForProposal(md, submitter)
         bmp = source.addLandingTarget(submitter, target, needs_review=True)
-        comment = bmp.createComment(submitter, message['Subject'], comment)
+        if comment_text.strip() == '':
+            comment = None
+        else:
+            comment = bmp.createComment(
+                submitter, message['Subject'], comment_text)
         return bmp, comment
 
 

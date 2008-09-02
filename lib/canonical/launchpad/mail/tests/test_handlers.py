@@ -321,7 +321,6 @@ class TestCodeHandler(TestCaseWithFactory):
                                source_branch=source_branch_url,
                                base_revision_id='base-revid')
 
-
     def test_acquireBranchesForProposal(self):
         target_branch = self.factory.makeBranch()
         source_branch = self.factory.makeBranch()
@@ -397,11 +396,11 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertRaises(MissingMergeDirective,
             code_handler.findMergeDirectiveAndComment, message)
 
-    def makeMergeDirectiveEmail(self):
+    def makeMergeDirectiveEmail(self, body='Hi!\n'):
         target_branch = self.factory.makeBranch()
         source_branch = self.factory.makeBranch(product=target_branch.product)
         md = self.makeMergeDirective(source_branch, target_branch)
-        message = self.factory.makeSignedMessage(body='Hi!\n',
+        message = self.factory.makeSignedMessage(body=body,
             subject='My subject',
             attachment_contents=''.join(md.to_lines()))
         return message, source_branch, target_branch
@@ -414,6 +413,16 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(target_branch, bmp.target_branch)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
+
+    def test_processMergeProposalEmptyMessage(self):
+        message, source_branch, target_branch = (
+            self.makeMergeDirectiveEmail(body=' '))
+        code_handler = CodeHandler()
+        bmp, comment = code_handler.processMergeProposal(message)
+        self.assertEqual(source_branch, bmp.source_branch)
+        self.assertEqual(target_branch, bmp.target_branch)
+        self.assertTrue(comment is None)
+        self.assertEqual(0, bmp.all_comments.count())
 
     def test_processWithMergeDirectiveEmail(self):
         message, source, target = self.makeMergeDirectiveEmail()
