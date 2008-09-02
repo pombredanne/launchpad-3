@@ -273,10 +273,10 @@ def validate_replication(cur):
     if confused_tables:
         raise ReplicationConfigError(
             "Tables exist in multiple replication sets: %s"
-            % repl(confused_tables))
+            % repr(confused_tables))
     confused_sequences = authdb_sequences.intersection(lpmain_sequences)
     if confused_sequences:
         raise ReplicationConfigError(
             "Sequences exist in multiple replication sets: %s"
-            % repl(confused_sequences))
+            % repr(confused_sequences))
 
