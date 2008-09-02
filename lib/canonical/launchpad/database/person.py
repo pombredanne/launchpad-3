@@ -857,7 +857,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                              prejoins=["product"])
 
 
-    # XXX: TomBerger 2008-02-14, 2008-04-14 bug=191799:
+    # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions
     # is no longer appropriate, since it now relies on subscriptions,
     # rather than package bug supervisors.
@@ -2058,7 +2058,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
-        # XXX stevea 2005-07-05:
+        # XXX Steve Alexander 2005-07-05:
         # This is here because of an SQLobject comparison oddity.
         assert email.person.id == self.id, 'Wrong person! %r, %r' % (
             email.person, self)

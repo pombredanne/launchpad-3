@@ -615,7 +615,7 @@ class BrowserNotificationLevel:
     """Matches the standard logging levels, with the addition of notice
     (which we should probably add to our log levels as well)
     """
-    # XXX Matthew Paul Thomas 2006-03-22 bugs=36287:
+    # XXX mpt 2006-03-22 bugs=36287:
     # NOTICE and INFO should be merged.
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
