@@ -32,13 +32,11 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSOP',
     'ProductSetBreadcrumbBuilder',
     'ProductSetContextMenu',
     'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
-    'ProductSetSOP',
     'ProductSetView',
     'ProductSpecificationsMenu',
     'ProductTranslationsMenu',
@@ -90,7 +88,6 @@ from canonical.launchpad.browser.distribution import UsesLaunchpadMixin
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import (
     FeedsMixin, ProductBranchesFeedLink)
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
@@ -239,22 +236,6 @@ class ProductLicenseMixin:
                 "Launchpad is free to use for software under approved "
                 "licenses. The Launchpad team will be in contact with "
                 "you soon."))
-
-
-class ProductSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        # product series, most recent first
-        return list(self.context.serieses[:num])
-
-    def listAltChildren(self, num):
-        return None
 
 
 class ProductBreadcrumbBuilder(BreadcrumbBuilder):
@@ -620,21 +601,6 @@ def _sort_distros(a, b):
     if a['name'] == 'ubuntu':
         return -1
     return cmp(a['name'], b['name'])
-
-
-class ProductSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
 
 
 class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):

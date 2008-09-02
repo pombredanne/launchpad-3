@@ -27,13 +27,6 @@
         classes="POFileNavigation"
         />
 
-    <adapter
-      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-      for="canonical.launchpad.interfaces.IPOFile"
-      factory="canonical.launchpad.browser.POFileSOP"
-      permission="zope.Public"
-      />
-
     <browser:url
         for="canonical.launchpad.interfaces.IPOFile"
         path_expression="language/code"
