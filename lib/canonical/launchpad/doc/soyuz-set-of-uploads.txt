@@ -354,11 +354,35 @@ Check the email recipient for displayname containing special chars,
   To: "Foo B. Bar" <foo.bar@canonical.com>,
   	Celso Providelo <celso.providelo@canonical.com>
   Subject: [ubuntutest/breezy] bar 1.0-4 (Accepted)
-  ...
-  Changed-By: Celso R. Providelo <cprov@ubuntu.com> =
+  Content-Type: text/plain; charset="utf-8"
+  MIME-Version: 1.0
+  Content-Transfer-Encoding: quoted-printable
+  <BLANKLINE>
+  bar (1.0-4) breezy; urgency=3Dlow
+  <BLANKLINE>
+    * Changer using non-preferred email
+  <BLANKLINE>
+   -- Celso R. Providelo <cprov@ubuntu.com>  Tue, 25 Apr 2006 10:36:14 -0300 =
+  <BLANKLINE>
+  <BLANKLINE>
+  Maintainer: Launchpad team <launchpad@lists.canonical.com> =
   <BLANKLINE>
   Signed-By: Foo B. Bar <foo.bar@canonical.com> =
-  ...
+  <BLANKLINE>
+  Source package release: http://launchpad.dev/ubuntutest/breezy/+source/bar/=
+  1.0-4
+  <BLANKLINE>
+  =3D=3D
+  <BLANKLINE>
+  Announcing to breezy-changes@ubuntu.com
+  <BLANKLINE>
+  Thank you for your contribution to Ubuntu Test.
+  <BLANKLINE>
+  -- =
+  <BLANKLINE>
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
+  <BLANKLINE>
   <BLANKLINE>
 
 Revert changes:

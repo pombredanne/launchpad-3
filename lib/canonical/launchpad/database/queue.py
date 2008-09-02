@@ -582,23 +582,22 @@ class PackageUpload(SQLBase):
         def do_sendmail(message, recipients=recipients, from_addr=None,
                         bcc=None):
             """Perform substitutions on a template and send the email."""
+            # Add the debian 'Changed-By:' field.
+            changed_by = changes.get('changed-by')
+            if changed_by:
+                changed_by = sanitize_string(changed_by)
+                message.CHANGEDBY = (
+                    ' -- %s  %s' % (changed_by, changes['date']))
+
             # If the maintainer is set, make it available to the template.
             maintainer = changes.get('maintainer')
             if maintainer:
                 maintainer = sanitize_string(maintainer)
-                message.MAINTAINER = (
-                    ' -- %s  %s' % (maintainer, changes['date']))
-
-            # Add the debian 'Changed-By:' field if the changes author
-            # differs from the maintainer.
-            changed_by = changes.get('changed-by')
-            if maintainer and changed_by:
-                changed_by = sanitize_string(changed_by)
-                if changed_by != maintainer:
-                    message.CHANGEDBY = '\nChanged-By: %s' % changed_by
+                if maintainer != changed_by:
+                    message.MAINTAINER = '\n\nMaintainer: %s' % maintainer
 
             # Add a 'Signed-By:' line if this is a signed upload and the
-            # signer/sponsor differs from the maintainer.
+            # signer/sponsor differs from the changed-by.
             if self.signing_key is not None:
                 # This is a signed upload.
                 signer = self.signing_key.owner
@@ -608,7 +607,7 @@ class PackageUpload(SQLBase):
 
                 signer_signature = '%s <%s>' % (signer_name, signer_email)
 
-                if maintainer != signer_signature:
+                if changed_by != signer_signature:
                     message.SIGNER = '\nSigned-By: %s' % signer_signature
 
             # Add the debian 'Origin:' field if present.
@@ -672,6 +671,8 @@ class PackageUpload(SQLBase):
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
+            MAINTAINER = ''
+            SPR_URL = ''
 
         class AcceptedMessage:
             """Accepted message."""
@@ -688,6 +689,8 @@ class PackageUpload(SQLBase):
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
+            MAINTAINER = ''
+            SPR_URL = ''
 
         class PPAAcceptedMessage:
             """PPA accepted message."""
@@ -706,6 +709,8 @@ class PackageUpload(SQLBase):
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
+            MAINTAINER = ''
+            SPR_URL = ''
 
 
         # The template is ready.  The remainder of this function deals with

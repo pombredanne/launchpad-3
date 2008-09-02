@@ -78,7 +78,6 @@ It was not rejected.
 
   >>> success = upload.do_accept()
   DEBUG: Creating queue entry
-  DEBUG: Setting it to ACCEPTED
   ...
   DEBUG: Sent a mail:
   DEBUG:     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
@@ -86,8 +85,9 @@ It was not rejected.
   DEBUG:     Body:
   DEBUG: * Duhh
   DEBUG:
-  DEBUG: -- Foo Bar <foo.bar@canonical.com> Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG:  -- Foo Bar <foo.bar@canonical.com>  Thu, 01 Aug 2006 14:20:25 +0300
   DEBUG: Origin: Ubuntu/warty
+  DEBUG:
   DEBUG:
   DEBUG: ==
   DEBUG:
@@ -104,9 +104,9 @@ It was not rejected.
   DEBUG:     Body:
   DEBUG: * Duhh
   DEBUG:
-  DEBUG: -- Foo Bar <foo.bar@canonical.com> Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG:  -- Foo Bar <foo.bar@canonical.com>  Thu, 01 Aug 2006 14:20:25 +0300
   DEBUG: Origin: Ubuntu/warty
-
+  DEBUG:
 
 And all things worked.
 

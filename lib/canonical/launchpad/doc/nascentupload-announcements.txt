@@ -403,7 +403,6 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   ...
-  DEBUG: Skipping announcement, it is a BACKPORT.
   DEBUG: Sent a mail:
   DEBUG:     Subject: [ubuntu/hoary-backports] bar 1.0-4 (Accepted)
   DEBUG:     Recipients: Celso Providelo <celso.providelo@canonical.com>
@@ -412,8 +411,9 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG:
   DEBUG:   * Changer using non-preferred email
   DEBUG:
-  DEBUG: -- Launchpad team <launchpad@lists.canonical.com> Tue, 25 Apr 2006 10:36:14 -0300
-  DEBUG: Changed-By: Celso R. Providelo <cprov@ubuntu.com>
+  DEBUG:  -- Celso R. Providelo <cprov@ubuntu.com>  Tue, 25 Apr 2006 10:36:14 -0300
+  DEBUG:
+  DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
   DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-4
   DEBUG:
   DEBUG: ==
@@ -467,12 +467,13 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG: bar (1.0-2) breezy; urgency=low
   DEBUG:
   DEBUG:   * A second upload to ensure that binary overrides of _all work
-  DEBUG: 
+  DEBUG:
   DEBUG:   * Also closes Launchpad bug #6
   DEBUG:
   DEBUG:
-  DEBUG: -- Launchpad team <launchpad@lists.canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
-  DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG:  -- Daniel Silverstone <daniel.silverstone@canonical.com>  Thu, 30 Mar 2006 01:36:14 +0100
+  DEBUG:
+  DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
   DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
   DEBUG:
   DEBUG: ==
@@ -491,12 +492,13 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG: bar (1.0-2) breezy; urgency=low
   DEBUG:
   DEBUG:   * A second upload to ensure that binary overrides of _all work
-  DEBUG: 
+  DEBUG:
   DEBUG:   * Also closes Launchpad bug #6
   DEBUG:
   DEBUG:
-  DEBUG: -- Launchpad team <launchpad@lists.canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
-  DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG:  -- Daniel Silverstone <daniel.silverstone@canonical.com>  Thu, 30 Mar 2006 01:36:14 +0100
+  DEBUG:
+  DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
   DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
 
   >>> import operator
@@ -598,7 +600,6 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
   >>> result = bar_bin.do_accept()
   DEBUG: Creating queue entry
   ...
-  DEBUG: Skipping announcement, it is a binary upload to SECURITY.
   DEBUG: Sent a mail:
   DEBUG:     Subject: [ubuntu/hoary-security] bar 1.0-2 (Accepted)
   DEBUG:     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
@@ -607,8 +608,9 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
   DEBUG:
   DEBUG:   * A second upload to ensure that binary overrides of _all work
   DEBUG:
-  DEBUG: -- Launchpad team <launchpad@lists.canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
-  DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG:  -- Daniel Silverstone <daniel.silverstone@canonical.com>  Thu, 30 Mar 2006 01:36:14 +0100
+  DEBUG:
+  DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
   DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
   DEBUG:
   DEBUG: ==
@@ -747,8 +749,9 @@ the INFO level what it /would/ have sent.
   INFO:
   INFO:   * A second upload to ensure that binary overrides of _all work
   INFO:
-  INFO: -- Launchpad team <launchpad@lists.canonical.com> Thu, 30 Mar 2006 01:36:14 +0100
-  INFO: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
+  INFO:  -- Daniel Silverstone <daniel.silverstone@canonical.com>  Thu, 30 Mar 2006 01:36:14 +0100
+  INFO:
+  INFO: Maintainer: Launchpad team <launchpad@lists.canonical.com>
   INFO: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
   INFO:
   INFO: ==
@@ -805,21 +808,19 @@ changes file is mentioned toward the end of the email.
   >>> body = announcement_email.get_payload()[0]
   >>> print body.as_string() # doctest: -NORMALIZE_WHITESPACE
   Content-Type: text/plain; charset="utf-8"
-  MIME-Version: 1.0
-  Content-Transfer-Encoding: quoted-printable
-  <BLANKLINE>
-  bar (1.0-10) breezy; urgency=3Dlow
+  ...
   <BLANKLINE>
     * Changes file that contains UTF-8
   <BLANKLINE>
     * Non-ascii text: =C4=8Ciha=C5=99
   <BLANKLINE>
   <BLANKLINE>
-  -- Non-ascii maintainer =C4=8Ciha=C5=99 <launchpad@lists.canonical.com> Thu=
-  , 30 Mar 2006 01:36:14 +0100 =
+   -- Non-ascii changed-by =C4=8Ciha=C5=99 <daniel.silverstone@canonical.com>=
+    Thu, 30 Mar 2006 01:36:14 +0100 =
   <BLANKLINE>
-  Changed-By: Non-ascii changed-by =C4=8Ciha=C5=99 <daniel.silverstone@canoni=
-  cal.com> =
+  <BLANKLINE>
+  Maintainer: Non-ascii maintainer =C4=8Ciha=C5=99 <launchpad@lists.canonical=
+  .com> =
   <BLANKLINE>
   Signed-By: Foo Bar <foo.bar@canonical.com> =
   <BLANKLINE>
