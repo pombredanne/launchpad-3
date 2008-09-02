@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = []
 
 from glob import glob
-import os
 import os.path
 import re
 import unittest

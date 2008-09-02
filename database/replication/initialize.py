@@ -20,7 +20,7 @@ from canonical.database.postgresql import (
         all_sequences_in_schema, all_tables_in_schema
         )
 from canonical.launchpad.scripts import (
-        execute_zcml_for_scripts, logger, logger_options, db_options
+        logger, logger_options, db_options
         )
 
 __metaclass__ = type
@@ -38,16 +38,12 @@ def main():
 
     log = logger(options)
 
-    #execute_zcml_for_scripts()
-
     # Confirm each database exists and is connectable.
 
     # Confirm the slave databases are empty.
 
     # Create the 'slony' superuser in each database if it does not already
     # exist.
-
-    # Change our connection to use the 'slony' user from this point on.
 
     # Duplicate the master schema into the slaves, except for security.
     # We can't use pg_dump to replicate security as not all of the roles

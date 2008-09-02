@@ -14,11 +14,9 @@ import glob
 import os.path
 from optparse import OptionParser
 import re
-import subprocess
 import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
-import time
 
 from canonical.launchpad.scripts import db_options, logger_options, logger
 from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT

@@ -213,7 +213,6 @@ class ZopelessTransactionManager(object):
             # installed, so return that one, but also emit a warning.
             warnings.warn(alreadyInstalledMsg, stacklevel=3)
         else:
-            from canonical.config import config
             config.push(cls._CONFIG_OVERLAY_NAME, overlay)
             cls._config_overlay = overlay
             cls._dbname = dbname
@@ -248,7 +247,6 @@ class ZopelessTransactionManager(object):
         """
         assert cls._installed is not None, (
             "ZopelessTransactionManager not installed")
-        from canonical.config import config
         config.pop(cls._CONFIG_OVERLAY_NAME)
         cls._reset_store()
         cls._installed = None
