@@ -1010,7 +1010,7 @@ class SynchronousAdapter(Transport):
 
     def external_url(self):
         """See `bzrlib.transport.Transport`."""
-        raise InProcessTransport()
+        raise InProcessTransport(self)
 
     def abspath(self, relpath):
         """See `bzrlib.transport.Transport`."""
