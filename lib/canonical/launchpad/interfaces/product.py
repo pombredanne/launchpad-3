@@ -316,7 +316,7 @@ class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
             description=_(
                 "A large image of exactly 192x192 pixels, that will be "
                 "displayed on this project's home page in Launchpad. It "
-                "should be no bigger than 100kb in size. ")),
+                "should be no bigger than 100kb in size.")),
         exported_as='brand')
 
     autoupdate = Bool(title=_('Automatic update'),
