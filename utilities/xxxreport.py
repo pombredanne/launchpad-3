@@ -18,8 +18,8 @@ from bzrlib import bzrdir
 from bzrlib.errors import (NotBranchError)
 
 
-dir_re = re.compile(r'.*(not-used|lib/mailman)')
-file_re = re.compile(r'.*(pyc$)')
+excluded_dir_re = re.compile(r'.*(not-used|lib/mailman)')
+excluded_file_re = re.compile(r'.*(pyc$)')
 
 
 class Report:
@@ -37,15 +37,15 @@ class Report:
             "Root directory does not exist: %s." % root_dir)
         self.root_dir = root_dir
         self.output_name = output_name
-        self.revno = self._get_branch_revno()
-        self.comments = self._find_comments()
+        self.revno = self._getBranchRevno()
+        self.comments = self._findComments()
 
     def _close(self, output_file):
         """Close the output_file if it was opened."""
         if self.output_name is not None:
             output_file.close()
 
-    def _get_branch_revno(self):
+    def _getBranchRevno(self):
         """Return the bazaar revision number of the branch or None."""
         # pylint: disable-msg=W0612
         a_bzrdir = bzrdir.BzrDir.open_containing(self.root_dir)[0]
@@ -60,31 +60,31 @@ class Report:
             revno = None
         return revno
 
-    def _find_comments(self):
+    def _findComments(self):
         """Set the list of XXX comments in files below a directory."""
         comments = []
-        for file_path in self._find_files():
-            comments.extend(self._extract_comments(file_path))
+        for file_path in self._findFiles():
+            comments.extend(self._extractComments(file_path))
         return comments
 
 
-    def _find_files(self):
+    def _findFiles(self):
         """Generate a list of matching files below a directory."""
         for path, subdirs, files in os.walk(self.root_dir):
             subdirs[:] = [dir_name for dir_name in subdirs
-                          if self._is_traversable(path, dir_name)]
+                          if self._isTraversable(path, dir_name)]
             for file in files:
                 file_path = os.path.join(path, file)
                 if os.path.islink(file_path):
                     continue
-                if file_re.match(file) is None:
+                if excluded_file_re.match(file) is None:
                     yield os.path.join(path, file)
 
-    def _is_traversable(self, path, dir_name):
+    def _isTraversable(self, path, dir_name):
         """Return True if path/dir_name does not match dir_re pattern."""
-        return dir_re.match(os.path.join(path, dir_name)) is None
+        return excluded_dir_re.match(os.path.join(path, dir_name)) is None
 
-    def _extract_comments(self, file_path):
+    def _extractComments(self, file_path):
         """Return a list of XXX comments in a file.
 
         :param file_path: The path of the file that contains XXX comments.
@@ -98,46 +98,47 @@ class Report:
                 if xxx_mark is None and comment is None:
                     # The loop is not in a comment or starting a comment.
                     continue
-                elif xxx_mark is not None and comment is None:
-                    # Start a new comment.
-                    comment = self.extract_metadata(line)
-                    comment['file_path'] = file_path
-                    comment['line_no'] = line_num + 1
-                    comment['context'] = []
-                elif xxx_mark is not None and comment is not None:
+                if xxx_mark is not None and comment is not None:
                     # Two XXX comments run together.
-                    comment['context'] = ''
-                    comment['text'] = ''.join(comment['text']).strip()
-                    comments.append(comment)
-                    comment = self.extract_metadata(line)
+                    self._finaliseComment(comments, comment)
+                    comment = None
+                if xxx_mark is not None and comment is None:
+                    # Start a new comment.
+                    comment = self.extractMetadata(line)
                     comment['file_path'] = file_path
                     comment['line_no'] = line_num + 1
-                    comment['context'] = []
+                    comment['context_list'] = []
                 elif '#' in line and '##' not in line:
                     # Continue collecting the comment text.
-                    text = ''.join(line.split('#')[1:]).lstrip()
-                    comment['text'].append(text)
-                elif xxx_mark is None and len(comment['context']) < 2:
+                    leading_, text = line.split('#', 1)
+                    comment['text_list'].append(text.lstrip())
+                elif xxx_mark is None and len(comment['context_list']) < 2:
                     # Collect the code context of the comment.
-                    comment['context'].append(line)
-                elif xxx_mark is None and len(comment['context']) == 2:
+                    comment['context_list'].append(line)
+                elif xxx_mark is None and len(comment['context_list']) == 2:
                     # Finalise the comment.
-                    comment['context'].append(line)
-                    self._finalise_comment(comments, comment)
+                    comment['context_list'].append(line)
+                    self._finaliseComment(comments, comment)
                     comment = None
                 else:
                     raise ValueError, (
                         "comment or xxx_mark are in an unknown state.")
             if comment is not None:
-                self._finalise_comment(comments, comment)
+                self._finaliseComment(comments, comment)
         finally:
             file.close()
         return comments
 
-    def _finalise_comment(self, comments, comment):
-        """Change the lists to strs and append the comment to comments."""
-        comment['context'] = ''.join(comment['context'])
-        comment['text'] = ''.join(comment['text']).strip()
+    def _finaliseComment(self, comments, comment):
+        """Replace the lists with strs and append the comment to comments."""
+        context = ''.join(comment['context_list'])
+        if context.strip() == '':
+            # Whitespace is not context; do not store it.
+            context = ''
+        comment['context'] = context
+        comment['text'] = ''.join(comment['text_list']).strip()
+        del comment['context_list']
+        del comment['text_list']
         comments.append(comment)
 
     # The standard XXX comment form of:
@@ -164,7 +165,7 @@ class Report:
         (?P<text>.*)                                # The comment text.
         """, re.VERBOSE)
 
-    def extract_metadata(self, comment_line):
+    def extractMetadata(self, comment_line):
         """Return a dict of metadata extracted from the comment line.
 
         :param comment_line: The first line of an XXX comment contains the
@@ -187,8 +188,7 @@ class Report:
             text = comment_line
 
         text = text.strip()
-        if text != '':
-            comment['text'] = [text + '\n']
+        comment['text_list'] = [text + '\n']
         return comment
 
     def write(self):
@@ -288,8 +288,8 @@ class HTMLReport(Report):
                               "revno": self.revno})
 
             for comment in self.comments:
-                comment['text'] = self.markup_text(comment['text'])
-                comment['context'] = self.markup_text(comment['context'])
+                comment['text'] = self.markupText(comment['text'])
+                comment['context'] = self.markupText(comment['context'])
                 if comment['bug'] is not None:
                     comment['bugurl'] = (
                         '<a href="https://bugs.launchpad.net/bugs/%s">%s</a>'
@@ -310,7 +310,7 @@ class HTMLReport(Report):
         finally:
             self._close(output_file)
 
-    def markup_text(self, text):
+    def markupText(self, text):
         """Return the line as HTML markup.
 
         :param text: The text to escape and link.
@@ -330,7 +330,7 @@ class CSVReport(Report):
         '%(file_path)s, %(line_no)s, '
         '%(person)s, %(date)s, %(bug)s, %(spec)s, %(text)s\n')
 
-    def markup_text(self, text):
+    def markupText(self, text):
         """Return the line as TSV markup.
 
         :param text: The text to escape.
@@ -344,8 +344,8 @@ class CSVReport(Report):
         try:
             output_file.write(self.report_header)
             for comment in self.comments:
-                comment['person'] = self.markup_text(comment['person'])
-                comment['text'] = self.markup_text(comment['text'])
+                comment['person'] = self.markupText(comment['person'])
+                comment['text'] = self.markupText(comment['text'])
                 output_file.write(self.report_comment % comment)
             output_file.flush()
         finally:
@@ -360,7 +360,7 @@ class TSVReport(CSVReport):
         '%(file_path)s\t%(line_no)s\t'
         '%(person)s\t%(date)s\t%(bug)s\t%(spec)s\t%(text)s\n')
 
-    def markup_text(self, text):
+    def markupText(self, text):
         """Return the line as TSV markup.
 
         :param text: The text to escape.
