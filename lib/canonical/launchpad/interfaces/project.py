@@ -64,16 +64,16 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
         title=_('Maintainer'),
         required=True,
         vocabulary='ValidOwner',
-        description=_("""Project group owner, it can either a valid
-            Person or Team inside Launchpad context.""")))
+        description=_("""Project group owner. Must be either a
+            Launchpad Person or Team.""")))
 
     registrant = exported(PublicPersonChoice(
         title=_('Registrant'),
         required=True,
         readonly=True,
         vocabulary='ValidPersonOrTeam',
-        description=_("""Project group registrant, a valid
-            Person inside Launchpad context.""")))
+        description=_("""Project group registrant. Must be a valid
+            Launchpad Person.""")))
 
     name = exported(
         ProjectNameField(
