@@ -9,6 +9,7 @@ __metaclass__ = type
 import os
 import re
 import simplejson
+import transaction
 import unittest
 import urllib
 
@@ -611,6 +612,7 @@ def safe_canonical_url(*args, **kwargs):
 
 def setUpGlobs(test):
     # Our tests report being on a different port.
+    test.globs['transaction'] = transaction
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
         'launchpad-library', 'salgado-change-anything', port=9000)
