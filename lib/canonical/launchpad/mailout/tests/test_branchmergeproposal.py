@@ -86,9 +86,11 @@ I think this would be good.
         self.assertEqual('<foobar-example-com>', headers['Message-Id'])
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
         bmp.root_message_id = None
+        pop_notifications()
         mailer.sendAll()
-        notification = pop_notifications()[-1]
-        self.assertEqual('<foobar-example-com>', notification['Message-Id'])
+        for notification in pop_notifications():
+            self.assertEqual('<foobar-example-com>',
+                notification['Message-Id'])
         self.assertEqual('<foobar-example-com>', bmp.root_message_id)
         mailer.message_id = '<bazqux-example-com>'
         mailer.sendAll()
