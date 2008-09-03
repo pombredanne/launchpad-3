@@ -8,7 +8,7 @@ CREATE TABLE Diff (
   diffstat text,
   added_lines_count integer,
   removed_lines_count integer,
-  conflicts text -- perhpas BYTES, store serialised bzrlib obj or not?
+  conflicts text -- perhaps BYTES, store serialised bzrlib obj or not?
 );
 
 
