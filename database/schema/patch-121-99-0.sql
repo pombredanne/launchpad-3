@@ -3,7 +3,7 @@ SET client_min_messages=ERROR;
 ALTER TABLE BugWatch
     ADD COLUMN remote_lp_bug_id INTEGER;
 
-ALTER TABLE BugWatch
+ALTER TABLE BugTracker
     ADD COLUMN has_lp_plugin BOOLEAN;
 
 
