@@ -53,10 +53,9 @@ def make_email_body_for_code_import_update(
     :param event: The MODIFY `CodeImportEvent`.
     :param new_whiteboard: Blah.
     """
-    assert event.event_type == CodeImportEventType.MODIFY, (
-        "event type must be MODIFY, not %s" % event.event_type.name)
-
     if event is not None:
+        assert event.event_type == CodeImportEventType.MODIFY, (
+            "event type must be MODIFY, not %s" % event.event_type.name)
         event_data = dict(event.items())
     else:
         event_data = {}
@@ -106,7 +105,7 @@ def make_email_body_for_code_import_update(
 
     if new_whiteboard is not None:
         if new_whiteboard != '':
-            body.append("The branch whiteboard was changed to:\n")
+            body.append("The branch whiteboard was changed to:")
             body.append("\n".join(textwrap.wrap(new_whiteboard)))
         else:
             body.append("The branch whiteboard was deleted.")
@@ -132,7 +131,8 @@ def code_import_updated(code_import, event, new_whiteboard, person):
 
     email_template = get_email_template('code-import-status-updated.txt')
     template_params = {
-        'body': make_email_body_for_code_import_update(event),
+        'body': make_email_body_for_code_import_update(
+            code_import, event, new_whiteboard),
         'branch': canonical_url(code_import.branch)}
 
     from_address = format_address(

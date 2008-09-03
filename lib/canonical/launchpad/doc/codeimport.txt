@@ -409,7 +409,8 @@ CVS details are displayed in a similar way.
     >>> login('david.allouche@canonical.com')
     >>> data = {'cvs_root': ':pserver:anoncvs@cvs.example.com:/var/cvsroot'}
     >>> modify_event = cvs_import.updateFromData(data, nopriv)
-    >>> print make_email_body_for_code_import_update(modify_event)
+    >>> print make_email_body_for_code_import_update(
+    ...     cvs_import, modify_event, None)
     ~vcs-imports/firefox/trunk-cvs is now being imported from:
         hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
     instead of:

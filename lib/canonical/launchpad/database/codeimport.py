@@ -178,7 +178,10 @@ class CodeImport(SQLBase):
         if 'whiteboard' in data:
             whiteboard = data.pop('whiteboard')
             if whiteboard != self.branch.whiteboard:
-                new_whiteboard = whiteboard
+                if whiteboard is None:
+                    new_whiteboard = ''
+                else:
+                    new_whiteboard = whiteboard
                 self.branch.whiteboard = whiteboard
         token = event_set.beginModify(self)
         for name, value in data.items():
