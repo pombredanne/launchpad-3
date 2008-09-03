@@ -20,7 +20,7 @@ class IPendingCodeMail(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     rfc822msgid = TextLine(title=_('RFC822 Msg ID'), required=True)
     in_reply_to = TextLine(title=_('Reply-to message ID'))
-    #date_created = Datetime(title=_('Date Created'), required=True),
+    date_created = Datetime(title=_('Date Created'), required=True)
     from_address = TextLine(title=_('From address'), required=True)
     to_address = TextLine(title=_('To address'), required=True)
     subject = TextLine(title=_('Subject'), required=True)
