@@ -31,16 +31,19 @@
                    define="widget nocall:view/widgets/deletion_comment;
                            field_name widget/context/__name__;
                            error python:view.getFieldError(field_name);">
-        <p class="informational message">
+        <p>
           Package deletion can take some time before the packages are actually removed.
           See the full <a href="https://help.launchpad.net/Packaging/PPA">PPA help page</a>.
         </p>
         <div style="margin-top: 1em;">
+          <p>
+            <input tal:replace="structure
+               view/actions/field.actions.delete/render" />
+          </p>
           <label tal:attributes="for widget/name"
                  tal:content="string:${widget/label}:">Label</label>
           <input tal:replace="structure widget" />
-          <input tal:replace="structure
-             view/actions/field.actions.delete/render" />
+          <span class="formHelp">(Optional)</span>
           <p class="formHelp" tal:condition="widget/hint"
              tal:content="widget/hint">Some Help Text</p>
         </div>

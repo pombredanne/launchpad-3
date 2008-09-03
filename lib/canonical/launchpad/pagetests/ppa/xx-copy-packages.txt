@@ -535,7 +535,7 @@ James uses the 'delete-packages' interface in his PPA to delete the
     ...    name='field.selected_sources').value = [pmount_pub_id]
     >>> jblack_browser.getControl(
     ...    "Deletion comment").value = "Deleted packages can be copied."
-    >>> jblack_browser.getControl("Request Deletion").click()
+    >>> jblack_browser.getControl("Delete Selected Packages").click()
 
 James return to his PPA overview page and checks that the package is
 really deleted.
