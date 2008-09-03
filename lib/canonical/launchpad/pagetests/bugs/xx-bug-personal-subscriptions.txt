@@ -103,8 +103,8 @@ Let's unsubscribe the Launchpad team.
   Sample Person (Subscribed by Launchpad Janitor)
   Steve Alexander (Subscribed by Launchpad Janitor)
 
-On the subscribe page there's a Cancel button as well, so if we go to
-that page and press the Cancel button, we will return to the bug page.
+On the subscribe page there's a Cancel link as well, that will return
+the browser to the bug page.
 
     >>> browser.getLink('Subscribe').click()
     >>> browser.url
@@ -113,10 +113,9 @@ that page and press the Cancel button, we will return to the bug page.
   >>> subscription_widget = browser.getControl(name='field.subscription')
   >>> subscription_widget.value
   ['name16']
-  >>> cancel_button = browser.getControl('Cancel')
-  >>> cancel_button.click()
+  >>> browser.getLink('Cancel').click()
   >>> browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/'
+  'http://bugs.launchpad.dev/firefox/+bug/1'
 
 Foo Bar wasn't subscribed to the bug.
 

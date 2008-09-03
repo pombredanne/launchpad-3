@@ -37,10 +37,8 @@ class BugSubscriptionAddView(LaunchpadFormView):
         self.request.response.addInfoNotification(message %
                                                   person.displayname)
 
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the bug page."""
-
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+    cancel_url = next_url
