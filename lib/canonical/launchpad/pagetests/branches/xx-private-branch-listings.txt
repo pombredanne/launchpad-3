@@ -11,7 +11,7 @@ created and imported branches), on the bug details page for bug-branch
 links, and on the blueprint pages when branches are associated with the
 blueprint.
 
-    >>> from canonical.launchpad.ftests.branch_helper import (
+    >>> from canonical.launchpad.tests.branch_helper import (
     ...     reset_all_branch_last_modified)
     >>> reset_all_branch_last_modified()
 
