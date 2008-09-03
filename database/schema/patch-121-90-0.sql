@@ -29,7 +29,7 @@ CREATE TABLE PreviewDiffReference (
   last_target_revision integer NOT NULL REFERENCES Revision,
   last_dependent_revision integer REFERENCES Revision,
   diff integer REFERENCES Diff,
-  lease timestamp without time zone,
+  lease timestamp without time zone
 );
 
 
