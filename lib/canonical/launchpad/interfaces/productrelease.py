@@ -13,12 +13,11 @@ __all__ = [
     'UpstreamFileType',
     ]
 
-from zope.schema import Bytes, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.validators.productrelease import (
     productrelease_file_size_constraint,
