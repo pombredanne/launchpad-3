@@ -213,9 +213,8 @@ series while copying.
     >>> jblack_browser.getControl(
     ...     'Destination series').value = ['hoary']
 
-And finally how the copies should be performed regarding rebuilding
-sources or copying binaries. James wants to rebuild it, the field
-default value.
+James may want to copy binaries over, or to do a full rebuild from
+source, which is the default option.
 
     >>> print_radio_button_field(jblack_browser.contents, 'copy_how')
     (*) Rebuild the copied sources
@@ -384,7 +383,7 @@ and 'grumpy' as Destination Series.
     >>> jblack_browser.getControl(
     ...     'Destination series').value = ['grumpy']
 
-Let 'Copy options' alone, i.e. rebuild the copied sources.
+He uses the default option of rebuilding copied source along the way.
 
     >>> print_radio_button_field(jblack_browser.contents, 'copy_how')
     (*) Rebuild the copied sources

@@ -39,7 +39,7 @@ from canonical.launchpad.browser.sourceslist import (
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, ArchiveCopyOptions, IArchive,
+    ArchiveCopyOptions, ArchivePurpose, IArchive,
     IArchiveEditDependenciesForm, IArchivePackageCopyingForm,
     IArchivePackageDeletionForm, IArchiveSet, IArchiveSourceSelectionForm,
     IPPAActivateForm)
@@ -739,8 +739,11 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                 '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
                     canonical_url(destination_archive),
                     destination_archive.title))
-            for copy in copies:
-                messages.append('<br/>%s' % copy.displayname)
+            messages.append('<ul>')
+            messages.append(
+                "\n".join(['<li>%s</li>' % copy.displayname
+                           for copy in copies]))
+            messages.append('</ul>')
 
         notification = "\n".join(messages)
         self.request.response.addNotification(structured(notification))
