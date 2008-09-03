@@ -95,7 +95,6 @@ from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
