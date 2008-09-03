@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ICanGetMilestonesDirectly',
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
@@ -15,8 +16,6 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description
@@ -25,8 +24,7 @@ from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters)
+    export_as_webservice_entry, exported)
 
 class MilestoneNameField(ContentNameField):
 
@@ -35,6 +33,11 @@ class MilestoneNameField(ContentNameField):
         return IMilestone
 
     def _getByName(self, name):
+        # IProductSeries and IDistroSeries are imported here to
+        # avoid an import loop.
+        from canonical.launchpad.interfaces.productseries import (
+            IProductSeries)
+        from canonical.launchpad.interfaces.distroseries import IDistroSeries
         if IMilestone.providedBy(self.context):
             milestone = self.context.target.getMilestone(name)
         elif IProductSeries.providedBy(self.context):
@@ -105,8 +108,11 @@ class IMilestone(Interface):
             schema=Interface, # IHasMilestones
             title=_("The product or distribution of this milestone."),
             required=False))
-    series_target = Attribute(
-        "The productseries or distroseries of this milestone.")
+    series_target = exported(
+        Reference(
+            schema=Interface, # IHasMilestones
+            title=_("The productseries or distroseries of this milestone."),
+            required=False))
     displayname = Attribute("A displayname for this milestone, constructed "
         "from the milestone name.")
     title = exported(
@@ -152,7 +158,8 @@ class IHasMilestones(Interface):
         CollectionField(
             title=_("The visible and active milestones associated with this "
                     "object, ordered by date expected."),
-            value_type=Reference(schema=IMilestone)))
+            value_type=Reference(schema=IMilestone)),
+        exported_as='active_milestones')
 
     all_milestones = exported(
         CollectionField(
@@ -160,9 +167,14 @@ class IHasMilestones(Interface):
                     "date expected."),
             value_type=Reference(schema=IMilestone)))
 
+
+class ICanGetMilestonesDirectly(Interface):
+    """ An interface for classes providing getMilestone(name)."""
+
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
 
 
 # Fix cyclic references.
 IMilestone['target'].schema = IHasMilestones
+IMilestone['series_target'].schema = IHasMilestones

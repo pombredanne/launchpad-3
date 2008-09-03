@@ -120,9 +120,9 @@ class AdminMergeBaseView(LaunchpadFormView):
         """Merge the two person/team entries specified in the form."""
         from zope.security.proxy import removeSecurityProxy
         for email in self.dupe_person_emails:
-            # XXX: Maybe this status change should be done only when merging
-            # people but not when merging teams.
-            # -- Guilherme Salgado, 2007-10-15
+            # XXX: Guilherme Salgado 2007-10-15: Maybe this status change
+            # should be done only when merging people but not when merging
+            # teams.
             email.status = EmailAddressStatus.NEW
             # EmailAddress.person is a readonly field, so we need to remove
             # the security proxy here.

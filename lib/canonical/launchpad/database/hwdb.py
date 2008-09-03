@@ -123,12 +123,11 @@ class HWSubmissionSet:
             name=filename,
             size=filesize,
             file=raw_submission,
-            # XXX: The hwdb client sends us bzipped XML, but arguably
-            # other clients could send us other formats. The right way
-            # to do this is either to enforce the format in the browser
+            # XXX: kiko 2007-09-20: The hwdb client sends us bzipped XML, but
+            # arguably other clients could send us other formats. The right
+            # way to do this is either to enforce the format in the browser
             # code, allow the client to specify the format, or use a
             # magic module to sniff what it is we got.
-            #   -- kiko, 2007-09-20
             contentType='application/x-bzip2',
             expires=None)
 
@@ -637,6 +636,12 @@ class HWSubmissionDeviceSet:
         return HWSubmissionDevice(device_driver_link=device_driver_link,
                                   submission=submission, parent=parent,
                                   hal_device_id=hal_device_id)
+
+    def getDevices(self, submission):
+        """See `IHWSubmissionDeviceSet`."""
+        return HWSubmissionDevice.selectBy(
+            submission=submission,
+            orderBy=['parent', 'device_driver_link', 'hal_device_id'])
 
 
 class HWSubmissionBug(SQLBase):
