@@ -102,7 +102,9 @@ Ensure the password changes are sticky, as this is a property hiding the
 AccountPassword table.
 
     >>> account.password = None
-    >>> account.password
+    >>> print account.password
+    None
+
     >>> account.password = u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
     >>> account.password
     u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
@@ -171,4 +173,41 @@ URL.
 
     >>> account.openid_identifier
     u'no-priv_oid'
+
+
+= Creating new accounts =
+
+New Accounts are created using the AccountSet.new() method. The account
+rational and displayname are required.
+
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     AccountCreationRationale)
+
+    >>> passwordless_account = account_set.new(
+    ...     AccountCreationRationale.USER_CREATED, 'Passwordless')
+    >>> passwordless_account.status.name
+    xxx
+    >>> print passwordless_account.password
+    None
+
+The new() method accepts the optional parameters of password and
+password_is_encrypted. The password is encrypted when
+password_is_encrypted is False, which is the default value.
+
+    >>> passwordful_account = account_set.new(
+    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Passwordful',
+    ...     password='clear_password')
+    >>> passwordful_account.status.name
+    xxx
+    >>> passwordful_account.password
+    xxx
+
+The password is not encrypted when password_is_encrypted is True. It
+is assumed the password was already encrypted.
+
+    >>> clear_account = account_set.new(
+    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Clear',
+    ...     password='clear_password', password_is_encrypted=True)
+    >>> clear_account.password
+    'clear_password'
 

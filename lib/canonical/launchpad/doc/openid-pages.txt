@@ -26,30 +26,83 @@ casting the account to the IOpenIDPersistentIdentity interface.
     >>> verifyObject(IOpenIDPersistentIdentity, sample_identity)
     True
 
-OpenIDPersistentIdentity provides access to the account and the
-openid_identifier.
+OpenIDPersistentIdentity provides access to the account.
 
     >>> sample_identity.account.displayname
     u'Sample Person'
-    >>> sample_identity.openid_identifier
+
+It also exposes both the new and old openid identifiers.
+
+    >>> sample_identity.new_openid_identifier
+    u'123/name12'
+    >>> sample_identity.new_openid_identifier
     u'+id/name12_oid'
 
 Most importantly, OpenIDPersistentIdentity provides access to the user's
-openid_identity_url.
+old and new openid identity URLs.
+
+    >>> sample_identity.new_openid_identity_url
+    'http://id.launchpad.dev/123/name12'
+    >>> sample_identity.new_openid_identity_url
+    'http://openid.launchpad.dev/+id/name12_oid'
+
+The openid_identity_url property is the identity URL for the vhost. It
+is the canonical URL for the XRDS discovery end point. It will return
+either the new or the old openid identity URL based on the vhost in
+the current request. A request is always associated with a Layer.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.layers import NewOpenIdLayer, OldOpenIdLayer
+
+When the current request is associated with the NewOpenIdLayer,
+openid_identity_url is the new URL format.
+
+    >>> class NewOpenIdTestRequest(LaunchpadTestRequest):
+    ...     implements(canonical.launchpad.layers.NewOpenIdLayer)
+
+    >>> request = NewOpenIdTestRequest(
+    ...     SERVER_URL='http://id.launchpad.dev',
+    ...     PATH_INFO='/123/name12')
+    >>> sample_identity.openid_identity_url
+    'http://id.launchpad.dev/123/name12'
+
+When the current request is associated with the OldOpenIdLayer,
+openid_identity_url is the old URL format.
+
+    >>> class OldOpenIdTestRequest(LaunchpadTestRequest):
+    ...     implements(canonical.launchpad.layers.OldOpenIdLayer)
+
+    >>> request = OldOpenIdTestRequest(
+    ...     SERVER_URL='http://openid.launchpad.dev',
+    ...     PATH_INFO='/+id/name12_oid')
 
     >>> sample_identity.openid_identity_url
     'http://openid.launchpad.dev/+id/name12_oid'
 
-It is possible for an account to have more than one identity URL. The
-OpenIDPersistentIdentity class provides the supportsURL() staticmethod
-to test if the format of the identity URL is supported.
+The OpenIDPersistentIdentity class provides the supportsURL()
+staticmethod to test if the format of the identity URL is supported.
+This verifies that the vhost and path are a valid combination.
 
     >>> from canonical.launchpad.components.openidserver import (
     ...     OpenIDPersistentIdentity)
 
     >>> OpenIDPersistentIdentity.supportsURL(
-    ...     'http://openid.launchpad.dev/+id/name12_oid')
+    ...     'http://id.launchpad.dev/123/name12')
     True
+
+    >>> OpenIDPersistentIdentity.supportsURL(
+    ...     'http://login.launchpad.dev/+id/name12_oid')
+    True
+
+The old path is not valid for the new vhost, and vise versa.
+
+    >>> OpenIDPersistentIdentity.supportsURL(
+    ...     'http://login.launchpad.dev/123/name12')
+    False
+
+    >>> OpenIDPersistentIdentity.supportsURL(
+    ...     'http://id.launchpad.dev/+id/name12_oid')
+    False
 
 
 == PersistentIdentityView ==
@@ -60,7 +113,6 @@ identity end point. It provides two URLs for navigation.
 
     >>> from openid.yadis.constants import YADIS_CONTENT_TYPE
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://openid.launchpad.dev',
