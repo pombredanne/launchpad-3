@@ -115,24 +115,32 @@ class IProductReleaseFile(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     productrelease = exported(
         ReferenceChoice(title=_('Project release'),
-               required=True,
-               vocabulary='ProductRelease',
-               description=_("The parent product release.")),
+                        description=_("The parent product release."),
+                        schema=Interface, # Defined later.
+                        required=True,
+                        vocabulary='ProductRelease'),
         exported_as='project_release')
-    libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
-                         description=_("The attached file."),
-                         required=True)
-    signature = Object(schema=ILibraryFileAlias, title=_("Signature"),
-                       description=_("The signature of the attached file."),
-                       required=False)
-    filetype = Choice(title=_("Upstream file type"), required=True,
-                      vocabulary=UpstreamFileType,
-                      default=UpstreamFileType.CODETARBALL)
-    description = Text(title=_("Description"), required=False,
-        description=_('A detailed description of the file contents'))
-    date_uploaded = Datetime(title=_('Upload date'),
-        description=_('The date this file was uploaded'),
-        required=True, readonly=True)
+    libraryfile = exported(
+        Bytes(title=_("File"),
+              description=_("The file contents."),
+              required=True),
+        exported_as='file')
+    signature = exported(
+        Bytes(title=_("File signature"),
+              description=_("The file signature."),
+              required=False))
+    filetype = exported(
+        Choice(title=_("Upstream file type"), required=True,
+               vocabulary=UpstreamFileType,
+               default=UpstreamFileType.CODETARBALL),
+        exported_as='file_type')
+    description = exported(
+        Text(title=_("Description"), required=False,
+             description=_('A detailed description of the file contents')))
+    date_uploaded = exported(
+        Datetime(title=_('Upload date'),
+                 description=_('The date this file was uploaded'),
+                 required=True, readonly=True))
 
 
 class IProductRelease(Interface):
@@ -204,6 +212,9 @@ class IProductRelease(Interface):
 
         This method supports traversal for the API.
         """
+
+# Set the schema for IProductReleaseFile now that IProductRelease is defined.
+IProductReleaseFile['productrelease'].schema = IProductRelease
 
 
 class IProductReleaseFileAddForm(Interface):
