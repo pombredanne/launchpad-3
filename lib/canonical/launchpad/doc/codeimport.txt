@@ -415,3 +415,26 @@ CVS details are displayed in a similar way.
         hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
     instead of:
         hello from :pserver:anonymous@cvs.example.com:/cvsroot
+
+In addition, updateFromData can be used to set the branch whiteboard,
+which is also described in the email that is sent.
+
+    >>> data = {'whiteboard': 'stuff'}
+    >>> modify_event = cvs_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(
+    ...     cvs_import, modify_event, 'stuff')
+    The branch whiteboard was changed to:
+    <BLANKLINE>
+    stuff
+    >>> print cvs_import.branch.whiteboard
+    stuff
+
+Setting the whiteboard to None is how it is deleted.
+
+    >>> data = {'whiteboard': None}
+    >>> modify_event = cvs_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(
+    ...     cvs_import, modify_event, '')
+    The branch whiteboard was deleted.
+    >>> print cvs_import.branch.whiteboard
+    None

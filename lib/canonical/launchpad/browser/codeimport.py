@@ -330,7 +330,6 @@ def _makeEditAction(label, status, text):
 
     :param label: The label for the action, which will end up as the
          button title.
-    :param method_name: The name of the method of the code import to call.
     :param status: If the code import has this as its review_status, don't
         show the button (always show the button if it is None).
     :param text: The text to go after 'The code import has been' in a
