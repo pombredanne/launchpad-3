@@ -23,7 +23,7 @@ class PendingCodeMail(SQLBase):
 
     id = IntCol(notNull=True)
 
-    rfc2822msgid = StringCol(notNull=True)
+    rfc822msgid = StringCol(notNull=True)
 
     in_reply_to = StringCol()
 
@@ -40,3 +40,5 @@ class PendingCodeMail(SQLBase):
     footer = StringCol()
 
     rationale = StringCol()
+
+    branch_url = StringCol()
