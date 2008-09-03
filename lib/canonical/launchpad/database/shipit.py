@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT',
     'RequestedCDs',
     'ShipItReport',
     'ShipItReportSet',
@@ -60,9 +59,6 @@ from canonical.launchpad.interfaces import (
     ShippingRequestPriority, ShippingRequestStatus, ShippingRequestType,
     ShippingService, SOFT_MAX_SHIPPINGRUN_SIZE)
 from canonical.launchpad.database.country import Country
-
-
-MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 class ShippingRequest(SQLBase):
