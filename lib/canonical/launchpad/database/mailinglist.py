@@ -47,7 +47,6 @@ from canonical.launchpad.interfaces.mailinglist import (
     IHeldMessageDetails, IMailingList, IMailingListSet,
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
     MailingListStatus, PostedMessageStatus, UnsafeToPurge)
-from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -573,7 +572,7 @@ class MailingListSet:
             assert existing_list.team == team, 'Team mismatch'
             # It's in the PURGED state, so just tweak the existing record.
             existing_list.registrant = registrant
-            existing_list.date_registered=UTC_NOW
+            existing_list.date_registered = UTC_NOW
             existing_list.reviewer = None
             existing_list.date_reviewed = None
             existing_list.date_activated = None
