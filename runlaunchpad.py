@@ -32,8 +32,8 @@ from configs import generate_overrides
 
 
 def set_up_sys_path(program):
-    # get rid of any empty strings that may appear in sys.path and cause random
-    # grief
+    # Get rid of any empty strings that may appear in sys.path and cause
+    # random grief.
     basepath = filter(None, sys.path)
     src = 'lib'
     here = os.path.dirname(os.path.abspath(program))
