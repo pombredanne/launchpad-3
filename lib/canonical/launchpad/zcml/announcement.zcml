@@ -25,13 +25,6 @@
     attribute_to_parent="target"
     />
 
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
-    for="canonical.launchpad.interfaces.IAnnouncement"
-    factory="canonical.launchpad.browser.AnnouncementSHP"
-    permission="zope.Public"
-    />
-
   <browser:defaultView
     for="canonical.launchpad.interfaces.IAnnouncement"
     name="+index" />

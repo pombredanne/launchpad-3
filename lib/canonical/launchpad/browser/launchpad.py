@@ -222,7 +222,7 @@ class LinkView(LaunchpadView):
     def render(self):
         """Render the menu link if it's enabled or we're in dev mode."""
         if self.context.enabled or config.devmode:
-            # XXX: TomBerger 2008-04-16 bug=218706:
+            # XXX: Tom Berger 2008-04-16 bug=218706:
             # We strip the result of the template rendering
             # since ZPT seems to always insert a line break
             # at the end of an embedded template.
@@ -856,21 +856,6 @@ class StructuralObjectPresentation(StructuralHeaderPresentation):
 
     def countAltChildren(self):
         raise NotImplementedError()
-
-
-class DefaultStructuralObjectPresentation(StructuralObjectPresentation):
-
-    def getMainHeading(self):
-        if hasattr(self.context, 'title'):
-            return self.context.title
-        else:
-            return 'no title'
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
 
 
 class Button:
