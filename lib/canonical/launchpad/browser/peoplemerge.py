@@ -17,12 +17,12 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IAdminPeopleMergeSchema, IAdminTeamMergeSchema,
-    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingListSet, IPersonSet,
-    LoginTokenType)
-
-from canonical.launchpad import _
+    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPersonSet, LoginTokenType)
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingListSet, MailingListStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 
@@ -187,7 +187,10 @@ class AdminTeamMergeView(AdminMergeBaseView):
         super(AdminTeamMergeView, self).validate(data)
         mailing_list = getUtility(IMailingListSet).get(
             data['dupe_person'].name)
-        if mailing_list is not None:
+        # We cannot merge the teams if there is a mailing list on the
+        # duplicate person, unless that mailing list is purged.
+        if (mailing_list is not None and
+            mailing_list.status != MailingListStatus.PURGED):
             self.addError(_(
                 "${name} is associated with a Launchpad mailing list; we "
                 "can't merge it.",

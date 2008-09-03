@@ -47,7 +47,7 @@ we'll ask the user to contact a Launchpad administrator.
     >>> login('foo.bar@canonical.com')
     >>> mailinglists_helper.review_list(
     ...     'landscape-developers', MailingListStatus.DECLINED)
-    <MailingList for team "landscape-developers"; status=DECLINED at ...>    
+    <MailingList for team "landscape-developers"; status=DECLINED at ...>
     >>> logout()
     >>> transaction.commit()
 
@@ -523,7 +523,8 @@ But a Launchpad administrator can purge a registered list.
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> test = getUtility(IPersonSet).getByName('name12')
+    >>> person_set = getUtility(IPersonSet)
+    >>> test = person_set.getByName('name12')
     >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
     >>> experts.addMember(test, reviewer=experts.teamowner)
     >>> logout()
@@ -643,7 +644,7 @@ purged.
     You can purge this mailing list...
 
 
-== Purging a mailing list ==
+== Actions on purged mailing lists ==
 
 A mailing list expert purges the inactive list.
 
@@ -714,6 +715,32 @@ And of course, a mailing list for the newly renamed team can be created.
     <Link text='Mailing list archive'
           url='http://lists.launchpad.dev/antelopes'>
 
+A team with an active mailing list cannot be merged with another team.
 
-XXX TODO
-  - show that a team with a purged list can be merged
+    >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
+    >>> admin_browser.getControl('Duplicated Team').value = 'antelopes'
+    >>> admin_browser.getControl('Target Team').value = 'bassists'
+    >>> admin_browser.getControl('Merge').click()
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    There are 2 errors.
+    antelopes is associated with a Launchpad mailing list; we can't merge it.
+    Constraint not satisfied
+
+But if the mailing list for the team being merge has been purged, then the
+merge is allowed.
+
+    >>> browser.open('http://launchpad.dev/~antelopes/+mailinglist')
+    >>> browser.getControl('Deactivate this Mailing List').click()
+    >>> act()
+    >>> admin_browser.open('http://launchpad.dev/~antelopes/+mailinglist')
+    >>> admin_browser.getControl('Purge this Mailing List').click()
+
+    >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
+    >>> admin_browser.getControl('Duplicated Team').value = 'antelopes'
+    >>> admin_browser.getControl('Target Team').value = 'guadamen'
+    >>> admin_browser.getControl('Merge').click()
+    >>> admin_browser.getControl('Deactivate Members and Merge').click()
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    Merge completed successfully.
