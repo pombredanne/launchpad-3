@@ -2,7 +2,6 @@
 
     >>> from zope.component import getMultiAdapter, getUtility
     >>> from canonical.launchpad.interfaces import IBuilderSet
-    >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
@@ -151,10 +150,9 @@ Finally, we will remove any publications of the source behind our
 build of interest that are not in cprov's archive, so that we know
 we're dealing with a single private source publication.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> random_spr = cprov_builds[random_build].sourcepackagerelease
     >>> non_cprov_publications = [
-    ...     pub for pub in random_spr.publishings 
+    ...     pub for pub in random_spr.publishings
     ...     if pub.archive != cprov.archive]
     >>> for pub in non_cprov_publications:
     ...     discard = pub.supersede()

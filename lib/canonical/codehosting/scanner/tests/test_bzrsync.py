@@ -450,64 +450,6 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertNotInMainline('trunk', db_branch)
         self.assertInMainline('branch', db_branch)
 
-    def test_external_stacked_branch(self):
-        # When we scan a branch 'foo' that's stacked on an external branch
-        # 'bar' that is mirrored by Launchpad, we mark 'foo' as being stacked
-        # on 'bar'.
-        stacked_format = 'development'
-
-        # Make the stacked-on branch.
-        self.switchDbUser(self.lp_db_user)
-        db_base_branch = self.makeDatabaseBranch()
-        bzr_base_tree = self.makeBzrBranchAndTree(
-            db_base_branch, format=stacked_format)
-
-        # db_base_branch needs to have a URL that can be opened and is a valid
-        # branch URL. This means that we register a fake HTTP transport so
-        # that the URL can *look* valid and still be opened.
-        HttpAsLocalTransport.register()
-        self.addCleanup(HttpAsLocalTransport.unregister)
-        db_base_branch.branch_type = BranchType.MIRRORED
-        db_base_branch.url = urljoin(
-            'http://localhost',
-            local_path_from_url(bzr_base_tree.branch.base)).rstrip('/')
-
-        # Make the stacked branch.
-        db_stacked_branch = self.makeDatabaseBranch()
-        bzr_stacked_tree = self.makeBzrBranchAndTree(
-            db_stacked_branch, format=stacked_format)
-
-        bzr_stacked_tree.branch.set_stacked_on_url(db_base_branch.url)
-
-        self.makeBzrSync(db_stacked_branch).syncBranchAndClose()
-        self.assertEqual(db_stacked_branch.stacked_on.id, db_base_branch.id)
-
-    def test_hosted_stacked_branch(self):
-        # By default, hosted branches will be stacked on other hosted branches
-        # using URL fragments like '/~foo/bar/baz'. When the scanner sees such
-        # branches, it will record the stacking relationship.
-        stacked_format = 'development'
-
-        # Make the stacked-on branch.
-        self.switchDbUser(self.lp_db_user)
-        db_base_branch = self.makeDatabaseBranch()
-        bzr_base_tree = self.makeBzrBranchAndTree(
-            db_base_branch, format=stacked_format)
-
-        # Make the stacked branch.
-        db_stacked_branch = self.makeDatabaseBranch()
-        bzr_stacked_tree = self.makeBzrBranchAndTree(
-            db_stacked_branch, format=stacked_format)
-        bzr_stacked_branch = Branch.open(
-            'lp-mirrored:///%s' % db_stacked_branch.unique_name)
-
-        # Stack 'em up.
-        bzr_stacked_branch.set_stacked_on_url(
-            '/' + db_base_branch.unique_name)
-
-        self.makeBzrSync(db_stacked_branch).syncBranchAndClose()
-        self.assertEqual(db_stacked_branch.stacked_on.id, db_base_branch.id)
-
     def test_sync_merging_to_merged(self):
         # When replacing a branch by one of the branches it merged, the
         # database must be updated appropriately.

@@ -72,12 +72,11 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-# NOTE:
-#
-# The LaunchpadObjectFactory is driven purely by use.  The version here
-# is by no means complete for Launchpad objects.  If you need to create
-# anonymous objects for your tests then add methods to the factory.
-#
+# This is the default for the 'product' parameter of makeBranch. We don't use
+# None, because None means "junk branch".
+_DEFAULT_BRANCH_PRODUCT = object()
+
+
 class LaunchpadObjectFactory:
     """Factory methods for creating Launchpad objects.
 
@@ -121,8 +120,9 @@ class LaunchpadObjectFactory:
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
 
     def makePerson(self, email=None, name=None, password=None,
-                   email_address_status=None, displayname=None,
-                   time_zone=None, latitude=None, longitude=None):
+                   email_address_status=None, hide_email_addresses=False,
+                   displayname=None, time_zone=None, latitude=None,
+                   longitude=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -134,6 +134,8 @@ class LaunchpadObjectFactory:
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
         :param displayname: The display name to use for the person.
+        :param hide_email_addresses: Whether or not to hide the person's email
+            address(es) from other users.
         :param time_zone: This person's time zone, as a string.
         :param latitude: This person's latitude, as a float.
         :param longitude: This person's longitude, as a float.
@@ -152,7 +154,8 @@ class LaunchpadObjectFactory:
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password=password, displayname=displayname)
+            password=password, displayname=displayname,
+            hide_email_addresses=hide_email_addresses)
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
@@ -276,16 +279,12 @@ class LaunchpadObjectFactory:
             owner=owner)
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, registrant=None,
-                   explicit_junk=False, private=False,
-                   **optional_branch_args):
+                   product=_DEFAULT_BRANCH_PRODUCT, url=None, registrant=None,
+                   private=False, stacked_on=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
         default ones.
-
-        :param explicit_junk: If set to True, a product is not created
-            if the product parameter is None.
         """
         if branch_type is None:
             branch_type = BranchType.HOSTED
@@ -295,7 +294,7 @@ class LaunchpadObjectFactory:
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if product is None and not explicit_junk:
+        if product is _DEFAULT_BRANCH_PRODUCT:
             product = self.makeProduct()
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
@@ -311,12 +310,14 @@ class LaunchpadObjectFactory:
             **optional_branch_args)
         if private:
             removeSecurityProxy(branch).private = True
+        if stacked_on is not None:
+            removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):
         """Create a proposal to merge based on anonymous branches."""
-        product = None
+        product = _DEFAULT_BRANCH_PRODUCT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
@@ -687,17 +688,20 @@ class LaunchpadObjectFactory:
             source_product_series_id)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
-                              vote=None, vote_tag=None, parent=None):
+                              vote=None, vote_tag=None, parent=None,
+                              merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
             body = self.getUniqueString('content')
-        if parent:
-            merge_proposal = parent.branch_merge_proposal
-        else:
-            merge_proposal = self.makeBranchMergeProposal(registrant=sender)
+        if merge_proposal is None:
+            if parent:
+                merge_proposal = parent.branch_merge_proposal
+            else:
+                merge_proposal = self.makeBranchMergeProposal(
+                    registrant=sender)
         return merge_proposal.createComment(
             sender, subject, body, vote, vote_tag, parent)
 

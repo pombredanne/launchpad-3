@@ -25,6 +25,7 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ProductBugTracker, ProductNameField, PublicPersonChoice,
     Summary, Title, URIField)
+from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -33,7 +34,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
     ILaunchpadUsage)
-from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.milestone import (
+    ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
@@ -112,12 +114,13 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
-               IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
+class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+               IHasBranchVisibilityPolicy, IHasDrivers,
+               IHasExternalBugTracker, IHasIcon, IHasLogo,
                IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IMakesAnnouncements, IHasOwner,
-               IHasSecurityContact,IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget, IPillar):
+               IMakesAnnouncements, IHasOwner, IHasSecurityContact,
+               IHasSprints, IHasTranslationGroup, IKarmaContext,
+               ILaunchpadUsage, ISpecificationTarget, IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -287,30 +290,34 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
 
-    icon = IconImageUpload(
-        title=_("Icon"), required=False,
-        default_image_resource='/@@/product',
-        description=_(
-            "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project. The icon will be "
-            "displayed next to the project name everywhere in Launchpad that "
-            "we refer to the project and link to it."))
+    icon = exported(
+        IconImageUpload(
+            title=_("Icon"), required=False,
+            default_image_resource='/@@/product',
+            description=_(
+                "A small image of exactly 14x14 pixels and at most 5kb in "
+                "size, that can be used to identify this project. The icon "
+                "will be displayed next to the project name everywhere in "
+                "Launchpad that we refer to the project and link to it.")))
 
-    logo = LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/product-logo',
-        description=_(
-            "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to this project. It should be "
-            "no bigger than 50kb in size."))
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/product-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to this project. It should "
+                "be no bigger than 50kb in size.")))
 
-    mugshot = MugshotImageUpload(
-        title=_("Brand"), required=False,
-        default_image_resource='/@@/product-mugshot',
-        description=_(
-            "A large image of exactly 192x192 pixels, that will be displayed "
-            "on this project's home page in Launchpad. It should be no "
-            "bigger than 100kb in size. "))
+    mugshot = exported(
+        MugshotImageUpload(
+            title=_("Brand"), required=False,
+            default_image_resource='/@@/product-mugshot',
+            description=_(
+                "A large image of exactly 192x192 pixels, that will be "
+                "displayed on this project's home page in Launchpad. It "
+                "should be no bigger than 100kb in size.")),
+        exported_as='brand')
 
     autoupdate = Bool(title=_('Automatic update'),
         description=_("""Whether or not this project's attributes are
@@ -379,8 +386,12 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
 
-    branches = Attribute(_("""An iterator over the Bazaar branches that are
-    related to this product."""))
+    branches = exported(
+        CollectionField(
+            title=_("An iterator over the Bazaar branches that are "
+                    "related to this product."),
+            readonly=True,
+            value_type=Reference(schema=IBranch)))
 
     bounties = Attribute(_("The bounties that are related to this product."))
 

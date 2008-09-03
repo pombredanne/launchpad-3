@@ -1085,7 +1085,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
             scope=token.context)
 
         # Make sure the principal is a member of the beta test team.
-        # XXX leonardr 2008-05-22 blueprint=api-bugs-remote
+        # XXX leonardr 2008-05-22 spec=api-bugs-remote:
         # Once we launch the web service this code will be removed.
         people = getUtility(IPersonSet)
         webservice_beta_team_name = config.vhost.api.beta_test_team
