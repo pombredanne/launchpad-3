@@ -2,17 +2,22 @@
 
 """Tests for Diff, etc."""
 
+__metaclass__ = type
+
+
 from unittest import TestLoader
+
+from canonical.testing import LaunchpadZopelessLayer
 
 from canonical.launchpad.database.diff import *
 from canonical.launchpad.testing import TestCaseWithFactory
 
-__metaclass__ = type
-
 
 class TestDiff(TestCaseWithFactory):
 
-    def from_revision_ids(self):
+    layer = LaunchpadZopelessLayer
+
+    def test_from_revision_ids(self):
         d = Diff.from_revision_ids()
 
 
