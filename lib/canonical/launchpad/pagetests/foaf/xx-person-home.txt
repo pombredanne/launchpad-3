@@ -72,15 +72,13 @@ OpenID.
 The persistant OpenID URL is displayed privately in the Contact
 Details portlet.
 
-    # XXX mars 2008-03-18
+    # XXX mars 2008-03-18 bug=201963:
     # Remove these tests after the beta program is done.
-    # See bug #201963.
-    #
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.config import config
-    >>> login('foo.bar@canonical.com')   # Needed for PersonSet.getByName().
+    >>> login('foo.bar@canonical.com')
     >>> person_set = getUtility(IPersonSet)
     >>> jdub = person_set.getByName('jdub')
     >>> openid_testers = getUtility(IPersonSet).getByName(
@@ -96,7 +94,7 @@ Details portlet.
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     >>> print ('OpenID login:' not in portlet) or portlet
     True
-    >>> login('foo.bar@canonical.com')   # Needed for PersonSet.getByName().
+    >>> login('foo.bar@canonical.com')
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> openid_testers in name16.teams_participated_in
     True

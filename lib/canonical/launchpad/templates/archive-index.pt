@@ -153,19 +153,5 @@
 
     </div> <!--main -->
 
-    <p metal:fill-slot="help">
-      You can view the current
-      <a href="https://help.launchpad.net/PPATermsofUse"
-      >Terms of Use</a> for the Launchpad PPA service.
-
-      <br />
-      <br />
-      For more information about how to configure your system to
-      use packages from this PPA see
-      <a href="https://help.launchpad.net/PPAQuickStart"
-      >quick-start guide</a>.
-
-    </p>
-
   </body>
 </html>
