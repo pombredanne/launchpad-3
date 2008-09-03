@@ -45,16 +45,21 @@ def new_import(code_import, event):
         simple_sendmail(from_address, address, subject, body, headers)
 
 
-def make_email_body_for_code_import_update(event):
+def make_email_body_for_code_import_update(
+        code_import, event, new_whiteboard):
     """Construct the body of an email describing a MODIFY `CodeImportEvent`.
 
+    :param code_import: Blah.
     :param event: The MODIFY `CodeImportEvent`.
+    :param new_whiteboard: Blah.
     """
     assert event.event_type == CodeImportEventType.MODIFY, (
         "event type must be MODIFY, not %s" % event.event_type.name)
 
-    code_import = event.code_import
-    event_data = dict(event.items())
+    if event is not None:
+        event_data = dict(event.items())
+    else:
+        event_data = {}
 
     body = []
 
@@ -99,13 +104,19 @@ def make_email_body_for_code_import_update(event):
         raise AssertionError(
             'Unexpected rcs_type %r for code import.' % code_import.rcs_type)
 
+    if new_whiteboard is not None:
+        if new_whiteboard != '':
+            body.append("The branch whiteboard was changed to:\n")
+            body.append("\n".join(textwrap.wrap(new_whiteboard)))
+        else:
+            body.append("The branch whiteboard was deleted.")
+
     return '\n\n'.join(body)
 
 
-def code_import_updated(event):
+def code_import_updated(code_import, event, new_whiteboard, person):
     """Email the branch subscribers, and the vcs-imports team with new status.
     """
-    code_import = event.code_import
     branch = code_import.branch
     recipients = branch.getNotificationRecipients()
     # Add in the vcs-imports user.
@@ -125,7 +136,7 @@ def code_import_updated(event):
         'branch': canonical_url(code_import.branch)}
 
     from_address = format_address(
-        event.person.displayname, event.person.preferredemail.email)
+        person.displayname, person.preferredemail.email)
 
     interested_levels = (
         BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,

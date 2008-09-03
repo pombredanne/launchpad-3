@@ -174,6 +174,12 @@ class CodeImport(SQLBase):
     def updateFromData(self, data, user):
         """See `ICodeImport`."""
         event_set = getUtility(ICodeImportEventSet)
+        new_whiteboard = None
+        if 'whiteboard' in data:
+            whiteboard = data.pop('whiteboard')
+            if whiteboard != self.branch.whiteboard:
+                new_whiteboard = whiteboard
+                self.branch.whiteboard = whiteboard
         token = event_set.beginModify(self)
         for name, value in data.items():
             setattr(self, name, value)
@@ -183,8 +189,8 @@ class CodeImport(SQLBase):
             else:
                 self._removeJob()
         event = event_set.newModify(self, user, token)
-        if event is not None:
-            code_import_updated(event)
+        if event is not None or new_whiteboard is not None:
+            code_import_updated(self, event, new_whiteboard, user)
         return event
 
     def __repr__(self):

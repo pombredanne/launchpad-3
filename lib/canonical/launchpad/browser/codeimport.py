@@ -343,7 +343,6 @@ def _makeEditAction(label, status, text):
         condition = None
     def success(self, action, data):
         """Make the requested status change."""
-        whiteboard = self._updateWhiteboardAndCheckIfChangedFromData(data)
         if status is not None:
             data['review_status'] = status
         event = self.code_import.updateFromData(data, self.user)
@@ -407,14 +406,6 @@ class CodeImportEditView(CodeImportBaseView):
     def _showButtonForStatus(self, status):
         """If the status is different, and the user is super, show button."""
         return self._super_user and self.code_import.review_status != status
-
-    def _updateWhiteboardAndCheckIfChangedFromData(self, data):
-        whiteboard = data.pop('whiteboard')
-        if whiteboard != self.context.whiteboard:
-            self.context.whiteboard = whiteboard
-            return whiteboard
-        else:
-            return None
 
     actions = form.Actions(
         _makeEditAction(_('Update'), None, 'updated'),
